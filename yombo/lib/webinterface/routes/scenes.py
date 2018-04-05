@@ -639,71 +639,45 @@ def route_scenes(webapp):
                 webinterface.add_alert("Requested scene could not be located.", 'warning')
                 return webinterface.redirect(request, '/scenes/index')
 
-            data = {
-                'item_type': 'device',
-                'device_id': webinterface.request_get_default(request, 'device_id', ""),
-                'command_id': webinterface.request_get_default(request, 'command_id', ""),
-                'inputs': webinterface.request_get_default(request, 'inputs', {}),
-                'weight': int(webinterface.request_get_default(
-                    request, 'weight', len(webinterface._Scenes.scenes) * 10)),
-            }
-
-            if data['device_id'] == "":
-                webinterface.add_alert('Must enter a device_id.', 'warning')
-                return page_scenes_form_add_device(webinterface, request, session, scene, data, 'add', "Add device to scene")
-
-            if data['command_id'] == "":
-                webinterface.add_alert('Must enter a command_id.', 'warning')
-                return page_scenes_form_add_device(webinterface, request, session, scene, data, 'add', "Add device to scene")
-
-            # if data['inputs'] == "" or len(data['inputs']) == 0:
-            #     webinterface.add_alert('Must enter a device value_type to ensure validity.', 'warning')
-            #     return page_scenes_form_add_device(webinterface, request, session, scene, data, 'add', "Add device to scene")
-
-            device_id = data['device_id']
             try:
-                device = webinterface._Devices[device_id]
+                data = json.loads(webinterface.request_get_default(request, 'json_output', "{}"))
             except Exception as e:
-                webinterface.add_alert('Device not found, invalid device_id.', 'warning')
-                return page_scenes_form_add_device(webinterface, request, session, scene, data, 'add', "Add device to scene")
-            command_id = data['command_id']
+                webinterface.add_alert("Error decoding request data.", 'warning')
+                return webinterface.redirect(request, '/scenes/%s/add_device' % scene_id)
+
+            data['item_type'] = 'device'
+            if 'device_id' not in data:
+                webinterface.add_alert("Device ID information is missing.", 'warning')
+                return webinterface.redirect(request, '/scenes/%s/add_device' % scene_id)
             try:
-                device = webinterface._Commands[command_id]
+                device = webinterface._Devices[data['device_id']]
             except Exception as e:
-                webinterface.add_alert('Command not found, invalid command_id.', 'warning')
-                return page_scenes_form_add_device(webinterface, request, session, scene, data, 'add', "Add device to scene")
+                webinterface.add_alert("Device could not be found.", 'warning')
+                return webinterface.redirect(request, '/scenes/%s/add_device' % scene_id)
 
-
-
-            value_type = data['value_type']
-            if value_type == "string":
-                data['value'] = coerce_value(data['value'], 'string')
-            elif value_type == "integer":
-                try:
-                    data['value'] = coerce_value(data['value'], 'int')
-                except Exception:
-                    webinterface.add_alert("Cannot coerce device value into an integer", 'warning')
-                    return page_scenes_form_add_device(webinterface, request, session, scene, data, 'add', "Add device to scene")
-            elif value_type == "float":
-                try:
-                    data['value'] = coerce_value(data['value'], 'float')
-                except Exception:
-                    webinterface.add_alert("Cannot coerce device value into an float", 'warning')
-                    return page_scenes_form_add_device(webinterface, request, session, scene, data, 'add', "Add device to scene")
-            elif value_type == "boolean":
-                try:
-                    data['value'] = coerce_value(data['value'], 'bool')
-                    if isinstance(data['value'], bool) is False:
-                        raise Exception()
-                except Exception:
-                    webinterface.add_alert("Cannot coerce device value into an boolean", 'warning')
-                    return page_scenes_form_add_device(webinterface, request, session, scene, data, 'add', "Add device to scene")
-
+            if 'command_id' not in data:
+                webinterface.add_alert("Command ID information is missing.", 'warning')
+                return webinterface.redirect(request, '/scenes/%s/add_device' % scene_id)
             try:
-                data['weight'] = int(data['weight'])
-            except Exception:
-                webinterface.add_alert('Must enter a number for a weight.', 'warning')
-                return page_scenes_form_add_device(webinterface, request, session, scene, data, 'add', "Add device to scene")
+                command = webinterface._Commands[data['command_id']]
+            except Exception as e:
+                webinterface.add_alert("Device could not be found.", 'warning')
+                return webinterface.redirect(request, '/scenes/%s/add_device' % scene_id)
+
+            if 'inputs' not in data:
+                data['inputs'] = {}
+
+            if 'weight' not in data:
+                data['weight'] = 4000
+            else:
+                try:
+                    data['weight'] = int(data['weight'])
+                except Exception as e:
+                    webinterface.add_alert("Weight must be a whole number.", 'warning')
+                    return webinterface.redirect(request, '/scenes/%s/add_device' % scene_id)
+            print("data = %s" % data)
+
+            # TODO: handle encrypted input values....
 
             try:
                 results = webinterface._Scenes.add_scene_item(scene_id, **data)

@@ -1,6 +1,30 @@
 {% extends "lib/webinterface/fragments/layout.tpl" %}
 {% import "lib/webinterface/pages/scenes/macros.tpl" as smacro%}
 
+{% block head_css %}
+<style>
+/* supersede bootstrap at the row level by being annoyingly specific
+*/
+.table-striped > tbody > tr:nth-child(odd).highlight-state > td {
+    background-color: #e8ffea;
+}
+.table-striped > tbody > tr:nth-child(even).highlight-state > td {
+    background-color: #daf1dc;
+}
+.table-striped > tbody > tr:nth-child(odd).highlight-device > td {
+    background-color: #e4eaff;
+}
+.table-striped > tbody > tr:nth-child(even).highlight-device > td {
+    background-color: #d6dcf1;
+}
+
+/* supersede bootstrap at the cell level by being annoyingly specific */
+.table-striped > tbody > tr:nth-child(odd) > td.highlight {
+	background-color:lightgreen;
+}
+
+</style>
+{% endblock %}
 {% block content %}
     <div class="row">
         <div class="col-lg-12">
@@ -66,12 +90,10 @@
                             </tr>
                         </thead>
                         <tbody>{% for item_id, item in _scenes.get_scene_item(scene.scene_id).items() %}
-                             <tr>
-                                 {%- if item['item_type'] == 'state' %} {{ smacro.display_state(scene, item_id, item) }}
-                                 {%- elif item['item_type'] == 'device' %} {{ smacro.display_device(scene, item_id, item) }}
-                                 {%- else %} Unknown item type: {{item['type']}}
-                                 {%- endif %}
-                             </tr>
+                             {%- if item['item_type'] == 'state' %} {{ smacro.display_state(scene, item_id, item) }}
+                             {%- elif item['item_type'] == 'device' %} {{ smacro.display_device(scene, item_id, item) }}
+                             {%- else %} Unknown item type: {{item['type']}}
+                             {%- endif %}
                         {%- endfor %}
                         </tbody>
                     </table>

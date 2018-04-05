@@ -58,6 +58,7 @@ from yombo.lib.webinterface.routes.api_v1.device_command import route_api_v1_dev
 from yombo.lib.webinterface.routes.api_v1.gateway import route_api_v1_gateway
 from yombo.lib.webinterface.routes.api_v1.module import route_api_v1_module
 from yombo.lib.webinterface.routes.api_v1.notification import route_api_v1_notification
+from yombo.lib.webinterface.routes.api_v1.scenes import route_api_v1_scene
 from yombo.lib.webinterface.routes.api_v1.server import route_api_v1_server
 from yombo.lib.webinterface.routes.api_v1.stream import broadcast as route_api_v1_stream_broadcast
 from yombo.lib.webinterface.routes.api_v1.stream import route_api_v1_stream
@@ -223,6 +224,7 @@ class WebInterface(YomboLibrary):
         route_api_v1_statistics(self.webapp)
         route_api_v1_stream(self.webapp, self)
         route_api_v1_system(self.webapp)
+        route_api_v1_scene(self.webapp)
 
         # Load devtool routes
         route_devtools_config(self.webapp)

@@ -282,8 +282,7 @@ class Scenes(YomboLibrary, object):
         #             'device_id': 'abc-deviceid',
         #             'command': 'on',
         #             'inputs': {
-        #                 'percent': [
-        #                     50,
+        #                 'percent': 50,
         #                 ],
         #             },
         #         },
@@ -374,7 +373,7 @@ class Scenes(YomboLibrary, object):
             print("new scene STATE item: %s" % scene.data['items'][item_id])
 
         elif item_type == 'device':
-            device = self._Devices['device_id']
+            device = self._Devices[kwargs['device_id']]
             command = self._Commands[kwargs['command_id']]
             scene.data['items'][item_id] = {
                 'item_id': item_id,

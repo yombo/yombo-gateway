@@ -30,11 +30,11 @@
                     <label style="margin-top: 0px; margin-bottom: 0px">Device</label>
                     <a href="#" data-toggle="modal" data-target="#modalname"><i class="fa fa-question fa-sm"></i></a>
                     {{ macros.modal("modalname", 'Device', '
-                    <p>Select a state name to apply the new value to.</p>
+                    <p>Select a device to control.</p>
                     ') }}
                     <br>
                     <div class="input-group">
-                        <select id="deviceID" class="selectpicker show-tick form-control">
+                        <select id="device_id" name="device_id" class="selectpicker show-tick form-control">
                             {%- if data['device_id'] == "" %}
                             {%- for device_id, device in _devices.items() if device.is_allowed_in_scenes -%}
                             <option value="{{device_id}}">{{device.full_label}}</option>
@@ -44,7 +44,6 @@
                             {% endif %}
                         </select>
                     </div>
-
                 </div>
 
                 <div class="form-group">
@@ -56,7 +55,7 @@
                     </p>') }}
                     <br>
                     <div class="input-group">
-                        <select id="commandID" class="selectpicker show-tick form-control">
+                        <select id="command_id" name="command_id" class="selectpicker show-tick form-control">
                             <option value="-1" disabled>Select device first</option>
                         </select>
                     </div>
@@ -83,24 +82,25 @@
                 </div>
 
                 <div class="form-group">
-                    <label style="margin-top: 0px; margin-bottom: 0px">Value Type: </label>
-                    <a href="#" data-toggle="modal" data-target="#modalvaluetype"><i class="fa fa-question fa-sm"></i></a>
-                    {{ macros.modal("modalstatus", 'Value Type', "
-                    <p>Set a value type to try to coerce the new value into. For example, if the value is '1' and the
-                        value type is string, it will be left as a string. However, if it's a value type is integer, it
-                        try to be forced into an integer.</p>
+                    <label style="margin-top: 0px; margin-bottom: 0px">Command Inputs: </label>
+                    <a href="#" data-toggle="modal" data-target="#modalcommandinputs"><i class="fa fa-question fa-sm"></i></a>
+                    {{ macros.modal("modalcommandinputs", 'Command Inputs', "
                     <p>
-                        Booleans will be true if the value is: true, 1, yes. Otherwise, it will be false.
+                        Some command accept (or require) various input to perform. Such as, settings a brightness
+                        for a bulb - the brightness value is required.
                     </p>
                     ") }}
                     <br>
                     <div class="input-group">
-                        <select tabindex="3" class="selectpicker show-tick form-control" name="value_type" id="value_type">
-                            <option value="string"{% if data['value_type'] == 'string' %} selected{% endif %} data-subtext="Make value a string.">String</option>
-                            <option value="integer"{% if data['value_type'] == 'integer' %} selected{% endif %} data-subtext="A whole number">Integer</option>
-                            <option value="float"{% if data['value_type'] == 'float' %} selected{% endif %} data-subtext="Number with a decimal period in it.">Float</option>
-                            <option value="boolean"{% if data['value_type'] == 'boolean' %} selected{% endif %} data-subtext="Either True or False">Boolean</option>
-                        </select>
+                        <table width="100%" class="table table-striped table-bordered table-hover" id="inputvalues">
+                            <thead>
+                                <tr>
+                                    <th>Input Name</th><th>Input Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
@@ -124,6 +124,7 @@
 {% endblock %}
 
 {% block body_bottom %}
+<script type="text/javascript" src="/static/js/jquery.serializejson.min.js"></script>
 <script>
     var deviceCommandList = {
     {%- for device_id, device in _devices.items() %}
@@ -140,38 +141,24 @@
     {% endfor %}
     };
 
-    var updateSelectCommandBox = function(make) {
-//        console.log('updating with', make);
-        var listItems= "";
-        for (var i = 0; i < deviceCommandList[make]['commands'].length; i++){
-            listItems+= "<option value='" + deviceCommandList[make]['commands'][i].commandId + "'>" + deviceCommandList[make]['commands'][i].commandLabel + "</option>\n";
-        }
-//        console.log(listItems)
-        $("select#commandID").html(listItems);
-        $('select#commandID').selectpicker('refresh');
-    }
+    function getSceneInputFields() {
+        var selectedDeviceID = $('#device_id option:selected').attr('value');
+        var selectedCommandID = $('#command_id option:selected').attr('value');
+        console.log("selectedCommandID: " + selectedCommandID)
+        var content = '<tr><td colspan="2">Downloading inputs...</td></tr>';
+        $('#inputvalues tbody').html(content);  // **better. give the table a ID, and replace**
 
-    $("select#deviceID").on('change',function(){
-//        console.log("in makeSelectioNBox on change...");
-//       var selectedMake = $('#deviceID option:selected').text();
-       var selectedMake = $('#deviceID option:selected').attr('value');
-//       var id = $(this).find('option:selected').attr('id');
-//        console.log('selectedMake: ', selectedMake);
-       updateSelectCommandBox(selectedMake);
-    });
-
-
-    function formLoadBottom() {
-        var val = $('#gpg-action').val();
-        console.log("im called. Val: " + val);
         $.ajax({
-            url: '/setup_wizard/5_gpg_section',
-            type: 'POST',
-            data: {gpg_action: val},
+            url: '/api/v1/scene/device_inputs',
+            type: 'GET',
+            data: {sceneid:'{{scene.scene_id}}',deviceid:selectedDeviceID,commandid:selectedCommandID},
         })
         .done(function(data) {
-            console.log("formLoadBottom: done: data:"+ data);
-            $('#GPG-Input-Area').html(data);
+            console.log("formLoadBottom: done: " + data);
+//            $('#command-input-area').html(data);
+            // content += '</tbody>';-- **superfluous**
+            //$('table tbody').replaceWith(content);  **incorrect..**
+             $('#inputvalues tbody').html(data);  // **better. give the table a ID, and replace**
         })
         .fail(function() {
             console.log("error");
@@ -181,15 +168,36 @@
         });
     }
 
-    $('#gpg-action').on('load change', formLoadBottom);
+    var updateSelectCommandBox = function(make) {
+        var listItems= "";
+        for (var i = 0; i < deviceCommandList[make]['commands'].length; i++){
+            listItems+= "<option value='" + deviceCommandList[make]['commands'][i].commandId + "'>" + deviceCommandList[make]['commands'][i].commandLabel + "</option>\n";
+        }
+        $("select#command_id").html(listItems);
+        $('select#command_id').selectpicker('refresh');
+    }
 
-    $(document).ready(function() {
-        formLoadBottom();
-//            $("body").prepend('<div id="overlay" class="ui-widget-overlay" style="z-index: 1001; display: none;"></div>');
-//            $("body").prepend("<div id='PleaseWait' style='display: none;'><img src='http://i.stack.imgur.com/FhHRx.gif'/></div>");
+    $("select#device_id").on('change',function(){
+       var selectedMake = $('#device_id option:selected').attr('value');
+       updateSelectCommandBox(selectedMake);
     });
 
-    $(document).ready(function(){
+    $("select#command_id").on('change',function(){
+        getSceneInputFields()
+    });
+
+        $("#scenedevice").submit(function(event) {
+        var rawData = $('#scenedevice').serializeJSON();
+        var formData = JSON.stringify(rawData);
+        console.log(formData);
+        $('#json_output').val(formData)
+    });
+
+    $(document).ready(function() {
+        var selectedDeviceID = $('#device_id option:selected').attr('value');
+        updateSelectCommandBox(selectedDeviceID);
+        getSceneInputFields()
+
        var i=1;
 
        (function($) {
@@ -208,29 +216,42 @@
            })
        })(jQuery);
 
-       (function($) {
-           $.fn.serializeFormJSON = function() {
-               var o = [];
-               $(this).find('tr').each(function() {
-                   var elements = $(this).find('input, textarea, select')
-                   if (elements.size() > 0) {
-                       var serialized = $(this).find('input, textarea, select').serialize();
-                       var item = $.toDictionary(serialized );
-                       o.push(item);
-                   }
-               });
-               return o;
-           };
-       })(jQuery);
+       function getFormData($form){
+            var unindexed_array = $form.serializeArray();
+            var indexed_array = {};
 
-       $("#scenedevice").submit(function(event) {
-           var rawData = $( this ).serializeArray();
-           var formData = JSON.stringify(rawData);
-           $('#json_output').val(formData);
-//           console.log(rawData);
+            $.map(unindexed_array, function(n, i){
+                indexed_array[n['name']] = n['value'];
+            });
+
+            return indexed_array;
+       }
+//       (function($) {
+//           $.fn.serializeFormJSON = function() {
+//               var o = [];
+//               $(this).find('tr').each(function() {
+//                   var elements = $(this).find('input, textarea, select')
+//                   if (elements.size() > 0) {
+//                       var serialized = $(this).find('input, textarea, select').serialize();
+//                       var item = $.toDictionary(serialized );
+//                       o.push(item);
+//                   }
+//               });
+//               return o;
+//           };
+//       })(jQuery);
+
+//       $("#scenedevice").submit(function(event) {
+//           var $form = $("#scenedevice");
+//           var rawData = getFormData($form);
+////           var rawData = $( this ).serializeArray();
+////           var rawData = $('#scenedevice').serializeFormJSON();
+////           console.log(rawData);
 //           console.log(formData);
-//           event.preventDefault();
-       });
+//           var formData = JSON.stringify(rawData);
+//           $('#json_output').val(formData);
+////           event.preventDefault();
+//       });
     });
 
     $('.ls-modal').on('click', function(e){
