@@ -1,4 +1,4 @@
-{% macro modal(id='the_id', label='Modal Label', content='Modal Content') -%}
+{% macro modal(id='the_id', label='Modal Label', content='Modal Content') %}
 <div class="modal fade" id="{{ id }}" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
