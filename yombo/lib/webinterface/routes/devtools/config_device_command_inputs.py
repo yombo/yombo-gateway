@@ -339,7 +339,7 @@ def route_devtools_config_device_command_inputs(webapp):
             return page_devtools_device_command_inputs_form(webinterface, request, session,
                                                             'edit',
                                                             device_type_command_id,
-                                                            device_command_input_results['data'][0],
+                                                            device_command_input_results['data'],
                                                             device_type_results['data'],
                                                             command_results['data'],
                                                             input_type_results['data'],
@@ -403,7 +403,7 @@ def route_devtools_config_device_command_inputs(webapp):
                                                                 'add',
                                                                 device_type_command_id,
                                                                 data,
-                                                                device_type_results['data'][0],
+                                                                device_type_results['data'],
                                                                 command_results['data'],
                                                                 input_type_results['data'],
                                                                 "Associate input type to command")
