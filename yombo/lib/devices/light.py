@@ -69,7 +69,7 @@ class Light(Device):
         kwargs['inputs'][INPUT_BRIGHTNESS] = brightness
         return self.command(command, **kwargs)
 
-    def set_percent(self, percent, user_id=None, component=None, gateway_id=None, callbacks=None):
+    def set_percent(self, percent, **kwargs):
         """
         Set the light based on a percent. Basically, just converts brightness to the devices
         step range, and forwards request to set_brightness()
@@ -83,7 +83,7 @@ class Light(Device):
         brightness = translate_int_value(percent,
                                          0, 100,
                                          0, self.FEATURES[FEATURE_NUMBER_OF_STEPS])
-        return self.set_brightness(brightness, user_id, component, gateway_id, callbacks)
+        return self.set_brightness(brightness, **kwargs)
 
     @property
     def xy_color(self):

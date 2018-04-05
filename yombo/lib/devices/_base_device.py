@@ -308,9 +308,6 @@ class Base_Device(object):
 
     @property
     def is_controllable(self):
-        print("is_controllable %s: %s == %s" % (self.full_label, self.device_feature_is_active(FEATURE_ALLOW_DIRECT_CONTROL),
-            is_true_false(self.controllable)))
-        print("is_controllable feature %s: %s " % (self.full_label, self.FEATURES))
         if self.device_feature_is_active(FEATURE_ALLOW_DIRECT_CONTROL) and \
                     is_true_false(self.controllable):
             return True
@@ -318,8 +315,6 @@ class Base_Device(object):
 
     @property
     def is_allowed_in_scenes(self):
-        print("is_allowed_in_scenes %s: %s == %s" % (self.full_label, self.device_feature_is_active(FEATURE_ALLOW_IN_SCENES),
-            is_true_false(self.controllable)))
         if self.device_feature_is_active(FEATURE_ALLOW_IN_SCENES) and self.is_controllable:
             return True
         return False
@@ -330,7 +325,7 @@ class Base_Device(object):
 
     @property
     def is_on(self):
-        if self.status_history[0].machine_status > 0:
+        if int(self.machine_status) > 0:
             return True
         else:
             return False
@@ -882,7 +877,7 @@ class Base_Device(object):
         if requested_by is None:  # soon, this will cause an error!
             requested_by = {
                 'user_id': 'Unknown',
-                'component': "$s.%s.%s" % (self.PLATFORM_BASE, self.PLATFORM, self.SUB_PLATFORM),
+                'component': "%s.%s.%s" % (self.PLATFORM_BASE, self.PLATFORM, self.SUB_PLATFORM),
             }
 
         device_command['requested_by'] = requested_by

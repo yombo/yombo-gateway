@@ -1,6 +1,7 @@
 # Python Stuff #
 ################
 MANIFEST
+.cache/
 *.c
 *.so
 *.pyc
