@@ -826,7 +826,7 @@ class Gateways(YomboLibrary):
             return
 
         gateway_id = kwargs['gateway_id']
-        if gateway_id != self.gateway_id:
+        if gateway_id != self.gateway_id and gateway_id not in ('global', 'cluster'):
             return
 
         # print("gw sending states set: %s" % kwargs['key'])

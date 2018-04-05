@@ -402,7 +402,7 @@ class States(YomboLibrary, object):
             return {}
 
     @inlineCallbacks
-    def set(self, key, value, value_type=None, function=None, arguments=None, gateway_id=None):
+    def set(self, key, value, value_type=None, callback=None, arguments=None, gateway_id=None):
         """
         Set the value of a given state (key).
 
@@ -413,9 +413,9 @@ class States(YomboLibrary, object):
         :param key: Name of state to set.
         :param value: Value to set state to. Can be string, list, or dictionary.
         :param value_type: If set, allows a human filter to be applied for display.
-        :param function: If this a living state, provide a function to be called to get value. Value will be used
+        :param callback: If this a living state, provide a callback to be called to get value. Value will be used
           to set the initial value.
-        :param arguments: kwarg (arguments) to send to function.
+        :param arguments: kwarg (arguments) to send to callback.
         :return: Value of state
         """
         # logger.debug("Saving state: {key} = {value}", key=key, value=value)
@@ -466,12 +466,12 @@ class States(YomboLibrary, object):
             return None
 
         self.__States[gateway_id][key]['value'] = value
-        self.__States[gateway_id][key]['function'] = function
+        self.__States[gateway_id][key]['callback'] = callback
         self.__States[gateway_id][key]['arguments'] = arguments
         if is_new is True or value_type is not None:
             self.__States[gateway_id][key]['value_type'] = value_type
-        if is_new is True or function is not None:
-            if function is None:
+        if is_new is True or callback is not None:
+            if callback is None:
                 self.__States[gateway_id][key]['live'] = False
             else:
                 self.__States[gateway_id][key]['live'] = True
@@ -745,7 +745,7 @@ class States(YomboLibrary, object):
                 if 'value_type' not in data:
                     data['value_type'] = None
 
-                self.set(requested_state, data['value'], value_type=data['value_type'], function=None, arguments=None)
+                self.set(requested_state, data['value'], value_type=data['value_type'], callback=None, arguments=None)
                 return
             except Exception:
                 self.mqtt.publish('yombo/states/%s/set_response' % parts[2],
