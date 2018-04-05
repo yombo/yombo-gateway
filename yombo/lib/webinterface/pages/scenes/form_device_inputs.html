@@ -1,7 +1,4 @@
 {% import "lib/webinterface/fragments/macros.tpl" as macros-%}
-<input type="hidden" id="item_id" name="item_id" value="
-{%- if item_details is none %}none{% else %}{{item_details['item_id']}}{% endif -%}
-">
 {%- if inputs|length == 0 -%}
 <tr>
     <td colspan="4">Command does not accept inputs.</td>
@@ -12,9 +9,14 @@
         {{ input['label'] }}
     </td>
     <td>
-        {% set ITID = "inputs[" ~ input['input_type_id'] ~ "]" -%}
+        {% set ITID = "inputs[" ~ input_machine_label ~ "]" -%}
+        {%- if item_details is none -%}
         {{macros.form_input_type(_devices, item, _inputtypes, input, ITID,
-          ITID, input['values'][input['input_type_id']] or '' )}}
+          ITID, '' )}}
+        {%- else -%}
+        {{macros.form_input_type(_devices, item, _inputtypes, input, ITID,
+          ITID, item_details['inputs'][input_machine_label] or '' )}}
+        {%- endif -%}
     </td>
 </tr>
 {%- endfor %}

@@ -176,16 +176,18 @@ class Scenes(YomboLibrary, object):
         items = self.get_scene_item(scene_id)
         for item_id, item in items.items():
             if item['item_type'] == "device":
-                device = self._Commands[item['device_id']]
+                print("trigger doing device..")
+                device = self._Devices[item['device_id']]
                 command = self._Commands[item['command_id']]
-                inputs = items['inputs']
+                inputs = item['inputs']
                 device.command(cmd=command,
                                requested_by={'user_id': "System", "component": "yombo.lib.scenes"},
                                control_method='scene',
-                               inputs=items['inputs'],
+                               inputs=item['inputs'],
                                **kwargs)
             elif item['item_type'] == "state":
-                self._States(items['name'], items['value'], items['value_type'])
+                print("trigger doing state..")
+                self._States.set(item['name'], item['value'], item['value_type'])
 
 
     def check_duplicate_scene(self, label=None, machine_label=None, scene_id=None):
@@ -353,8 +355,6 @@ class Scenes(YomboLibrary, object):
         :param kwargs:
         :return:
         """
-        print("add_scene_item: scene_id %s" % scene_id)
-        print("add_scene_item: kwargs %s" % kwargs)
         scene = self.scenes[scene_id]
         item_type = kwargs['item_type']
         if 'order' not in kwargs:
@@ -370,7 +370,6 @@ class Scenes(YomboLibrary, object):
                 'value_type': kwargs['value_type'],
                 'weight': kwargs['weight'],
             }
-            print("new scene STATE item: %s" % scene.data['items'][item_id])
 
         elif item_type == 'device':
             device = self._Devices[kwargs['device_id']]
@@ -383,7 +382,6 @@ class Scenes(YomboLibrary, object):
                 'inputs': kwargs['inputs'],
                 'weight': kwargs['weight'],
             }
-            print("new scene DEVICE item: %s" % scene.data['items'][item_id])
 
         else:
             raise YomboWarning("Invalid scene item type.")
@@ -411,7 +409,7 @@ class Scenes(YomboLibrary, object):
             item['value_type'] = kwargs['value_type']
             item['weight'] = kwargs['weight']
         elif item_type == 'device':
-            device = self._Devices['device_id']
+            device = self._Devices[kwargs['device_id']]
             command = self._Commands[kwargs['command_id']]
             item['device_id'] = device.device_id
             item['command_id'] = command.command_id

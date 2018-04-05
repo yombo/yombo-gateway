@@ -65,6 +65,19 @@ def route_scenes(webapp):
                                scene=scene,
                                )
 
+        @webapp.route('/<string:scene_id>/trigger', methods=['GET'])
+        @require_auth()
+        def page_scenes_trigger_get(webinterface, request, session, scene_id):
+            try:
+                scene = webinterface._Scenes[scene_id]
+            except KeyError as e:
+                webinterface.add_alert("Requested scene doesn't exist: %s" % scene_id, 'warning')
+                return webinterface.redirect(request, '/scenes/index')
+
+            webinterface._Scenes.trigger(scene_id)
+            webinterface.add_alert("The scene '%s' has been triggered" % scene.label)
+            return webinterface.redirect(request, "/scenes/%s/details" % scene.scene_id)
+
         @webapp.route('/add', methods=['GET'])
         @require_auth()
         def page_scenes_add_get(webinterface, request, session):
@@ -90,7 +103,6 @@ def route_scenes(webapp):
             try:
                 scene = yield webinterface._Scenes.add(data['label'], data['machine_label'], data['status'])
             except YomboWarning as e:
-                print("page_scenes_add_post:: 1")
                 webinterface.add_alert(e, 'warning')
                 return page_scenes_form(webinterface, request, session, 'add', data, "Add Scene",)
 
@@ -450,7 +462,7 @@ def route_scenes(webapp):
 
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene.scene_id, scene.label)
-            webinterface.add_breadcrumb(request, "/scenes/%s/edit" % scene.scene_id, "Edit")
+            webinterface.add_breadcrumb(request, "/scenes/%s/edit_state" % scene.scene_id, "Edit item: State")
             data = webinterface._Scenes.get_scene_item(scene_id, item_id)
             return page_scenes_form_add_state(webinterface, request, session, scene, data, 'edit',
                                               "Edit scene item: State")
@@ -561,7 +573,7 @@ def route_scenes(webapp):
             )
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene_id, scene.label)
-            webinterface.add_breadcrumb(request, "/scenes/%s/delete" % scene_id, "Delete")
+            webinterface.add_breadcrumb(request, "/scenes/%s/delete_state" % scene_id, "Delete item: State")
             return page.render(alerts=webinterface.get_alerts(),
                                scene=scene,
                                item=item,
@@ -579,24 +591,25 @@ def route_scenes(webapp):
                 return webinterface.redirect(request, '/scenes/index')
 
             try:
-                confirm = request.args.get('confirm')[0]
-            except:
-                return webinterface.redirect(request,
-                                             '/scenes/%s/details' % scene_id)
-
-            try:
                 item = webinterface._Scenes.get_scene_item(scene_id, item_id)
             except KeyError as e:
                 webinterface.add_alert("Requested item for scene doesn't exist.", 'warning')
                 return webinterface.redirect(request, '/scenes/index')
 
+            try:
+                confirm = request.args.get('confirm')[0]
+            except:
+                return webinterface.redirect(request,
+                                             '/scenes/%s/delete_state/%s' % (scene_id, item_id))
+
             if confirm != "delete":
-                webinterface.add_alert('Must enter "delete" in the confirmation box to delete the scene.', 'warning')
+                webinterface.add_alert('Must enter "delete" in the confirmation box to '
+                                       'delete the state from the scene.', 'warning')
                 return webinterface.redirect(request,
                                              '/scenes/%s/delete_state/%s' % (scene_id, item_id))
 
             try:
-                action_results = yield webinterface._Scenes.delete_scene_item(scene_id, item_id)
+                yield webinterface._Scenes.delete_scene_item(scene_id, item_id)
             except Exception as e:
                 webinterface.add_alert(e, 'warning')
                 return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
@@ -618,6 +631,7 @@ def route_scenes(webapp):
                 return webinterface.redirect(request, '/scenes/index')
 
             data = {
+                'item_id': None,
                 'item_type': 'device',
                 'device_id': webinterface.request_get_default(request, 'device_id', ""),
                 'command_id': webinterface.request_get_default(request, 'command_id', ""),
@@ -640,11 +654,12 @@ def route_scenes(webapp):
                 return webinterface.redirect(request, '/scenes/index')
 
             try:
-                data = json.loads(webinterface.request_get_default(request, 'json_output', "{}"))
+                incoming_data = json.loads(webinterface.request_get_default(request, 'json_output', "{}"))
             except Exception as e:
                 webinterface.add_alert("Error decoding request data.", 'warning')
                 return webinterface.redirect(request, '/scenes/%s/add_device' % scene_id)
-
+            keep_attributes = ['device_id', 'command_id', 'inputs', 'weight']
+            data = {k: incoming_data[k] for k in keep_attributes if k in incoming_data}
             data['item_type'] = 'device'
             if 'device_id' not in data:
                 webinterface.add_alert("Device ID information is missing.", 'warning')
@@ -668,14 +683,17 @@ def route_scenes(webapp):
                 data['inputs'] = {}
 
             if 'weight' not in data:
-                data['weight'] = 4000
+                data['weight'] = 40000
             else:
                 try:
                     data['weight'] = int(data['weight'])
                 except Exception as e:
                     webinterface.add_alert("Weight must be a whole number.", 'warning')
                     return webinterface.redirect(request, '/scenes/%s/add_device' % scene_id)
-            print("data = %s" % data)
+            if 'scene_id' in data:
+                del data['scene_id']
+            if 'item_id' in data:
+                del data['item_id']
 
             # TODO: handle encrypted input values....
 
@@ -699,7 +717,7 @@ def route_scenes(webapp):
 
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene.scene_id, scene.label)
-            webinterface.add_breadcrumb(request, "/scenes/%s/edit" % scene.scene_id, "Edit")
+            webinterface.add_breadcrumb(request, "/scenes/%s/edit_device" % scene.scene_id, "Edit item: Device")
             data = webinterface._Scenes.get_scene_item(scene_id, item_id)
             return page_scenes_form_add_device(webinterface, request, session, scene, data, 'edit',
                                               "Edit scene item: Device")
@@ -712,77 +730,62 @@ def route_scenes(webapp):
             except KeyError as e:
                 webinterface.add_alert("Requested scene could not be located.", 'warning')
                 return webinterface.redirect(request, '/scenes/index')
-            data = {
-                'item_type': 'device',
-                'name': webinterface.request_get_default(request, 'name', ""),
-                'value': webinterface.request_get_default(request, 'value', ""),
-                'value_type': webinterface.request_get_default(request, 'value_type', ""),
-                'weight': int(webinterface.request_get_default(
-                    request, 'weight', len(webinterface._Scenes.scenes) * 10)),
-            }
-
-            if data['name'] == "":
-                webinterface.add_alert('Must enter a device name.', 'warning')
-                return page_scenes_form_add_device(webinterface, request, session, scene, data, 'add', "Edit scene item: Device")
-
-            if data['value'] == "":
-                webinterface.add_alert('Must enter a device value to set.', 'warning')
-                return page_scenes_form_add_device(webinterface, request, session, scene, data, 'add', "Edit scene item: Device")
-
-            if data['value_type'] == "" or data['value_type'] not in ('integer', 'string', 'boolean', 'float'):
-                webinterface.add_alert('Must enter a device value_type to ensure validity.', 'warning')
-                return page_scenes_form_add_device(webinterface, request, session, scene, data, 'add', "Edit scene item: Device")
-
-            value_type = data['value_type']
-            print("aaavalue type : %s" % value_type)
-            if value_type == "string":
-                print("value type : %s" % value_type)
-                data['value'] = coerce_value(data['value'], 'string')
-            elif value_type == "integer":
-                print("value type : %s" % value_type)
-                try:
-                    data['value'] = int(data['value'])
-                except Exception:
-                    webinterface.add_alert("Cannot coerce device value into an integer", 'warning')
-                    return page_scenes_form_add_device(webinterface, request, session, scene, data, 'add',
-                                                      "Edit scene item: Device")
-            elif value_type == "float":
-                print("value type : %s" % value_type)
-                try:
-                    data['value'] = coerce_value(data['value'], 'float')
-                except Exception:
-                    webinterface.add_alert("Cannot coerce device value into an float", 'warning')
-                    return page_scenes_form_add_device(webinterface, request, session, scene, data, 'add',
-                                                      "Edit scene item: Device")
-            elif value_type == "boolean":
-                print("value type : %s" % value_type)
-                try:
-                    data['value'] = coerce_value(data['value'], 'bool')
-                    if isinstance(data['value'], bool) is False:
-                        raise Exception()
-                except Exception:
-                    webinterface.add_alert("Cannot coerce device value into an boolean", 'warning')
-                    return page_scenes_form_add_device(webinterface, request, session, scene, data, 'add',
-                                                      "Edit scene item: Device")
-            else:
-                webinterface.add_alert("Unknown value type.", 'warning')
-                return page_scenes_form_add_device(webinterface, request, session, scene, data, 'add',
-                                                  "Edit scene item: Device")
 
             try:
-                data['weight'] = int(data['weight'])
-            except Exception:
-                webinterface.add_alert('Must enter a number for a weight.', 'warning')
-                return page_scenes_form_add_device(webinterface, request, session, scene, data, 'add', "Edit scene item: Device")
+                incoming_data = json.loads(webinterface.request_get_default(request, 'json_output', "{}"))
+            except Exception as e:
+                webinterface.add_alert("Error decoding request data.", 'warning')
+                return webinterface.redirect(request, '/scenes/%s/add_device' % scene_id)
+            keep_attributes = ['device_id', 'command_id', 'inputs', 'weight']
+            data = {k: incoming_data[k] for k in keep_attributes if k in incoming_data}
+            data['item_type'] = 'device'
+
+
+            if 'device_id' not in data:
+                webinterface.add_alert("Device ID information is missing.", 'warning')
+                return webinterface.redirect(request, '/scenes/%s/add_device' % scene_id)
+            try:
+                device = webinterface._Devices[data['device_id']]
+            except Exception as e:
+                webinterface.add_alert("Device could not be found.", 'warning')
+                return webinterface.redirect(request, '/scenes/%s/add_device' % scene_id)
+
+            if 'command_id' not in data:
+                webinterface.add_alert("Command ID information is missing.", 'warning')
+                return webinterface.redirect(request, '/scenes/%s/add_device' % scene_id)
+            try:
+                command = webinterface._Commands[data['command_id']]
+            except Exception as e:
+                webinterface.add_alert("Device could not be found.", 'warning')
+                return webinterface.redirect(request, '/scenes/%s/add_device' % scene_id)
+
+            if 'inputs' not in data:
+                data['inputs'] = {}
+
+            if 'weight' not in data:
+                data['weight'] = 40000
+            else:
+                try:
+                    data['weight'] = int(data['weight'])
+                except Exception as e:
+                    webinterface.add_alert("Weight must be a whole number.", 'warning')
+                    return webinterface.redirect(request, '/scenes/%s/add_device' % scene_id)
+            if 'scene_id' in data:
+                del data['scene_id']
+            if 'item_id' in data:
+                del data['item_id']
+
+            # TODO: handle encrypted input values....
 
             try:
                 webinterface._Scenes.edit_scene_item(scene_id, item_id, **data)
             except YomboWarning as e:
                 webinterface.add_alert(e, 'warning')
-                return page_scenes_form_add_device(webinterface, request, session, scene, data, 'add', "Edit scene item: Device")
+                return page_scenes_form_add_device(webinterface, request, session, scene, data, 'add', "Add device to scene")
 
-            webinterface.add_alert("Edited device item for scene.")
+            webinterface.add_alert("Added device item to scene.")
             return webinterface.redirect(request, "/scenes/%s/details" % scene.scene_id)
+
 
         def page_scenes_form_add_device(webinterface, request, session, scene, data, action_type, header_label):
             page = webinterface.get_template(request, webinterface._dir + 'pages/scenes/form_device.html')
@@ -815,7 +818,7 @@ def route_scenes(webapp):
             )
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene_id, scene.label)
-            webinterface.add_breadcrumb(request, "/scenes/%s/delete" % scene_id, "Delete")
+            webinterface.add_breadcrumb(request, "/scenes/%s/delete_device" % scene_id, "Delete item: Device")
             return page.render(alerts=webinterface.get_alerts(),
                                scene=scene,
                                item=item,
@@ -833,24 +836,25 @@ def route_scenes(webapp):
                 return webinterface.redirect(request, '/scenes/index')
 
             try:
-                confirm = request.args.get('confirm')[0]
-            except:
-                return webinterface.redirect(request,
-                                             '/scenes/%s/details' % scene_id)
-
-            try:
                 item = webinterface._Scenes.get_scene_item(scene_id, item_id)
             except KeyError as e:
                 webinterface.add_alert("Requested item for scene doesn't exist.", 'warning')
                 return webinterface.redirect(request, '/scenes/index')
 
+            try:
+                confirm = request.args.get('confirm')[0]
+            except:
+                return webinterface.redirect(request,
+                                             '/scenes/%s/delete_device/%s' % (scene_id, item_id))
+
             if confirm != "delete":
-                webinterface.add_alert('Must enter "delete" in the confirmation box to delete the scene.', 'warning')
+                webinterface.add_alert('Must enter "delete" in the confirmation box to '
+                                       'delete the device from the scene.', 'warning')
                 return webinterface.redirect(request,
                                              '/scenes/%s/delete_device/%s' % (scene_id, item_id))
 
             try:
-                action_results = yield webinterface._Scenes.delete_scene_item(scene_id, item_id)
+                yield webinterface._Scenes.delete_scene_item(scene_id, item_id)
             except Exception as e:
                 webinterface.add_alert(e, 'warning')
                 return webinterface.redirect(request, '/scenes/%s/details' % scene_id)

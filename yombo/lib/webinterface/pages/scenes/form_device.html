@@ -16,6 +16,9 @@
 </div>
 <!-- /.row -->
 <form method="post" id="scenedevice">
+<input type="hidden" id="item_id" name="item_id" value="
+{%- if data['item_id'] is none %}none{% else %}{{data['item_id']}}{% endif -%}
+">
 <div class="row">
     <div class="col-lg-12">
         <div class="panel panel-default">
@@ -127,7 +130,7 @@
 <script type="text/javascript" src="/static/js/jquery.serializejson.min.js"></script>
 <script>
     var deviceCommandList = {
-    {%- for device_id, device in _devices.items() %}
+    {%- for device_id, device in _devices.items() if data['device_id'] == "" or data['device_id'] == device_id %}
         "{{ device.device_id }}": {
         "deviceLabel": "{{ device.full_label}}",
         "commands":
@@ -144,6 +147,7 @@
     function getSceneInputFields() {
         var selectedDeviceID = $('#device_id option:selected').attr('value');
         var selectedCommandID = $('#command_id option:selected').attr('value');
+        var itemID = "{{data['item_id'] or "none"}}";
         console.log("selectedCommandID: " + selectedCommandID)
         var content = '<tr><td colspan="2">Downloading inputs...</td></tr>';
         $('#inputvalues tbody').html(content);  // **better. give the table a ID, and replace**
@@ -151,7 +155,12 @@
         $.ajax({
             url: '/api/v1/scene/device_inputs',
             type: 'GET',
-            data: {sceneid:'{{scene.scene_id}}',deviceid:selectedDeviceID,commandid:selectedCommandID},
+            data: {
+                sceneid:'{{scene.scene_id}}',
+                deviceid:selectedDeviceID,
+                commandid:selectedCommandID,
+                itemid:itemID
+            },
         })
         .done(function(data) {
             console.log("formLoadBottom: done: " + data);
@@ -168,14 +177,20 @@
         });
     }
 
-    var updateSelectCommandBox = function(make) {
+    var updateSelectCommandBox = function(deviceid, commandid = "") {
         var listItems= "";
-        for (var i = 0; i < deviceCommandList[make]['commands'].length; i++){
-            listItems+= "<option value='" + deviceCommandList[make]['commands'][i].commandId + "'>" + deviceCommandList[make]['commands'][i].commandLabel + "</option>\n";
+        for (var i = 0; i < deviceCommandList[deviceid]['commands'].length; i++){
+            var option_commandid = deviceCommandList[deviceid]['commands'][i].commandId;
+            listItems+= "<option value='" + deviceCommandList[deviceid]['commands'][i].commandId + "'";
+            if (commandid == option_commandid) {
+                listItems += " selected";
+            }
+            listItems += ">" + deviceCommandList[deviceid]['commands'][i].commandLabel + "</option>\n";
         }
         $("select#command_id").html(listItems);
         $('select#command_id').selectpicker('refresh');
-    }
+        getSceneInputFields()
+    };
 
     $("select#device_id").on('change',function(){
        var selectedMake = $('#device_id option:selected').attr('value');
@@ -195,7 +210,7 @@
 
     $(document).ready(function() {
         var selectedDeviceID = $('#device_id option:selected').attr('value');
-        updateSelectCommandBox(selectedDeviceID);
+        updateSelectCommandBox(selectedDeviceID, "{{data['command_id']}}");
         getSceneInputFields()
 
        var i=1;
@@ -226,32 +241,7 @@
 
             return indexed_array;
        }
-//       (function($) {
-//           $.fn.serializeFormJSON = function() {
-//               var o = [];
-//               $(this).find('tr').each(function() {
-//                   var elements = $(this).find('input, textarea, select')
-//                   if (elements.size() > 0) {
-//                       var serialized = $(this).find('input, textarea, select').serialize();
-//                       var item = $.toDictionary(serialized );
-//                       o.push(item);
-//                   }
-//               });
-//               return o;
-//           };
-//       })(jQuery);
 
-//       $("#scenedevice").submit(function(event) {
-//           var $form = $("#scenedevice");
-//           var rawData = getFormData($form);
-////           var rawData = $( this ).serializeArray();
-////           var rawData = $('#scenedevice').serializeFormJSON();
-////           console.log(rawData);
-//           console.log(formData);
-//           var formData = JSON.stringify(rawData);
-//           $('#json_output').val(formData);
-////           event.preventDefault();
-//       });
     });
 
     $('.ls-modal').on('click', function(e){

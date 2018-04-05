@@ -22,12 +22,7 @@
 .table-striped > tbody > tr:nth-child(odd) > td.highlight {
 	background-color:lightgreen;
 }
-[contenteditable="true"]:active,
-[contenteditable="true"]:focus{
-    outline: solid;
-    outline-color: red;
-    padding: 10px 10px 10px 10px;
-}
+
 </style>
 {% endblock %}
 {% block content %}
@@ -44,7 +39,6 @@
             <a class="btn btn-md btn-primary" href="/scenes/{{scene.scene_id}}/edit" title="Edit scene labels.">Edit Scene</a>
             <a class="btn btn-md btn-warning" href="/scenes/{{scene.scene_id}}/disable">Disable Scene </a>
             <a class="btn btn-md btn-danger" href="/scenes/{{scene.scene_id}}/delete">Delete Scene</a>
-            <a class="btn btn-md btn-primary pull-right" href="/scenes/{{scene.scene_id}}/trigger" title="Trigger scene">Trigger Scene</a>
 {% elif scene.status == 2  %}
             <a class="btn btn-md btn-success" href="/scenes/{{scene.scene_id}}/enable">Enable Scene</a>
 {% endif %}
@@ -61,8 +55,8 @@
                 </div>
                 <!-- /.panel-heading -->
                 <div class="panel-body">
-                    <label style="margin-top: 0px; margin-bottom: 0px">Label:2 </label><br>
-                    <span  ondblclick="$(this).editable('col_a')">{{ scene.label }}</span><br>
+                    <label style="margin-top: 0px; margin-bottom: 0px">Label: </label><br>
+                    {{ scene.label }}<br>
                     <label style="margin-top: 15px; margin-bottom: 0px">Machine: </label><br>
                     {{ scene.machine_label }}<br>
                     <label style="margin-top: 15px; margin-bottom: 0px">Status: </label><br>
@@ -110,30 +104,6 @@
         <!-- /.col-lg-12 -->
     </div>
     <!-- /.row -->
+
 {% endblock %}
 
-{% block body_bottom %}
-<script>
-jQuery(document).ready(function(){
-
-    $.fn.editable = function(column){
-        $(this).attr('contenteditable', true);
-
-        $(this).blur(function () {
-            var ajax = $.ajax({
-                url: './aaaaaaaa',
-                type: "POST",
-                data: { row_id: $(this).parent().attr('id'), column:column, value: $(this).html()},
-                dataType: "json"
-            });
-            ajax.done(function(data){
-                $('#result').html(data.result);
-            });
-
-            $(this).attr('contenteditable', false);
-        });
-        return this;
-    };
-});
-</script>
-{% endblock %}
