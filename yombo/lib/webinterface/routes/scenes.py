@@ -78,6 +78,19 @@ def route_scenes(webapp):
             webinterface.add_alert("The scene '%s' has been triggered" % scene.label)
             return webinterface.redirect(request, "/scenes/%s/details" % scene.scene_id)
 
+        @webapp.route('/<string:scene_id>/stop_trigger', methods=['GET'])
+        @require_auth()
+        def page_scenes_stop_trigger_get(webinterface, request, session, scene_id):
+            try:
+                scene = webinterface._Scenes[scene_id]
+            except KeyError as e:
+                webinterface.add_alert("Requested scene doesn't exist: %s" % scene_id, 'warning')
+                return webinterface.redirect(request, '/scenes/index')
+
+            webinterface._Scenes.stop_trigger(scene_id)
+            webinterface.add_alert("The scene '%s' trigger has been stopped" % scene.label)
+            return webinterface.redirect(request, "/scenes/%s/details" % scene.scene_id)
+
         @webapp.route('/add', methods=['GET'])
         @require_auth()
         def page_scenes_add_get(webinterface, request, session):
@@ -220,6 +233,7 @@ def route_scenes(webapp):
             try:
                 confirm = request.args.get('confirm')[0]
             except:
+                webinterface.add_alert('Must enter "delete" in the confirmation box to delete the scene.', 'warning')
                 return webinterface.redirect(request,
                                              '/scenes/%s/details' % scene_id)
 
@@ -280,6 +294,8 @@ def route_scenes(webapp):
             try:
                 confirm = request.args.get('confirm')[0]
             except:
+                webinterface.add_alert('Must enter "disable" in the confirmation box to disable the scene.',
+                                       'warning')
                 return webinterface.redirect(request,
                                              '/scenes/%s/details' % scene_id)
 
@@ -341,6 +357,7 @@ def route_scenes(webapp):
             try:
                 confirm = request.args.get('confirm')[0]
             except:
+                webinterface.add_alert('Must enter "enable" in the confirmation box to enable the scene.', 'warning')
                 return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
 
             if confirm != "enable":
@@ -380,7 +397,7 @@ def route_scenes(webapp):
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene_id, scene.label)
             webinterface.add_breadcrumb(request, "/scenes/%s/add_state" % scene_id, "Add Item: State")
-            return page_scenes_form_add_state(webinterface, request, session, scene, data, 'add', "Add state to scene")
+            return page_scenes_form_state(webinterface, request, session, scene, data, 'add', "Add state to scene")
 
         @webapp.route('/<string:scene_id>/add_state', methods=['POST'])
         @require_auth()
@@ -402,15 +419,15 @@ def route_scenes(webapp):
 
             if data['name'] == "":
                 webinterface.add_alert('Must enter a state name.', 'warning')
-                return page_scenes_form_add_state(webinterface, request, session, scene, data, 'add', "Add state to scene")
+                return page_scenes_form_state(webinterface, request, session, scene, data, 'add', "Add state to scene")
 
             if data['value'] == "":
                 webinterface.add_alert('Must enter a state value to set.', 'warning')
-                return page_scenes_form_add_state(webinterface, request, session, scene, data, 'add', "Add state to scene")
+                return page_scenes_form_state(webinterface, request, session, scene, data, 'add', "Add state to scene")
 
             if data['value_type'] == "" or data['value_type'] not in ('integer', 'string', 'boolean', 'float'):
                 webinterface.add_alert('Must enter a state value_type to ensure validity.', 'warning')
-                return page_scenes_form_add_state(webinterface, request, session, scene, data, 'add', "Add state to scene")
+                return page_scenes_form_state(webinterface, request, session, scene, data, 'add', "Add state to scene")
 
             value_type = data['value_type']
             if value_type == "string":
@@ -420,13 +437,13 @@ def route_scenes(webapp):
                     data['value'] = coerce_value(data['value'], 'int')
                 except Exception:
                     webinterface.add_alert("Cannot coerce state value into an integer", 'warning')
-                    return page_scenes_form_add_state(webinterface, request, session, scene, data, 'add', "Add state to scene")
+                    return page_scenes_form_state(webinterface, request, session, scene, data, 'add', "Add state to scene")
             elif value_type == "float":
                 try:
                     data['value'] = coerce_value(data['value'], 'float')
                 except Exception:
                     webinterface.add_alert("Cannot coerce state value into an float", 'warning')
-                    return page_scenes_form_add_state(webinterface, request, session, scene, data, 'add', "Add state to scene")
+                    return page_scenes_form_state(webinterface, request, session, scene, data, 'add', "Add state to scene")
             elif value_type == "boolean":
                 try:
                     data['value'] = coerce_value(data['value'], 'bool')
@@ -434,19 +451,19 @@ def route_scenes(webapp):
                         raise Exception()
                 except Exception:
                     webinterface.add_alert("Cannot coerce state value into an boolean", 'warning')
-                    return page_scenes_form_add_state(webinterface, request, session, scene, data, 'add', "Add state to scene")
+                    return page_scenes_form_state(webinterface, request, session, scene, data, 'add', "Add state to scene")
 
             try:
                 data['weight'] = int(data['weight'])
             except Exception:
                 webinterface.add_alert('Must enter a number for a weight.', 'warning')
-                return page_scenes_form_add_state(webinterface, request, session, scene, data, 'add', "Add state to scene")
+                return page_scenes_form_state(webinterface, request, session, scene, data, 'add', "Add state to scene")
 
             try:
                 results = webinterface._Scenes.add_scene_item(scene_id, **data)
             except YomboWarning as e:
                 webinterface.add_alert(e, 'warning')
-                return page_scenes_form_add_state(webinterface, request, session, scene, data, 'add', "Add state to scene")
+                return page_scenes_form_state(webinterface, request, session, scene, data, 'add', "Add state to scene")
 
             webinterface.add_alert("Added state item to scene.")
             return webinterface.redirect(request, "/scenes/%s/details" % scene.scene_id)
@@ -464,7 +481,7 @@ def route_scenes(webapp):
             webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene.scene_id, scene.label)
             webinterface.add_breadcrumb(request, "/scenes/%s/edit_state" % scene.scene_id, "Edit item: State")
             data = webinterface._Scenes.get_scene_item(scene_id, item_id)
-            return page_scenes_form_add_state(webinterface, request, session, scene, data, 'edit',
+            return page_scenes_form_state(webinterface, request, session, scene, data, 'edit',
                                               "Edit scene item: State")
 
         @webapp.route('/<string:scene_id>/edit_state/<string:item_id>', methods=['POST'])
@@ -486,15 +503,15 @@ def route_scenes(webapp):
 
             if data['name'] == "":
                 webinterface.add_alert('Must enter a state name.', 'warning')
-                return page_scenes_form_add_state(webinterface, request, session, scene, data, 'add', "Edit scene item: State")
+                return page_scenes_form_state(webinterface, request, session, scene, data, 'add', "Edit scene item: State")
 
             if data['value'] == "":
                 webinterface.add_alert('Must enter a state value to set.', 'warning')
-                return page_scenes_form_add_state(webinterface, request, session, scene, data, 'add', "Edit scene item: State")
+                return page_scenes_form_state(webinterface, request, session, scene, data, 'add', "Edit scene item: State")
 
             if data['value_type'] == "" or data['value_type'] not in ('integer', 'string', 'boolean', 'float'):
                 webinterface.add_alert('Must enter a state value_type to ensure validity.', 'warning')
-                return page_scenes_form_add_state(webinterface, request, session, scene, data, 'add', "Edit scene item: State")
+                return page_scenes_form_state(webinterface, request, session, scene, data, 'add', "Edit scene item: State")
 
             value_type = data['value_type']
             if value_type == "string":
@@ -504,14 +521,14 @@ def route_scenes(webapp):
                     data['value'] = coerce_value(data['value'], 'int')
                 except Exception:
                     webinterface.add_alert("Cannot coerce state value into an integer", 'warning')
-                    return page_scenes_form_add_state(webinterface, request, session, scene, data, 'add',
+                    return page_scenes_form_state(webinterface, request, session, scene, data, 'add',
                                                       "Edit scene item: State")
             elif value_type == "float":
                 try:
                     data['value'] = coerce_value(data['value'], 'float')
                 except Exception:
                     webinterface.add_alert("Cannot coerce state value into an float", 'warning')
-                    return page_scenes_form_add_state(webinterface, request, session, scene, data, 'add',
+                    return page_scenes_form_state(webinterface, request, session, scene, data, 'add',
                                                       "Edit scene item: State")
             elif value_type == "boolean":
                 try:
@@ -520,29 +537,29 @@ def route_scenes(webapp):
                         raise Exception()
                 except Exception:
                     webinterface.add_alert("Cannot coerce state value into an boolean", 'warning')
-                    return page_scenes_form_add_state(webinterface, request, session, scene, data, 'add',
+                    return page_scenes_form_state(webinterface, request, session, scene, data, 'add',
                                                       "Edit scene item: State")
             else:
                 webinterface.add_alert("Unknown value type.", 'warning')
-                return page_scenes_form_add_state(webinterface, request, session, scene, data, 'add',
+                return page_scenes_form_state(webinterface, request, session, scene, data, 'add',
                                                   "Edit scene item: State")
 
             try:
                 data['weight'] = int(data['weight'])
             except Exception:
                 webinterface.add_alert('Must enter a number for a weight.', 'warning')
-                return page_scenes_form_add_state(webinterface, request, session, scene, data, 'add', "Edit scene item: State")
+                return page_scenes_form_state(webinterface, request, session, scene, data, 'add', "Edit scene item: State")
 
             try:
                 webinterface._Scenes.edit_scene_item(scene_id, item_id, **data)
             except YomboWarning as e:
                 webinterface.add_alert(e, 'warning')
-                return page_scenes_form_add_state(webinterface, request, session, scene, data, 'add', "Edit scene item: State")
+                return page_scenes_form_state(webinterface, request, session, scene, data, 'add', "Edit scene item: State")
 
             webinterface.add_alert("Edited state item for scene.")
             return webinterface.redirect(request, "/scenes/%s/details" % scene.scene_id)
 
-        def page_scenes_form_add_state(webinterface, request, session, scene, data, action_type, header_label):
+        def page_scenes_form_state(webinterface, request, session, scene, data, action_type, header_label):
             page = webinterface.get_template(request, webinterface._dir + 'pages/scenes/form_state.html')
 
             return page.render(alerts=webinterface.get_alerts(),
@@ -598,6 +615,8 @@ def route_scenes(webapp):
 
             try:
                 confirm = request.args.get('confirm')[0]
+                webinterface.add_alert('Must enter "delete" in the confirmation box to '
+                                       'delete the state from the scene.', 'warning')
             except:
                 return webinterface.redirect(request,
                                              '/scenes/%s/delete_state/%s' % (scene_id, item_id))
@@ -615,6 +634,207 @@ def route_scenes(webapp):
                 return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
 
             webinterface.add_alert("Deleted state item for scene.")
+            return webinterface.redirect(request, "/scenes/%s/details" % scene.scene_id)
+
+#########################################
+## pause
+#########################################
+
+        @webapp.route('/<string:scene_id>/add_pause', methods=['GET'])
+        @require_auth()
+        def page_scenes_item_pause_add_get(webinterface, request, session, scene_id):
+            try:
+                scene = webinterface._Scenes[scene_id]
+            except KeyError as e:
+                webinterface.add_alert("Requested scene could not be located.", 'warning')
+                return webinterface.redirect(request, '/scenes/index')
+
+            data = {
+                'item_type': 'pause',
+                'duration': webinterface.request_get_default(request, 'duration', 5),
+                'weight': webinterface.request_get_default(
+                    request, 'weight', len(webinterface._Scenes.get_scene_item(scene_id)) * 10),
+            }
+            try:
+                data['duration'] = float(data['duration'])
+            except Exception as e:
+                webinterface.add_alert("Duration must be an integer or float.", 'warning')
+                return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
+
+            try:
+                data['weight'] = int(data['weight'])
+            except Exception:
+                webinterface.add_alert('Must enter a number for a weight.', 'warning')
+                return page_scenes_form_pause(webinterface, request, session, scene, data, 'add', "Add a pause to scene")
+
+            root_breadcrumb(webinterface, request)
+            webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene_id, scene.label)
+            webinterface.add_breadcrumb(request, "/scenes/%s/add_pause" % scene_id, "Add Item: Pause")
+            return page_scenes_form_pause(webinterface, request, session, scene, data, 'add', "Add a pause to scene")
+
+        @webapp.route('/<string:scene_id>/add_pause', methods=['POST'])
+        @require_auth()
+        def page_scenes_item_pause_add_post(webinterface, request, session, scene_id):
+            try:
+                scene = webinterface._Scenes[scene_id]
+            except KeyError as e:
+                webinterface.add_alert("Requested scene could not be located.", 'warning')
+                return webinterface.redirect(request, '/scenes/index')
+
+            data = {
+                'item_type': 'pause',
+                'duration': webinterface.request_get_default(request, 'duration', 5),
+                'weight': webinterface.request_get_default(
+                    request, 'weight', len(webinterface._Scenes.get_scene_item(scene_id)) * 10),
+            }
+            try:
+                data['duration'] = float(data['duration'])
+            except Exception as e:
+                webinterface.add_alert("Duration must be an integer or float.", 'warning')
+                return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
+
+            try:
+                data['weight'] = int(data['weight'])
+            except Exception:
+                webinterface.add_alert('Must enter a number for a weight.', 'warning')
+                return page_scenes_form_pause(webinterface, request, session, scene, data, 'add', "Add a pause to scene")
+
+            try:
+                results = webinterface._Scenes.add_scene_item(scene_id, **data)
+            except YomboWarning as e:
+                webinterface.add_alert(e, 'warning')
+                return page_scenes_form_pause(webinterface, request, session, scene, data, 'add', "Add a pause to scene")
+
+            webinterface.add_alert("Added pause item to scene.")
+            return webinterface.redirect(request, "/scenes/%s/details" % scene.scene_id)
+
+        @webapp.route('/<string:scene_id>/edit_pause/<string:item_id>', methods=['GET'])
+        @require_auth()
+        def page_scenes_item_pause_edit_get(webinterface, request, session, scene_id, item_id):
+            try:
+                scene = webinterface._Scenes[scene_id]
+            except KeyError as e:
+                webinterface.add_alert("Requested scene could not be located.", 'warning')
+                return webinterface.redirect(request, '/scenes/index')
+
+            root_breadcrumb(webinterface, request)
+            webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene.scene_id, scene.label)
+            webinterface.add_breadcrumb(request, "/scenes/%s/edit_pause" % scene.scene_id, "Edit item: State")
+            data = webinterface._Scenes.get_scene_item(scene_id, item_id)
+            return page_scenes_form_pause(webinterface, request, session, scene, data, 'edit',
+                                              "Edit scene item: State")
+
+        @webapp.route('/<string:scene_id>/edit_pause/<string:item_id>', methods=['POST'])
+        @require_auth()
+        def page_scenes_item_pause_edit_post(webinterface, request, session, scene_id, item_id):
+            try:
+                scene = webinterface._Scenes[scene_id]
+            except KeyError as e:
+                webinterface.add_alert("Requested scene could not be located.", 'warning')
+                return webinterface.redirect(request, '/scenes/index')
+
+            data = {
+                'item_type': 'pause',
+                'duration': webinterface.request_get_default(request, 'duration', 5),
+                'weight': webinterface.request_get_default(
+                    request, 'weight', len(webinterface._Scenes.get_scene_item(scene_id)) * 10),
+            }
+            try:
+                data['duration'] = float(data['duration'])
+            except Exception as e:
+                webinterface.add_alert("Duration must be an integer or float.", 'warning')
+                return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
+
+            try:
+                data['weight'] = int(data['weight'])
+            except Exception:
+                webinterface.add_alert('Must enter a number for a weight.', 'warning')
+                return page_scenes_form_pause(webinterface, request, session, scene, data, 'add', "Add a pause to scene")
+
+            try:
+                webinterface._Scenes.edit_scene_item(scene_id, item_id, **data)
+            except YomboWarning as e:
+                webinterface.add_alert(e, 'warning')
+                return page_scenes_form_pause(webinterface, request, session, scene, data, 'add', "Edit scene item: State")
+
+            webinterface.add_alert("Edited a pause item for scene '%s'." % scene.label)
+            return webinterface.redirect(request, "/scenes/%s/details" % scene.scene_id)
+
+        def page_scenes_form_pause(webinterface, request, session, scene, data, action_type, header_label):
+            page = webinterface.get_template(request, webinterface._dir + 'pages/scenes/form_pause.html')
+
+            return page.render(alerts=webinterface.get_alerts(),
+                               header_label=header_label,
+                               scene=scene,
+                               data=data,
+                               action_type=action_type,
+                               )
+
+        @webapp.route('/<string:scene_id>/delete_pause/<string:item_id>', methods=['GET'])
+        @require_auth()
+        def page_scenes_item_pause_delete_get(webinterface, request, session, scene_id, item_id):
+            try:
+                scene = webinterface._Scenes[scene_id]
+            except KeyError as e:
+                webinterface.add_alert("Requested scene doesn't exist: %s" % scene_id, 'warning')
+                return webinterface.redirect(request, '/scenes/index')
+
+            try:
+                item = webinterface._Scenes.get_scene_item(scene_id, item_id)
+            except KeyError as e:
+                webinterface.add_alert("Requested item for scene doesn't exist.", 'warning')
+                return webinterface.redirect(request, '/scenes/index')
+
+            page = webinterface.get_template(
+                request,
+                webinterface._dir + 'pages/scenes/delete_pause.html'
+            )
+            root_breadcrumb(webinterface, request)
+            webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene_id, scene.label)
+            webinterface.add_breadcrumb(request, "/scenes/%s/delete_pause" % scene_id, "Delete item: Pause")
+            return page.render(alerts=webinterface.get_alerts(),
+                               scene=scene,
+                               item=item,
+                               item_id=item_id,
+                               )
+
+        @webapp.route('/<string:scene_id>/delete_pause/<string:item_id>', methods=['POST'])
+        @require_auth()
+        @inlineCallbacks
+        def page_scenes_item_pause_delete_post(webinterface, request, session, scene_id, item_id):
+            try:
+                scene = webinterface._Scenes[scene_id]
+            except KeyError as e:
+                webinterface.add_alert("Requested scene doesn't exist: %s" % scene_id, 'warning')
+                return webinterface.redirect(request, '/scenes/index')
+
+            try:
+                item = webinterface._Scenes.get_scene_item(scene_id, item_id)
+            except KeyError as e:
+                webinterface.add_alert("Requested item for scene doesn't exist.", 'warning')
+                return webinterface.redirect(request, '/scenes/index')
+
+            try:
+                confirm = request.args.get('confirm')[0]
+            except:
+                webinterface.add_alert('Must enter "delete" in the confirmation box to '
+                                       'delete the pause from the scene.', 'warning')
+                return webinterface.redirect(request,
+                                             '/scenes/%s/delete_pause/%s' % (scene_id, item_id))
+
+            if confirm != "delete":
+                webinterface.add_alert('Must enter "delete" in the confirmation box to '
+                                       'delete the pause from the scene.', 'warning')
+                return webinterface.redirect(request,
+                                             '/scenes/%s/delete_pause/%s' % (scene_id, item_id))
+
+            try:
+                yield webinterface._Scenes.delete_scene_item(scene_id, item_id)
+            except Exception as e:
+                webinterface.add_alert(e, 'warning')
+                return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
+
+            webinterface.add_alert("Deleted pause item for scene.")
             return webinterface.redirect(request, "/scenes/%s/details" % scene.scene_id)
 
 #########################################
@@ -642,7 +862,7 @@ def route_scenes(webapp):
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene_id, scene.label)
             webinterface.add_breadcrumb(request, "/scenes/%s/add_device" % scene_id, "Add Item: Device")
-            return page_scenes_form_add_device(webinterface, request, session, scene, data, 'add', "Add device to scene")
+            return page_scenes_form_device(webinterface, request, session, scene, data, 'add', "Add device to scene")
 
         @webapp.route('/<string:scene_id>/add_device', methods=['POST'])
         @require_auth()
@@ -701,7 +921,7 @@ def route_scenes(webapp):
                 results = webinterface._Scenes.add_scene_item(scene_id, **data)
             except YomboWarning as e:
                 webinterface.add_alert(e, 'warning')
-                return page_scenes_form_add_device(webinterface, request, session, scene, data, 'add', "Add device to scene")
+                return page_scenes_form_device(webinterface, request, session, scene, data, 'add', "Add device to scene")
 
             webinterface.add_alert("Added device item to scene.")
             return webinterface.redirect(request, "/scenes/%s/details" % scene.scene_id)
@@ -719,7 +939,7 @@ def route_scenes(webapp):
             webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene.scene_id, scene.label)
             webinterface.add_breadcrumb(request, "/scenes/%s/edit_device" % scene.scene_id, "Edit item: Device")
             data = webinterface._Scenes.get_scene_item(scene_id, item_id)
-            return page_scenes_form_add_device(webinterface, request, session, scene, data, 'edit',
+            return page_scenes_form_device(webinterface, request, session, scene, data, 'edit',
                                               "Edit scene item: Device")
 
         @webapp.route('/<string:scene_id>/edit_device/<string:item_id>', methods=['POST'])
@@ -781,13 +1001,13 @@ def route_scenes(webapp):
                 webinterface._Scenes.edit_scene_item(scene_id, item_id, **data)
             except YomboWarning as e:
                 webinterface.add_alert(e, 'warning')
-                return page_scenes_form_add_device(webinterface, request, session, scene, data, 'add', "Add device to scene")
+                return page_scenes_form_device(webinterface, request, session, scene, data, 'add', "Add device to scene")
 
             webinterface.add_alert("Added device item to scene.")
             return webinterface.redirect(request, "/scenes/%s/details" % scene.scene_id)
 
 
-        def page_scenes_form_add_device(webinterface, request, session, scene, data, action_type, header_label):
+        def page_scenes_form_device(webinterface, request, session, scene, data, action_type, header_label):
             page = webinterface.get_template(request, webinterface._dir + 'pages/scenes/form_device.html')
 
             return page.render(alerts=webinterface.get_alerts(),
@@ -844,6 +1064,8 @@ def route_scenes(webapp):
             try:
                 confirm = request.args.get('confirm')[0]
             except:
+                webinterface.add_alert('Must enter "delete" in the confirmation box to '
+                                       'delete the device from the scene.', 'warning')
                 return webinterface.redirect(request,
                                              '/scenes/%s/delete_device/%s' % (scene_id, item_id))
 

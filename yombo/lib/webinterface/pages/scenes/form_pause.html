@@ -15,61 +15,25 @@
     <!-- /.col-lg-12 -->
 </div>
 <!-- /.row -->
-<form method="post" id="scenestate">
+<form method="post" id="scenepause">
 <div class="row">
     <div class="col-lg-12">
         <div class="panel panel-default">
             <div class="panel-heading">
-                <label>Change state values</label><br>
-                State values can be changed through a scene. Enter the state name and desired value to set it
-                to when this scene is triggered.
+                <label>Change pause duration</label><br>
+                Cause a trigger to pause between processing scene items.
             </div>
             <!-- /.panel-heading -->
             <div class="panel-body">
                 <div class="form-group">
-                    <label style="margin-top: 0px; margin-bottom: 0px">State name: </label>
-                    <a href="#" data-toggle="modal" data-target="#modalname"><i class="fa fa-question fa-sm"></i></a>
-                    {{ macros.modal("modalname", 'State Name', '
-                    <p>Select a state name to apply the new value to.</p>
+                    <label style="margin-top: 0px; margin-bottom: 0px">Duration: </label>
+                    <a href="#" data-toggle="modal" data-target="#modalduration"><i class="fa fa-question fa-sm"></i></a>
+                    {{ macros.modal("modalduration", 'Duration', '
+                    <p>Select how many seconds (or a fraction of one) to pause for.</p>
                     ') }}
                     <br>
                     <div class="input-group">
-                        <input tabindex="1" type="text" class="form-control" name="name" id="name" size="30" placeholder="is.away" value="{{ data['name'] }}" autofocus required>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label style="margin-top: 0px; margin-bottom: 0px">State Value: </label>
-                    <a href="#" data-toggle="modal" data-target="#modalvalue"><i class="fa fa-question fa-sm"></i></a>
-                    {{ macros.modal("modalvalue", 'State Value', '
-                    <p>
-                        Enter a new value to set the state to.
-                    </p>') }}
-                    <br>
-                    <div class="input-group">
-                        <input tabindex="2" type="text" class="form-control" name="value" id="value" size="30" placeholder="1" value="{{ data['value'] }}">
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label style="margin-top: 0px; margin-bottom: 0px">Value Type: </label>
-                    <a href="#" data-toggle="modal" data-target="#modalvaluetype"><i class="fa fa-question fa-sm"></i></a>
-                    {{ macros.modal("modalstatus", 'Value Type', "
-                    <p>Set a value type to try to coerce the new value into. For example, if the value is '1' and the
-                        value type is string, it will be left as a string. However, if it's a value type is integer, it
-                        try to be forced into an integer.</p>
-                    <p>
-                        Booleans will be true if the value is: true, 1, yes. Otherwise, it will be false.
-                    </p>
-                    ") }}
-                    <br>
-                    <div class="input-group">
-                        <select tabindex="3" class="selectpicker show-tick form-control" name="value_type" id="value_type">
-                            <option value="string"{% if data['value_type'] == 'string' %} selected{% endif %} data-subtext="Make value a string.">String</option>
-                            <option value="integer"{% if data['value_type'] == 'integer' %} selected{% endif %} data-subtext="A whole number">Integer</option>
-                            <option value="float"{% if data['value_type'] == 'float' %} selected{% endif %} data-subtext="Number with a decimal period in it.">Float</option>
-                            <option value="boolean"{% if data['value_type'] == 'boolean' %} selected{% endif %} data-subtext="Either True or False">Boolean</option>
-                        </select>
+                        <input tabindex="1" type="text" class="form-control" name="duration" id="duration" size="30" placeholder=".5, 1, .04, 600" value="{{ data['duration'] }}" autofocus required>
                     </div>
                 </div>
 
@@ -92,9 +56,10 @@
                         <input tabindex="4" type="text" class="form-control" name="weight" id="weight" size="30" placeholder="10" value="{{ data['weight'] }}">
                     </div>
                 </div>
+
                 <a class="btn btn-md btn-danger" href="/scenes/{{scene.node_id}}/details">Cancel</a>
                 <input type="hidden" name="json_output" id="json_output" value="">
-                <button type="submit" class="btn btn-success">Save State</button>
+                <button type="submit" class="btn btn-success">Save Pause</button>
             </div>
         </div>
         <!-- /.panel-body -->
@@ -114,10 +79,13 @@
 {% block body_bottom %}
 <script type="text/javascript" src="/static/js/jquery.serializejson.min.js"></script>
 <script>
-$("#scenestate").submit(function(event) {
-    var rawData = $('#scenestate').serializeJSON();
-    var formData = JSON.stringify(rawData);
-    $('#json_output').val(formData)
+
+ $(document).ready(function(){
+    $("#scenepause").submit(function(event) {
+        var rawData = $('#scenepause').serializeJSON();
+        var formData = JSON.stringify(rawData);
+        $('#json_output').val(formData)
+    });
 });
 
 $('.ls-modal').on('click', function(e){

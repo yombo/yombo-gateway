@@ -15,13 +15,14 @@ import copy
 import types
 
 # Import twisted libraries
+from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
-from yombo.utils import random_string
+from yombo.utils import random_string, sleep
 
 logger = get_logger("library.scenes")
 
@@ -138,6 +139,7 @@ class Scenes(YomboLibrary, object):
         :return:
         """
         self.scenes = {}
+        self.scenes_running = {}
         self.gateway_id = self._Configs.get2("core", "gwid", "local", False)
 
     def _load_(self, **kwargs):
@@ -164,7 +166,7 @@ class Scenes(YomboLibrary, object):
                 return scene
         raise KeyError("Cannot find scene for key: %s" % requested_scene)
 
-    def trigger(self, scene_id, **kwargs):
+    def stop_trigger(self, scene_id, **kwargs):
         """
         Trigger a scene to start.
 
@@ -173,22 +175,79 @@ class Scenes(YomboLibrary, object):
         :return:
         """
         scene = self.scenes[scene_id]
+        if scene_id in self.scenes_running and self.scenes_running[scene_id] == "running":
+            self.scenes_running[scene_id] = "stopping"
+            return True
+        return False
+
+    def trigger(self, scene_id, **kwargs):
+        """
+        Trigger a scene to start.
+
+        :param scene_id:
+        :param kwargs:
+        :return:
+        """
+        print("starting trigger. 1")
+        scene = self.scenes[scene_id]
+        if scene_id in self.scenes_running:
+            print("starting trigger 1b: %s" % self.scenes_running[scene_id])
+            if self.scenes_running[scene_id] in ("running", "stopping"):
+                return False  # already running
+        print("starting trigger. 2")
+        self.scenes_running[scene_id] = "running"
+        print("starting trigger. 3.. %s" % scene)
+        reactor.callLater(0.001, self.do_trigger, scene, **kwargs)
+        print("starting trigger. 4")
+        return True
+
+    @inlineCallbacks
+    def do_trigger(self, scene, **kwargs):
+        """
+        Performs the actual trigger. It's wrapped here to handle any requested delays.
+
+        :param scene:
+        :param kwargs:
+        :return:
+        """
+        print("starting do_trigger. 1")
+        scene_id = scene.scene_id
         items = self.get_scene_item(scene_id)
+
         for item_id, item in items.items():
             if item['item_type'] == "device":
-                print("trigger doing device..")
                 device = self._Devices[item['device_id']]
                 command = self._Commands[item['command_id']]
-                inputs = item['inputs']
                 device.command(cmd=command,
                                requested_by={'user_id': "System", "component": "yombo.lib.scenes"},
                                control_method='scene',
                                inputs=item['inputs'],
                                **kwargs)
             elif item['item_type'] == "state":
-                print("trigger doing state..")
                 self._States.set(item['name'], item['value'], item['value_type'])
+            elif item['item_type'] == 'pause':
+                final_duration = 0
+                loops = 0
+                duration = item['duration']
+                if duration < 10:
+                    final_duration = duration
+                    loops = 1
+                else:
+                    loops = int(round(duration/5))
+                    final_duration = duration / loops
+                for current_loop in range(loops):
+                    print("Trigger sleep 1: status: %s duration: %s, final_duration: %s loops: %s, current loop: %s" %
+                          (self.scenes_running[scene_id], duration, final_duration, loops, current_loop))
+                    yield sleep(final_duration)
+                    if self.scenes_running[scene_id] != "running":  # a way to kill this trigger
+                        self.scenes_running[scene_id] = "stopped"
+                        return False
 
+            if self.scenes_running[scene_id] != "running":  # a way to kill this trigger
+                self.scenes_running[scene_id] = "stopped"
+                return False
+
+        self.scenes_running[scene_id] = "stopped"
 
     def check_duplicate_scene(self, label=None, machine_label=None, scene_id=None):
         """
@@ -209,6 +268,12 @@ class Scenes(YomboLibrary, object):
             if scene.machine_label.lower() == machine_label.lower():
                 raise YomboWarning("Scene with matching machine_label already exists: %s" % scene.node_id)
 
+    def disable(self, scene_id):
+        """
+        Disable a scene. Just marks the configuration item as disabled.
+        :param scene_id:
+        :return:
+        """
     def patch_scene(self, scene):
         """
         Adds additional attributes and methods to a node instance.
@@ -289,7 +354,9 @@ class Scenes(YomboLibrary, object):
         #             },
         #         },
         #     },
-        #     'config': {},
+        #     'config': {
+        #         'status': 1,  # enabled
+        #     },
         # }
         self.check_duplicate_scene(label, machine_label)
         data = {
@@ -374,12 +441,23 @@ class Scenes(YomboLibrary, object):
         elif item_type == 'device':
             device = self._Devices[kwargs['device_id']]
             command = self._Commands[kwargs['command_id']]
+            # This fancy inline just removes None and '' values.
+            kwargs['inputs'] = {k: v for k, v in kwargs['inputs'].items() if v}
+
             scene.data['items'][item_id] = {
                 'item_id': item_id,
                 'item_type': 'device',
                 'device_id': device.device_id,
                 'command_id': command.command_id,
                 'inputs': kwargs['inputs'],
+                'weight': kwargs['weight'],
+            }
+
+        elif item_type == 'pause':
+            scene.data['items'][item_id] = {
+                'item_id': item_id,
+                'item_type': 'pause',
+                'duration': kwargs['duration'],
                 'weight': kwargs['weight'],
             }
 
@@ -408,13 +486,20 @@ class Scenes(YomboLibrary, object):
             item['value'] = kwargs['value']
             item['value_type'] = kwargs['value_type']
             item['weight'] = kwargs['weight']
+
         elif item_type == 'device':
             device = self._Devices[kwargs['device_id']]
             command = self._Commands[kwargs['command_id']]
             item['device_id'] = device.device_id
             item['command_id'] = command.command_id
+            kwargs['inputs'] = {k: v for k, v in kwargs['inputs'].items() if v}
             item['inputs'] = kwargs['inputs']
             item['weight'] = kwargs['weight']
+
+        elif item_type == 'pause':
+            item['duration'] = kwargs['duration']
+            item['weight'] = kwargs['weight']
+
         else:
             raise YomboWarning("Invalid scene item type.")
         self.balance_weights(scene_id)

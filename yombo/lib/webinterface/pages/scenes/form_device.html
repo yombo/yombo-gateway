@@ -109,7 +109,7 @@
 
                 <a class="btn btn-md btn-danger" href="/scenes/{{scene.node_id}}/details">Cancel</a>
                 <input type="hidden" name="json_output" id="json_output" value="">
-                <button type="submit" class="btn btn-success">Save Scene</button>
+                <button type="submit" class="btn btn-success">Save Device</button>
             </div>
         </div>
         <!-- /.panel-body -->
@@ -201,10 +201,9 @@
         getSceneInputFields()
     });
 
-        $("#scenedevice").submit(function(event) {
+    $("#scenedevice").submit(function(event) {
         var rawData = $('#scenedevice').serializeJSON();
         var formData = JSON.stringify(rawData);
-        console.log(formData);
         $('#json_output').val(formData)
     });
 
@@ -230,17 +229,6 @@
                }
            })
        })(jQuery);
-
-       function getFormData($form){
-            var unindexed_array = $form.serializeArray();
-            var indexed_array = {};
-
-            $.map(unindexed_array, function(n, i){
-                indexed_array[n['name']] = n['value'];
-            });
-
-            return indexed_array;
-       }
 
     });
 

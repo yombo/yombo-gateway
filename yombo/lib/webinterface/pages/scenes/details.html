@@ -5,19 +5,24 @@
 <style>
 /* supersede bootstrap at the row level by being annoyingly specific
 */
-.table-striped > tbody > tr:nth-child(odd).highlight-state > td {
-    background-color: #e8ffea;
-}
-.table-striped > tbody > tr:nth-child(even).highlight-state > td {
-    background-color: #daf1dc;
-}
 .table-striped > tbody > tr:nth-child(odd).highlight-device > td {
     background-color: #e4eaff;
 }
 .table-striped > tbody > tr:nth-child(even).highlight-device > td {
     background-color: #d6dcf1;
 }
-
+.table-striped > tbody > tr:nth-child(odd).highlight-pause > td {
+    background-color: #fffef7;
+}
+.table-striped > tbody > tr:nth-child(even).highlight-pause > td {
+    background-color: #fffef7;
+}
+.table-striped > tbody > tr:nth-child(odd).highlight-state > td {
+    background-color: #e8ffea;
+}
+.table-striped > tbody > tr:nth-child(even).highlight-state > td {
+    background-color: #daf1dc;
+}
 /* supersede bootstrap at the cell level by being annoyingly specific */
 .table-striped > tbody > tr:nth-child(odd) > td.highlight {
 	background-color:lightgreen;
@@ -44,7 +49,14 @@
             <a class="btn btn-md btn-primary" href="/scenes/{{scene.scene_id}}/edit" title="Edit scene labels.">Edit Scene</a>
             <a class="btn btn-md btn-warning" href="/scenes/{{scene.scene_id}}/disable">Disable Scene </a>
             <a class="btn btn-md btn-danger" href="/scenes/{{scene.scene_id}}/delete">Delete Scene</a>
-            <a class="btn btn-md btn-primary pull-right" href="/scenes/{{scene.scene_id}}/trigger" title="Trigger scene">Trigger Scene</a>
+            <a class="btn btn-md btn-primary pull-right" href="/scenes/{{scene.scene_id}}/trigger" style="margin-left: 10px" title="Trigger scene">Trigger Scene</a>
+{{_scenes.scenes_running}}
+            {%- if scene.scene_id in _scenes.scenes_running and  _scenes.scenes_running[scene.scene_id] == "running"%} IT RUNNING
+            <a class="btn btn-md btn-danger pull-right" href="/scenes/{{scene.scene_id}}/stop_trigger" title="Trigger scene">Stop trigger</a>
+            {% else %}
+            <a class="btn btn-md btn-danger disabled pull-right" href="/scenes/{{scene.scene_id}}/stop_trigger" title="Trigger scene">Stop trigger</a>
+            {% endif %}
+            &nbsp;
 {% elif scene.status == 2  %}
             <a class="btn btn-md btn-success" href="/scenes/{{scene.scene_id}}/enable">Enable Scene</a>
 {% endif %}
@@ -74,9 +86,11 @@
             <div class="panel panel-default">
                 <div class="panel-heading">
                     <label>Items</label><br>
-                    <a href="/scenes/{{scene.scene_id}}/add_device">Add Device Control</a>
+                    <a href="/scenes/{{scene.scene_id}}/add_device">Add Device</a>
                     <i class="fas fa-circle" style="font-size: .6em; vertical-align: 10%;"></i>
-                    <a href="/scenes/{{scene.scene_id}}/add_state">Add State Control</a>
+                    <a href="/scenes/{{scene.scene_id}}/add_pause">Add Pause</a>
+                    <i class="fas fa-circle" style="font-size: .6em; vertical-align: 10%;"></i>
+                    <a href="/scenes/{{scene.scene_id}}/add_state">Add State</a>
                 </div>
                 <!-- /.panel-heading -->
                 <div class="panel-body">
@@ -96,9 +110,10 @@
                             </tr>
                         </thead>
                         <tbody>{% for item_id, item in _scenes.get_scene_item(scene.scene_id).items() %}
-                             {%- if item['item_type'] == 'state' %} {{ smacro.display_state(scene, item_id, item) }}
+                             {%- if item['item_type'] == 'device' %} {{ smacro.display_device(scene, item_id, item) }}
+                             {%- elif item['item_type'] == 'pause' %} {{ smacro.display_pause(scene, item_id, item) }}
                              {%- elif item['item_type'] == 'device' %} {{ smacro.display_device(scene, item_id, item) }}
-                             {%- else %} Unknown item type: {{item['type']}}
+                             {%- else %} <tr><td colspan="2">Unknown item type: {{item['type']}} </td></tr>
                              {%- endif %}
                         {%- endfor %}
                         </tbody>
