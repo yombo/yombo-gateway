@@ -32,7 +32,7 @@
                     ') }}
                     <br>
                     <div class="input-group">
-                        <input tabindex="1" type="text" class="form-control" name="label" id="label" size="30" placeholder="Scene Label" value="{{ scene.label }}" autofocus required>
+                        <input tabindex="1" type="text" class="form-control" name="label" id="label" size="25" placeholder="Scene Label" value="{{ scene.label }}" autofocus required>
                     </div>
                 </div>
 
@@ -45,8 +45,21 @@
                     <p>A computer friendly version of the label. Examples: tv_time, all_lights_on, away_mode_on</p>') }}
                     <br>
                     <div class="input-group">
-                        <input tabindex="2" tabindex="2" type="text" class="form-control" name="machine_label" id="machine_label" size="30" placeholder="'scene_name', 'scenename'" value="{{ scene.machine_label }}">
-                        <input type="hidden" class="form-control" name="machine_label_hidden" id="machine_label_hidden" size="30" value="{{ scene.machine_label }}">
+                        <input tabindex="2" type="text" class="form-control" name="machine_label" id="machine_label" size="25" placeholder="'scene_name', 'scenename'" value="{{ scene.machine_label }}">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label style="margin-top: 0px; margin-bottom: 0px">Description: </label>
+                    <a href="#" data-toggle="modal" data-target="#modaldescription"><i class="fa fa-question fa-lg"></i></a>
+                    {{ macros.modal("modaldescription", 'Description', '
+                    <p>
+                        A description of the scene. Will show in places like Amazon Alexa.
+                    </p>
+                    ') }}
+                    <br>
+                    <div class="input-group">
+                        <input tabindex="3" type="text" class="form-control" name="description" id="description" size="55" placeholder="Turns on a series of lights for arriving home." value="{{ scene.machine_label }}">
                     </div>
                 </div>
 
@@ -62,7 +75,6 @@
                         <select tabindex="5" class="selectpicker show-tick form-control" name="status" id="status">
                             <option value="0"{% if scene.status == 0 %} selected{% endif %} data-subtext="Gateways cannot use.">Disabled</option>
                             <option value="1"{% if scene.status == 1 %} selected{% endif %} data-subtext="Works as normal.">Enabled</option>
-                            <option value="2"{% if scene.status == 2 %} selected{% endif %} data-subtext="Will be removed soon.">Deleted</option>
                         </select>
                     </div>
                 </div>

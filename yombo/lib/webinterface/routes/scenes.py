@@ -97,6 +97,7 @@ def route_scenes(webapp):
             data = {
                 'label': webinterface.request_get_default(request, 'label', ""),
                 'machine_label': webinterface.request_get_default(request, 'machine_label', ""),
+                'description': webinterface.request_get_default(request, 'description', ""),
                 'status': int(webinterface.request_get_default(request, 'status', 1)),
             }
             root_breadcrumb(webinterface, request)
@@ -107,14 +108,20 @@ def route_scenes(webapp):
         @require_auth()
         @inlineCallbacks
         def page_scenes_add_post(webinterface, request, session):
+            print("111")
             data = {
                 'label': webinterface.request_get_default(request, 'label', ""),
                 'machine_label': webinterface.request_get_default(request, 'machine_label', ""),
+                'description': webinterface.request_get_default(request, 'description', ""),
                 'status': int(webinterface.request_get_default(request, 'status', 1)),
             }
 
+            print("111 2")
             try:
-                scene = yield webinterface._Scenes.add(data['label'], data['machine_label'], data['status'])
+                print("111 3")
+                scene = yield webinterface._Scenes.add(data['label'], data['machine_label'],
+                                                       data['description'], data['status'])
+                print("111 4")
             except YomboWarning as e:
                 webinterface.add_alert(e, 'warning')
                 return page_scenes_form(webinterface, request, session, 'add', data, "Add Scene",)
@@ -149,12 +156,14 @@ def route_scenes(webapp):
             data = {
                 'label': webinterface.request_get_default(request, 'label', ""),
                 'machine_label': webinterface.request_get_default(request, 'machine_label', ""),
+                'description': webinterface.request_get_default(request, 'description', ""),
                 'status': int(webinterface.request_get_default(request, 'status', 1)),
             }
 
             try:
                 scene = webinterface._Scenes.edit(scene_id,
-                                                  data['label'], data['machine_label'], data['status'])
+                                                  data['label'], data['machine_label'],
+                                                  data['description'], data['status'])
             except YomboWarning as e:
                 webinterface.add_alert(e, 'warning')
                 root_breadcrumb(webinterface, request)
@@ -248,7 +257,7 @@ def route_scenes(webapp):
                 return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
             msg = {
                 'header': 'Scene Deleted',
-                'label': 'Scene delete successfully',
+                'label': 'Scene deleted successfully',
                 'description': '<p>The scene has been delete.'
                                '<p>Continue to:</p><ul>'
                                ' <li><strong><a href="/scenes/index">Scene index</a></strong></li>'
@@ -283,7 +292,6 @@ def route_scenes(webapp):
 
         @webapp.route('/<string:scene_id>/disable', methods=['POST'])
         @require_auth()
-        @inlineCallbacks
         def page_scenes_disable_post(webinterface, request, session, scene_id):
             try:
                 scene = webinterface._Scenes[scene_id]
@@ -304,10 +312,7 @@ def route_scenes(webapp):
                                        'warning')
                 return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
 
-            action_results = yield scene.disable(session=session['yomboapi_session'])
-            if action_results['status'] == 'failed':
-                webinterface.add_alert(action_results['apimsghtml'], 'warning')
-                return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
+            scene.disable(session=session['yomboapi_session'])
 
             msg = {
                 'header': 'Scene Disabled',
@@ -347,7 +352,6 @@ def route_scenes(webapp):
 
         @webapp.route('/<string:scene_id>/enable', methods=['POST'])
         @require_auth()
-        @inlineCallbacks
         def page_scenes_enable_post(webinterface, request, session, scene_id):
             try:
                 scene = webinterface._Scenes[scene_id]
@@ -364,14 +368,10 @@ def route_scenes(webapp):
                 webinterface.add_alert('Must enter "enable" in the confirmation box to enable the scene.', 'warning')
                 return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
 
-            action_results = yield scene.enable(session=session['yomboapi_session'])
-            if action_results['status'] == 'failed':
-                webinterface.add_alert(action_results['apimsghtml'], 'warning')
-                return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
+            scene.enable(session=session['yomboapi_session'])
 
             webinterface.add_alert("Scene '%s' enabled." % scene.label)
             return webinterface.redirect(request, "/scenes/%s/details" % scene.scene_id)
-
 
 #########################################
 ## States
@@ -392,7 +392,7 @@ def route_scenes(webapp):
                 'value': webinterface.request_get_default(request, 'value', ""),
                 'value_type': webinterface.request_get_default(request, 'value_type', ""),
                 'weight': int(webinterface.request_get_default(
-                    request, 'weight', len(webinterface._Scenes.get_scene_item(scene_id)) * 10)),
+                    request, 'weight', (len(webinterface._Scenes.get_scene_item(scene_id)) + 1) * 10)),
             }
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene_id, scene.label)
@@ -414,7 +414,7 @@ def route_scenes(webapp):
                 'value': webinterface.request_get_default(request, 'value', ""),
                 'value_type': webinterface.request_get_default(request, 'value_type', ""),
                 'weight': int(webinterface.request_get_default(
-                    request, 'weight', len(webinterface._Scenes.scenes) * 10)),
+                    request, 'weight', (len(webinterface._Scenes.scenes) +1) * 10)),
             }
 
             if data['name'] == "":
@@ -498,7 +498,7 @@ def route_scenes(webapp):
                 'value': webinterface.request_get_default(request, 'value', ""),
                 'value_type': webinterface.request_get_default(request, 'value_type', ""),
                 'weight': int(webinterface.request_get_default(
-                    request, 'weight', len(webinterface._Scenes.scenes) * 10)),
+                    request, 'weight', (len(webinterface._Scenes.scenes) + 1) * 10)),
             }
 
             if data['name'] == "":
@@ -653,7 +653,7 @@ def route_scenes(webapp):
                 'item_type': 'pause',
                 'duration': webinterface.request_get_default(request, 'duration', 5),
                 'weight': webinterface.request_get_default(
-                    request, 'weight', len(webinterface._Scenes.get_scene_item(scene_id)) * 10),
+                    request, 'weight', (len(webinterface._Scenes.get_scene_item(scene_id)) + 1) * 10),
             }
             try:
                 data['duration'] = float(data['duration'])
@@ -685,7 +685,7 @@ def route_scenes(webapp):
                 'item_type': 'pause',
                 'duration': webinterface.request_get_default(request, 'duration', 5),
                 'weight': webinterface.request_get_default(
-                    request, 'weight', len(webinterface._Scenes.get_scene_item(scene_id)) * 10),
+                    request, 'weight', (len(webinterface._Scenes.get_scene_item(scene_id)) + 1) * 10),
             }
             try:
                 data['duration'] = float(data['duration'])
@@ -737,7 +737,7 @@ def route_scenes(webapp):
                 'item_type': 'pause',
                 'duration': webinterface.request_get_default(request, 'duration', 5),
                 'weight': webinterface.request_get_default(
-                    request, 'weight', len(webinterface._Scenes.get_scene_item(scene_id)) * 10),
+                    request, 'weight', (len(webinterface._Scenes.get_scene_item(scene_id)) + 1) * 10),
             }
             try:
                 data['duration'] = float(data['duration'])
@@ -857,7 +857,7 @@ def route_scenes(webapp):
                 'command_id': webinterface.request_get_default(request, 'command_id', ""),
                 'inputs': webinterface.request_get_default(request, 'inputs', ""),
                 'weight': int(webinterface.request_get_default(
-                    request, 'weight', len(webinterface._Scenes.get_scene_item(scene_id)) * 10)),
+                    request, 'weight', (len(webinterface._Scenes.get_scene_item(scene_id)) + 1) * 10)),
             }
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene_id, scene.label)

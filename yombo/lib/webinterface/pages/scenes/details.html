@@ -50,8 +50,7 @@
             <a class="btn btn-md btn-warning" href="/scenes/{{scene.scene_id}}/disable">Disable Scene </a>
             <a class="btn btn-md btn-danger" href="/scenes/{{scene.scene_id}}/delete">Delete Scene</a>
             <a class="btn btn-md btn-primary pull-right" href="/scenes/{{scene.scene_id}}/trigger" style="margin-left: 10px" title="Trigger scene">Trigger Scene</a>
-{{_scenes.scenes_running}}
-            {%- if scene.scene_id in _scenes.scenes_running and  _scenes.scenes_running[scene.scene_id] == "running"%} IT RUNNING
+            {%- if scene.scene_id in _scenes.scenes_running and  _scenes.scenes_running[scene.scene_id] == "running"%}
             <a class="btn btn-md btn-danger pull-right" href="/scenes/{{scene.scene_id}}/stop_trigger" title="Trigger scene">Stop trigger</a>
             {% else %}
             <a class="btn btn-md btn-danger disabled pull-right" href="/scenes/{{scene.scene_id}}/stop_trigger" title="Trigger scene">Stop trigger</a>
@@ -66,26 +65,36 @@
     </div>
     <!-- /.row -->
     <div class="row">
-        <div class="col-lg-2">
+        <div class="col-lg-12">
             <div class="panel panel-default">
                 <div class="panel-heading">
                     <label>Basic Information</label>
                 </div>
                 <!-- /.panel-heading -->
                 <div class="panel-body">
-                    <label style="margin-top: 0px; margin-bottom: 0px">Label:2 </label><br>
-                    <span  ondblclick="$(this).editable('col_a')">{{ scene.label }}</span><br>
-                    <label style="margin-top: 15px; margin-bottom: 0px">Machine: </label><br>
-                    {{ scene.machine_label }}<br>
-                    <label style="margin-top: 15px; margin-bottom: 0px">Status: </label><br>
-                    {{ scene.status|status_to_string }}<br>
+                    <div class="row">
+                        <div class="col-lg-4">
+                            <label style="margin-top: 0px; margin-bottom: 0px">Label: </label><br>
+                            <span  ondblclick="$(this).editable('col_a')">{{ scene.label }}</span><br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Machine: </label><br>
+                            {{ scene.machine_label }}<br>
+                        </div>
+                        <div class="col-lg-8">
+                            <label style="margin-top: 0px; margin-bottom: 0px">Description: </label><br>
+                            {{ scene.description }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Status: </label><br>
+                            {{ scene.status|status_to_string }}<br>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-lg-10">
+    </div>
+    <div class="row">
+        <div class="col-lg-12">
             <div class="panel panel-default">
                 <div class="panel-heading">
-                    <label>Items</label><br>
+                    <label>Scene Items</label><br>
                     <a href="/scenes/{{scene.scene_id}}/add_device">Add Device</a>
                     <i class="fas fa-circle" style="font-size: .6em; vertical-align: 10%;"></i>
                     <a href="/scenes/{{scene.scene_id}}/add_pause">Add Pause</a>
