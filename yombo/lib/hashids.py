@@ -1,4 +1,3 @@
-# doesn't exist on gw
 """
 Manages hashids.  Decodes and encodes.
 

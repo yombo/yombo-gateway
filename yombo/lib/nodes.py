@@ -969,7 +969,6 @@ class Node(object):
     def node_id(self, val):
         return
 
-
     def __init__(self, parent, node):
         """
         Setup the node object using information passed in.
