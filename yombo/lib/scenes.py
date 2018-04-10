@@ -581,7 +581,7 @@ class Scenes(YomboLibrary, object):
         :return:
         """
         scene_id = scene.scene_id
-        items = self.get_item(scene_id)
+        scene, items = self.get_scene_item(scene_id)
 
         for item_id, item in items.items():
             if item['item_type'] == "device":
@@ -610,20 +610,20 @@ class Scenes(YomboLibrary, object):
                         return False
 
             elif item['item_type'] == "scene":
-                scene = self.get(item['machine_label'])
+                local_scene = self.get(item['machine_label'])
                 action = item['action']
                 if action == 'enable':
-                    self.enable(scene.scene_id)
+                    self.enable(local_scene.scene_id)
                 elif action == 'disable':
-                    self.disable(scene.scene_id)
+                    self.disable(local_scene.scene_id)
                 elif action == 'start':
                     try:
-                        self.trigger(scene.scene_id)
+                        self.trigger(local_scene.scene_id)
                     except Exception:  # Gobble everything up..
                         pass
                 elif action == 'stop':
                     try:
-                        self.stop_trigger(scene.scene_id)
+                        self.stop_trigger(local_scene.scene_id)
                     except Exception:  # Gobble everything up..
                         pass
 
@@ -631,7 +631,9 @@ class Scenes(YomboLibrary, object):
                 self._States.set(item['name'], item['value'], item['value_type'])
 
             elif item['item_type'] == "template":
-                self.scene_templates["%s_%s" % (scene_id, item_id)].render()
+                self.scene_templates["%s_%s" % (scene_id, item_id)].render(
+                    {'current_scene': scene}
+                )
 
             if self.scenes_running[scene_id] != "running":  # a way to kill this trigger
                 self.scenes_running[scene_id] = "stopped"
