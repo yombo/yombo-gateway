@@ -3,7 +3,7 @@ Allows users to create scenes. The devices can be local devices or a device
 on another gateway that is apart of the cluster.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-.. versionadded:: 0.17.0
+.. versionadded:: 0.18.0
 
 :copyright: Copyright 2018 by Yombo.
 :license: LICENSE for details.

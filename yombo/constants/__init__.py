@@ -17,7 +17,7 @@ The constant values are not fully documented here, see the
 """
 
 # Yombo gateway version number
-VERSION = "0.17.0"
+VERSION = "0.18.0"
 
 # Days of the week
 WEEKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']

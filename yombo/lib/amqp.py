@@ -21,7 +21,7 @@ Yombo Gateway interacts with Yombo servers using AMQPYombo which depends on this
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.12.0
 
-:copyright: Copyright 2015-2017 by Yombo.
+:copyright: Copyright 2015-2018 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/amqp.html>`_
 """
