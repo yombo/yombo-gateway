@@ -169,6 +169,7 @@ def route_scenes(webapp):
                 'machine_label': webinterface.request_get_default(request, 'machine_label', ""),
                 'description': webinterface.request_get_default(request, 'description', ""),
                 'status': int(webinterface.request_get_default(request, 'status', 1)),
+                'scene_id': scene_id,
             }
 
             try:
