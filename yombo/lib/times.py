@@ -13,12 +13,12 @@ changes.  It also configures many State items such as times_light, times_dark, t
 This library uses the python Ephem module to provide many astronomy computations, such as which objects are
 above or below the horizon (saturn, moon, sun, etc), and then they will transition next.
 
-    **Usage**:
+**Usage**:
 
-    .. code-block:: python
+.. code-block:: python
 
-       times = self._Libraries['Times']
-       moonrise = times.item_rise(dayOffset=1, item='Moon') # 1 - we want the next moon rise
+   times = self._Libraries['Times']
+   moonrise = times.item_rise(dayOffset=1, item='Moon') # 1 - we want the next moon rise
 
 
 .. todo::
@@ -35,9 +35,9 @@ above or below the horizon (saturn, moon, sun, etc), and then they will transiti
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/times.html>`_
 """
 # Import python libraries
-import ephem
 from calendar import timegm as CalTimegm
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, tzinfo
+import ephem
 import parsedatetime as pdt
 import time
 from typing import Any
@@ -76,7 +76,10 @@ class Times(YomboLibrary, object):
         library.
         :type loader: Instance of Loader
         """
-        if PatchEnvironment: self.runned_for_tests()
+        self.UTC = self.DEFAULT_TIME_ZONE = pytz.utc  # type: datetime.tzinfo
+
+        if PatchEnvironment:
+            self.runned_for_tests()
 
         self.obs = ephem.Observer()
         self.obs.lat = str(self._Configs.get('location', 'latitude', 0))
@@ -448,7 +451,6 @@ class Times(YomboLibrary, object):
         Modified from: http://stackoverflow.com/questions/1551382/user-friendly-time-format-in-python
         """
 
-        from datetime import datetime
         now = datetime.now()
         if type(time) is float:
             time = int(round(time))
@@ -505,6 +507,92 @@ class Times(YomboLibrary, object):
                 time_ago = "month ago"
             return "%s %s" % (time_count, time_ago)
         return str(day_diff // 365) + " years ago"
+
+    def get_time_zone(input):
+        """
+        Attempt to get time zone from string, otherwise return None.
+        """
+        try:
+            return pytz.timezone(input)
+        except pytz.exceptions.UnknownTimeZoneError:
+            return None
+
+    def utc_from_timestamp(self, timestamp: float) -> datetime:
+        """
+        Gets UTC from a provided timestamp.
+        """
+        return datetime.utcfromtimestamp(timestamp).replace(tzinfo=self.UTC)
+
+    def as_local(self, dattim: datetime) -> datetime:
+        """
+        Convert a UTC datetime object to local time zone.
+        """
+        if dattim.tzinfo == self.DEFAULT_TIME_ZONE:
+            return dattim
+        elif dattim.tzinfo is None:
+            dattim = self.UTC.localize(dattim)
+
+        return dattim.astimezone(self.DEFAULT_TIME_ZONE)
+
+    def timestamp_custom(self, value, date_format="%Y-%m-%d", local=True):
+        """
+        Create a timestamp from a value. First, attempts to convert input to a datetime
+        and then applies date_format to it.
+        """
+        try:
+            date = self.utc_from_timestamp(value)
+
+            if local:
+                date = self.as_local(date)
+
+            return date.strftime(date_format)
+        except (ValueError, TypeError):
+            # If timestamp can't be converted
+            return value
+
+    def timestamp_local(self, value):
+        """
+        Filter to convert given timestamp to local date/time.
+        """
+        try:
+            return self.as_local(
+                self.utc_from_timestamp(value)).strftime(self.DATE_STR_FORMAT)
+        except (ValueError, TypeError):
+            # If timestamp can't be converted
+            return value
+
+    def timestamp_utc(self, value):
+        """
+        Filter to convert given timestamp to UTC date/time.
+        """
+        try:
+            return self.utc_from_timestamp(value).strftime(self.DATE_STR_FORMAT)
+        except (ValueError, TypeError):
+            # If timestamp can't be converted
+            return value
+
+    def forgiving_as_timestamp(self, value):
+        """
+        Try to convert value to timestamp.
+        """
+        try:
+            return self.as_timestamp(value)
+        except (ValueError, TypeError):
+            return None
+
+    def now(self, time_zone: tzinfo = None) -> datetime:
+        """
+        Get time now in in the specified time zone.
+        """
+        return datetime.now(time_zone or self.DEFAULT_TIME_ZONE)
+
+    def utcnow(self) -> datetime:
+        """
+        Get time now in UTC time.
+
+        :return:
+        """
+        return datetime.now(self.UTC)
 
     @static_var("calendar", pdt.Calendar())
     def time_from_string(self, time_string: str, source_time = None) -> tuple:

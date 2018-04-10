@@ -64,6 +64,7 @@ logger = get_logger('library.loader')
 
 HARD_LOAD = OrderedDict()
 HARD_LOAD["Validate"] = {'operating_mode': 'all'}
+HARD_LOAD["Template"] = {'operating_mode': 'all'}
 HARD_LOAD["Queue"] = {'operating_mode': 'all'}
 HARD_LOAD["Notifications"] = {'operating_mode': 'all'}
 HARD_LOAD["LocalDB"] = {'operating_mode': 'all'}
@@ -461,6 +462,7 @@ class Loader(YomboLibrary, object):
             library._States = self.loadedLibraries['states']
             library._Statistics = self.loadedLibraries['statistics']
             library._Tasks = self.loadedLibraries['tasks']
+            library._Template = self.loadedLibraries['template']
             library._Times = self.loadedLibraries['times']
             library._YomboAPI = self.loadedLibraries['yomboapi']
             library._Variables = self.loadedLibraries['variables']

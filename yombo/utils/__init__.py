@@ -18,10 +18,13 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
 except ImportError:
     import json
 
+from datetime import datetime
+from docutils.core import publish_parts
 import base64
 import binascii
 from difflib import SequenceMatcher
 import inspect
+import markdown
 import math
 import msgpack
 import netifaces
@@ -1205,6 +1208,44 @@ def random_int(middle, percent, **kwargs):
     end = round(middle + (middle * percent))
     return random.randint(start, end)
 
+
+def excerpt(value, length=None):
+    if length is None:
+        length = 25
+
+    if isinstance(value, str):
+        if len(value) > length:
+            return "%s..." % value[:length]
+    return value
+
+
+def make_link(link, link_text, target = None):
+    if link == '' or link is None or link.lower() == "None":
+        return "None"
+    if target is None:
+        target = "_self"
+    return '<a href="%s" target="%s">%s</a>' % (link, target, link_text)
+
+
+def format_markdown(input_text, formatting=None):
+    if formatting == 'restructured' or formatting is None:
+        return publish_parts(input_text, writer_name='html')['html_body']
+    elif formatting == 'markdown':
+        return markdown.markdown(input_text, extensions=['markdown.extensions.nl2br', 'markdown.extensions.codehilite'])
+    return input_text
+
+
+def display_hide_none(input, allow_string=None):
+    if input is None:
+        return ""
+    if isinstance(input, str):
+        if allow_string is True:
+            return input
+        if input.lower() == "none":
+            return ""
+    return input
+
+
 def human_alpabet():
     return "ABCDEFGHJKLMNPQRTSUVWXYZabcdefghkmnopqrstuvwxyz23456789"
 
@@ -1430,6 +1471,79 @@ def is_none(input):
         if input.lower() == "none":
             return None
     return input
+
+
+def forgiving_float(value):
+    """
+    Primarily used for templates as a filter. Tries to convert input to a float. Doesn't die if it fails.
+
+    :param value:
+    :return:
+    """
+    try:
+        return float(value)
+    except (ValueError, TypeError):
+        return value
+
+
+def forgiving_round(value, precision=0):
+    """
+    Primarily used for templates as a filter. Rounds string, int, or float Accepts a precision to
+    determine number of decimals places.
+
+    :param precision:
+    """
+    try:
+        value = round(float(value), precision)
+        return int(value) if precision == 0 else value
+    except (ValueError, TypeError):
+        return value  # return input if value cannot be rounded.
+
+
+def multiply(value, amount):
+    """
+    Primarily used for templates as a filter. Takes an int, string, or float and multiplies it.
+
+    :param value: Input
+    :param amount: Multiplier
+    """
+    try:
+        return float(value) * amount
+    except (ValueError, TypeError):
+        return value  # return input if value cannot be multiplied.
+
+
+def logarithm(value, base=math.e):
+    """
+    Primarily used for templates as a filter. Performs logarithm math to a value.
+
+    :param value:
+    :param base:
+    """
+    try:
+        return math.log(float(value), float(base))
+    except (ValueError, TypeError):
+        return value  # return input if value cannot be processed.
+
+def strptime(string, fmt):
+    """
+    Primarily used for templates as a filter. Parse a time string to datetime.
+    :param string:
+    :param fmt:
+    :return:
+    """
+    try:
+        return datetime.strptime(string, fmt)
+    except (ValueError, AttributeError):
+        return string  # return input if value cannot be processed.
+
+
+def fail_when_undefined(value):
+    """Filter to force a failure when the value is undefined."""
+    if isinstance(value, jinja2.Undefined):
+        value()
+    return value
+
 
 def test_bit(int_type, offset):
     """

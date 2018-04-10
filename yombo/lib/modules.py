@@ -702,6 +702,7 @@ class Modules(YomboLibrary):
             module._States = self._Loader.loadedLibraries['states']
             module._Statistics = self._Loader.loadedLibraries['statistics']
             module._Tasks = self._Loader.loadedLibraries['tasks']
+            module._Template = self._Loader.loadedLibraries['template']
             module._Times = self._Loader.loadedLibraries['times']
             module._YomboAPI = self._Loader.loadedLibraries['yomboapi']
             module._Variables = self._Loader.loadedLibraries['variables']
