@@ -36,7 +36,7 @@ def route_api_v1_scene(webapp):
                 item_details = None
             else:
                 try:
-                    item_details = webinterface._Scenes.get_scene_item(scene_id, item_id)
+                    item_details = webinterface._Scenes.get_item(scene_id, item_id)
                 except Exception as e:
                     return local_error("The 'itemid' cannot be found.")
 
@@ -109,7 +109,7 @@ def route_api_v1_scene(webapp):
 
             available_commands = device.available_commands()
             command_inputs = available_commands[command_id]['inputs']
-            items = webinterface._Scenes.get_scene_item(scene_id)
+            items = webinterface._Scenes.get_item(scene_id)
             data = command_inputs
             # data = {
             #     'total': results['content']['pages']['total_items'],

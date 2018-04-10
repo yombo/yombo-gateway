@@ -89,7 +89,7 @@
                                 <th>Type / Label</th><th>Weight</th><th>Attributes</th><th>Actions</th>
                             </tr>
                         </thead>
-                        <tbody>{% for item_id, item in _scenes.get_scene_item(scene.scene_id).items() %}
+                        <tbody>{% for item_id, item in _scenes.get_item(scene.scene_id).items() %}
                              {%- if item['item_type'] == 'state' %} {{ smacro.display_state(scene, item_id, item) }}
                              {%- elif item['item_type'] == 'device' %} {{ smacro.display_device(scene, item_id, item) }}
                              {%- else %} Unknown item type: {{item['type']}}

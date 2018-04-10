@@ -39,7 +39,7 @@
                     <div class="input-group">
                         <select id="device_id" name="device_id" class="selectpicker show-tick form-control">
                             {%- if data['device_id'] == "" %}
-                            {%- for device_id, device in _devices.items() if device.is_allowed_in_scenes -%}
+                            {%- for device_id, device in _devices.sorted().items() if device.is_allowed_in_scenes -%}
                             <option value="{{device_id}}">{{device.full_label}}</option>
                             {% endfor %}
                             {% else %}

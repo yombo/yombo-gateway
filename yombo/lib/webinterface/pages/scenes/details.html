@@ -49,11 +49,11 @@
             <a class="btn btn-md btn-primary" href="/scenes/{{scene.scene_id}}/edit" title="Edit scene labels.">Edit Scene</a>
             <a class="btn btn-md btn-warning" href="/scenes/{{scene.scene_id}}/disable">Disable Scene </a>
             <a class="btn btn-md btn-danger" href="/scenes/{{scene.scene_id}}/delete">Delete Scene</a>
-            <a class="btn btn-md btn-primary pull-right" href="/scenes/{{scene.scene_id}}/trigger" style="margin-left: 10px" title="Trigger scene">Trigger Scene</a>
+            <a class="btn btn-md btn-primary pull-right" href="/scenes/{{scene.scene_id}}/trigger" style="margin-left: 10px" title="Trigger scene">Start Scene</a>
             {%- if scene.scene_id in _scenes.scenes_running and  _scenes.scenes_running[scene.scene_id] == "running"%}
-            <a class="btn btn-md btn-danger pull-right" href="/scenes/{{scene.scene_id}}/stop_trigger" title="Trigger scene">Stop trigger</a>
+            <a class="btn btn-md btn-danger pull-right" href="/scenes/{{scene.scene_id}}/stop_trigger" title="Trigger scene">Stop Scene</a>
             {% else %}
-            <a class="btn btn-md btn-danger disabled pull-right" href="/scenes/{{scene.scene_id}}/stop_trigger" title="Trigger scene">Stop trigger</a>
+            <a class="btn btn-md btn-danger disabled pull-right" href="/scenes/{{scene.scene_id}}/stop_trigger" title="Trigger scene">Stop Scene</a>
             {% endif %}
             &nbsp;
 {% elif scene.status == 2  %}
@@ -95,11 +95,14 @@
             <div class="panel panel-default">
                 <div class="panel-heading">
                     <label>Scene Items</label><br>
-                    <a href="/scenes/{{scene.scene_id}}/add_device">Add Device</a>
-                    <i class="fas fa-circle" style="font-size: .6em; vertical-align: 10%;"></i>
-                    <a href="/scenes/{{scene.scene_id}}/add_pause">Add Pause</a>
-                    <i class="fas fa-circle" style="font-size: .6em; vertical-align: 10%;"></i>
-                    <a href="/scenes/{{scene.scene_id}}/add_state">Add State</a>
+                     Add new:
+                    <select name="new_item_type" id="new_item_type" required class="selectpicker show-tick" title="Select...">
+                    <option value="/scenes/{{scene.scene_id}}/add_device">Device</option>
+                    <option value="/scenes/{{scene.scene_id}}/add_pause">Pause</option>
+                    <option value="/scenes/{{scene.scene_id}}/add_state">State</option>
+                    <option value="/scenes/{{scene.scene_id}}/add_scene">Scene</option>
+                    <option value="/scenes/{{scene.scene_id}}/add_template">Template</option>
+                    </select>
                 </div>
                 <!-- /.panel-heading -->
                 <div class="panel-body">
@@ -107,8 +110,11 @@
                     <p>This scene doesn't have any items.</p>
                     <p><strong>Add the first item now.</strong></p>
                     <ul>
-                        <li><a href="/scenes/{{scene.scene_id}}/add_device">Add Device</a> - Control a device</li>
-                        <li><a href="/scenes/{{scene.scene_id}}/add_state">Add State</a> - Change a state value</li>
+                        <li><a href="/scenes/{{scene.scene_id}}/add_device">Device</a> - Control a device</li>
+                        <li><a href="/scenes/{{scene.scene_id}}/add_pause">Pause</a> - Pause a scene</li>
+                        <li><a href="/scenes/{{scene.scene_id}}/add_state">State</a> - Change a state value</li>
+                        <li><a href="/scenes/{{scene.scene_id}}/add_scene">Scene</a> - Control a scene</li>
+                        <li><a href="/scenes/{{scene.scene_id}}/add_template">Template</a> - Advanced logic control</li>
                     </ul>
 
                     {% else %}
@@ -118,11 +124,13 @@
                                 <th>Type / Label</th><th>Weight</th><th>Attributes</th><th>Actions</th>
                             </tr>
                         </thead>
-                        <tbody>{% for item_id, item in _scenes.get_scene_item(scene.scene_id).items() %}
+                        <tbody>{% for item_id, item in _scenes.get_item(scene.scene_id).items() %}
                              {%- if item['item_type'] == 'device' %} {{ smacro.display_device(scene, item_id, item) }}
                              {%- elif item['item_type'] == 'pause' %} {{ smacro.display_pause(scene, item_id, item) }}
-                             {%- elif item['item_type'] == 'device' %} {{ smacro.display_device(scene, item_id, item) }}
-                             {%- else %} <tr><td colspan="2">Unknown item type: {{item['type']}} </td></tr>
+                             {%- elif item['item_type'] == 'scene' %} {{ smacro.display_scene(scene, item_id, item) }}
+                             {%- elif item['item_type'] == 'state' %} {{ smacro.display_state(scene, item_id, item) }}
+                             {%- elif item['item_type'] == 'template' %} {{ smacro.display_template(scene, item_id, item) }}
+                             {%- else %} <tr><td colspan="2">Unknown item type:{{item}} {{item['type']}} </td></tr>
                              {%- endif %}
                         {%- endfor %}
                         </tbody>
@@ -135,9 +143,21 @@
     </div>
     <!-- /.row -->
 {% endblock %}
+{% block body_bottom_js %}{% include 'lib/webinterface/fragments/select_js.tpl' %}
 
-{% block body_bottom %}
 <script>
+
+    $(function(){
+  // bind change event to select
+  $('#new_item_type').on('change', function () {
+      var url = $(this).val(); // get selected value
+      if (url) { // require a URL
+          window.location = url; // redirect
+      }
+      return false;
+  });
+});
+
 jQuery(document).ready(function(){
 
     $.fn.editable = function(column){

@@ -25,8 +25,6 @@ from urllib.parse import parse_qs, urlparse
 from operator import itemgetter
 import jinja2
 from klein import Klein
-import markdown
-from docutils.core import publish_parts
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
@@ -786,28 +784,7 @@ class WebInterface(YomboLibrary):
     def _get_parms(self, request):
         return parse_qs(urlparse(request.uri).query)
 
-    def format_markdown(self, input_text, formatting=None):
-        if formatting == 'restructured' or formatting is None:
-            return publish_parts(input_text, writer_name='html')['html_body']
-        elif formatting == 'markdown':
-            return markdown.markdown(input_text, extensions=['markdown.extensions.nl2br', 'markdown.extensions.codehilite'])
-        return input_text
 
-    def make_link(self, link, link_text, target = None):
-        if link == '' or link is None or link.lower() == "None":
-            return "None"
-        if target is None:
-            target = "_self"
-        return '<a href="%s" target="%s">%s</a>' % (link, target, link_text)
-
-    def excerpt(self, input, length=None):
-        if length is None:
-            length = 25
-
-        if isinstance(input, str):
-            if len(input) > length:
-                return "%s..." % input[:length]
-        return input
 
     def request_get_default(self, request, name, default, offset=None):
         if offset == None:
@@ -882,28 +859,20 @@ class WebInterface(YomboLibrary):
 
     def setup_basic_filters(self):
         self.webapp.templates.filters['yes_no'] = yombo.utils.is_yes_no
-        self.webapp.templates.filters['excerpt'] = self.excerpt
-        self.webapp.templates.filters['make_link'] = self.make_link
+        self.webapp.templates.filters['excerpt'] = yombo.utils.excerpt
+        self.webapp.templates.filters['make_link'] = yombo.utils.make_link
         self.webapp.templates.filters['status_to_string'] = yombo.utils.status_to_string
         self.webapp.templates.filters['public_to_string'] = yombo.utils.public_to_string
         self.webapp.templates.filters['epoch_to_human'] = yombo.utils.epoch_to_string
         self.webapp.templates.filters['epoch_to_pretty_date'] = self._Times.get_age # yesterday, 5 minutes ago, etc.
-        self.webapp.templates.filters['format_markdown'] = self.format_markdown
-        self.webapp.templates.filters['hide_none'] = self.dispay_hide_none
+        self.webapp.templates.filters['format_markdown'] = yombo.utils.format_markdown
+        self.webapp.templates.filters['hide_none'] = yombo.utils.display_hide_none
         self.webapp.templates.filters['display_encrypted'] = self._GPG.display_encrypted
         self.webapp.templates.filters['display_temperature'] = self._Localize.display_temperature
         self.webapp.templates.filters['yombo'] = self
 
 
-    def dispay_hide_none(self, input, allow_string=None):
-        if input is None:
-            return ""
-        if isinstance(input, str):
-            if allow_string is True:
-                return input
-            if input.lower() == "none":
-                return ""
-        return input
+
 
     def restart(self, request, message=None, redirect=None):
         if message is None:
