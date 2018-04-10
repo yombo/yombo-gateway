@@ -148,9 +148,12 @@ class Scenes(YomboLibrary, object):
         self.scenes = self._Nodes.search({'node_type': 'scene'})
         # Some scenes don't have this. This check will be removed later.
         for scene_id, scene in self.scenes.items():
-            if 'config' not in scene.data:
+            if scene.status == 0:
+                scene.status = 1
+            if 'config' not in scene.data or isinstance(scene.data['config'], dict) is False:
                 scene.data['config'] = {}
             if 'enabled' not in scene.data['config']:
+                print("data: %s" % scene.data)
                 scene.data['config']['enabled'] = True
             if 'description' not in scene.data['config']:
                 scene.data['config']['description'] = scene.label
@@ -161,13 +164,15 @@ class Scenes(YomboLibrary, object):
                 if item['item_type'] == 'template':
                     self.scene_templates["%s_%s" % (scene_id, item_id)] = self._Template.new(item['template'])
 
-    def get(self, requested_scene):
+    def get(self, requested_scene=None):
         """
         Return the requested scene, if it's found.
 
         :param requested_scene:
         :return:
         """
+        if requested_scene is None:
+            return OrderedDict(sorted(self.scenes.items(), key=lambda x: x[1].label))
         if requested_scene in self.scenes:
             return self.scenes[requested_scene]
         for temp_scene_id, scene in self.scenes.items():
@@ -239,7 +244,6 @@ class Scenes(YomboLibrary, object):
         scene = self.scenes.get(scene_id)
         data = scene.data
         data['config']['enabled'] = False
-        reactor.callLater(0.001, self._Nodes.disable_node(scene_id))
         scene.on_change()
 
     def enable(self, scene_id, **kwargs):
@@ -249,26 +253,14 @@ class Scenes(YomboLibrary, object):
         :param scene_id:
         :return:
         """
+        print("starting enable. 1")
         scene = self.scenes[scene_id]
+        print("starting enable. 2")
         data = scene.data
+        print("starting enable. 3")
         data['config']['enabled'] = True
-        reactor.callLater(0.001, self._Nodes.enable_node(scene_id))
+        print("starting enable. 5")
         scene.on_change()
-
-    @inlineCallbacks
-    def delete(self, scene_id, session=None):
-        """
-        Deletes the scene. Will disappear on next restart. This allows the user to recover it.
-        This marks the node to be deleted!
-
-        :param scene_id:
-        :return:
-        """
-        scene = self.scenes.get(scene_id)
-        data = scene.data
-        data['config']['enabled'] = False
-        results = yield self._Nodes.delete_node(scene.scene_id, session=session)
-        return results
 
     @inlineCallbacks
     def add(self, label, machine_label, description, status):
@@ -313,7 +305,6 @@ class Scenes(YomboLibrary, object):
                 'description': description
             },
         }
-        print("scenes:: add 4")
         new_scene = yield self._Nodes.create(label=label,
                                              machine_label=machine_label,
                                              node_type='scene',
@@ -346,10 +337,52 @@ class Scenes(YomboLibrary, object):
         if machine_label is not None:
             scene.machine_label = machine_label
         if description is not None:
-            scene.data['config'] = description
+            scene.data['config']['description'] = description
         if status is not None:
             scene.status = is_true_false(status)
+            scene.data['config']['enabled'] = scene.status
         return scene
+
+    @inlineCallbacks
+    def delete(self, scene_id, session=None):
+        """
+        Deletes the scene. Will disappear on next restart. This allows the user to recover it.
+        This marks the node to be deleted!
+
+        :param scene_id:
+        :return:
+        """
+        scene = self.scenes.get(scene_id)
+        data = scene.data
+        data['config']['enabled'] = False
+        results = yield self._Nodes.delete_node(scene.scene_id, session=session)
+        return results
+
+    @inlineCallbacks
+    def duplicate_scene(self, scene_id):
+        """
+        Deletes the scene. Will disappear on next restart. This allows the user to recover it.
+        This marks the node to be deleted!
+
+        :param scene_id:
+        :return:
+        """
+        scene = self.scenes.get(scene_id)
+        label = "%s (copy)" % scene.label
+        machine_label = "%s_copy" % scene.machine_label
+        if label is not None and machine_label is not None:
+            self.check_duplicate_scene(label, machine_label, scene_id)
+        new_scene = yield self._Nodes.create(label=label,
+                                             machine_label=machine_label,
+                                             node_type='scene',
+                                             data=scene.data,
+                                             data_content_type='json',
+                                             gateway_id=self.gateway_id(),
+                                             destination='gw',
+                                             status=1)
+        self.patch_scene(new_scene)
+        self.scenes[new_scene.node_id] = new_scene
+        return new_scene
 
     def balance_weights(self, scene_id):
         if scene_id not in self.scenes:
@@ -406,7 +439,6 @@ class Scenes(YomboLibrary, object):
                 'item_type': 'scene',
                 'machine_label': kwargs['machine_label'],
                 'action': kwargs['action'],
-                'value_type': kwargs['value_type'],
                 'weight': kwargs['weight'],
             }
 
@@ -536,11 +568,11 @@ class Scenes(YomboLibrary, object):
         """
         print("starting trigger. 1")
         scene = self.scenes.get(scene_id)
+        if scene.effective_status() != 1:
+            raise YomboWarning("Scene is disabled.")
         if scene_id in self.scenes_running:
-            print("starting trigger 1b: %s" % self.scenes_running[scene_id])
             if self.scenes_running[scene_id] in ("running", "stopping"):
                 return False  # already running
-        print("starting trigger. 2")
         self.scenes_running[scene_id] = "running"
         print("starting trigger. 3.. %s" % scene)
         reactor.callLater(0.001, self.do_trigger, scene, **kwargs)
@@ -589,6 +621,8 @@ class Scenes(YomboLibrary, object):
                         return False
 
             elif item['item_type'] == "scene":
+                print("starting do_trigger. scene 1")
+
                 scene = self.get(item['machine_label'])
                 action = item['action']
                 if action == 'enable':
@@ -596,9 +630,15 @@ class Scenes(YomboLibrary, object):
                 elif action == 'disable':
                     self.disable(scene.scene_id)
                 elif action == 'start':
-                    self.trigger(scene.scene_id)
+                    try:
+                        self.trigger(scene.scene_id)
+                    except Exception:  # Gobble everything up..
+                        pass
                 elif action == 'stop':
-                    self.stop_trigger(scene.scene_id)
+                    try:
+                        self.stop_trigger(scene.scene_id)
+                    except Exception:  # Gobble everything up..
+                        pass
 
             elif item['item_type'] == "state":
                 self._States.set(item['name'], item['value'], item['value_type'])
@@ -634,17 +674,11 @@ class Scenes(YomboLibrary, object):
         :return:
         """
         scene.scene_id = scene._node_id
-        scene.enabled = scene.data['config']['enabled']
-        scene.description = scene.data['config']['description']
         scene._Scene = self
 
-        def effective_status(node):
-            if node.status == 2:
-                return "deleted"
-            elif node.data['config']['enabled'] is True:
-                return "enabled"
-            else:
-                return "disabled"
+        def add_scene_item(node, **kwargs):
+            results = node._Scene.add_scene_item(node._node_id, **kwargs)
+            return results
 
         @inlineCallbacks
         def delete(node, session):
@@ -652,32 +686,44 @@ class Scenes(YomboLibrary, object):
             results = yield node._Scene.delete(node._node_id, session=session)
             return results
 
+        def description(node):
+            return node.data['config']['description']
+
         def disable(node, session):
             print("about to disable nodeid: %s" % node._node_id)
             results = node._Scene.disable(node._node_id, session=session)
             return results
 
+        def effective_status(node):
+            if node.status == 2:
+                return 2
+            elif node.data['config']['enabled'] is True:
+                return 1
+            else:
+                return 0
+
+        def enabled(node):
+            return node.data['config']['enabled']
+
         def enable(node, session):
-            print("about to enable nodeid: %s" % node._node_id)
             results = node._Scene.enable(node._node_id, session=session)
-            return results
-
-        def add_scene_item(node, **kwargs):
-            results = node._Scene.add_scene_item(node._node_id, **kwargs)
-            return results
-
-        def trigger(node):
-            results = node._Scene.trigger(node._node_id)
             return results
 
         def stop_trigger(node):
             results = node._Scene.stop_trigger(node._node_id)
             return results
 
-        scene.effective_status = types.MethodType(effective_status, scene)
-        scene.delete = types.MethodType(delete, scene)
-        scene.disable = types.MethodType(disable, scene)
-        scene.enable = types.MethodType(enable, scene)
+        def trigger(node):
+            results = node._Scene.trigger(node._node_id)
+            return results
+
+
         scene.add_scene_item = types.MethodType(add_scene_item, scene)
+        scene.delete = types.MethodType(delete, scene)
+        scene.description = types.MethodType(description, scene)
+        scene.disable = types.MethodType(disable, scene)
+        scene.effective_status = types.MethodType(effective_status, scene)
+        scene.enabled = types.MethodType(enabled, scene)
+        scene.enable = types.MethodType(enable, scene)
         scene.trigger = types.MethodType(trigger, scene)
-        scene.trigger = types.MethodType(stop_trigger, scene)
+        scene.stop_trigger = types.MethodType(stop_trigger, scene)

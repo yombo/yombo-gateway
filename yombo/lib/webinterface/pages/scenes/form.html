@@ -28,30 +28,37 @@
                     <label style="margin-top: 0px; margin-bottom: 0px">Label: </label>
                     <a href="#" data-toggle="modal" data-target="#modallabel"><i class="fa fa-question fa-lg"></i></a>
                     {{ macros.modal("modallabel", 'Label', '
-                    <p>A label for the scene. A short but helpful title to describe what the scene does. For example: TV Time, Bed Time, All lights on</p>
+                    <p>
+                        A label for the scene. A short but helpful title to describe what the scene does. For example:
+                        TV Time, Bed Time, All lights on
+                    </p>
                     ') }}
                     <br>
                     <div class="input-group">
-                        <input tabindex="1" type="text" class="form-control" name="label" id="label" size="25" placeholder="Scene Label" value="{{ scene.label }}" autofocus required>
+                        <input tabindex="1" type="text" class="form-control" name="label" id="label" size="25"
+                               placeholder="Scene Label" value="{{ scene.label }}" autofocus required>
                     </div>
                 </div>
 
                 <div class="form-group">
                     <label style="margin-top: 0px; margin-bottom: 0px">Machine Label: </label>
-                    <a href="#" data-toggle="modal" data-target="#modalmachinelabel"><i class="fa fa-question fa-lg"></i></a>
+                    <a href="#" data-toggle="modal" data-target="#modalmachinelabel">
+                        <i class="fa fa-question fa-lg"></i></a>
                     {{ macros.modal("modalmachinelabel", 'Machine Label', '
                     <p>The machine label is used by automation tools and other components to uniquely
                         identify this scene. <strong>Once set, we highly suggest not changing this.</strong></p>
                     <p>A computer friendly version of the label. Examples: tv_time, all_lights_on, away_mode_on</p>') }}
                     <br>
                     <div class="input-group">
-                        <input tabindex="2" type="text" class="form-control" name="machine_label" id="machine_label" size="25" placeholder="'scene_name', 'scenename'" value="{{ scene.machine_label }}">
+                        <input tabindex="2" type="text" class="form-control" name="machine_label" id="machine_label"
+                               size="25" placeholder="'scene_name', 'scenename'" value="{{ scene.machine_label }}">
                     </div>
                 </div>
 
                 <div class="form-group">
                     <label style="margin-top: 0px; margin-bottom: 0px">Description: </label>
-                    <a href="#" data-toggle="modal" data-target="#modaldescription"><i class="fa fa-question fa-lg"></i></a>
+                    <a href="#" data-toggle="modal" data-target="#modaldescription">
+                        <i class="fa fa-question fa-lg"></i></a>
                     {{ macros.modal("modaldescription", 'Description', '
                     <p>
                         A description of the scene. Will show in places like Amazon Alexa.
@@ -59,7 +66,8 @@
                     ') }}
                     <br>
                     <div class="input-group">
-                        <input tabindex="3" type="text" class="form-control" name="description" id="description" size="55" placeholder="Turns on a series of lights for arriving home." value="{{ scene.machine_label }}">
+                        <input tabindex="3" type="text" class="form-control" name="description" id="description"
+                               size="55" placeholder="Turns on a series of lights for arriving home." value="{{ scene.description }}">
                     </div>
                 </div>
 
@@ -67,7 +75,10 @@
                     <label style="margin-top: 0px; margin-bottom: 0px">Status: </label>
                     <a href="#" data-toggle="modal" data-target="#modalstatus"><i class="fa fa-question fa-lg"></i></a>
                     {{ macros.modal("modalstatus", 'Status: enabled / disabled', '
-                    <p>You can enable or disable the scene as needed. When disabled, the scene cannot be used by gateways.</p>
+                    <p>
+                        You can enable or disable the scene as needed. When disabled, the scene cannot be
+                        used by gateways.
+                    </p>
                     <p>Any items marked "delete" will be deleted after 30 days. This allows the
                     delete scene to fully propagate through the entire Yombo eco system.</p>') }}
                     <br>
@@ -178,8 +189,8 @@
                 required: true,
             },
             description: {
-                minlength: 5,
-                maxlength: 8192,
+                minlength: 0,
+                maxlength: 255,
                 required: true,
             },
 

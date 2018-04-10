@@ -45,7 +45,7 @@
 {%- endmacro %}
 
 {% macro display_scene(scene, item_id, item) %}
-<tr class="highlight-state">
+<tr class="highlight-scene">
 <td> <strong>Scene:</strong> {{_scenes[item['machine_label']].label}}</td>
 <td> {{item['weight']}} </td>
 <td>
@@ -71,13 +71,13 @@
 {{edit_link('edit_state', scene.scene_id, item_id)}}
 {{delete_link('delete_state', scene.scene_id, item_id)}}
 {{up_link('move_up', scene.scene_id, item_id)}}
-{{down_link('move_down', scene.scene_id, item_id)}}
+{{down_link('`move_down', scene.scene_id, item_id)}}
 </td>
 </tr>
 {%- endmacro %}
 
 {% macro display_template(scene, item_id, item) %}
-<tr class="highlight-state">
+<tr class="highlight-template">
 <td> <strong>Template</strong></td>
 <td> {{item['weight']}} </td>
 <td>

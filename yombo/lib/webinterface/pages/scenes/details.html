@@ -6,22 +6,34 @@
 /* supersede bootstrap at the row level by being annoyingly specific
 */
 .table-striped > tbody > tr:nth-child(odd).highlight-device > td {
-    background-color: #e4eaff;
+    background-color: #eaedff;
 }
 .table-striped > tbody > tr:nth-child(even).highlight-device > td {
-    background-color: #d6dcf1;
+    background-color: #e6e9fb;
 }
 .table-striped > tbody > tr:nth-child(odd).highlight-pause > td {
     background-color: #fffef7;
 }
 .table-striped > tbody > tr:nth-child(even).highlight-pause > td {
-    background-color: #fffef7;
+    background-color: #faf9f2;
+}
+.table-striped > tbody > tr:nth-child(odd).highlight-scene > td {
+    background-color: #fdf0ff;
+}
+.table-striped > tbody > tr:nth-child(even).highlight-scene > td {
+    background-color: #f8ebfa;
 }
 .table-striped > tbody > tr:nth-child(odd).highlight-state > td {
-    background-color: #e8ffea;
+    background-color: #ffefee;
 }
 .table-striped > tbody > tr:nth-child(even).highlight-state > td {
-    background-color: #daf1dc;
+    background-color: #faeae9;
+}
+.table-striped > tbody > tr:nth-child(odd).highlight-template > td {
+    background-color: #ebffed;
+}
+.table-striped > tbody > tr:nth-child(even).highlight-template > td {
+    background-color: #e7fbe9;
 }
 /* supersede bootstrap at the cell level by being annoyingly specific */
 .table-striped > tbody > tr:nth-child(odd) > td.highlight {
@@ -81,9 +93,9 @@
                         </div>
                         <div class="col-lg-8">
                             <label style="margin-top: 0px; margin-bottom: 0px">Description: </label><br>
-                            {{ scene.description }}<br>
+                            {{ scene.description() }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Status: </label><br>
-                            {{ scene.status|status_to_string }}<br>
+                            {{ scene.effective_status()|status_to_string }}<br>
                         </div>
                     </div>
                 </div>

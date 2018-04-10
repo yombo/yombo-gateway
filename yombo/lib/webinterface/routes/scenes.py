@@ -77,10 +77,10 @@ def route_scenes(webapp):
             try:
                 webinterface._Scenes.trigger(scene_id)
             except YomboWarning as e:
-                webinterface.add_alert(e.message, 'warning')
-                return webinterface.redirect(request, '/scenes/index')
+                webinterface.add_alert("Cannot start scene. %s" % e.message, 'warning')
+                return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
 
-            webinterface.add_alert("The scene '%s' has been triggered" % scene.label)
+            webinterface.add_alert("The scene '%s' has been started" % scene.label)
             return webinterface.redirect(request, "/scenes/%s/details" % scene.scene_id)
 
         @webapp.route('/<string:scene_id>/stop_trigger', methods=['GET'])
@@ -95,10 +95,10 @@ def route_scenes(webapp):
             try:
                 webinterface._Scenes.stop_trigger(scene_id)
             except YomboWarning as e:
-                webinterface.add_alert(e.message, 'warning')
-                return webinterface.redirect(request, '/scenes/index')
+                webinterface.add_alert("Cannot stop scene. %s" % e.message, 'warning')
+                return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
 
-            webinterface.add_alert("The scene '%s' trigger has been stopped" % scene.label)
+            webinterface.add_alert("The scene '%s' has been stopped" % scene.label)
             return webinterface.redirect(request, "/scenes/%s/details" % scene.scene_id)
 
         @webapp.route('/add', methods=['GET'])
@@ -129,7 +129,7 @@ def route_scenes(webapp):
                 scene = yield webinterface._Scenes.add(data['label'], data['machine_label'],
                                                        data['description'], data['status'])
             except YomboWarning as e:
-                webinterface.add_alert(e.message, 'warning')
+                webinterface.add_alert("Cannot add scene. %s" % e.message, 'warning')
                 return page_scenes_form(webinterface, request, session, 'add', data, "Add Scene",)
 
             webinterface.add_alert("New scene '%s' added." % scene.label)
@@ -147,8 +147,13 @@ def route_scenes(webapp):
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene.scene_id, scene.label)
             webinterface.add_breadcrumb(request, "/scenes/%s/edit" % scene.scene_id, "Edit")
-            data = scene.asdict()
-            data['scene_id'] = scene_id
+            data = {
+                'label': scene.label,
+                'machine_label': scene.machine_label,
+                'description':  scene.description(),
+                'status': scene.effective_status(),
+                'scene_id': scene_id
+            }
             return page_scenes_form(webinterface,
                                     request,
                                     session,
@@ -171,7 +176,7 @@ def route_scenes(webapp):
                                                   data['label'], data['machine_label'],
                                                   data['description'], data['status'])
             except YomboWarning as e:
-                webinterface.add_alert(e.message, 'warning')
+                webinterface.add_alert("Cannot edit scene. %s" % e.message, 'warning')
                 root_breadcrumb(webinterface, request)
                 webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene.scene_id, scene.label)
                 webinterface.add_breadcrumb(request, "/scenes/%s/edit", "Edit")
@@ -179,30 +184,8 @@ def route_scenes(webapp):
                 return page_scenes_form(webinterface, request, session, 'edit', data,
                                                         "Edit Scene: %s" % scene.label)
 
-                return webinterface.redirect(request, '/scenes/index')
-
             webinterface.add_alert("Scene '%s' edited." % scene.label)
             return webinterface.redirect(request, "/scenes/%s/details" % scene.scene_id)
-
-            # msg = {
-            #     'header': 'Scene Updated',
-            #     'label': 'Scene updated successfully',
-            #     'description': '<p>The scene has been updated.'
-            #                    '<p>Continue to:</p><ul>'
-            #                    ' <li><a href="/scenes/index">Scene index</a></li>'
-            #                    ' <li><a href="/scenes/%s/details">View the edited scene</a></li>'
-            #                    '<ul>' %
-            #                    scene.scene_id,
-            # }
-            #
-            # page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
-            # root_breadcrumb(webinterface, request)
-            # webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene_id, scene.label)
-            # webinterface.add_breadcrumb(request, "/scenes/%s/edit" % scene_id, "Edit")
-            #
-            # return page.render(alerts=webinterface.get_alerts(),
-            #                    msg=msg,
-            #                    )
 
         def page_scenes_form(webinterface, request, session, action_type, scene,
                                         header_label):
@@ -249,8 +232,7 @@ def route_scenes(webapp):
                 confirm = request.args.get('confirm')[0]
             except:
                 webinterface.add_alert('Must enter "delete" in the confirmation box to delete the scene.', 'warning')
-                return webinterface.redirect(request,
-                                             '/scenes/%s/details' % scene_id)
+                return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
 
             if confirm != "delete":
                 webinterface.add_alert('Must enter "delete" in the confirmation box to delete the scene.', 'warning')
@@ -260,26 +242,11 @@ def route_scenes(webapp):
             try:
                 yield scene.delete(session=session['yomboapi_session'])
             except YomboWarning as e:
-                webinterface.add_alert(e.message, 'warning')
-                return webinterface.redirect(request, '/scenes/index')
+                webinterface.add_alert("Cannot delete scene. %s" % e.message, 'warning')
+                return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
 
-            msg = {
-                'header': 'Scene Deleted',
-                'label': 'Scene deleted successfully',
-                'description': '<p>The scene has been delete.'
-                               '<p>Continue to:</p><ul>'
-                               ' <li><strong><a href="/scenes/index">Scene index</a></strong></li>'
-                               '<ul>'
-            }
-
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
-            root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene.scene_id, scene.label)
-            webinterface.add_breadcrumb(request, "/scenes/%s/edit" % scene.scene_id, "Delete")
-
-            return page.render(alerts=webinterface.get_alerts(),
-                               msg=msg,
-                               )
+            webinterface.add_alert('Scene deleted. Will be fully removed from system on next restart.')
+            return webinterface.redirect(request, '/scenes/index')
 
         @webapp.route('/<string:scene_id>/disable', methods=['GET'])
         @require_auth()
@@ -312,8 +279,7 @@ def route_scenes(webapp):
             except:
                 webinterface.add_alert('Must enter "disable" in the confirmation box to disable the scene.',
                                        'warning')
-                return webinterface.redirect(request,
-                                             '/scenes/%s/details' % scene_id)
+                return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
 
             if confirm != "disable":
                 webinterface.add_alert('Must enter "disable" in the confirmation box to disable the scene.',
@@ -323,8 +289,8 @@ def route_scenes(webapp):
             try:
                 scene.disable(session=session['yomboapi_session'])
             except YomboWarning as e:
-                webinterface.add_alert(e.message, 'warning')
-                return webinterface.redirect(request, '/scenes/index')
+                webinterface.add_alert("Cannot disable scene. %s" % e.message, 'warning')
+                return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
 
             msg = {
                 'header': 'Scene Disabled',
@@ -383,8 +349,8 @@ def route_scenes(webapp):
             try:
                 scene.enable(session=session['yomboapi_session'])
             except YomboWarning as e:
-                webinterface.add_alert(e.message, 'warning')
-                return webinterface.redirect(request, '/scenes/index')
+                webinterface.add_alert("Cannot enable scene. %s" % e.message, 'warning')
+                return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
 
             webinterface.add_alert("Scene '%s' enabled." % scene.label)
             return webinterface.redirect(request, "/scenes/%s/details" % scene.scene_id)
@@ -401,7 +367,7 @@ def route_scenes(webapp):
             try:
                 webinterface._Scenes.move_item_up(scene_id, item_id)
             except YomboWarning as e:
-                webinterface.add_alert(e.message, 'warning')
+                webinterface.add_alert("Cannot move item up. %s" % e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
 
             webinterface.add_alert("Item moved up.")
@@ -419,11 +385,30 @@ def route_scenes(webapp):
             try:
                 webinterface._Scenes.move_item_down(scene_id, item_id)
             except YomboWarning as e:
-                webinterface.add_alert(e.message, 'warning')
+                webinterface.add_alert("Cannot move item down. %s" % e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
 
             webinterface.add_alert("Item moved up.")
             return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
+
+        @webapp.route('/<string:scene_id>/duplicate_scene', methods=['GET'])
+        @require_auth()
+        @inlineCallbacks
+        def page_scenes_duplicate_scene_get(webinterface, request, session, scene_id):
+            try:
+                scene = webinterface._Scenes.get(scene_id)
+            except KeyError as e:
+                webinterface.add_alert("Requested scene or item id could not be located.", 'warning')
+                return webinterface.redirect(request, '/scenes/index')
+
+            try:
+                yield webinterface._Scenes.duplicate_scene(scene_id)
+            except YomboWarning as e:
+                webinterface.add_alert("Cannot duplicate scene. %s" % e.message, 'warning')
+                return webinterface.redirect(request, '/scenes/index')
+
+            webinterface.add_alert("Scene dupllicated.")
+            return webinterface.redirect(request, '/scenes/index')
 
 #########################################
 ## Devices
@@ -508,7 +493,7 @@ def route_scenes(webapp):
             try:
                 webinterface._Scenes.add_scene_item(scene_id, **data)
             except YomboWarning as e:
-                webinterface.add_alert(e.message, 'warning')
+                webinterface.add_alert("Cannot add device to scene. %s" % e.message, 'warning')
                 return page_scenes_form_device(webinterface, request, session, scene, data, 'add',
                                                "Add device to scene")
 
@@ -587,7 +572,7 @@ def route_scenes(webapp):
             try:
                 webinterface._Scenes.edit_scene_item(scene_id, item_id, **data)
             except YomboWarning as e:
-                webinterface.add_alert(e.message, 'warning')
+                webinterface.add_alert("Cannot edit device within scene. %s" % e.message, 'warning')
                 return page_scenes_form_device(webinterface, request, session, scene, data, 'add',
                                                "Add device to scene")
 
@@ -664,7 +649,7 @@ def route_scenes(webapp):
             try:
                 webinterface._Scenes.delete_scene_item(scene_id, item_id)
             except YomboWarning as e:
-                webinterface.add_alert(e.message, 'warning')
+                webinterface.add_alert("Cannot delete device from scene. %s" % e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
 
             webinterface.add_alert("Deleted device item for scene.")
@@ -738,7 +723,7 @@ def route_scenes(webapp):
             try:
                 webinterface._Scenes.add_scene_item(scene_id, **data)
             except YomboWarning as e:
-                webinterface.add_alert(e.message, 'warning')
+                webinterface.add_alert("Cannot add pause to scene. %s" % e.message, 'warning')
                 return page_scenes_form_pause(webinterface, request, session, scene, data, 'add', "Add a pause to scene")
 
             webinterface.add_alert("Added pause item to scene.")
@@ -761,7 +746,7 @@ def route_scenes(webapp):
 
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene.scene_id, scene.label)
-            webinterface.add_breadcrumb(request, "/scenes/%s/edit_pause" % scene.scene_id, "Edit item: State")
+            webinterface.add_breadcrumb(request, "/scenes/%s/edit_pause" % scene.scene_id, "Edit item: Pause")
             return page_scenes_form_pause(webinterface, request, session, scene, item, 'edit',
                                               "Edit scene item: State")
 
@@ -795,8 +780,9 @@ def route_scenes(webapp):
             try:
                 webinterface._Scenes.edit_scene_item(scene_id, item_id, **data)
             except YomboWarning as e:
-                webinterface.add_alert(e.message, 'warning')
-                return page_scenes_form_pause(webinterface, request, session, scene, data, 'add', "Edit scene item: State")
+                webinterface.add_alert("Cannot edit pause within scene. %s" % e.message, 'warning')
+                return page_scenes_form_pause(webinterface, request, session, scene, data, 'add',
+                                              "Edit scene item: Pause")
 
             webinterface.add_alert("Edited a pause item for scene '%s'." % scene.label)
             return webinterface.redirect(request, "/scenes/%s/details" % scene.scene_id)
@@ -871,7 +857,7 @@ def route_scenes(webapp):
             try:
                 webinterface._Scenes.delete_scene_item(scene_id, item_id)
             except YomboWarning as e:
-                webinterface.add_alert(e.message, 'warning')
+                webinterface.add_alert("Cannot delete pause from scene. %s" % e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
 
             webinterface.add_alert("Deleted pause item for scene.")
@@ -968,7 +954,7 @@ def route_scenes(webapp):
             try:
                 webinterface._Scenes.add_scene_item(scene_id, **data)
             except YomboWarning as e:
-                webinterface.add_alert(e.message, 'warning')
+                webinterface.add_alert("Cannot add state to scene. %s" % e.message, 'warning')
                 return page_scenes_form_state(webinterface, request, session, scene, data, 'add', "Add state to scene")
 
             webinterface.add_alert("Added state item to scene.")
@@ -1063,7 +1049,7 @@ def route_scenes(webapp):
             try:
                 webinterface._Scenes.edit_scene_item(scene_id, item_id, **data)
             except YomboWarning as e:
-                webinterface.add_alert(e.message, 'warning')
+                webinterface.add_alert("Cannot edit state within scene. %s" % e.message, 'warning')
                 return page_scenes_form_state(webinterface, request, session, scene, data, 'add', "Edit scene item: State")
 
             webinterface.add_alert("Edited state item for scene.")
@@ -1139,7 +1125,7 @@ def route_scenes(webapp):
             try:
                 webinterface._Scenes.delete_scene_item(scene_id, item_id)
             except YomboWarning as e:
-                webinterface.add_alert(e.message, 'warning')
+                webinterface.add_alert("Cannot delete state from scene. %s" % e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
 
             webinterface.add_alert("Deleted state item for scene.")
@@ -1162,7 +1148,8 @@ def route_scenes(webapp):
 
             data = {
                 'item_type': 'scene',
-                'scene': webinterface.request_get_default(request, 'scene', ""),
+                'machine_label': webinterface.request_get_default(request, 'machine_label', ""),
+                'action': webinterface.request_get_default(request, 'action', ""),
                 'weight': webinterface.request_get_default(
                     request, 'weight', (len(webinterface._Scenes.get_item(scene_id)) + 1) * 10),
             }
@@ -1171,12 +1158,14 @@ def route_scenes(webapp):
                 data['weight'] = int(data['weight'])
             except Exception:
                 webinterface.add_alert('Must enter a number for a weight.', 'warning')
-                return page_scenes_form_scene(webinterface, request, session, scene, data, 'add', "Add a scene to scene")
+                return page_scenes_form_scene(webinterface, request, session, scene, data, 'add',
+                                              "Add a scene to scene")
 
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene_id, scene.label)
             webinterface.add_breadcrumb(request, "/scenes/%s/add_scene" % scene_id, "Add Item: Pause")
-            return page_scenes_form_scene(webinterface, request, session, scene, data, 'add', "Add a scene to scene")
+            return page_scenes_form_scene(webinterface, request, session, scene, data, 'add',
+                                          "Add a scene to scene")
 
         @webapp.route('/<string:scene_id>/add_scene', methods=['POST'])
         @require_auth()
@@ -1189,7 +1178,8 @@ def route_scenes(webapp):
 
             data = {
                 'item_type': 'scene',
-                'scene': webinterface.request_get_default(request, 'scene', ""),
+                'machine_label': webinterface.request_get_default(request, 'machine_label', ""),
+                'action': webinterface.request_get_default(request, 'action', ""),
                 'weight': webinterface.request_get_default(
                     request, 'weight', (len(webinterface._Scenes.get_item(scene_id)) + 1) * 10),
             }
@@ -1198,13 +1188,15 @@ def route_scenes(webapp):
                 data['weight'] = int(data['weight'])
             except Exception:
                 webinterface.add_alert('Must enter a number for a weight.', 'warning')
-                return page_scenes_form_scene(webinterface, request, session, scene, data, 'add', "Add a scene to scene")
+                return page_scenes_form_scene(webinterface, request, session, scene, data, 'add',
+                                              "Add a scene to scene")
 
             try:
                 webinterface._Scenes.add_scene_item(scene_id, **data)
             except YomboWarning as e:
-                webinterface.add_alert(e.message, 'warning')
-                return page_scenes_form_scene(webinterface, request, session, scene, data, 'add', "Add a scene to scene")
+                webinterface.add_alert("Cannot add scene control to scene. %s" % e.message, 'warning')
+                return page_scenes_form_scene(webinterface, request, session, scene, data, 'add',
+                                              "Add a scene to scene")
 
             webinterface.add_alert("Added scene item to scene.")
             return webinterface.redirect(request, "/scenes/%s/details" % scene.scene_id)
@@ -1225,9 +1217,9 @@ def route_scenes(webapp):
 
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene.scene_id, scene.label)
-            webinterface.add_breadcrumb(request, "/scenes/%s/edit_scene" % scene.scene_id, "Edit item: State")
+            webinterface.add_breadcrumb(request, "/scenes/%s/edit_scene" % scene.scene_id, "Edit item: Scene Control")
             return page_scenes_form_scene(webinterface, request, session, scene, item, 'edit',
-                                              "Edit scene item: State")
+                                          "Edit scene item: Scene control")
 
         @webapp.route('/<string:scene_id>/edit_scene/<string:item_id>', methods=['POST'])
         @require_auth()
@@ -1240,7 +1232,8 @@ def route_scenes(webapp):
 
             data = {
                 'item_type': 'scene',
-                'scene': webinterface.request_get_default(request, 'scene', 5),
+                'machine_label': webinterface.request_get_default(request, 'machine_label', ""),
+                'action': webinterface.request_get_default(request, 'action', ""),
                 'weight': webinterface.request_get_default(
                     request, 'weight', (len(webinterface._Scenes.get_item(scene_id)) + 1) * 10),
             }
@@ -1249,19 +1242,21 @@ def route_scenes(webapp):
                 data['weight'] = int(data['weight'])
             except Exception:
                 webinterface.add_alert('Must enter a number for a weight.', 'warning')
-                return page_scenes_form_scene(webinterface, request, session, scene, data, 'add', "Add a scene to scene")
+                return page_scenes_form_scene(webinterface, request, session, scene, data, 'add',
+                                              "Edit scene control")
 
             try:
                 webinterface._Scenes.edit_scene_item(scene_id, item_id, **data)
             except YomboWarning as e:
-                webinterface.add_alert(e.message, 'warning')
-                return page_scenes_form_scene(webinterface, request, session, scene, data, 'add', "Edit scene item: State")
+                webinterface.add_alert("Cannot edit scene control within scene. %s" % e.message, 'warning')
+                return page_scenes_form_scene(webinterface, request, session, scene, data, 'add',
+                                              "Edit scene item: Scene control")
 
             webinterface.add_alert("Edited a scene item for scene '%s'." % scene.label)
             return webinterface.redirect(request, "/scenes/%s/details" % scene.scene_id)
 
         def page_scenes_form_scene(webinterface, request, session, scene, data, action_type, header_label):
-            page = webinterface.get_scene(request, webinterface._dir + 'pages/scenes/form_scene.html')
+            page = webinterface.get_template(request, webinterface._dir + 'pages/scenes/form_scene.html')
 
             return page.render(alerts=webinterface.get_alerts(),
                                header_label=header_label,
@@ -1285,13 +1280,12 @@ def route_scenes(webapp):
                 webinterface.add_alert("Requested item for scene doesn't exist.", 'warning')
                 return webinterface.redirect(request, '/scenes/index')
 
-            page = webinterface.get_scene(
-                request,
-                webinterface._dir + 'pages/scenes/delete_scene.html'
-            )
+            page = webinterface.get_template(request,
+                                             webinterface._dir + 'pages/scenes/delete_scene.html'
+                                            )
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene_id, scene.label)
-            webinterface.add_breadcrumb(request, "/scenes/%s/delete_scene" % scene_id, "Delete item: Pause")
+            webinterface.add_breadcrumb(request, "/scenes/%s/delete_scene" % scene_id, "Delete item: Scene Control")
             return page.render(alerts=webinterface.get_alerts(),
                                scene=scene,
                                item=item,
@@ -1317,20 +1311,20 @@ def route_scenes(webapp):
                 confirm = request.args.get('confirm')[0]
             except:
                 webinterface.add_alert('Must enter "delete" in the confirmation box to '
-                                       'delete the scene from the scene.', 'warning')
+                                       'delete the scene control from the scene.', 'warning')
                 return webinterface.redirect(request,
                                              '/scenes/%s/delete_scene/%s' % (scene_id, item_id))
 
             if confirm != "delete":
                 webinterface.add_alert('Must enter "delete" in the confirmation box to '
-                                       'delete the scene from the scene.', 'warning')
+                                       'delete the scene control from the scene.', 'warning')
                 return webinterface.redirect(request,
                                              '/scenes/%s/delete_scene/%s' % (scene_id, item_id))
 
             try:
                 webinterface._Scenes.delete_scene_item(scene_id, item_id)
             except YomboWarning as e:
-                webinterface.add_alert(e.message, 'warning')
+                webinterface.add_alert("Cannot delete scene control from scene. %s" % e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
 
             webinterface.add_alert("Deleted scene item for scene.")
@@ -1396,7 +1390,7 @@ def route_scenes(webapp):
             try:
                 webinterface._Scenes.add_scene_item(scene_id, **data)
             except YomboWarning as e:
-                webinterface.add_alert(e.message, 'warning')
+                webinterface.add_alert("Cannot add template to scene. %s" % e.message, 'warning')
                 return page_scenes_form_template(webinterface, request, session, scene, data, 'add', "Add a template to scene")
 
             webinterface.add_alert("Added template item to scene.")
@@ -1448,7 +1442,7 @@ def route_scenes(webapp):
             try:
                 webinterface._Scenes.edit_scene_item(scene_id, item_id, **data)
             except YomboWarning as e:
-                webinterface.add_alert(e.message, 'warning')
+                webinterface.add_alert("Cannot edit template within scene. %s" % e.message, 'warning')
                 return page_scenes_form_template(webinterface, request, session, scene, data, 'add', "Edit scene item: State")
 
             webinterface.add_alert("Edited a template item for scene '%s'." % scene.label)
@@ -1524,7 +1518,7 @@ def route_scenes(webapp):
             try:
                 webinterface._Scenes.delete_scene_item(scene_id, item_id)
             except YomboWarning as e:
-                webinterface.add_alert(e.message, 'warning')
+                webinterface.add_alert("Cannot delete template from scene. %s" % e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
 
             webinterface.add_alert("Deleted template item for scene.")

@@ -52,23 +52,29 @@
                                             <th>Label</th><th>Machine Label</th><th>Status</th><th>Actions</th>
                                         </tr>
                                     </thead>
-                                    <tbody>{% for scene_id, scene in _scenes.items() if scene.gateway_id == _local_gateway.gateway_id%}
+                                    <tbody>{% for scene_id, scene in _scenes.get().items() if scene.gateway_id == _local_gateway.gateway_id%}
                                          <tr>
                                              <td data-priority="1">
                                                  <a href="/scenes/{{ scene.scene_id }}/details">{{ scene.label }}</a><br>
                                              </td>
                                              <td data-priority="4">{{ scene.machine_label }}</td>
-                                             <td>{{ scene.effective_status()|title }}</td>
+                                             <td>{{ scene.effective_status()|status_to_string }}</td>
                                              <td>
-                                                {% if scene.effective_status() == "disabled" -%}
-                                             <a href="/scenes/{{ scene.scene_id }}/edit">Edit</a> &nbsp; <a class="alert-success" href="/scenes/{{ scene.scene_id }}/enable">Enable</a> &nbsp; <a class="alert-danger" href="/scenes/{{ scene.scene_id }}/delete">Delete</a>
-                                                {% elif scene.effective_status() == "enabled" -%}
-                                             <a href="/scenes/{{ scene.scene_id }}/edit">Edit</a> &nbsp; <a class="alert-warning" href="/scenes/{{ scene.scene_id }}/disable">Disable</a> &nbsp; <a class="alert-danger" href="/scenes/{{ scene.scene_id }}/delete">Delete</a>
-                                                {% elif scene.effective_status() == "deleted" -%}
-                                                 <a class="alert-success" href="/scenes/{{ scene.scene_id }}/enable">Enable</a> Deleted - Will be removed on restart</a>
+                                                {% if scene.effective_status() == 0 -%}
+                                                 <a href="/scenes/{{ scene.scene_id }}/edit">Edit</a>
+                                                 <a class="alert-success" href="/scenes/{{ scene.scene_id }}/enable">Enable</a>
+                                                 <a href="/scenes/{{ scene.scene_id }}/duplicate_scene">Duplicate</a>
+                                                 <a class="alert-danger" href="/scenes/{{ scene.scene_id }}/delete">Delete</a>
+                                                {% elif scene.effective_status() == 1 -%}
+                                             <a href="/scenes/{{ scene.scene_id }}/edit">Edit</a>
+                                                 <a class="alert-warning" href="/scenes/{{ scene.scene_id }}/disable">Disable</a>
+                                                 <a href="/scenes/{{ scene.scene_id }}/duplicate_scene">Duplicate</a>
+                                                 <a class="alert-danger" href="/scenes/{{ scene.scene_id }}/delete">Delete</a>
+                                                {% elif scene.status() == 2 -%}
+                                             <a class="alert-success"  href="/scenes/{{ scene.scene_id }}/disable">Enable</a> (Will be removed on restart.)
                                                 {% endif %}
-
                                              </td>
+
                                          </tr>{% endfor %}
                                     </tbody>
                                 </table>
@@ -86,18 +92,23 @@
                                     <tbody>{% for scene_id, scene in _scenes.items() if scene.gateway_id != _local_gateway.gateway_id%}
                                          <tr>
                                              <td data-priority="1">
-                                                 <a href="/scenes/{{ scene.scene_id }}/details">{{ scene.label }}</a><br>
+                                                 <a href="/scenes/{{ scene.scene_id }}/details">{{ scene.label }}</a>ddddd<br>
                                              </td>
                                              <td data-priority="4">{{ scene.machine_label }}</td>
                                              <td>
                                                 {% if scene.status == 0 -%}
-                                             <a href="/scenes/{{ scene.scene_id }}/edit">Edit</a> &nbsp; <a class="alert-success" href="/scenes/{{ scene.scene_id }}/enable">Enable</a> &nbsp; <a class="alert-danger" href="/scenes/{{ scene.scene_id }}/delete">Delete</a>
+                                                 <a href="/scenes/{{ scene.scene_id }}/edit">Edit</a>
+                                                 <a class="alert-success" href="/scenes/{{ scene.scene_id }}/enable">Enable</a>
+                                                 <a href="/scenes/{{ scene.scene_id }}/duplicate_scene">Duplicate</a>
+                                                 <a class="alert-danger" href="/scenes/{{ scene.scene_id }}/delete">Delete</a>
                                                 {% elif scene.status == 1 -%}
-                                             <a href="/scenes/{{ scene.scene_id }}/edit">Edit</a> &nbsp; <a class="alert-warning" href="/scenes/{{ scene.scene_id }}/disable">Disable</a> &nbsp; <a class="alert-danger" href="/scenes/{{ scene.scene_id }}/delete">Delete</a>
+                                             <a href="/scenes/{{ scene.scene_id }}/edit">Edit</a>
+                                                 <a class="alert-warning" href="/scenes/{{ scene.scene_id }}/disable">Disable</a>
+                                                 <a href="/scenes/{{ scene.scene_id }}/duplicate_scene">Duplicate</a>
+                                                 <a class="alert-danger" href="/scenes/{{ scene.scene_id }}/delete">Delete</a>
                                                 {% elif scene.status == 2 -%}
                                              <a class="alert-success"  href="/scenes/{{ scene.scene_id }}/disable">Enable</a>
                                                 {% endif %}
-
                                              </td>
                                          </tr>{% endfor %}
                                     </tbody>
