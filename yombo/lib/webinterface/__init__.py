@@ -87,6 +87,11 @@ from yombo.lib.webinterface.routes.modules import route_modules
 from yombo.lib.webinterface.routes.notices import route_notices
 from yombo.lib.webinterface.routes.panel import route_panel
 from yombo.lib.webinterface.routes.scenes import route_scenes
+from yombo.lib.webinterface.routes.scenes.device import route_scenes_device
+from yombo.lib.webinterface.routes.scenes.pause import route_scenes_pause
+from yombo.lib.webinterface.routes.scenes.scene import route_scenes_scene
+from yombo.lib.webinterface.routes.scenes.state import route_scenes_state
+from yombo.lib.webinterface.routes.scenes.template import route_scenes_template
 from yombo.lib.webinterface.routes.statistics import route_statistics
 from yombo.lib.webinterface.routes.states import route_states
 from yombo.lib.webinterface.routes.system import route_system
@@ -251,6 +256,11 @@ class WebInterface(YomboLibrary):
         route_notices(self.webapp)
         route_panel(self.webapp)
         route_scenes(self.webapp)
+        route_scenes_device(self.webapp)
+        route_scenes_pause(self.webapp)
+        route_scenes_scene(self.webapp)
+        route_scenes_state(self.webapp)
+        route_scenes_template(self.webapp)
         route_setup_wizard(self.webapp)
         route_statistics(self.webapp)
         route_states(self.webapp)
