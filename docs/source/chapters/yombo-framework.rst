@@ -76,6 +76,7 @@ IoT devices, etc.
    ../lib/nodes.rst
    ../lib/notifications.rst
    ../lib/queue.rst
+   ../lib/scenes.rst
    ../lib/sqldict.rst
    ../lib/sslcerts/sslcerts.rst
    ../lib/startup.rst
