@@ -153,7 +153,6 @@ class Scenes(YomboLibrary, object):
             if 'config' not in scene.data or isinstance(scene.data['config'], dict) is False:
                 scene.data['config'] = {}
             if 'enabled' not in scene.data['config']:
-                print("data: %s" % scene.data)
                 scene.data['config']['enabled'] = True
             if 'description' not in scene.data['config']:
                 scene.data['config']['description'] = scene.label
@@ -253,13 +252,9 @@ class Scenes(YomboLibrary, object):
         :param scene_id:
         :return:
         """
-        print("starting enable. 1")
         scene = self.scenes[scene_id]
-        print("starting enable. 2")
         data = scene.data
-        print("starting enable. 3")
         data['config']['enabled'] = True
-        print("starting enable. 5")
         scene.on_change()
 
     @inlineCallbacks
@@ -566,7 +561,6 @@ class Scenes(YomboLibrary, object):
         :param kwargs:
         :return:
         """
-        print("starting trigger. 1")
         scene = self.scenes.get(scene_id)
         if scene.effective_status() != 1:
             raise YomboWarning("Scene is disabled.")
@@ -574,9 +568,7 @@ class Scenes(YomboLibrary, object):
             if self.scenes_running[scene_id] in ("running", "stopping"):
                 return False  # already running
         self.scenes_running[scene_id] = "running"
-        print("starting trigger. 3.. %s" % scene)
         reactor.callLater(0.001, self.do_trigger, scene, **kwargs)
-        print("starting trigger. 4")
         return True
 
     @inlineCallbacks
@@ -588,7 +580,6 @@ class Scenes(YomboLibrary, object):
         :param kwargs:
         :return:
         """
-        print("starting do_trigger. 1")
         scene_id = scene.scene_id
         items = self.get_item(scene_id)
 
@@ -606,23 +597,19 @@ class Scenes(YomboLibrary, object):
                 final_duration = 0
                 loops = 0
                 duration = item['duration']
-                if duration < 10:
+                if duration < 6:
                     final_duration = duration
                     loops = 1
                 else:
                     loops = int(round(duration/5))
                     final_duration = duration / loops
                 for current_loop in range(loops):
-                    print("Trigger sleep 1: status: %s duration: %s, final_duration: %s loops: %s, current loop: %s" %
-                          (self.scenes_running[scene_id], duration, final_duration, loops, current_loop))
                     yield sleep(final_duration)
                     if self.scenes_running[scene_id] != "running":  # a way to kill this trigger
                         self.scenes_running[scene_id] = "stopped"
                         return False
 
             elif item['item_type'] == "scene":
-                print("starting do_trigger. scene 1")
-
                 scene = self.get(item['machine_label'])
                 action = item['action']
                 if action == 'enable':
@@ -682,7 +669,6 @@ class Scenes(YomboLibrary, object):
 
         @inlineCallbacks
         def delete(node, session):
-            print("about to delete nodeid: %s" % node._node_id)
             results = yield node._Scene.delete(node._node_id, session=session)
             return results
 
@@ -690,7 +676,6 @@ class Scenes(YomboLibrary, object):
             return node.data['config']['description']
 
         def disable(node, session):
-            print("about to disable nodeid: %s" % node._node_id)
             results = node._Scene.disable(node._node_id, session=session)
             return results
 
