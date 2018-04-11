@@ -79,13 +79,14 @@
                         You can enable or disable the scene as needed. When disabled, the scene cannot be
                         used by gateways.
                     </p>
-                    <p>Any items marked "delete" will be deleted after 30 days. This allows the
-                    delete scene to fully propagate through the entire Yombo eco system.</p>') }}
+                    ') }}
                     <br>
                     <div class="input-group">
                         <select tabindex="5" class="selectpicker show-tick form-control" name="status" id="status">
-                            <option value="0"{% if scene.status == 0 %} selected{% endif %} data-subtext="Gateways cannot use.">Disabled</option>
-                            <option value="1"{% if scene.status == 1 %} selected{% endif %} data-subtext="Works as normal.">Enabled</option>
+                            <option value="0" {% if scene.status == 0 %}selected {% endif %}
+                                    data-subtext="Gateways cannot use.">Disabled</option>
+                            <option value="1" {% if scene.status == 1 %}selected {% endif %}
+                                    data-subtext="Works as normal.">Enabled</option>
                         </select>
                     </div>
                 </div>
@@ -109,23 +110,6 @@
 
 {% block body_bottom %}
     <script>
-    $('#short_description').keyup(updateCountShortDescription);
-    $('#short_description').keydown(updateCountShortDescription);
-    $('#short_description').focusin(updateCountShortDescription);
-    $('#short_description').focusout(updateCountShortDescription_remove);
-
-    function updateCountShortDescription() {
-        var cs = $(this).val().length;
-        $('#short_description_characters').text(cs + ' characters');
-        $('#short_description_characters_text').text('Should be 100 to 156 characters long.');
-    }
-
-    function updateCountShortDescription_remove() {
-        var cs = $(this).val().length;
-        $('#short_description_characters').text('');
-        $('#short_description_characters_text').text('');
-    }
-
      $(document).ready(function(){
         var i=1;
 

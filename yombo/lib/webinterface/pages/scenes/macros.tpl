@@ -22,8 +22,24 @@
 <td>
 {{edit_link('edit_device', scene.scene_id, item_id)}}
 {{delete_link('delete_device', scene.scene_id, item_id)}}
-{{up_link('move_up', scene.scene_id, item_id)}}
-{{down_link('move_down', scene.scene_id, item_id)}}
+{{up_link(scene.scene_id, item_id)}}
+{{down_link(scene.scene_id, item_id)}}
+</td>
+</tr>
+{%- endmacro %}
+
+{% macro display_generic(scene, item_id, item) %}
+{% set data = _scenes.get_scene_type_column_data(scene, item) %}
+<tr class="highlight-pause">
+<td> {{ data.type }} </td>
+<td> {{item['weight']}} </td>
+<td> {{ data.attributes }}
+</td>
+<td>
+{{edit_link_full(data['edit_url'], scene.scene_id, item_id)}}
+{{delete_link_full(data['delete_url'], scene.scene_id, item_id)}}
+{{up_link(scene.scene_id, item_id)}}
+{{down_link(scene.scene_id, item_id)}}
 </td>
 </tr>
 {%- endmacro %}
@@ -38,8 +54,8 @@
 <td>
 {{edit_link('edit_pause', scene.scene_id, item_id)}}
 {{delete_link('delete_pause', scene.scene_id, item_id)}}
-{{up_link('move_up', scene.scene_id, item_id)}}
-{{down_link('move_down', scene.scene_id, item_id)}}
+{{up_link(scene.scene_id, item_id)}}
+{{down_link(scene.scene_id, item_id)}}
 </td>
 </tr>
 {%- endmacro %}
@@ -54,24 +70,8 @@
 <td>
 {{edit_link('edit_scene', scene.scene_id, item_id)}}
 {{delete_link('delete_scene', scene.scene_id, item_id)}}
-{{up_link('move_up', scene.scene_id, item_id)}}
-{{down_link('move_down', scene.scene_id, item_id)}}
-</td>
-</tr>
-{%- endmacro %}
-
-{% macro display_state(scene, item_id, item) %}
-<tr class="highlight-state">
-<td> <strong>State:</strong> {{item['name']}}</td>
-<td> {{item['weight']}} </td>
-<td>
-  <strong>Set Value:</strong><br> {{item['value']}}<br>
-</td>
-<td>
-{{edit_link('edit_state', scene.scene_id, item_id)}}
-{{delete_link('delete_state', scene.scene_id, item_id)}}
-{{up_link('move_up', scene.scene_id, item_id)}}
-{{down_link('`move_down', scene.scene_id, item_id)}}
+{{up_link(scene.scene_id, item_id)}}
+{{down_link(scene.scene_id, item_id)}}
 </td>
 </tr>
 {%- endmacro %}
@@ -86,14 +86,10 @@
 <td>
 {{edit_link('edit_template', scene.scene_id, item_id)}}
 {{delete_link('delete_template', scene.scene_id, item_id)}}
-{{up_link('move_up', scene.scene_id, item_id)}}
-{{down_link('move_down', scene.scene_id, item_id)}}
+{{up_link(scene.scene_id, item_id)}}
+{{down_link(scene.scene_id, item_id)}}
 </td>
 </tr>
-{%- endmacro %}
-
-{% macro details_link(action, scene_id, item_id) %}
-<a href="/scenes/{{scene_id}}/{{action}}/{{item_id}}" title="Details"><i class="fas fa-search fa-lg"></i></a>&nbsp;&nbsp;
 {%- endmacro %}
 
 {% macro edit_link(action, scene_id, item_id) %}
@@ -104,10 +100,18 @@
 <a href="/scenes/{{scene_id}}/{{action}}/{{item_id}}" title="Delete item"><i class="fas fa-trash-alt fa-lg"></i></a>&nbsp;&nbsp;
 {%- endmacro %}
 
-{% macro up_link(action, scene_id, item_id) %}
-<a href="/scenes/{{scene_id}}/{{action}}/{{item_id}}" title="Move up"><i class="fas fa-arrow-up fa-lg"></i></a>&nbsp;&nbsp;
+{% macro up_link(scene_id, item_id) %}
+<a href="/scenes/{{scene_id}}/move_up/{{item_id}}" title="Move up"><i class="fas fa-arrow-up fa-lg"></i></a>&nbsp;&nbsp;
 {%- endmacro %}
 
-{% macro down_link(action, scene_id, item_id) %}
-<a href="/scenes/{{scene_id}}/{{action}}/{{item_id}}" title="Move down"><i class="fas fa-arrow-down fa-lg"></i></a>&nbsp;&nbsp;
+{% macro down_link(scene_id, item_id) %}
+<a href="/scenes/{{scene_id}}/move_down/{{item_id}}" title="Move down"><i class="fas fa-arrow-down fa-lg"></i></a>&nbsp;&nbsp;
+{%- endmacro %}
+
+{% macro edit_link_full(url, scene_id, item_id) %}
+<a href="{{url}}" title="Edit item"><i class="fas fa-pencil-alt fa-lg"></i></a>&nbsp;&nbsp;
+{%- endmacro %}
+
+{% macro delete_link_full(url, scene_id, item_id) %}
+<a href="{{url}}" title="Delete item"><i class="fas fa-trash-alt fa-lg"></i></a>&nbsp;&nbsp;
 {%- endmacro %}

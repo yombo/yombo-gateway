@@ -7,8 +7,13 @@
 {% block content %}
 <div class="row">
     <div class="col-lg-12">
-                    <h1 class="page-header">{{ _('webinterface_label', 'Scenes') }}
-                    <a href="#" data-toggle=modal data-target=#scenesinfo><i class="fa fa-question pull-right"></i></a></h1>
+        <h1 class="page-header">{{ _('webinterface_label', 'Scenes') }}
+        <a href="#" data-toggle=modal data-target=#scenesinfo><i class="fa fa-question pull-right"></i></a></h1>
+        {{ macros.modal("scenesinfo", 'Scenes', "
+        <p>
+            Scenes allow you to control multiple items quickly with one command or request.
+        </p>
+        ") }}
     </div>
     <!-- /.col-lg-12 -->
 </div>
@@ -23,12 +28,7 @@
                 </h4>
             </div>
             <div class="panel-body">
-                {{ macros.modal("scenesinfo", 'Scenes', "
-                <p>
-                    Scenes allow you to control multiple items quickly with one command or request.
-                </p>
-                ") }}
-                {% if _scenes|length > 0 or _scenes|length > 0 %}
+                {% if _scenes|length > 0 %}
                     <div class="devices devices-tabs" role="tabpanel" data-example-id="togglable-tabs">
                       <ul id="myTab" class="nav nav-tabs nav-tabs-responsive" role="tablist">
                         <li role="presentation" class="active bg-success">
@@ -55,23 +55,23 @@
                                     <tbody>{% for scene_id, scene in _scenes.get().items() if scene.gateway_id == _local_gateway.gateway_id%}
                                          <tr>
                                              <td data-priority="1">
-                                                 <a href="/scenes/{{ scene.scene_id }}/details">{{ scene.label }}</a><br>
+                                                 <a href="/scenes/{{ scene_id }}/details">{{ scene.label }}</a><br>
                                              </td>
                                              <td data-priority="4">{{ scene.machine_label }}</td>
                                              <td>{{ scene.effective_status()|status_to_string }}</td>
                                              <td>
                                                 {% if scene.effective_status() == 0 -%}
-                                                 <a href="/scenes/{{ scene.scene_id }}/edit">Edit</a>
-                                                 <a class="alert-success" href="/scenes/{{ scene.scene_id }}/enable">Enable</a>
-                                                 <a href="/scenes/{{ scene.scene_id }}/duplicate_scene">Duplicate</a>
-                                                 <a class="alert-danger" href="/scenes/{{ scene.scene_id }}/delete">Delete</a>
+                                                 <a href="/scenes/{{ scene_id }}/edit">Edit</a>
+                                                 <a class="alert-success" href="/scenes/{{ scene_id }}/enable">Enable</a>
+                                                 <a href="/scenes/{{ scene_id }}/duplicate_scene">Duplicate</a>
+                                                 <a class="alert-danger" href="/scenes/{{ scene_id }}/delete">Delete</a>
                                                 {% elif scene.effective_status() == 1 -%}
-                                             <a href="/scenes/{{ scene.scene_id }}/edit">Edit</a>
-                                                 <a class="alert-warning" href="/scenes/{{ scene.scene_id }}/disable">Disable</a>
-                                                 <a href="/scenes/{{ scene.scene_id }}/duplicate_scene">Duplicate</a>
-                                                 <a class="alert-danger" href="/scenes/{{ scene.scene_id }}/delete">Delete</a>
+                                             <a href="/scenes/{{ scene_id }}/edit">Edit</a>
+                                                 <a class="alert-warning" href="/scenes/{{ scene_id }}/disable">Disable</a>
+                                                 <a href="/scenes/{{ scene_id }}/duplicate_scene">Duplicate</a>
+                                                 <a class="alert-danger" href="/scenes/{{ scene_id }}/delete">Delete</a>
                                                 {% elif scene.status() == 2 -%}
-                                             <a class="alert-success"  href="/scenes/{{ scene.scene_id }}/disable">Enable</a> (Will be removed on restart.)
+                                             <a class="alert-success"  href="/scenes/{{ scene_id }}/disable">Enable</a> (Will be removed on restart.)
                                                 {% endif %}
                                              </td>
 
@@ -92,22 +92,22 @@
                                     <tbody>{% for scene_id, scene in _scenes.items() if scene.gateway_id != _local_gateway.gateway_id%}
                                          <tr>
                                              <td data-priority="1">
-                                                 <a href="/scenes/{{ scene.scene_id }}/details">{{ scene.label }}</a>ddddd<br>
+                                                 <a href="/scenes/{{ scene_id }}/details">{{ scene.label }}</a>ddddd<br>
                                              </td>
                                              <td data-priority="4">{{ scene.machine_label }}</td>
                                              <td>
                                                 {% if scene.status == 0 -%}
-                                                 <a href="/scenes/{{ scene.scene_id }}/edit">Edit</a>
-                                                 <a class="alert-success" href="/scenes/{{ scene.scene_id }}/enable">Enable</a>
-                                                 <a href="/scenes/{{ scene.scene_id }}/duplicate_scene">Duplicate</a>
-                                                 <a class="alert-danger" href="/scenes/{{ scene.scene_id }}/delete">Delete</a>
+                                                 <a href="/scenes/{{ scene_id }}/edit">Edit</a>
+                                                 <a class="alert-success" href="/scenes/{{ scene_id }}/enable">Enable</a>
+                                                 <a href="/scenes/{{ scene_id }}/duplicate_scene">Duplicate</a>
+                                                 <a class="alert-danger" href="/scenes/{{ scene_id }}/delete">Delete</a>
                                                 {% elif scene.status == 1 -%}
-                                             <a href="/scenes/{{ scene.scene_id }}/edit">Edit</a>
-                                                 <a class="alert-warning" href="/scenes/{{ scene.scene_id }}/disable">Disable</a>
-                                                 <a href="/scenes/{{ scene.scene_id }}/duplicate_scene">Duplicate</a>
-                                                 <a class="alert-danger" href="/scenes/{{ scene.scene_id }}/delete">Delete</a>
+                                             <a href="/scenes/{{ scene_id }}/edit">Edit</a>
+                                                 <a class="alert-warning" href="/scenes/{{ scene_id }}/disable">Disable</a>
+                                                 <a href="/scenes/{{ scene_id }}/duplicate_scene">Duplicate</a>
+                                                 <a class="alert-danger" href="/scenes/{{ scene_id }}/delete">Delete</a>
                                                 {% elif scene.status == 2 -%}
-                                             <a class="alert-success"  href="/scenes/{{ scene.scene_id }}/disable">Enable</a>
+                                             <a class="alert-success"  href="/scenes/{{ scene_id }}/disable">Enable</a>
                                                 {% endif %}
                                              </td>
                                          </tr>{% endfor %}
@@ -138,24 +138,6 @@
       e.preventDefault();
       $('#myModal').modal('show').find('.modal-body').load($(this).attr('href'));
     });
-
-$('#sendmqtt').submit(function() { // catch the form's submit event
-    $.ajax({ // create an AJAX call...
-        data: $(this).serialize(), // get the form data
-        type: $(this).attr('method'), // GET or POST
-        url: $(this).attr('action'), // the file to call
-        dataType: 'json',
-        success: function(resp){
-            $("#mqttresults").html(resp.message);
-            $("#mqttresultmodal").modal('show');
-        }
-//        success: function(response) { // on success..
-//            $('#created').html(response.message); // update the DIV
-//        }
-    });
-    return false; // cancel original event to prevent form submitting
-});
-
 </script>
 
 {% endblock %}

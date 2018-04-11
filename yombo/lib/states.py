@@ -754,6 +754,64 @@ class States(YomboLibrary, object):
                                   )
                 return
 
+    ##############################################################################################################
+    # Below this demonstrates adding additional scene action types. The following can be used as a simple demo   #
+    # showing how to completely add a new scene item control type.                                               #
+    ##############################################################################################################
+
+    def _scene_types_list_(self, **kwargs):
+        """
+        Add an additional scene item control type: states
+
+        :param kwargs:
+        :return:
+        """
+        return [
+            {
+                "platform": "state",
+                "webroutes": "%s/webinterface/routes/scenes/states.py" % self._Atoms.get('yombo.path'),
+                "urls": {
+                    "edit": {
+                        "State": {
+                            "url": "/scenes/{scene_id}/add_state",
+                            "note": "Change a state value",
+                        },
+                    },
+                },
+                "render_table_column_callback": self.scene_render_table_column,  # Show summary line in a table.
+                "scene_item_update_callback": self.scene_item_update,  # Return a dictionary to store as the item.
+                "handle_trigger_callback": self.scene_item_triggered,  # Do item activity
+            }
+        ]
+
+    def scene_render_table_column(self, scene, item):
+        """
+        Return a dictionary that will be used to populate some variables for the Jinja2 template for scene item
+        rendering.
+
+        :param scene:
+        :param item:
+        :return:
+        """
+        return {
+            "type": "<strong>State:</strong><br>%s" % item['name'],
+            "attributes": "<strong>Set Value:</strong><br> %s" % item['value'],
+            "edit_url": "/scenes/%s/edit_state/%s" % (scene.scene_id, item['item_id']),
+            "delete_url": "/scenes/%s/delete_state/%s" % (scene.scene_id, item['item_id']),
+        }
+
+    def scene_item_update(self, scene, data):
+        print("zzz")
+        return {
+            'name': data['name'],
+            'value': data['value'],
+            'value_type': data['value_type'],
+            'weight': data['weight']
+        }
+
+    def scene_item_triggered(self, scene, item):
+        self.set(item['name'], item['value'], item['value_type'])
+        return True
 
     ##############################################################################################################
     # The remaining functions implement automation hooks. These should not be called by anything other than the  #

@@ -682,6 +682,17 @@ def dict_diff(dict2, dict1):
     return added, removed, modified, same
 
 
+def dict_filter(input_dict, key_list):
+    """
+    Returns a new dictionary with only the supplied list of keys.
+
+    :param input_dict:
+    :param key_list:
+    :return:
+    """
+    return dict((key, input_dict[key]) for key in key_list if key in input_dict)
+
+
 def fopen(*args, **kwargs):
     """
     A help function that wraps around python open() function. Makes handling files a across platforms easier.

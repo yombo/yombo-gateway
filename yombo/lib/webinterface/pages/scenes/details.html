@@ -109,11 +109,9 @@
                     <label>Scene Items</label><br>
                      Add new:
                     <select name="new_item_type" id="new_item_type" required class="selectpicker show-tick" title="Select...">
-                    <option value="/scenes/{{scene.scene_id}}/add_device">Device</option>
-                    <option value="/scenes/{{scene.scene_id}}/add_pause">Pause</option>
-                    <option value="/scenes/{{scene.scene_id}}/add_state">State</option>
-                    <option value="/scenes/{{scene.scene_id}}/add_scene">Scene</option>
-                    <option value="/scenes/{{scene.scene_id}}/add_template">Template</option>
+                    {%- for label, data in _scenes.scene_types_urls_sorted().items() %}
+                        <option value="{{ data['url']|replace("{scene_id}", scene.scene_id)}}">{{label}}</option>
+                    {%- endfor %}
                     </select>
                 </div>
                 <!-- /.panel-heading -->
@@ -140,8 +138,9 @@
                              {%- if item['item_type'] == 'device' %} {{ smacro.display_device(scene, item_id, item) }}
                              {%- elif item['item_type'] == 'pause' %} {{ smacro.display_pause(scene, item_id, item) }}
                              {%- elif item['item_type'] == 'scene' %} {{ smacro.display_scene(scene, item_id, item) }}
-                             {%- elif item['item_type'] == 'state' %} {{ smacro.display_state(scene, item_id, item) }}
                              {%- elif item['item_type'] == 'template' %} {{ smacro.display_template(scene, item_id, item) }}
+                             {%- elif item['item_type'] in _scenes.scene_types %}
+                               {{ smacro.display_generic(scene, item_id, item) }}
                              {%- else %} <tr><td colspan="2">Unknown item type:{{item}} {{item['type']}} </td></tr>
                              {%- endif %}
                         {%- endfor %}
