@@ -4,34 +4,34 @@
 {% block content %}
             <div class="row">
                 <div class="col-lg-12">
-                    <h2 class="page-header">
+                    <h1 class="page-header">
                         <a class="success" href="/scenes/{{scene.scene_id}}/details" aria-label="Delete"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
-                        Confirm Scene Delete Pause: {{ scene.label }}
-                    </h2>
-                    <p></p>
+                        Confirm Scene Disable: {{ scene.label }}
+                    </h1>
                 </div>
                 <!-- /.col-lg-12 -->
             </div>
             <!-- /.row -->
-            <form method="post" id="scenepausedelete">
+            <form method="post" id="devcedelete">
 
             <div class="row">
                 <div class="col-lg-12">
                     <div class="panel panel-default">
                         <div class="panel-heading">
-                            <label>Confirm delete scene pause: <em>{{ scene.label }}</em></label>
+                            <label>Confirm disabling scene: <em>{{ scene.label }}</em></label>
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
-                            <p>Type "<strong>delete</strong>" to confirm:</p>
+                            <p>Disabling a scene will render automation devices that use this scene unusable.</p>
+                            <p>Type "<strong>disable</strong>" to confirm:</p>
     						<div class="form-group">
                                 <div class="input-group">
                                     <input type="text" class="form-control" name="confirm" id="confirm" size="10" placeholder="" value="">
                                 </div>
                             </div>
                             <br>
-                            <a class="btn btn-md btn-success" href="/scenes/{{scene.scene_id}}/details">Cancel (Do not delete)</a>
-                            <button type="submit" class="btn btn-danger">Delete Scene Pause Item</button>
+                            <a class="btn btn-md btn-success" href="/scenes/{{scene.scene_id}}/details">Cancel (Do not disable)</a>
+                            <button type="submit" class="btn btn-danger">Disable Scene</button>
                         </div>
                     </div>
                     <!-- /.panel-body -->
@@ -53,7 +53,7 @@
     $('form').validate({
         rules: {
             confirm: {
-                customrule: 'delete',
+                customrule: 'disable',
                 required: true,
             },
         },

@@ -71,6 +71,7 @@ def get_python_package_info(package_name):
     except DistributionNotFound as e:
         return None
 
+
 @inlineCallbacks
 def read_file(filename, convert_to_unicode=None):
     """
@@ -93,6 +94,7 @@ def read_file(filename, convert_to_unicode=None):
         return bytes_to_unicode(contents)
     return contents
 
+
 def save_file(filename, content, mode=None):
     """
     A quick function to save data to a file. Defaults to overwrite, us mode 'a' to append.
@@ -113,6 +115,7 @@ def save_file(filename, content, mode=None):
             writeToFD(fd, content)
     writeFile(filename, unicode_to_bytes(content), mode)
 
+
 def get_nested_dict(data_dict, map_list):
     """
     Get a dictionary value using keys as a list.
@@ -125,6 +128,7 @@ def get_nested_dict(data_dict, map_list):
     for k in map_list: data_dict = data_dict[k]
     return data_dict
     # return reduce(operator.getitem, dic, keys)
+
 
 def set_nested_dict(dic, keys, value):
     """
@@ -145,6 +149,7 @@ def set_nested_dict(dic, keys, value):
         dic = dic.setdefault(key, {})
     dic[keys[-1]] = value
 
+
 def data_pickle(data, encoder=None, zip_level=None):
     """
     Encodes data with an encoder type. The default is "msgpack_base85". This allows data to be sent to
@@ -152,7 +157,7 @@ def data_pickle(data, encoder=None, zip_level=None):
 
     :param data: String, list, or dictionary to be encoded.
     :param encoder: Optional encode method. One of: json, msgpack, msgpack_zip, msgpack_base85, msgpack_base85_zip
-    :param zip: True or a compression number from 1 to 9. Only works with msgpack_base85, and converts it to a
+    :param zip_level: True or a compression number from 1 to 9. Only works with msgpack_base85, and converts it to a
       msgpack_base85_zip.
 
     :return: bytes (not string) of the encoded data that can be used with data_unpickle.
@@ -167,42 +172,45 @@ def data_pickle(data, encoder=None, zip_level=None):
             encoder = 'msgpack_base85_zip'
         else:
             encoder = 'msgpack_base85'
-
+    if encoder not in ('json', 'msgpack', 'msgpack_zip', 'msgpack_base85', 'msgpack_base85_zip', 'zip'):
+        print("FORCED ENCODER TO JSON... %s -> %s" % (type(encoder), encoder))
+        encoder = 'json'
     if encoder == 'json':
         try:
             return json.dumps(data, separators=(',', ':'))
-        except:
-            pass
+        except Exception as e:
+            logger.warn("Error encoding json: %s" % e)
     elif encoder == 'msgpack':
         try:
             return msgpack.packb(data)
-        except:
-            pass
+        except Exception as e:
+            logger.warn("Error encoding msgpack: %s" % e)
     elif encoder == 'msgpack_zip':
         try:
             return zlib.compress(msgpack.packb(data), zip_level)
-        except:
-            pass
+        except Exception as e:
+            logger.warn("Error encoding msgpack_zip: %s" % e)
     elif encoder == 'msgpack_base85':
         try:
             return base64.b85encode(msgpack.packb(data))
-        except:
-            pass
+        except Exception as e:
+            logger.warn("Error encoding msgpack_base85: %s" % e)
     elif encoder == 'msgpack_base85_zip':
         if isinstance(zip_level, int) is False:
             zip_level = 5
         try:
             return base64.b85encode(zlib.compress(msgpack.packb(data), zip_level))
-        except:
-            pass
+        except Exception as e:
+            logger.warn("Error encoding msgpack_base85_zip: %s" % e)
     elif encoder == 'zip':
         if isinstance(zip_level, int) is False:
             zip_level = 5
         try:
             return base64.b85encode(zlib.compress(data))
-        except:
-            pass
+        except Exception as e:
+            logger.warn("Error encoding msgpack_base85_zip: %s" % e)
     return data
+
 
 def data_unpickle(data, encoder=None, zip_level=None):
     """
@@ -251,6 +259,7 @@ def data_unpickle(data, encoder=None, zip_level=None):
             pass
     return data
 
+
 def instance_properties(obj, startswith_filter=None, endwith_filter=None):
     """
     Get the attributes of an instance and return a dictionary.
@@ -271,6 +280,7 @@ def instance_properties(obj, startswith_filter=None, endwith_filter=None):
                     continue
             pr[name] = value
     return pr
+
 
 def translate_int_value(value, leftMin, leftMax, rightMin, rightMax):
     """
@@ -298,6 +308,7 @@ def translate_int_value(value, leftMin, leftMax, rightMin, rightMax):
     # Convert the 0-1 range into a value in the right range.
     return int(round(rightMin + (valueScaled * rightSpan)))
 
+
 def convert_temp(i_temp):
     """
     Convert a temperature from celsius to fahrenheit and back. Just input a number followed by C or F.
@@ -320,6 +331,7 @@ def convert_temp(i_temp):
         return unit_convert('f_c', degree)
     else:
         raise YomboWarning("Invalid temperature requested.")
+
 
 def pattern_search(look_for, items):
     """

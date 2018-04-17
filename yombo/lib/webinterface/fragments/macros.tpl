@@ -1,6 +1,6 @@
-{% macro modal(id='the_id', label='Modal Label', content='Modal Content') %}
-<div class="modal fade" id="{{ id }}" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
-    <div class="modal-dialog" role="document">
+{% macro modal(id='the_id', label='Modal Label', content='Modal Content', classes="") %}
+<div class="modal fade"" id="{{ id }}" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+    <div class="modal-dialog {{classes}}" role="document">
         <div class="modal-content">
             <div class="modal-header btn-primary">
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>

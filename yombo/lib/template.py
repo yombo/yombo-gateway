@@ -17,7 +17,7 @@ they can be used as condition statements for scenes, automation rules, etc.
 """
 # Import python libraries
 import random
-from time import time
+from time import sleep
 
 import jinja2
 from jinja2 import contextfilter
@@ -31,7 +31,7 @@ from twisted.internet.defer import inlineCallbacks
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
-from yombo.utils import (random_string, sleep, is_true_false, forgiving_float, forgiving_round, multiply, logarithm,
+from yombo.utils import (random_string, is_true_false, forgiving_float, forgiving_round, multiply, logarithm,
                          fail_when_undefined, strptime, is_yes_no, status_to_string, public_to_string, epoch_to_string,
                          excerpt, make_link, format_markdown, display_hide_none)
 
@@ -60,13 +60,14 @@ class Template(YomboLibrary, object):
 
     def _load_(self, **kwargs):
         self.environment = TemplateEnvironment()
-        self.environment.globals['log'] = logarithm
-        self.environment.globals['float'] = forgiving_float
-        self.environment.globals['now'] = self._Times.now
-        self.environment.globals['utcnow'] = self._Times.utcnow
         self.environment.globals['as_timestamp'] = self._Times.forgiving_as_timestamp
+        self.environment.globals['float'] = forgiving_float
+        self.environment.globals['log'] = logarithm
+        self.environment.globals['now'] = self._Times.now
         self.environment.globals['relative_time'] = self._Times.get_age
+        self.environment.globals['sleep'] = sleep
         self.environment.globals['strptime'] = strptime
+        self.environment.globals['utcnow'] = self._Times.utcnow
 
         # self.environment.globals['yombo'] = self
         self.environment.globals['local_gateway'] = self._Gateways.get_local()

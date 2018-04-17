@@ -1,0 +1,88 @@
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+{% block head_css %}{% include 'lib/webinterface/fragments/select_css.tpl' %}{% endblock %}
+
+{% block content %}
+<!-- Modal -->
+<div class="modal fade" id="selecttypemodal" tabindex="-1" role="dialog" aria-labelledby="localModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="myModalLabel">Select Item Type</h4>
+      </div>
+      <div class="modal-body">
+          <p>
+              For
+          </p>
+          <p>
+          </p>
+          <div class="bs-callout bs-callout-primary" id=callout-images-ie-rounded-corners>
+              <h4>Create new modules</h4>
+              <p>
+                  Modules can be <a href="https://yg2.in/f_gw_dev1" target="_blank">
+                  developed by anyone</a> to extend the capabilites of the system.
+              </p>
+          </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 col-md-offset-2">
+        <div class="login-panel panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <center><h3 class="modal-title" id="myModalLabel">New Scene Wizard</h3><br>Step 1: Select Item Type
+                    <a href="#" data-toggle=modal data-target=#selecttypemodal><i class="fa fa-question"></i></a></center></h3>
+                    <p></p>
+                    <div class="col-md-8 col-md-offset-2">
+                        <div class="progress">
+                          <div class="progress-bar progress-bar-success progress-bar-striped active"
+                               role="progressbar" aria-valuenow="0" aria-valuemin="2" aria-valuemax="100"
+                               style="min-width: 2em; width: 10%">
+                            0%
+                          </div>
+                        </div>
+                    </div>
+            </div>
+            <div class="panel-body">
+                <p></p>
+                <form action="/scenes/add_details" method="GET" role="form">
+                <h2>Select Device Type</h2>
+                <p></p>
+                <select name="device_type_id" id="device_type_id" required class="selectpicker show-tick" title="Select...">
+                    {% for devicetype in device_types -%}
+                    <option value="/devices/add/{{ devicetype.id }}">{{ devicetype.label }}</option>
+                    {%- endfor %}
+                </select>
+                <p>&nbsp;</p>
+                <p>&nbsp;</p>
+                <a class="btn btn-md btn-warning" href="/devices/index"><i class="fa fa-chevron-left pull-left"></i>&nbsp; Cancel</a>
+                <button type="submit" id="submit-login" class="btn btn-lg btn-success pull-right">New Device<i class="fa fa-chevron-right pull-right"></i></button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block body_bottom_js %}{% include 'lib/webinterface/fragments/select_js.tpl' %}
+
+<script>
+    $(function(){
+      // bind change event to select
+      $('#device_type_id').on('change', function () {
+          var url = $(this).val(); // get selected value
+          if (url) { // require a URL
+              window.location = url; // redirect
+          }
+          return false;
+      });
+    });
+</script>
+{% endblock %}
+

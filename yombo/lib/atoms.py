@@ -266,7 +266,6 @@ class Atoms(YomboLibrary):
         self.triggers = {}
         # self._Automation = self._Libraries['automation']
         self.set('yombo.path', dirname(dirname(dirname(abspath(__file__)))) )
-        self.automation_startup_check = {}
         logger.debug("Calling GPG init_from_config...")
         yield self._GPG._init_from_atoms_()
 
@@ -426,8 +425,6 @@ class Atoms(YomboLibrary):
                                             gateway_id=gateway_id
                                             )
 
-        self.check_trigger(gateway_id, key, value)  # Check if any automation items need to fire!
-
     @inlineCallbacks
     def set_from_gateway_communications(self, key, values):
         """
@@ -512,7 +509,6 @@ class Atoms(YomboLibrary):
         #     except YomboHookStopProcessing:
         #         pass
         #
-        # self.check_trigger(key, value)
 
     def os_data(self):
         """
@@ -582,202 +578,3 @@ class Atoms(YomboLibrary):
         for name, value in atoms.items():
             self.set(name, value)
         return atoms
-
-    ##############################################################################################################
-    # The remaining functions implement automation hooks. These should not be called by anything other than the  #
-    # automation library!                                                                                        #
-    ##############################################################################################################
-
-    def check_trigger(self, gateway_id, name, value):
-        """
-        .. note::
-
-          Should only be called by the automation system.
-
-        Called by the atoms.set function when a new value is set. It asks the automation library if this key is
-        trigger, and if so, fire any rules.
-
-        True - Rules fired, fale - no rules fired.
-        """
-        if self._loaded:
-            results = self._Automation.triggers_check(['atoms', gateway_id, name], value)
-
-    def _automation_source_list_(self, **kwargs):
-        """
-        .. note::
-
-          Should only be called by the automation system.
-
-        hook_automation_source_list called by the automation library to get a list of possible sources.
-
-        :param kwargs: None
-        :return:
-        """
-        return [
-            { 'platform': 'atoms',
-              'description': 'Allows atoms to be used as a source (trigger).',
-              'validate_source_callback': self.atoms_validate_source_callback,  # function to call to validate a trigger
-              'add_trigger_callback': self.atoms_add_trigger_callback,  # function to call to add a trigger
-              'startup_trigger_callback': self.atoms_startup_trigger_callback,  # function to call to check all triggers
-              'get_value_callback': self.atoms_get_value_callback,  # get a value
-              'field_details': [
-                  {
-                  'label': 'name',
-                  'description': 'The name of the atom to monitor.',
-                  'required': True
-                  }
-              ]            }
-         ]
-
-    def atoms_validate_source_callback(self, rule, portion, **kwargs):
-        """
-        .. note::
-
-          Should only be called by the automation system.
-
-        A callback to check if a provided source is valid before being added as a possible source.
-
-        :param rule: The potential rule being added.
-        :param portion: Dictionary containg everything in the portion of rule being fired. Includes source, filter, etc.
-        :return:
-        """
-        if all( required in portion['source'] for required in ['platform', 'name']):
-            return True
-        raise YomboWarning("Source doesn't have required parameters: platform, name",
-                           101, 'atoms_validate_source_callback', 'atoms')
-
-    def atoms_add_trigger_callback(self, rule, **kwargs):
-        """
-        .. note::
-
-          Should only be called by the automation system.
-
-        Called to add a trigger.  We simply use the automation library for the heavy lifting.
-
-        :param rule: The potential rule being added.
-        :param kwargs: None
-        :return:
-        """
-        if 'gateway_id' in rule['trigger']['source']:
-            gateway_id = rule['trigger']['source']['gateway_id']
-        else:
-            gateway_id = self.gateway_id
-        # if rule['run_on_start'] is True:
-
-        keys = ['atoms', gateway_id, rule['trigger']['source']['name']]
-        self._Automation.triggers_add(rule['rule_id'], keys)
-        if 'run_on_start' in rule:
-            keys = [gateway_id, rule['trigger']['source']['name']]
-            yombo.utils.set_nested_dict(self.automation_startup_check, keys, True)
-
-        logger.error("atoms_add_trigger_callback.automation_startup_check: %s" % self.automation_startup_check)
-
-    def atoms_startup_trigger_callback(self):
-        """
-        Called when automation rules are active. Check for any automation rules that are marked with run_on_start
-
-        :return:
-        """
-        logger.debug("atoms_startup_trigger_callback: {startup_check}",
-            startup_check=self.automation_startup_check)
-        for gateway_id, keys in self.automation_startup_check.items():
-            logger.info("gateway_id: %s" % gateway_id)
-            for name, name_value in keys.items():
-                if name_value is True:
-                    try:
-                        value = self.__Atoms[gateway_id][name]['value']
-                        self.check_trigger(gateway_id, name, value)
-                    except Exception as e:
-                        pass
-
-    def atoms_get_value_callback(self, rule, portion, **kwargs):
-        """
-        .. note::
-
-          Should only be called by the automation system.
-
-        A callback to the value for platform "atom". We simply just do a get based on key_name.
-
-        :param rule: The potential rule being added.
-        :param portion: Dictionary containg everything in the portion of rule being fired. Includes source, filter, etc.
-        :return:
-        """
-        if 'gateway_id' in rule['source']:
-            gateway_id = rule['source']['gateway_id']
-        else:
-            gateway_id = self.gateway_id
-
-        return self.get(rule['source']['name'], gateway_id=gateway_id)
-
-    def _automation_action_list_(self, **kwargs):
-        """
-        .. note::
-
-          Should only be called by the automation system.
-
-        hook_automation_action_list called by the automation library to list possible actions this module can
-        perform.
-
-        This implementation allows automation rules set easily set Atom values.
-
-        :param kwargs: None
-        :return:
-        """
-        return [
-            { 'platform': 'atom',
-              'description': 'Allows atoms to be changed as an action.',
-              'validate_action_callback': self.atoms_validate_action_callback,  # function to call to validate an action is possible.
-              'do_action_callback': self.atoms_do_action_callback,  # function to be called to perform an action
-              'field_details': [
-                  {
-                  'label': 'name',
-                  'description': 'The name of the atom to change.',
-                  'required': True
-                  },
-                  {
-                  'label': 'value',
-                  'description': 'The value that should be set.',
-                  'required': True
-                  }
-              ]
-            }
-         ]
-
-    def atoms_validate_action_callback(self, rule, action, **kwargs):
-        """
-        .. note::
-
-          Should only be called by the automation system.
-
-        A callback to check if a provided action is valid before being added as a possible action.
-
-        :param rule: The potential rule being added.
-        :param action: The action portion of the rule.
-        :param kwargs: None
-        :return:
-        """
-        if 'value' not in action:
-            raise YomboWarning("In atoms_validate_action_callback: action is required to have 'value', so I know what to set.",
-                               101, 'atoms_validate_action_callback', 'atoms')
-
-    def atoms_do_action_callback(self, rule, action, **kwargs):
-        """
-        .. note::
-
-          Should only be called by the automation system.
-
-        A callback to perform an action.
-
-        :param rule: The complete rule being fired.
-        :param action: The action portion of the rule.
-        :param kwargs: None
-        :return:
-        """
-        results = action['name'].split(":::")
-        if len(results) == 1:
-            gateway_id = self.gateway_id
-            name = results[0]
-        else:
-            gateway_id = results[0]
-            name = results[1]
-        return self.set(name, action['value'], gateway_id=gateway_id)

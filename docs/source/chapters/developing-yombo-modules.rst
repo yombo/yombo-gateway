@@ -12,11 +12,6 @@ a complete example on
 An :ref:`empty <emptymodule>` module is included with the gateway to get you quickly started. Simply make a copy
 of the empty module to use a framework.
 
-Some additional reference modules for examples:
-
-* :ref:`AutomationExample <automationexample>` - Demonstrates adding rules to the automation system.
-* :ref:`AutomationHelpers <automationhelpers>` - Demonstrates extending the automation using various hooks.
-
 
 .. rubric:: Modules used as reference
 
@@ -27,6 +22,5 @@ Some additional reference modules for examples:
    ../examples/logreader
    ../examples/logwriter
    ../examples/mynightmode
-   ../examples/automationexample
 
 Last updated: |today|

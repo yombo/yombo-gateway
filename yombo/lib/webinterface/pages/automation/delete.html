@@ -4,22 +4,22 @@
 {% block content %}
             <div class="row">
                 <div class="col-lg-12">
-                    <h2 class="page-header">
-                        <a class="success" href="/scenes/{{scene.scene_id}}/details" aria-label="Delete"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
-                        Confirm Scene Delete Pause: {{ scene.label }}
-                    </h2>
+                    <h1 class="page-header">
+                        <a class="success" href="/automation/{{rule.rule_id}}/details" aria-label="Delete"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
+                        Confirm Automation Rule Delete: {{ rule.label }}
+                    </h1>
                     <p></p>
                 </div>
                 <!-- /.col-lg-12 -->
             </div>
             <!-- /.row -->
-            <form method="post" id="scenepausedelete">
+            <form method="post" id="devcedelete">
 
             <div class="row">
                 <div class="col-lg-12">
                     <div class="panel panel-default">
                         <div class="panel-heading">
-                            <label>Confirm delete scene pause: <em>{{ scene.label }}</em></label>
+                            <label>Confirm delete automation rule: <em>{{ rule.label }}</em></label>
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
@@ -30,8 +30,8 @@
                                 </div>
                             </div>
                             <br>
-                            <a class="btn btn-md btn-success" href="/scenes/{{scene.scene_id}}/details">Cancel (Do not delete)</a>
-                            <button type="submit" class="btn btn-danger">Delete Scene Pause Item</button>
+                            <a class="btn btn-md btn-success" href="/automation/{{rule.rule_id}}/details">Cancel (Do not delete)</a>
+                            <button type="submit" class="btn btn-danger">Delete Automation Rule</button>
                         </div>
                     </div>
                     <!-- /.panel-body -->
@@ -47,8 +47,8 @@
     <!-- Make the tables pretty -->
     <script>
     $.validator.addMethod("customrule", function(value, element, param) {
-  return this.optional(element) || value === param;
-}, "You must enter '{0}'.");
+            return this.optional(element) || value === param;
+        }, "You must enter '{0}'.");
 
     $('form').validate({
         rules: {

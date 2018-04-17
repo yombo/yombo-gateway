@@ -1487,7 +1487,6 @@ class Base_Device(object):
         #     # print("requested by before: %s" % save_status['requested_by'])
         #     # print("requested by after: %s" % save_status['requested_by'])
         #     self._Parent._LocalDB.add_bulk_queue('device_status', 'insert', save_status, 'device_id')
-        self._Parent.check_trigger(self.device_id, new_status)
 
         if self._Parent.mqtt != None:
             mqtt_message = {
@@ -1530,7 +1529,6 @@ class Base_Device(object):
         # save_status['machine_status_extra'] = data_pickle(save_status['machine_status_extra'])
         # if self.test_device is False and self._Parent.is_master is True:
         #     self._Parent._LocalDB.add_bulk_queue('device_status', 'insert', save_status, 'device_id')
-        self._Parent.check_trigger(self.device_id, new_status)
         self.send_status(**payload)
 
     def send_status(self, **kwargs):
@@ -1604,6 +1602,10 @@ class Base_Device(object):
         else:
             message['previous_status'] = self.status_history[1]
 
+
+        self._Automation.trigger_monitor('device',
+                                         device=self,
+                                         action='set_status')
         global_invoke_all('_device_status_',
                           called_by=self,
                           **message,

@@ -1,0 +1,281 @@
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+{% import "lib/webinterface/fragments/macros.tpl" as macros%}
+{% block head_css %}
+{% include 'lib/webinterface/fragments/select_css.tpl' %}
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-12">
+        <h1 class="page-header">
+            <a class="success" href="/scenes/{{scene.scene_id}}/details" aria-label="Delete">
+            <i class="fa fa-arrow-left" aria-hidden="true"></i></a> {{header_label}}
+        </h1>
+    </div>
+    <!-- /.col-lg-12 -->
+</div>
+<!-- /.row -->
+<form method="post" id="scenedevice">
+<input type="hidden" id="action_id" name="action_id" value="
+{%- if data['action_id'] is none %}none{% else %}{{data['action_id']}}{% endif -%}
+">
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <label>Control device</label><br>
+                Devices can be controlled through scenes. Select the device, command, and any inputs
+                that should be sent to the device.
+            </div>
+            <!-- /.panel-heading -->
+            <div class="panel-body">
+                <div class="form-group">
+                    <label style="margin-top: 0px; margin-bottom: 0px">Device</label>
+                    <a href="#" data-toggle="modal" data-target="#modalname"><i class="fa fa-question fa-sm"></i></a>
+                    {{ macros.modal("modalname", 'Device', '
+                    <p>Select a device to control.</p>
+                    ') }}
+                    <br>
+                    <div class="input-group">
+                        <select id="machine_label" name="machine_label" class="selectpicker show-tick form-control">
+                            {%- if data['machine_label'] == "" %}
+                            {%- for machine_label, device in _devices.sorted().items() if device.is_allowed_in_scenes -%}
+                            <option value="{{machine_label}}">{{device.full_label}}</option>
+                            {% endfor %}
+                            {% else %}
+                            <option value="{{data['machine_label']}}" selected="selected">{{_devices[data['machine_label']].full_label}}</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label style="margin-top: 0px; margin-bottom: 0px">Command: </label>
+                    <a href="#" data-toggle="modal" data-target="#modalcommand"><i class="fa fa-question fa-sm"></i></a>
+                    {{ macros.modal("modalcommand", 'Command', '
+                    <p>
+                        Select a command you wish you send to device.
+                    </p>') }}
+                    <br>
+                    <div class="input-group">
+                        <select id="command_id" name="command_id" class="selectpicker show-tick form-control">
+                            <option value="-1" disabled>Select device first</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label style="margin-top: 0px; margin-bottom: 0px">Weight: </label>
+                    <a href="#" data-toggle="modal" data-target="#modalweight"><i class="fa fa-question fa-sm"></i></a>
+                    {{ macros.modal("modalweight", 'Weight', "
+                    <p>
+                        Weight is used to help determine the order in which each item is performed.
+                    </p>
+                    <p>
+                        Enter a weight (as a number). The lower the number, the higher the priority. Negative numbers are valid.
+                    </p>
+                    <p>
+                        When the entry is saved, the system will calculate new weights for all scene items. This allows you to quickly
+                        move an item between two existing items simply by setting a weight value between the new items.
+                    </p>") }}
+                    <br>
+                    <div class="input-group">
+                        <input tabindex="4" type="text" class="form-control" name="weight" id="weight" size="30" placeholder="10" value="{{ data['weight'] }}">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label style="margin-top: 0px; margin-bottom: 0px">Command Inputs: </label>
+                    <a href="#" data-toggle="modal" data-target="#modalcommandinputs"><i class="fa fa-question fa-sm"></i></a>
+                    {{ macros.modal("modalcommandinputs", 'Command Inputs', "
+                    <p>
+                        Some command accept (or require) various input to perform. Such as, settings a brightness
+                        for a bulb - the brightness value is required.
+                    </p>
+                    ") }}
+                    <br>
+                    <div class="input-group">
+                        <table width="100%" class="table table-striped table-bordered table-hover" id="inputvalues">
+                            <thead>
+                                <tr>
+                                    <th>Input Name</th><th>Input Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <a class="btn btn-md btn-danger" href="/scenes/{{scene.node_id}}/details">Cancel</a>
+                <input type="hidden" name="json_output" id="json_output" value="">
+                <button type="submit" class="btn btn-success">Save Device</button>
+            </div>
+        </div>
+        <!-- /.panel-body -->
+    </div>
+    <!-- /.col-lg-12 -->
+</div>
+<!-- /.row -->
+</form>
+<br>
+{% endblock %}
+
+{% block body_bottom_js %}
+{% include 'lib/webinterface/fragments/select_js.tpl' %}
+{% include 'lib/webinterface/fragments/jquery_validate_js.tpl' %}
+{% endblock %}
+
+{% block body_bottom %}
+<script type="text/javascript" src="/static/js/jquery.serializejson.min.js"></script>
+<script>
+    var deviceCommandList = {
+    {%- for device_id, device in _devices.items() if data['machine_label'] == "" or data['machine_label'] == machine_label %}
+        "{{ device.machine_label }}": {
+        "deviceLabel": "{{ device.full_label}}",
+        "commands":
+            [
+                {%- for command_id, a_command in device.available_commands().items() %}
+                {"commandId": "{{ a_command['command'].command_id }}",
+                 "commandLabel": "{{ a_command['command'].label}}"},
+                {%- endfor %}
+            ],
+       },
+    {% endfor %}
+    };
+
+    function getSceneInputFields() {
+        var selectedDeviceID = $('#machine_label option:selected').attr('value');
+        var selectedCommandID = $('#command_id option:selected').attr('value');
+        var itemID = "{{data['action_id'] or "none"}}";
+        console.log("selectedCommandID: " + selectedCommandID)
+        var content = '<tr><td colspan="2">Downloading inputs...</td></tr>';
+        $('#inputvalues tbody').html(content);  // **better. give the table a ID, and replace**
+
+        $.ajax({
+            url: '/api/v1/scene/device_inputs',
+            type: 'GET',
+            data: {
+                sceneid:'{{scene.scene_id}}',
+                deviceid:selectedDeviceID,
+                commandid:selectedCommandID,
+                itemid:itemID
+            },
+        })
+        .done(function(data) {
+            console.log("formLoadBottom: done: " + data);
+//            $('#command-input-area').html(data);
+            // content += '</tbody>';-- **superfluous**
+            //$('table tbody').replaceWith(content);  **incorrect..**
+             $('#inputvalues tbody').html(data);  // **better. give the table a ID, and replace**
+        })
+        .fail(function() {
+            console.log("error");
+        })
+        .always(function() {
+            console.log("complete on load call");
+        });
+    }
+
+    var updateSelectCommandBox = function(deviceid, commandid = "") {
+        var listItems= "";
+        for (var i = 0; i < deviceCommandList[deviceid]['commands'].length; i++){
+            var option_commandid = deviceCommandList[deviceid]['commands'][i].commandId;
+            listItems+= "<option value='" + deviceCommandList[deviceid]['commands'][i].commandId + "'";
+            if (commandid == option_commandid) {
+                listItems += " selected";
+            }
+            listItems += ">" + deviceCommandList[deviceid]['commands'][i].commandLabel + "</option>\n";
+        }
+        $("select#command_id").html(listItems);
+        $('select#command_id').selectpicker('refresh');
+        getSceneInputFields()
+    };
+
+    $("select#machine_label").on('change',function(){
+       var selectedMake = $('#machine_label option:selected').attr('value');
+       updateSelectCommandBox(selectedMake);
+    });
+
+    $("select#command_id").on('change',function(){
+        getSceneInputFields()
+    });
+
+    $("#scenedevice").submit(function(event) {
+        var rawData = $('#scenedevice').serializeJSON();
+        var formData = JSON.stringify(rawData);
+        $('#json_output').val(formData)
+    });
+
+    $(document).ready(function() {
+        var selectedDeviceID = $('#device_id option:selected').attr('value');
+        updateSelectCommandBox(selectedDeviceID, "{{data['command_id']}}");
+        getSceneInputFields()
+
+       var i=1;
+
+       (function($) {
+           $.extend({
+               toDictionary: function(query) {
+                   var parms = {};
+                   var items = query.split("&"); // split
+                   for (var i = 0; i < items.length; i++) {
+                       var values = items[i].split("=");
+                       var key = decodeURIComponent(values.shift());
+                       var value = values.join("=")
+                       parms[key] = decodeURIComponent(value);
+                   }
+                   return (parms);
+               }
+           })
+       })(jQuery);
+
+    });
+
+    $('.ls-modal').on('click', function(e){
+      e.preventDefault();
+      $('#myModal').modal('show').find('.modal-body').load($(this).attr('href'));
+    });
+
+    $('form').validate({
+        rules: {
+            name: {
+                minlength: 2,
+                maxlength: 250,
+                required: true,
+            },
+            value: {
+                minlength: 1,
+                maxlength: 250,
+                required: true,
+            },
+            weight: {
+                min: -9000,
+                max: 9000,
+                number: true,
+                required: true,
+            },        },
+        messages: {
+        },
+        highlight: function(element) {
+            var id_attr = "#" + $( element ).attr("id") + "1";
+            $(element).closest('.form-group').removeClass('has-success').addClass('has-error');
+            $(id_attr).removeClass('glyphicon-ok').addClass('glyphicon-remove');
+        },
+        unhighlight: function(element) {
+            var id_attr = "#" + $( element ).attr("id") + "1";
+            $(element).closest('.form-group').removeClass('has-error').addClass('has-success');
+            $(id_attr).removeClass('glyphicon-remove').addClass('glyphicon-ok');
+        },
+        errorElement: 'span',
+            errorClass: 'input-validation-error',
+            errorPlacement: function(error, element) {
+                if(element.length) {
+                    error.insertAfter(element);
+                } else {
+                error.insertAfter(element);
+                }
+            }
+     });
+</script>
+{% endblock %}

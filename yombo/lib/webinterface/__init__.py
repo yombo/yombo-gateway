@@ -76,6 +76,11 @@ from yombo.lib.webinterface.routes.devtools.debug import route_devtools_debug
 from yombo.lib.webinterface.routes.apiauth import route_apiauth
 from yombo.lib.webinterface.routes.atoms import route_atoms
 from yombo.lib.webinterface.routes.automation import route_automation
+from yombo.lib.webinterface.routes.automation.device import route_automation_device
+from yombo.lib.webinterface.routes.automation.pause import route_automation_pause
+from yombo.lib.webinterface.routes.automation.scene import route_automation_scene
+from yombo.lib.webinterface.routes.automation.state import route_automation_state
+from yombo.lib.webinterface.routes.automation.template import route_automation_template
 from yombo.lib.webinterface.routes.configs import route_configs
 from yombo.lib.webinterface.routes.devices import route_devices
 from yombo.lib.webinterface.routes.discovery import route_discovery
@@ -244,6 +249,11 @@ class WebInterface(YomboLibrary):
         route_apiauth(self.webapp)
         route_atoms(self.webapp)
         route_automation(self.webapp)
+        route_automation_device(self.webapp)
+        route_automation_pause(self.webapp)
+        route_automation_scene(self.webapp)
+        route_automation_state(self.webapp)
+        route_automation_template(self.webapp)
         route_configs(self.webapp)
         route_devices(self.webapp)
         route_discovery(self.webapp)

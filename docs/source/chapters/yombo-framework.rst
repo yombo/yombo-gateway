@@ -114,13 +114,6 @@ various devices over various protocols.
 
 For a list of modules available to be installed by end users: `Available Modules <https://yg2.in/f_gdoc_modules>`_
 
-A list of system modules:
-
-.. toctree::
-   :maxdepth: 1
-
-   ../modules/automationhelpers.rst
-
 .. _framework_utils:
 
 Utils

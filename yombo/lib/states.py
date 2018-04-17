@@ -210,10 +210,9 @@ class States(YomboLibrary, object):
         self.library_phase = 1
         self.gateway_id = self._Configs.get('core', 'gwid', 'local', False)
         self.__States = {self.gateway_id: {}}
-        self.automation_startup_check = {}
         self.db_save_states_data = deque()
         self.db_save_states_loop = LoopingCall(self.db_save_states)
-        self.db_save_states_loop.start(random_int(60, .10), False)  # clean the database every 6 hours.
+        self.db_save_states_loop.start(random_int(30, .10), False)  # clean the database every 6 hours.
         self.init_deferred = Deferred()
         self.load_states()
         return self.init_deferred
@@ -478,6 +477,11 @@ class States(YomboLibrary, object):
 
         self.__States[gateway_id][key]['value_human'] = self.convert_to_human(value, value_type)
 
+        self._Automation.trigger_monitor('state',
+                                         key=key,
+                                         value=value,
+                                         action='set',
+                                         gateway_id=gateway_id)
         # Call any hooks
         yield global_invoke_all('_states_set_',
                                 called_by=self,
@@ -487,10 +491,8 @@ class States(YomboLibrary, object):
                                 gateway_id=gateway_id,
                                 )
 
-        if gateway_id == self.gateway_id:
-            self.db_save_states_data.append((key, self.__States[gateway_id][key]))
-
-        self.check_trigger(gateway_id, key, value)  # Check if any automation items need to fire!
+        if gateway_id == self.gateway_id or gateway_id == 'cluster':
+            self.db_save_states_data.append([key, self.__States[gateway_id][key]])
 
     @inlineCallbacks
     def db_save_states(self):
@@ -504,6 +506,7 @@ class States(YomboLibrary, object):
         while True:
             try:
                 key, data = self.db_save_states_data.popleft()
+                # print("Saving state to database: %s, %s" % (key, data))
                 if data['live'] is True:
                     live = 1
                 else:
@@ -545,6 +548,12 @@ class States(YomboLibrary, object):
             'created_at': values['created_at'],
             'updated_at': values['updated_at'],
         }
+
+        self._Automation.trigger_monitor('state',
+                                         key=key,
+                                         value=values['value'],
+                                         action='set',
+                                         gateway_id=gateway_id)
 
         # Call any hooks
         yield global_invoke_all('_states_set_',
@@ -592,6 +601,7 @@ class States(YomboLibrary, object):
         else:
             return
 
+    @inlineCallbacks
     def history_length(self, key):
         """
         Returns how many records a given state (key) has.
@@ -768,16 +778,10 @@ class States(YomboLibrary, object):
         """
         return [
             {
-                "platform": "state",
+                "platform": "State",
                 "webroutes": "%s/webinterface/routes/scenes/states.py" % self._Atoms.get('yombo.path'),
-                "urls": {
-                    "edit": {
-                        "State": {
-                            "url": "/scenes/{scene_id}/add_state",
-                            "note": "Change a state value",
-                        },
-                    },
-                },
+                "add_url": "/scenes/{scene_id}/add_state",
+                "note": "Change a state value",
                 "render_table_column_callback": self.scene_render_table_column,  # Show summary line in a table.
                 "scene_item_update_callback": self.scene_item_update,  # Return a dictionary to store as the item.
                 "handle_trigger_callback": self.scene_item_triggered,  # Do item activity
@@ -801,7 +805,6 @@ class States(YomboLibrary, object):
         }
 
     def scene_item_update(self, scene, data):
-        print("zzz")
         return {
             'name': data['name'],
             'value': data['value'],
@@ -812,180 +815,3 @@ class States(YomboLibrary, object):
     def scene_item_triggered(self, scene, item):
         self.set(item['name'], item['value'], item['value_type'])
         return True
-
-    ##############################################################################################################
-    # The remaining functions implement automation hooks. These should not be called by anything other than the  #
-    # automation library!                                                                                        #
-    #############################################################################################################
-
-    def check_trigger(self, gateway_id, name, value):
-        """
-        Called by the states.set function when a new value is set. It asks the automation library if this key is
-        trigger, and if so, fire any rules.
-
-        True - Rules fired, fale - no rules fired.
-        """
-        logger.debug("check_trigger. {name} = {value}", name=name, value=value)
-        if self.library_phase >= 2:
-            logger.debug("check_trigger running... {name} = {value}", name=name, value=value)
-            results = self._Automation.triggers_check(['states', gateway_id, name], value)
-
-    def _automation_source_list_(self, **kwargs):
-        """
-        hook_automation_source_list called by the automation library to get a list of possible sources.
-
-        :param kwargs: None
-        :return:
-        """
-        return [
-            { 'platform': 'states',
-              'description': 'Allows states to be used as a source (trigger).',
-              'validate_source_callback': self.states_validate_source_callback,  # function to call to validate a trigger
-              'add_trigger_callback': self.states_add_trigger_callback,  # function to call to add a trigger
-              'startup_trigger_callback': self.states_startup_trigger_callback,  # function to call to check all triggers
-              'get_value_callback': self.states_get_value_callback,  # get a value
-              'field_details': [
-                  {
-                  'label': 'name',
-                  'description': 'The name of the state to monitor.',
-                  'required': True
-                  }
-              ]
-            }
-         ]
-
-    def states_validate_source_callback(self, rule, portion, **kwargs):
-        """
-        A callback to check if a provided source is valid before being added as a possible source.
-
-        :param rule: The potential rule being added.
-        :param portion: Dictionary containg everything in the portion of rule being fired. Includes source, filter, etc.
-        :return:
-        """
-        if all( required in portion['source'] for required in ['platform', 'name']):
-            return True
-        raise YomboWarning("Source doesn't have required parameters: platform, name",
-                101, 'states_validate_source_callback', 'states')
-
-    def states_add_trigger_callback(self, rule, **kwargs):
-        """
-        Called to add a trigger.  We simply use the automation library for the heavy lifting.
-
-        :param rule: The potential rule being added.
-        :param kwargs: None
-        :return:
-        """
-        if 'gateway_id' in rule['trigger']['source']:
-            gateway_id = rule['trigger']['source']['gateway_id']
-        else:
-            gateway_id = self.gateway_id
-        # if rule['run_on_start'] is True:
-
-        keys = ['states', gateway_id, rule['trigger']['source']['name']]
-        self._Automation.triggers_add(rule['rule_id'], keys)
-        if 'run_on_start' in rule:
-            keys = [gateway_id, rule['trigger']['source']['name']]
-            set_nested_dict(self.automation_startup_check, keys, True)
-
-        logger.debug("states_add_trigger_callback.automation_startup_check: {automation_startup_check}",
-                     automation_startup_check=self.automation_startup_check)
-
-    def states_startup_trigger_callback(self):
-        """
-        Called when automation rules are active. Check for any automation rules that are marked with run_on_start
-
-        :return:
-        """
-        # logger.debug("states_startup_trigger_callback: {automation_startup_check}",
-        #             automation_startup_check=self.automation_startup_check)
-        for gateway_id, keys in self.automation_startup_check.items():
-            # logger.debug("states_startup_trigger_callback keys: keys {keys}",
-            #             keys=keys)
-            for name, name_value in keys.items():
-                # logger.debug("states_startup_trigger_callback keys: name {name} = {value}",
-                #             name=name, value=name_value)
-                if name_value is True:
-                    try:
-                        value = self.__States[gateway_id][name]['value']
-                        # logger.debug("states_startup_trigger_callback state {name} = {value}", name=name, value=value)
-                        self.check_trigger(gateway_id, name, value)
-                    except Exception as e:
-                        pass
-
-    def states_get_value_callback(self, rule, portion, **kwargs):
-        """
-        A callback to the value for platform "states". We simply just do a get based on key_name.
-
-        :param rule: The potential rule being added.
-        :param portion: Dictionary containg everything in the portion of rule being fired. Includes source, filter, etc.
-        :return:
-        """
-        if 'gateway_id' in rule['source']:
-            gateway_id = rule['source']['gateway_id']
-        else:
-            gateway_id = self.gateway_id
-
-        return self.get(rule['source']['name'], gateway_id=gateway_id)
-
-    def _automation_action_list_(self, **kwargs):
-        """
-        hook_automation_action_list called by the automation library to list possible actions this module can
-        perform.
-
-        This implementation allows automation rules set easily set state values.
-
-        :param kwargs: None
-        :return:
-        """
-        return [
-            { 'platform': 'states',
-              'description': 'Allows states to be changed as an action.',
-              'validate_action_callback': self.states_validate_action_callback,  # function to call to validate an action is possible.
-              'do_action_callback': self.states_do_action_callback,  # function to be called to perform an action
-              'field_details': [
-                  {
-                  'label': 'name',
-                  'description': 'The name of the state to change.',
-                  'required': True
-                  },
-                  {
-                  'label': 'value',
-                  'description': 'The value that should be set.',
-                  'required': True
-                  }
-              ]
-            }
-         ]
-
-    def states_validate_action_callback(self, rule, action, **kwargs):
-        """
-        A callback to check if a provided action is valid before being added as a possible action.
-
-        :param rule: The potential rule being added.
-        :param action: The action portion of the rule.
-        :param kwargs: None
-        :return:
-        """
-        if all( required in action for required in ['name', 'value']):
-            return True
-        raise YomboWarning("In states_validate_action_callback: action is required to have 'name' and 'value', so I know what to set.",
-                           101, 'states_validate_action_callback', 'states')
-
-    def states_do_action_callback(self, rule, action, **kwargs):
-        """
-        A callback to perform an action.
-
-        :param rule: The complete rule being fired.
-        :param action: The action portion of the rule.
-        :param kwargs: None
-        :return:
-        """
-        logger.debug("Automation rule fired. Setting:  {name} = {value}", name=action['name'], value=action['value'])
-        results = action['name'].split(":::")
-        if len(results) == 1:
-            gateway_id = self.gateway_id
-            name = results[0]
-        else:
-            gateway_id = results[0]
-            name = results[1]
-        return self.set(name, action['value'], gateway_id=gateway_id)

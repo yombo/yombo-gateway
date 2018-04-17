@@ -31,6 +31,17 @@ NAV_SIDE_MENU = [
     },
 
     {
+        'label1': 'Automation',
+        'label2': 'Rules',
+        'priority1': 600,
+        'priority2': 500,
+        'icon': 'fa fa-random fa-fw',
+        'url': '/automation/index',
+        'tooltip': 'Show Rules',
+        'opmode': 'run',
+    },
+
+    {
         'label1': 'Scenes',
         'label2': 'Scenes',
         'priority1': 700,
@@ -94,36 +105,6 @@ NAV_SIDE_MENU = [
         'opmode': 'run',
     },
 
-    {
-        'label1': 'Automation',
-        'label2': 'Rules',
-        'priority1': 1500,
-        'priority2': 500,
-        'icon': 'fa fa-random fa-fw',
-        'url': '/automation/index',
-        'tooltip': 'Show Rules',
-        'opmode': 'run',
-    },
-    {
-        'label1': 'Automation',
-        'label2': 'Platforms',
-        'priority1': 1500,
-        'priority2': 1500,
-        'icon': 'fa fa-random fa-fw',
-        'url': '/automation/platforms',
-        'tooltip': 'Automation Platforms',
-        'opmode': 'run',
-    },
-    {
-        'label1': 'Automation',
-        'label2': 'Add Rule',
-        'priority1': 1500,
-        'priority2': 1000,
-        'icon': 'fa fa-random fa-fw',
-        'url': '/automation/add_rule',
-        'tooltip': 'Automation Platforms',
-        'opmode': 'run',
-    },
     {
         'label1': 'Statistics',
         'label2': 'General',

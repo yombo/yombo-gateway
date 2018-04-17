@@ -1,8 +1,0 @@
-# Automation Example Module translations
-# Mitch Schwenk <mitch@yombo.net>, 2016.
-
-#: defined in atoms library
-msgctxt "automationexample"
-msgid "demo.automationexample"
-msgstr "This is a demonstration state used in the automation example module. Safe to delete."
-

@@ -5,26 +5,116 @@ except ImportError:
     import json
 from time import time
 
+# Import twisted libraries
+from twisted.internet.defer import inlineCallbacks
+
+from yombo.core.exceptions import YomboWarning
 from yombo.lib.webinterface.auth import require_auth
-from yombo.lib.webinterface.routes.api_v1.__init__ import return_good, return_not_found, return_error, return_unauthorized
-from yombo.utils import epoch_to_string, bytes_to_unicode
+from yombo.lib.webinterface.routes.api_v1.__init__ import return_not_found, return_error
+from yombo.utils import is_none
 
 def route_api_v1_automation(webapp):
     with webapp.subroute("/api/v1") as webapp:
 
-        @webapp.route('/automation/list/items', methods=['GET'])
+        @webapp.route('/automation/device_inputs', methods=['GET'])
         @require_auth(api=True)
-        def apiv1_automation_list_items_get(webinterface, request, session):
-            try:
-                platform = request.args.get('platform')[0]
-            except:
-                return return_error(request, 'platform must be specified.')
-            # try:
-            #     type = request.args.get('type')[0]
-            # except:
-            #     return return_error('type must be specified.')
-            webinterface._Automation.get_available_items(platform=platform)
+        def apiv1_automations_device_inputs_index(webinterface, request, session):
+            def local_error(message):
+                return "<tr><td colspan=4>%s</td><tr>\n" % message
 
-            a = return_good(request, 'The list')
-            request.setHeader('Content-Type', 'application/json')
-            return json.dumps(a)
+            try:
+                rule_id = request.args.get('ruleid')[0]
+            except Exception:
+                return local_error("The 'ruleid' is required.")
+            try:
+                rule = webinterface._Automation[rule_id]
+            except Exception:
+                return local_error("The 'ruleid' cannot be found.")
+
+            action_id = is_none(request.args.get('actionid', [None])[0])
+            if action_id is None:
+                item_details = None
+            else:
+                try:
+                    item_details = webinterface._Automation.get_action_items(rule_id, action_id)
+                except Exception as e:
+                    return local_error("The 'itemid' cannot be found.")
+
+            try:
+                device_machine_label = request.args.get('device_machine_label')[0]
+            except Exception:
+                return local_error("The 'device_machine_label' is required.")
+            try:
+                device = webinterface._Devices[device_machine_label]
+            except Exception as e:
+                return local_error("The 'device_machine_label' cannot be found.")
+
+            try:
+                command_machine_label = request.args.get('command_machine_label')[0]
+            except Exception:
+                return local_error("The 'command_machine_label' is required.")
+            try:
+                command = webinterface._Commands[command_machine_label]
+            except Exception:
+                return local_error("The 'command_machine_label' cannot be found.")
+
+            available_commands = device.available_commands()
+
+            if command.command_id not in available_commands:
+                return local_error("Command ID is not valid for this device.")
+            inputs = available_commands[command.command_id]['inputs']
+
+            page = webinterface.get_template(request, webinterface._dir + 'pages/automation/form_action_device_inputs.html')
+            return page.render(
+                alerts=webinterface.get_alerts(),
+                inputs=inputs,
+                item_details=item_details,
+                )
+
+        # @webapp.route('/automation/inputs', methods=['GET'])
+        # @require_auth(api=True)
+        # def apiv1_automation_inputs_index(webinterface, request, session):
+        #     """
+        #     Gets input data for a given ruleid, device
+        #
+        #     :param webinterface:
+        #     :param request:
+        #     :param session:
+        #     :return:
+        #     """
+        #     try:
+        #         device_id = request.args.get('deviceid')[0]
+        #     except Exception:
+        #         return return_error(request, "'deviceid' required.")
+        #     try:
+        #         device = webinterface._Devices[device_id]
+        #     except Exception as e:
+        #         return return_error(request, "'deviceid' cannot be found.")
+        #     try:
+        #         command_id = request.args.get('commandid')[0]
+        #     except Exception:
+        #         return return_error(request, "'commandid' required.")
+        #     try:
+        #         command = webinterface._Commands[command_id]
+        #     except Exception:
+        #         return return_error(request, "'commandid' cannot be found.")
+        #
+        #     try:
+        #         rule_id = request.args.get('ruleid')[0]
+        #     except Exception:
+        #         return return_error(request, "'ruleid' required.")
+        #     try:
+        #         rule = webinterface._Automation[rule_id]
+        #     except Exception:
+        #         return return_error(request, "'ruleid' cannot be found.")
+        #
+        #     available_commands = device.available_commands()
+        #     command_inputs = available_commands[command_id]['inputs']
+        #     items = webinterface._Automation.get_action_items(rule_id)
+        #     data = command_inputs
+        #     # data = {
+        #     #     'total': results['content']['pages']['total_items'],
+        #     #     'rows': results['data'],
+        #     # }
+        #     request.setHeader('Content-Type', 'application/json')
+        #     return json.dumps(data)
