@@ -68,7 +68,7 @@ def route_scenes_state(webapp):
                 'value': webinterface.request_get_default(request, 'value', ""),
                 'value_type': webinterface.request_get_default(request, 'value_type', ""),
                 'weight': int(webinterface.request_get_default(
-                    request, 'weight', (len(webinterface._Scenes.scenes) +1) * 10)),
+                    request, 'weight', (len(webinterface._Scenes.get_item(scene_id)) + 1) * 10)),
             }
 
             if data['name'] == "":
@@ -128,13 +128,17 @@ def route_scenes_state(webapp):
             try:
                 scene = webinterface._Scenes[scene_id]
             except KeyError as e:
-                webinterface.add_alert("Requested scene could not be located.", 'warning')
+                webinterface.add_alert("Requested scene doesn't exist: %s" % scene_id, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
+
             try:
                 item = webinterface._Scenes.get_item(scene_id, item_id)
             except KeyError as e:
                 webinterface.add_alert("Requested item for scene doesn't exist.", 'warning')
-                return webinterface.redirect(request, '/scenes/index')
+                return webinterface.redirect(request, "/scenes/%s/details" % scene_id)
+            if item['item_type'] != 'state':
+                webinterface.add_alert("Requested item type is invalid.", 'warning')
+                return webinterface.redirect(request, "/automation/%s/details" % scene_id)
 
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene.scene_id, scene.label)
@@ -148,15 +152,25 @@ def route_scenes_state(webapp):
             try:
                 scene = webinterface._Scenes[scene_id]
             except KeyError as e:
-                webinterface.add_alert("Requested scene could not be located.", 'warning')
+                webinterface.add_alert("Requested scene doesn't exist: %s" % scene_id, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
+
+            try:
+                item = webinterface._Scenes.get_item(scene_id, item_id)
+            except KeyError as e:
+                webinterface.add_alert("Requested item for scene doesn't exist.", 'warning')
+                return webinterface.redirect(request, "/scenes/%s/details" % scene_id)
+            if item['item_type'] != 'state':
+                webinterface.add_alert("Requested item type is invalid.", 'warning')
+                return webinterface.redirect(request, "/automation/%s/details" % scene_id)
+
             data = {
                 'item_type': 'state',
                 'name': webinterface.request_get_default(request, 'name', ""),
                 'value': webinterface.request_get_default(request, 'value', ""),
                 'value_type': webinterface.request_get_default(request, 'value_type', ""),
                 'weight': int(webinterface.request_get_default(
-                    request, 'weight', (len(webinterface._Scenes.scenes) + 1) * 10)),
+                    request, 'weight', (len(webinterface._Scenes.get_item(scene_id)) + 1) * 10)),
             }
 
             if data['name'] == "":
@@ -240,7 +254,10 @@ def route_scenes_state(webapp):
                 item = webinterface._Scenes.get_item(scene_id, item_id)
             except KeyError as e:
                 webinterface.add_alert("Requested item for scene doesn't exist.", 'warning')
-                return webinterface.redirect(request, '/scenes/index')
+                return webinterface.redirect(request, "/scenes/%s/details" % scene_id)
+            if item['item_type'] != 'state':
+                webinterface.add_alert("Requested item type is invalid.", 'warning')
+                return webinterface.redirect(request, "/automation/%s/details" % scene_id)
 
             page = webinterface.get_template(
                 request,
@@ -268,7 +285,10 @@ def route_scenes_state(webapp):
                 item = webinterface._Scenes.get_item(scene_id, item_id)
             except KeyError as e:
                 webinterface.add_alert("Requested item for scene doesn't exist.", 'warning')
-                return webinterface.redirect(request, '/scenes/index')
+                return webinterface.redirect(request, "/scenes/%s/details" % scene_id)
+            if item['item_type'] != 'state':
+                webinterface.add_alert("Requested item type is invalid.", 'warning')
+                return webinterface.redirect(request, "/automation/%s/details" % scene_id)
 
             try:
                 confirm = request.args.get('confirm')[0]

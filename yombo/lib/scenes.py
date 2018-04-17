@@ -10,7 +10,9 @@ on another gateway that is apart of the cluster.
 """
 # Import python libraries
 from collections import OrderedDict
-import copy
+from copy import deepcopy
+import msgpack
+import traceback
 import types
 
 # Import twisted libraries
@@ -21,12 +23,13 @@ from twisted.internet.defer import inlineCallbacks
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
-from yombo.utils import random_string, sleep, is_true_false, global_invoke_all, dict_filter, dict_merge
+from yombo.utils import (random_string, sleep, is_true_false, global_invoke_all, dict_filter, dict_merge,
+                         bytes_to_unicode)
 
 logger = get_logger("library.scenes")
 
 REQUIRED_ACTION_KEYS = ['platform', 'webroutes', 'render_table_column_callback', 'scene_item_update_callback',
-                        'urls', 'handle_trigger_callback']
+                        'add_url', 'note', 'handle_trigger_callback']
 REQUIRED_ACTION_RENDER_TABLE_COLUMNS = ['type', 'attributes', 'edit_url', 'delete_url']
 
 class Scenes(YomboLibrary, object):
@@ -140,25 +143,23 @@ class Scenes(YomboLibrary, object):
         self.scenes = {}  # store all scenes
         self.scenes_running = {}  # tracks if scene is running, stopping, or stopped
         self.scene_templates = {}  # hold any templates for scenes here for caching.
-        self.scene_types = {}  # any addition action types, fill by _scene_action_list_ hook.
+        self.scene_types_extra = {}  # any addition action types, fill by _scene_action_list_ hook.
         self.scene_types_urls = {
-            "edit": {
-                "Device": {
-                    "url": "/scenes/{scene_id}/add_device",
-                    "note": "Control a device",
-                },
-                "Pause": {
-                    "url": "/scenes/{scene_id}/add_pause",
-                    "note": "Pause a scene",
-                },
-                "Scene": {
-                    "url": "/scenes/{scene_id}/add_scene",
-                    "note": "Control a scene",
-                },
-                "Template": {
-                    "url": "/scenes/{scene_id}/add_template",
-                    "note": " Advanced logic control",
-                },
+            "Device": {
+                "add_url": "/scenes/{scene_id}/add_device",
+                "note": "Control a device",
+            },
+            "Pause": {
+                "add_url": "/scenes/{scene_id}/add_pause",
+                "note": "Pause a scene",
+            },
+            "Scene": {
+                "add_url": "/scenes/{scene_id}/add_scene",
+                "note": "Control a scene",
+            },
+            "Template": {
+                "add_url": "/scenes/{scene_id}/add_template",
+                "note": " Advanced logic control",
             },
         }
         self.gateway_id = self._Configs.get2("core", "gwid", "local", False)
@@ -210,14 +211,8 @@ class Scenes(YomboLibrary, object):
                    {
                        "platform": "state",
                        "webroutes": "%s/webinterface/routes/scenes/states.py" % self._Atoms.get('yombo.path'),
-                       "urls": {
-                           "edit": {
-                               "State": {
-                                   "url": "/scenes/{scene_id}/add_state",
-                                   "note": "Change a state value",
-                               },
-                           },
-                       },
+                       "add_url": "/scenes/{scene_id}/add_state",
+                       "note": "Change a state value",
                        "render_table_column_callback": self.scene_render_table_column,  # Show summary line in a table.
                        "scene_item_update_callback": self.scene_item_update,  # Return a dictionary to store as the item.
                        "handle_trigger_callback": self.scene_item_triggered,  # Do item activity
@@ -226,9 +221,9 @@ class Scenes(YomboLibrary, object):
 
         """
         # Collect a list of automation source platforms.
-        scene_types = yield global_invoke_all('_scene_types_list_', called_by=self)
-        logger.info("scene_types: {scene_types}", scene_types=scene_types)
-        for component_name, data in scene_types.items():
+        scene_types_extra = yield global_invoke_all('_scene_types_list_', called_by=self)
+        logger.debug("scene_types_extra: {scene_types_extra}", scene_types_extra=scene_types_extra)
+        for component_name, data in scene_types_extra.items():
             for scene_action in data:
                 if not all(action_key in scene_action for action_key in REQUIRED_ACTION_KEYS):
                     logger.info("Scene platform doesn't have required fields, skipping: {required}",
@@ -236,19 +231,20 @@ class Scenes(YomboLibrary, object):
                     continue
                 action = dict_filter(scene_action, REQUIRED_ACTION_KEYS)
                 action['platform_source'] = component_name
-                self.scene_types_urls = dict_merge(self.scene_types_urls, action['urls'])
-                self.scene_types[action['platform']] = action
+                self.scene_types_urls[action['platform']] = {
+                    "add_url": action['add_url'],
+                    "note": action['note'],
+                }
+                self.scene_types_extra[action['platform'].lower()] = action
 
-    def scene_types_urls_sorted(self, url_type=None):
+    def scene_types_urls_sorted(self):
         """
         Return scene_type_urls, but sorted by display value.
 
         :param url_type:
         :return:
         """
-        if url_type is None:
-            url_type = 'edit'
-        return OrderedDict(sorted(self.scene_types_urls[url_type].items(), key=lambda x: x))
+        return OrderedDict(sorted(self.scene_types_urls.items(), key=lambda x: x))
 
     def get_scene_type_column_data(self, scene, item):
         """
@@ -258,13 +254,9 @@ class Scenes(YomboLibrary, object):
         :param item:
         :return:
         """
-        print("aaa1")
         item_type = item['item_type']
-        print("aaa2: %s" % item_type)
-        print("aaa3: %s" % self.scene_types)
-        if item_type in self.scene_types:
-            print("aaa10")
-            return self.scene_types[item_type]['render_table_column_callback'](scene, item)
+        if item_type in self.scene_types_extra:
+            return self.scene_types_extra[item_type]['render_table_column_callback'](scene, item)
 
     def get(self, requested_scene=None):
         """
@@ -343,7 +335,7 @@ class Scenes(YomboLibrary, object):
         :param scene_id:
         :return:
         """
-        scene = self.scenes.get(scene_id)
+        scene = self.get(scene_id)
         data = scene.data
         data['config']['enabled'] = False
         scene.on_change()
@@ -450,7 +442,7 @@ class Scenes(YomboLibrary, object):
         :param scene_id:
         :return:
         """
-        scene = self.scenes.get(scene_id)
+        scene = self.get(scene_id)
         data = scene.data
         data['config']['enabled'] = False
         results = yield self._Nodes.delete_node(scene.scene_id, session=session)
@@ -465,15 +457,16 @@ class Scenes(YomboLibrary, object):
         :param scene_id:
         :return:
         """
-        scene = self.scenes.get(scene_id)
+        scene = self.get(scene_id)
         label = "%s (copy)" % scene.label
         machine_label = "%s_copy" % scene.machine_label
         if label is not None and machine_label is not None:
             self.check_duplicate_scene(label, machine_label, scene_id)
+        new_data = msgpack.unpackb(msgpack.packb(scene.data))
         new_scene = yield self._Nodes.create(label=label,
                                              machine_label=machine_label,
                                              node_type='scene',
-                                             data=scene.data,
+                                             data=new_data,
                                              data_content_type='json',
                                              gateway_id=self.gateway_id(),
                                              destination='gw',
@@ -486,13 +479,14 @@ class Scenes(YomboLibrary, object):
         if scene_id not in self.scenes:
             return
         scene = self.get(scene_id)
-        items = copy.deepcopy(scene.data['items'])
+        items = deepcopy(scene.data['items'])
         o_items = OrderedDict(sorted(items.items(), key=lambda x: x[1]['weight']))
         weight = 10
         for item_id, item in o_items.items():
+            self.scenes[scene_id].data['items'][item_id]['weight'] = weight
             item['weight'] = weight
             weight += 10
-        scene.data['items'] = o_items
+        # scene.data['items'] = o_items
 
     def add_scene_item(self, scene_id, **kwargs):
         """
@@ -504,8 +498,8 @@ class Scenes(YomboLibrary, object):
         """
         scene = self.get(scene_id)
         item_type = kwargs['item_type']
-        if 'order' not in kwargs:
-            kwargs['order'] = len(scene.data['items'])
+        if 'weight' not in kwargs:
+            kwargs['weight'] = (len(scene.data['items']) + 1) * 10
 
         item_id = random_string(length=15)
         if item_type == 'device':
@@ -551,8 +545,8 @@ class Scenes(YomboLibrary, object):
                 'weight': kwargs['weight'],
             }
 
-        elif item_type in self.scene_types:
-            item_data = self.scene_types[item_type]['scene_item_update_callback'](scene, kwargs)
+        elif item_type in self.scene_types_extra:
+            item_data = self.scene_types_extra[item_type]['scene_item_update_callback'](scene, kwargs)
             item_data['item_type'] = item_type
             item_data['item_id'] = item_id
             scene.data['items'][item_id] = item_data
@@ -600,10 +594,9 @@ class Scenes(YomboLibrary, object):
             item['description'] = kwargs['description']
             item['template'] = kwargs['template']
             item['weight'] = kwargs['weight']
-            self.scene_templates["%s_%s" % (scene_id, item_id)] = self._Template.new(kwargs['template'])
 
-        elif item_type in self.scene_types:
-            item_data = self.scene_types[item_type]['scene_item_update_callback'](scene, kwargs)
+        elif item_type in self.scene_types_extra:
+            item_data = self.scene_types_extra[item_type]['scene_item_update_callback'](scene, kwargs)
             item_data['item_type'] = item_type
             item_data['item_id'] = item_id
             scene.data['items'][item_id] = item_data
@@ -652,7 +645,7 @@ class Scenes(YomboLibrary, object):
         self.balance_weights(scene_id)
         return scene
 
-    def trigger(self, scene_id, **kwargs):
+    def start(self, scene_id, **kwargs):
         """
         Trigger a scene to start.
 
@@ -660,18 +653,21 @@ class Scenes(YomboLibrary, object):
         :param kwargs:
         :return:
         """
-        scene = self.scenes.get(scene_id)
+        scene = self.get(scene_id)
+        logger.debug("Scene '{label}' is starting.", label=scene.label)
         if scene.effective_status() != 1:
+            logger.debug("Scene '{label}' is disabled, cannot start.", label=scene.label)
             raise YomboWarning("Scene is disabled.")
         if scene_id in self.scenes_running:
             if self.scenes_running[scene_id] in ("running", "stopping"):
+                logger.debug("Scene '{label}' is already running, cannot start.", label=scene.label)
                 return False  # already running
         self.scenes_running[scene_id] = "running"
-        reactor.callLater(0.001, self.do_trigger, scene, **kwargs)
+        reactor.callLater(0.001, self._start, scene, **kwargs)
         return True
 
     @inlineCallbacks
-    def do_trigger(self, scene, **kwargs):
+    def _start(self, scene, **kwargs):
         """
         Performs the actual trigger. It's wrapped here to handle any requested delays.
 
@@ -679,8 +675,18 @@ class Scenes(YomboLibrary, object):
         :param kwargs:
         :return:
         """
+        logger.debug("Scene '{label}' is now running.", label=scene.label)
         scene_id = scene.scene_id
         scene, items = self.get_scene_item(scene_id)
+        self._Automation.trigger_monitor('scene',
+                                         scene=scene,
+                                         name=scene.machine_label,
+                                         action='start')
+        yield global_invoke_all('_scene_starting_',
+                                called_by=self,
+                                scene_id=scene_id,
+                                scene=scene,
+                                )
 
         for item_id, item in items.items():
             item_type = item['item_type']
@@ -719,22 +725,32 @@ class Scenes(YomboLibrary, object):
                     self.disable(local_scene.scene_id)
                 elif action == 'start':
                     try:
-                        self.trigger(local_scene.scene_id)
+                        self.start(local_scene.scene_id)
                     except Exception:  # Gobble everything up..
                         pass
                 elif action == 'stop':
                     try:
-                        self.stop_trigger(local_scene.scene_id)
+                        self.stop(local_scene.scene_id)
                     except Exception:  # Gobble everything up..
                         pass
 
             elif item_type == "template":
-                self.scene_templates["%s_%s" % (scene_id, item_id)].render(
-                    {'current_scene': scene}
-                )
+                try:
+                    yield self.scene_templates["%s_%s" % (scene_id, item_id)].render(
+                        {'current_scene': scene}
+                    )
+                except Exception as e:
+                    logger.warn("-==(Warning: Scenes library had trouble with template==-")
+                    logger.warn("Input template:")
+                    logger.warn("{template}", template=item['template'])
+                    logger.warn("---------------==(Traceback)==--------------------------")
+                    logger.warn("{trace}", trace=traceback.format_exc())
+                    logger.warn("--------------------------------------------------------")
 
-            elif item_type in self.scene_types:
-                item_data = self.scene_types[item_type]['handle_trigger_callback'](scene, item)
+                    logger.warn("Scene had trouble running template: {message}", message=e)
+
+            elif item_type in self.scene_types_extra:
+                item_data = self.scene_types_extra[item_type]['handle_trigger_callback'](scene, item)
 
             if self.scenes_running[scene_id] != "running":  # a way to kill this trigger
                 self.scenes_running[scene_id] = "stopped"
@@ -742,15 +758,15 @@ class Scenes(YomboLibrary, object):
 
         self.scenes_running[scene_id] = "stopped"
 
-    def stop_trigger(self, scene_id, **kwargs):
+    def stop(self, scene_id, **kwargs):
         """
-        Trigger a scene to start.
+        Stop a currently running scene.
 
         :param scene_id:
         :param kwargs:
         :return:
         """
-        scene = self.scenes.get(scene_id)
+        scene = self.get(scene_id)
         if scene_id in self.scenes_running and self.scenes_running[scene_id] == "running":
             self.scenes_running[scene_id] = "stopping"
             return True
@@ -797,14 +813,17 @@ class Scenes(YomboLibrary, object):
             results = node._Scene.enable(node._node_id)
             return results
 
-        def stop_trigger(node):
-            results = node._Scene.stop_trigger(node._node_id)
+        def disable(node, session):
+            results = node._Scene.disable(node._node_id)
             return results
 
-        def trigger(node):
-            results = node._Scene.trigger(node._node_id)
+        def start(node):
+            results = node._Scene.start(node._node_id)
             return results
 
+        def stop(node):
+            results = node._Scene.stop(node._node_id)
+            return results
 
         scene.add_scene_item = types.MethodType(add_scene_item, scene)
         scene.delete = types.MethodType(delete, scene)
@@ -813,5 +832,6 @@ class Scenes(YomboLibrary, object):
         scene.effective_status = types.MethodType(effective_status, scene)
         scene.enabled = types.MethodType(enabled, scene)
         scene.enable = types.MethodType(enable, scene)
-        scene.trigger = types.MethodType(trigger, scene)
-        scene.stop_trigger = types.MethodType(stop_trigger, scene)
+        scene.disable = types.MethodType(disable, scene)
+        scene.start = types.MethodType(start, scene)
+        scene.stop = types.MethodType(stop, scene)

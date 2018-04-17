@@ -71,49 +71,49 @@ def route_api_v1_scene(webapp):
                 item_details=item_details,
                 )
 
-        @webapp.route('/scene/inputs', methods=['GET'])
-        @require_auth(api=True)
-        def apiv1_scenes_inputs_index(webinterface, request, session):
-            """
-            Gets input data for a given sceneid, device
-            :param webinterface:
-            :param request:
-            :param session:
-            :return:
-            """
-            try:
-                device_id = request.args.get('deviceid')[0]
-            except Exception:
-                return return_error(request, "'deviceid' required.")
-            try:
-                device = webinterface._Devices[device_id]
-            except Exception as e:
-                return return_error(request, "'deviceid' cannot be found.")
-            try:
-                command_id = request.args.get('commandid')[0]
-            except Exception:
-                return return_error(request, "'commandid' required.")
-            try:
-                command = webinterface._Commands[command_id]
-            except Exception:
-                return return_error(request, "'commandid' cannot be found.")
-
-            try:
-                scene_id = request.args.get('sceneid')[0]
-            except Exception:
-                return return_error(request, "'sceneid' required.")
-            try:
-                scene = webinterface._Scenes[scene_id]
-            except Exception:
-                return return_error(request, "'sceneid' cannot be found.")
-
-            available_commands = device.available_commands()
-            command_inputs = available_commands[command_id]['inputs']
-            items = webinterface._Scenes.get_item(scene_id)
-            data = command_inputs
-            # data = {
-            #     'total': results['content']['pages']['total_items'],
-            #     'rows': results['data'],
-            # }
-            request.setHeader('Content-Type', 'application/json')
-            return json.dumps(data)
+        # @webapp.route('/scene/inputs', methods=['GET'])
+        # @require_auth(api=True)
+        # def apiv1_scenes_inputs_index(webinterface, request, session):
+        #     """
+        #     Gets input data for a given sceneid, device
+        #     :param webinterface:
+        #     :param request:
+        #     :param session:
+        #     :return:
+        #     """
+        #     try:
+        #         device_id = request.args.get('deviceid')[0]
+        #     except Exception:
+        #         return return_error(request, "'deviceid' required.")
+        #     try:
+        #         device = webinterface._Devices[device_id]
+        #     except Exception as e:
+        #         return return_error(request, "'deviceid' cannot be found.")
+        #     try:
+        #         command_id = request.args.get('commandid')[0]
+        #     except Exception:
+        #         return return_error(request, "'commandid' required.")
+        #     try:
+        #         command = webinterface._Commands[command_id]
+        #     except Exception:
+        #         return return_error(request, "'commandid' cannot be found.")
+        #
+        #     try:
+        #         scene_id = request.args.get('sceneid')[0]
+        #     except Exception:
+        #         return return_error(request, "'sceneid' required.")
+        #     try:
+        #         scene = webinterface._Scenes[scene_id]
+        #     except Exception:
+        #         return return_error(request, "'sceneid' cannot be found.")
+        #
+        #     available_commands = device.available_commands()
+        #     command_inputs = available_commands[command_id]['inputs']
+        #     items = webinterface._Scenes.get_item(scene_id)
+        #     data = command_inputs
+        #     # data = {
+        #     #     'total': results['content']['pages']['total_items'],
+        #     #     'rows': results['data'],
+        #     # }
+        #     request.setHeader('Content-Type', 'application/json')
+        #     return json.dumps(data)

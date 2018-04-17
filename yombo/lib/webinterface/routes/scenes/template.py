@@ -55,7 +55,7 @@ def route_scenes_template(webapp):
 
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene_id, scene.label)
-            webinterface.add_breadcrumb(request, "/scenes/%s/add_template" % scene_id, "Add Item: Pause")
+            webinterface.add_breadcrumb(request, "/scenes/%s/add_template" % scene_id, "Add Item: Template")
             return page_scenes_form_template(webinterface, request, session, scene, data, 'add', "Add a template to scene")
 
         @webapp.route('/<string:scene_id>/add_template', methods=['POST'])
@@ -106,9 +106,9 @@ def route_scenes_template(webapp):
 
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene.scene_id, scene.label)
-            webinterface.add_breadcrumb(request, "/scenes/%s/edit_template" % scene.scene_id, "Edit item: State")
+            webinterface.add_breadcrumb(request, "/scenes/%s/edit_template" % scene.scene_id, "Edit item: Template")
             return page_scenes_form_template(webinterface, request, session, scene, item, 'edit',
-                                              "Edit scene item: State")
+                                              "Edit scene item: Template")
 
         @webapp.route('/<string:scene_id>/edit_template/<string:item_id>', methods=['POST'])
         @require_auth()
@@ -116,8 +116,17 @@ def route_scenes_template(webapp):
             try:
                 scene = webinterface._Scenes[scene_id]
             except KeyError as e:
-                webinterface.add_alert("Requested scene could not be located.", 'warning')
+                webinterface.add_alert("Requested scene doesn't exist: %s" % scene_id, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
+
+            try:
+                item = webinterface._Scenes.get_item(scene_id, item_id)
+            except KeyError as e:
+                webinterface.add_alert("Requested item for scene doesn't exist.", 'warning')
+                return webinterface.redirect(request, "/scenes/%s/details" % scene_id)
+            if item['item_type'] != 'template':
+                webinterface.add_alert("Requested item type is invalid.", 'warning')
+                return webinterface.redirect(request, "/automation/%s/details" % scene_id)
 
             data = {
                 'item_type': 'template',
@@ -137,7 +146,7 @@ def route_scenes_template(webapp):
                 webinterface._Scenes.edit_scene_item(scene_id, item_id, **data)
             except YomboWarning as e:
                 webinterface.add_alert("Cannot edit template within scene. %s" % e.message, 'warning')
-                return page_scenes_form_template(webinterface, request, session, scene, data, 'add', "Edit scene item: State")
+                return page_scenes_form_template(webinterface, request, session, scene, data, 'add', "Edit scene item: Template")
 
             webinterface.add_alert("Edited a template item for scene '%s'." % scene.label)
             return webinterface.redirect(request, "/scenes/%s/details" % scene.scene_id)
@@ -165,7 +174,10 @@ def route_scenes_template(webapp):
                 item = webinterface._Scenes.get_item(scene_id, item_id)
             except KeyError as e:
                 webinterface.add_alert("Requested item for scene doesn't exist.", 'warning')
-                return webinterface.redirect(request, '/scenes/index')
+                return webinterface.redirect(request, "/scenes/%s/details" % scene_id)
+            if item['item_type'] != 'template':
+                webinterface.add_alert("Requested item type is invalid.", 'warning')
+                return webinterface.redirect(request, "/automation/%s/details" % scene_id)
 
             page = webinterface.get_template(
                 request,
@@ -173,7 +185,7 @@ def route_scenes_template(webapp):
             )
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene_id, scene.label)
-            webinterface.add_breadcrumb(request, "/scenes/%s/delete_template" % scene_id, "Delete item: Pause")
+            webinterface.add_breadcrumb(request, "/scenes/%s/delete_template" % scene_id, "Delete item: Template")
             return page.render(alerts=webinterface.get_alerts(),
                                scene=scene,
                                item=item,
@@ -193,7 +205,10 @@ def route_scenes_template(webapp):
                 item = webinterface._Scenes.get_item(scene_id, item_id)
             except KeyError as e:
                 webinterface.add_alert("Requested item for scene doesn't exist.", 'warning')
-                return webinterface.redirect(request, '/scenes/index')
+                return webinterface.redirect(request, "/scenes/%s/details" % scene_id)
+            if item['item_type'] != 'template':
+                webinterface.add_alert("Requested item type is invalid.", 'warning')
+                return webinterface.redirect(request, "/automation/%s/details" % scene_id)
 
             try:
                 confirm = request.args.get('confirm')[0]

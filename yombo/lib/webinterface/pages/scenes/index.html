@@ -70,7 +70,7 @@
                                                  <a class="alert-warning" href="/scenes/{{ scene_id }}/disable">Disable</a>
                                                  <a href="/scenes/{{ scene_id }}/duplicate_scene">Duplicate</a>
                                                  <a class="alert-danger" href="/scenes/{{ scene_id }}/delete">Delete</a>
-                                                {% elif scene.status() == 2 -%}
+                                                {% elif scene.effective_status() == 2 -%}
                                              <a class="alert-success"  href="/scenes/{{ scene_id }}/disable">Enable</a> (Will be removed on restart.)
                                                 {% endif %}
                                              </td>

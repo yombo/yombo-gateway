@@ -122,10 +122,19 @@ def route_scenes_device(webapp):
         @require_auth()
         def page_scenes_item_device_edit_get(webinterface, request, session, scene_id, item_id):
             try:
-                scene, item = webinterface._Scenes.get_scene_item(scene_id, item_id)
+                scene = webinterface._Scenes[scene_id]
             except KeyError as e:
-                webinterface.add_alert("Requested scene or item id could not be located.", 'warning')
+                webinterface.add_alert("Requested scene doesn't exist: %s" % scene_id, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
+
+            try:
+                item = webinterface._Scenes.get_item(scene_id, item_id)
+            except KeyError as e:
+                webinterface.add_alert("Requested item for scene doesn't exist.", 'warning')
+                return webinterface.redirect(request, "/scenes/%s/details" % scene_id)
+            if item['item_type'] != 'device':
+                webinterface.add_alert("Requested item type is invalid.", 'warning')
+                return webinterface.redirect(request, "/automation/%s/details" % scene_id)
 
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene.scene_id, scene.label)
@@ -139,8 +148,17 @@ def route_scenes_device(webapp):
             try:
                 scene = webinterface._Scenes[scene_id]
             except KeyError as e:
-                webinterface.add_alert("Requested scene could not be located.", 'warning')
+                webinterface.add_alert("Requested scene doesn't exist: %s" % scene_id, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
+
+            try:
+                item = webinterface._Scenes.get_item(scene_id, item_id)
+            except KeyError as e:
+                webinterface.add_alert("Requested item for scene doesn't exist.", 'warning')
+                return webinterface.redirect(request, "/scenes/%s/details" % scene_id)
+            if item['item_type'] != 'device':
+                webinterface.add_alert("Requested item type is invalid.", 'warning')
+                return webinterface.redirect(request, "/automation/%s/details" % scene_id)
 
             try:
                 incoming_data = json.loads(webinterface.request_get_default(request, 'json_output', "{}"))
@@ -220,7 +238,10 @@ def route_scenes_device(webapp):
                 item = webinterface._Scenes.get_item(scene_id, item_id)
             except KeyError as e:
                 webinterface.add_alert("Requested item for scene doesn't exist.", 'warning')
-                return webinterface.redirect(request, '/scenes/index')
+                return webinterface.redirect(request, "/scenes/%s/details" % scene_id)
+            if item['item_type'] != 'device':
+                webinterface.add_alert("Requested item type is invalid.", 'warning')
+                return webinterface.redirect(request, "/automation/%s/details" % scene_id)
 
             page = webinterface.get_template(
                 request,
@@ -248,7 +269,10 @@ def route_scenes_device(webapp):
                 item = webinterface._Scenes.get_item(scene_id, item_id)
             except KeyError as e:
                 webinterface.add_alert("Requested item for scene doesn't exist.", 'warning')
-                return webinterface.redirect(request, '/scenes/index')
+                return webinterface.redirect(request, "/scenes/%s/details" % scene_id)
+            if item['item_type'] != 'device':
+                webinterface.add_alert("Requested item type is invalid.", 'warning')
+                return webinterface.redirect(request, "/automation/%s/details" % scene_id)
 
             try:
                 confirm = request.args.get('confirm')[0]

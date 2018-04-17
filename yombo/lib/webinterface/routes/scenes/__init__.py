@@ -64,7 +64,7 @@ def route_scenes(webapp):
                                scene=scene,
                                )
 
-        @webapp.route('/<string:scene_id>/trigger', methods=['GET'])
+        @webapp.route('/<string:scene_id>/start', methods=['GET'])
         @require_auth()
         def page_scenes_trigger_get(webinterface, request, session, scene_id):
             try:
@@ -74,7 +74,7 @@ def route_scenes(webapp):
                 return webinterface.redirect(request, '/scenes/index')
 
             try:
-                webinterface._Scenes.trigger(scene_id)
+                webinterface._Scenes.start(scene_id)
             except YomboWarning as e:
                 webinterface.add_alert("Cannot start scene. %s" % e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
@@ -82,7 +82,7 @@ def route_scenes(webapp):
             webinterface.add_alert("The scene '%s' has been started" % scene.label)
             return webinterface.redirect(request, "/scenes/%s/details" % scene.scene_id)
 
-        @webapp.route('/<string:scene_id>/stop_trigger', methods=['GET'])
+        @webapp.route('/<string:scene_id>/stop', methods=['GET'])
         @require_auth()
         def page_scenes_stop_trigger_get(webinterface, request, session, scene_id):
             try:
@@ -92,7 +92,7 @@ def route_scenes(webapp):
                 return webinterface.redirect(request, '/scenes/index')
 
             try:
-                webinterface._Scenes.stop_trigger(scene_id)
+                webinterface._Scenes.stop(scene_id)
             except YomboWarning as e:
                 webinterface.add_alert("Cannot stop scene. %s" % e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
