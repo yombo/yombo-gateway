@@ -50,34 +50,36 @@ import collections
 logger = get_logger('library.modules')
 
 SYSTEM_MODULES = {
-    'automationhelpers': {
-        'id': 'automationhelpers',  # module_id
-        'gateway_id': 'local',
-        'module_type': 'logic',
-        'machine_label': 'AutomationHelpers',
-        'label': 'Automation Helpers',
-        'short_description': "Adds basic platforms to the automation rules.",
-        'medium_description': "Adds basic platforms to the automation rules.",
-        'description': "Adds basic platforms to the automation rules.",
-        'medium_description_html': "Adds basic platforms to the automation rules.",
-        'description_html': "Adds basic platforms to the automation rules.",
-        'install_branch': 'system',
-        'install_count': '',
-        'see_also': '',
-        'prod_branch': '',
-        'dev_branch': '',
-        'prod_version': '',
-        'dev_version': '',
-        'repository_link': '',
-        'issue_tracker_link': '',
-        'doc_link': 'https://yg2.in/about_rules',
-        'git_link': '',
-        'public': '2',
-        'status': '1',
-        'created_at': int(time()),
-        'updated_at': int(time()),
-        'load_source': 'system modules',
-        }
+    # This module was removed during the automation revamp. This is left here for future
+    # reference on how to add system modules.
+    # 'automationhelpers': {
+    #     'id': 'automationhelpers',  # module_id
+    #     'gateway_id': 'local',
+    #     'module_type': 'logic',
+    #     'machine_label': 'AutomationHelpers',
+    #     'label': 'Automation Helpers',
+    #     'short_description': "Adds basic platforms to the automation rules.",
+    #     'medium_description': "Adds basic platforms to the automation rules.",
+    #     'description': "Adds basic platforms to the automation rules.",
+    #     'medium_description_html': "Adds basic platforms to the automation rules.",
+    #     'description_html': "Adds basic platforms to the automation rules.",
+    #     'install_branch': 'system',
+    #     'install_count': '',
+    #     'see_also': '',
+    #     'prod_branch': '',
+    #     'dev_branch': '',
+    #     'prod_version': '',
+    #     'dev_version': '',
+    #     'repository_link': '',
+    #     'issue_tracker_link': '',
+    #     'doc_link': 'https://yg2.in/about_rules',
+    #     'git_link': '',
+    #     'public': '2',
+    #     'status': '1',
+    #     'created_at': int(time()),
+    #     'updated_at': int(time()),
+    #     'load_source': 'system modules',
+    #     }
     }
 
 
