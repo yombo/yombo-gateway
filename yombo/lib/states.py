@@ -55,6 +55,7 @@ Example states: times_dark, weather_raining, alarm_armed, yombo_service_connecti
 """
 # Import python libraries
 from collections import OrderedDict, deque
+from copy import deepcopy
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
@@ -248,10 +249,11 @@ class States(YomboLibrary, object):
     @inlineCallbacks
     def load_states(self):
         states = yield self._LocalDB.get_states()
-
         for state in states:
-            if state['name'] not in self.__States[self.gateway_id]:
-                self.__States[self.gateway_id][state['name']] = {
+            if state['gateway_id'] not in self.__States:
+                self.__States[state['gateway_id']] = {}
+            if state['name'] not in self.__States[state['gateway_id']]:
+                self.__States[state['gateway_id']][state['name']] = {
                     'gateway_id': state['gateway_id'],
                     'value': coerce_value(state['value'], state['value_type']),
                     'value_human': self.convert_to_human(state['value'], state['value_type']),
@@ -480,6 +482,7 @@ class States(YomboLibrary, object):
         self._Automation.trigger_monitor('state',
                                          key=key,
                                          value=value,
+                                         value_full=self.__States[gateway_id][key],
                                          action='set',
                                          gateway_id=gateway_id)
         # Call any hooks
@@ -492,7 +495,7 @@ class States(YomboLibrary, object):
                                 )
 
         if gateway_id == self.gateway_id or gateway_id == 'cluster':
-            self.db_save_states_data.append([key, self.__States[gateway_id][key]])
+            self.db_save_states_data.append([key, deepcopy( self.__States[gateway_id][key]) ])
 
     @inlineCallbacks
     def db_save_states(self):
@@ -783,35 +786,37 @@ class States(YomboLibrary, object):
                 "add_url": "/scenes/{scene_id}/add_state",
                 "note": "Change a state value",
                 "render_table_column_callback": self.scene_render_table_column,  # Show summary line in a table.
-                "scene_item_update_callback": self.scene_item_update,  # Return a dictionary to store as the item.
+                "scene_action_update_callback": self.scene_action_update,  # Return a dictionary to store as the item.
                 "handle_trigger_callback": self.scene_item_triggered,  # Do item activity
             }
         ]
 
-    def scene_render_table_column(self, scene, item):
+    def scene_render_table_column(self, scene, action):
         """
-        Return a dictionary that will be used to populate some variables for the Jinja2 template for scene item
+        Return a dictionary that will be used to populate some variables for the Jinja2 template for scene action
         rendering.
 
         :param scene:
-        :param item:
+        :param action:
         :return:
         """
         return {
-            "type": "<strong>State:</strong><br>%s" % item['name'],
-            "attributes": "<strong>Set Value:</strong><br> %s" % item['value'],
-            "edit_url": "/scenes/%s/edit_state/%s" % (scene.scene_id, item['item_id']),
-            "delete_url": "/scenes/%s/delete_state/%s" % (scene.scene_id, item['item_id']),
+            "action_type": "<strong>State:</strong>%s<br><strong>Gateway:</strong>%s" % (
+                action['name'], self._Gateways[action['gateway_id']].label),
+            "attributes": "<strong>Set Value:</strong><br> %s" % action['value'],
+            "edit_url": "/scenes/%s/edit_state/%s" % (scene.scene_id, action['action_id']),
+            "delete_url": "/scenes/%s/delete_state/%s" % (scene.scene_id, action['action_id']),
         }
 
-    def scene_item_update(self, scene, data):
+    def scene_action_update(self, scene, data):
         return {
             'name': data['name'],
             'value': data['value'],
             'value_type': data['value_type'],
+            'gateway_id': data['gateway_id'],
             'weight': data['weight']
         }
 
-    def scene_item_triggered(self, scene, item):
-        self.set(item['name'], item['value'], item['value_type'])
+    def scene_item_triggered(self, scene, action):
+        self.set(action['name'], action['value'], action['value_type'], gateway_id=action['gateway_id'])
         return True
