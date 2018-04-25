@@ -45,20 +45,16 @@ def route_home(webapp):
         @run_first()
         # @inlineCallbacks
         def page_logout_get(webinterface, request, session):
-            print("page logout get 1: %s" % session)
+            # print("page logout get 1: %s" % session)
             # if session is False:
             #     print("page logout no session.. redirecting to home...")
             #     # return request.redirect("/")
             #     return webinterface.redirect(request, "/?")
             try:
-                print("page logout get 2")
-                session.close_session(request)
-                print("page logout get 3")
-            except:
-                pass
-            print("page logout get 4")
-            return request.redirect("/")
-            return webinterface.redirect(request, "/?")
+                webinterface._WebSessions.close_session(request)
+            except Exception as e:
+                print("Unable to close websession: %s" % e)
+            return request.redirect("/?")
 
         @webapp.route('/login/user', methods=['GET'])
         @require_auth_pin()
@@ -155,8 +151,9 @@ def route_home(webapp):
                 l_session['yomboapi_login_key'] = ''
                 request.received_cookies[l_webinterface._WebSessions.config.cookie_session_name] = l_session.session_id
 
+            print("pins: %s == %s" % (submitted_pin, webinterface.auth_pin()))
             if webinterface.auth_pin_type() == 'pin':
-                # print("pins: %s == %s" % (submitted_pin, webinterface.auth_pin()))
+                print("checking pin... : %s == %s" % (submitted_pin, webinterface.auth_pin()))
                 if submitted_pin == webinterface.auth_pin():
                     create_pin_session(webinterface, request, session)
                 else:

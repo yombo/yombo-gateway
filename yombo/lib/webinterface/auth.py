@@ -80,7 +80,7 @@ def run_first(create_session=None, *args, **kwargs):
                     session = False
 
             if create_session is True:
-                session = webinterface._WebSessions.create(request)
+                session = webinterface._WebSessions.create_from_request(request)
 
             if session is not False:
                 if 'auth' in session:
