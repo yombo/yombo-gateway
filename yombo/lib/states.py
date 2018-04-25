@@ -469,6 +469,16 @@ class States(YomboLibrary, object):
         self.__States[gateway_id][key]['value'] = value
         self.__States[gateway_id][key]['callback'] = callback
         self.__States[gateway_id][key]['arguments'] = arguments
+        if value_type is None:
+            value_type = 'str'
+        elif value_type.lower() in ('bool', 'boolean'):
+            value_type = 'bool'
+        elif value_type.lower() in ('str', 'string'):
+            value_type = 'str'
+        elif value_type.lower() in ('int', 'integer'):
+            value_type = 'int'
+        elif value_type.lower() in ('float', 'decimal'):
+            value_type = 'float'
         if is_new is True or value_type is not None:
             self.__States[gateway_id][key]['value_type'] = value_type
         if is_new is True or callback is not None:
