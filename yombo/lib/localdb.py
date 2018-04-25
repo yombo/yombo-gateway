@@ -431,9 +431,11 @@ class LocalDB(YomboLibrary):
     @inlineCallbacks
     def save_bulk_queue(self):
         # print("saving bulk data: %s" % self.db_bulk_queue)
-        for table, queues in self.db_bulk_queue.items():
-            for queue_type, data in queues.items():
-                if len(data) > 0:
+        for table in self.db_bulk_queue.keys():
+            # print("saving bulk table: %s" % table)
+            queues = self.db_bulk_queue[table]
+            for queue_type in queues.keys():
+                if len(self.db_bulk_queue[table][queue_type]) > 0:
                     db_data = self.db_bulk_queue[table][queue_type].copy()
                     self.db_bulk_queue[table][queue_type].clear()
                     if queue_type == 'insert':
