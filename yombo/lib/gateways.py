@@ -188,7 +188,16 @@ class Gateways(YomboLibrary):
                 'fqdn': '127.0.0.1',
                 'version': VERSION,
             })
-
+        self.import_gateway({
+            'id': 'cluster',
+            'is_master': False,
+            'master_gateway': '',
+            'machine_label': 'cluster',
+            'label': 'Cluster',
+            'description': 'All gateways in a cluster.',
+            'fqdn': '127.0.0.1',
+            'version': VERSION,
+        })
         yield self._load_gateways_from_database()
 
         # now local the master, on or off network.
