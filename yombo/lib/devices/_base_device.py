@@ -920,7 +920,7 @@ class Base_Device(object):
                 # if isinstance(not_before, int) or isinstance(not_before, float):
                 if not_before < cur_time:
                     raise YomboWarning("'not_before' time should be epoch second in the future, not the past. Got: %s" % not_before)
-                device_command['not_before_time'] = not_before
+                device_command['not_before_at'] = not_before
 
             elif delay is not None:
                 if isinstance(delay, str):
@@ -931,7 +931,7 @@ class Base_Device(object):
                 # if isinstance(not_before, int) or isinstance(not_before, float):
                 if delay < 0:
                     raise YomboWarning("'not_before' time should be epoch second in the future, not the past.")
-                device_command['not_before_time'] = cur_time + delay
+                device_command['not_before_at'] = cur_time + delay
 
             # determine how late the command can be run. This happens is the gateway was turned off
             if not_after is not None:
@@ -941,9 +941,9 @@ class Base_Device(object):
                     except:
                         raise YomboWarning("'not_after' time should be epoch second in the future after not_before as an int, float, or parsable string.")
                 if isinstance(not_after, int) or isinstance(not_after, float):
-                    if not_after < device_command['not_before_time']:
+                    if not_after < device_command['not_before_at']:
                         raise YomboWarning("'not_after' must occur after 'not_before (or current time + delay)")
-                device_command['not_after_time'] = not_after
+                device_command['not_after_at'] = not_after
             elif max_delay is not None:
                 # todo: try to convert if it's not. Make a util helper for this, occurs a lot!
                 if isinstance(max_delay, str):
@@ -954,7 +954,7 @@ class Base_Device(object):
                 if isinstance(max_delay, int) or isinstance(max_delay, float):
                     if max_delay < 0:
                         raise YomboWarning("'max_delay' must be positive only.")
-                device_command['not_after_time'] = device_command['not_before_time'] + max_delay
+                device_command['not_after_at'] = device_command['not_before_at'] + max_delay
 
         device_command['params'] = kwargs.get('params', None)
         if inputs is None:
@@ -1031,13 +1031,6 @@ class Base_Device(object):
         if request_id in self._Parent.device_commands:
             device_command = self._Parent.device_commands[request_id]
             device_command.set_sent(message=message, sent_at=log_time)
-            global_invoke_all('_device_command_status_',
-                              called_by=self,
-                              device_command=device_command,
-                              status=device_command.status,
-                              status_id=device_command.status_id,
-                              message=message,
-                              )
             device_command.set_received(message=message, received_at=log_time)
             global_invoke_all('_device_command_status_',
                               called_by=self,
@@ -1601,7 +1594,6 @@ class Base_Device(object):
             message['previous_status'] = None
         else:
             message['previous_status'] = self.status_history[1]
-
 
         self._Automation.trigger_monitor('device',
                                          device=self,

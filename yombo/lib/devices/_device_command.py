@@ -216,6 +216,7 @@ class Device_Command(object):
             self.finished_at = data['finished_at']
         if 'not_before_at' in data:
             self.not_before_at = data['not_before_at']
+            print("in device command, setting not before: %s (currently: %s_" % (self.not_before_at, time()))
         if 'not_after_at' in data:
             self.not_after_at = data['not_after_at']
         if 'history' in data:
@@ -237,6 +238,7 @@ class Device_Command(object):
             return
 
         if self.not_before_at is not None:
+            print("device command: start. Has a not-before-at")
             cur_at = time()
             if self.not_after_at < cur_at:
                 self.set_delay_expired(message='Unable to send message due to request being expired by "%s" seconds.'
