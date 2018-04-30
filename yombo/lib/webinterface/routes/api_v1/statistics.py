@@ -76,7 +76,7 @@ def route_api_v1_statistics(webapp):
                 return return_error(request, "'time_end' not included for stat: %s" % stat_name[idx])
 
             for idx, item in enumerate(stat_name):
-                print(" checking: %s - %s" % (idx, item))
+                # print(" checking: %s - %s" % (idx, item))
                 if item is None:
                     break
 

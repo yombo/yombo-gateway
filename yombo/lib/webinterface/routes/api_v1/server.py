@@ -166,7 +166,6 @@ def route_api_v1_server(webapp):
         @require_auth(api=True)
         @inlineCallbacks
         def apiv1_server_modules_show_one(webinterface, request, session, module_id):
-            # action = request.args.get('action')[0]
             try:
                 results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id,
                                                                session=session['yomboapi_session'])

@@ -25,17 +25,3 @@ def route_api_v1_notification(webapp):
             except KeyError as e:
                 return return_not_found(request)
             return return_good(request)
-
-        # @webapp.route('/web_notif', methods=['GET'])
-        # @require_auth()
-        # def api_v1_web_notif_get(webinterface, request, session):
-        #     action = request.args.get('action')[0]
-        #     results = {}
-        #     if action == "closed":
-        #         id = request.args.get('id')[0]
-        #         # print "alert - id: %s" % id
-        #         if id in webinterface.alerts:
-        #             del webinterface.alerts[id]
-        #             results = {"status": 200}
-        #     request.setHeader('Content-Type', 'application/json')
-        #     return json.dumps(results)
