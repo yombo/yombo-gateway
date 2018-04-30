@@ -34,6 +34,7 @@ usage: $0 options
 This script starts the Yombo Gateway service.
 
 OPTIONS:
+   -u        Show URLs to access Yombo Gateway.
    -d        Run in daemon (service) mode. Called by init script.
    -h        Show this message
    -l file   Change log file location
@@ -48,14 +49,18 @@ EOF
 YOMBO_OPTS="twistd --pidfile=$YOMBO_PIDFILE"
 
 # Process args
-while getopts ":vdhl:LPp:t:" opt; do
+while getopts ":uvdhl:LPp:t:" opt; do
   case $opt in
+    u)
+      # Show yombo urls
+      ./scripts/show_urls.py
+      exit 1
+      ;;
     v)
       # Show version of yombo.
       cd scripts
       ./show_version.py
       exit 1
-
       ;;
     d)
       # Run as daemon (used by init script)
