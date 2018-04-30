@@ -59,6 +59,9 @@ class Template(YomboLibrary, object):
         pass
 
     def _load_(self, **kwargs):
+        def debug(text):
+            logger.info("Template says: {text}", text=text)
+
         self.environment = TemplateEnvironment()
         self.environment.globals['as_timestamp'] = self._Times.forgiving_as_timestamp
         self.environment.globals['float'] = forgiving_float
@@ -103,6 +106,7 @@ class Template(YomboLibrary, object):
         self.environment.globals['validate'] = self._Validate
         # self.environment.globals['voicecmds'] = self._VoiceCmds
 
+        self.environment.filters['debug'] = debug
         self.environment.filters['round'] = forgiving_round
         self.environment.filters['multiply'] = multiply
         self.environment.filters['log'] = logarithm
