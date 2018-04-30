@@ -34,9 +34,9 @@ def route_automation_pause(webapp):
         @require_auth()
         def page_automation_action_pause_add_get(webinterface, request, session, rule_id):
             try:
-                rule = webinterface._Automation[rule_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested automation rule doesn't exist.", 'warning')
+                rule = webinterface._Automation.get(rule_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/automation/index')
 
             data = {
@@ -59,16 +59,16 @@ def route_automation_pause(webapp):
 
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/automation/%s/details" % rule_id, rule.label)
-            webinterface.add_breadcrumb(request, "/automation/%s/add_pause" % rule_id, "Add Item: Pause")
+            webinterface.add_breadcrumb(request, "/automation/%s/add_pause" % rule_id, "Add action: Pause")
             return page_automation_action_form_pause(webinterface, request, session, rule, data, 'add', "Add a pause to automation rule")
 
         @webapp.route('/<string:rule_id>/add_action_pause', methods=['POST'])
         @require_auth()
         def page_automation_action_pause_add_post(webinterface, request, session, rule_id):
             try:
-                rule = webinterface._Automation[rule_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested automation rule doesn't exist.", 'warning')
+                rule = webinterface._Automation.get(rule_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/automation/index')
 
             data = {
@@ -95,47 +95,47 @@ def route_automation_pause(webapp):
                 webinterface.add_alert("Cannot add pause to automation rule. %s" % e.message, 'warning')
                 return page_automation_action_form_pause(webinterface, request, session, rule, data, 'add', "Add a pause to automation rule")
 
-            webinterface.add_alert("Added pause item to automation rule.")
+            webinterface.add_alert("Added pause action to automation rule.")
             return webinterface.redirect(request, "/automation/%s/details" % rule.rule_id)
 
         @webapp.route('/<string:rule_id>/edit_action_pause/<string:action_id>', methods=['GET'])
         @require_auth()
         def page_automation_action_pause_edit_get(webinterface, request, session, rule_id, action_id):
             try:
-                rule = webinterface._Automation[rule_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested automation rule doesn't exist.", 'warning')
+                rule = webinterface._Automation.get(rule_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/automation/index')
             try:
-                item = webinterface._Automation.get_action_items(rule_id, action_id)
-            except KeyError as e:
-                webinterface.add_alert("Requested item for rule doesn't exist.", 'warning')
+                action = webinterface._Automation.get_action_items(rule_id, action_id)
+            except YomboWarning as e:
+                webinterface.add_alert("Requested action id could not be located.", 'warning')
                 return webinterface.redirect(request, "/automation/%s/details" % rule_id)
-            if item['action_type'] != 'pause':
-                webinterface.add_alert("Requested action type is invalid: %s" % item['action_type'], 'warning')
+            if action['action_type'] != 'pause':
+                webinterface.add_alert("Requested action type is invalid: %s" % action['action_type'], 'warning')
                 return webinterface.redirect(request, "/automation/%s/details" % rule_id)
 
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/automation/%s/details" % rule.rule_id, rule.label)
-            webinterface.add_breadcrumb(request, "/automation/%s/edit_pause" % rule.rule_id, "Edit item: Pause")
-            return page_automation_action_form_pause(webinterface, request, session, rule, item, 'edit',
-                                              "Edit automation rule item: State")
+            webinterface.add_breadcrumb(request, "/automation/%s/edit_pause" % rule.rule_id, "Edit action: Pause")
+            return page_automation_action_form_pause(webinterface, request, session, rule, action, 'edit',
+                                              "Edit automation rule action: State")
 
         @webapp.route('/<string:rule_id>/edit_action_pause/<string:action_id>', methods=['POST'])
         @require_auth()
         def page_automation_action_pause_edit_post(webinterface, request, session, rule_id, action_id):
             try:
-                rule = webinterface._Automation[rule_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested automation rule doesn't exist.", 'warning')
+                rule = webinterface._Automation.get(rule_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/automation/index')
             try:
-                item = webinterface._Automation.get_action_items(rule_id, action_id)
-            except KeyError as e:
-                webinterface.add_alert("Requested item for rule doesn't exist.", 'warning')
+                action = webinterface._Automation.get_action_items(rule_id, action_id)
+            except YomboWarning as e:
+                webinterface.add_alert("Requested action id could not be located.", 'warning')
                 return webinterface.redirect(request, "/automation/%s/details" % rule_id)
-            if item['action_type'] != 'pause':
-                webinterface.add_alert("Requested action type is invalid: %s" % item['action_type'], 'warning')
+            if action['action_type'] != 'pause':
+                webinterface.add_alert("Requested action type is invalid: %s" % action['action_type'], 'warning')
                 return webinterface.redirect(request, "/automation/%s/details" % rule_id)
 
             data = {
@@ -161,9 +161,9 @@ def route_automation_pause(webapp):
             except YomboWarning as e:
                 webinterface.add_alert("Cannot edit pause within automation rule. %s" % e.message, 'warning')
                 return page_automation_action_form_pause(webinterface, request, session, rule, data, 'add',
-                                              "Edit automation rule item: Pause")
+                                              "Edit automation rule action: Pause")
 
-            webinterface.add_alert("Edited a pause item for automation rule '%s'." % rule.label)
+            webinterface.add_alert("Edited a pause action for automation rule '%s'." % rule.label)
             return webinterface.redirect(request, "/automation/%s/details" % rule.rule_id)
 
         def page_automation_action_form_pause(webinterface, request, session, rule, data, action_type, header_label):
@@ -180,17 +180,17 @@ def route_automation_pause(webapp):
         @require_auth()
         def page_automation_action_pause_delete_get(webinterface, request, session, rule_id, action_id):
             try:
-                rule = webinterface._Automation[rule_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested automation rule doesn't exist.", 'warning')
+                rule = webinterface._Automation.get(rule_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/automation/index')
             try:
-                item = webinterface._Automation.get_action_items(rule_id, action_id)
-            except KeyError as e:
-                webinterface.add_alert("Requested item for rule doesn't exist.", 'warning')
+                action = webinterface._Automation.get_action_items(rule_id, action_id)
+            except YomboWarning as e:
+                webinterface.add_alert("Requested action id could not be located.", 'warning')
                 return webinterface.redirect(request, "/automation/%s/details" % rule_id)
-            if item['action_type'] != 'pause':
-                webinterface.add_alert("Requested action type is invalid: %s" % item['action_type'], 'warning')
+            if action['action_type'] != 'pause':
+                webinterface.add_alert("Requested action type is invalid: %s" % action['action_type'], 'warning')
                 return webinterface.redirect(request, "/automation/%s/details" % rule_id)
 
             page = webinterface.get_template(
@@ -199,10 +199,10 @@ def route_automation_pause(webapp):
             )
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/automation/%s/details" % rule_id, rule.label)
-            webinterface.add_breadcrumb(request, "/automation/%s/delete_pause" % rule_id, "Delete item: Pause")
+            webinterface.add_breadcrumb(request, "/automation/%s/delete_pause" % rule_id, "Delete action: Pause")
             return page.render(alerts=webinterface.get_alerts(),
                                rule=rule,
-                               item=item,
+                               action=action,
                                action_id=action_id,
                                )
 
@@ -210,17 +210,17 @@ def route_automation_pause(webapp):
         @require_auth()
         def page_automation_action_pause_delete_post(webinterface, request, session, rule_id, action_id):
             try:
-                rule = webinterface._Automation[rule_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested automation rule doesn't exist.", 'warning')
+                rule = webinterface._Automation.get(rule_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/automation/index')
             try:
-                item = webinterface._Automation.get_action_items(rule_id, action_id)
-            except KeyError as e:
-                webinterface.add_alert("Requested item for rule doesn't exist.", 'warning')
+                action = webinterface._Automation.get_action_items(rule_id, action_id)
+            except YomboWarning as e:
+                webinterface.add_alert("Requested action id could not be located.", 'warning')
                 return webinterface.redirect(request, "/automation/%s/details" % rule_id)
-            if item['action_type'] != 'pause':
-                webinterface.add_alert("Requested action type is invalid: %s" % item['action_type'], 'warning')
+            if action['action_type'] != 'pause':
+                webinterface.add_alert("Requested action type is invalid: %s" % action['action_type'], 'warning')
                 return webinterface.redirect(request, "/automation/%s/details" % rule_id)
 
             try:
@@ -243,5 +243,5 @@ def route_automation_pause(webapp):
                 webinterface.add_alert("Cannot delete pause from automation rule. %s" % e.message, 'warning')
                 return webinterface.redirect(request, '/automation/index')
 
-            webinterface.add_alert("Deleted pause item for automation rule.")
+            webinterface.add_alert("Deleted pause action for automation rule.")
             return webinterface.redirect(request, "/automation/%s/details" % rule.rule_id)

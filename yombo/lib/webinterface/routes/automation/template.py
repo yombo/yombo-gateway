@@ -34,10 +34,11 @@ def route_automation_template(webapp):
         @require_auth()
         def page_automation_condition_template_get(webinterface, request, session, rule_id):
             try:
-                rule = webinterface._Automation[rule_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested automation rule doesn't exist.", 'warning')
+                rule = webinterface._Automation.get(rule_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/automation/index')
+
             if 'template' in rule.data['condition']:
                 template = rule.data['condition']['template']
             else:
@@ -53,16 +54,16 @@ def route_automation_template(webapp):
 
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/automation/%s/details" % rule_id, rule.label)
-            webinterface.add_breadcrumb(request, "/automation/%s/add_condition_template" % rule_id, "Add Item: Template")
+            webinterface.add_breadcrumb(request, "/automation/%s/add_condition_template" % rule_id, "Add action: Template")
             return page_automation_condition_form_template(webinterface, request, session, rule, data)
 
         @webapp.route('/<string:rule_id>/set_condition_template', methods=['POST'])
         @require_auth()
         def page_automation_condition_template_post(webinterface, request, session, rule_id):
             try:
-                rule = webinterface._Automation[rule_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested automation rule doesn't exist.", 'warning')
+                rule = webinterface._Automation.get(rule_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/automation/index')
 
             data = {
@@ -83,47 +84,47 @@ def route_automation_template(webapp):
                 webinterface.add_alert("Cannot set rule condition template: %s" % e.message, 'warning')
                 return page_automation_action_form_template(webinterface, request, session, rule, data, 'add', "Add a template to automation rule")
 
-            webinterface.add_alert("Added template item to automation rule.")
+            webinterface.add_alert("Added template action to automation rule.")
             return webinterface.redirect(request, "/automation/%s/details" % rule.rule_id)
 
         @webapp.route('/<string:rule_id>/edit_action_template/<string:action_id>', methods=['GET'])
         @require_auth()
         def page_automation_action_template_edit_get(webinterface, request, session, rule_id, action_id):
             try:
-                rule = webinterface._Automation[rule_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested automation rule doesn't exist.", 'warning')
+                rule = webinterface._Automation.get(rule_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/automation/index')
             try:
-                item = webinterface._Automation.get_action_items(rule_id, action_id)
-            except KeyError as e:
-                webinterface.add_alert("Requested item for rule doesn't exist.", 'warning')
+                action = webinterface._Automation.get_action_items(rule_id, action_id)
+            except YomboWarning as e:
+                webinterface.add_alert("Requested action id could not be located.", 'warning')
                 return webinterface.redirect(request, "/automation/%s/details" % rule_id)
-            if item['action_type'] != 'template':
-                webinterface.add_alert("Requested item type is invalid.", 'warning')
+            if action['action_type'] != 'template':
+                webinterface.add_alert("Requested action type is invalid.", 'warning')
                 return webinterface.redirect(request, "/automation/%s/details" % rule_id)
 
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/automation/%s/details" % rule.rule_id, rule.label)
-            webinterface.add_breadcrumb(request, "/automation/%s/edit_template" % rule.rule_id, "Edit item: Template")
-            return page_automation_action_form_template(webinterface, request, session, rule, item, 'edit',
+            webinterface.add_breadcrumb(request, "/automation/%s/edit_template" % rule.rule_id, "Edit action: Template")
+            return page_automation_action_form_template(webinterface, request, session, rule, action, 'edit',
                                               "Edit automation rule action: Template")
 
         @webapp.route('/<string:rule_id>/edit_action_template/<string:action_id>', methods=['POST'])
         @require_auth()
         def page_automation_action_template_edit_post(webinterface, request, session, rule_id, action_id):
             try:
-                rule = webinterface._Automation[rule_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested automation rule doesn't exist.", 'warning')
+                rule = webinterface._Automation.get(rule_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/automation/index')
             try:
-                item = webinterface._Automation.get_action_items(rule_id, action_id)
-            except KeyError as e:
-                webinterface.add_alert("Requested item for rule doesn't exist.", 'warning')
+                action = webinterface._Automation.get_action_items(rule_id, action_id)
+            except YomboWarning as e:
+                webinterface.add_alert("Requested action id could not be located.", 'warning')
                 return webinterface.redirect(request, "/automation/%s/details" % rule_id)
-            if item['action_type'] != 'template':
-                webinterface.add_alert("Requested item type is invalid.", 'warning')
+            if action['action_type'] != 'template':
+                webinterface.add_alert("Requested action type is invalid.", 'warning')
                 return webinterface.redirect(request, "/automation/%s/details" % rule_id)
 
             data = {
@@ -146,7 +147,7 @@ def route_automation_template(webapp):
                 webinterface.add_alert("Cannot edit template within automation rule. %s" % e.message, 'warning')
                 return page_automation_action_form_template(webinterface, request, session, rule, data, 'add', "Edit automation rule action: Template")
 
-            webinterface.add_alert("Edited a template item for automation rule '%s'." % rule.label)
+            webinterface.add_alert("Edited a template action for automation rule '%s'." % rule.label)
             return webinterface.redirect(request, "/automation/%s/details" % rule.rule_id)
 
         def page_automation_condition_form_template(webinterface, request, session, rule, data):
@@ -161,9 +162,9 @@ def route_automation_template(webapp):
         @require_auth()
         def page_automation_action_template_add_get(webinterface, request, session, rule_id):
             try:
-                rule = webinterface._Automation[rule_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested automation rule doesn't exist.", 'warning')
+                rule = webinterface._Automation.get(rule_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/automation/index')
 
             data = {
@@ -182,16 +183,16 @@ def route_automation_template(webapp):
 
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/automation/%s/details" % rule_id, rule.label)
-            webinterface.add_breadcrumb(request, "/automation/%s/add_action_template" % rule_id, "Add Item: Template")
+            webinterface.add_breadcrumb(request, "/automation/%s/add_action_template" % rule_id, "Add action: Template")
             return page_automation_action_form_template(webinterface, request, session, rule, data, 'add', "Add a template to automation rule")
 
         @webapp.route('/<string:rule_id>/add_action_template', methods=['POST'])
         @require_auth()
         def page_automation_action_template_add_post(webinterface, request, session, rule_id):
             try:
-                rule = webinterface._Automation[rule_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested automation rule doesn't exist.", 'warning')
+                rule = webinterface._Automation.get(rule_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/automation/index')
 
             data = {
@@ -214,47 +215,47 @@ def route_automation_template(webapp):
                 webinterface.add_alert("Cannot add template to automation rule. %s" % e.message, 'warning')
                 return page_automation_action_form_template(webinterface, request, session, rule, data, 'add', "Add a template to automation rule")
 
-            webinterface.add_alert("Added template item to automation rule.")
+            webinterface.add_alert("Added template action to automation rule.")
             return webinterface.redirect(request, "/automation/%s/details" % rule.rule_id)
 
         @webapp.route('/<string:rule_id>/edit_action_template/<string:action_id>', methods=['GET'])
         @require_auth()
         def page_automation_action_template_edit_get(webinterface, request, session, rule_id, action_id):
             try:
-                rule = webinterface._Automation[rule_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested automation rule doesn't exist.", 'warning')
+                rule = webinterface._Automation.get(rule_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/automation/index')
             try:
-                item = webinterface._Automation.get_action_items(rule_id, action_id)
-            except KeyError as e:
-                webinterface.add_alert("Requested item for rule doesn't exist.", 'warning')
+                action = webinterface._Automation.get_action_items(rule_id, action_id)
+            except YomboWarning as e:
+                webinterface.add_alert("Requested action id could not be located.", 'warning')
                 return webinterface.redirect(request, "/automation/%s/details" % rule_id)
-            if item['action_type'] != 'template':
-                webinterface.add_alert("Requested item type is invalid.", 'warning')
+            if action['action_type'] != 'template':
+                webinterface.add_alert("Requested action type is invalid.", 'warning')
                 return webinterface.redirect(request, "/automation/%s/details" % rule_id)
 
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/automation/%s/details" % rule.rule_id, rule.label)
-            webinterface.add_breadcrumb(request, "/automation/%s/edit_template" % rule.rule_id, "Edit item: Template")
-            return page_automation_action_form_template(webinterface, request, session, rule, item, 'edit',
+            webinterface.add_breadcrumb(request, "/automation/%s/edit_template" % rule.rule_id, "Edit action: Template")
+            return page_automation_action_form_template(webinterface, request, session, rule, action, 'edit',
                                               "Edit automation rule action: Template")
 
         @webapp.route('/<string:rule_id>/edit_action_template/<string:action_id>', methods=['POST'])
         @require_auth()
         def page_automation_action_template_edit_post(webinterface, request, session, rule_id, action_id):
             try:
-                rule = webinterface._Automation[rule_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested automation rule doesn't exist.", 'warning')
+                rule = webinterface._Automation.get(rule_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/automation/index')
             try:
-                item = webinterface._Automation.get_action_items(rule_id, action_id)
-            except KeyError as e:
-                webinterface.add_alert("Requested item for rule doesn't exist.", 'warning')
+                action = webinterface._Automation.get_action_items(rule_id, action_id)
+            except YomboWarning as e:
+                webinterface.add_alert("Requested action id could not be located.", 'warning')
                 return webinterface.redirect(request, "/automation/%s/details" % rule_id)
-            if item['action_type'] != 'template':
-                webinterface.add_alert("Requested item type is invalid.", 'warning')
+            if action['action_type'] != 'template':
+                webinterface.add_alert("Requested action type is invalid.", 'warning')
                 return webinterface.redirect(request, "/automation/%s/details" % rule_id)
 
             data = {
@@ -277,7 +278,7 @@ def route_automation_template(webapp):
                 webinterface.add_alert("Cannot edit template within automation rule. %s" % e.message, 'warning')
                 return page_automation_action_form_template(webinterface, request, session, rule, data, 'add', "Edit automation rule action: Template")
 
-            webinterface.add_alert("Edited a template item for automation rule '%s'." % rule.label)
+            webinterface.add_alert("Edited a template action for automation rule '%s'." % rule.label)
             return webinterface.redirect(request, "/automation/%s/details" % rule.rule_id)
 
         def page_automation_action_form_template(webinterface, request, session, rule, data, action_type, header_label):
@@ -294,17 +295,17 @@ def route_automation_template(webapp):
         @require_auth()
         def page_automation_action_template_delete_get(webinterface, request, session, rule_id, action_id):
             try:
-                rule = webinterface._Automation[rule_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested automation rule doesn't exist.", 'warning')
+                rule = webinterface._Automation.get(rule_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/automation/index')
             try:
-                item = webinterface._Automation.get_action_items(rule_id, action_id)
-            except KeyError as e:
-                webinterface.add_alert("Requested item for rule doesn't exist.", 'warning')
+                action = webinterface._Automation.get_action_items(rule_id, action_id)
+            except YomboWarning as e:
+                webinterface.add_alert("Requested action id could not be located.", 'warning')
                 return webinterface.redirect(request, "/automation/%s/details" % rule_id)
-            if item['action_type'] != 'template':
-                webinterface.add_alert("Requested item type is invalid.", 'warning')
+            if action['action_type'] != 'template':
+                webinterface.add_alert("Requested action type is invalid.", 'warning')
                 return webinterface.redirect(request, "/automation/%s/details" % rule_id)
 
             page = webinterface.get_template(
@@ -313,10 +314,10 @@ def route_automation_template(webapp):
             )
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/automation/%s/details" % rule_id, rule.label)
-            webinterface.add_breadcrumb(request, "/automation/%s/delete_action_template" % rule_id, "Delete item: Template")
+            webinterface.add_breadcrumb(request, "/automation/%s/delete_action_template" % rule_id, "Delete action: Template")
             return page.render(alerts=webinterface.get_alerts(),
                                rule=rule,
-                               item=item,
+                               action=action,
                                action_id=action_id,
                                )
 
@@ -324,17 +325,17 @@ def route_automation_template(webapp):
         @require_auth()
         def page_automation_action_template_delete_post(webinterface, request, session, rule_id, action_id):
             try:
-                rule = webinterface._Automation[rule_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested automation rule doesn't exist.", 'warning')
+                rule = webinterface._Automation.get(rule_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/automation/index')
             try:
-                item = webinterface._Automation.get_action_items(rule_id, action_id)
-            except KeyError as e:
-                webinterface.add_alert("Requested item for rule doesn't exist.", 'warning')
+                action = webinterface._Automation.get_action_items(rule_id, action_id)
+            except YomboWarning as e:
+                webinterface.add_alert("Requested action id could not be located.", 'warning')
                 return webinterface.redirect(request, "/automation/%s/details" % rule_id)
-            if item['action_type'] != 'template':
-                webinterface.add_alert("Requested item type is invalid.", 'warning')
+            if action['action_type'] != 'template':
+                webinterface.add_alert("Requested action type is invalid.", 'warning')
                 return webinterface.redirect(request, "/automation/%s/details" % rule_id)
 
             try:
@@ -357,5 +358,5 @@ def route_automation_template(webapp):
                 webinterface.add_alert("Cannot delete template from automation rule. %s" % e.message, 'warning')
                 return webinterface.redirect(request, '/automation/index')
 
-            webinterface.add_alert("Deleted template item for automation rule.")
+            webinterface.add_alert("Deleted template action for automation rule.")
             return webinterface.redirect(request, "/automation/%s/details" % rule.rule_id)

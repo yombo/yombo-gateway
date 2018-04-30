@@ -1,15 +1,15 @@
 {% macro display_trigger_device(rule) %}
-{%- set device_id = rule.data['trigger']['device_id'] %}
+{%- set device_id = rule.data['trigger']['device_machine_label'] %}
 {%- set device = _devices[device_id] %}
 <strong>Trigger type:</strong> Device<br>
 <strong>Monitored device:</strong>
-{{ device.label}}<br>
+{{ device.full_label}}<br>
 {%- endmacro %}
 
 {% macro display_trigger_scene(rule) %}
 <strong>Trigger type:</strong> Scene<br>
 <strong>Monitored scene:</strong> {{rule.data['trigger']['name']}}<br>
-<strong>Scene action:</strong> {{rule.data['trigger']['action']}}<br>
+<strong>Scene action:</strong> {{rule.data['trigger']['actions']}}<br>
 {%- endmacro %}
 
 {% macro display_trigger_state(rule) %}
@@ -30,24 +30,24 @@
 {%- endmacro %}
 
 
-{% macro display_action_device(rule, action_id, item) %}
+{% macro display_action_device(rule, action_id, action) %}
 <tr class="highlight-device">
 <td>
   <strong>Device:</strong>
-  {% set device = _devices.get(item['device_machine_label']) -%}
-  {% set command = _commands[item['command_machine_label']] -%}
+  {% set device = _devices.get(action['device_machine_label']) -%}
+  {% set command = _commands[action['command_machine_label']] -%}
   {{device.full_label}}<br>
   <strong>Command:</strong>
   {{command.label}}<br>
 </td>
-<td> {{item['weight']}} </td>
+<td> {{action['weight']}} </td>
 <td>
   <strong>Inputs:</strong><br>
   {%- set available_commands = device.available_commands() -%}
   {%- set inputs = available_commands[command.command_id]['inputs'] -%}
-  {% if item['inputs']|length == 0 %}No inputs
+  {% if action['inputs']|length == 0 %}No inputs
   {%- else -%}
-  {%- for input_id, value in item['inputs'].items() -%}
+  {%- for input_id, value in action['inputs'].items() -%}
   <i>{{ inputs[input_id]['label'] }}:</i> {{value}} <br>
   {%- endfor -%}
   {%- endif -%}
@@ -62,12 +62,12 @@
 </tr>
 {%- endmacro %}
 
-{% macro display_action_pause(rule, action_id, item) %}
+{% macro display_action_pause(rule, action_id, action) %}
 <tr class="highlight-pause">
 <td> <strong>Pause</strong></td>
-<td> {{item['weight']}} </td>
+<td> {{action['weight']}} </td>
 <td>
-  <strong>Duration:</strong><br> {{item['duration']}} seconds<br>
+  <strong>Duration:</strong><br> {{action['duration']}} seconds<br>
 </td>
 <td>
 {% set links = _automation.action_types['pause'] %}
@@ -79,12 +79,12 @@
 </tr>
 {%- endmacro %}
 
-{% macro display_action_scene(rule, action_id, item) %}
+{% macro display_action_scene(rule, action_id, action) %}
 <tr class="highlight-scene">
-<td> <strong>Scene:</strong> {{_scenes[item['scene_machine_label']].label}}</td>
-<td> {{item['weight']}} </td>
+<td> <strong>Scene:</strong> {{_scenes[action['scene_machine_label']].label}}</td>
+<td> {{action['weight']}} </td>
 <td>
-  <strong>Action:</strong><br> {{item['action']}}<br>
+  <strong>Action:</strong><br> {{action['scene_action']}}<br>
 </td>
 <td>
 {% set links = _automation.action_types['scene'] %}
@@ -96,12 +96,12 @@
 </tr>
 {%- endmacro %}
 
-{% macro display_action_state(rule, action_id, item) %}
+{% macro display_action_state(rule, action_id, action) %}
 <tr class="highlight-state">
-<td> <strong>State:</strong> {{item['name']}}</td>
-<td> {{item['weight']}} </td>
+<td> <strong>State:</strong> {{action['name']}}</td>
+<td> {{action['weight']}} </td>
 <td>
-  <strong>Set Value:</strong><br> {{item['value']}}<br>
+  <strong>Set Value:</strong><br> {{action['value']}}<br>
 </td>
 <td>
 {% set links = _automation.action_types['state'] %}
@@ -113,13 +113,13 @@
 </tr>
 {%- endmacro %}
 
-{% macro display_action_template(rule, action_id, item) %}
+{% macro display_action_template(rule, action_id, action) %}
 {% set links = _automation.action_types['state'] %}
 <tr class="highlight-template">
 <td> <strong>Template</strong></td>
-<td> {{item['weight']}} </td>
+<td> {{action['weight']}} </td>
 <td>
-  <strong>Description:</strong><br> {{item['description']}}<br>
+  <strong>Description:</strong><br> {{action['description']}}<br>
 </td>
 <td>
 {% set links = _automation.action_types['template'] %}
@@ -136,11 +136,11 @@
 {%- endmacro %}
 
 {% macro edit_action_link(links, rule_id, action_id) %}
-<a href="{{filter_url(links['edit_url'],rule_id,action_id)}}" title="Edit item"><i class="fas fa-pencil-alt fa-lg"></i></a>&nbsp;&nbsp;
+<a href="{{filter_url(links['edit_url'],rule_id,action_id)}}" title="Edit action"><i class="fas fa-pencil-alt fa-lg"></i></a>&nbsp;&nbsp;
 {%- endmacro %}
 
 {% macro delete_action_link(links, rule_id, action_id) %}
-<a href="{{filter_url(links['delete_url'],rule_id,action_id)}}" title="Delete item"><i class="fas fa-trash-alt fa-lg"></i></a>&nbsp;&nbsp;
+<a href="{{filter_url(links['delete_url'],rule_id,action_id)}}" title="Delete action"><i class="fas fa-trash-alt fa-lg"></i></a>&nbsp;&nbsp;
 {%- endmacro %}
 
 {% macro up_action_link(links, rule_id, action_id) %}

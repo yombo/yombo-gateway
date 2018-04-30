@@ -33,42 +33,44 @@ def route_scenes_state(webapp):
 
         @webapp.route('/<string:scene_id>/add_state', methods=['GET'])
         @require_auth()
-        def page_scenes_item_state_add_get(webinterface, request, session, scene_id):
+        def page_scenes_action_state_add_get(webinterface, request, session, scene_id):
             try:
-                scene = webinterface._Scenes[scene_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested scene could not be located.", 'warning')
+                scene = webinterface._Scenes.get(scene_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
 
             data = {
-                'item_type': 'state',
+                'action_type': 'state',
                 'name': webinterface.request_get_default(request, 'name', ""),
                 'value': webinterface.request_get_default(request, 'value', ""),
                 'value_type': webinterface.request_get_default(request, 'value_type', ""),
+                'gateway_id': webinterface.request_get_default(request, 'gateway_id', webinterface.gateway_id()),
                 'weight': int(webinterface.request_get_default(
-                    request, 'weight', (len(webinterface._Scenes.get_item(scene_id)) + 1) * 10)),
+                    request, 'weight', (len(webinterface._Scenes.get_action_items(scene_id)) + 1) * 10)),
             }
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene_id, scene.label)
-            webinterface.add_breadcrumb(request, "/scenes/%s/add_state" % scene_id, "Add Item: State")
+            webinterface.add_breadcrumb(request, "/scenes/%s/add_state" % scene_id, "Add action: State")
             return page_scenes_form_state(webinterface, request, session, scene, data, 'add', "Add state to scene")
 
         @webapp.route('/<string:scene_id>/add_state', methods=['POST'])
         @require_auth()
-        def page_scenes_item_state_add_post(webinterface, request, session, scene_id):
+        def page_scenes_action_state_add_post(webinterface, request, session, scene_id):
             try:
-                scene = webinterface._Scenes[scene_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested scene could not be located.", 'warning')
+                scene = webinterface._Scenes.get(scene_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
 
             data = {
-                'item_type': 'state',
+                'action_type': 'state',
                 'name': webinterface.request_get_default(request, 'name', ""),
                 'value': webinterface.request_get_default(request, 'value', ""),
                 'value_type': webinterface.request_get_default(request, 'value_type', ""),
+                'gateway_id': webinterface.request_get_default(request, 'gateway_id', webinterface.gateway_id()),
                 'weight': int(webinterface.request_get_default(
-                    request, 'weight', (len(webinterface._Scenes.get_item(scene_id)) + 1) * 10)),
+                    request, 'weight', (len(webinterface._Scenes.get_action_items(scene_id)) + 1) * 10)),
             }
 
             if data['name'] == "":
@@ -114,76 +116,75 @@ def route_scenes_state(webapp):
                 return page_scenes_form_state(webinterface, request, session, scene, data, 'add', "Add state to scene")
 
             try:
-                webinterface._Scenes.add_scene_item(scene_id, **data)
+                webinterface._Scenes.add_action_item(scene_id, **data)
             except YomboWarning as e:
                 webinterface.add_alert("Cannot add state to scene. %s" % e.message, 'warning')
                 return page_scenes_form_state(webinterface, request, session, scene, data, 'add', "Add state to scene")
 
-            webinterface.add_alert("Added state item to scene.")
+            webinterface.add_alert("Added state action to scene.")
             return webinterface.redirect(request, "/scenes/%s/details" % scene.scene_id)
 
-        @webapp.route('/<string:scene_id>/edit_state/<string:item_id>', methods=['GET'])
+        @webapp.route('/<string:scene_id>/edit_state/<string:action_id>', methods=['GET'])
         @require_auth()
-        def page_scenes_item_state_edit_get(webinterface, request, session, scene_id, item_id):
+        def page_scenes_action_state_edit_get(webinterface, request, session, scene_id, action_id):
             try:
-                scene = webinterface._Scenes[scene_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested scene doesn't exist: %s" % scene_id, 'warning')
+                scene = webinterface._Scenes.get(scene_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
-
             try:
-                item = webinterface._Scenes.get_item(scene_id, item_id)
-            except KeyError as e:
-                webinterface.add_alert("Requested item for scene doesn't exist.", 'warning')
+                action = webinterface._Scenes.get_action_items(scene_id, action_id)
+            except YomboWarning as e:
+                webinterface.add_alert("Requested action id could not be located.", 'warning')
                 return webinterface.redirect(request, "/scenes/%s/details" % scene_id)
-            if item['item_type'] != 'state':
-                webinterface.add_alert("Requested item type is invalid.", 'warning')
-                return webinterface.redirect(request, "/automation/%s/details" % scene_id)
+            if action['action_type'] != 'state':
+                webinterface.add_alert("Requested action type is invalid.", 'warning')
+                return webinterface.redirect(request, "/scenes/%s/details" % scene_id)
 
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene.scene_id, scene.label)
-            webinterface.add_breadcrumb(request, "/scenes/%s/edit_state" % scene.scene_id, "Edit item: State")
-            return page_scenes_form_state(webinterface, request, session, scene, item, 'edit',
-                                          "Edit scene item: State")
+            webinterface.add_breadcrumb(request, "/scenes/%s/edit_state" % scene.scene_id, "Edit action: State")
+            return page_scenes_form_state(webinterface, request, session, scene, action, 'edit',
+                                          "Edit scene action: State")
 
-        @webapp.route('/<string:scene_id>/edit_state/<string:item_id>', methods=['POST'])
+        @webapp.route('/<string:scene_id>/edit_state/<string:action_id>', methods=['POST'])
         @require_auth()
-        def page_scenes_item_state_edit_post(webinterface, request, session, scene_id, item_id):
+        def page_scenes_action_state_edit_post(webinterface, request, session, scene_id, action_id):
             try:
-                scene = webinterface._Scenes[scene_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested scene doesn't exist: %s" % scene_id, 'warning')
+                scene = webinterface._Scenes.get(scene_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
-
             try:
-                item = webinterface._Scenes.get_item(scene_id, item_id)
-            except KeyError as e:
-                webinterface.add_alert("Requested item for scene doesn't exist.", 'warning')
+                action = webinterface._Scenes.get_action_items(scene_id, action_id)
+            except YomboWarning as e:
+                webinterface.add_alert("Requested action id could not be located.", 'warning')
                 return webinterface.redirect(request, "/scenes/%s/details" % scene_id)
-            if item['item_type'] != 'state':
-                webinterface.add_alert("Requested item type is invalid.", 'warning')
-                return webinterface.redirect(request, "/automation/%s/details" % scene_id)
+            if action['action_type'] != 'state':
+                webinterface.add_alert("Requested action type is invalid.", 'warning')
+                return webinterface.redirect(request, "/scenes/%s/details" % scene_id)
 
             data = {
-                'item_type': 'state',
+                'action_type': 'state',
                 'name': webinterface.request_get_default(request, 'name', ""),
                 'value': webinterface.request_get_default(request, 'value', ""),
                 'value_type': webinterface.request_get_default(request, 'value_type', ""),
+                'gateway_id': webinterface.request_get_default(request, 'gateway_id', webinterface.gateway_id()),
                 'weight': int(webinterface.request_get_default(
-                    request, 'weight', (len(webinterface._Scenes.get_item(scene_id)) + 1) * 10)),
+                    request, 'weight', (len(webinterface._Scenes.get_action_items(scene_id)) + 1) * 10)),
             }
 
             if data['name'] == "":
                 webinterface.add_alert('Must enter a state name.', 'warning')
-                return page_scenes_form_state(webinterface, request, session, scene, data, 'add', "Edit scene item: State")
+                return page_scenes_form_state(webinterface, request, session, scene, data, 'add', "Edit scene action: State")
 
             if data['value'] == "":
                 webinterface.add_alert('Must enter a state value to set.', 'warning')
-                return page_scenes_form_state(webinterface, request, session, scene, data, 'add', "Edit scene item: State")
+                return page_scenes_form_state(webinterface, request, session, scene, data, 'add', "Edit scene action: State")
 
             if data['value_type'] == "" or data['value_type'] not in ('integer', 'string', 'boolean', 'float'):
                 webinterface.add_alert('Must enter a state value_type to ensure validity.', 'warning')
-                return page_scenes_form_state(webinterface, request, session, scene, data, 'add', "Edit scene item: State")
+                return page_scenes_form_state(webinterface, request, session, scene, data, 'add', "Edit scene action: State")
 
             value_type = data['value_type']
             if value_type == "string":
@@ -194,14 +195,14 @@ def route_scenes_state(webapp):
                 except Exception:
                     webinterface.add_alert("Cannot coerce state value into an integer", 'warning')
                     return page_scenes_form_state(webinterface, request, session, scene, data, 'add',
-                                                      "Edit scene item: State")
+                                                      "Edit scene action: State")
             elif value_type == "float":
                 try:
                     data['value'] = coerce_value(data['value'], 'float')
                 except Exception:
                     webinterface.add_alert("Cannot coerce state value into an float", 'warning')
                     return page_scenes_form_state(webinterface, request, session, scene, data, 'add',
-                                                      "Edit scene item: State")
+                                                      "Edit scene action: State")
             elif value_type == "boolean":
                 try:
                     data['value'] = coerce_value(data['value'], 'bool')
@@ -210,25 +211,25 @@ def route_scenes_state(webapp):
                 except Exception:
                     webinterface.add_alert("Cannot coerce state value into an boolean", 'warning')
                     return page_scenes_form_state(webinterface, request, session, scene, data, 'add',
-                                                      "Edit scene item: State")
+                                                      "Edit scene action: State")
             else:
                 webinterface.add_alert("Unknown value type.", 'warning')
                 return page_scenes_form_state(webinterface, request, session, scene, data, 'add',
-                                                  "Edit scene item: State")
+                                                  "Edit scene action: State")
 
             try:
                 data['weight'] = int(data['weight'])
             except Exception:
                 webinterface.add_alert('Must enter a number for a weight.', 'warning')
-                return page_scenes_form_state(webinterface, request, session, scene, data, 'add', "Edit scene item: State")
+                return page_scenes_form_state(webinterface, request, session, scene, data, 'add', "Edit scene action: State")
 
             try:
-                webinterface._Scenes.edit_scene_item(scene_id, item_id, **data)
+                webinterface._Scenes.edit_action_item(scene_id, action_id, **data)
             except YomboWarning as e:
                 webinterface.add_alert("Cannot edit state within scene. %s" % e.message, 'warning')
-                return page_scenes_form_state(webinterface, request, session, scene, data, 'add', "Edit scene item: State")
+                return page_scenes_form_state(webinterface, request, session, scene, data, 'add', "Edit scene action: State")
 
-            webinterface.add_alert("Edited state item for scene.")
+            webinterface.add_alert("Edited state action for scene.")
             return webinterface.redirect(request, "/scenes/%s/details" % scene.scene_id)
 
         def page_scenes_form_state(webinterface, request, session, scene, data, action_type, header_label):
@@ -241,23 +242,22 @@ def route_scenes_state(webapp):
                                action_type=action_type,
                                )
 
-        @webapp.route('/<string:scene_id>/delete_state/<string:item_id>', methods=['GET'])
+        @webapp.route('/<string:scene_id>/delete_state/<string:action_id>', methods=['GET'])
         @require_auth()
-        def page_scenes_item_state_delete_get(webinterface, request, session, scene_id, item_id):
+        def page_scenes_action_state_delete_get(webinterface, request, session, scene_id, action_id):
             try:
-                scene = webinterface._Scenes[scene_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested scene doesn't exist: %s" % scene_id, 'warning')
+                scene = webinterface._Scenes.get(scene_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
-
             try:
-                item = webinterface._Scenes.get_item(scene_id, item_id)
-            except KeyError as e:
-                webinterface.add_alert("Requested item for scene doesn't exist.", 'warning')
+                action = webinterface._Scenes.get_action_items(scene_id, action_id)
+            except YomboWarning as e:
+                webinterface.add_alert("Requested action id could not be located.", 'warning')
                 return webinterface.redirect(request, "/scenes/%s/details" % scene_id)
-            if item['item_type'] != 'state':
-                webinterface.add_alert("Requested item type is invalid.", 'warning')
-                return webinterface.redirect(request, "/automation/%s/details" % scene_id)
+            if action['action_type'] != 'state':
+                webinterface.add_alert("Requested action type is invalid.", 'warning')
+                return webinterface.redirect(request, "/scenes/%s/details" % scene_id)
 
             page = webinterface.get_template(
                 request,
@@ -265,30 +265,29 @@ def route_scenes_state(webapp):
             )
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene_id, scene.label)
-            webinterface.add_breadcrumb(request, "/scenes/%s/delete_state" % scene_id, "Delete item: State")
+            webinterface.add_breadcrumb(request, "/scenes/%s/delete_state" % scene_id, "Delete action: State")
             return page.render(alerts=webinterface.get_alerts(),
                                scene=scene,
-                               item=item,
-                               item_id=item_id,
+                               action=action,
+                               action_id=action_id,
                                )
 
-        @webapp.route('/<string:scene_id>/delete_state/<string:item_id>', methods=['POST'])
+        @webapp.route('/<string:scene_id>/delete_state/<string:action_id>', methods=['POST'])
         @require_auth()
-        def page_scenes_item_state_delete_post(webinterface, request, session, scene_id, item_id):
+        def page_scenes_action_state_delete_post(webinterface, request, session, scene_id, action_id):
             try:
-                scene = webinterface._Scenes[scene_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested scene doesn't exist: %s" % scene_id, 'warning')
+                scene = webinterface._Scenes.get(scene_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
-
             try:
-                item = webinterface._Scenes.get_item(scene_id, item_id)
-            except KeyError as e:
-                webinterface.add_alert("Requested item for scene doesn't exist.", 'warning')
+                action = webinterface._Scenes.get_action_items(scene_id, action_id)
+            except YomboWarning as e:
+                webinterface.add_alert("Requested action id could not be located.", 'warning')
                 return webinterface.redirect(request, "/scenes/%s/details" % scene_id)
-            if item['item_type'] != 'state':
-                webinterface.add_alert("Requested item type is invalid.", 'warning')
-                return webinterface.redirect(request, "/automation/%s/details" % scene_id)
+            if action['action_type'] != 'state':
+                webinterface.add_alert("Requested action type is invalid.", 'warning')
+                return webinterface.redirect(request, "/scenes/%s/details" % scene_id)
 
             try:
                 confirm = request.args.get('confirm')[0]
@@ -296,19 +295,19 @@ def route_scenes_state(webapp):
                                        'delete the state from the scene.', 'warning')
             except:
                 return webinterface.redirect(request,
-                                             '/scenes/%s/delete_state/%s' % (scene_id, item_id))
+                                             '/scenes/%s/delete_state/%s' % (scene_id, action_id))
 
             if confirm != "delete":
                 webinterface.add_alert('Must enter "delete" in the confirmation box to '
                                        'delete the state from the scene.', 'warning')
                 return webinterface.redirect(request,
-                                             '/scenes/%s/delete_state/%s' % (scene_id, item_id))
+                                             '/scenes/%s/delete_state/%s' % (scene_id, action_id))
 
             try:
-                webinterface._Scenes.delete_scene_item(scene_id, item_id)
+                webinterface._Scenes.delete_scene_item(scene_id, action_id)
             except YomboWarning as e:
                 webinterface.add_alert("Cannot delete state from scene. %s" % e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
 
-            webinterface.add_alert("Deleted state item for scene.")
+            webinterface.add_alert("Deleted state action for scene.")
             return webinterface.redirect(request, "/scenes/%s/details" % scene.scene_id)

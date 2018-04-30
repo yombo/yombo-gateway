@@ -28,9 +28,9 @@ from yombo.utils import (random_string, sleep, is_true_false, global_invoke_all,
 
 logger = get_logger("library.scenes")
 
-REQUIRED_ACTION_KEYS = ['platform', 'webroutes', 'render_table_column_callback', 'scene_item_update_callback',
+REQUIRED_ACTION_KEYS = ['platform', 'webroutes', 'render_table_column_callback', 'scene_action_update_callback',
                         'add_url', 'note', 'handle_trigger_callback']
-REQUIRED_ACTION_RENDER_TABLE_COLUMNS = ['type', 'attributes', 'edit_url', 'delete_url']
+REQUIRED_ACTION_RENDER_TABLE_COLUMNS = ['action_type', 'attributes', 'edit_url', 'delete_url']
 
 class Scenes(YomboLibrary, object):
     """
@@ -183,10 +183,10 @@ class Scenes(YomboLibrary, object):
                 scene.data['config']['description'] = scene.label
             self.scenes_running[scene_id] = 'stopped'
             self.patch_scene(scene)  # add methods an attributes to the node.
-            items = self.get_item(scene_id)
-            for item_id, item in items.items():
-                if item['item_type'] == 'template':
-                    self.scene_templates["%s_%s" % (scene_id, item_id)] = self._Template.new(item['template'])
+            actions = self.get_action_items(scene_id)
+            for action_id, action in actions.items():
+                if action['action_type'] == 'template':
+                    self.scene_templates["%s_%s" % (scene_id, action_id)] = self._Template.new(action['template'])
 
     @inlineCallbacks
     def _start_(self, **kwargs):
@@ -214,7 +214,7 @@ class Scenes(YomboLibrary, object):
                        "add_url": "/scenes/{scene_id}/add_state",
                        "note": "Change a state value",
                        "render_table_column_callback": self.scene_render_table_column,  # Show summary line in a table.
-                       "scene_item_update_callback": self.scene_item_update,  # Return a dictionary to store as the item.
+                       "scene_action_update_callback": self.scene_item_update,  # Return a dictionary to store as the item.
                        "handle_trigger_callback": self.scene_item_triggered,  # Do item activity
                    }
                ]
@@ -246,17 +246,17 @@ class Scenes(YomboLibrary, object):
         """
         return OrderedDict(sorted(self.scene_types_urls.items(), key=lambda x: x))
 
-    def get_scene_type_column_data(self, scene, item):
+    def get_scene_type_column_data(self, scene, action):
         """
-        Called by the scenes macros.tpl file to get scene detail item for a custom scene type.
+        Called by the scenes macros.tpl file to get scene detail action for a custom scene type.
 
         :param scene:
-        :param item:
+        :param action:
         :return:
         """
-        item_type = item['item_type']
-        if item_type in self.scene_types_extra:
-            return self.scene_types_extra[item_type]['render_table_column_callback'](scene, item)
+        action_type = action['action_type']
+        if action_type in self.scene_types_extra:
+            return self.scene_types_extra[action_type]['render_table_column_callback'](scene, action)
 
     def get(self, requested_scene=None):
         """
@@ -274,40 +274,22 @@ class Scenes(YomboLibrary, object):
                 return scene
         raise YomboWarning("Cannot find requested scene : %s" % requested_scene)
 
-    def get_scene_item(self, scene_id, item_id=None):
+    def get_action_items(self, scene_id, action_id=None):
         """
         Get a scene item.
 
         :param scene_id:
-        :param item_id:
+        :param action_id:
         :return:
         """
         scene = self.get(scene_id)
-        if item_id is None:
-            return scene, OrderedDict(sorted(scene.data['items'].items(), key=lambda x: x[1]['weight']))
+        if action_id is None:
+            return OrderedDict(sorted(scene.data['actions'].items(), key=lambda x: x[1]['weight']))
         else:
             try:
-                return scene, scene.data['items'][item_id]
+                return scene.data['actions'][action_id]
             except YomboWarning:
-                raise YomboWarning("Unable to find requested item for the provide scene_id.")
-
-
-    def get_item(self, scene_id, item_id=None):
-        """
-        Get a scene item.
-
-        :param scene_id:
-        :param item_id:
-        :return:
-        """
-        scene = self.get(scene_id)
-        if item_id is None:
-            return OrderedDict(sorted(scene.data['items'].items(), key=lambda x: x[1]['weight']))
-        else:
-            try:
-                return scene.data['items'][item_id]
-            except YomboWarning:
-                raise YomboWarning("Unable to find requested item for the provide scene_id.")
+                raise YomboWarning("Unable to find requested action_id (%s) for scene_id (%s)." % (action_id, scene_id))
 
     def check_duplicate_scene(self, label=None, machine_label=None, scene_id=None):
         """
@@ -330,7 +312,7 @@ class Scenes(YomboLibrary, object):
 
     def disable(self, scene_id, **kwargs):
         """
-        Disable a scene. Just marks the configuration item as disabled.
+        Disable a scene. Just marks the configuration for the scene as disabled.
 
         :param scene_id:
         :return:
@@ -339,10 +321,15 @@ class Scenes(YomboLibrary, object):
         data = scene.data
         data['config']['enabled'] = False
         scene.on_change()
+        self._Automation.trigger_monitor('scene',
+                                         scene=scene,
+                                         name=scene.machine_label,
+                                         action='disable')
+
 
     def enable(self, scene_id, **kwargs):
         """
-        Enable a scene. Just marks the configuration item as enabled.
+        Enable a scene. Just marks the configuration for the scene as enabled.
 
         :param scene_id:
         :return:
@@ -351,6 +338,10 @@ class Scenes(YomboLibrary, object):
         data = scene.data
         data['config']['enabled'] = True
         scene.on_change()
+        self._Automation.trigger_monitor('scene',
+                                         scene=scene,
+                                         name=scene.machine_label,
+                                         action='disable')
 
     @inlineCallbacks
     def add(self, label, machine_label, description, status):
@@ -361,35 +352,9 @@ class Scenes(YomboLibrary, object):
         :param machine_label:
         :return:
         """
-        # Example data structure
-        #
-        # data = {
-        #     'items': {
-        #         '123-itemid': {
-        #             'weight': 0,
-        #             'type': 'state',
-        #             'name': 'some_state',
-        #             'value': 'new_value',
-        #             'value_type': 'string',  # or int, bool
-        #         },
-        #         '987-itemid': {
-        #             'weight': 1,
-        #             'type': 'device',
-        #             'device_id': 'abc-deviceid',
-        #             'command': 'on',
-        #             'inputs': {
-        #                 'percent': 50,
-        #                 ],
-        #             },
-        #         },
-        #     },
-        #     'config': {
-        #         'enabled': 1,  # enabled
-        #     },
-        # }
         self.check_duplicate_scene(label, machine_label)
         data = {
-            'items': {},
+            'actions': {},
             'config': {
                 'enabled': is_true_false(status),
                 'description': description
@@ -462,7 +427,7 @@ class Scenes(YomboLibrary, object):
         machine_label = "%s_copy" % scene.machine_label
         if label is not None and machine_label is not None:
             self.check_duplicate_scene(label, machine_label, scene_id)
-        new_data = msgpack.unpackb(msgpack.packb(scene.data))
+        new_data = bytes_to_unicode(msgpack.unpackb(msgpack.packb(scene.data)))  # had issues with deepcopy
         new_scene = yield self._Nodes.create(label=label,
                                              machine_label=machine_label,
                                              node_type='scene',
@@ -479,16 +444,15 @@ class Scenes(YomboLibrary, object):
         if scene_id not in self.scenes:
             return
         scene = self.get(scene_id)
-        items = deepcopy(scene.data['items'])
-        o_items = OrderedDict(sorted(items.items(), key=lambda x: x[1]['weight']))
+        actions = deepcopy(scene.data['actions'])
+        ordered_actions = OrderedDict(sorted(actions.items(), key=lambda x: x[1]['weight']))
         weight = 10
-        for item_id, item in o_items.items():
-            self.scenes[scene_id].data['items'][item_id]['weight'] = weight
-            item['weight'] = weight
+        for action_id, action in ordered_actions.items():
+            self.scenes[scene_id].data['actions'][action_id]['weight'] = weight
+            action['weight'] = weight
             weight += 10
-        # scene.data['items'] = o_items
 
-    def add_scene_item(self, scene_id, **kwargs):
+    def add_action_item(self, scene_id, **kwargs):
         """
         Add new scene item.
 
@@ -497,150 +461,154 @@ class Scenes(YomboLibrary, object):
         :return:
         """
         scene = self.get(scene_id)
-        item_type = kwargs['item_type']
+        action_type = kwargs['action_type']
         if 'weight' not in kwargs:
-            kwargs['weight'] = (len(scene.data['items']) + 1) * 10
+            kwargs['weight'] = (len(scene.data['actions']) + 1) * 10
 
-        item_id = random_string(length=15)
-        if item_type == 'device':
-            device = self._Devices[kwargs['device_id']]
-            command = self._Commands[kwargs['command_id']]
+        action_id = random_string(length=15)
+        if action_type == 'device':
+            device = self._Devices[kwargs['device_machine_label']]
+            command = self._Commands[kwargs['command_machine_label']]
             # This fancy inline just removes None and '' values.
             kwargs['inputs'] = {k: v for k, v in kwargs['inputs'].items() if v}
 
-            scene.data['items'][item_id] = {
-                'item_id': item_id,
-                'item_type': 'device',
-                'device_id': device.device_id,
-                'command_id': command.command_id,
+            scene.data['actions'][action_id] = {
+                'action_id': action_id,
+                'action_type': 'device',
+                'device_machine_label': device.machine_label,
+                'command_machine_label': command.machine_label,
                 'inputs': kwargs['inputs'],
                 'weight': kwargs['weight'],
             }
 
-        elif item_type == 'pause':
-            scene.data['items'][item_id] = {
-                'item_id': item_id,
-                'item_type': 'pause',
+        elif action_type == 'pause':
+            scene.data['actions'][action_id] = {
+                'action_id': action_id,
+                'action_type': 'pause',
                 'duration': kwargs['duration'],
                 'weight': kwargs['weight'],
             }
 
-        elif item_type == 'scene':
-            scene.data['items'][item_id] = {
-                'item_id': item_id,
-                'item_type': 'scene',
-                'machine_label': kwargs['machine_label'],
-                'action': kwargs['action'],
+        elif action_type == 'scene':
+            scene.data['actions'][action_id] = {
+                'action_id': action_id,
+                'action_type': 'scene',
+                'scene_machine_label': kwargs['scene_machine_label'],
+                'scene_action': kwargs['scene_action'],
                 'weight': kwargs['weight'],
             }
 
-        elif item_type == 'template':
-            self.scene_templates["%s_%s" % (scene_id, item_id)] = self._Template.new(kwargs['template'])
-            self.scene_templates["%s_%s" % (scene_id, item_id)].ensure_valid()
-            scene.data['items'][item_id] = {
-                'item_id': item_id,
-                'item_type': 'template',
+        elif action_type == 'template':
+            self.scene_templates["%s_%s" % (scene_id, action_id)] = self._Template.new(kwargs['template'])
+            self.scene_templates["%s_%s" % (scene_id, action_id)].ensure_valid()
+            scene.data['actions'][action_id] = {
+                'action_id': action_id,
+                'action_type': 'template',
                 'description': kwargs['description'],
                 'template': kwargs['template'],
                 'weight': kwargs['weight'],
             }
 
-        elif item_type in self.scene_types_extra:
-            item_data = self.scene_types_extra[item_type]['scene_item_update_callback'](scene, kwargs)
-            item_data['item_type'] = item_type
-            item_data['item_id'] = item_id
-            scene.data['items'][item_id] = item_data
+        elif action_type in self.scene_types_extra:
+            action_data = self.scene_types_extra[action_type]['scene_action_update_callback'](scene, kwargs)
+            action_data['action_type'] = action_type
+            action_data['action_id'] = action_id
+            scene.data['actions'][action_id] = action_data
 
         else:
             raise YomboWarning("Invalid scene item type.")
         self.balance_weights(scene_id)
         scene.on_change()
-        return item_id
+        return action_id
 
-    def edit_scene_item(self, scene_id, item_id, **kwargs):
+    def edit_action_item(self, scene_id, action_id, **kwargs):
         """
         Edit scene item.
 
         :param scene_id:
-        :param item_id:
+        :param action_id:
         :param kwargs:
         :return:
         """
-        scene, item = self.get_scene_item(scene_id, item_id)
+        scene = self.get(scene_id)
+        action = self.get_action_items(scene_id, action_id)
 
-        item_type = item['item_type']
+        action_type = action['action_type']
 
-        if item_type == 'device':
-            device = self._Devices[kwargs['device_id']]
-            command = self._Commands[kwargs['command_id']]
-            item['device_id'] = device.device_id
-            item['command_id'] = command.command_id
+        if action_type == 'device':
+            device = self._Devices[kwargs['device_machine_label']]
+            command = self._Commands[kwargs['command_machine_label']]
+            action['device_machine_label'] = device.machine_label
+            action['command_machine_label'] = command.machine_label
             kwargs['inputs'] = {k: v for k, v in kwargs['inputs'].items() if v}
-            item['inputs'] = kwargs['inputs']
-            item['weight'] = kwargs['weight']
+            action['inputs'] = kwargs['inputs']
+            action['weight'] = kwargs['weight']
 
-        elif item_type == 'pause':
-            item['duration'] = kwargs['duration']
-            item['weight'] = kwargs['weight']
+        elif action_type == 'pause':
+            action['duration'] = kwargs['duration']
+            action['weight'] = kwargs['weight']
 
-        elif item_type == 'scene':
-            item['machine_label'] = kwargs['machine_label']
-            item['action'] = kwargs['action']
-            item['weight'] = kwargs['weight']
+        elif action_type == 'scene':
+            action['scene_machine_label'] = kwargs['scene_machine_label']
+            action['scene_action'] = kwargs['scene_action']
+            action['weight'] = kwargs['weight']
 
-        elif item_type == 'template':
-            self.scene_templates["%s_%s" % (scene_id, item_id)] = self._Template.new(kwargs['template'])
-            self.scene_templates["%s_%s" % (scene_id, item_id)].ensure_valid()
-            item['description'] = kwargs['description']
-            item['template'] = kwargs['template']
-            item['weight'] = kwargs['weight']
+        elif action_type == 'template':
+            self.scene_templates["%s_%s" % (scene_id, action_id)] = self._Template.new(kwargs['template'])
+            self.scene_templates["%s_%s" % (scene_id, action_id)].ensure_valid()
+            action['description'] = kwargs['description']
+            action['template'] = kwargs['template']
+            action['weight'] = kwargs['weight']
 
-        elif item_type in self.scene_types_extra:
-            item_data = self.scene_types_extra[item_type]['scene_item_update_callback'](scene, kwargs)
-            item_data['item_type'] = item_type
-            item_data['item_id'] = item_id
-            scene.data['items'][item_id] = item_data
+        elif action_type in self.scene_types_extra:
+            action_data = self.scene_types_extra[action_type]['scene_action_update_callback'](scene, kwargs)
+            action_data['action_type'] = action_type
+            action_data['action_id'] = action_id
+            scene.data['actions'][action_id] = action_data
 
         else:
             raise YomboWarning("Invalid scene item type.")
         self.balance_weights(scene_id)
         scene.on_change()
 
-    def delete_scene_item(self, scene_id, item_id):
+    def delete_scene_item(self, scene_id, action_id):
         """
-        Delete a scene item.
+        Delete a scene action.
 
         :param scene_id:
-        :param item_id:
+        :param action_id:
         :return:
         """
-        scene, item = self.get_scene_item(scene_id, item_id)
-        del scene.data['items'][item_id]
+        scene = self.get(scene_id)
+        action = self.get_action_items(scene_id, action_id)
+        del scene.data['actions'][action_id]
         self.balance_weights(scene_id)
         return scene
 
-    def move_item_down(self, scene_id, item_id):
+    def move_action_down(self, scene_id, action_id):
         """
-        Move an item down.
+        Move an action down.
 
         :param scene_id:
-        :param item_id:
+        :param action_id:
         :return:
         """
-        scene, item = self.get_scene_item(scene_id, item_id)
+        scene = self.get(scene_id)
+        action = self.get_action_items(scene_id, action_id)
         item['weight'] += 11
         self.balance_weights(scene_id)
         return scene
 
-    def move_item_up(self, scene_id, item_id):
+    def move_action_up(self, scene_id, action_id):
         """
-        Move an item up.
+        Move an action up.
 
         :param scene_id:
-        :param item_id:
+        :param action_id:
         :return:
         """
-        scene, item = self.get_scene_item(scene_id, item_id)
+        scene = self.get(scene_id)
+        action = self.get_action_items(scene_id, action_id)
         item['weight'] -= 11
         self.balance_weights(scene_id)
         return scene
@@ -663,11 +631,11 @@ class Scenes(YomboLibrary, object):
                 logger.debug("Scene '{label}' is already running, cannot start.", label=scene.label)
                 return False  # already running
         self.scenes_running[scene_id] = "running"
-        reactor.callLater(0.001, self._start, scene, **kwargs)
+        reactor.callLater(0.001, self.do_start, scene, **kwargs)
         return True
 
     @inlineCallbacks
-    def _start(self, scene, **kwargs):
+    def do_start(self, scene, **kwargs):
         """
         Performs the actual trigger. It's wrapped here to handle any requested delays.
 
@@ -677,7 +645,8 @@ class Scenes(YomboLibrary, object):
         """
         logger.debug("Scene '{label}' is now running.", label=scene.label)
         scene_id = scene.scene_id
-        scene, items = self.get_scene_item(scene_id)
+        scene = self.get(scene_id)
+        actions = self.get_action_items(scene_id)
         self._Automation.trigger_monitor('scene',
                                          scene=scene,
                                          name=scene.machine_label,
@@ -688,22 +657,25 @@ class Scenes(YomboLibrary, object):
                                 scene=scene,
                                 )
 
-        for item_id, item in items.items():
-            item_type = item['item_type']
+        logger.info("Scene is firing: {label}", label=scene.label)
 
-            if item_type == "device":
-                device = self._Devices[item['device_id']]
-                command = self._Commands[item['command_id']]
+        for action_id, action in actions.items():
+            action_type = action['action_type']
+
+            if action_type == "device":
+                device = self._Devices[action['device_machine_label']]
+                logger.info("Scene is firing {label}, device: {device}", label=scene.label, device=device.label)
+                command = self._Commands[action['command_machine_label']]
                 device.command(cmd=command,
                                requested_by={'user_id': "System", "component": "yombo.lib.scenes"},
                                control_method='scene',
-                               inputs=item['inputs'],
+                               inputs=action['inputs'],
                                **kwargs)
 
-            elif item_type == 'pause':
+            elif action_type == 'pause':
                 final_duration = 0
                 loops = 0
-                duration = item['duration']
+                duration = action['duration']
                 if duration < 6:
                     final_duration = duration
                     loops = 1
@@ -716,41 +688,41 @@ class Scenes(YomboLibrary, object):
                         self.scenes_running[scene_id] = "stopped"
                         return False
 
-            elif item_type == "scene":
-                local_scene = self.get(item['machine_label'])
-                action = item['action']
-                if action == 'enable':
+            elif action_type == "scene":
+                local_scene = self._Scenes.get(action['scene_machine_label'])
+                scene_action = action['scene_action']
+                if scene_action == 'enable':
                     self.enable(local_scene.scene_id)
-                elif action == 'disable':
+                elif scene_action == 'disable':
                     self.disable(local_scene.scene_id)
-                elif action == 'start':
+                elif scene_action == 'start':
                     try:
                         self.start(local_scene.scene_id)
                     except Exception:  # Gobble everything up..
                         pass
-                elif action == 'stop':
+                elif scene_action == 'stop':
                     try:
                         self.stop(local_scene.scene_id)
                     except Exception:  # Gobble everything up..
                         pass
 
-            elif item_type == "template":
+            elif action_type == "template":
                 try:
-                    yield self.scene_templates["%s_%s" % (scene_id, item_id)].render(
+                    yield self.scene_templates["%s_%s" % (scene_id, action_id)].render(
                         {'current_scene': scene}
                     )
                 except Exception as e:
                     logger.warn("-==(Warning: Scenes library had trouble with template==-")
                     logger.warn("Input template:")
-                    logger.warn("{template}", template=item['template'])
+                    logger.warn("{template}", template=action['template'])
                     logger.warn("---------------==(Traceback)==--------------------------")
                     logger.warn("{trace}", trace=traceback.format_exc())
                     logger.warn("--------------------------------------------------------")
 
                     logger.warn("Scene had trouble running template: {message}", message=e)
 
-            elif item_type in self.scene_types_extra:
-                item_data = self.scene_types_extra[item_type]['handle_trigger_callback'](scene, item)
+            elif action_type in self.scene_types_extra:
+                action_data = self.scene_types_extra[action_type]['handle_trigger_callback'](scene, action)
 
             if self.scenes_running[scene_id] != "running":  # a way to kill this trigger
                 self.scenes_running[scene_id] = "stopped"
@@ -769,8 +741,13 @@ class Scenes(YomboLibrary, object):
         scene = self.get(scene_id)
         if scene_id in self.scenes_running and self.scenes_running[scene_id] == "running":
             self.scenes_running[scene_id] = "stopping"
-            return True
-        return False
+            results = True
+        results = False
+        self._Automation.trigger_monitor('scene',
+                                         scene=scene,
+                                         name=scene.machine_label,
+                                         action='stop')
+        return results
 
     def patch_scene(self, scene):
         """
@@ -782,8 +759,8 @@ class Scenes(YomboLibrary, object):
         scene.scene_id = scene._node_id
         scene._Scene = self
 
-        def add_scene_item(node, **kwargs):
-            results = node._Scene.add_scene_item(node._node_id, **kwargs)
+        def add_action_item(node, **kwargs):
+            results = node._Scene.add_action_item(node._node_id, **kwargs)
             return results
 
         @inlineCallbacks
@@ -825,7 +802,7 @@ class Scenes(YomboLibrary, object):
             results = node._Scene.stop(node._node_id)
             return results
 
-        scene.add_scene_item = types.MethodType(add_scene_item, scene)
+        scene.add_action_item = types.MethodType(add_action_item, scene)
         scene.delete = types.MethodType(delete, scene)
         scene.description = types.MethodType(description, scene)
         scene.disable = types.MethodType(disable, scene)

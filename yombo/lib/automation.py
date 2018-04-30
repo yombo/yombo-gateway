@@ -32,12 +32,13 @@ from twisted.internet import reactor
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import is_true_false, random_string, sleep, global_invoke_all, dict_filter, dict_merge
+from yombo.utils import (is_true_false, random_string, sleep, global_invoke_all, dict_filter, dict_merge,
+                         bytes_to_unicode)
 from yombo.utils.datatypes import coerce_value
 
 logger = get_logger("library.automation")
 
-REQUIRED_RULE_FIELDS = ['trigger', 'action']
+REQUIRED_RULE_FIELDS = ['trigger', 'actions']
 REQUIRED_TRIGGER_FIELDS = ['template']
 REQUIRED_CONDITION_FIELDS = ['template']
 REQUIRED_ACTION_FIELDS = ['action_type']
@@ -169,26 +170,6 @@ class Automation(YomboLibrary):
         self.active_triggers = {}  # Track various triggers - help find what rules to fire when a trigger matches.
         self.gateway_id = self._Configs.get2("core", "gwid", "local", False)
 
-
-        self.trigger_types = {  # Type of items that can potentially trigger a rule.
-            "device": {
-                "label": "Device",
-                "set_url": "/automation/{rule_id}/set_trigger_device",
-            },
-            "scene": {
-                "label": "Scene",
-                "set_url": "/automation/{rule_id}/set_trigger_scene",
-            },
-            "state": {
-                "label": "State",
-                "set_url": "/automation/{rule_id}/set_trigger_state",
-            },
-            "template": {
-                "label": "Template",
-                "set_url": "/automation/{rule_id}/set_trigger_template",
-            },
-        }
-
         self.action_types = {  # things that rules can do as a result if it being triggered.
             "device": {
                 "label": "Device",
@@ -231,7 +212,22 @@ class Automation(YomboLibrary):
                 "up_url": "/automation/{rule_id}/move_up/{action_id}",
             },
         }
-        self.trigger_templates = {}  # hold any templates for condition templates
+
+        self.trigger_types = {  # Type of items that can potentially trigger a rule.
+            "device": {
+                "label": "Device",
+                "set_url": "/automation/{rule_id}/set_trigger_device",
+            },
+            "scene": {
+                "label": "Scene",
+                "set_url": "/automation/{rule_id}/set_trigger_scene",
+            },
+            "state": {
+                "label": "State",
+                "set_url": "/automation/{rule_id}/set_trigger_state",
+            },
+        }
+
         self.condition_templates = {}  # hold any templates for condition templates
         self.action_templates = {}  # hold any templates for automation rule action templates
         self.actions_running = {}  # tracks if scene is running, stopping, or stopped
@@ -250,6 +246,47 @@ class Automation(YomboLibrary):
                 self.validate_and_activate_rule(rule)
             except Exception:
                 pass
+
+    def _started_(self, **kwargs):
+        """
+        Looks for rules that have 'run_on_start' set to true.
+
+        :return:
+        """
+        device_triggered = []
+        states_triggered = []
+
+        for rule_id, rule in self.rules.items():
+            run_on_start = rule.data['config']['run_on_start']
+            if run_on_start is True:
+                trigger = rule.data['trigger']
+                trigger_type = trigger['trigger_type']
+                if trigger_type == 'device':
+                    device = self.get_device(trigger['device_machine_label'])
+                    if device.device_id in device_triggered:
+                        continue
+                    device_triggered.append(device.device_id)
+                    self.trigger_monitor('device',
+                                         _run_on_start=True,
+                                         device=device,
+                                         action='set_status')
+
+                elif trigger_type == "state":
+                    state = trigger['name']
+                    gateway_id = trigger['gateway_id']
+                    state_gateway_id = "%s::::::::%s" % (state, gateway_id)
+                    if state_gateway_id in states_triggered:
+                        continue
+                        states_triggered.append(state_gateway_id)
+                    try:
+                        self.trigger_monitor('state',
+                                             _run_on_start=True,
+                                             key=state,
+                                             value=self._States[key],
+                                             action='set',
+                                             gateway_id=gateway_id)
+                    except:
+                        pass
 
     def get(self, requested_rule=None):
         """
@@ -294,7 +331,8 @@ class Automation(YomboLibrary):
 
     def get_action_items(self, rule_id, action_id=None):
         """
-        Get an action item or multiple items if action_id is not provided.
+        Get an action item or multiple action items if action_id is not provided. The results will be returned
+        ordered by weight as an OrderedDict.
 
         :param rule_id:
         :param action_id:
@@ -302,14 +340,20 @@ class Automation(YomboLibrary):
         """
         rule = self.get(rule_id)
         if action_id is None:
-            return OrderedDict(sorted(rule.data['action'].items(), key=lambda x: x[1]['weight']))
+            return OrderedDict(sorted(rule.data['actions'].items(), key=lambda x: x[1]['weight']))
         else:
             try:
-                return rule.data['action'][action_id]
+                return rule.data['actions'][action_id]
             except YomboWarning:
-                raise YomboWarning("Unable to find requested item for the provide rule_id.")
+                raise YomboWarning("Unable to find requested action for the provide rule_id.")
 
     def ensure_data_minimum_fields(self, data):
+        """
+        Ensure that the autoamtion rule has the minimum required fields setup. Provides baseline sanity checks.
+
+        :param data:
+        :return:
+        """
         if 'trigger' not in data or isinstance(data['trigger'], dict) is False:
             data['trigger'] = {}
         if 'trigger_type' not in data['trigger']:
@@ -318,8 +362,8 @@ class Automation(YomboLibrary):
         if 'condition' not in data or isinstance(data['condition'], dict) is False:
             data['condition'] = {}
 
-        if 'action' not in data or isinstance(data['action'], dict) is False:
-            data['action'] = {}
+        if 'actions' not in data or isinstance(data['actions'], dict) is False:
+            data['actions'] = {}
 
         if 'config' not in data or isinstance(data['config'], dict) is False:
             data['config'] = {}
@@ -335,8 +379,8 @@ class Automation(YomboLibrary):
         """
         Validate and activate a rule.
 
-        :param rule: A dictionary containing the rule to add. Must have 'trigger' and 'action', with an
-          optional 'filter' section.
+        :param rule: A dictionary containing the rule to add. Must have 'trigger' and 'actions', with an
+          optional 'conditions' section.
         :type rule: Node
         :return:
         """
@@ -372,13 +416,13 @@ class Automation(YomboLibrary):
                 rule.is_valid_message = "Condition template is invalid: %s" % e.message
                 raise YomboWarning("Automation rule condition has in invalid template: %s" % e.message)
         try:
-            for action_id, action in data['action'].items():
+            for action_id, action in data['actions'].items():
                 self.validate_rule_action_item(rule, action, complete_validation)
         except Exception as e:
             rule.is_valid_message = "Problem with automation rule: %s" % e
             raise YomboWarning("Automation rule has invalid action: %s" % e)
 
-        if len(data['action']) == 0:
+        if len(data['actions']) == 0:
             rule.is_valid_message = "Rule has no actions."
             raise YomboWarning("Rule has no actions. Disabling.")
 
@@ -392,6 +436,14 @@ class Automation(YomboLibrary):
         return True
 
     def validate_rule_action_item(self, rule, action, complete_validation=None):
+        """
+        Validates a single action from a rule.
+
+        :param rule:
+        :param action:
+        :param complete_validation:
+        :return:
+        """
         if complete_validation is None:
             complete_validation = True
 
@@ -416,9 +468,9 @@ class Automation(YomboLibrary):
                 raise YomboWarning("Rule '%s': Action type 'pause' is missing field 'duration'." % rule.label)
 
         elif action_type == "scene":
-            if not all(section in action for section in ['scene_machine_label', 'action']):
+            if not all(section in action for section in ['scene_machine_label', 'scene_action']):
                 raise YomboWarning("Rule '%s': Action type 'scene' is missing a required field." % rule.label)
-            if action['action'] not in ['enable', 'disable', 'start', 'stop']:
+            if action['scene_action'] not in ['enable', 'disable', 'start', 'stop']:
                 raise YomboWarning("Rule '%s': Action device has " % rule.label)
             try:
                 self._Scenes.get(action['scene_machine_label'])
@@ -449,6 +501,12 @@ class Automation(YomboLibrary):
             raise YomboWarning("Invalid action type (%s) for rule '%s'." % (action_type, rule.label))
 
     def get_device(self, machine_label):
+        """
+        Get a yombo device. Throws YomboWarning exception if one isn't found.
+
+        :param machine_label:
+        :return:
+        """
         try:
             return self._Devices.get(machine_label)
         except KeyError:
@@ -475,17 +533,19 @@ class Automation(YomboLibrary):
         if trigger_type not in self.trigger_types:
             logger.info("Action type ({action_type}) doesn't exist as a possible trigger action type.",
                         action_type=trigger['trigger_type'])
-            raise YomboWarning("Rule '%s': trigger item has invalid trigger type: %s" % (rule.label, trigger_type))
+            raise YomboWarning("Rule '%s': trigger has invalid trigger type: %s" % (rule.label, trigger_type))
 
         if trigger_type == "device":
-            if not all(section in trigger for section in ['device_machine_label', 'command_machine_label']):
-                raise YomboWarning("Rule '%s': Trigger item is missing a required field." % rule.label)
+            if not all(section in trigger for section in ['device_machine_label']):
+                raise YomboWarning("Rule '%s': trigger is missing a required field." % rule.label)
             device = self.get_device(trigger['device_machine_label'])
-            self.triggers['device'][rule_id] = device.machine_label
+            self.triggers['device'][rule_id] = {
+                'device_machine_label': device.machine_label
+            }
 
         elif trigger_type == "state":
             if not all(section in trigger for section in ['name', 'value', 'value_type', 'gateway_id']):
-                raise YomboWarning("Rule '%s': Trigger item is missing a required field." % rule.label)
+                raise YomboWarning("Rule '%s': Trigger is missing a required field." % rule.label)
             if 'value' not in trigger:
                 trigger['value'] = None
             self.triggers['state'][rule_id] = {
@@ -496,28 +556,14 @@ class Automation(YomboLibrary):
             }
 
         elif trigger_type == "scene":
-            if not all(section in trigger for section in ['name']):
-                raise YomboWarning("Rule '%s': Trigger item is missing a required field: name" % rule.label)
-            if 'action' not in trigger:
-                trigger['action'] = None
-            self.triggers['scene'][rule_id] = {'name': trigger['name']}
+            if not all(section in trigger for section in ['scene_machine_label', 'scene_action']):
+                raise YomboWarning("Rule '%s': Trigger is missing a required field: scene_machine_label or scene_action" % rule.label)
+            self.triggers['scene'][rule_id] = {
+                'scene_machine_label': trigger['scene_machine_label'],
+                'scene_action': trigger['scene_action'],
+            }
 
-        elif trigger_type == "template":
-            """
-            The template is responsible for setting up it's own trigger.
-            """
-            if not all(section in trigger for section in ['template']):
-                raise YomboWarning("Trigger type 'template' must have a field: template")
-
-            self.trigger_templates[rule_id] = self._Template.new(trigger['template'])
-            try:
-                self.action_templates[rule_id].ensure_valid()
-            except YomboWarning as e:
-                logger.info("Rule '{label} has invalid condition template: {reason}",
-                            label=rule.label, reason=e.message)
-                raise
-
-    def trigger_monitor(self, trigger_type, **kwargs):
+    def trigger_monitor(self, trigger_type, _run_on_start=None, **kwargs):
         """
         Various libraries will call this when something happens to see if an automation rule
         needs to be triggered.
@@ -531,34 +577,51 @@ class Automation(YomboLibrary):
                 'type': trigger_type,
             }
         }
-
+        logger.debug("Trigger_monitor get: {trigger_type}", trigger_type=trigger_type)
         if trigger_type == 'device':
+            logger.info("Running device trigger check.")
             device = kwargs['device']
+            template_variables['trigger']['device'] = device
+            logger.info("Running device..template vars..")
             for rule_id, trigger in self.triggers['device'].items():
-                if trigger == device.machine_label:
-                    template_variables['trigger']['device'] = device
-                    template_variables['trigger']['device'] = device
-                    reactor.callLater(0.001, self.run_rule, rule_id, **kwargs)
-                    return True
+                rule = self.get(rule_id)
+                # print("checking device rule: %s" % rule.label)
+                if _run_on_start is True and rule.data['config']['run_on_start'] is not True:
+                    continue
+                # print("Trigger machine label: %s, actual device machine label: %s" % (trigger, device))
+                # print("Trigger machine label: %s, actual device machine label: %s" % (type(trigger), type(device)))
+                if trigger['device_machine_label'] == device.machine_label:
+                    reactor.callLater(0.001, self.run_rule, rule_id, template_variables, **kwargs)
 
         elif trigger_type == 'scene':
             scene = kwargs['scene']
+            template_variables['trigger']['scene'] = scene
+            template_variables['trigger']['action'] = kwargs['action']
             for rule_id, trigger in self.triggers['scene'].items():
-                if trigger['name'] == scene.machine_label and trigger['action'] == kwargs['action']:
-                    reactor.callLater(0.001, self.run_rule, rule_id, **kwargs)
-                    return True
+                if trigger['scene_machine_label'] == scene.machine_label and trigger['scene_action'] == kwargs['action']:
+                    reactor.callLater(0.001, self.run_rule, rule_id, template_variables, **kwargs)
 
         elif trigger_type == 'state':
             name = kwargs['key']
             gateway_id = kwargs['gateway_id']
+            template_variables['trigger']['name'] = kwargs['key']
+            template_variables['trigger']['value'] = kwargs['value']
+            template_variables['trigger']['value_full'] = kwargs['value_full']
             for rule_id, trigger in self.triggers['state'].items():
-                # print("testing state action...")
-                if (trigger['name'] == name or trigger['name'] == 'cluster') and trigger['gateway_id'] == gateway_id:
+                rule = self.get(rule_id)
+                # print("testing state action... %s and %s" % (_run_on_start, rule.data['config']['run_on_start']))
+                if _run_on_start is True and rule.data['config']['run_on_start'] is not True:
+                    # print("will continue since runonstart is true and config run on start is not true")
+                    continue
+                # print("rule gatewayId = %s, trigger gatewayid: %s" % (gateway_id, trigger['gateway_id']))
+                # print("rule name = %s, trigger name: %s" % (name, trigger['name']))
+                # print("rule value = %s, trigger value: %s" % (kwargs['value'], trigger['value']))
+                if trigger['name'] == name and trigger['gateway_id'] == gateway_id:
                     value_type = trigger['value_type']
                     # print("value type of action:> %s" % value_type)
                     if trigger['value'] == "" or trigger['value'] is None:
                         # print("trigger_monitor calling 1")
-                        reactor.callLater(0.001, self.run_rule, rule_id, **kwargs)
+                        reactor.callLater(0.001, self.run_rule, rule_id, template_variables, **kwargs)
                         continue
 
                     if value_type == "string":
@@ -568,26 +631,30 @@ class Automation(YomboLibrary):
                         try:
                             value = coerce_value(kwargs['value'], 'int')
                         except Exception:
+                            logger.info("Trigger monitor couldn't force state value to int.")
                             continue
 
                     elif value_type == "float":
                         try:
                             value = coerce_value(kwargs['value'], 'float')
                         except Exception:
+                            logger.info("Trigger monitor couldn't force state value to float.")
                             continue
 
                     elif value_type == "boolean":
                         try:
                             value = coerce_value(kwargs['value'], 'bool')
                         except Exception:
+                            logger.info("Trigger monitor couldn't force state value to bool.")
                             continue
 
+                    # print("rule value check = %s, trigger value: %s" % (value, trigger['value']))
                     if trigger['value'] == value:
-                        reactor.callLater(0.001, self.run_rule, rule_id, **kwargs)
+                        reactor.callLater(0.001, self.run_rule, rule_id, template_variables, **kwargs)
                         continue
 
     @inlineCallbacks
-    def run_rule(self, rule_id, **kwargs):
+    def run_rule(self, rule_id, template_variables = None, **kwargs):
         """
         Called when a rule should fire.
 
@@ -596,11 +663,16 @@ class Automation(YomboLibrary):
         :return:
         """
         rule = self.rules[rule_id]
-        logger.info("Rule is firing: {label}, {status}", label=rule.label, status=self.actions_running[rule_id])
+        logger.info("Rule is firing: {label}", label=rule.label)
         if rule_id in self.actions_running:
             if self.actions_running[rule_id] in ("running", "stopping"):
                 return False  # already running
         self.actions_running[rule_id] = "running"
+
+        if template_variables is None:
+            template_variables = {}
+        template_variables['current_rule'] = rule
+
         data = rule.data
         self.validate_and_activate_rule(rule)  # check everything before firing. Something may have changed.
         if rule.is_valid is False:
@@ -609,9 +681,7 @@ class Automation(YomboLibrary):
 
         if len(data['condition']) > 0:
             try:
-                condition_results = yield self.condition_templates[rule_id].render(
-                    {'current_rule': rule}
-                )
+                condition_results = yield self.condition_templates[rule_id].render(template_variables)
                 condition_results = condition_results.strip()
             except Exception as e:
                 logger.warn("-==(Warning: Automation library had trouble with template==-")
@@ -621,13 +691,13 @@ class Automation(YomboLibrary):
                 logger.warn("{trace}", trace=traceback.format_exc())
                 logger.warn("------------------------------------------------------------")
                 logger.warn("Template processing error: {message}", message=e)
-        condition_results_bool = is_true_false(condition_results)
-        if condition_results_bool is None:
-            logger.warn("Condition template for rule '{label}' must return true/false, or on/off, or 1/0. Returned invalid results: {results}.",
-                        rule.label, condition_results)
-        elif condition_results_bool is not True:
-            logger.debug("Stopping rule due to condition is false: {label}", label=rule.label)
-            return
+            condition_results_bool = is_true_false(condition_results)
+            if condition_results_bool is None:
+                logger.warn("Condition template for rule '{label}' must return true/false, or on/off, or 1/0. Returned invalid results: {results}.",
+                            rule.label, condition_results)
+            elif condition_results_bool is not True:
+                logger.debug("Stopping rule due to condition is false: {label}", label=rule.label)
+                return
 
         action_items = self.get_action_items(rule_id)
         for action_id, action in action_items.items():
@@ -636,11 +706,14 @@ class Automation(YomboLibrary):
                 logger.info("Action type ({action_type}) doesn't exist as a possible trigger action type.",
                             action_type=action['action_type'])
                 rule.is_valid = False
-                raise YomboWarning("Rule '%s': Action item has invalid action type: %s" % (rule.label, action_type))
+                raise YomboWarning("Rule '%s': Action has invalid action type: %s" % (rule.label, action_type))
+
+            logger.info("Rule is firing {label} action:", label=rule.label, action=action_type)
 
             if action_type == "device":
                 device = self._Devices[action['device_machine_label']]
                 command = self._Commands[action['command_machine_label']]
+                logger.info("Rule is firing {label} action device: ", label=rule.label, device=device.label)
                 # print("rule... device firing Device: %s, command: %s" % (device.label, command.label))
                 device.command(cmd=command,
                                requested_by={'user_id': "System", "component": "yombo.lib.automation"},
@@ -664,18 +737,18 @@ class Automation(YomboLibrary):
 
             elif action_type == "scene":
                 local_scene = self._Scenes.get(action['scene_machine_label'])
-                action = action['action']
+                scene_action = action['scene_action']
                 # print("rule... scene starting")
-                if action == 'enable':
+                if scene_action == 'enable':
                     self._Scenes.enable(local_scene.scene_id)
-                elif action == 'disable':
+                elif scene_action == 'disable':
                     self._Scenes.disable(local_scene.scene_id)
-                elif action == 'start':
+                elif scene_action == 'start':
                     try:
                         self._Scenes.start(local_scene.scene_id)
                     except Exception as e:  # Gobble everything up..
                         pass
-                elif action == 'stop':
+                elif scene_action == 'stop':
                     try:
                         self._Scenes.stop(local_scene.scene_id)
                     except Exception as e:  # Gobble everything up..
@@ -687,7 +760,7 @@ class Automation(YomboLibrary):
             elif action_type == "template":
                 try:
                     yield self.action_templates["%s_%s" % (rule.rule_id, action['action_id'])].render(
-                        {'current_rule': rule}
+                        template_variables
                     )
                 except Exception as e:
                     logger.warn("-==(Warning: Automation library had trouble with template==-")
@@ -739,7 +812,7 @@ class Automation(YomboLibrary):
 
     def disable(self, rule_id, **kwargs):
         """
-        Disable an automation rule. Just marks the configuration item as disabled.
+        Disable an automation rule. Just marks the configuration for the rule as disabled.
 
         :param rule_id:
         :return:
@@ -751,7 +824,7 @@ class Automation(YomboLibrary):
 
     def enable(self, rule_id, **kwargs):
         """
-        Enable an automation rule. Just marks the configuration item as enabled.
+        Enable an automation rule. Just marks the configuration for the rule as enabled.
 
         :param rule_id:
         :return:
@@ -770,6 +843,7 @@ class Automation(YomboLibrary):
         :param machine_label:
         :param description:
         :param status:
+        :param run_on_start:
         :return:
         """
         self.check_duplicate_rule(label, machine_label)
@@ -777,7 +851,7 @@ class Automation(YomboLibrary):
             'config': {
                 'enabled': is_true_false(status),
                 'description': description,
-                'run_on_start': True,
+                'run_on_start': run_on_start,
             },
         }
         new_rule = yield self._Nodes.create(label=label,
@@ -797,7 +871,7 @@ class Automation(YomboLibrary):
             pass
         return new_rule
 
-    def edit(self, rule_id, label=None, machine_label=None, description=None, status=None):
+    def edit(self, rule_id, label=None, machine_label=None, description=None, status=None, run_on_start=None):
         """
         Edit a automation rule label and machine_label.
 
@@ -806,10 +880,11 @@ class Automation(YomboLibrary):
         :param machine_label:
         :param description:
         :param status:
+        :param run_on_start:
         :return:
         """
         if label is not None and machine_label is not None:
-            self.check_duplicate_scene(label, machine_label, rule_id)
+            self.check_duplicate_rule(label, machine_label, rule_id)
 
         rule = self.get(rule_id)
         if label is not None:
@@ -821,6 +896,8 @@ class Automation(YomboLibrary):
         if rule is not None:
             rule.status = is_true_false(status)
             rule.data['config']['enabled'] = rule.status
+        if run_on_start is not None:
+            rule.data['config']['run_on_start'] = run_on_start
         return rule
 
     @inlineCallbacks
@@ -851,7 +928,7 @@ class Automation(YomboLibrary):
         machine_label = "%s_copy" % rule.machine_label
         if label is not None and machine_label is not None:
             self.check_duplicate_rule(label, machine_label, rule_id)
-        new_data = msgpack.unpackb(msgpack.packb(rule.data))
+        new_data = bytes_to_unicode(msgpack.unpackb(msgpack.packb(rule.data)))  # had issues with deepcopy
         new_rule = yield self._Nodes.create(label=label,
                                             machine_label=machine_label,
                                             node_type='automation_rules',
@@ -865,6 +942,13 @@ class Automation(YomboLibrary):
         return new_rule
 
     def set_rule_trigger(self, rule_id, **kwargs):
+        """
+        Set the trigger for the rule.
+
+        :param rule_id:
+        :param kwargs:
+        :return:
+        """
         rule = self.get(rule_id)
         trigger_type = kwargs['trigger_type']
 
@@ -872,20 +956,46 @@ class Automation(YomboLibrary):
             rule.data['trigger'] = {
                 'trigger_type': 'device',
                 'device_machine_label': kwargs['device_machine_label'],
-                'action': kwargs['action'],
             }
         elif trigger_type == "state":
+            value_type = kwargs['value_type']
+            if value_type == "string":
+                try:
+                    value = coerce_value(kwargs['value'], 'string')
+                except Exception:
+                    raise YomboWarning("Could not force matching value to request value type of string.")
+
+            elif value_type == "integer":
+                try:
+                    value = coerce_value(kwargs['value'], 'int')
+                except Exception:
+                    raise YomboWarning("Could not force matching value to request value type of int.")
+
+            elif value_type == "float":
+                try:
+                    value = coerce_value(kwargs['value'], 'float')
+                except Exception:
+                    raise YomboWarning("Could not force matching value to request value type of float.")
+
+            elif value_type == "boolean":
+                try:
+                    value = coerce_value(kwargs['value'], 'bool')
+                except Exception:
+                    raise YomboWarning("Could not force matching value to request value type of bool.")
+
             rule.data['trigger'] = {
                 'trigger_type': 'state',
                 'name': kwargs['name'],
-                'value': kwargs['value'],
+                'value': value,
                 'value_type': kwargs['value_type'],
                 'gateway_id': kwargs['gateway_id'],
             }
         elif trigger_type == "scene":
-            pass
-        elif trigger_type == "template":
-            pass
+            rule.data['trigger'] = {
+                'trigger_type': 'scene',
+                'scene_machine_label': kwargs['scene_machine_label'],
+                'scene_action': kwargs['scene_action'],
+            }
         else:
             raise YomboWarning("Unknown trigger_type: %s" % trigger_type)
         try:
@@ -904,13 +1014,12 @@ class Automation(YomboLibrary):
         if rule_id not in self.rules:
             return
         rule = self.get(rule_id)
-        items = deepcopy(rule.data['action'])
-        o_items = OrderedDict(sorted(items.items(), key=lambda x: x[1]['weight']))
+        actions = deepcopy(rule.data['actions'])
+        ordered_actions = OrderedDict(sorted(actions.items(), key=lambda x: x[1]['weight']))
         weight = 10
-        for action_id, action in o_items.items():
-            self.rules[rule_id].data['action'][action_id]['weight'] = weight
+        for action_id, action in ordered_actions.items():
+            self.rules[rule_id].data['actions'][action_id]['weight'] = weight
             weight += 10
-            # rule.data['action'] = o_items
 
     def set_rule_condition(self, rule_id, **kwargs):
         """
@@ -939,7 +1048,9 @@ class Automation(YomboLibrary):
         try:
             self.validate_and_activate_rule(rule)
         except Exception as e:
-            logger.info("Cannot enable automation rule after adding action item: {reason}", reason=e)
+            logger.info("Cannot enable automation rule ({label}) after adding an action: {reason}",
+                        label=rule.label,
+                        reason=e)
             pass
 
         self.balance_action_weights(rule_id)
@@ -947,7 +1058,7 @@ class Automation(YomboLibrary):
 
     def add_action_item(self, rule_id, **kwargs):
         """
-        Add new action item to an automation rule.
+        Add new action to an automation rule.
 
         :param rule_id:
         :param kwargs:
@@ -956,7 +1067,7 @@ class Automation(YomboLibrary):
         rule = self.get(rule_id)
         action_type = kwargs['action_type']
         if 'weight' not in kwargs:
-            kwargs['weight'] = (len(rule.data['action']) + 1) * 10
+            kwargs['weight'] = (len(rule.data['actions']) + 1) * 10
 
         action_id = random_string(length=15)
         if action_type == 'device':
@@ -965,7 +1076,7 @@ class Automation(YomboLibrary):
             # This fancy inline just removes None and '' values.
             kwargs['inputs'] = {k: v for k, v in kwargs['inputs'].items() if v}
 
-            rule.data['action'][action_id] = {
+            rule.data['actions'][action_id] = {
                 'action_id': action_id,
                 'action_type': 'device',
                 'device_machine_label': device.machine_label,
@@ -975,7 +1086,7 @@ class Automation(YomboLibrary):
             }
 
         elif action_type == 'pause':
-            rule.data['action'][action_id] = {
+            rule.data['actions'][action_id] = {
                 'action_id': action_id,
                 'action_type': 'pause',
                 'duration': kwargs['duration'],
@@ -983,23 +1094,24 @@ class Automation(YomboLibrary):
             }
 
         elif action_type == 'scene':
-            rule.data['action'][action_id] = {
+            rule.data['actions'][action_id] = {
                 'action_id': action_id,
                 'action_type': 'scene',
                 'scene_machine_label': kwargs['scene_machine_label'],
-                'action': kwargs['action'],
+                'scene_action': kwargs['scene_action'],
                 'weight': kwargs['weight'],
             }
 
         elif action_type == 'state':
             if rule.data['trigger']['trigger_type'] == "state" and rule.data['trigger']['name'] == kwargs['name']:
                 raise YomboWarning("Cannot set state name where the trigger is a state that matches the same name.")
-            rule.data['action'][action_id] = {
+            rule.data['actions'][action_id] = {
                 'action_id': action_id,
                 'action_type': 'state',
                 'name': kwargs['name'],
                 'value': kwargs['value'],
                 'value_type': kwargs['value_type'],
+                'gateway_id': kwargs['gateway_id'],
                 'weight': kwargs['weight'],
             }
 
@@ -1017,7 +1129,7 @@ class Automation(YomboLibrary):
                             label=rule.label, reason=e.message)
                 raise
 
-            rule.data['action'][action_id] = {
+            rule.data['actions'][action_id] = {
                 'action_id': action_id,
                 'action_type': 'template',
                 'description': kwargs['description'],
@@ -1026,12 +1138,12 @@ class Automation(YomboLibrary):
             }
 
         else:
-            raise YomboWarning("Invalid action item type.")
+            raise YomboWarning("Invalid action type.")
 
         try:
             self.validate_and_activate_rule(rule)
         except Exception as e:
-            logger.info("Cannot enable automation rule after adding action item: {reason}", reason=e)
+            logger.info("Cannot enable automation rule after adding action: {reason}", reason=e)
             pass
 
         self.balance_action_weights(rule_id)
@@ -1040,7 +1152,7 @@ class Automation(YomboLibrary):
 
     def edit_action_item(self, rule_id, action_id, **kwargs):
         """
-        Edit action item.
+        Edit action.
 
         :param rule_id:
         :param action_id:
@@ -1048,101 +1160,106 @@ class Automation(YomboLibrary):
         :return:
         """
         rule = self.get(rule_id)
-        item = self.get_action_items(rule_id, action_id)
+        action = self.get_action_items(rule_id, action_id)
 
-        action_type = item['action_type']
+        action_type = action['action_type']
 
         if action_type == 'device':
             device = self._Devices[kwargs['device_machine_label']]
             command = self._Commands[kwargs['command_machine_label']]
-            item['device_machine_label'] = device.machine_label
-            item['command_machine_label'] = command.machine_label
+            action['device_machine_label'] = device.machine_label
+            action['command_machine_label'] = command.machine_label
             kwargs['inputs'] = {k: v for k, v in kwargs['inputs'].items() if v}
-            item['inputs'] = kwargs['inputs']
-            item['weight'] = kwargs['weight']
+            action['inputs'] = kwargs['inputs']
+            action['weight'] = kwargs['weight']
 
         elif action_type == 'pause':
-            item['duration'] = kwargs['duration']
-            item['weight'] = kwargs['weight']
+            action['duration'] = kwargs['duration']
+            action['weight'] = kwargs['weight']
 
         elif action_type == 'scene':
-            item['scene_machine_label'] = kwargs['scene_machine_label']
-            item['action'] = kwargs['action']
-            item['weight'] = kwargs['weight']
+            action['scene_machine_label'] = kwargs['scene_machine_label']
+            action['scene_action'] = kwargs['scene_action']
+            action['weight'] = kwargs['weight']
 
         elif action_type == 'state':
-            item['name'] = kwargs['name']
-            item['value'] = kwargs['value']
-            item['value_type'] = kwargs['value_type']
-            item['weight'] = kwargs['weight']
+            action['name'] = kwargs['name']
+            action['value'] = kwargs['value']
+            action['value_type'] = kwargs['value_type']
+            action['gateway_id'] = kwargs['gateway_id']
+            action['weight'] = kwargs['weight']
 
         elif action_type == 'template':
             self.action_templates["%s_%s" % (rule_id, action_id)] = self._Template.new(kwargs['template'])
             self.action_templates["%s_%s" % (rule_id, action_id)].ensure_valid()
-            item['description'] = kwargs['description']
-            item['template'] = kwargs['template']
-            item['weight'] = kwargs['weight']
+            action['description'] = kwargs['description']
+            action['template'] = kwargs['template']
+            action['weight'] = kwargs['weight']
             self.action_templates["%s_%s" % (rule_id, action_id)] = self._Template.new(kwargs['template'])
 
         else:
-            raise YomboWarning("Invalid action item type.")
+            raise YomboWarning("Invalid action type.")
 
         try:
             self.validate_and_activate_rule(rule)
         except Exception as e:
-            logger.info("Cannot enable automation rule after editing action item: {reason}", reason=e)
+            logger.info("Cannot enable automation rule ({label}) after editing action: {reason}",
+                        label=rule.label,
+                        reason=e)
             pass
         self.balance_action_weights(rule_id)
         rule.on_change()
 
     def delete_action_item(self, rule_id, action_id):
         """
-        Delete a action item.
+        Delete a action.
 
         :param rule_id:
         :param action_id:
         :return:
         """
         rule = self.get(rule_id)
-        item = self.get_action_items(rule_id, action_id)
-        del rule.data['action'][action_id]
+        action = self.get_action_items(rule_id, action_id)
+        del rule.data['actions'][action_id]
         self.balance_action_weights(rule_id)
         try:
             self.validate_and_activate_rule(rule)
         except Exception as e:
-            logger.info("Cannot enable automation rule after editing action item: {reason}", reason=e)
+            logger.info("Cannot enable automation rule ({label}) after editing action: {reason}",
+                        label=rule.label,
+                        reason=e)
             pass
         self.balance_action_weights(rule_id)
         rule.on_change()
-        return item
+        return action
 
-    def move_item_down(self, rule_id, action_id):
+    def move_action_down(self, rule_id, action_id):
         """
-        Move an item down.
-
-        :param rule_id:
-        :param action_id:
-        :return:
-        """
-        rule = self.get(rule_id)
-        item = self.get_action_items(rule_id, action_id)
-        item['weight'] += 11
-        self.balance_action_weights(rule_id)
-        return item
-
-    def move_item_up(self, rule_id, action_id):
-        """
-        Move an item up.
+        Move an action down.
 
         :param rule_id:
         :param action_id:
         :return:
         """
         rule = self.get(rule_id)
-        item = self.get_action_items(rule_id, action_id)
-        item['weight'] -= 11
+        action = self.get_action_items(rule_id, action_id)
+        action['weight'] += 11
         self.balance_action_weights(rule_id)
-        return item
+        return action
+
+    def move_action_up(self, rule_id, action_id):
+        """
+        Move an action up.
+
+        :param rule_id:
+        :param action_id:
+        :return:
+        """
+        rule = self.get(rule_id)
+        action = self.get_action_items(rule_id, action_id)
+        action['weight'] -= 11
+        self.balance_action_weights(rule_id)
+        return action
 
 
     def patch_automation_rule(self, rule):

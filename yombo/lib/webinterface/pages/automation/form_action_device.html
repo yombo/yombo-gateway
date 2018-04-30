@@ -16,9 +16,6 @@
 </div>
 <!-- /.row -->
 <form method="post" id="ruledevice">
-<input type="hidden" id="action_id" name="action_id" value="
-{%- if data['action_id'] is none %}none{% else %}{{data['action_id']}}{% endif -%}
-">
 <div class="row">
     <div class="col-lg-12">
         <div class="panel panel-default">
@@ -69,15 +66,16 @@
                     <a href="#" data-toggle="modal" data-target="#modalweight"><i class="fa fa-question fa-sm"></i></a>
                     {{ macros.modal("modalweight", 'Weight', "
                     <p>
-                        Weight is used to help determine the order in which each item is performed.
+                        Weight is used to help determine the order in which each action is performed.
                     </p>
                     <p>
-                        Enter a weight (as a number). The lower the number, the higher the priority. Negative numbers are valid.
+                        Enter a weight (as a number). The lower the number, the higher the priority. Negative numbers
+                        are valid.
                     </p>
                     <p>
-                        When the entry is saved, the system will calculate new weights for all automation rule items.
-                        This allows you to quickly move an item between two existing items simply by setting a weight
-                        value between the new items.
+                        When the entry is saved, the system will calculate new weights for all automation rule actions.
+                        This allows you to quickly move an action between two existing actions simply by setting a
+                        weight value between the new actions.
                     </p>") }}
                     <br>
                     <div class="input-group">
@@ -109,6 +107,7 @@
                 </div>
 
                 <a class="btn btn-md btn-danger" href="/automation/{{rule.rule_id}}/details">Cancel</a>
+                <input type="hidden" name="device_id" id="device_id" value="">
                 <input type="hidden" name="json_output" id="json_output" value="">
                 <button type="submit" class="btn btn-success">Save Device</button>
             </div>
@@ -134,6 +133,7 @@
     {%- for device_id, device in _devices.items() if data['device_machine_label'] == "" or data['device_machine_label'] == device.machine_label %}
         "{{ device.machine_label }}": {
         "deviceLabel": "{{ device.full_label}}",
+        "deviceId": "{{ device.device_id}}",
         "commands":
             [
                 {%- for command_id, a_command in device.available_commands().items() %}
@@ -147,9 +147,9 @@
 
     function getAutomationRuleInputFields() {
         var selectedDeviceMachinelabel = $('#device_machine_label option:selected').attr('value');
-        var selectedCommandID = $('#command_machine_label option:selected').attr('value');
+        var selectedCommandMachineLabel = $('#command_machine_label option:selected').attr('value');
         var actionID = "{{data['action_id'] or "none"}}";
-        console.log("selectedCommandID: " + selectedCommandID)
+//        console.log("selectedCommandMachineLabel: " + selectedCommandMachineLabel)
         var content = '<tr><td colspan="2">Downloading inputs...</td></tr>';
         $('#inputvalues tbody').html(content);  // **better. give the table a ID, and replace**
 
@@ -157,10 +157,10 @@
             url: '/api/v1/automation/device_inputs',
             type: 'GET',
             data: {
-                ruleid:'{{rule.rule_id}}',
+                rule_id:'{{rule.rule_id}}',
                 device_machine_label:selectedDeviceMachinelabel,
-                command_machine_label:selectedCommandID,
-                actionid:actionID
+                command_machine_label:selectedCommandMachineLabel,
+                action_id:actionID
             },
         })
         .done(function(data) {
@@ -179,6 +179,7 @@
     }
 
     var updateSelectCommandBox = function(devicemachinelabel, commandmachinelabel = "") {
+        $('#device_id').val(deviceCommandList[devicemachinelabel]['deviceId']);
         var listItems= "";
         for (var i = 0; i < deviceCommandList[devicemachinelabel]['commands'].length; i++){
             var option_commandmachinelabel = deviceCommandList[devicemachinelabel]['commands'][i].commandMachineLabel;
@@ -240,16 +241,6 @@
 
     $('form').validate({
         rules: {
-            name: {
-                minlength: 2,
-                maxlength: 250,
-                required: true,
-            },
-            value: {
-                minlength: 1,
-                maxlength: 250,
-                required: true,
-            },
             weight: {
                 min: -9000,
                 max: 9000,

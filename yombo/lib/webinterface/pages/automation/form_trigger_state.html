@@ -8,7 +8,7 @@
 <div class="row">
     <div class="col-lg-12">
         <h1 class="page-header">
-            <a class="success" href="/automation/{{data.automation_id}}/details" aria-label="Delete">
+            <a class="success" href="/automation/{{rule.rule_id}}/details" aria-label="Delete">
             <i class="fa fa-arrow-left" aria-hidden="true"></i></a> {{header_label}}
         </h1>
     </div>
@@ -41,7 +41,8 @@
                             <option value="cluster"{% if data['gateway_id'] == 'cluster' %} selected{% endif %} data-subtext="Any gateway within cluster">Local cluster</option>
                             <option value="{{_local_gateway.gateway_id}}"{% if data['gateway_id'] == _local_gateway.gateway_id %} selected{% endif %} data-subtext="This gateway">{{_local_gateway.label}}</option>
                             <option data-divider="true"></option>
-                            {%- for gateway_id, gateway in _gateways.items() if gateway_id != _local_gateway.gateway_id %}
+                            {%- for gateway_id, gateway in _gateways.items() if gateway_id != _local_gateway.gateway_id
+                             and gateway_id != 'cluster'%}
                             <option value="{{gateway.gateway_id}}"{% if data['gateway_id'] == gateway.gateway_id %} selected{% endif %}  data-subtext="Remote gateway.">{{gateway.label}}</option>
                             {%- endfor %}
                         </select>
@@ -56,7 +57,8 @@
                     ') }}
                     <br>
                     <div class="input-group">
-                        <input tabindex="1" type="text" class="form-control" name="name" id="name" size="30" placeholder="is.away" value="{{ data['name'] }}" autofocus required>
+                        <input tabindex="1" type="text" class="form-control" name="name" id="name" size="30"
+                               placeholder="is.away" value="{{ data['name'] }}" autofocus required>
                     </div>
                 </div>
 
@@ -95,7 +97,7 @@
                     </div>
                 </div>
 
-                <a class="btn btn-md btn-danger" href="/automation/{{automation.node_id}}/details">Cancel</a>
+                <a class="btn btn-md btn-danger" href="/automation/{{rule.rule_id}}/details">Cancel</a>
                 <input type="hidden" name="json_output" id="json_output" value="">
                 <button type="submit" class="btn btn-success">Save Trigger</button>
             </div>

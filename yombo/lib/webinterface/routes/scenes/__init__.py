@@ -50,9 +50,9 @@ def route_scenes(webapp):
         @require_auth()
         def page_scenes_details_get(webinterface, request, session, scene_id):
             try:
-                scene = webinterface._Scenes[scene_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested scene doesn't exist: %s" % scene_id, 'warning')
+                scene = webinterface._Scenes.get(scene_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
 
             page = webinterface.get_template(
@@ -68,9 +68,9 @@ def route_scenes(webapp):
         @require_auth()
         def page_scenes_trigger_get(webinterface, request, session, scene_id):
             try:
-                scene = webinterface._Scenes[scene_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested scene doesn't exist: %s" % scene_id, 'warning')
+                scene = webinterface._Scenes.get(scene_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
 
             try:
@@ -86,9 +86,9 @@ def route_scenes(webapp):
         @require_auth()
         def page_scenes_stop_trigger_get(webinterface, request, session, scene_id):
             try:
-                scene = webinterface._Scenes[scene_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested scene doesn't exist: %s" % scene_id, 'warning')
+                scene = webinterface._Scenes.get(scene_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
 
             try:
@@ -138,9 +138,9 @@ def route_scenes(webapp):
         @require_auth()
         def page_scenes_edit_get(webinterface, request, session, scene_id):
             try:
-                scene = webinterface._Scenes[scene_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested scene could not be located.", 'warning')
+                scene = webinterface._Scenes.get(scene_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
 
             root_breadcrumb(webinterface, request)
@@ -163,6 +163,12 @@ def route_scenes(webapp):
         @webapp.route('/<string:scene_id>/edit', methods=['POST'])
         @require_auth()
         def page_scenes_edit_post(webinterface, request, session, scene_id):
+            try:
+                scene = webinterface._Scenes.get(scene_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
+                return webinterface.redirect(request, '/scenes/index')
+
             data = {
                 'label': webinterface.request_get_default(request, 'label', ""),
                 'machine_label': webinterface.request_get_default(request, 'machine_label', ""),
@@ -187,8 +193,7 @@ def route_scenes(webapp):
             webinterface.add_alert("Scene '%s' edited." % scene.label)
             return webinterface.redirect(request, "/scenes/%s/details" % scene.scene_id)
 
-        def page_scenes_form(webinterface, request, session, action_type, scene,
-                                        header_label):
+        def page_scenes_form(webinterface, request, session, action_type, scene, header_label):
             page = webinterface.get_template(
                 request,
                 webinterface._dir + 'pages/scenes/form.html')
@@ -202,9 +207,9 @@ def route_scenes(webapp):
         @require_auth()
         def page_scenes_details_post(webinterface, request, session, scene_id):
             try:
-                scene = webinterface._Scenes[scene_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested scene doesn't exist: %s" % scene_id, 'warning')
+                scene = webinterface._Scenes.get(scene_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
 
             page = webinterface.get_template(
@@ -223,9 +228,9 @@ def route_scenes(webapp):
         @inlineCallbacks
         def page_scenes_delete_post(webinterface, request, session, scene_id):
             try:
-                scene = webinterface._Scenes[scene_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested scene doesn't exist: %s" % scene_id, 'warning')
+                scene = webinterface._Scenes.get(scene_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
 
             try:
@@ -252,9 +257,9 @@ def route_scenes(webapp):
         @require_auth()
         def page_scenes_disable_get(webinterface, request, session, scene_id):
             try:
-                scene = webinterface._Scenes[scene_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested scene could not be located.", 'warning')
+                scene = webinterface._Scenes.get(scene_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/scenes/disable.html')
@@ -269,9 +274,9 @@ def route_scenes(webapp):
         @require_auth()
         def page_scenes_disable_post(webinterface, request, session, scene_id):
             try:
-                scene = webinterface._Scenes[scene_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested scene could not be located.", 'warning')
+                scene = webinterface._Scenes.get(scene_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
 
             try:
@@ -315,9 +320,9 @@ def route_scenes(webapp):
         @require_auth()
         def page_scenes_enable_get(webinterface, request, session, scene_id):
             try:
-                scene = webinterface._Scenes[scene_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested scene could not be located.", 'warning')
+                scene = webinterface._Scenes.get(scene_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/scenes/enable.html')
@@ -332,9 +337,9 @@ def route_scenes(webapp):
         @require_auth()
         def page_scenes_enable_post(webinterface, request, session, scene_id):
             try:
-                scene = webinterface._Scenes[scene_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested scene could not be located.", 'warning')
+                scene = webinterface._Scenes.get(scene_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
             try:
                 confirm = request.args.get('confirm')[0]
@@ -355,40 +360,50 @@ def route_scenes(webapp):
             webinterface.add_alert("Scene '%s' enabled." % scene.label)
             return webinterface.redirect(request, "/scenes/%s/details" % scene.scene_id)
 
-        @webapp.route('/<string:scene_id>/move_up/<string:item_id>', methods=['GET'])
+        @webapp.route('/<string:scene_id>/move_up/<string:action_id>', methods=['GET'])
         @require_auth()
-        def page_scenes_item_move_up_get(webinterface, request, session, scene_id, item_id):
+        def page_scenes_action_move_up_get(webinterface, request, session, scene_id, action_id):
             try:
-                scene, item = webinterface._Scenes.get_scene_item(scene_id, item_id)
-            except KeyError as e:
-                webinterface.add_alert("Requested scene or item id could not be located.", 'warning')
+                scene = webinterface._Scenes.get(scene_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
+            try:
+                action = webinterface._Scenes.get_action_items(scene_id, action_id)
+            except YomboWarning as e:
+                webinterface.add_alert("Requested action id could not be located.", 'warning')
+                return webinterface.redirect(request, "/scenes/%s/details" % scene_id)
 
             try:
-                webinterface._Scenes.move_item_up(scene_id, item_id)
+                webinterface._Scenes.move_action_up(scene_id, action_id)
             except YomboWarning as e:
-                webinterface.add_alert("Cannot move item up. %s" % e.message, 'warning')
+                webinterface.add_alert("Cannot move action up. %s" % e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
 
-            webinterface.add_alert("Item moved up.")
+            webinterface.add_alert("Action moved up.")
             return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
 
-        @webapp.route('/<string:scene_id>/move_down/<string:item_id>', methods=['GET'])
+        @webapp.route('/<string:scene_id>/move_down/<string:action_id>', methods=['GET'])
         @require_auth()
-        def page_scenes_item_move_down_get(webinterface, request, session, scene_id, item_id):
+        def page_scenes_action_move_down_get(webinterface, request, session, scene_id, action_id):
             try:
-                scene, item = webinterface._Scenes.get_scene_item(scene_id, item_id)
-            except KeyError as e:
-                webinterface.add_alert("Requested scene or item id could not be located.", 'warning')
+                scene = webinterface._Scenes.get(scene_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
+            try:
+                action = webinterface._Scenes.get_action_items(scene_id, action_id)
+            except YomboWarning as e:
+                webinterface.add_alert("Requested action id could not be located.", 'warning')
+                return webinterface.redirect(request, "/scenes/%s/details" % scene_id)
 
             try:
-                webinterface._Scenes.move_item_down(scene_id, item_id)
+                webinterface._Scenes.move_action_down(scene_id, action_id)
             except YomboWarning as e:
-                webinterface.add_alert("Cannot move item down. %s" % e.message, 'warning')
+                webinterface.add_alert("Cannot move action down. %s" % e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
 
-            webinterface.add_alert("Item moved up.")
+            webinterface.add_alert("Action moved down.")
             return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
 
         @webapp.route('/<string:scene_id>/duplicate_scene', methods=['GET'])
@@ -397,8 +412,8 @@ def route_scenes(webapp):
         def page_scenes_duplicate_scene_get(webinterface, request, session, scene_id):
             try:
                 scene = webinterface._Scenes.get(scene_id)
-            except KeyError as e:
-                webinterface.add_alert("Requested scene or item id could not be located.", 'warning')
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
 
             try:

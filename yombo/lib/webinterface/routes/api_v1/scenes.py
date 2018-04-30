@@ -23,52 +23,52 @@ def route_api_v1_scene(webapp):
                 return "<tr><td colspan=4>%s</td><tr>\n" % message
 
             try:
-                scene_id = request.args.get('sceneid')[0]
+                scene_id = request.args.get('scene_id')[0]
             except Exception:
-                return local_error("The 'sceneid' is required.")
+                return local_error("The 'scene_id' is required.")
             try:
                 scene = webinterface._Scenes[scene_id]
             except Exception:
-                return local_error("The 'sceneid' cannot be found.")
+                return local_error("The 'scene_id' cannot be found.")
 
-            item_id = is_none(request.args.get('itemid', [None])[0])
-            if item_id is None:
-                item_details = None
+            action_id = is_none(request.args.get('action_id', [None])[0])
+            if action_id is None:
+                action_details = None
             else:
                 try:
-                    item_details = webinterface._Scenes.get_item(scene_id, item_id)
+                    action_details = webinterface._Scenes.get_action_items(scene_id, action_id)
                 except Exception as e:
                     return local_error("The 'itemid' cannot be found.")
 
             try:
-                device_id = request.args.get('deviceid')[0]
+                device_machine_label = request.args.get('device_machine_label')[0]
             except Exception:
-                return local_error("The 'deviceid' is required.")
+                return local_error("The 'device_machine_label' is required.")
             try:
-                device = webinterface._Devices[device_id]
+                device = webinterface._Devices[device_machine_label]
             except Exception as e:
                 return local_error("The 'deviceid' cannot be found.")
 
             try:
-                command_id = request.args.get('commandid')[0]
+                command_machine_label = request.args.get('command_machine_label')[0]
             except Exception:
-                return local_error("The 'commandid' is required.")
+                return local_error("The 'command_machine_label' is required.")
             try:
-                command = webinterface._Commands[command_id]
+                command = webinterface._Commands[command_machine_label]
             except Exception:
-                return local_error("The 'sceneid' cannot be found.")
+                return local_error("The 'command_machine_label' cannot be found.")
 
             available_commands = device.available_commands()
 
-            if command_id not in available_commands:
+            if command.command_id not in available_commands:
                 return local_error("Command ID is not valid for this device.")
-            inputs = available_commands[command_id]['inputs']
+            inputs = available_commands[command.command_id]['inputs']
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/scenes/form_device_inputs.html')
             return page.render(
                 alerts=webinterface.get_alerts(),
                 inputs=inputs,
-                item_details=item_details,
+                action_details=action_details,
                 )
 
         # @webapp.route('/scene/inputs', methods=['GET'])
@@ -109,7 +109,7 @@ def route_api_v1_scene(webapp):
         #
         #     available_commands = device.available_commands()
         #     command_inputs = available_commands[command_id]['inputs']
-        #     items = webinterface._Scenes.get_item(scene_id)
+        #     items = webinterface._Scenes.get_action_items(scene_id)
         #     data = command_inputs
         #     # data = {
         #     #     'total': results['content']['pages']['total_items'],

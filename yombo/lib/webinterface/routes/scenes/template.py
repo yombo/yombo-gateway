@@ -32,19 +32,19 @@ def route_scenes_template(webapp):
 
         @webapp.route('/<string:scene_id>/add_template', methods=['GET'])
         @require_auth()
-        def page_scenes_item_template_add_get(webinterface, request, session, scene_id):
+        def page_scenes_action_template_add_get(webinterface, request, session, scene_id):
             try:
-                scene = webinterface._Scenes[scene_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested scene could not be located.", 'warning')
+                scene = webinterface._Scenes.get(scene_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
 
             data = {
-                'item_type': 'template',
+                'action_type': 'template',
                 'description': webinterface.request_get_default(request, 'description', ""),
                 'template': webinterface.request_get_default(request, 'template', ""),
                 'weight': webinterface.request_get_default(
-                    request, 'weight', (len(webinterface._Scenes.get_item(scene_id)) + 1) * 10),
+                    request, 'weight', (len(webinterface._Scenes.get_action_items(scene_id)) + 1) * 10),
             }
 
             try:
@@ -55,24 +55,24 @@ def route_scenes_template(webapp):
 
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene_id, scene.label)
-            webinterface.add_breadcrumb(request, "/scenes/%s/add_template" % scene_id, "Add Item: Template")
+            webinterface.add_breadcrumb(request, "/scenes/%s/add_template" % scene_id, "Add action: Template")
             return page_scenes_form_template(webinterface, request, session, scene, data, 'add', "Add a template to scene")
 
         @webapp.route('/<string:scene_id>/add_template', methods=['POST'])
         @require_auth()
-        def page_scenes_item_template_add_post(webinterface, request, session, scene_id):
+        def page_scenes_action_template_add_post(webinterface, request, session, scene_id):
             try:
-                scene = webinterface._Scenes[scene_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested scene could not be located.", 'warning')
+                scene = webinterface._Scenes.get(scene_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
 
             data = {
-                'item_type': 'template',
+                'action_type': 'template',
                 'description': webinterface.request_get_default(request, 'description', ""),
                 'template': webinterface.request_get_default(request, 'template', ""),
                 'weight': webinterface.request_get_default(
-                    request, 'weight', (len(webinterface._Scenes.get_item(scene_id)) + 1) * 10),
+                    request, 'weight', (len(webinterface._Scenes.get_action_items(scene_id)) + 1) * 10),
             }
 
             try:
@@ -82,58 +82,60 @@ def route_scenes_template(webapp):
                 return page_scenes_form_template(webinterface, request, session, scene, data, 'add', "Add a template to scene")
 
             try:
-                webinterface._Scenes.add_scene_item(scene_id, **data)
+                webinterface._Scenes.add_action_item(scene_id, **data)
             except YomboWarning as e:
                 webinterface.add_alert("Cannot add template to scene. %s" % e.message, 'warning')
                 return page_scenes_form_template(webinterface, request, session, scene, data, 'add', "Add a template to scene")
 
-            webinterface.add_alert("Added template item to scene.")
+            webinterface.add_alert("Added template action to scene.")
             return webinterface.redirect(request, "/scenes/%s/details" % scene.scene_id)
 
-        @webapp.route('/<string:scene_id>/edit_template/<string:item_id>', methods=['GET'])
+        @webapp.route('/<string:scene_id>/edit_template/<string:action_id>', methods=['GET'])
         @require_auth()
-        def page_scenes_item_template_edit_get(webinterface, request, session, scene_id, item_id):
+        def page_scenes_action_template_edit_get(webinterface, request, session, scene_id, action_id):
             try:
-                scene = webinterface._Scenes[scene_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested scene could not be located.", 'warning')
+                scene = webinterface._Scenes.get(scene_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
             try:
-                item = webinterface._Scenes.get_item(scene_id, item_id)
-            except KeyError as e:
-                webinterface.add_alert("Requested item for scene doesn't exist.", 'warning')
-                return webinterface.redirect(request, '/scenes/index')
+                action = webinterface._Scenes.get_action_items(scene_id, action_id)
+            except YomboWarning as e:
+                webinterface.add_alert("Requested action id could not be located.", 'warning')
+                return webinterface.redirect(request, "/scenes/%s/details" % scene_id)
+            if action['action_type'] != 'template':
+                webinterface.add_alert("Requested action type is invalid.", 'warning')
+                return webinterface.redirect(request, "/scenes/%s/details" % scene_id)
 
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene.scene_id, scene.label)
-            webinterface.add_breadcrumb(request, "/scenes/%s/edit_template" % scene.scene_id, "Edit item: Template")
-            return page_scenes_form_template(webinterface, request, session, scene, item, 'edit',
-                                              "Edit scene item: Template")
+            webinterface.add_breadcrumb(request, "/scenes/%s/edit_template" % scene.scene_id, "Edit action: Template")
+            return page_scenes_form_template(webinterface, request, session, scene, action, 'edit',
+                                              "Edit scene action: Template")
 
-        @webapp.route('/<string:scene_id>/edit_template/<string:item_id>', methods=['POST'])
+        @webapp.route('/<string:scene_id>/edit_template/<string:action_id>', methods=['POST'])
         @require_auth()
-        def page_scenes_item_template_edit_post(webinterface, request, session, scene_id, item_id):
+        def page_scenes_action_template_edit_post(webinterface, request, session, scene_id, action_id):
             try:
-                scene = webinterface._Scenes[scene_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested scene doesn't exist: %s" % scene_id, 'warning')
+                scene = webinterface._Scenes.get(scene_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
-
             try:
-                item = webinterface._Scenes.get_item(scene_id, item_id)
-            except KeyError as e:
-                webinterface.add_alert("Requested item for scene doesn't exist.", 'warning')
+                action = webinterface._Scenes.get_action_items(scene_id, action_id)
+            except YomboWarning as e:
+                webinterface.add_alert("Requested action id could not be located.", 'warning')
                 return webinterface.redirect(request, "/scenes/%s/details" % scene_id)
-            if item['item_type'] != 'template':
-                webinterface.add_alert("Requested item type is invalid.", 'warning')
-                return webinterface.redirect(request, "/automation/%s/details" % scene_id)
+            if action['action_type'] != 'template':
+                webinterface.add_alert("Requested action type is invalid.", 'warning')
+                return webinterface.redirect(request, "/scenes/%s/details" % scene_id)
 
             data = {
-                'item_type': 'template',
+                'action_type': 'template',
                 'description': webinterface.request_get_default(request, 'description', ""),
                 'template': webinterface.request_get_default(request, 'template', 5),
                 'weight': webinterface.request_get_default(
-                    request, 'weight', (len(webinterface._Scenes.get_item(scene_id)) + 1) * 10),
+                    request, 'weight', (len(webinterface._Scenes.get_action_items(scene_id)) + 1) * 10),
             }
 
             try:
@@ -143,12 +145,12 @@ def route_scenes_template(webapp):
                 return page_scenes_form_template(webinterface, request, session, scene, data, 'add', "Add a template to scene")
 
             try:
-                webinterface._Scenes.edit_scene_item(scene_id, item_id, **data)
+                webinterface._Scenes.edit_action_item(scene_id, action_id, **data)
             except YomboWarning as e:
                 webinterface.add_alert("Cannot edit template within scene. %s" % e.message, 'warning')
-                return page_scenes_form_template(webinterface, request, session, scene, data, 'add', "Edit scene item: Template")
+                return page_scenes_form_template(webinterface, request, session, scene, data, 'add', "Edit scene action: Template")
 
-            webinterface.add_alert("Edited a template item for scene '%s'." % scene.label)
+            webinterface.add_alert("Edited a template action for scene '%s'." % scene.label)
             return webinterface.redirect(request, "/scenes/%s/details" % scene.scene_id)
 
         def page_scenes_form_template(webinterface, request, session, scene, data, action_type, header_label):
@@ -161,23 +163,22 @@ def route_scenes_template(webapp):
                                action_type=action_type,
                                )
 
-        @webapp.route('/<string:scene_id>/delete_template/<string:item_id>', methods=['GET'])
+        @webapp.route('/<string:scene_id>/delete_template/<string:action_id>', methods=['GET'])
         @require_auth()
-        def page_scenes_item_template_delete_get(webinterface, request, session, scene_id, item_id):
+        def page_scenes_action_template_delete_get(webinterface, request, session, scene_id, action_id):
             try:
-                scene = webinterface._Scenes[scene_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested scene doesn't exist: %s" % scene_id, 'warning')
+                scene = webinterface._Scenes.get(scene_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
-
             try:
-                item = webinterface._Scenes.get_item(scene_id, item_id)
-            except KeyError as e:
-                webinterface.add_alert("Requested item for scene doesn't exist.", 'warning')
+                action = webinterface._Scenes.get_action_items(scene_id, action_id)
+            except YomboWarning as e:
+                webinterface.add_alert("Requested action id could not be located.", 'warning')
                 return webinterface.redirect(request, "/scenes/%s/details" % scene_id)
-            if item['item_type'] != 'template':
-                webinterface.add_alert("Requested item type is invalid.", 'warning')
-                return webinterface.redirect(request, "/automation/%s/details" % scene_id)
+            if action['action_type'] != 'template':
+                webinterface.add_alert("Requested action type is invalid.", 'warning')
+                return webinterface.redirect(request, "/scenes/%s/details" % scene_id)
 
             page = webinterface.get_template(
                 request,
@@ -185,50 +186,48 @@ def route_scenes_template(webapp):
             )
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene_id, scene.label)
-            webinterface.add_breadcrumb(request, "/scenes/%s/delete_template" % scene_id, "Delete item: Template")
+            webinterface.add_breadcrumb(request, "/scenes/%s/delete_template" % scene_id, "Delete action: Template")
             return page.render(alerts=webinterface.get_alerts(),
                                scene=scene,
-                               item=item,
-                               item_id=item_id,
+                               action=action,
+                               action_id=action_id,
                                )
 
-        @webapp.route('/<string:scene_id>/delete_template/<string:item_id>', methods=['POST'])
+        @webapp.route('/<string:scene_id>/delete_template/<string:action_id>', methods=['POST'])
         @require_auth()
-        def page_scenes_item_template_delete_post(webinterface, request, session, scene_id, item_id):
+        def page_scenes_action_template_delete_post(webinterface, request, session, scene_id, action_id):
             try:
-                scene = webinterface._Scenes[scene_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested scene doesn't exist: %s" % scene_id, 'warning')
+                scene = webinterface._Scenes.get(scene_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
-
             try:
-                item = webinterface._Scenes.get_item(scene_id, item_id)
-            except KeyError as e:
-                webinterface.add_alert("Requested item for scene doesn't exist.", 'warning')
+                action = webinterface._Scenes.get_action_items(scene_id, action_id)
+            except YomboWarning as e:
+                webinterface.add_alert("Requested action id could not be located.", 'warning')
                 return webinterface.redirect(request, "/scenes/%s/details" % scene_id)
-            if item['item_type'] != 'template':
-                webinterface.add_alert("Requested item type is invalid.", 'warning')
-                return webinterface.redirect(request, "/automation/%s/details" % scene_id)
-
+            if action['action_type'] != 'template':
+                webinterface.add_alert("Requested action type is invalid.", 'warning')
+                return webinterface.redirect(request, "/scenes/%s/details" % scene_id)
             try:
                 confirm = request.args.get('confirm')[0]
             except:
                 webinterface.add_alert('Must enter "delete" in the confirmation box to '
                                        'delete the template from the scene.', 'warning')
                 return webinterface.redirect(request,
-                                             '/scenes/%s/delete_template/%s' % (scene_id, item_id))
+                                             '/scenes/%s/delete_template/%s' % (scene_id, action_id))
 
             if confirm != "delete":
                 webinterface.add_alert('Must enter "delete" in the confirmation box to '
                                        'delete the template from the scene.', 'warning')
                 return webinterface.redirect(request,
-                                             '/scenes/%s/delete_template/%s' % (scene_id, item_id))
+                                             '/scenes/%s/delete_template/%s' % (scene_id, action_id))
 
             try:
-                webinterface._Scenes.delete_scene_item(scene_id, item_id)
+                webinterface._Scenes.delete_scene_item(scene_id, action_id)
             except YomboWarning as e:
                 webinterface.add_alert("Cannot delete template from scene. %s" % e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
 
-            webinterface.add_alert("Deleted template item for scene.")
+            webinterface.add_alert("Deleted template action for scene.")
             return webinterface.redirect(request, "/scenes/%s/details" % scene.scene_id)

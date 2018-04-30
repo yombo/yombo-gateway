@@ -10,12 +10,12 @@
     </td>
     <td>
         {% set ITID = "inputs[" ~ input_machine_label ~ "]" -%}
-        {%- if item_details is none -%}
-        {{macros.form_input_type(_devices, item, _inputtypes, input, ITID,
+        {%- if action_details is none -%}
+        {{macros.form_input_type(_devices, action, _inputtypes, input, ITID,
           ITID, '' )}}
         {%- else -%}
-        {{macros.form_input_type(_devices, item, _inputtypes, input, ITID,
-          ITID, item_details['inputs'][input_machine_label] or '' )}}
+        {{macros.form_input_type(_devices, action, _inputtypes, input, ITID,
+          ITID, action_details['inputs'][input_machine_label] or '' )}}
         {%- endif -%}
     </td>
 </tr>

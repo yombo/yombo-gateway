@@ -69,9 +69,9 @@ def route_automation(webapp):
         @require_auth()
         def page_automation_stop_rule_get(webinterface, request, session, rule_id):
             try:
-                rule = webinterface._Automation[rule_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested automation rule doesn't exist: %s" % rule_id, 'warning')
+                rule = webinterface._Automation.get(rule_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/automation/index')
 
             try:
@@ -124,7 +124,8 @@ def route_automation(webapp):
                 return page_automation_form(webinterface, request, session, 'add', data, "Add Automation rule",)
             try:
                 rule = yield webinterface._Automation.add(data['label'], data['machine_label'],
-                                                       data['description'], data['status'], data['run_on_start'])
+                                                          data['description'], data['status'],
+                                                          data['run_on_start'])
             except YomboWarning as e:
                 webinterface.add_alert("Cannot add automation rule. %s" % e.message, 'warning')
                 return page_automation_form(webinterface, request, session, 'add', data, "Add Automation rule",)
@@ -136,9 +137,9 @@ def route_automation(webapp):
         @require_auth()
         def page_automation_edit_rule_get(webinterface, request, session, rule_id):
             try:
-                rule = webinterface._Automation[rule_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested automation rule could not be located.", 'warning')
+                rule = webinterface._Automation.get(rule_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/automation/index')
 
             root_breadcrumb(webinterface, request)
@@ -194,8 +195,7 @@ def route_automation(webapp):
             webinterface.add_alert("Automation rule '%s' edited." % rule.label)
             return webinterface.redirect(request, "/automation/%s/details" % rule.rule_id)
 
-        def page_automation_form(webinterface, request, session, action_type, rule,
-                                        header_label):
+        def page_automation_form(webinterface, request, session, action_type, rule, header_label):
             page = webinterface.get_template(
                 request,
                 webinterface._dir + 'pages/automation/form.html')
@@ -209,9 +209,9 @@ def route_automation(webapp):
         @require_auth()
         def page_automation_delete_rule_get(webinterface, request, session, rule_id):
             try:
-                rule = webinterface._Automation[rule_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested automation rule doesn't exist: %s" % rule_id, 'warning')
+                rule = webinterface._Automation.get(rule_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/automation/index')
 
             page = webinterface.get_template(
@@ -230,9 +230,9 @@ def route_automation(webapp):
         @inlineCallbacks
         def page_automation_delete_rule_post(webinterface, request, session, rule_id):
             try:
-                rule = webinterface._Automation[rule_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested automation rule doesn't exist: %s" % rule_id, 'warning')
+                rule = webinterface._Automation.get(rule_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/automation/index')
 
             try:
@@ -259,9 +259,9 @@ def route_automation(webapp):
         @require_auth()
         def page_automation_disable_rule_get(webinterface, request, session, rule_id):
             try:
-                rule = webinterface._Automation[rule_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested automation rule could not be located.", 'warning')
+                rule = webinterface._Automation.get(rule_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/automation/index')
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/automation/disable.html')
@@ -276,9 +276,9 @@ def route_automation(webapp):
         @require_auth()
         def page_automation_disable_rule_post(webinterface, request, session, rule_id):
             try:
-                rule = webinterface._Automation[rule_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested automation rule could not be located.", 'warning')
+                rule = webinterface._Automation.get(rule_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/automation/index')
 
             try:
@@ -322,9 +322,9 @@ def route_automation(webapp):
         @require_auth()
         def page_automation_enable_rule_get(webinterface, request, session, rule_id):
             try:
-                rule = webinterface._Automation[rule_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested automation rule could not be located.", 'warning')
+                rule = webinterface._Automation.get(rule_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/automation/index')
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/automation/enable.html')
@@ -339,9 +339,9 @@ def route_automation(webapp):
         @require_auth()
         def page_automation_enable_rule_post(webinterface, request, session, rule_id):
             try:
-                rule = webinterface._Automation[rule_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested automation rule could not be located.", 'warning')
+                rule = webinterface._Automation.get(rule_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/automation/index')
             try:
                 confirm = request.args.get('confirm')[0]
@@ -364,51 +364,51 @@ def route_automation(webapp):
 
         @webapp.route('/<string:rule_id>/move_up/<string:action_id>', methods=['GET'])
         @require_auth()
-        def page_automation_item_move_up_get(webinterface, request, session, rule_id, action_id):
+        def page_automation_action_move_up_get(webinterface, request, session, rule_id, action_id):
             try:
-                rule = webinterface._Automation[rule_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested automation rule doesn't exist.", 'warning')
+                rule = webinterface._Automation.get(rule_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/automation/index')
             try:
-                item = webinterface._Automation.get_action_items(rule_id, action_id)
-            except KeyError as e:
-                webinterface.add_alert("Requested item for rule doesn't exist.", 'warning')
+                action = webinterface._Automation.get_action_items(rule_id, action_id)
+            except YomboWarning as e:
+                webinterface.add_alert("Requested action id could not be located.", 'warning')
                 return webinterface.redirect(request, "/automation/%s/details" % rule_id)
 
             try:
-                webinterface._Automation.move_item_up(rule_id, action_id)
+                webinterface._Automation.move_action_up(rule_id, action_id)
             except YomboWarning as e:
-                webinterface.add_alert("Cannot move item up. %s" % e.message, 'warning')
+                webinterface.add_alert("Cannot move action up. %s" % e.message, 'warning')
                 return webinterface.redirect(request, '/automation/%s/details' % rule_id)
 
-            webinterface.add_alert("Item moved up.")
+            webinterface.add_alert("Action moved up.")
             return webinterface.redirect(request, '/automation/%s/details' % rule_id)
 
         @webapp.route('/<string:rule_id>/move_down/<string:action_id>', methods=['GET'])
         @require_auth()
-        def page_automation_item_move_down_get(webinterface, request, session, rule_id, action_id):
+        def page_automation_action_move_down_get(webinterface, request, session, rule_id, action_id):
             try:
-                rule = webinterface._Automation[rule_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested automation rule doesn't exist.", 'warning')
+                rule = webinterface._Automation.get(rule_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/automation/index')
             try:
-                item = webinterface._Automation.get_action_items(rule_id, action_id)
-            except KeyError as e:
-                webinterface.add_alert("Requested item for rule doesn't exist.", 'warning')
+                action = webinterface._Automation.get_action_items(rule_id, action_id)
+            except YomboWarning as e:
+                webinterface.add_alert("Requested action id could not be located.", 'warning')
                 return webinterface.redirect(request, "/automation/%s/details" % rule_id)
 
             try:
-                webinterface._Automation.move_item_down(rule_id, action_id)
+                webinterface._Automation.move_action_down(rule_id, action_id)
             except YomboWarning as e:
-                webinterface.add_alert("Cannot move item down. %s" % e.message, 'warning')
+                webinterface.add_alert("Cannot move action down. %s" % e.message, 'warning')
                 return webinterface.redirect(request, '/automation/%s/details' % rule_id)
 
-            webinterface.add_alert("Item moved up.")
+            webinterface.add_alert("Action moved up.")
             return webinterface.redirect(request, '/automation/%s/details' % rule_id)
 
-        @webapp.route('/<string:rule_id>/duplicate_automation rule', methods=['GET'])
+        @webapp.route('/<string:rule_id>/duplicate_automation', methods=['GET'])
         @require_auth()
         @inlineCallbacks
         def page_automation_duplicate_rule_get(webinterface, request, session, rule_id):

@@ -31,13 +31,83 @@ def route_automation_device(webapp):
             webinterface.add_breadcrumb(request, "/?", "Home")
             webinterface.add_breadcrumb(request, "/automation/index", "Automation Rule")
 
+        @webapp.route('/<string:rule_id>/set_trigger_device', methods=['GET'])
+        @require_auth()
+        def page_automation_trigger_set_device_get(webinterface, request, session, rule_id):
+            try:
+                rule = webinterface._Automation.get(rule_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
+                return webinterface.redirect(request, '/automation/index')
+
+            device_machine_label = ""
+
+            trigger_data = rule.data['trigger']
+            if trigger_data['trigger_type'] == "device":
+                if 'device_machine_label' in trigger_data:
+                    device_machine_label = trigger_data['device_machine_label']
+
+            data = {
+                'trigger_type': 'device',
+                'device_machine_label': webinterface.request_get_default(request, 'device_machine_label', device_machine_label),
+            }
+            root_breadcrumb(webinterface, request)
+            webinterface.add_breadcrumb(request, "/automation/%s/details" % rule_id, rule.label)
+            webinterface.add_breadcrumb(request, "/automation/%s/add_trigger_device" % rule_id, "Set trigger: device")
+            return page_automation_trigger_set_device_form(webinterface, request, session, rule, data)
+
+        @webapp.route('/<string:rule_id>/set_trigger_device', methods=['POST'])
+        @require_auth()
+        def page_automation_trigger_set_device_post(webinterface, request, session, rule_id):
+            try:
+                rule = webinterface._Automation.get(rule_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
+                return webinterface.redirect(request, '/automation/index')
+
+            device_machine_label = ""
+
+            trigger_data = rule.data['trigger']
+            if trigger_data['trigger_type'] == "device":
+                print("getting data from array")
+                if 'device_machine_label' in trigger_data:
+                    device_machine_label = trigger_data['device_machine_label']
+
+            data = {
+                'trigger_type': 'device',
+                'device_machine_label': webinterface.request_get_default(request,
+                                                                         'device_machine_label',
+                                                                         "device_machine_label"),
+            }
+
+            if data['device_machine_label'] == "":
+                webinterface.add_alert('Must enter a device machine label.', 'warning')
+                return page_automation_trigger_set_device_form(webinterface, request, session, rule, data)
+
+            try:
+                webinterface._Automation.set_rule_trigger(rule_id, **data)
+            except YomboWarning as e:
+                webinterface.add_alert("Cannot add device to automation. %s" % e.message, 'warning')
+                return page_automation_trigger_set_device_form(webinterface, request, session, rule, data)
+
+            webinterface.add_alert("Set device trigger to automation rule.")
+            return webinterface.redirect(request, "/automation/%s/details" % rule.rule_id)
+
+        def page_automation_trigger_set_device_form(webinterface, request, session, rule, data):
+            page = webinterface.get_template(request, webinterface._dir + 'pages/automation/form_trigger_device.html')
+
+            return page.render(alerts=webinterface.get_alerts(),
+                               rule=rule,
+                               data=data,
+                               )
+
         @webapp.route('/<string:rule_id>/add_action_device', methods=['GET'])
         @require_auth()
         def page_automation_action_device_add_get(webinterface, request, session, rule_id):
             try:
-                rule = webinterface._Automation[rule_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested automation rule doesn't exist.", 'warning')
+                rule = webinterface._Automation.get(rule_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/automation/index')
 
             data = {
@@ -51,7 +121,7 @@ def route_automation_device(webapp):
             }
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/automation/%s/details" % rule_id, rule.label)
-            webinterface.add_breadcrumb(request, "/automation/%s/add_device" % rule_id, "Add Item: Device")
+            webinterface.add_breadcrumb(request, "/automation/%s/add_device" % rule_id, "Add action: Device")
             return page_automation_action_form_device(webinterface, request, session, rule, data, 'add',
                                            "Add device to automation rule")
 
@@ -59,9 +129,9 @@ def route_automation_device(webapp):
         @require_auth()
         def page_automation_action_device_add_post(webinterface, request, session, rule_id):
             try:
-                rule = webinterface._Automation[rule_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested automation rule doesn't exist.", 'warning')
+                rule = webinterface._Automation.get(rule_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/automation/index')
 
             try:
@@ -111,47 +181,47 @@ def route_automation_device(webapp):
                 return page_automation_action_form_device(webinterface, request, session, rule, data, 'add',
                                                "Add device to automation rule")
 
-            webinterface.add_alert("Added device item to automation rule.")
+            webinterface.add_alert("Added device action to automation rule.")
             return webinterface.redirect(request, "/automation/%s/details" % rule.rule_id)
 
         @webapp.route('/<string:rule_id>/edit_action_device/<string:action_id>', methods=['GET'])
         @require_auth()
         def page_automation_action_device_edit_get(webinterface, request, session, rule_id, action_id):
             try:
-                rule = webinterface._Automation[rule_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested automation rule doesn't exist.", 'warning')
+                rule = webinterface._Automation.get(rule_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/automation/index')
             try:
-                item = webinterface._Automation.get_action_items(rule_id, action_id)
-            except KeyError as e:
-                webinterface.add_alert("Requested item for rule doesn't exist.", 'warning')
+                action = webinterface._Automation.get_action_items(rule_id, action_id)
+            except YomboWarning as e:
+                webinterface.add_alert("Requested action id could not be located.", 'warning')
                 return webinterface.redirect(request, "/automation/%s/details" % rule_id)
-            if item['action_type'] != 'device':
-                webinterface.add_alert("Requested item type is invalid.", 'warning')
+            if action['action_type'] != 'device':
+                webinterface.add_alert("Requested action type is invalid.", 'warning')
                 return webinterface.redirect(request, "/automation/%s/details" % rule_id)
 
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/automation/%s/details" % rule.rule_id, rule.label)
-            webinterface.add_breadcrumb(request, "/automation/%s/edit_device" % rule.rule_id, "Edit item: Device")
-            return page_automation_action_form_device(webinterface, request, session, rule, item, 'edit',
-                                           "Edit automation rule item: Device")
+            webinterface.add_breadcrumb(request, "/automation/%s/edit_device" % rule.rule_id, "Edit action: Device")
+            return page_automation_action_form_device(webinterface, request, session, rule, action, 'edit',
+                                           "Edit automation rule action: Device")
 
         @webapp.route('/<string:rule_id>/edit_action_device/<string:action_id>', methods=['POST'])
         @require_auth()
         def page_automation_action_device_edit_post(webinterface, request, session, rule_id, action_id):
             try:
-                rule = webinterface._Automation[rule_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested automation rule doesn't exist.", 'warning')
+                rule = webinterface._Automation.get(rule_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/automation/index')
             try:
-                item = webinterface._Automation.get_action_items(rule_id, action_id)
-            except KeyError as e:
-                webinterface.add_alert("Requested item for rule doesn't exist.", 'warning')
+                action = webinterface._Automation.get_action_items(rule_id, action_id)
+            except YomboWarning as e:
+                webinterface.add_alert("Requested action id could not be located.", 'warning')
                 return webinterface.redirect(request, "/automation/%s/details" % rule_id)
-            if item['action_type'] != 'device':
-                webinterface.add_alert("Requested item type is invalid.", 'warning')
+            if action['action_type'] != 'device':
+                webinterface.add_alert("Requested action type is invalid.", 'warning')
                 return webinterface.redirect(request, "/automation/%s/details" % rule_id)
 
             try:
@@ -206,7 +276,7 @@ def route_automation_device(webapp):
                 return page_automation_action_form_device(webinterface, request, session, rule, data, 'add',
                                                "Add device to automation rule")
 
-            webinterface.add_alert("Added device item to automation rule.")
+            webinterface.add_alert("Added device action to automation rule.")
             return webinterface.redirect(request, "/automation/%s/details" % rule.rule_id)
 
         def page_automation_action_form_device(webinterface, request, session, rule, data, action_type, header_label):
@@ -223,17 +293,17 @@ def route_automation_device(webapp):
         @require_auth()
         def page_automation_action_device_delete_get(webinterface, request, session, rule_id, action_id):
             try:
-                rule = webinterface._Automation[rule_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested automation rule doesn't exist.", 'warning')
+                rule = webinterface._Automation.get(rule_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/automation/index')
             try:
-                item = webinterface._Automation.get_action_items(rule_id, action_id)
-            except KeyError as e:
-                webinterface.add_alert("Requested item for rule doesn't exist.", 'warning')
+                action = webinterface._Automation.get_action_items(rule_id, action_id)
+            except YomboWarning as e:
+                webinterface.add_alert("Requested action id could not be located.", 'warning')
                 return webinterface.redirect(request, "/automation/%s/details" % rule_id)
-            if item['action_type'] != 'device':
-                webinterface.add_alert("Requested item type is invalid.", 'warning')
+            if action['action_type'] != 'device':
+                webinterface.add_alert("Requested action type is invalid.", 'warning')
                 return webinterface.redirect(request, "/automation/%s/details" % rule_id)
 
             page = webinterface.get_template(
@@ -242,10 +312,10 @@ def route_automation_device(webapp):
             )
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/automation/%s/details" % rule_id, rule.label)
-            webinterface.add_breadcrumb(request, "/automation/%s/delete_device" % rule_id, "Delete item: Device")
+            webinterface.add_breadcrumb(request, "/automation/%s/delete_device" % rule_id, "Delete action: Device")
             return page.render(alerts=webinterface.get_alerts(),
                                rule=rule,
-                               item=item,
+                               action=action,
                                action_id=action_id,
                                )
 
@@ -253,17 +323,17 @@ def route_automation_device(webapp):
         @require_auth()
         def page_automation_action_device_delete_post(webinterface, request, session, rule_id, action_id):
             try:
-                rule = webinterface._Automation[rule_id]
-            except KeyError as e:
-                webinterface.add_alert("Requested automation rule doesn't exist.", 'warning')
+                rule = webinterface._Automation.get(rule_id)
+            except YomboWarning as e:
+                webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/automation/index')
             try:
-                item = webinterface._Automation.get_action_items(rule_id, action_id)
-            except KeyError as e:
-                webinterface.add_alert("Requested item for rule doesn't exist.", 'warning')
+                action = webinterface._Automation.get_action_items(rule_id, action_id)
+            except YomboWarning as e:
+                webinterface.add_alert("Requested action id could not be located.", 'warning')
                 return webinterface.redirect(request, "/automation/%s/details" % rule_id)
-            if item['action_type'] != 'device':
-                webinterface.add_alert("Requested item type is invalid.", 'warning')
+            if action['action_type'] != 'device':
+                webinterface.add_alert("Requested action type is invalid.", 'warning')
                 return webinterface.redirect(request, "/automation/%s/details" % rule_id)
 
             try:
@@ -286,5 +356,5 @@ def route_automation_device(webapp):
                 webinterface.add_alert("Cannot delete device from automation rule. %s" % e.message, 'warning')
                 return webinterface.redirect(request, '/automation/index')
 
-            webinterface.add_alert("Deleted device item for automation rule.")
+            webinterface.add_alert("Deleted device action for automation rule.")
             return webinterface.redirect(request, "/automation/%s/details" % rule.rule_id)

@@ -23,22 +23,22 @@ def route_api_v1_automation(webapp):
                 return "<tr><td colspan=4>%s</td><tr>\n" % message
 
             try:
-                rule_id = request.args.get('ruleid')[0]
+                rule_id = request.args.get('rule_id')[0]
             except Exception:
-                return local_error("The 'ruleid' is required.")
+                return local_error("The 'rule_id' is required.")
             try:
                 rule = webinterface._Automation[rule_id]
             except Exception:
-                return local_error("The 'ruleid' cannot be found.")
+                return local_error("The 'rule_id' cannot be found.")
 
-            action_id = is_none(request.args.get('actionid', [None])[0])
+            action_id = is_none(request.args.get('action_id', [None])[0])
             if action_id is None:
-                item_details = None
+                action_details = None
             else:
                 try:
-                    item_details = webinterface._Automation.get_action_items(rule_id, action_id)
+                    action_details = webinterface._Automation.get_action_items(rule_id, action_id)
                 except Exception as e:
-                    return local_error("The 'itemid' cannot be found.")
+                    return local_error("The 'action_id' cannot be found.")
 
             try:
                 device_machine_label = request.args.get('device_machine_label')[0]
@@ -68,7 +68,7 @@ def route_api_v1_automation(webapp):
             return page.render(
                 alerts=webinterface.get_alerts(),
                 inputs=inputs,
-                item_details=item_details,
+                action_details=action_details,
                 )
 
         # @webapp.route('/automation/inputs', methods=['GET'])

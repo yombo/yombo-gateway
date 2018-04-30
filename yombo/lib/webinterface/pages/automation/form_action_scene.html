@@ -56,26 +56,26 @@
                         Select an action to do:
                     </p>
                     <ul>
-                        <li><strong>Enable</strong> - Enable a scene.</li>
-                        <li><strong>Disable</strong> - Disable a scene.</li>
                         <li><strong>Start</strong> - Start (or trigger) a scene.</li>
                         <li><strong>Stop</strong> - Stop a scene if it's running.</li>
+                        <li><strong>Enable</strong> - Enable a scene.</li>
+                        <li><strong>Disable</strong> - Disable a scene.</li>
                     </ul>
                     ") }}
                     <br>
                     <div class="input-group">
-                        <select tabindex="3" class="selectpicker show-tick form-control" name="action" id="action">
+                        <select tabindex="3" class="selectpicker show-tick form-control" name="scene_action" id="scene_action">
                             <option value="start"
-                                {%- if data['action'] == 'start' %} selected {% endif -%}
+                                {%- if data['scene_action'] == 'start' %} selected {% endif -%}
                                 data-subtext="Start the scene">Start</option>
                             <option value="stop"
-                                {%- if data['action'] == 'stop' %} selected {% endif -%}
+                                {%- if data['scene_action'] == 'stop' %} selected {% endif -%}
                                 data-subtext="Stop scene if running.">Stop</option>
                             <option value="enable"
-                                {%- if data['action'] == 'enable' %} selected {% endif -%}
+                                {%- if data['scene_action'] == 'enable' %} selected {% endif -%}
                                 data-subtext="Allow scene to run.">Enable</option>
                             <option value="disable"
-                                {%- if data['action'] == 'disable' %} selected {% endif -%}
+                                {%- if data['scene_action'] == 'disable' %} selected {% endif -%}
                                 data-subtext="Prevent scene from running.">Disable</option>
                         </select>
                     </div>
@@ -86,15 +86,16 @@
                     <a href="#" data-toggle="modal" data-target="#modalweight"><i class="fa fa-question fa-sm"></i></a>
                     {{ macros.modal("modalweight", 'Weight', "
                     <p>
-                        Weight is used to help determine the order in which each item is performed.
+                        Weight is used to help determine the order in which each action is performed.
                     </p>
                     <p>
-                        Enter a weight (as a number). The lower the number, the higher the priority. Negative numbers are valid.
+                        Enter a weight (as a number). The lower the number, the higher the priority. Negative numbers
+                        are valid.
                     </p>
                     <p>
-                        When the entry is saved, the system will calculate new weights for all automation rule items.
-                        This allows you to quickly move an item between two existing items simply by setting a weight
-                        value between the new items.
+                        When the entry is saved, the system will calculate new weights for all automation rule actions.
+                        This allows you to quickly move an action between two existing actions simply by setting a
+                        weight value between the new actions.
                     </p>") }}
                     <br>
                     <div class="input-group">

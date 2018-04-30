@@ -56,15 +56,16 @@
                     <a href="#" data-toggle="modal" data-target="#modalweight"><i class="fa fa-question fa-sm"></i></a>
                     {{ macros.modal("modalweight", 'Weight', "
                     <p>
-                        Weight is used to help determine the order in which each item is performed.
+                        Weight is used to help determine the order in which each action is performed.
                     </p>
                     <p>
-                        Enter a weight (as a number). The lower the number, the higher the priority. Negative numbers are valid.
+                        Enter a weight (as a number). The lower the number, the higher the priority. Negative numbers
+                        are valid.
                     </p>
                     <p>
-                        When the entry is saved, the system will calculate new weights for all automation rule items.
-                        This allows you to quickly move an item between two existing items simply by setting a weight
-                        value between the new items.
+                        When the entry is saved, the system will calculate new weights for all automation rule actions.
+                        This allows you to quickly move an action between two existing actions simply by setting a weight
+                        value between the new actions.
                     </p>") }}
                     <br>
                     <div class="input-group">
@@ -108,7 +109,7 @@ $('form').validate({
     rules: {
         template: {
             minlength: 2,
-            maxlength: 1500,
+            maxlength: 65535,
             required: true,
         },
         description: {

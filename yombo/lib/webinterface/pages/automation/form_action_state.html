@@ -38,11 +38,14 @@
                     <br>
                     <div class="input-group">
                         <select tabindex="3" class="selectpicker show-tick form-control" name="gateway_id" id="gateway_id">
-                            <option value="cluster"{% if data['gateway_id'] == 'cluster' %} selected{% endif %} data-subtext="Any gateway within cluster">Local cluster</option>
-                            <option value="{{_local_gateway.gateway_id}}"{% if data['gateway_id'] == _local_gateway.gateway_id %} selected{% endif %} data-subtext="This gateway">{{_local_gateway.label}}</option>
+                            <option value="cluster"{% if data['gateway_id'] == 'cluster' %} selected{% endif
+                            %} data-subtext="Any gateway within cluster">Local cluster</option>
+                            <option value="{{_local_gateway.gateway_id}}"{% if data['gateway_id'] == _local_gateway.gateway_id %} selected{% endif
+                            %} data-subtext="This gateway">{{_local_gateway.label}}</option>
                             <option data-divider="true"></option>
-                            {%- for gateway_id, gateway in _gateways.items() if gateway_id != _local_gateway.gateway_id %}
-                            <option value="{{gateway.gateway_id}}"{% if data['gateway_id'] == gateway.gateway_id %} selected{% endif %}  data-subtext="Remote gateway.">{{gateway.label}}</option>
+                            {%- for gateway_id, gateway in _gateways.items() if gateway_id != _local_gateway.gateway_id and gateway_id != 'cluster'%}
+                            <option value="{{gateway.gateway_id}}"{% if data['gateway_id'] == gateway.gateway_id %} selected{% endif
+                            %}  data-subtext="Remote gateway.">{{gateway.label}}</option>
                             {%- endfor %}
                         </select>
                     </div>
@@ -56,7 +59,8 @@
                     ') }}
                     <br>
                     <div class="input-group">
-                        <input tabindex="1" type="text" class="form-control" name="name" id="name" size="30" placeholder="is.away" value="{{ data['name'] }}" autofocus required>
+                        <input tabindex="1" type="text" class="form-control" name="name" id="name" size="30"
+                               placeholder="is.away" value="{{ data['name'] }}" autofocus required>
                     </div>
                 </div>
 
@@ -100,15 +104,16 @@
                     <a href="#" data-toggle="modal" data-target="#modalweight"><i class="fa fa-question fa-sm"></i></a>
                     {{ macros.modal("modalweight", 'Weight', "
                     <p>
-                        Weight is used to help determine the order in which each item is performed.
+                        Weight is used to help determine the order in which each action is performed.
                     </p>
                     <p>
-                        Enter a weight (as a number). The lower the number, the higher the priority. Negative numbers are valid.
+                        Enter a weight (as a number). The lower the number, the higher the priority. Negative numbers
+                        are valid.
                     </p>
                     <p>
                         When the entry is saved, the system will calculate new weights for the current automation
-                        rule items. This allows you to quickly move an item between two existing items simply by
-                        setting a weight value between the new items.
+                        rule actions. This allows you to quickly move an action between two existing actions simply by
+                        setting a weight value between the new actions.
                     </p>") }}
                     <br>
                     <div class="input-group">
