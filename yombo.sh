@@ -47,19 +47,18 @@ EOF
 }
 
 YOMBO_OPTS="twistd --pidfile=$YOMBO_PIDFILE"
-
+SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
 # Process args
 while getopts ":uvdhl:LPp:t:" opt; do
   case $opt in
     u)
       # Show yombo urls
-      ./scripts/show_urls.py
+      $SCRIPTPATH/scripts/show_urls.py
       exit 1
       ;;
     v)
       # Show version of yombo.
-      cd scripts
-      ./show_version.py
+      $SCRIPTPATH/scripts/show_version.py
       exit 1
       ;;
     d)
