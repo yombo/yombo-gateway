@@ -371,6 +371,9 @@ class Configuration(YomboLibrary):
     def _load_(self, **kwargs):
         self._loaded = True
 
+    def __started(self, **kwargs):
+        self.save()
+
     def _stop_(self, **kwargs):
         if self.periodic_save_yombo_ini is not None and self.periodic_save_yombo_ini.running:
             self.periodic_save_yombo_ini.stop()
