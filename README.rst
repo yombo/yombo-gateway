@@ -66,7 +66,7 @@ In short: It's your data. We don't sell it or give it away, unless required to
 do so by court order.
 
 =========================
-Yombo Gateway License 
+Yombo Gateway License
 =========================
 
 By accessing or using any Yombo code, you are agreeing to the licensing terms as

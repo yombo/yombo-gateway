@@ -1,4 +1,5 @@
-# This file was created by Yombo for use with Yombo Python Gateway automation
+# -*- coding: utf-8 -*-
+#  This file was created by Yombo for use with Yombo Python Gateway automation
 # software.  Details can be found at https://yombo.net
 """
 Various constants used throughout the system. These allow various values to be easily referenced

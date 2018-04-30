@@ -1,12 +1,9 @@
 #!/usr/bin/env bash
 if [ "$(id -u)" -ne 0 ]; then
     echo "This script must run with sudo to gain root access. This is needed to install"
-    echo "the required software as well as adjust some system settings to enable"
-    echo "USB/Serial port access."
-    echo "If you created a dedicate account for this software, first log into that account."
-    echo "Then run this script as:"
+    echo "the latest updates."
     echo ""
-    echo "mycomputer> sudo bash ./install-debian.sh"
+    echo "mycomputer> sudo bash ./update_debian.sh"
     echo ""
     exit
 fi
@@ -28,13 +25,48 @@ apt-get update
 apt-get upgrade -y
 apt-get install git wget -y
 
-# This can't be used on raspberry pi
-CFLAGS='-O2'
+sudo pip3 install --upgrade pip
 
-cd /home/$USER/.pyenv && git pull && cd -
-cd /opt/yombo-gateway
-pyenv install 3.6.5
-pyenv local --unset
-pyenv local 3.6.5
-pip3 list --outdated --format=freeze | grep -v '^\-e' | cut -d = -f 1 | xargs -n1 pip install -U
-pip3 install -r requirements.txt
+cd /usr/local/src/yombo/libwebsockets
+git remote update
+UPSTREAM=${1:-'@{u}'}
+LOCAL=$(git rev-parse @)
+REMOTE=$(git rev-parse "$UPSTREAM")
+BASE=$(git merge-base @ "$UPSTREAM")
+
+if [ $LOCAL = $REMOTE ]; then
+    LIBWEBSOCKETSUPDATED=no
+    echo "libwebsockets is current, skipping"
+elif [ $LOCAL = $BASE ]; then
+    LIBWEBSOCKETSUPDATED=yes
+    git pull
+    cd build
+    make clean
+    cmake ..
+    sudo make install
+    sudo ldconfig
+fi
+
+cd /usr/local/src/yombo
+git clone https://github.com/eclipse/mosquitto.git
+cd mosquitto
+make binary WITH_WEBSOCKETS=yes WITH_DOCS=no CFLAGS=-I/usr/local/include/
+sudo make install WITH_WEBSOCKETS=yes WITH_DOCS=no CFLAGS=-I/usr/local/include/
+
+cd /usr/local/src/yombo/mosquitto
+git remote update
+UPSTREAM=${1:-'@{u}'}
+LOCAL=$(git rev-parse @)
+REMOTE=$(git rev-parse "$UPSTREAM")
+BASE=$(git merge-base @ "$UPSTREAM")
+
+if [ $LOCAL = $REMOTE ] and [$LIBWEBSOCKETSUPDATED == "no"]; then
+    echo "libwebsockets is current, skipping"
+else [ $LOCAL = $BASE ]; then
+    git pull
+    make clean
+    make binary WITH_WEBSOCKETS=yes WITH_DOCS=no CFLAGS=-I/usr/local/include/
+    sudo make install WITH_WEBSOCKETS=yes WITH_DOCS=no CFLAGS=-I/usr/local/include/
+fi
+
+sudo runuser -l $SSH_USER -c "bash /opt/yombo-gateway/scripts/update_debian_user.sh"

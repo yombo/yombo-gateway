@@ -2,50 +2,40 @@
 Scripts Directory
 =====================
 
-Various files to get Yombo Gateway installed on various platforms. To get started
-and information on installation, visit: https://yombo.net/docs/gateway/quick_start
+The installation scripts have been moved to a separate repository. To
+install Yombo gateway, visit the `quick start guide <https://yg2.in/start>`_.
 
-
-Debian
-======
-
-For installing on Debian based systems, including Mint and Ubuntu.
-
-
-install-debian.sh
+update_debian.sh
 ----------------------
 
-Installs the required software before Yombo Gateway can run.
+Used on x86 (32/64 bit) based Debian systems (Ubuntu, Mint, Debian, etc).
 
-update-debian.sh
+Updates all the software related to Yombo gateway. This script updates the Debian system,
+the Yombo gateway software, and any required dependencies.
+
+This script must be run under sudo:
+sudo ./update-debian.sh
+
+update_debian_user.sh
 ----------------------
 
-Updates all the software related to Yombo gateway.
+Called by the update_debian.sh script to update user level component. This shouldn't
+be called directly.
 
-install-service-systemd.sh
+
+update_raspberrypi.sh
 --------------------------
 
-Setup Yombo Gateway to run as a service on using systemd (used on newer Debian based systems).
-After installation, you can use the service command to manage the Gateway.
+Used on arm based Debian systems (Raspbian, Stretch, etc).
 
-install-service-initd.sh
---------------------------
+Updates all the software related to Yombo gateway. This script updates the Debian system,
+the Yombo gateway software, and any required dependencies.
 
-Setup Yombo Gateway to run as a service on using initd (used on older Debian based systems).
-After installation, you can use the service command to manage the Gateway.
+This script must be run under sudo:
+sudo ./update-raspberrypi.sh
 
+update_raspberrypi.sh
+----------------------
 
-Misc
-====
-
-Misc files in this directory.
-
-yombo-init
-----------
-
-initd script to be installed on linux distributions. Used by the install-service-initd script.
-
-yombo-systemd
--------------
-
-systemd script to be installed on linux distributions. Used by the install-service-systemd script.
+Called by the update_raspberrypi.sh script to update user level component. This shouldn't
+be called directly.

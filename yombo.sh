@@ -40,6 +40,7 @@ OPTIONS:
    -p file   Change pid file location
    -t file   Change tac file location (rarely used)
    -P        Enable profiling to profile.out
+   -v        Version information
 
 EOF
 }
@@ -47,8 +48,15 @@ EOF
 YOMBO_OPTS="twistd --pidfile=$YOMBO_PIDFILE"
 
 # Process args
-while getopts ":dhl:LPp:t:" opt; do
+while getopts ":vdhl:LPp:t:" opt; do
   case $opt in
+    v)
+      # Show version of yombo.
+      cd scripts
+      ./show_version.py
+      exit 1
+
+      ;;
     d)
       # Run as daemon (used by init script)
       YOMBO_DAEMON=1
