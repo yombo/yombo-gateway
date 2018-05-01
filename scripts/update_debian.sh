@@ -3,7 +3,7 @@ if [ "$(id -u)" -ne 0 ]; then
     echo "This script must run with sudo to gain root access. This is needed to install"
     echo "the latest updates."
     echo ""
-    echo "mycomputer> sudo bash ./update_debian.sh"
+    echo "mycomputer> sudo ./update_debian.sh"
     echo ""
     exit
 fi

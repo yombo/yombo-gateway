@@ -7,7 +7,7 @@ if [ "$(id -u)" -ne 0 ]; then
     echo "If you created a dedicate account for this software, first log into that account."
     echo "Then run this script as:"
     echo ""
-    echo "mycomputer> sudo bash ./install-debian.sh"
+    echo "mycomputer> sudo ./update_raspberry.sh"
     echo ""
     exit
 fi

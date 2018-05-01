@@ -49,16 +49,21 @@ EOF
 YOMBO_OPTS="twistd --pidfile=$YOMBO_PIDFILE"
 SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
 # Process args
-while getopts ":uvdhl:LPp:t:" opt; do
+while getopts ":muvdhl:LPp:t:" opt; do
   case $opt in
+    m)
+      # Show yombo motd
+      $SCRIPTPATH/scripts/show_motd
+      exit 1
+      ;;
     u)
       # Show yombo urls
-      $SCRIPTPATH/scripts/show_urls.py
+      $SCRIPTPATH/scripts/show_urls
       exit 1
       ;;
     v)
       # Show version of yombo.
-      $SCRIPTPATH/scripts/show_version.py
+      $SCRIPTPATH/scripts/show_version
       exit 1
       ;;
     d)
