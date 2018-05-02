@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+# Handles updates for various Debian distros. Including ubunut,
+# and raspberry pi.
+
+if [ "$USER" = "root" ] && [ "$SUDO_USER" == "" ]; then
+  echo "This script cannot be run as root directly and must be run"
+  echo "as the user owning the Yombo gateway service."
+  echo ""
+  echo "Logout as root and then:"
+  echo "sudo yombo_update debian|raspberry"
+  exit
+fi
+
+if [ "$(id -u)" -ne 0 ]; then
+  echo "This script must run with sudo to gain root access. This"
+  echo "is needed to install the latest updates. Run this the user"
+  echo "owning the Yombo gateway service:"
+  echo ""
+  echo "sudo yombo_update debian|raspberry"
+  echo ""
+  exit
+fi
+
+OPTIMIZE=$1
+
+if [ "$OPTIMIZE" == "" ]; then
+  echo "This script shouldn't be called directly. Use yombo_update script."
+fi
+
+apt-get update >> /dev/null
+apt-get upgrade -y
+
+sudo npm update
+
+sudo pip3 install --upgrade pip
+sudo pip2 install --upgrade pip
+
+cd /usr/local/src/yombo/libwebsockets
+git remote update
+UPSTREAM=${1:-'@{u}'}
+LOCAL=$(git rev-parse @)
+REMOTE=$(git rev-parse "$UPSTREAM")
+BASE=$(git merge-base @ "$UPSTREAM")
+
+if [ $LOCAL = $REMOTE ]; then
+    LIBWEBSOCKETSUPDATED=no
+    echo "libwebsockets is current, skipping"
+elif [ $LOCAL = $BASE ]; then
+    LIBWEBSOCKETSUPDATED=yes
+    git pull
+    cd build
+    make clean
+    cmake ..
+    sudo make install
+    sudo ldconfig
+fi
+
+cd /usr/local/src/yombo/mosquitto
+git remote update
+UPSTREAM=${1:-'@{u}'}
+LOCAL=$(git rev-parse @)
+REMOTE=$(git rev-parse "$UPSTREAM")
+BASE=$(git merge-base @ "$UPSTREAM")
+
+if [ $LOCAL = $REMOTE ] and [$LIBWEBSOCKETSUPDATED == "no"]; then
+    echo "libwebsockets is current, skipping"
+else [ $LOCAL = $BASE ]; then
+    git pull
+    make clean
+    make binary WITH_WEBSOCKETS=yes WITH_DOCS=no CFLAGS=-I/usr/local/include/
+    sudo make install WITH_WEBSOCKETS=yes WITH_DOCS=no CFLAGS=-I/usr/local/include/
+fi
+
+
+_scriptLocation="$(readlink -f ${BASH_SOURCE[0]})"
+YOMBO_PARENTDIR="$(dirname $_scriptLocation)"
+trap 'kill -TERM $PID' TERM INT
+sudo runuser -l $SUDO_USER -c "bash $YOMBO_PARENTDIR/update_debian_user $OPTIMIZE" &
+PID=$!
+wait $PID
+trap - TERM INT
+wait $PID

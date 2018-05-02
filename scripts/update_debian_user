@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-if [ "$(id -u)" -e 0 ]; then
+if [ "$EUID" -eq 0 ]; then
     echo ""
     echo "This must NOT be run as root, instead run as the user running the Yombo Gateway"
     echo ""
@@ -11,13 +11,29 @@ if [ "$(id -u)" -e 0 ]; then
     exit
 fi
 
-# This can't be used on raspberry pi
-CFLAGS='-O2'
+echo "USER:   ################  $USER"
+
+OPTIMIZE=$1
+
+if [ "$OPTIMIZE" == "" ]; then
+  echo "This script shouldn't be called directly. Use yombo_update script."
+fi
+
+if [ "$OPTIMIZE" == 'yes' ]; then
+  # This can't be used on raspberry pi
+  CFLAGS='-O2'
+fi
+
+pip3 install --upgrade pip3
+pip2 install --upgrade pip2
+pip3 install netifaces
 
 cd /home/$USER/.pyenv && git pull && cd -
 cd /opt/yombo-gateway
-pyenv install 3.6.5
-pyenv local --unset
+git pull
+
+pyenv install 3.6.5 -s
 pyenv local 3.6.5
-pip3 list --outdated --format=freeze | grep -v '^\-e' | cut -d = -f 1 | xargs -n1 pip install -U
+
+pip3 list --outdated --format=freeze | grep -v '^\-e' | cut -d = -f 1 | xargs -n1 pip3 install -U
 pip3 install -r requirements.txt

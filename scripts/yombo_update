@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+if [ "$USER" = "root" ] && [ "$SUDO_USER" == "" ]; then
+  echo "This script cannot be run as root directly and must be run"
+  echo "as the user owning the Yombo gateway service."
+  echo ""
+  echo "Logout as root and then:"
+  echo "sudo yombo_update"
+  exit
+fi
+
+if [ "$(id -u)" -ne 0 ]; then
+  echo "This script must run with sudo to gain root access. This"
+  echo "is needed to install the latest updates. Run this the user"
+  echo "owning the Yombo gateway service:"
+  echo ""
+  echo "sudo yombo_update"
+  echo ""
+  exit
+fi
+
+SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
+
+usage()
+{
+cat << EOF
+usage: $0 options
+
+This script is a wrapper around various platform updaters.
+
+OPTIONS:
+   -x  Force x86_64 based system (Intel/AMD)
+   -a  Force arm based system (Raspberry PI, etc)
+EOF
+}
+
+while getopts ":xa" opt; do
+  case $opt in
+    6)
+      ARC="x86_64"
+      ;;
+    a)
+      ARC="arm"
+      ;;
+    \?)
+      ARC=$(uname -m)
+      ;;
+  esac
+done
+
+if [ "$ARC" == "none" ]; then
+    # Determine OS platform
+    DISTRO="Unknown"
+    if [[ "$OSTYPE" == "linux-gnu" ]]; then
+        # If available, use LSB to identify distribution
+        if [ -f /etc/lsb-release -o -d /etc/lsb-release.d ]; then
+            DISTRO=$(lsb_release -i | cut -d: -f2 | sed s/'^\t'//)
+        # Otherwise, use release info file
+        else
+            DISTRO=$(ls -d /etc/[A-Za-z]*[_-][rv]e[lr]* | grep -v "lsb" | cut -d'/' -f3 | cut -d'-' -f1 | cut -d'_' -f1)
+        fi
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        echo "Yombo isn't support on Mac OSX. You should use the VirtualBox image:"
+        echo "https://yombo.net/docs/gateway/virtualbox"
+        exit
+    elif [[ "$OSTYPE" == "cygwin" ]]; then
+        # POSIX compatibility layer and Linux environment emulation for Windows
+        echo "Yombo isn't support on Windows. You should use the VirtualBox image:"
+        echo "https://yombo.net/docs/gateway/virtualbox"
+        exit
+    elif [[ "$OSTYPE" == "msys" ]]; then
+        # Lightweight shell and GNU utilities compiled for Windows (part of MinGW)
+        echo "Yombo isn't support on Windows. You should use the VirtualBox image:"
+        echo "https://yombo.net/docs/gateway/virtualbox"
+        exit
+    elif [[ "$OSTYPE" == "win32" ]]; then
+        echo "Yombo isn't support on Windows. You should use the VirtualBox image:"
+        echo "https://yombo.net/docs/gateway/virtualbox"
+        exit
+    elif [[ "$OSTYPE" == "freebsd"* ]]; then
+        echo "This script hasn't been updated to support freebsd."
+        echo "Feel free update and make a pull request"
+        exit
+    else
+        echo "Your operating system is unknown: $OSTYPE"
+        echo "Please email us at support@yombo.net with the output of this script."
+        exit
+    fi
+    echo "Detected: $OSTYPE -> $DISTRO on architecture: $ARC"
+fi
+
+
+if [ "$ARC" != "x86_64" ]; then
+  OPTIMIZE="yes"
+  echo "Advanced compiler optimization enabled for your architecture."
+else
+  OPTIMIZE="no"
+fi
+
+$SCRIPTPATH/update_debian $OPTIMIZE

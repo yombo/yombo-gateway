@@ -37,6 +37,18 @@ class CB:
     WHITE = '\033[37;1m'
     DONE = '\033[0m'
 
+class CBU:
+    """ Colors, bold"""
+    BLACK = '\033[03;1;4m'
+    RED = '\033[31;1;4m'
+    GREEN = '\033[32;1;4m'
+    YELLOW = '\033[33;1;4m'
+    BLUE = '\033[34;1;4m'
+    PURPLE = '\033[35;1;4m'
+    CYAN = '\033[36;1;4m'
+    WHITE = '\033[37;1;4m'
+    DONE = '\033[0m'
+
 internal_hostname = 'localhost'
 interfaces = netifaces.interfaces()
 for i in interfaces:
@@ -75,19 +87,20 @@ else:
     external = "Not available"
     globaluri = "Not available"
 
-data = OrderedDict()
-data['Hostname'] = str(platform.node())
-data['FQDN'] = dns_fqdn
-data['Local'] = local
-data['Internal'] = internal
-data['External'] = external
-data['From anywhere'] = globaluri
+data_yombo = OrderedDict()
+data_system = OrderedDict()
+data_system['Hostname'] = str(platform.node())
+data_yombo['FQDN'] = dns_fqdn
+data_yombo['Local'] = local
+data_yombo['Internal'] = internal
+data_yombo['External'] = external
+data_yombo['From anywhere'] = globaluri
 
 with open('/proc/uptime', 'r') as f:
     uptime_seconds = float(f.readline().split()[0])
     uptime = timedelta(seconds = uptime_seconds)
-data['Uptime'] = "%s days, %s hours" % (uptime.days, uptime.seconds//3600)
-data['Kernel'] = platform.release()
+data_system['Uptime'] = "%s days, %s hours" % (uptime.days, uptime.seconds//3600)
+data_system['Kernel'] = platform.release()
 
 command = "cat /proc/cpuinfo"
 all_info = subprocess.check_output(command, shell=True).strip()
@@ -96,39 +109,45 @@ for line in all_info.split(b"\n"):
     if b"model name" in line:
         cpu_model = re.sub(b".*model name.*:", b"", line, 1).decode("utf-8").strip()
         break
-data['CPU'] = cpu_model
+data_system['CPU'] = cpu_model
 
 df = subprocess.Popen(["df", "-h", yombo_path], stdout=subprocess.PIPE)
 output = df.communicate()[0].decode("utf-8")
 device, size, used, available, percent, mountpoint = \
     output.split("\n")[1].split()
-data['Disk'] = "%s / %s" % (used, available)
+data_system['Disk'] = "%s / %s" % (used, available)
 
 # Now convert the dict to a list.
 data_formatted = [
-    '%sYombo Gateway%s' % (CB.BLUE, CB.DONE),
-    '%s---------------------%s' %(CB.WHITE, CB.DONE)
+    '%sYombo Gateway%s https://yombo.net' % (CB.BLUE, CB.DONE),
+    '',
+    '%sYombo Access URLS and details%s' % (CBU.WHITE, CB.DONE),
 ]
-for key, value in data.items():
+for key, value in data_yombo.items():
+    data_formatted.append("%s%s%s: %s" % (CB.RED, key, CB.DONE, value))
+
+data_formatted.append('')
+data_formatted.append('%sSystem details%s' % (CBU.WHITE, CB.DONE))
+for key, value in data_system.items():
     data_formatted.append("%s%s%s: %s" % (CB.RED, key, CB.DONE, value))
 
 logo = [
-'YYYYYYY       YYYYYYY',
-'Y:::::Y       Y:::::Y',
-'Y:::::Y       Y:::::Y',
-'Y::::::Y     Y::::::Y',
-'YYY:::::Y   Y:::::YYY',
-'   Y:::::Y Y:::::Y   ',
-'    Y:::::Y:::::Y    ',
-'     Y:::::::::Y     ',
-'      Y:::::::Y      ',
-'       Y:::::Y       ',
-'       Y:::::Y       ',
-'       Y:::::Y       ',
-'       Y:::::Y       ',
-'    YYYY:::::YYYY    ',
-'    Y:::::::::::Y    ',
-'    YYYYYYYYYYYYY    ',
+' YYYYYYY       YYYYYYY',
+' Y:::::Y       Y:::::Y',
+' Y:::::Y       Y:::::Y',
+' Y::::::Y     Y::::::Y',
+' YYY:::::Y   Y:::::YYY',
+'    Y:::::Y Y:::::Y   ',
+'     Y:::::Y:::::Y    ',
+'      Y:::::::::Y     ',
+'       Y:::::::Y      ',
+'        Y:::::Y       ',
+'        Y:::::Y       ',
+'        Y:::::Y       ',
+'        Y:::::Y       ',
+'     YYYY:::::YYYY    ',
+'     Y:::::::::::Y    ',
+'     YYYYYYYYYYYYY    ',
 ]
 
 for logo_idx, logo_elem in enumerate(logo):
@@ -136,3 +155,4 @@ for logo_idx, logo_elem in enumerate(logo):
         print("%s  %s" % (logo_elem, data_formatted[logo_idx]))
     except IndexError:
         print("%s" % logo_elem)
+
