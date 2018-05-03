@@ -16,9 +16,16 @@ The constant values are not fully documented here, see the
 :license: LICENSE for details.
 :view-source: `View Source Code <https://github.com/yombo/yombo-gateway/tree/master/yombo/constants>`_
 """
+MAJOR_VERSION = 0
+MINOR_VERSION = 19
+PATCH_VERSION = '1.dev0'
+__short_version__ = '{}.{}'.format(MAJOR_VERSION, MINOR_VERSION)
+__version__ = '{}.{}'.format(__short_version__, PATCH_VERSION)
+
+REQUIRED_PYTHON_VER = (3, 5, 3)
 
 # Yombo gateway version number
-VERSION = "0.19.0"
+VERSION = __version__
 
 # Days of the week
 WEEKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']

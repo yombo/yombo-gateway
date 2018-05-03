@@ -50,7 +50,7 @@ def route_modules(webapp):
             :param session: User's session information.
             :return:
             """
-            page = webinterface.get_template(request, webinterface._dir + 'pages/modules/index.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/modules/index.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/modules/index", "Modules")
             return page.render(alerts=webinterface.get_alerts(),
@@ -59,7 +59,7 @@ def route_modules(webapp):
         @webapp.route('/server_index')
         @require_auth()
         def page_modules_server_index(webinterface, request, session):
-            page = webinterface.get_template(request, webinterface._dir + 'pages/modules/server_index.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/modules/server_index.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/modules/index", "Server Modules")
             return page.render(alerts=webinterface.get_alerts(),
@@ -76,7 +76,7 @@ def route_modules(webapp):
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/modules/index')
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/modules/details_server.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/modules/details_server.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/modules/index", "Modules")
             webinterface.add_breadcrumb(request, "/modules/server_index", "Server Modules")
@@ -140,7 +140,7 @@ def route_modules(webapp):
                                                      'local': True,
                                                      })
 
-                    page = webinterface.get_template(request, webinterface._dir + 'pages/reboot_needed.html')
+                    page = webinterface.get_template(request, webinterface.wi_dir + '/pages/reboot_needed.html')
                     msg={
                         'header': 'Module Added',
                         'label': 'Module added successfully',
@@ -164,7 +164,7 @@ def route_modules(webapp):
                         variable_groups[field['group_id']]['fields'] = {}
                     variable_groups[field['group_id']]['fields'][field['id']] = field
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/modules/add.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/modules/add.html')
 
 
             webinterface.home_breadcrumb(request)
@@ -187,7 +187,7 @@ def route_modules(webapp):
                 webinterface.add_alert('Module ID was not found.', 'warning')
                 return webinterface.redirect(request, '/modules/index')
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/modules/details.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/modules/details.html')
             module_device_types = yield webinterface._Modules.module_device_types(module_id)
             module_variables = yield module._module_variables()
             # print("module_variables: %s" % module_variables)
@@ -209,7 +209,7 @@ def route_modules(webapp):
                 webinterface.add_alert('Module ID was not found.', 'warning')
                 return webinterface.redirect(request, '/modules/index')
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/modules/disable.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/modules/disable.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/modules/index", "Modules")
             webinterface.add_breadcrumb(request, "/modules/%s/details" % module._module_id, module._label)
@@ -230,7 +230,7 @@ def route_modules(webapp):
 
             confirm = request.args.get('confirm')[0]
             if confirm != "disable":
-                page = webinterface.get_template(request, webinterface._dir + 'pages/modules/disable.html')
+                page = webinterface.get_template(request, webinterface.wi_dir + '/pages/modules/disable.html')
                 webinterface.add_alert('Must enter "disable" in the confirmation box to disable the module.', 'warning')
                 return page.render(alerts=webinterface.get_alerts(),
                                    module=module,
@@ -241,7 +241,7 @@ def route_modules(webapp):
             if results['status'] == 'failed':
                 webinterface.add_alert(results['apimsghtml'], 'warning')
 
-                page = webinterface.get_template(request, webinterface._dir + 'pages/modules/disable.html')
+                page = webinterface.get_template(request, webinterface.wi_dir + '/pages/modules/disable.html')
                 return page.render(alerts=webinterface.get_alerts(),
                                    module=module,
                                    )
@@ -263,7 +263,7 @@ def route_modules(webapp):
                                              'local': True,
                                              })
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/reboot_needed.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/reboot_needed.html')
             return page.render(alerts=webinterface.get_alerts(),
                                msg=msg,
                                )
@@ -287,7 +287,7 @@ def route_modules(webapp):
 
             module_variables = yield module._module_variables()
             device_types = yield webinterface._LocalDB.get_module_device_types(module_id)
-            page = webinterface.get_template(request, webinterface._dir + 'pages/modules/edit.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/modules/edit.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/modules/index", "Modules")
             webinterface.add_breadcrumb(request, "/modules/%s/details" % module._module_id, module._label)
@@ -331,7 +331,7 @@ def route_modules(webapp):
                 except YomboWarning as e:
                     webinterface.add_alert(e.html_message, 'warning')
                     return webinterface.redirect(request, '/modules/index')
-                page = webinterface.get_template(request, webinterface._dir + 'pages/modules/edit.html')
+                page = webinterface.get_template(request, webinterface.wi_dir + '/pages/modules/edit.html')
                 return page.render(alerts=webinterface.get_alerts(),
                                    server_module=results['data'],
                                    module=module,
@@ -354,14 +354,14 @@ def route_modules(webapp):
                                              'local': True,
                                              })
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/reboot_needed.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/reboot_needed.html')
             return page.render(alerts=webinterface.get_alerts(),
                                msg=msg,
                                )
 
         @inlineCallbacks
         def page_modules_edit_form(webinterface, request, session, device, variable_data=None):
-            page = webinterface.get_template(request, webinterface._dir + 'pages/devices/edit.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/devices/edit.html')
             device_variables = yield webinterface._Variables.get_variable_groups_fields_data(
                 group_relation_type='device_type',
                 group_relation_id=device['device_type_id'],
@@ -389,7 +389,7 @@ def route_modules(webapp):
                 webinterface.add_alert('Module ID was not found.', 'warning')
                 return webinterface.redirect(request, '/modules/index')
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/modules/enable.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/modules/enable.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/modules/index", "Modules")
             webinterface.add_breadcrumb(request, "/modules/%s/details" % module._module_id, module._label)
@@ -410,7 +410,7 @@ def route_modules(webapp):
 
             confirm = request.args.get('confirm')[0]
             if confirm != "enable":
-                page = webinterface.get_template(request, webinterface._dir + 'pages/modules/enable.html')
+                page = webinterface.get_template(request, webinterface.wi_dir + '/pages/modules/enable.html')
                 webinterface.add_alert('Must enter "disable" in the confirmation box to enable the module.', 'warning')
                 return page.render(alerts=webinterface.get_alerts(),
                                    module=module,
@@ -421,7 +421,7 @@ def route_modules(webapp):
             if results['status'] == 'failed':
                 webinterface.add_alert(results['apimsghtml'], 'warning')
 
-                page = webinterface.get_template(request, webinterface._dir + 'pages/modules/enable.html')
+                page = webinterface.get_template(request, webinterface.wi_dir + '/pages/modules/enable.html')
                 return page.render(alerts=webinterface.get_alerts(),
                                    module=module,
                                    )
@@ -443,7 +443,7 @@ def route_modules(webapp):
                 'description': '',
             }
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/reboot_needed.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/reboot_needed.html')
             return page.render(alerts=webinterface.get_alerts(),
                                msg=msg,
                                )
@@ -457,7 +457,7 @@ def route_modules(webapp):
                 webinterface.add_alert('Module ID was not found.', 'warning')
                 return webinterface.redirect(request, '/modules/index')
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/modules/remove.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/modules/remove.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/modules/index", "Modules")
             webinterface.add_breadcrumb(request, "/modules/%s/details" % module._module_id, module._label)
@@ -479,7 +479,7 @@ def route_modules(webapp):
 
             confirm = request.args.get('confirm')[0]
             if confirm != "remove":
-                page = webinterface.get_template(request, webinterface._dir + 'pages/modules/remove.html')
+                page = webinterface.get_template(request, webinterface.wi_dir + '/pages/modules/remove.html')
                 webinterface.add_alert('Must enter "disable" in the confirmation box to remove the module.', 'warning')
                 return page.render(alerts=webinterface.get_alerts(),
                                    module=module,
@@ -490,7 +490,7 @@ def route_modules(webapp):
             if results['status'] == 'failed':
                 webinterface.add_alert(results['apimsghtml'], 'warning')
 
-                page = webinterface.get_template(request, webinterface._dir + 'pages/modules/remove.html')
+                page = webinterface.get_template(request, webinterface.wi_dir + '/pages/modules/remove.html')
                 return page.render(alerts=webinterface.get_alerts(),
                                    module=module,
                                    )
@@ -512,7 +512,7 @@ def route_modules(webapp):
                                              'local': True,
                                              })
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/reboot_needed.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/reboot_needed.html')
             return page.render(alerts=webinterface.get_alerts(),
                                msg=msg,
                                )

@@ -31,7 +31,6 @@ from subprocess import Popen, PIPE
 from Crypto import Random
 from Crypto.Cipher import AES
 import hashlib
-from os.path import dirname, abspath
 import re
 from time import time
 
@@ -96,13 +95,12 @@ class GPG(YomboLibrary):
             'oc.pool.sks-keyservers.net',
             'pool.sks-keyservers.net',
         ]
-
-        self.gpg = gnupg.GPG(gnupghome="usr/etc/gpg")
+        self.working_dir = self._Loader.command_line_arguments['working_dir']
+        self.gpg = gnupg.GPG(gnupghome="%s/etc/gpg" % self.working_dir)
 
         self.__mypassphrase = None  # will be loaded by sync_keyring_to_db() calls
-        yombo_path = dirname(dirname(dirname(abspath(__file__))))
 
-        secret_file = "%s/usr/etc/gpg/last.pass" % yombo_path
+        secret_file = "%s/etc/gpg/last.pass" % self.working_dir
         if os.path.exists(secret_file):
             phrase = yield read_file(secret_file)
             self.__mypassphrase = bytes_to_unicode(phrase)
@@ -161,8 +159,7 @@ class GPG(YomboLibrary):
         if fingerprint is None:
             fingerprint = self.myfingerprint()
         if fingerprint is not None:
-            full_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-            secret_file = "%s/usr/etc/gpg/%s.pass" % (full_path, fingerprint)
+            secret_file = "%s/etc/gpg/%s.pass" % (self.working_dir, fingerprint)
             if os.path.exists(secret_file):
                 phrase = yield read_file(secret_file)
                 phrase = bytes_to_unicode(phrase)
@@ -451,7 +448,8 @@ class GPG(YomboLibrary):
         #TODO: This function is blocking! Adjust to non-blocking. See below.
         """
         # print("SEtting trust level: %s" % trust_string)
-        p = yield Popen(["gpg --import-ownertrust --homedir usr/etc/gpg"], shell=True, stdin=PIPE, stdout=PIPE, close_fds=True)
+        p = yield Popen(["gpg --import-ownertrust --homedir %s/etc/gpg" % self.working_dir], shell=True,
+                        stdin=PIPE, stdout=PIPE, close_fds=True)
         (child_stdout, child_stdin) = (p.stdout, p.stdin)
         child_stdin.write(unicode_to_bytes("%s\n" % trust_string))
         child_stdin.close()
@@ -465,7 +463,8 @@ class GPG(YomboLibrary):
         #TODO: This function is blocking! Adjust to non-blocking. See below.
         """
         print("Getting trust levels")
-        p = yield Popen(["gpg --export-ownertrust --homedir usr/etc/gpg"], shell=True, stdin=PIPE, stdout=PIPE, close_fds=True)
+        p = yield Popen(["gpg --export-ownertrust --homedir %s/etc/gpg" % self.working_dir], shell=True,
+                        stdin=PIPE, stdout=PIPE, close_fds=True)
         (child_stdout, child_stdin) = (p.stdout, p.stdin)
         child_stdin.close()
         result = child_stdout.read()
@@ -655,10 +654,10 @@ class GPG(YomboLibrary):
                 break
         asciiArmoredPublicKey = self.gpg.export_keys(newfingerprint)
         self._Configs.set('gpg', 'fingerprint', newfingerprint)
-        secret_file = "%s/usr/etc/gpg/%s.pass" % (self._Atoms.get('yombo.path'), newfingerprint)
+        secret_file = "%s/etc/gpg/%s.pass" % (self._Atoms.get('working_dir'), newfingerprint)
         # print("saveing pass to : %s" % secret_file)
         yield save_file(secret_file, passphrase)
-        secret_file = "%s/usr/etc/gpg/last.pass" % self._Atoms.get('yombo.path')
+        secret_file = "%s/etc/gpg/last.pass" % self._Atoms.get('working_dir')
         yield save_file(secret_file, passphrase)
         self.__mypassphrase = passphrase
 

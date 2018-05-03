@@ -53,7 +53,7 @@ def route_apiauth(webapp):
             :param session: User's session information.
             :return:
             """
-            page = webinterface.get_template(request, webinterface._dir + 'pages/apiauth/index.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/apiauth/index.html')
             root_breadcrumb(webinterface, request)
             return page.render(alerts=webinterface.get_alerts(),
                                apiauths=webinterface._APIAuth.active_api_auth,
@@ -69,7 +69,7 @@ def route_apiauth(webapp):
                 return webinterface.redirect(request, '/apiauth/index')
 
             page = webinterface.get_template(request,
-                                             webinterface._dir + 'pages/apiauth/details.html')
+                                             webinterface.wi_dir + '/pages/apiauth/details.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/apiauth/%s/details" % apiauth_id,
                                         api_auth.label)
@@ -123,7 +123,7 @@ def route_apiauth(webapp):
                                (api_auth.auth_id, api_auth.auth_id),
             }
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/apiauth/add", "Add")
             return page.render(alerts=webinterface.get_alerts(),
@@ -170,7 +170,7 @@ def route_apiauth(webapp):
                                '<p>Continue to <strong><a href="/apiauth/index">API Auth the index</a></strong> or <a href="/apiauth/%s/details">View edited API Auth Key</a>.</p>' %
                                (apiauth_id, apiauth_id)
             }
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/apiauth/add", "Add")
             return page.render(alerts=webinterface.get_alerts(),
@@ -178,7 +178,7 @@ def route_apiauth(webapp):
                                     )
 
         def page_lib_apiauth_form(webinterface, request, session, action_type, apiauth, header_label):
-            page = webinterface.get_template(request, webinterface._dir + 'pages/apiauth/form.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/apiauth/form.html')
             return page.render(alerts=webinterface.get_alerts(),
                                header_label=header_label,
                                apiauth=apiauth,
@@ -193,7 +193,7 @@ def route_apiauth(webapp):
                 webinterface.add_alert('Invalid API Auth Key id: %s' % apiauth_id, 'warning')
                 return webinterface.redirect(request, '/apiauth/index')
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/apiauth/remove.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/apiauth/remove.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/apiauth/%s/details" % apiauth_id,
                                         api_auth.label)
@@ -226,7 +226,7 @@ def route_apiauth(webapp):
                 'label': 'API Auth deleted successfully',
                 'description': '<p>The API Auth key has been deleted.<p><a href="/apiauth/index">API Auth index</a>.</p>',
             }
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
             root_breadcrumb(webinterface, request)
 
             return page.render(alerts=webinterface.get_alerts(),
@@ -241,7 +241,7 @@ def route_apiauth(webapp):
                 webinterface.add_alert('Invalid API Auth Key id: %s' % apiauth_id, 'warning')
                 return webinterface.redirect(request, '/apiauth/index')
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/apiauth/rotate.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/apiauth/rotate.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/apiauth/%s/details" % apiauth_id,
                                         api_auth.label)
@@ -274,7 +274,7 @@ def route_apiauth(webapp):
                 'label': 'API Auth rotated successfully',
                 'description': "<p>The API Auth key has been rotated.</p><p>The new key: %s</p><p><a href=\"/apiauth/index\">API Auth index</a>.</p>" % api_auth.auth_id,
             }
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/apiauth/%s/details" % apiauth_id,
                                         api_auth.label)

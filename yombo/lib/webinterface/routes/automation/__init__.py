@@ -42,7 +42,7 @@ def route_automation(webapp):
         @require_auth()
         def page_automation_index(webinterface, request, session):
             root_breadcrumb(webinterface, request)
-            page = webinterface.get_template(request, webinterface._dir + 'pages/automation/index.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/automation/index.html')
             return page.render(
                 alerts=webinterface.get_alerts(),
                 )
@@ -58,7 +58,7 @@ def route_automation(webapp):
 
             page = webinterface.get_template(
                 request,
-                webinterface._dir + 'pages/automation/details.html')
+                webinterface.wi_dir + '/pages/automation/details.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/automation/%s/details" % rule.rule_id, rule.label)
             return page.render(alerts=webinterface.get_alerts(),
@@ -198,7 +198,7 @@ def route_automation(webapp):
         def page_automation_form(webinterface, request, session, action_type, rule, header_label):
             page = webinterface.get_template(
                 request,
-                webinterface._dir + 'pages/automation/form.html')
+                webinterface.wi_dir + '/pages/automation/form.html')
             return page.render(alerts=webinterface.get_alerts(),
                                header_label=header_label,
                                rule=rule,
@@ -216,7 +216,7 @@ def route_automation(webapp):
 
             page = webinterface.get_template(
                 request,
-                webinterface._dir + 'pages/automation/delete.html'
+                webinterface.wi_dir + '/pages/automation/delete.html'
             )
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/automation/%s/details" % rule_id, rule.label)
@@ -264,7 +264,7 @@ def route_automation(webapp):
                 webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/automation/index')
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/automation/disable.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/automation/disable.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/automation/%s/details" % rule.rule_id, rule.label)
             webinterface.add_breadcrumb(request, "/automation/%s/disable" % rule.rule_id, "Disable")
@@ -310,7 +310,7 @@ def route_automation(webapp):
                                rule.rule_id,
             }
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/automation/%s/details" % rule.rule_id, rule.label)
             webinterface.add_breadcrumb(request, "/automation/%s/disable" % rule.rule_id, "Disable")
@@ -327,7 +327,7 @@ def route_automation(webapp):
                 webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/automation/index')
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/automation/enable.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/automation/enable.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/automation/%s/details" % rule.rule_id, rule.label)
             webinterface.add_breadcrumb(request, "/automation/%s/enable" % rule.rule_id, "Enable")

@@ -105,7 +105,7 @@ def route_automation_state(webapp):
             return webinterface.redirect(request, "/automation/%s/details" % rule.rule_id)
 
         def page_automation_trigger_set_state_form(webinterface, request, session, rule, data):
-            page = webinterface.get_template(request, webinterface._dir + 'pages/automation/form_trigger_state.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/automation/form_trigger_state.html')
 
             return page.render(alerts=webinterface.get_alerts(),
                                rule=rule,
@@ -310,7 +310,7 @@ def route_automation_state(webapp):
             return webinterface.redirect(request, "/automation/%s/details" % rule.rule_id)
 
         def page_automation_action_state_form(webinterface, request, session, rule, data, action_type, header_label):
-            page = webinterface.get_template(request, webinterface._dir + 'pages/automation/form_action_state.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/automation/form_action_state.html')
 
             return page.render(alerts=webinterface.get_alerts(),
                                header_label=header_label,
@@ -338,7 +338,7 @@ def route_automation_state(webapp):
 
             page = webinterface.get_template(
                 request,
-                webinterface._dir + 'pages/automation/delete_action_state.html'
+                webinterface.wi_dir + '/pages/automation/delete_action_state.html'
             )
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/automation/%s/details" % rule_id, rule.label)

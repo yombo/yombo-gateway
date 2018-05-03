@@ -47,7 +47,7 @@ def route_devtools_config_device_type_commmands(webapp):
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/device_types/index')
             page = webinterface.get_template(request,
-                                             webinterface._dir + 'pages/devtools/config/device_type_commands/details.html')
+                                             webinterface.wi_dir + '/pages/devtools/config/device_type_commands/details.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request,
                                         "/devtools/config/device_types/%s/details" % device_type_id,
@@ -76,7 +76,7 @@ def route_devtools_config_device_type_commmands(webapp):
                 return webinterface.redirect(request, '/devtools/config/device_types/index')
 
             page = webinterface.get_template(request,
-                                             webinterface._dir + 'pages/devtools/config/device_type_commands/add.html')
+                                             webinterface.wi_dir + '/pages/devtools/config/device_type_commands/add.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
                                         device_type_results['data']['label'])
@@ -122,7 +122,7 @@ def route_devtools_config_device_type_commmands(webapp):
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/device_types/index')
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
                                         device_type_results['data']['label'])
@@ -167,7 +167,7 @@ def route_devtools_config_device_type_commmands(webapp):
             #     return webinterface.redirect(request, '/devtools/config/device_types/index')
 
             page = webinterface.get_template(request,
-                                             webinterface._dir + 'pages/devtools/config/device_type_commands/remove.html')
+                                             webinterface.wi_dir + '/pages/devtools/config/device_type_commands/remove.html')
 
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request,
@@ -253,7 +253,7 @@ def route_devtools_config_device_type_commmands(webapp):
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/device_types/index')
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
             root_breadcrumb(webinterface, request)
 
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,

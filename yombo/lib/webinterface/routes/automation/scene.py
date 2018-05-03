@@ -92,7 +92,7 @@ def route_automation_scene(webapp):
             return webinterface.redirect(request, "/automation/%s/details" % rule.rule_id)
 
         def page_automation_trigger_set_scene_form(webinterface, request, session, rule, data):
-            page = webinterface.get_template(request, webinterface._dir + 'pages/automation/form_trigger_scene.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/automation/form_trigger_scene.html')
 
             return page.render(alerts=webinterface.get_alerts(),
                                rule=rule,
@@ -230,7 +230,7 @@ def route_automation_scene(webapp):
             return webinterface.redirect(request, "/automation/%s/details" % rule.rule_id)
 
         def page_automation_form_scene(webinterface, request, session, rule, data, action_type, header_label):
-            page = webinterface.get_template(request, webinterface._dir + 'pages/automation/form_action_scene.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/automation/form_action_scene.html')
 
             return page.render(alerts=webinterface.get_alerts(),
                                header_label=header_label,
@@ -257,7 +257,7 @@ def route_automation_scene(webapp):
                 return webinterface.redirect(request, "/automation/%s/details" % rule_id)
 
             page = webinterface.get_template(request,
-                                             webinterface._dir + 'pages/automation/delete_action_scene.html'
+                                             webinterface.wi_dir + '/pages/automation/delete_action_scene.html'
                                             )
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/automation/%s/details" % rule_id, rule.label)

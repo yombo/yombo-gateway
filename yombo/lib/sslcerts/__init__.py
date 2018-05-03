@@ -103,8 +103,8 @@ class SSLCerts(YomboLibrary):
         self.fqdn = self._Configs.get2('dns', 'fqdn', None, False)
 
         self.received_message_for_unknown = ExpiringDict(100, 600)
-        self.self_signed_cert_file = self._Atoms.get('yombo.path') + "/usr/etc/certs/sslcert_selfsigned.cert.pem"
-        self.self_signed_key_file = self._Atoms.get('yombo.path') + "/usr/etc/certs/sslcert_selfsigned.key.pem"
+        self.self_signed_cert_file = self._Atoms.get('working_dir') + "/etc/certs/sslcert_selfsigned.cert.pem"
+        self.self_signed_key_file = self._Atoms.get('working_dir') + "/etc/certs/sslcert_selfsigned.key.pem"
         self.self_signed_expires = self._Configs.get("sslcerts", "self_signed_expires", None, False)
         self.self_signed_created = self._Configs.get("sslcerts", "self_signed_created", None, False)
 

@@ -23,6 +23,8 @@ if [ "$OPTIMIZE" == 'yes' ]; then
   # This can't be used on raspberry pi
   CFLAGS='-O2'
 fi
+SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
+cd "$SCRIPTPATH"
 
 pip3 install --upgrade pip3
 pip2 install --upgrade pip2

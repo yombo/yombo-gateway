@@ -267,6 +267,7 @@ class LocalDB(YomboLibrary):
         Check to make sure the database exists. Will create if missing, will also update schema if any
         changes are required.
         """
+        self.working_dir = self._Loader.command_line_arguments['working_dir']
         self.db_bulk_queue = {}
         self.db_bulk_queue_id_cols = {}
         self.save_bulk_queue_loop = None
@@ -274,7 +275,9 @@ class LocalDB(YomboLibrary):
             connection.execute("PRAGMA foreign_keys = ON")
         self.db_model = {}  # store generated database model here.
         # Connect to the DB
-        Registry.DBPOOL = adbapi.ConnectionPool('sqlite3', "usr/etc/yombo.db", check_same_thread=False,
+        Registry.DBPOOL = adbapi.ConnectionPool('sqlite3',
+                                                "%s/etc/yombo.db" % self.working_dir,
+                                                check_same_thread=False,
                                                 cp_min=1, cp_max=1, cp_openfun=show_connected)
         self.dbconfig = Registry.getConfig()
 
@@ -311,7 +314,7 @@ class LocalDB(YomboLibrary):
                                  where=['table_name = ?', 'core'])
             # results = yield Schema_Version.all()
 
-        chmod('usr/etc/yombo.db', 0o600)
+        chmod("%s/etc/yombo.db" % self.working_dir, 0o600)
 
         yield self._load_db_model()
 

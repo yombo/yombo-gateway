@@ -16,7 +16,7 @@ def route_devtools_config_device_types(webapp):
         @require_auth()
         def page_devtools_device_types_index_get(webinterface, request, session):
             page = webinterface.get_template(request,
-                                             webinterface._dir + 'pages/devtools/config/device_types/index.html')
+                                             webinterface.wi_dir + '/pages/devtools/config/device_types/index.html')
             root_breadcrumb(webinterface, request)
             return page.render(alerts=webinterface.get_alerts(),
                                )
@@ -51,7 +51,7 @@ def route_devtools_config_device_types(webapp):
                 return webinterface.redirect(request, '/devtools/config/device_types/index')
 
             page = webinterface.get_template(request,
-                                             webinterface._dir + 'pages/devtools/config/device_types/details.html')
+                                             webinterface.wi_dir + '/pages/devtools/config/device_types/details.html')
 
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
@@ -76,7 +76,7 @@ def route_devtools_config_device_types(webapp):
                 return webinterface.redirect(request, '/devtools/config/device_types/index')
 
             page = webinterface.get_template(request,
-                                             webinterface._dir + 'pages/devtools/config/device_types/delete.html')
+                                             webinterface.wi_dir + '/pages/devtools/config/device_types/delete.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types")
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
@@ -127,7 +127,7 @@ def route_devtools_config_device_types(webapp):
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/device_types/index')
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
                                         device_type_results['data']['label'])
@@ -151,7 +151,7 @@ def route_devtools_config_device_types(webapp):
                 return webinterface.redirect(request, '/devtools/config/device_types/index')
 
             page = webinterface.get_template(request,
-                                             webinterface._dir + 'pages/devtools/config/device_types/disable.html')
+                                             webinterface.wi_dir + '/pages/devtools/config/device_types/disable.html')
 
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
@@ -199,7 +199,7 @@ def route_devtools_config_device_types(webapp):
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/device_types/index')
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
             root_breadcrumb(webinterface, request)
 
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types")
@@ -225,7 +225,7 @@ def route_devtools_config_device_types(webapp):
                 return webinterface.redirect(request, '/devtools/config/device_types/index')
 
             page = webinterface.get_template(request,
-                                             webinterface._dir + 'pages/devtools/config/device_types/enable.html')
+                                             webinterface.wi_dir + '/pages/devtools/config/device_types/enable.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
                                         device_type_results['data']['label'])
@@ -271,7 +271,7 @@ def route_devtools_config_device_types(webapp):
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/device_types/index')
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
             root_breadcrumb(webinterface, request)
 
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types")
@@ -355,7 +355,7 @@ def route_devtools_config_device_types(webapp):
                                device_type_results['data']['id'],
             }
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/add", "Add")
             return page.render(alerts=webinterface.get_alerts(),
@@ -446,7 +446,7 @@ def route_devtools_config_device_types(webapp):
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/device_types/index')
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
             root_breadcrumb(webinterface, request)
 
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
@@ -461,7 +461,7 @@ def route_devtools_config_device_types(webapp):
         def page_devtools_devicestypes_form(webinterface, request, session, action_type, device_type, categories,
                                             header_label):
             page = webinterface.get_template(request,
-                                             webinterface._dir + 'pages/devtools/config/device_types/form.html')
+                                             webinterface.wi_dir + '/pages/devtools/config/device_types/form.html')
             return page.render(alerts=webinterface.get_alerts(),
                                header_label=header_label,
                                device_type=device_type,
@@ -482,7 +482,7 @@ def route_devtools_config_device_types(webapp):
                 return webinterface.redirect(request, '/devtools/config/device_types/index')
 
             page = webinterface.get_template(request,
-                                             webinterface._dir + 'pages/devtools/config/device_types/variable_details.html')
+                                             webinterface.wi_dir + '/pages/devtools/config/device_types/variable_details.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
                                         device_type_results['data']['label'])

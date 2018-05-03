@@ -14,7 +14,7 @@ def route_statistics(webapp):
         @require_auth()
         @inlineCallbacks
         def page_statistics_index(webinterface, request, session):
-            page = webinterface.get_template(request, webinterface._dir + 'pages/statistics/index.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/statistics/index.html')
             system_stats = yield webinterface._Libraries['localdb'].get_distinct_stat_names(search_name_start='lib.')
             device_stats = yield webinterface._Libraries['localdb'].get_distinct_stat_names(search_name_start='devices.')
             energy_stats = yield webinterface._Libraries['localdb'].get_distinct_stat_names(search_name_start='energy.')
@@ -35,7 +35,7 @@ def route_statistics(webapp):
         #         webinterface.add_alert('Device ID was not found.  %s' % e, 'warning')
         #         return webinterface.redirect(request, '/devices/index')
         #     device_commands = device.available_commands()
-        #     page = webinterface.get_template(request, webinterface._dir + 'pages/devices/device.html')
+        #     page = webinterface.get_template(request, webinterface.wi_dir + '/pages/devices/device.html')
         #     return page.render(alerts=webinterface.get_alerts(),
         #                        device=device,
         #                        device_commands=device_commands,
@@ -50,7 +50,7 @@ def route_statistics(webapp):
         #         # print "device find errr: %s" % e
         #         webinterface.add_alert('Device ID was not found.', 'warning')
         #         return webinterface.redirect(request, '/devices/index')
-        #     page = webinterface.get_template(request, webinterface._dir + 'pages/devices/device.html')
+        #     page = webinterface.get_template(request, webinterface.wi_dir + '/pages/devices/device.html')
         #     return page.render(alerts=webinterface.get_alerts(),
         #                        device=device,
         #                        )

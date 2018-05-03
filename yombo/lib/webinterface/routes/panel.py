@@ -36,7 +36,7 @@ def route_panel(webapp):
         @require_auth()
         def page_panel_index(webinterface, request, session):
             print(request.requestHeaders)
-            page = webinterface.get_template(request, webinterface._dir + 'pages/panel/index.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/panel/index.html')
             return page.render(
                 alerts=webinterface.get_alerts(),
                 )

@@ -32,7 +32,10 @@ class GWService(Service):
     Responsible for starting/stopping the entire Yombo Gateway service.  This is called from Yombo.tac.
     """
     loader = None
-   
+    arguments = {}
+    def settings(self, arguments):
+        self.arguments = arguments
+
     def start(self):
         """
         After twisted is running to get, call loader library and various starter functions
@@ -52,7 +55,7 @@ class GWService(Service):
         """
         Sets up the loader library and then start it.
         """
-        self.loader = setup_loader()
+        self.loader = setup_loader(self.arguments)
         yield self.loader.start()
 
     @inlineCallbacks

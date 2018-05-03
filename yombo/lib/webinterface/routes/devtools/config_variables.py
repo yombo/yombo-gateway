@@ -73,7 +73,7 @@ def route_devtools_config_variables(webapp):
                 return webinterface.redirect(request, '/devtools/config/index')
 
             page = webinterface.get_template(request,
-                                             webinterface._dir + 'pages/devtools/config/variables/group_details.html')
+                                             webinterface.wi_dir + '/pages/devtools/config/variables/group_details.html')
             # root_breadcrumb(webinterface, request)
             if group_results['data']['relation_type'] == "module":
                 group_results['data']['relation_type_label'] = "Local Module"
@@ -145,7 +145,7 @@ def route_devtools_config_variables(webapp):
                 'description': ''
             }
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
             if parent_type in ('module', 'all_devices', 'all_modules'):
                 msg[
                     'description'] = '<p>Variable group has beed added.</p><p>Continue to:<ul><li><a href="/devtools/config/modules/index">modules index</a></li><li><a href="/devtools/config/modules/%s/details">view the module</a></li><li><a href="/devtools/config/modules/%s/variables"> view module variables</a></li></ul></p>' % (
@@ -227,7 +227,7 @@ def route_devtools_config_variables(webapp):
                 'description': ''
             }
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
             if parent_type in ('module', 'all_devices', 'all_modules'):
                 msg[
                     'description'] = '<p>Variable group has beed edited.</p><p>Continue to:<ul><li><a href="/devtools/config/modules/index">modules index</a></li><li><a href="/devtools/config/modules/%s/details">view the module</a></li><li><a href="/devtools/config/modules/%s/variables"> view module variables</a></li></ul></p>' % (
@@ -244,7 +244,7 @@ def route_devtools_config_variables(webapp):
         def page_devtools_variables_group_form(webinterface, request, session, parent_type, parent, group,
                                                header_label):
             page = webinterface.get_template(request,
-                                             webinterface._dir + 'pages/devtools/config/variables/group_form.html')
+                                             webinterface.wi_dir + '/pages/devtools/config/variables/group_form.html')
             return page.render(alerts=webinterface.get_alerts(),
                                header_label=header_label,
                                parent_type=parent_type,
@@ -273,7 +273,7 @@ def route_devtools_config_variables(webapp):
             webinterface.add_breadcrumb(request, "/", "Enable")
 
             page = webinterface.get_template(request,
-                                             webinterface._dir + 'pages/devtools/config/variables/group_enable.html')
+                                             webinterface.wi_dir + '/pages/devtools/config/variables/group_enable.html')
             return page.render(alerts=webinterface.get_alerts(),
                                     var_group=data,
                                     parent=parent,
@@ -308,7 +308,7 @@ def route_devtools_config_variables(webapp):
                 return webinterface.redirect(request, '/devtools/config/modules/index')
 
             data = group_results['data']
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
             parent = yield variable_group_breadcrumbs(webinterface, request, session,
                                                       data['relation_id'], data['relation_type'])
             webinterface.add_breadcrumb(request,
@@ -365,7 +365,7 @@ def route_devtools_config_variables(webapp):
             webinterface.add_breadcrumb(request, "/", "Disable")
 
             page = webinterface.get_template(request,
-                                             webinterface._dir + 'pages/devtools/config/variables/group_disable.html')
+                                             webinterface.wi_dir + '/pages/devtools/config/variables/group_disable.html')
             return page.render(alerts=webinterface.get_alerts(),
                                     var_group=data,
                                     parent=parent,
@@ -400,7 +400,7 @@ def route_devtools_config_variables(webapp):
                 return webinterface.redirect(request, '/devtools/config/modules/index')
 
             data = group_results['data']
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
             parent = yield variable_group_breadcrumbs(webinterface, request, session,
                                                       data['relation_id'], data['relation_type'])
             webinterface.add_breadcrumb(request,
@@ -457,7 +457,7 @@ def route_devtools_config_variables(webapp):
             webinterface.add_breadcrumb(request, "/", "Delete")
 
             page = webinterface.get_template(request,
-                                             webinterface._dir + 'pages/devtools/config/variables/group_delete.html')
+                                             webinterface.wi_dir + '/pages/devtools/config/variables/group_delete.html')
             return page.render(alerts=webinterface.get_alerts(),
                                     var_group=data,
                                     parent=parent,
@@ -492,7 +492,7 @@ def route_devtools_config_variables(webapp):
                 return webinterface.redirect(request, '/devtools/config/modules/index')
 
             data = group_results['data']
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
             parent = yield variable_group_breadcrumbs(webinterface, request, session,
                                                       data['relation_id'], data['relation_type'])
             webinterface.add_breadcrumb(request,
@@ -658,7 +658,7 @@ def route_devtools_config_variables(webapp):
                 'description': ''
             }
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
             if group_results['data']['relation_type'] in ('module', 'all_devices', 'all_modules'):
                 msg['description'] = '<p>Variable group has beed added.</p>' \
                                      '<p>Continue to:' \
@@ -714,7 +714,7 @@ def route_devtools_config_variables(webapp):
             webinterface.add_breadcrumb(request, "/", "Delete Field")
 
             page = webinterface.get_template(request,
-                                             webinterface._dir + 'pages/devtools/config/variables/field_delete.html')
+                                             webinterface.wi_dir + '/pages/devtools/config/variables/field_delete.html')
             return page.render(alerts=webinterface.get_alerts(),
                                     var_field=field_results['data'],
                                     parent=parent,
@@ -757,7 +757,7 @@ def route_devtools_config_variables(webapp):
                 webinterface.add_alert(dev_group_results['apimsghtml'], 'warning')
                 return webinterface.redirect(request, '/devtools/config/variables/field/%s/details' % field_id)
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
             parent = yield variable_group_breadcrumbs(webinterface, request, session,
                                                       group_results['data']['relation_id'],
                                                       group_results['data']['relation_type'])
@@ -834,7 +834,7 @@ def route_devtools_config_variables(webapp):
             webinterface.add_breadcrumb(request, "/", "Details")
 
             page = webinterface.get_template(request,
-                                             webinterface._dir + 'pages/devtools/config/variables/field_details.html')
+                                             webinterface.wi_dir + '/pages/devtools/config/variables/field_details.html')
             return page.render(alerts=webinterface.get_alerts(),
                                var_group=group_results['data'],
                                var_field=field_results['data'],
@@ -975,7 +975,7 @@ def route_devtools_config_variables(webapp):
                 'description': ''
             }
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
             if group_results['data']['relation_type'] in ('module', 'all_devices', 'all_modules'):
                 msg['description'] = '<p>Variable group has beed edited.</p>' \
                                      '<p>Continue to:' \
@@ -1003,7 +1003,7 @@ def route_devtools_config_variables(webapp):
         def page_devtools_variables_field_form(webinterface, request, session, parent, group, field, input_types,
                                                header_label):
             page = webinterface.get_template(request,
-                                             webinterface._dir + 'pages/devtools/config/variables/field_form.html')
+                                             webinterface.wi_dir + '/pages/devtools/config/variables/field_form.html')
             return page.render(alerts=webinterface.get_alerts(),
                                header_label=header_label,
                                parent=parent,

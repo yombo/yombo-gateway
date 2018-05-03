@@ -19,7 +19,7 @@ def route_configs(webapp):
         def page_configs_basic_get(webinterface, request, session):
             configs = webinterface._Configs.get("*", "*")
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/configs/basic.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/configs/basic.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/configs/basic", "Basic Configs")
             return page.render(alerts=webinterface.get_alerts(),
@@ -217,7 +217,7 @@ def route_configs(webapp):
 
             configs = webinterface._Configs.get("*", "*")
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/configs/basic.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/configs/basic.html')
             return page.render(alerts=webinterface.get_alerts(),
                                config=configs,
                                )
@@ -237,7 +237,7 @@ def route_configs(webapp):
                     'fqdn': 'None',
                 }
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/configs/dns.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/configs/dns.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/configs/dns", "DNS")
 
@@ -303,7 +303,7 @@ def route_configs(webapp):
                     'fqdn': 'None',
                 }
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/configs/dns.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/configs/dns.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/configs/dns", "DNS")
             return page.render(alerts=webinterface.get_alerts(),
@@ -313,7 +313,7 @@ def route_configs(webapp):
         @webapp.route('/yombo_ini')
         @require_auth(login_redirect="/configs/yombo_ini")
         def page_configs_yombo_ini(webinterface, request, session):
-            page = webinterface.get_template(request, webinterface._dir + 'pages/configs/yombo_ini.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/configs/yombo_ini.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/configs/basic", "Yombo.ini")
             return page.render(alerts=webinterface.get_alerts(),
@@ -326,7 +326,7 @@ def route_configs(webapp):
         def page_gpg_keys_index(webinterface, request, session):
             db_keys = yield webinterface._LocalDB.get_gpg_key()
             gw_fingerprint = webinterface._Configs.get('gpg', 'fingerprint')
-            page = webinterface.get_template(request, webinterface._dir + 'pages/configs/gpg_index.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/configs/gpg_index.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/gpg/index", "GPG Keys")
             return page.render(
@@ -340,7 +340,7 @@ def route_configs(webapp):
         def page_gpg_keys_generate_key(webinterface, request, session):
             request_id = random_string(length=16)
     #        self._Libraries['gpg'].generate_key(request_id)
-            page = webinterface.get_template(request, webinterface._dir + 'pages/configs/gpg_generate_key_started.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/configs/gpg_generate_key_started.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/gpg/index", "GPG Keys")
             webinterface.add_breadcrumb(request, "/gpg/generate_key", "Generate Key")
@@ -349,7 +349,7 @@ def route_configs(webapp):
         @webapp.route('/gpg/genrate_key_status')
         @require_auth(login_redirect="/configs/genrate_key_status")
         def page_gpg_keys_generate_key_status(webinterface, request, session):
-            page = webinterface.get_template(request, webinterface._dir + 'pages/configs/gpg_generate_key_status.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/configs/gpg_generate_key_status.html')
             return page.render(atoms=webinterface._Libraries['atoms'].get_atoms(),
                                getattr=getattr,
                                type=type)

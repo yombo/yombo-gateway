@@ -36,7 +36,7 @@ try:
 except ImportError:
     HAS_PSUTIL = False
 
-from os.path import dirname, abspath
+import os
 import platform
 import re
 from time import time
@@ -45,7 +45,7 @@ from time import time
 from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboWarning, YomboHookStopProcessing
+from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 import yombo.utils
@@ -265,7 +265,9 @@ class Atoms(YomboLibrary):
 
         self.triggers = {}
         # self._Automation = self._Libraries['automation']
-        self.set('yombo.path', dirname(dirname(dirname(abspath(__file__)))) )
+        self.working_dir = self._Loader.command_line_arguments['working_dir']
+        self.set('working_dir', self._Loader.command_line_arguments['working_dir'])
+        self.set('app_dir', self._Loader.command_line_arguments['app_dir'] )
         logger.debug("Calling GPG init_from_config...")
         yield self._GPG._init_from_atoms_()
 
@@ -517,7 +519,8 @@ class Atoms(YomboLibrary):
         :return: None
         """
         atoms = {}
-        (atoms['kernel'],atoms['system.name'],atoms['kernel.release'], version,
+        atoms['pid'] = os.getpid()
+        (atoms['kernel'], atoms['system.name'], atoms['kernel.release'], version,
          atoms['cpu.arch'], _) = platform.uname()
 
         atoms['cpu.count'] = 0

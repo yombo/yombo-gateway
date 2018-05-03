@@ -27,6 +27,9 @@ if [ "$OPTIMIZE" == "" ]; then
   echo "This script shouldn't be called directly. Use yombo_update script."
 fi
 
+SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
+cd "$SCRIPTPATH"
+
 apt-get update >> /dev/null
 apt-get upgrade -y
 

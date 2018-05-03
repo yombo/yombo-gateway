@@ -21,15 +21,15 @@ def route_system(webapp):
         @webapp.route('/index')
         @require_auth()
         def page_system_index(webinterface, request, session):
-            page = webinterface.get_template(request, webinterface._dir + 'pages/system/index.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/system/index.html')
             return page.render(alerts=webinterface.get_alerts(),
                                )
 
         @webapp.route('/backup')
         @require_auth()
         def page_system_backup(webinterface, request, session):
-            db_size = os.path.getsize("usr/etc/yombo.db")
-            page = webinterface.get_template(request, webinterface._dir + 'pages/system/backup.html')
+            db_size = os.path.getsize("%s/etc/yombo.db" % webinterface.working_dir)
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/system/backup.html')
             return page.render(alerts=webinterface.get_alerts(),
                                db_size=db_size
                                )
@@ -43,8 +43,8 @@ def route_system(webapp):
                 password2 = request.args.get('password2')[0]
                 if password1 != password2:
                     webinterface.add_alert('Encryption passwords do not match.', 'danger')
-                    db_size = os.path.getsize("usr/etc/yombo.db")
-                    page = webinterface.get_template(request, webinterface._dir + 'pages/system/backup.html')
+                    db_size = os.path.getsize("%s/etc/yombo.db" % webinterface.working_dir)
+                    page = webinterface.get_template(request, webinterface.wi_dir + '/pages/system/backup.html')
                     return page.render(alerts=webinterface.get_alerts(),
                                        db_size=db_size
                                        )
@@ -118,12 +118,12 @@ def route_system(webapp):
             request.setHeader('Cache-Control', 'must-revalidate, post-check=0, pre-check=0')
             request.setHeader('Pragma', 'public')
             # webinterface._LocalDB.make_backup()
-            return File("%s/usr/etc/yombo.db" % webinterface._Atoms.get('yombo.path'))
+            return File("%s/etc/yombo.db" % webinterface.working_path)
 
         @webapp.route('/control')
         @require_auth()
         def page_system_control(webinterface, request, session):
-            page = webinterface.get_template(request, webinterface._dir + 'pages/system/control.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/system/control.html')
             return page.render(alerts=webinterface.get_alerts(),
                                )
 

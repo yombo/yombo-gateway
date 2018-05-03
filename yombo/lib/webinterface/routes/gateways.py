@@ -13,7 +13,7 @@ def route_gateways(webapp):
         @webapp.route('/index')
         @require_auth()
         def page_lib_gateways_index(webinterface, request, session):
-            page = webinterface.get_template(request, webinterface._dir + 'pages/gateways/index.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/gateways/index.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/gateways/index", "Gateways")
             return page.render(alerts=webinterface.get_alerts(),
@@ -28,7 +28,7 @@ def route_gateways(webapp):
                 print("gatew find error: %s" % e)
                 webinterface.add_alert('Gateway was not found.  %s' % gateway_id, 'warning')
                 return webinterface.redirect(request, '/gateways/index')
-            page = webinterface.get_template(request, webinterface._dir + 'pages/gateways/details.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/gateways/details.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/gateways/index", "Gateways")
             webinterface.add_breadcrumb(request, "/gateways/%s/details" % gateway_id, gateway.label)

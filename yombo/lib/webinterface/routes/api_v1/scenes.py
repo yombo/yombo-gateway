@@ -64,7 +64,7 @@ def route_api_v1_scene(webapp):
                 return local_error("Command ID is not valid for this device.")
             inputs = available_commands[command.command_id]['inputs']
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/scenes/form_device_inputs.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/scenes/form_device_inputs.html')
             return page.render(
                 alerts=webinterface.get_alerts(),
                 inputs=inputs,

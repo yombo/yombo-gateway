@@ -62,6 +62,7 @@ class Localize(YomboLibrary):
         return "Yombo localization and translation library"
 
     def _init_(self, **kwargs):
+        self.working_dir = self._Loader.command_line_arguments['working_dir']
         self.default_lang = self._Configs.get2('localize', 'default_lang', 'en', False)
 
         try:
@@ -77,7 +78,8 @@ class Localize(YomboLibrary):
         self.localization_degrees = self._Configs.get2("localization", "degrees", "f")
 
         self.files = {}
-        self.locale_files = abspath('.') + "/usr/locale/"
+
+        self.locale_files = abspath('.') + "%s/locale/" % self.working_dir
         self.translator = self.get_translator()
         builtins.__dict__['_'] = self.handle_translate
 
@@ -341,7 +343,7 @@ class Localize(YomboLibrary):
         :param language:
         :return:
         """
-        output_folder = 'usr/locale/' + language + '/LC_MESSAGES'
+        output_folder = self.working_dir + '/locale/' + language + '/LC_MESSAGES'
         # print "files in lang (%s): %s" % (lang, files)
 
         if not path.exists(output_folder):

@@ -210,7 +210,7 @@ class Scenes(YomboLibrary, object):
                return [
                    {
                        "platform": "state",
-                       "webroutes": "%s/webinterface/routes/scenes/states.py" % self._Atoms.get('yombo.path'),
+                       "webroutes": "%syombo/lib/webinterface/routes/scenes/states.py" % self._Atoms.get('app_dir'),
                        "add_url": "/scenes/{scene_id}/add_state",
                        "note": "Change a state value",
                        "render_table_column_callback": self.scene_render_table_column,  # Show summary line in a table.

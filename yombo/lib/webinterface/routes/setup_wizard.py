@@ -19,7 +19,7 @@ def route_setup_wizard(webapp):
     with webapp.subroute("/setup_wizard") as webapp:
 
         def page_show_wizard_home(webinterface, request, session):
-            page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/1.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/setup_wizard/1.html')
             return page.render(
                                alerts=webinterface.get_alerts(),
                                )
@@ -79,7 +79,7 @@ def route_setup_wizard(webapp):
                     password = session.get('restorepassword', None)
 
                 if password is None:
-                    page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/restore_password.html')
+                    page = webinterface.get_template(request, webinterface.wi_dir + '/pages/setup_wizard/restore_password.html')
                     return page.render(
                         alerts=webinterface.get_alerts(),
                         restore=restorefile
@@ -91,7 +91,7 @@ def route_setup_wizard(webapp):
                 except Exception as e:
                     logger.warn("Unable to decrypt restoration file: {e}", e=e)
                     webinterface.add_alert("It appears the password is incorrect.", 'danger')
-                    page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/restore_password.html')
+                    page = webinterface.get_template(request, webinterface.wi_dir + '/pages/setup_wizard/restore_password.html')
                     return page.render(
                         alerts=webinterface.get_alerts(),
                         restore=restorefile
@@ -101,13 +101,13 @@ def route_setup_wizard(webapp):
 
             session.set('restore_backup_file', restorefile)
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/restore_ready.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/setup_wizard/restore_ready.html')
             return page.render(
                 alerts=webinterface.get_alerts(),
                 restore=session.get('restore_backup_file')
             )
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/restore_complete.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/setup_wizard/restore_complete.html')
             return page.render(
                                alerts=webinterface.get_alerts(),
                                )
@@ -129,7 +129,7 @@ def route_setup_wizard(webapp):
                 webinterface.add_alert("No restore data found.")
                 return page_show_wizard_home(webinterface, request, session)
 
-            yombopath = webinterface._Atoms.get('yombo.path')
+            working_path = webinterface._Atoms.get('working_path')
             data = restorefile['data_processed']
 
             for section, options in data['configs'].items():
@@ -142,10 +142,10 @@ def route_setup_wizard(webapp):
                     yield webinterface._GPG.import_to_keyring(key['privatekey'])
                 if key['passphrase'] != None:
 
-                    filename = "%s/usr/etc/gpg/%s.pass" % (yombopath, key['fingerprint'])
+                    filename = "%s/etc/gpg/%s.pass" % (working_path, key['fingerprint'])
                     yield save_file(filename, key['passphrase'])
                 if data['gpg_fingerprint'] == key['fingerprint']:
-                    filename = "%s/usr/etc/gpg/last.pass" % (yombopath)
+                    filename = "%s/etc/gpg/last.pass" % (working_path)
                     yield save_file(filename, key['passphrase'])
 
             for cert_name, cert in data['sslcerts'].items():
@@ -154,7 +154,7 @@ def route_setup_wizard(webapp):
             webinterface._Configs.exit_config_file = data['yombo_ini']
             yield webinterface._GPG.import_trust(data['gpg_trust'])
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/restart.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/restart.html')
             reactor.callLater(0.4, webinterface.do_restart)
             return page.render(
                                alerts=webinterface.get_alerts(),
@@ -180,7 +180,7 @@ def route_setup_wizard(webapp):
             if session is not False:
                 if session.get('setup_wizard_done', False) is True:
                     return webinterface.redirect(request, '/setup_wizard/%s' % session['setup_wizard_last_step'])
-            page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/1.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/setup_wizard/1.html')
             return page.render(
                                alerts=webinterface.get_alerts(),
                                )
@@ -219,7 +219,7 @@ def route_setup_wizard(webapp):
             session.set('available_gateways', available_gateways_sorted)
 
             session['setup_wizard_last_step'] = 2
-            page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/2.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/setup_wizard/2.html')
             # print("session: %s" % session.session_data)
 
             output = page.render(
@@ -370,7 +370,7 @@ def route_setup_wizard(webapp):
             # print "gw_fields: %s" % fields
 
             session['setup_wizard_last_step'] = 3
-            page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/3.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/setup_wizard/3.html')
             output = page.render(
                                alerts=webinterface.get_alerts(),
                                gw_fields=fields,
@@ -480,7 +480,7 @@ def route_setup_wizard(webapp):
             print("security_items: %s" % security_items)
 
             session['setup_wizard_last_step'] = 4
-            page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/4.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/setup_wizard/4.html')
             return page.render(
                                alerts=webinterface.get_alerts(),
                                security_items=security_items,
@@ -587,7 +587,7 @@ def route_setup_wizard(webapp):
             gpg_selected = session.get("gpg_selected", "new")
             i18n = webinterface.i18n(request)
             session.set('setup_wizard_last_step', 5)
-            page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/5.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/setup_wizard/5.html')
             gpg_existing = yield webinterface._LocalDB.get_gpg_key()
             gpg_existing_sorted = OrderedDict(sorted(gpg_existing.items(), key=lambda x: x[1]['created_at']))
             if len(gpg_existing_sorted) > 0:
@@ -621,18 +621,18 @@ def route_setup_wizard(webapp):
                 return "invalid submit"
 
             if submitted_gpg_action == "new":
-                page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/5_gpg_new.html')
+                page = webinterface.get_template(request, webinterface.wi_dir + '/pages/setup_wizard/5_gpg_new.html')
                 return page.render(
                                    alerts=webinterface.get_alerts(),
                                    )
 
             elif submitted_gpg_action == "import":
-                page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/5_gpg_import.html')
+                page = webinterface.get_template(request, webinterface.wi_dir + '/pages/setup_wizard/5_gpg_import.html')
                 return page.render(
                                    alerts=webinterface.get_alerts(),
                                    )
             elif submitted_gpg_action in gpg_existing:
-                page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/5_gpg_existing.html')
+                page = webinterface.get_template(request, webinterface.wi_dir + '/pages/setup_wizard/5_gpg_existing.html')
                 return page.render(
                                    alerts=webinterface.get_alerts(),
                                    key=gpg_existing[submitted_gpg_action]
@@ -800,7 +800,7 @@ def route_setup_wizard(webapp):
             dns_domain = webinterface._Configs.get('dns', 'dns_domain', None)
             allow_change = webinterface._Configs.get('dns', 'allow_change_at', 0)
             fqdn = webinterface._Configs.get('dns', 'fqdn', None, False)
-            page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/6.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/setup_wizard/6.html')
             return page.render(
                 alerts=webinterface.get_alerts(),
                 dns_fqdn=dns_fqdn,
@@ -814,7 +814,7 @@ def route_setup_wizard(webapp):
         @webapp.route('/7', methods=['GET'])
         @require_auth()
         def page_setup_wizard_7_get(webinterface, request, session):
-            page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/7.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/setup_wizard/7.html')
 
             session['setup_wizard_last_step'] = 7
             return page.render(
@@ -870,7 +870,7 @@ def route_setup_wizard(webapp):
             session['setup_wizard_last_step'] = 7
             print("SW7 - 13")
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/7.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/setup_wizard/7.html')
             return page.render(
                                alerts=webinterface.get_alerts(),
                                )

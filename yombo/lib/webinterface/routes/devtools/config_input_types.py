@@ -15,7 +15,7 @@ def route_devtools_config_input_types(webapp):
         @require_auth()
         def page_devtools_input_types_index_get(webinterface, request, session):
             page = webinterface.get_template(request,
-                                             webinterface._dir + 'pages/devtools/config/input_types/index.html')
+                                             webinterface.wi_dir + '/pages/devtools/config/input_types/index.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/devtools/config/input_types/index", "Input Types")
             return page.render(alerts=webinterface.get_alerts())
@@ -42,7 +42,7 @@ def route_devtools_config_input_types(webapp):
                 return webinterface.redirect(request, '/devtools/config/input_types/index')
 
             page = webinterface.get_template(request,
-                                             webinterface._dir + 'pages/devtools/config/input_types/details.html')
+                                             webinterface.wi_dir + '/pages/devtools/config/input_types/details.html')
 
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/devtools/config/input_types/index", "Input Types")
@@ -67,7 +67,7 @@ def route_devtools_config_input_types(webapp):
                 return webinterface.redirect(request, '/devtools/config/input_types/index')
 
             page = webinterface.get_template(request,
-                                             webinterface._dir + 'pages/devtools/config/input_types/delete.html')
+                                             webinterface.wi_dir + '/pages/devtools/config/input_types/delete.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/devtools/config/input_types/index", "Input Types")
             webinterface.add_breadcrumb(request, "/devtools/config/input_types/%s/details" % input_type_id,
@@ -112,7 +112,7 @@ def route_devtools_config_input_types(webapp):
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/input_types/index')
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/devtools/config/input_types/index", "Input Types")
             webinterface.add_breadcrumb(request, "/devtools/config/input_types/%s/details" % input_type_id,
@@ -136,7 +136,7 @@ def route_devtools_config_input_types(webapp):
                 return webinterface.redirect(request, '/devtools/config/input_types/index')
 
             page = webinterface.get_template(request,
-                                             webinterface._dir + 'pages/devtools/config/input_types/disable.html')
+                                             webinterface.wi_dir + '/pages/devtools/config/input_types/disable.html')
 
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/devtools/config/input_types/index", "Input Types")
@@ -182,7 +182,7 @@ def route_devtools_config_input_types(webapp):
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/input_types/index')
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
             root_breadcrumb(webinterface, request)
 
             webinterface.add_breadcrumb(request, "/devtools/config/input_types/index", "Input Types")
@@ -208,7 +208,7 @@ def route_devtools_config_input_types(webapp):
                 return webinterface.redirect(request, '/devtools/config/input_types/index')
 
             page = webinterface.get_template(request,
-                                             webinterface._dir + 'pages/devtools/config/input_types/enable.html')
+                                             webinterface.wi_dir + '/pages/devtools/config/input_types/enable.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/devtools/config/input_types/index", "Input Types")
             webinterface.add_breadcrumb(request, "/devtools/config/input_types/%s/details" % input_type_id,
@@ -252,7 +252,7 @@ def route_devtools_config_input_types(webapp):
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/input_types/index')
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
             root_breadcrumb(webinterface, request)
 
             webinterface.add_breadcrumb(request, "/devtools/config/input_types/index", "Input Types")
@@ -328,7 +328,7 @@ def route_devtools_config_input_types(webapp):
                                input_type_results['input_type_id'],
             }
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/devtools/config/input_types/index", "Input Types")
             webinterface.add_breadcrumb(request, "/devtools/config/input_types/add", "Add")
@@ -432,7 +432,7 @@ def route_devtools_config_input_types(webapp):
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/input_types/index')
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
             root_breadcrumb(webinterface, request)
 
             if input_type_results['code'] <= 299:
@@ -449,7 +449,7 @@ def route_devtools_config_input_types(webapp):
 
         def page_devtools_input_types_form(webinterface, request, session, action_type, input_type, categories,
                                            header_label):
-            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/config/input_types/form.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/devtools/config/input_types/form.html')
             return page.render(alerts=webinterface.get_alerts(),
                                header_label=header_label,
                                input_type=input_type,

@@ -233,7 +233,7 @@ def route_scenes_state(webapp):
             return webinterface.redirect(request, "/scenes/%s/details" % scene.scene_id)
 
         def page_scenes_form_state(webinterface, request, session, scene, data, action_type, header_label):
-            page = webinterface.get_template(request, webinterface._dir + 'pages/scenes/form_state.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/scenes/form_state.html')
 
             return page.render(alerts=webinterface.get_alerts(),
                                header_label=header_label,
@@ -261,7 +261,7 @@ def route_scenes_state(webapp):
 
             page = webinterface.get_template(
                 request,
-                webinterface._dir + 'pages/scenes/delete_state.html'
+                webinterface.wi_dir + '/pages/scenes/delete_state.html'
             )
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene_id, scene.label)

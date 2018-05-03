@@ -48,7 +48,7 @@ def route_discovery(webapp):
         @webapp.route('/index')
         @require_auth()
         def page_discovery_index(webinterface, request, session):
-            page = webinterface.get_template(request, webinterface._dir + 'pages/discovery/index.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/discovery/index.html')
             root_breadcrumb(webinterface, request)
             return page.render(
                 alerts=webinterface.get_alerts(),
@@ -63,7 +63,7 @@ def route_discovery(webapp):
             webinterface.add_breadcrumb(request, "/discovery/details/%s" % device_id, "Device Details")
             discovered_device = webinterface._Discovery[device_id]
             yombo_device = discovered_device.yombo_device
-            page = webinterface.get_template(request, webinterface._dir + 'pages/discovery/details.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/discovery/details.html')
             return page.render(
                 alerts=webinterface.get_alerts(),
                 discovered_device=discovered_device,

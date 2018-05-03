@@ -201,8 +201,10 @@ class WebInterface(YomboLibrary):
 
         self.gateway_id = self._Configs.get2('core', 'gwid', 'local', False)
         # self._LocalDB = self._Loader.loadedLibraries['localdb']
-        self._current_dir = self._Atoms.get('yombo.path') + "/yombo"
-        self._dir = '/lib/webinterface/'
+        self.working_dir = self._Atoms.get('working_dir')
+        self.app_dir = self._Atoms.get('app_dir')
+        self.wi_dir = '%s/yombo/lib/webinterface' % self.working_dir
+
         self._build_dist()  # Make all the JS and CSS files
         self.secret_pin_totp = self._Configs.get2('webinterface', 'auth_pin_totp',
                                      yombo.utils.random_string(length=16, letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'))
@@ -212,7 +214,7 @@ class WebInterface(YomboLibrary):
         self.wi_port_nonsecure = self._Configs.get2('webinterface', 'nonsecure_port', 8080)
         self.wi_port_secure = self._Configs.get2('webinterface', 'secure_port', 8443)
 
-        self.webapp.templates = jinja2.Environment(loader=jinja2.FileSystemLoader(self._current_dir))
+        self.webapp.templates = jinja2.Environment(loader=jinja2.FileSystemLoader("%s/yombo" % self.working_dir))
         self.setup_basic_filters()
 
         self.web_interface_listener = None
@@ -614,7 +616,7 @@ class WebInterface(YomboLibrary):
     @require_auth()
     def page_404(self, request, session, catchall):
         request.setResponseCode(404)
-        page = self.get_template(request, self._dir + 'pages/404.html')
+        page = self.get_template(request, self.wi_dir + '/pages/404.html')
         return page.render()
 
     @webapp.handle_errors(NotFound)
@@ -900,7 +902,7 @@ class WebInterface(YomboLibrary):
         if redirect is None:
             redirect = "/?"
 
-        page = self.get_template(request, self._dir + 'pages/restart.html')
+        page = self.get_template(request, self.wi_dir + '/pages/restart.html')
         reactor.callLater(0.3, self.do_restart)
         return page.render(message=message,
                            redirect=redirect,
@@ -914,7 +916,7 @@ class WebInterface(YomboLibrary):
             pass
 
     def shutdown(self, request):
-        page = self.get_template(request, self._dir + 'pages/shutdown.html')
+        page = self.get_template(request, self.wi_dir + '/pages/shutdown.html')
         # reactor.callLater(0.3, self.do_shutdown)
         return page.render()
 

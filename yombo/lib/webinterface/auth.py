@@ -179,7 +179,7 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
                 logger.error("Request: {request}", request=request)
                 logger.error("{trace}", trace=traceback.format_exc())
                 logger.error("--------------------------------------------------------")
-                page = webinterface.get_template(request, webinterface._dir + 'pages/misc/traceback.html')
+                page = webinterface.get_template(request, webinterface.wi_dir + '/pages/misc/traceback.html')
                 return page.render(traceback=traceback.format_exc())
 
         return wrapped_f
@@ -261,7 +261,7 @@ def return_need_login(webinterface, request, session, api_message=None, **kwargs
     else:
         if 'api' in kwargs and kwargs['api'] is True:
             return return_api_error(request, 'Unauthorized', 401, api_message)
-    page = webinterface.get_template(request, webinterface._dir + 'pages/login_user.html')
+    page = webinterface.get_template(request, webinterface.wi_dir + '/pages/login_user.html')
     return page.render(alerts=webinterface.get_alerts())
 
 
@@ -271,7 +271,7 @@ def return_need_pin(webinterface, request, **kwargs):
     if webinterface._display_pin_console_at < int(time()) - 30:
         webinterface._display_pin_console_at = int(time())
         webinterface.display_pin_console()
-    page = webinterface.get_template(request, webinterface._dir + 'pages/login_pin.html')
+    page = webinterface.get_template(request, webinterface.wi_dir + '/pages/login_pin.html')
     return page.render(alerts=webinterface.get_alerts())
 
 

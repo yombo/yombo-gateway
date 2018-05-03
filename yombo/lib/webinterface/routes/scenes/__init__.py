@@ -41,7 +41,7 @@ def route_scenes(webapp):
         @require_auth()
         def page_scenes_index(webinterface, request, session):
             root_breadcrumb(webinterface, request)
-            page = webinterface.get_template(request, webinterface._dir + 'pages/scenes/index.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/scenes/index.html')
             return page.render(
                 alerts=webinterface.get_alerts(),
                 )
@@ -57,7 +57,7 @@ def route_scenes(webapp):
 
             page = webinterface.get_template(
                 request,
-                webinterface._dir + 'pages/scenes/details.html')
+                webinterface.wi_dir + '/pages/scenes/details.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene.scene_id, scene.label)
             return page.render(alerts=webinterface.get_alerts(),
@@ -196,7 +196,7 @@ def route_scenes(webapp):
         def page_scenes_form(webinterface, request, session, action_type, scene, header_label):
             page = webinterface.get_template(
                 request,
-                webinterface._dir + 'pages/scenes/form.html')
+                webinterface.wi_dir + '/pages/scenes/form.html')
             return page.render(alerts=webinterface.get_alerts(),
                                header_label=header_label,
                                scene=scene,
@@ -214,7 +214,7 @@ def route_scenes(webapp):
 
             page = webinterface.get_template(
                 request,
-                webinterface._dir + 'pages/scenes/delete.html'
+                webinterface.wi_dir + '/pages/scenes/delete.html'
             )
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene_id, scene.label)
@@ -262,7 +262,7 @@ def route_scenes(webapp):
                 webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/scenes/disable.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/scenes/disable.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene.scene_id, scene.label)
             webinterface.add_breadcrumb(request, "/scenes/%s/disable" % scene.scene_id, "Disable")
@@ -308,7 +308,7 @@ def route_scenes(webapp):
                                scene.scene_id,
             }
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene.scene_id, scene.label)
             webinterface.add_breadcrumb(request, "/scenes/%s/disable" % scene.scene_id, "Disable")
@@ -325,7 +325,7 @@ def route_scenes(webapp):
                 webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/scenes/enable.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/scenes/enable.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene.scene_id, scene.label)
             webinterface.add_breadcrumb(request, "/scenes/%s/enable" % scene.scene_id, "Enable")

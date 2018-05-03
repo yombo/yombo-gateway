@@ -54,7 +54,7 @@ def route_locations(webapp):
             :param session: User's session information.
             :return:
             """
-            page = webinterface.get_template(request, webinterface._dir + 'pages/locations/index.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/locations/index.html')
             root_breadcrumb(webinterface, request)
             # print("webinterface._Locations.locations: %s" % webinterface._Locations.locations)
             return page.render(alerts=webinterface.get_alerts(),
@@ -73,7 +73,7 @@ def route_locations(webapp):
                 return webinterface.redirect(request, '/locations/index')
 
             page = webinterface.get_template(request,
-                                             webinterface._dir + 'pages/locations/details.html')
+                                             webinterface.wi_dir + '/pages/locations/details.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/locations/%s/details" % DL_results['data']['id'],
                                         DL_results['data']['label'])
@@ -118,7 +118,7 @@ def route_locations(webapp):
                                results['location_id'],
             }
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/locations/add", "Add")
             return page.render(alerts=webinterface.get_alerts(),
@@ -177,7 +177,7 @@ def route_locations(webapp):
             }
 
             # DL_api_results = yield webinterface._YomboAPI.request('GET', '/v1/location/%s' % location_id)
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
             root_breadcrumb(webinterface, request)
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/locations/%s/details" % location_id,
@@ -189,7 +189,7 @@ def route_locations(webapp):
                                )
 
         def page_lib_location_form(webinterface, request, session, action_type, location, header_label):
-            page = webinterface.get_template(request, webinterface._dir + 'pages/locations/form.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/locations/form.html')
             return page.render(alerts=webinterface.get_alerts(),
                                header_label=header_label,
                                location=location,
@@ -207,7 +207,7 @@ def route_locations(webapp):
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/locations/index')
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/locations/remove.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/locations/remove.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/locations/%s/details" % location_id,
                                         DL_results['data']['label'])
@@ -240,7 +240,7 @@ def route_locations(webapp):
                 'label': 'Location deleted successfully',
                 'description': '<p>The location has been deleted.<p><a href="/locations/index">Locations index</a>.</p>',
             }
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
             root_breadcrumb(webinterface, request)
 
             return page.render(alerts=webinterface.get_alerts(),

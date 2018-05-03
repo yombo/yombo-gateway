@@ -14,7 +14,7 @@ def route_devtools_config_modules(webapp):
         @webapp.route('/config/modules/index')
         @require_auth()
         def page_devtools_modules_index(webinterface, request, session):
-            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/config/modules/index.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/devtools/config/modules/index.html')
             root_breadcrumb(webinterface, request)
             return page.render(alerts=webinterface.get_alerts(),
                                )
@@ -31,7 +31,7 @@ def route_devtools_config_modules(webapp):
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/modules/index')
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/config/modules/details.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/devtools/config/modules/details.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/devtools/config/modules/%s/details" % module_id,
                                         module_results['data']['label'])
@@ -51,7 +51,7 @@ def route_devtools_config_modules(webapp):
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/modules/index')
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/config/modules/delete.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/devtools/config/modules/delete.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/devtools/config/modules/%s/details" % module_id,
                                         module_results['data']['label'])
@@ -93,7 +93,7 @@ def route_devtools_config_modules(webapp):
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/modules/index')
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/devtools/config/modules/%s/details" % module_id,
                                         module_api_results['data']['label'])
@@ -115,7 +115,7 @@ def route_devtools_config_modules(webapp):
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/modules/index')
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/config/modules/disable.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/devtools/config/modules/disable.html')
             return page.render(alerts=webinterface.get_alerts(),
                                     module=module_results['data'],
                                     )
@@ -153,7 +153,7 @@ def route_devtools_config_modules(webapp):
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/modules/index')
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
             root_breadcrumb(webinterface, request)
 
             webinterface.add_breadcrumb(request, "/devtools/config/modules/%s/details" % module_id,
@@ -176,7 +176,7 @@ def route_devtools_config_modules(webapp):
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/modules/index')
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/config/modules/enable.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/devtools/config/modules/enable.html')
             return page.render(alerts=webinterface.get_alerts(),
                                     module=module_results['data'],
                                     )
@@ -207,7 +207,7 @@ def route_devtools_config_modules(webapp):
                 'description': '<p>The module has been enabled.</p><p>Continue to <a href="/devtools/config/modules/index">modules index</a> or <a href="/devtools/config/modules/%s/details">view the module</a>.</p>' % module_id,
             }
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
             return page.render(alerts=webinterface.get_alerts(),
                                     msg=msg,
                                     )
@@ -269,7 +269,7 @@ def route_devtools_config_modules(webapp):
                 'description': '<p>The module has been added. If you have requested this module to be made public, please allow a few days for Yombo to perform a code review of your repository.</p><p>Continue to <a href="/devtools/config/modules/index">modules index</a></p>',
             }
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/devtools/config/modules/add", "Add Module")
             return page.render(alerts=webinterface.get_alerts(),
@@ -343,13 +343,13 @@ def route_devtools_config_modules(webapp):
                 'description': '<p>The module has been updated. If you have requested this module to be made public, please allow a few days for Yombo to perform a code review of your repository.</p><p>Continue to <a href="/devtools/config/modules/index">modules index</a></p>',
             }
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
             return page.render(alerts=webinterface.get_alerts(),
                                     msg=msg,
                                     )
 
         def page_devtools_modules_form(webinterface, request, session, module, display_type, header_label):
-            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/config/modules/form.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/devtools/config/modules/form.html')
             return page.render(alerts=webinterface.get_alerts(),
                                header_label=header_label,
                                module=module,
@@ -369,7 +369,7 @@ def route_devtools_config_modules(webapp):
                 return webinterface.redirect(request, '/devtools/config/modules/index')
 
             page = webinterface.get_template(request,
-                                             webinterface._dir + 'pages/devtools/config/modules/devicetype_index.html')
+                                             webinterface.wi_dir + '/pages/devtools/config/modules/devicetype_index.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/devtools/config/modules/%s/details" % module_id,
                                         module_results['data']['label'])
@@ -400,7 +400,7 @@ def route_devtools_config_modules(webapp):
                 return webinterface.redirect(request, '/devtools/config/modules/index')
 
             page = webinterface.get_template(request,
-                                             webinterface._dir + 'pages/devtools/config/modules/devicetype_add.html')
+                                             webinterface.wi_dir + '/pages/devtools/config/modules/devicetype_add.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/devtools/config/modules/%s/details" % module_id,
                                         module_results['data']['label'])
@@ -457,7 +457,7 @@ def route_devtools_config_modules(webapp):
                 return webinterface.redirect(request, '/devtools/config/modules/%s/details' % module_id)
 
             page = webinterface.get_template(request,
-                                             webinterface._dir + 'pages/devtools/config/modules/devicetype_remove.html')
+                                             webinterface.wi_dir + '/pages/devtools/config/modules/devicetype_remove.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/devtools/config/modules/%s/details" % module_id,
                                         module_results['data']['label'])
@@ -508,7 +508,7 @@ def route_devtools_config_modules(webapp):
                 return webinterface.redirect(request, '/devtools/config/modules/index')
 
             page = webinterface.get_template(request,
-                                             webinterface._dir + 'pages/devtools/config/modules/variable_details.html')
+                                             webinterface.wi_dir + '/pages/devtools/config/modules/variable_details.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/devtools/config/modules/%s/details" % module_id,
                                         module_results['data']['label'])

@@ -26,7 +26,7 @@ def route_home(webapp):
         @require_auth()
         def run_home(webinterface, request, session):
             # print("run_home aaaaaa")
-            page = webinterface.webapp.templates.get_template(webinterface._dir + 'pages/index.html')
+            page = webinterface.webapp.templates.get_template(webinterface.wi_dir + '/pages/index.html')
             delayed_device_commands = webinterface._Devices.get_delayed_commands()
             return page.render(alerts=webinterface.get_alerts(),
                                device_commands_delayed=delayed_device_commands,
@@ -34,7 +34,7 @@ def route_home(webapp):
 
         @require_auth()
         def config_home(webinterface, request, session):
-            page = webinterface.get_template(request, webinterface._dir + 'config_pages/index.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/config_pages/index.html')
             return page.render(alerts=webinterface.get_alerts(),
                                )
         @run_first()
@@ -85,7 +85,7 @@ def route_home(webapp):
                 if len(results) != 1:
                     webinterface.add_alert('Email address not allowed to access gateway.', 'warning')
                     #            webinterface._WebSessions.load(request)
-                    page = webinterface.get_template(request, webinterface._dir + 'pages/login_user.html')
+                    page = webinterface.get_template(request, webinterface.wi_dir + '/pages/login_user.html')
                     return page.render(alerts=webinterface.get_alerts())
 
             try:
@@ -93,7 +93,7 @@ def route_home(webapp):
                     submitted_email, submitted_password, submitted_g_recaptcha_response)
             except YomboWarning as e:
                 webinterface.add_alert("%s: %s" % (e.errorno, e.message), 'warning')
-                page = webinterface.get_template(request, webinterface._dir + 'pages/login_user.html')
+                page = webinterface.get_template(request, webinterface.wi_dir + '/pages/login_user.html')
                 return page.render(alerts=webinterface.get_alerts())
             print("results: %s" % results)
             if results['code'] == 200:
@@ -114,7 +114,7 @@ def route_home(webapp):
                 return login_redirect(webinterface, request, session)
             else:
                 webinterface.add_alert(results['msg'], 'warning')
-                page = webinterface.get_template(request, webinterface._dir + 'pages/login_user.html')
+                page = webinterface.get_template(request, webinterface.wi_dir + '/pages/login_user.html')
                 return page.render(alerts=webinterface.get_alerts())
 
         def login_redirect(webinterface, request, session=None, location=None):
@@ -173,5 +173,5 @@ def route_home(webapp):
         def static(webinterface, request, session):
             request.responseHeaders.removeHeader('Expires')
             request.setHeader('Cache-Control', 'max-age=%s' % randint(3600, 7200))
-            return File(webinterface._current_dir + "/lib/webinterface/static/dist")
+            return File(webinterface.wi_dir + "/static/dist")
 

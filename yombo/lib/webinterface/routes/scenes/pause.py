@@ -167,7 +167,7 @@ def route_scenes_pause(webapp):
             return webinterface.redirect(request, "/scenes/%s/details" % scene.scene_id)
 
         def page_scenes_form_pause(webinterface, request, session, scene, data, action_type, header_label):
-            page = webinterface.get_template(request, webinterface._dir + 'pages/scenes/form_pause.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/scenes/form_pause.html')
 
             return page.render(alerts=webinterface.get_alerts(),
                                header_label=header_label,
@@ -195,7 +195,7 @@ def route_scenes_pause(webapp):
 
             page = webinterface.get_template(
                 request,
-                webinterface._dir + 'pages/scenes/delete_pause.html'
+                webinterface.wi_dir + '/pages/scenes/delete_pause.html'
             )
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene_id, scene.label)

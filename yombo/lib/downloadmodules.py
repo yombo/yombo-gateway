@@ -80,7 +80,7 @@ class DownloadModules(YomboLibrary):
         return "Yombo download modules library"
 
     MAX_PATH = 50
-    DL_PATH = "usr/opt/"
+    DL_PATH = "opt/"
     MAX_KEY = 50
     MAX_VALUE = 50
     MAX_DOWNLOAD_CONCURRENT = 3  # config: misc:downloadmodulesconcurrent
@@ -95,7 +95,7 @@ class DownloadModules(YomboLibrary):
 
         self._getVersion = []
         self.maxDownloadConcurrent = self._Configs.get("misc", 'downloadmodulesconcurrent', self.MAX_DOWNLOAD_CONCURRENT)
-        self.download_path = self._Atoms.get('yombo.path') + "/" + self.DL_PATH
+        self.download_path = self._Atoms.get('working_dir') + "/" + self.DL_PATH
         self.allDownloads = []   # to start deferreds
         self.mysemaphore = defer.DeferredSemaphore(self.maxDownloadConcurrent)  #used to queue deferreds
 

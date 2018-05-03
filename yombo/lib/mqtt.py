@@ -486,7 +486,7 @@ class MQTT(YomboLibrary):
             @webapp.route("/tools/mqtt")
             @require_auth()
             def page_tools_mqtt(webinterface, request, session):
-                page = webinterface.webapp.templates.get_template(webinterface._dir + 'pages/mqtt/index.html')
+                page = webinterface.webapp.templates.get_template(webinterface.wi_dir + '/pages/mqtt/index.html')
                 return page.render(alerts=webinterface.get_alerts(),
                                    )
 

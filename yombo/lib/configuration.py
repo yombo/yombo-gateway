@@ -248,13 +248,14 @@ class Configuration(YomboLibrary):
         self.configs = {}
         self._loaded = False
         self.yombo_ini_last_modified = 0
-
-        ini_norestore = not os.path.exists('yombo.ini.norestore')
-
-        if os.path.exists('yombo.ini'):
-            if os.path.isfile('yombo.ini') is False:
+        self.argments = self._Loader.command_line_arguments
+        self.working_dir = self._Loader.command_line_arguments['working_dir']
+        ini_norestore = self.argments['norestoreini']
+        self.yombo_ini_path = "%s/yombo.ini" % self.working_dir
+        if os.path.exists(self.yombo_ini_path):
+            if os.path.isfile(self.yombo_ini_path) is False:
                 try:
-                    os.remove('yombo.ini')
+                    os.remove(self.yombo_ini_path)
                 except Exception as e:
                     logger.error("'yombo.ini' file exists, but it's not a file and it can't be deleted!")
                     reactor.stop()
@@ -262,7 +263,7 @@ class Configuration(YomboLibrary):
                 if ini_norestore:
                     self.restore_backup_yombi_ini()
             else:
-                if os.path.getsize('yombo.ini') < 5:
+                if os.path.getsize(self.yombo_ini_path) < 5:
                     logger.warn('yombo.ini appears corrupt, attempting to restore from backup.')
                     if ini_norestore:
                         self.restore_backup_yombi_ini()
@@ -278,7 +279,7 @@ class Configuration(YomboLibrary):
         logger.debug("done parsing yombo.ini. Now about to parse yombo.ini.info.")
         try:
             config_parser = configparser.ConfigParser()
-            config_parser.read('usr/etc/yombo.ini.info')
+            config_parser.read('%s/etc/yombo.ini.info' % self.working_dir)
             logger.debug("yombo.ini.info file read into memory.")
             for section in config_parser.sections():
                 if section not in self.configs:
@@ -371,8 +372,8 @@ class Configuration(YomboLibrary):
     def _load_(self, **kwargs):
         self._loaded = True
 
-    def __started(self, **kwargs):
-        self.save()
+    def _started_(self, **kwargs):
+        self.save(True, display_extra_warning=True)
 
     def _stop_(self, **kwargs):
         if self.periodic_save_yombo_ini is not None and self.periodic_save_yombo_ini.running:
@@ -394,16 +395,14 @@ class Configuration(YomboLibrary):
         temp = {}
         try:
             timeString = strftime("%Y-%m-%d_%H:%M:%S", localtime())
-            copyfile('yombo.ini', "usr/bak/yombo_ini/%s_yombo.ini" % timeString)
+            copyfile('yombo.ini', "%s/bak/yombo_ini/%s_yombo.ini" % (self.working_dir, timeString))
             config_parser = configparser.ConfigParser()
-            config_parser.read('yombo.ini')
+            config_parser.read(self.yombo_ini_path)
             for section in config_parser.sections():
                 temp[section] = {}
                 for option in config_parser.options(section):
                     value = config_parser.get(section, option)
-                    # print("config before (%s:%s): %s" % (section, option, value))
                     value = yield self._GPG.decrypt(value)
-                    # print("config after (%s:%s): %s" % (section, option, value))
                     try:
                         value = is_string_bool(value)
                     except:
@@ -445,7 +444,7 @@ class Configuration(YomboLibrary):
        ]
 
     def restore_backup_yombi_ini(self):
-        path = "usr/bak/yombo_ini/"
+        path = "%s/bak/yombo_ini/" % self.working_dir
 
         dated_files = [(os.path.getmtime("%s/%s" % (path, fn)), os.path.basename(fn))
                        for fn in os.listdir(path)]
@@ -455,13 +454,13 @@ class Configuration(YomboLibrary):
             for i in range(0, len(dated_files)):
                 the_file = "%s/%s" % (path, dated_files[i][1])
                 if os.path.getsize(the_file) > 100:
-                    copyfile(the_file, 'yombo.ini')
+                    copyfile(the_file, self.yombo_ini_path)
                     logger.warn("yombo.ini file restored from previous backup.")
                     return True
         return False
 
     @inlineCallbacks
-    def save(self, force_save=False):
+    def save(self, force_save=False, display_extra_warning=False):
         """
         Save the configuration configs to the INI file.
 
@@ -475,12 +474,12 @@ class Configuration(YomboLibrary):
 
             if self.exit_config_file is not None:
                 # print("saving exit file..")
-                yield save_file('yombo.ini', self.exit_config_file)
+                yield save_file(self.yombo_ini_path, self.exit_config_file)
 
             elif self.configs_dirty is True or force_save is True:
-                contents = yield self.generate_yombo_ini()
+                contents = yield self.generate_yombo_ini(display_extra_warning)
                 # print("yombo.ini contents: %s" % contents)
-                yield save_file('yombo.ini', contents)
+                yield save_file(self.yombo_ini_path, contents)
 
             Config = configparser.ConfigParser()
             for section, options in self.configs.items():
@@ -495,7 +494,7 @@ class Configuration(YomboLibrary):
                 if len(Config.options(section)) == 0:  # Don't save empty sections.
                     Config.remove_section(section)
 
-            config_file = open("usr/etc/yombo.ini.info",'w')
+            config_file = open("%s/etc/yombo.ini.info" % self.working_dir, 'w')
             config_file.write('#\n')
             config_file.write('# This file stores meta information about yombo.ini. Do not edit manually!\n')
             config_file.write('#\n')
@@ -512,7 +511,7 @@ class Configuration(YomboLibrary):
 
         self.configs_dirty = False
 
-        file_path = "usr/bak/yombo_ini/"
+        file_path = "%s/bak/yombo_ini/" % self.working_dir
 
         backup_files = os.listdir(os.path.dirname(file_path))
         if len(backup_files) > 5:
@@ -526,12 +525,29 @@ class Configuration(YomboLibrary):
                     os.remove(fullpath)
 
     @inlineCallbacks
-    def generate_yombo_ini(self):
+    def generate_yombo_ini(self, display_extra_warning=False):
+        """
+        Generates the output for yombo.ini. If display_extra_warning is True, will display an even
+        more nasty message to not edit this file while its running.
+
+        :param shutdown:
+        :return:
+        """
         contents = ""
         contents += "#\n# " + _('configuration',
           "This file stores configuration information about the gateway.") + "\n"
+        if display_extra_warning is True:
+            contents += "#\n#####################################################################################\n"
+            contents += "#  WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING \n"
+            contents += "#####################################################################################\n"
+            contents += "# " + _('configuration',
+               "It appears the Yombo gateway still running. All changes will be lost!") + "\n"
+            contents += "# " + _('configuration',
+               "Process ID number: ") + str(self._Atoms['pid']) + "\n"
+
+            contents += "#####################################################################################\n#\n#\n"
         contents += "# " + _('configuration',
-           "WARNING: Do not edit this file while the gateway is running, any changes will be lost.") + "\n# \n"
+                             "WARNING: Do not edit this file while the gateway is running, any changes will be lost.") + "\n# \n"
 
         # first parse sections to make sure each section has a value!
         configs = {}
@@ -558,7 +574,10 @@ class Configuration(YomboLibrary):
                         if item in self.configs_details[section]:
                             if 'encrypt' in self.configs_details[section][item]:
                                 # print("encrypt: config before (%s:%s): %s" % (section, item, data))
-                                data = yield self._GPG.encrypt(data)
+                                try:
+                                    data = yield self._GPG.encrypt(data)
+                                except YomboWarning as e:
+                                    logger.info("Tried to encrypt a yombo.ini value, but gpg not ready. Saving cleartext.")
                                 # print("encrypt: config after (%s:%s): %s" % (section, item, data))
                     i18n_label = _('config_item', "%s:%s" % (section, item))
                     if i18n_label != "%s:%s" % (section, item):

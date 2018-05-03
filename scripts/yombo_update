@@ -18,7 +18,15 @@ if [ "$(id -u)" -ne 0 ]; then
   exit
 fi
 
-SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
+TEMPSCRIPTPATH=$(readlink -f `which ybo`)
+rc=$?
+if [[ $rc != 0 ]]; then
+ SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
+else
+ SCRIPTPATH=$(dirname "$TEMPSCRIPTPATH")
+fi
+echo "results: $SCRIPTPATH"
+cd "$SCRIPTPATH"
 
 usage()
 {

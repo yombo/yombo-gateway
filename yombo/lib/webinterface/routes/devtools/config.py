@@ -15,7 +15,7 @@ def route_devtools_config(webapp):
         @webapp.route('/config/index')
         @require_auth()
         def page_devtools_index(webinterface, request, session):
-            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/config/index.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/devtools/config/index.html')
             root_breadcrumb(webinterface, request)
             return page.render(alerts=webinterface.get_alerts(),
                                )

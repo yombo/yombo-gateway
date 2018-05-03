@@ -16,7 +16,7 @@ def route_devtools_config_commands(webapp):
         def page_devtools_commands_index(webinterface, request, session):
             page = webinterface.get_template(
                 request,
-                webinterface._dir + 'pages/devtools/config/commands/index.html')
+                webinterface.wi_dir + '/pages/devtools/config/commands/index.html')
             root_breadcrumb(webinterface, request)
             return page.render(alerts=webinterface.get_alerts())
 
@@ -33,7 +33,7 @@ def route_devtools_config_commands(webapp):
 
             page = webinterface.get_template(
                 request,
-                webinterface._dir + 'pages/devtools/config/commands/details.html')
+                webinterface.wi_dir + '/pages/devtools/config/commands/details.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(
                 request,
@@ -59,7 +59,7 @@ def route_devtools_config_commands(webapp):
                 return webinterface.redirect(request, '/devtools/config/commands/index')
             page = webinterface.get_template(
                 request,
-                webinterface._dir + 'pages/devtools/config/commands/delete.html'
+                webinterface.wi_dir + '/pages/devtools/config/commands/delete.html'
             )
             root_breadcrumb(webinterface, request)
 
@@ -106,7 +106,7 @@ def route_devtools_config_commands(webapp):
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/commands/index')
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/devtools/config/commands/%s/details" % command_id,
                                         command_api_results['data']['label'])
@@ -127,7 +127,7 @@ def route_devtools_config_commands(webapp):
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/commands/index')
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/config/commands/disable.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/devtools/config/commands/disable.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/devtools/config/commands/%s/details" % command_id,
                                         command_results['data']['label'])
@@ -173,7 +173,7 @@ def route_devtools_config_commands(webapp):
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/commands/index')
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/devtools/config/commands/%s/details" % command_id,
                                         command_api_results['data']['label'])
@@ -193,7 +193,7 @@ def route_devtools_config_commands(webapp):
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/commands/index')
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/config/commands/enable.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/devtools/config/commands/enable.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/devtools/config/commands/%s/details" % command_id,
                                         command_results['data']['label'])
@@ -238,7 +238,7 @@ def route_devtools_config_commands(webapp):
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/commands/index')
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/devtools/config/commands/%s/details" % command_id,
                                         command_api_results['data']['label'])
@@ -297,7 +297,7 @@ def route_devtools_config_commands(webapp):
                                command_results['data']['id'],
             }
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/devtools/config/commands/add", "Add")
             return page.render(alerts=webinterface.get_alerts(),
@@ -378,7 +378,7 @@ def route_devtools_config_commands(webapp):
                 return webinterface.redirect(
                     request,'/devtools/config/commands/index')
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(
                 request,
@@ -395,7 +395,7 @@ def route_devtools_config_commands(webapp):
                                         header_label):
             page = webinterface.get_template(
                 request,
-                webinterface._dir + 'pages/devtools/config/commands/form.html')
+                webinterface.wi_dir + '/pages/devtools/config/commands/form.html')
             return page.render(alerts=webinterface.get_alerts(),
                                header_label=header_label,
                                command=command,

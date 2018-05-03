@@ -10,13 +10,13 @@ def route_notices(webapp):
         @webapp.route('/index')
         @require_auth()
         def page_notifications_index(webinterface, request, session):
-            page = webinterface.get_template(request, webinterface._dir + 'pages/notifications/index.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/notifications/index.html')
             return page.render(alerts=webinterface.get_alerts())
 
         @webapp.route('/<string:notification_id>/details')
         @require_auth()
         def page_notifications_details(webinterface, request, session, notification_id):
-            page = webinterface.get_template(request, webinterface._dir + 'pages/notifications/details.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/notifications/details.html')
             try:
                 webinterface._Notifications.ack(notification_id)
                 notice = webinterface._Notifications[notification_id]
@@ -30,7 +30,7 @@ def route_notices(webapp):
         @webapp.route('/<string:notification_id>/delete')
         @require_auth()
         def page_notifications_edit(webinterface, request, session, module_id):
-            page = webinterface.get_template(request, webinterface._dir + 'pages/notifications/delete.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/notifications/delete.html')
             return page.render(alerts=webinterface.get_alerts(),
                                notice=webinterface._Notifications[notification_id],
                                )

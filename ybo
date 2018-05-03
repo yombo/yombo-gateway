@@ -1,0 +1,229 @@
+#!/usr/bin/env bash
+
+# a basic wrapper around the yombo.tac (yombo service).
+
+if [ "$EUID" -eq 0 ]; then
+    echo ""
+    echo "This should't be run by root. This should be run be a normal user."
+    echo ""
+    while true; do
+        read -p "Are you sure you want to do this? (y/n)" yn
+        case $yn in
+            [Yy]* ) break;;
+            [Nn]* ) exit;;
+            * ) echo "Please answer y (yes) or n (no).";;
+        esac
+    done
+fi
+
+usage()
+{
+cat << EOF
+usage: ybo
+
+Manages the Yombo gateway service or simply just starts it up
+in interactive mode.
+
+
+Get status and manage the Yombo Gateway software.
+
+OPTIONS:
+   -debug [items]      Turn on debug mode.
+   -disable
+       Disable Yombo service.
+   -enable
+       Enable Yombo service.
+   -h, -help           Show this message
+   -logfile FILE       Change log file location
+   -motd               Show MOTD / URL status
+   -profiler           Enable profiling to profile.out
+   -pid_path PATH      Set the pid path location
+   -pid_file FILE      Set the pid path filename
+   -start              Start Yombo service
+   -status             Show the status of the Yombo service
+   -stop               Stop Yombo service
+   -urls               Show URLs to access Yombo Gateway.
+   -working-dir DIR    Set data storage directory
+   -version            Show version
+
+EXAMPLES:
+  Debugging:
+    Turn on debug with with optional selection of what items to debug. The
+    items list can be * for all, or a comma separated list of items such as:
+    --debug yombo.lib.*,yombo.modules.mymodule.*
+
+EOF
+}
+
+TEMPSCRIPTPATH=$(readlink -f `which ybo`)
+rc=$?
+if [[ $rc != 0 ]]; then
+ SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
+else
+ SCRIPTPATH=$(dirname "$TEMPSCRIPTPATH")
+fi
+echo "results: $SCRIPTPATH"
+cd "$SCRIPTPATH"
+
+#Base vars
+DAEMON=0
+DEBUG=false
+DEBUG_ITEMS=*
+LOGFILE=/var/log/yombo/yombo.log
+LOGENABLE=0
+PID_PATH=$HOME/.yombo/
+PID_FILE=yombo.pid
+TACFILE=yombo.tac
+SHOW_STATUS=false
+
+ARGUMENTS=
+
+while true; do
+  case "$1" in
+#    -m | --memory ) MEMORY="$2"; shift 2 ;;
+
+    -daemon)
+      # Run as daemon (used by systemd)
+      DAEMON=1
+      ;;
+    -debug )
+      ARGUMENTS="$ARGUMENTS -debug"
+      if [[ "$2" != \-* ]]; then
+        ARGUMENTS="$ARGUMENTS --debug-items $2"
+        shift
+      fi
+      shift ;;
+    -disable )
+      systemctl disable yombo
+      exit 1
+      shift ;;
+    -enable )
+      systemctl enable yombo
+      exit 1
+      shift ;;
+    -h | --help )
+      usage
+      exit 1
+      ;;
+    -logfile)
+      # Change log file location
+      shift
+      LOGFILE=$1
+      shift
+      ;;
+    -motd )
+      # Show yombo motd
+      $SCRIPTPATH/scripts/show_motd
+      exit 1
+      ;;
+    -pid_path)
+      shift
+      PID_PATH=$1
+      shift
+      ;;
+    -pid_file)
+      shift
+      PID_FILE=$1
+      shift
+      ;;
+    -profiler)
+      # Enable profiling
+      echo "enabling profiler"
+      ARGUMENTS="$ARGUMENTS --savestats --profiler cprofile -n --profile prof.stats"
+      ;;
+    -stop)
+      # stop yombo service
+      echo "Request Yombo stop"
+      service stop yombo
+      exit 1
+      ;;
+    -status)
+      SHOW_STATUS=true
+      ;;
+    -tacfile)
+      # Change TAC file location
+      shift
+      TACFILE=$1
+      shift
+      ;;
+    -urls)
+      # Show yombo urls
+      $SCRIPTPATH/scripts/show_urls
+      exit 1
+      ;;
+    -version)
+      # Show version of yombo.
+      $SCRIPTPATH/scripts/show_version
+      exit 1
+      ;;
+    \?)
+      echo "Invalid option: -$OPTARG" >&2
+      echo "For help: $0 -h" >&2
+      exit 1
+      ;;
+    :)
+      echo "Option -$OPTARG requires an argument." >&2
+      exit 1
+      ;;
+    * ) break ;;
+  esac
+done
+
+if [ "$SHOW_STATUS" == "true" ]; then
+  if [ -e $PID_PATH/$PID_FILE ]; then
+    mypid=`cat $PID_PATH/$PID_FILE`
+    if kill -0 &>1 > /dev/null $mypid; then
+      echo "Yombo gateway appears to be running with pid: $mypid"
+      echo ""
+      $SCRIPTPATH/scripts/show_motd
+      exit 1
+    fi
+    echo "Yombo gateway is not running."
+  fi
+  exit 1
+fi
+
+YOMBO_SERVICE="echo \"$ARGUMENTS\" | twistd --pidfile=$PID_PATH/$PID_FILE"
+
+#Check if PID is running, if it is, then exit gracefully.
+if [ -e $PID_PATH/$PID_FILE ]; then
+    mypid=`cat $PID_PATH/$PID_FILE`
+  if kill -0 &>1 > /dev/null $mypid; then
+    echo "Yombo Gateway already running with pid: $mypid"
+    exit 1
+  fi
+fi
+
+if [ $DAEMON -eq "0" ]; then
+   YOMBO_SERVICE="$YOMBO_SERVICE -n"
+else
+   YOMBO_SERVICE="$YOMBO_SERVICE --logfile=$LOGFILE"
+fi
+
+
+export SSL_CERT_FILE="$(python -m certifi)"
+YOMBO_SERVICE="$YOMBO_SERVICE -y $TACFILE"
+
+#Check if pyenv is being used and isn't loaded...
+if [ -f ".python-version" ] ; then
+  if ! [ -x "$(command -v pyenv)" ]; then
+    echo "Yombo.sh setting up pyenv"
+    export PATH="~/.pyenv/bin:$PATH"
+    eval "$(pyenv init -)"
+    eval "$(pyenv virtualenv-init -)"
+  fi
+fi
+
+while :
+do
+  if [ $DAEMON -eq "1" ]; then
+     eval $YOMBO_SERVICE
+  else
+     eval $YOMBO_SERVICE
+  fi
+  OUT=$?
+  if [ $OUT -le "126" ]; then
+    # Gateway died for some reason or was told to quit, so, lets exit!
+    exit $OUT
+  fi
+done

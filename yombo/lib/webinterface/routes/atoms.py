@@ -10,7 +10,7 @@ def route_atoms(webapp):
         @webapp.route('/index')
         @require_auth()
         def page_lib_atoms_index(webinterface, request, session):
-            page = webinterface.get_template(request, webinterface._dir + 'pages/atoms/index.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/atoms/index.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/info", "Info")
             webinterface.add_breadcrumb(request, "/atoms/index", "Atoms")
@@ -26,7 +26,7 @@ def route_atoms(webapp):
                 webinterface.add_alert('Atom Name was not found.  %s' % atom_name, 'warning')
                 redirect = webinterface.redirect(request, '/atoms/index')
                 return redirect
-            page = webinterface.get_template(request, webinterface._dir + 'pages/atoms/details.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/atoms/details.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/info", "Info")
             webinterface.add_breadcrumb(request, "/atoms/index", "Atoms")

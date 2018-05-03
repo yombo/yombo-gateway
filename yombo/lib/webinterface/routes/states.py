@@ -14,7 +14,7 @@ def route_states(webapp):
         @webapp.route('/index')
         @require_auth()
         def page_states_index(webinterface, request, session):
-            page = webinterface.get_template(request, webinterface._dir + 'pages/states/index.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/states/index.html')
             # i18n = webinterface.i18n(request)
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/info", "Info")
@@ -34,7 +34,7 @@ def route_states(webapp):
                 redirect = webinterface.redirect(request, '/states/index')
                 return redirect
             state_history = yield webinterface._States.get_history(state_name, 0, 400)
-            page = webinterface.get_template(request, webinterface._dir + 'pages/states/details.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/states/details.html')
             if state_history is None:
                 state_history = []
             webinterface.home_breadcrumb(request)

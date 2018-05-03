@@ -39,7 +39,6 @@ from time import time
 from OpenSSL import crypto
 
 # Import twisted libraries
-from twisted.internet import threads
 from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks, maybeDeferred, Deferred
 
@@ -102,6 +101,7 @@ class SSLCert(object):
         self._Name = 'SSLCerts.SSLCert'
         self._ParentLibrary = _parent_library
         self.source = source
+        self.working_dir = self._Loader.command_line_arguments['working_dir']
 
         self.sslname = sslcert.sslname
         self.cn = sslcert.cn
@@ -348,7 +348,7 @@ class SSLCert(object):
         setattr(self, "%s_is_valid" % label, None)
 
         # now the the variables are deleted, lets delete the matching files
-        for file_to_delete in glob.glob("usr/etc/certs/%s.%s.*" % (self.sslname, label)):
+        for file_to_delete in glob.glob("%s/etc/certs/%s.%s.*" % (self.working_dir, self.sslname, label)):
             logger.debug("Removing ssl file file: %s" % file_to_delete)
             os.remove(file_to_delete)
 
@@ -430,19 +430,19 @@ class SSLCert(object):
         for label in ['current', 'next']:
             setattr(self, "%s_is_valid" % label, None)
 
-            if os.path.exists('usr/etc/certs/%s.%s.meta' % (self.sslname, label)):
+            if os.path.exists("%s/etc/certs/%s.%s.meta" % (self.working_dir, self.sslname, label)):
                 logger.debug("SSL Meta found for: {label} - {sslname}", label=label, sslname=self.sslname)
-                file_content = yield read_file('usr/etc/certs/%s.%s.meta' % (self.sslname, label))
+                file_content = yield read_file("%s/etc/certs/%s.%s.meta" % (self.working_dir, self.sslname, label))
                 meta = json.loads(file_content)
                 # print("meta: %s" % meta)
 
                 csr_read = False
                 if label == 'next':
                     logger.debug("Looking for 'next' information.")
-                    if os.path.exists('usr/etc/certs/%s.%s.csr.pem' % (self.sslname, label)):
+                    if os.path.exists("%s/etc/certs/%s.%s.csr.pem" % (self.working_dir, self.sslname, label)):
                         if getattr(self, "%s_csr" % label) is None:
                             csr = yield read_file(
-                                'usr/etc/certs/%s.%s.csr.pem' % (self.sslname, label),
+                                "%s/etc/certs/%s.%s.csr.pem" % (self.working_dir, self.sslname, label),
                                 True,
                             )
                             if sha256(str(csr).encode('utf-8')).hexdigest() == meta['csr']:
@@ -453,17 +453,17 @@ class SSLCert(object):
                                 #     )
                                 # )
                                 logger.warn("Appears that the file system has bad meta signatures (csr). Purging.")
-                                for file_to_delete in glob.glob("usr/etc/certs/%s.%s.*" % (self.sslname, label)):
+                                for file_to_delete in glob.glob("%s/etc/certs/%s.%s.*" % (self.working_dir, self.sslname, label)):
                                     logger.warn("Removing bad file: %s" % file_to_delete)
                                     os.remove(file_to_delete)
                                 continue
 
                 cert_read = False
                 if getattr(self, "%s_cert" % label) is None:
-                    if os.path.exists('usr/etc/certs/%s.%s.cert.pem' % (self.sslname, label)):
+                    if os.path.exists("%s/etc/certs/%s.%s.cert.pem" % (self.working_dir, self.sslname, label)):
                         # print("setting cert!!!")
                         cert = yield read_file(
-                            'usr/etc/certs/%s.%s.cert.pem' % (self.sslname, label),
+                            "%s/etc/certs/%s.%s.cert.pem" % (self.working_dir, self.sslname, label),
                             True
                         )
                         cert_read = True
@@ -471,38 +471,38 @@ class SSLCert(object):
                         if sha256(str(cert).encode('utf-8')).hexdigest() != meta['cert']:
                             # print("%s != %s" % (sha256(str(cert).encode('utf-8')).hexdigest(), meta['cert']))
                             logger.warn("Appears that the file system has bad meta signatures (cert). Purging.")
-                            for file_to_delete in glob.glob("usr/etc/certs/%s.%s.*" % (self.sslname, label)):
+                            for file_to_delete in glob.glob("%s/etc/certs/%s.%s.*" % (self.working_dir, self.sslname, label)):
                                 logger.warn("Removing bad file: %s" % file_to_delete)
                                 os.remove(file_to_delete)
                             continue
 
                 chain_read = False
                 if getattr(self, "%s_chain" % label) is None:
-                    if os.path.exists('usr/etc/certs/%s.%s.chain.pem' % (self.sslname, label)):
+                    if os.path.exists("%s/etc/certs/%s.%s.chain.pem" % (self.working_dir, self.sslname, label)):
                         # print("setting chain!!!")
                         chain = yield read_file(
-                            'usr/etc/certs/%s.%s.chain.pem' % (self.sslname, label),
+                            "%s/etc/certs/%s.%s.chain.pem" % (self.working_dir, self.sslname, label),
                             True
                         )
                         chain_read = True
                         if sha256(str(chain).encode('utf-8')).hexdigest() != meta['chain']:
                             logger.warn("Appears that the file system has bad meta signatures (chain). Purging.")
-                            for file_to_delete in glob.glob("usr/etc/certs/%s.%s.*" % (self.sslname, label)):
+                            for file_to_delete in glob.glob("%s/etc/certs/%s.%s.*" % (self.working_dir, self.sslname, label)):
                                 logger.warn("Removing bad file: %s" % file_to_delete)
                                 os.remove(file_to_delete)
                             continue
 
                 key_read = False
                 if getattr(self, "%s_key" % label) is None:
-                    if os.path.exists('usr/etc/certs/%s.%s.key.pem' % (self.sslname, label)):
+                    if os.path.exists("%s/etc/certs/%s.%s.key.pem" % (self.working_dir, self.sslname, label)):
                         key = yield read_file(
-                            'usr/etc/certs/%s.%s.key.pem' % (self.sslname, label),
+                            "%s/etc/certs/%s.%s.key.pem" % self.working_dir, (self.sslname, label),
                             True
                         )
                         key_read = True
                         if sha256(str(key).encode('utf-8')).hexdigest() != meta['key']:
                             logger.warn("Appears that the file system has bad meta signatures (key). Purging.")
-                            for file_to_delete in glob.glob("usr/etc/certs/%s.%s.*" % (self.sslname, label)):
+                            for file_to_delete in glob.glob("%s/etc/certs/%s.%s.*" % (self.working_dir, self.sslname, label)):
                                 logger.warn("Removing bad file: %s" % file_to_delete)
                                 os.remove(file_to_delete)
                             continue
@@ -564,45 +564,45 @@ class SSLCert(object):
 
             if getattr(self, "%s_cert" % label) is None:
                 meta['cert'] = None
-                file = 'usr/etc/certs/%s.%s.cert.pem' % (self.sslname, label)
+                file = "%s/etc/certs/%s.%s.cert.pem" % (self.working_dir, self.sslname, label)
                 if os.path.exists(file):
                     os.remove(file)
             else:
                 meta['cert'] = sha256(str(getattr(self, "%s_cert" % label)).encode('utf-8')).hexdigest()
-                yield save_file('usr/etc/certs/%s.%s.cert.pem' % (self.sslname, label),  getattr(self, "%s_cert" % label))
+                yield save_file("%s/etc/certs/%s.%s.cert.pem" % (self.working_dir, self.sslname, label),  getattr(self, "%s_cert" % label))
 
             if getattr(self, "%s_chain" % label) is None:
                 meta['chain'] = None
-                file = 'usr/etc/certs/%s.%s.chain.pem' % (self.sslname, label)
+                file = "%s/etc/certs/%s.%s.chain.pem" % (self.working_dir, self.sslname, label)
                 if os.path.exists(file):
                     os.remove(file)
             else:
                 meta['chain'] = sha256(str(getattr(self, "%s_chain" % label)).encode('utf-8')).hexdigest()
-                yield save_file('usr/etc/certs/%s.%s.chain.pem' % (self.sslname, label), getattr(self, "%s_chain" % label))
+                yield save_file("%s/etc/certs/%s.%s.chain.pem" % (self.working_dir, self.sslname, label), getattr(self, "%s_chain" % label))
 
             if getattr(self, "%s_key" % label) is None:
                 meta['key'] = None
-                file = 'usr/etc/certs/%s.%s.key.pem' % (self.sslname, label)
+                file = "%s/etc/certs/%s.%s.key.pem" % (self.working_dir, self.sslname, label)
                 if os.path.exists(file):
                     os.remove(file)
             else:
                 meta['key'] = sha256(str(getattr(self, "%s_key" % label)).encode('utf-8')).hexdigest()
-                yield save_file('usr/etc/certs/%s.%s.key.pem' % (self.sslname, label), getattr(self, "%s_key" % label))
+                yield save_file("%s/etc/certs/%s.%s.key.pem" % (self.working_dir, self.sslname, label), getattr(self, "%s_key" % label))
 
             if label == 'next':
                 if getattr(self, "%s_csr" % label) is None:
                     meta['csr'] = None
-                    file = 'usr/etc/certs/%s.%s.csr.pem' % (self.sslname, label)
+                    file = "%s/etc/certs/%s.%s.csr.pem" % (self.working_dir, self.sslname, label)
                     if os.path.exists(file):
                         os.remove(file)
                 else:
                     meta['csr'] = sha256(str(getattr(self, "%s_csr" % label)).encode('utf-8')).hexdigest()
-                    yield save_file('usr/etc/certs/%s.%s.csr.pem' % (self.sslname, label), getattr(self, "%s_csr" % label))
+                    yield save_file("%s/etc/certs/%s.%s.csr.pem" % (self.working_dir, self.sslname, label), getattr(self, "%s_csr" % label))
 
-            yield save_file('usr/etc/certs/%s.%s.meta' % (self.sslname, label),
+            yield save_file("%s/etc/certs/%s.%s.meta" % (self.working_dir, self.sslname, label),
                             json.dumps(meta, indent=4))
 
-            yield save_file('usr/etc/certs/%s.meta' % self.sslname,
+            yield save_file("%s/etc/certs/%s.meta" % (self.working_dir, self.sslname),
                             json.dumps({
                                 'sans': self.sans,
                                 'cn': self.cn,
@@ -684,8 +684,8 @@ class SSLCert(object):
         self.next_key = results['key']
         self.next_csr = results['csr']
         # print("request_new_csr csr: %s " % self.next_csr)
-        yield save_file('usr/etc/certs/%s.next.csr.pem' % self.sslname, self.next_csr)
-        yield save_file('usr/etc/certs/%s.next.key.pem' % self.sslname, self.next_key)
+        yield save_file("%s/etc/certs/%s.next.csr.pem" % (self.working_dir, self.sslname), self.next_csr)
+        yield save_file("%s/etc/certs/%s.next.key.pem" % (self.working_dir, self.sslname), self.next_key)
         self.next_created = int(time())
         self.dirty = True
         self.next_csr_generation_in_progress = False
@@ -793,10 +793,12 @@ class SSLCert(object):
                 'created': self.current_created,
                 'signed': self.current_signed,
                 'self_signed': False,
-                'cert_file': self._ParentLibrary._Atoms.get('yombo.path') + '/usr/etc/certs/%s.current.cert.pem' % self.sslname,
-                'key_file': self._ParentLibrary._Atoms.get('yombo.path') + '/usr/etc/certs/%s.current.key.pem' % self.sslname,
-                'chain_file': self._ParentLibrary._Atoms.get('yombo.path') + '/usr/etc/certs/%s.current.chain.pem' %
-                self.sslname,
+                'cert_file': self._ParentLibrary._Atoms.get('working_dir') + "/etc/certs/%s.current.cert.pem" %
+                            self.sslname,
+                'key_file': self._ParentLibrary._Atoms.get('working_dir') + "/etc/certs/%s.current.key.pem" %
+                            self.sslname,
+                'chain_file': self._ParentLibrary._Atoms.get('working_dir') + "/etc/certs/%s.current.chain.pem" %
+                            self.sslname,
             }
         else:
             logger.debug("Sending SELF SIGNED cert details for {sslname}", sslname=self.sslname)
@@ -820,8 +822,8 @@ class SSLCert(object):
                     'created': self._ParentLibrary.self_signed_created,
                     'signed': self._ParentLibrary.self_signed_created,
                     'self_signed': True,
-                    'cert_file': self._ParentLibrary._Atoms.get('yombo.path') + '/usr/etc/certs/sslcert_selfsigned.cert.pem',
-                    'key_file': self._ParentLibrary._Atoms.get('yombo.path') + '/usr/etc/certs/%sslcert_selfsigned.key.pem',
+                    'cert_file': self._ParentLibrary._Atoms.get('working_dir') + "/etc/certs/sslcert_selfsigned.cert.pem",
+                    'key_file': self._ParentLibrary._Atoms.get('working_dir') + "/etc/certs/%sslcert_selfsigned.key.pem",
                     'chain_file': None,
                 }
 
