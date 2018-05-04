@@ -92,7 +92,7 @@ COMMANDS:
   sudoers        Manage sudoers control file for user: '$REALUSER'
                  Options: 'install' to install sudoers file, or 'remove'.
   update         Upgrade the operating system with 'apt update && apt upgrade'. Also
-                 updates Yombo Gateway software and it's dependants.
+                 updates Yombo Gateway software and its dependants.
   version        Set the Yombo gateway source code branch. **Advanced users only**
                  Option: The version name, eg: master, develop, tagname
   install-bash   Install bash completion scripts.
@@ -108,11 +108,7 @@ Additional options:
 
 Additional Yombo Tools:
   ybo - manage Yombo gateway service for '$REALUSER'
-
 EOF
-if [ 'asdf' == 'adf' ]; then
- echio 'asdf'
-fi
 }
 
 function run_command {
@@ -206,25 +202,37 @@ function enable_yombo
 }
 
 
-function sudoers
+function do_sudoers
 {
   need_sudo
+
   if [ "$SUDOERSMODE" == "install" ]; then
     info "Updating/creating sudoers file for: $REALUSER"
     cat <<- EOF > /etc/sudoers.d/yombo_$REALUSER\.service
 # This file is managed by yombo, use ybo-config to update.
 
-%$REALUSER ALL= NOPASSWD: /bin/systemctl enable yombo.service >> /etc
-%$REALUSER ALL= NOPASSWD: /bin/systemctl disable yombo.service
-%$REALUSER ALL= NOPASSWD: /bin/systemctl start yombo.service
-%$REALUSER ALL= NOPASSWD: /bin/systemctl stop yombo.service
-%$REALUSER ALL= NOPASSWD: /bin/systemctl restart yombo.service
+%$REALUSER ALL= NOPASSWD: /bin/systemctl enable yombo_$REALUSER.service
+%$REALUSER ALL= NOPASSWD: /bin/systemctl disable yombo_$REALUSER.service
+%$REALUSER ALL= NOPASSWD: /bin/systemctl start yombo_$REALUSER.service
+%$REALUSER ALL= NOPASSWD: /bin/systemctl stop yombo_$REALUSER.service
+%$REALUSER ALL= NOPASSWD: /bin/systemctl restart yombo_$REALUSER.service
+%$REALUSER ALL= NOPASSWD: /bin/systemctl enable yombo_$REALUSER
+%$REALUSER ALL= NOPASSWD: /bin/systemctl disable yombo_$REALUSER
+%$REALUSER ALL= NOPASSWD: /bin/systemctl start yombo_$REALUSER
+%$REALUSER ALL= NOPASSWD: /bin/systemctl stop yombo_$REALUSER
+%$REALUSER ALL= NOPASSWD: /bin/systemctl restart yombo_$REALUSER
 %$REALUSER ALL= NOPASSWD: /bin/systemctl enable mosquitto.service
 %$REALUSER ALL= NOPASSWD: /bin/systemctl disable mosquitto.service
 %$REALUSER ALL= NOPASSWD: /bin/systemctl start mosquitto.service
 %$REALUSER ALL= NOPASSWD: /bin/systemctl stop mosquitto.service
 %$REALUSER ALL= NOPASSWD: /bin/systemctl restart mosquitto.service
 %$REALUSER ALL= NOPASSWD: /bin/systemctl kill -s HUP mosquitto.service
+%$REALUSER ALL= NOPASSWD: /bin/systemctl enable mosquitto
+%$REALUSER ALL= NOPASSWD: /bin/systemctl disable mosquitto
+%$REALUSER ALL= NOPASSWD: /bin/systemctl start mosquitto
+%$REALUSER ALL= NOPASSWD: /bin/systemctl stop mosquitto
+%$REALUSER ALL= NOPASSWD: /bin/systemctl restart mosquitto
+%$REALUSER ALL= NOPASSWD: /bin/systemctl kill -s HUP mosquitto
 EOF
     chmod 440 /etc/sudoers.d/yombo_$REALUSER
   elif [ "$SUDOERSMODE" == "remove" ]; then
@@ -232,6 +240,7 @@ EOF
     rm /etc/sudoers.d/yombo_$REALUSER
   else
     echo "'install' or 'remove' must be supplied with 'sudoers'."
+    echo "Example: 'sudo ybo-config sudoers install'"
     exit 1
   fi
 }
@@ -422,11 +431,10 @@ do
         ;;
 
       "sudoers" )
-        RUN="sudoers"
-        SUDOERSMODE=$1
+        RUN="do_sudoers"
+        SUDOERSMODE=$2
         shift # pass command
         shift # pass sudoers mode
-        exit 0
         ;;
 
       "log-cfg-clear" )
@@ -499,6 +507,7 @@ do
 done
 
 if [ "$RUN" != "" ]; then
+#  echo "About to run $RUN"
   $RUN
   exit 0
 fi
