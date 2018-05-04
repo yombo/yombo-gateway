@@ -1,0 +1,439 @@
+#!/usr/bin/env bash
+# Yombo gateway configuration helper
+
+if [ "$USER" = "root" ] && [ "$SUDO_USER" == "" ]; then
+  echo "This script cannot be run as root directly and must be run"
+  echo "as the user owning the Yombo gateway service."
+  echo ""
+  echo "Logout as root and then:"
+  echo "sudo ybo-config"
+  exit
+fi
+
+if [ "$SUDO_USER" != "" ]; then
+  REALUSER=$SUDO_USER
+else
+  REALUSER=$USER
+fi
+SCRIPTPATH="$(dirname "$(readlink -f "$0")")"
+rc=$?
+if [[ $rc != 0 ]]; then
+ SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
+fi
+WORK_DIR="$HOME/.yombo"
+LOGFILE=$WORK_DIR/log/config.log
+LOGYBOFILE=$WORK_DIR/log/service.log
+VERSION="$($SCRIPTPATH/scripts/show_version)"
+
+# Configurable options
+ACCEPT="false"
+FORCE="false"
+
+YOMBOVERSION=$($SCRIPTPATH/scripts/show_version)
+YOMBOVERSIONHASH=$(git -C "$SCRIPTPATH" log --pretty=format:'%h' -n 1)
+YOMBOFULLVERSION="$YOMBOVERSIONHASH-$YOMBOVERSION"
+
+function log {
+  echo "$2"
+  echo "[$(date +'%D %T')] [$YOMBOFULLVERSION] [$1] $2" >> "$LOGFILE"
+  if [ "$SUDO_USER" != "" ]; then
+    chown "$REALUSER":"$REALUSER" "$LOGFILE"
+  fi
+}
+
+function info {
+  log "info" "$1"
+}
+
+function warning {
+  log "warning" "$1"
+}
+
+function error {
+  log "error" "$1"
+}
+
+function need_sudo {
+  if (( EUID != 0 ))
+  then
+    echo "Error: ybo-config must be run as root (with sudo) for this request."
+    echo "Hint: Run the same same command again with 'sudo' in front."
+    exit 1
+  fi
+  return 0
+}
+
+function usage {
+  printf "usage: ybo-config [command] [options...]\\n"
+  printf "'ybo-config help' to see all options\\n"
+  exit 0
+}
+
+function help {
+cat << EOF
+Yombo gateway configuration and setup helper.
+ybo-config    version: $VERSION
+
+usage: ybo-config command [options...]
+
+COMMANDS:
+  help, -?,      Show this text
+    -h, --help
+
+  disable        Disable Yombo service, prevents Yombo from ruinning on system startup.
+
+  enable         Enable Yombo service, configures Yombo to run on system startup.
+
+  sudoers        Manage sudoers control file for user: '$REALUSER'
+                 Options: 'install' to install sudoers file, or 'remove'.
+
+  update         Upgrade the operating system with 'apt update && apt upgrade'. Also
+                 updates Yombo Gateway software and it's dependants.
+
+  version        Set the Yombo gateway source code branch. **Advanced users only**
+                 Option: The version name, eg: master, develop, tagname
+
+  log-cfg-clear  Clear configuration log.
+
+  log-ybo-clear  Clear configuration log.
+
+  log-cfg-show   Show configuration log.
+
+  log-ybo-show      Show Yombo service log.
+
+  log-cfg-share  Share configuration log.
+
+  log-cfg-share  Share configuration log.
+
+Additional options:
+  -Y, --accept   Always accept prompts.
+
+Additional Yombo Tools:
+  ybo - manage Yombo gateway service for '$REALUSER'
+
+EOF
+if [ 'asdf' == 'adf' ]; then
+ echio 'asdf'
+fi
+}
+
+function run_command {
+  echo "------ STARTING EXTERNAL PROGRAM ------" >> "$LOGFILE"
+  echo "$1" >> "$LOGFILE"
+  echo "------ STARTING LOG ------" >> "$LOGFILE"
+  $1 2>&1 | tee -a "$LOGFILE"
+  echo "------ FINISHED EXTERNAL PROGRAM ------" >> "$LOGFILE"
+  return 0
+}
+
+function check_systemd
+{
+  need_sudo
+  if [ ! -f /etc/systemd/system/yombo_$REALUSER.service ]; then
+    if [ "$ACCEPT" == "true" ]; then
+      warning "Systemd service control file is missing."
+      create_systemd
+      return 0
+    else
+        while true; do
+            read -p "Systemd service control file is missing, do you want to create it? (y/n)" yn
+            case $yn in
+                [Yy]* )
+                  create_systemd
+                  return 0
+                  break;;
+                [Nn]* )cd m
+                  echo "Not creating system control file, Yombo will not run automatically."
+                  exit 0;;
+                * )
+                  echo "Please answer y (yes) or n (no)."
+                  echo "" ;;
+            esac
+        done
+    fi
+  fi
+}
+
+function create_systemd
+{
+  need_sudo
+  info "Creating systemd service control file. This will tell your system how"
+  info "to start Yombo Gateway when your device starts up."
+  cat <<- EOF > /etc/systemd/system/yombo_$REALUSER.service
+# This file is managed by yombo, use ybo-config to update.
+
+[Unit]
+Description=Yombo Home Automation software for user: $REALUSER
+Wants=network.target
+
+[Service]
+User=$REALUSER
+Group=$REALUSER
+WorkingDirectory=/home/$REALUSER/.yombo/
+PIDFile=/home/yombo/.yombo/yombogateway.pid
+#ExecStartPre=/bin/bash --login -c 'env > /tmp/.yombo-magic-environment-file'
+ExecStart=ybo -daemon
+ExecStop=/bin/kill -s SIGINT \$MAINPID
+#EnvironmentFile=-/tmp/.yombo-magic-environment-file
+
+[Install]
+WantedBy=multi-user.target
+
+EOF
+    chmod 440 /etc/sudoers.d/yombo_$REALUSER
+    info "Systemd service control file created."
+    return 0
+}
+
+
+function disable_yombo
+{
+  need_sudo
+
+  info "About to disable systemd control Yombo Gateway for user: $REALUSER"
+  run_command "systemctl disable yombo_$REALUSER"
+  info "Yombo has been disabled for startup for user: $REALUSER"
+  exit 0
+}
+
+
+function enable_yombo
+{
+  need_sudo
+  check_systemd
+  info "About to enable systemd control Yombo Gateway for user: $REALUSER"
+  run_command "systemctl enable yombo_$REALUSER"
+  info "Yombo has been enabled for startup for user: $REALUSER"
+  exit 0
+}
+
+
+function sudoers
+{
+  need_sudo
+  if [ "$SUDOERSMODE" == "install" ]; then
+    info "Updating/creating sudoers file for: $REALUSER"
+    cat <<- EOF > /etc/sudoers.d/yombo_$REALUSER\.service
+# This file is managed by yombo, use ybo-config to update.
+
+%$REALUSER ALL= NOPASSWD: /bin/systemctl enable yombo.service >> /etc
+%$REALUSER ALL= NOPASSWD: /bin/systemctl disable yombo.service
+%$REALUSER ALL= NOPASSWD: /bin/systemctl start yombo.service
+%$REALUSER ALL= NOPASSWD: /bin/systemctl stop yombo.service
+%$REALUSER ALL= NOPASSWD: /bin/systemctl restart yombo.service
+%$REALUSER ALL= NOPASSWD: /bin/systemctl enable mosquitto.service
+%$REALUSER ALL= NOPASSWD: /bin/systemctl disable mosquitto.service
+%$REALUSER ALL= NOPASSWD: /bin/systemctl start mosquitto.service
+%$REALUSER ALL= NOPASSWD: /bin/systemctl stop mosquitto.service
+%$REALUSER ALL= NOPASSWD: /bin/systemctl restart mosquitto.service
+%$REALUSER ALL= NOPASSWD: /bin/systemctl kill -s HUP mosquitto.service
+EOF
+    chmod 440 /etc/sudoers.d/yombo_$REALUSER
+  elif [ "$SUDOERSMODE" == "remove" ]; then
+    info "Removing sudoers file for: $REALUSER"
+    rm /etc/sudoers.d/yombo_$REALUSER
+  else
+    echo "'install' or 'remove' must be supplied with 'sudoers'."
+    exit 1
+  fi
+}
+
+function clear-log {
+  if [ ! -f $SHARELOG ];then
+    echo "Logfile '$SHARELOG' not found, exiting..."
+    return 0
+  fi
+  if [ "$ACCEPT" == "true" ]; then
+    rm $SHARELOG
+    echo "Log file deleted: $SHARELOG"
+  else
+    echo ""
+    echo "About to delete: $SHARELOG"
+    echo ""
+    echo -n "Are you sure you want to permanently delete this log file? [N/y] : "
+    read -r  RESPONSE
+    if [ "$RESPONSE" == "y" ] || [ "$RESPONSE" == "Y" ]; then
+    rm $SHARELOG
+    echo "Log file deleted: $SHARELOG"
+    fi
+  fi
+  return 0
+}
+
+function share-log {
+  if [ ! -f $SHARELOG ];then
+    echo "Logfile '$SHARELOG' not found, exiting..."
+    return 0
+  fi
+  if [ "$ACCEPT" == "true" ]; then
+    info "Sharing '$SHARELOG' to Hastebin"
+    loglink=$(curl -X POST -s -d "$(cat "$SHARELOG")" https://hastebin.com/documents | awk -F '"' '{print "https://hastebin.com/"$4}')
+    if [[ $loglink != *"initial"*  ]]; then
+      info "Hastebin link: $loglink"
+    else
+      info "Unable to post to Hastebin, unreachable. Try later or check your network connection."
+      return 0
+    fi
+  else
+    echo "This will upload the contents of this log file: $SHARELOG"
+    echo "This could include sensitive information."
+    echo "If you are unsure about what it contains, you can run 'ybo-config cfg-log|ybo-log' to check."
+    echo -n "Are you sure you want to upload this publicly to Hastebin? [N/y] : "
+    read -r  RESPONSE
+    if [ "$RESPONSE" == "y" ] || [ "$RESPONSE" == "Y" ]; then
+      info "Sharing '$SHARELOG' to Hastebin"
+      loglink=$(curl -X POST -s -d "$(cat "$SHARELOG")" https://hastebin.com/documents | awk -F '"' '{print "https://hastebin.com/"$4}')
+      if [[ $loglink != *"initial"*  ]]; then
+        info "Hastebin link: $loglink"
+      else
+        echo
+        info "Unable to post to Hastebin, unreachable. Try later or check your network connection."
+        return 0
+      fi
+    fi
+  fi
+  return 0
+}
+
+function do_update {
+  need_sudo
+  info "Calling yombo_update to update the system and Yombo Gateway software."
+  run_command "sudo -H -u $SUDO_USER sudo bash $SCRIPTPATH/scripts/yombo_update yombo_update"
+  info "Finised with system and Yombo Gateway software update."
+  return 0
+}
+
+function update {
+  need_sudo
+  info "hello asdf"
+  if [ "$ACCEPT" == "true" ]; then
+    do_update
+    echo "Log file deleted: $SHARELOG"
+  else
+    echo ""
+    echo "About to update the operating system, Yombo Gateway, and it's dependencies."
+    echo ""
+    echo -n "Are you sure you want to complete this task? [N/y] : "
+    read -r  RESPONSE
+    if [ "$RESPONSE" == "y" ] || [ "$RESPONSE" == "Y" ]; then
+        do_update
+    fi
+  fi
+  return 0
+}
+
+if [ $# -lt 1 ]; then
+  usage
+  exit 0
+fi
+
+while [[ $# -gt 0 ]]
+do
+    COMMAND=$1
+
+    case $COMMAND in
+      "disable" )
+        RUN="disable_yombo"
+        shift
+        ;;
+      "enable" )
+        RUN="enable_yombo"
+        shift
+        ;;
+
+      "help" )
+        help
+        exit 0
+        ;;
+
+      "sudoers" )
+        RUN="sudoers"
+        SUDOERSMODE=$1
+        shift # pass command
+        shift # pass sudoers mode
+        exit 0
+        ;;
+
+      "log-cfg-clear" )
+        SHARELOG="$LOGFILE"
+        RUN="clear-log"
+        shift # past argument
+        ;;
+
+      "log-ybo-clear" )
+        SHARELOG="$LOGFILE"
+        RUN="clear-log"
+        shift # past argument
+        ;;
+
+      "log-cfg-show" )
+        RUN="more $LOGFILE"
+        shift # past argument
+        ;;
+
+      "log-ybo-show" )
+        RUN="more $LOGYBOFILE"
+        shift # past argument
+        ;;
+
+      "log-cfg-show")
+        SHARELOG="$LOGFILE"
+        RUN="share-share" $LOGFILE
+        shift # pass command
+        ;;
+
+      "log-ybo-share")
+        SHARELOG="$LOGYBOFILE"
+        RUN="share-log"
+        shift # pass command
+        ;;
+
+      "update")
+        RUN="update"
+        shift # pass command
+        ;;
+
+      "version")
+        echo "Yombo version: $YOMBOVERSION, git hash: $YOMBOVERSIONHASH"
+        exit 0
+        ;;
+
+      # Now the options!
+      "-Y"|"-y"|"--accept")
+        ACCEPT="true"
+        shift # pass command
+        ;;
+
+      "-F"|"-f"|"--force")
+        FORCE="true"
+        shift # pass command
+        ;;
+
+
+
+      "-V"|"--version")
+        VERSION=$(dpkg -s hassbian-scripts | grep 'Version:' | awk '{print $2}')
+        RUN="echo $VERSION"
+        shift # past argument
+        ;;
+      "show-installed")
+        RUN="show-installed-suites"
+        shift # past argument
+        ;;
+      "-H"|"--help")
+        RUN="help"
+        shift # past argument
+        ;;
+      * )
+        usage
+        exit 0
+        ;;
+    esac
+done
+
+if [ "$RUN" != "" ]; then
+echo "Run 1"
+  $RUN
+echo "Run 2"
+  exit 0
+fi

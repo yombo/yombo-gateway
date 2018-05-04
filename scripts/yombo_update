@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+echo "user: $USER, sudu_user: $SUDO_USER"
+exit 0
 if [ "$USER" = "root" ] && [ "$SUDO_USER" == "" ]; then
   echo "This script cannot be run as root directly and must be run"
   echo "as the user owning the Yombo gateway service."
@@ -104,4 +106,4 @@ else
   OPTIMIZE="no"
 fi
 
-$SCRIPTPATH/update_debian $OPTIMIZE
+$SCRIPTPATH/scripts/update_debian $OPTIMIZE

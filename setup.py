@@ -1,125 +1,110 @@
-import codecs
-import os
-
+#!/usr/bin/env python3
+"""Home Assistant setup script."""
 from setuptools import setup, find_packages
 
-# from distutils.core import setup
-# from distutils.extension import Extension
+import yombo.constants as yombo_const
 
-HERE = os.path.abspath(os.path.dirname(__file__))
+PROJECT_NAME = 'Yombo'
+PROJECT_PACKAGE_NAME = 'yombo'
+PROJECT_LICENSE = 'Yombo Reciprocal Public License 1.6'
+PROJECT_AUTHOR = 'The Yombo Authors'
+PROJECT_COPYRIGHT = ' 2012-2018, {}'.format(PROJECT_AUTHOR)
+PROJECT_URL = 'https://yombo.net/'
+PROJECT_EMAIL = 'hello@yombo.net'
+PROJECT_DESCRIPTION = ('Web based open-source home automation platform '
+                       'using Python 3.')
+PROJECT_LONG_DESCRIPTION = ('Yombo is an open-source home automation '
+                            'platform running on Python 3 with an easy to use '
+                            'web interfaces for setup and configuration. Track '
+                            'and control various components within minutes.')
+PROJECT_CLASSIFIERS = [
+    'Development Status :: 4 - Beta',
+    'Intended Audience :: End Users/Desktop',
+    'Intended Audience :: Developers',
+    'License :: OSI Approved :: Apache Software License',
+    'Natural Language :: English',
+    'Operating System :: OS Independent',
+    'Programming Language :: Python :: 3.5',
+    'Programming Language :: Python :: 3.6',
+    'Topic :: Home Automation'
+]
 
-def read(*parts):
-    """
-    Build an absolute path from *parts* and and return the contents of the
-    resulting file.  Assume UTF-8 encoding.
-    """
-    with codecs.open(os.path.join(HERE, *parts), "rb", "utf-8") as f:
-        return f.read()
+PROJECT_GITHUB_USERNAME = 'yombo'
+PROJECT_GITHUB_REPOSITORY = 'yombo-gateway'
 
-def list_files(path):
-    files = (file for file in os.listdir(os.path.join(HERE, path))
-             if os.path.isfile(os.path.join('yombo/lib', file)))
+PYPI_URL = 'https://pypi.python.org/pypi/{}'.format(PROJECT_PACKAGE_NAME)
+GITHUB_PATH = '{}/{}'.format(
+    PROJECT_GITHUB_USERNAME, PROJECT_GITHUB_REPOSITORY)
+GITHUB_URL = 'https://github.com/{}'.format(GITHUB_PATH)
 
-    good_files = []
-    for file in files: # You could shorten this to one line, but it runs on a bit.
-        if file.endswith('.py'):
-            new_file = path + '/' +file
-            new_file.replace('/', '.')
-            good_files.append(path + '/' +file)
+DOWNLOAD_URL = '{}/archive/{}.zip'.format(GITHUB_URL, yombo_const.__version__)
 
-    return good_files
+PACKAGES = find_packages(exclude=['tests', 'tests.*'])
 
-NAME = "yombo"
-VERSION = "0.12.0.alpha"
-DESCRIPTION = "Yombo automation software for home and business.",
-URL='https://yombo.net/'
-AUTHOR='Mitch Schwenk',
-AUTHOR_EMAIL='mitch-gwy@yombo.net',
-MAINTAINER='Yombo',
-MAINTAINER_EMAIL='support-pypi@yombo.net',
-LICENSE='YRPL',
-PACKAGES=['yombo'],
-KEYWORDS = ["automation"]
-CLASSIFIERS=[
-        # How mature is this project? Common values are
-        #   3 - Alpha
-        #   4 - Beta
-        #   5 - Production/Stable
-        'Development Status :: 3 - Alpha',
-        'Natural Language :: English',
-        'Operating System :: OS Independent',
+REQUIRES = [
+    'argon2_cffi>=18.1.0',
+    'asyncio==3.4.*',
+    'certifi',
+    'cython',
+    'decorator',
+    'dnspython',
+    'docutils',
+    'ephem',
+    'gnupg',
+    'hashids',
+    'hjson',
+    'jinja2',
+    'klein',
+    'logger',
+    'markdown',
+    'msgpack-python',
+    'netaddr',
+    'netifaces',
+    'numpy',
+    'parsedatetime',
+    'passlib',
+    'pika',
+    'pycrypto',
+    'pydispatcher',
+    'pyephem',
+    'pyopenssl',
+    'pyserial==3.2.0',
+    'python_dateutil',
+    'python-gnupg',
+    'pytz',
+    'service_identity',
+    'six',
+    'treq',
+    'Twisted==18.4.*',
+    'unidecode',
+    'uvloop',
+    'voluptuous',
+    'wheel',
+]
 
-        # Indicate who your project is intended for
-        'Intended Audience :: Users',
-        'Topic :: Home Automation :: Business Automation',
+MIN_PY_VERSION = '.'.join(map(str, yombo_const.REQUIRED_PYTHON_VER))
 
-        # Pick your license as you wish (should match "license" above)
-         'License :: YRPL',
-
-        # Specify the Python versions you support here. In particular, ensure
-        # that you indicate whether you support Python 2, Python 3 or both.
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
-    ],
-
-REQUIRES=[
-        'hbmqtt',
-        'Twisted',
-        'python-gnupg',
-        'pyephem',
-        'gnupg',
-        'service_identity',
-        'parsedatetime',
-        'psutil',
-        'jinja2',
-        'klein',
-        'pytest'
-        ],
-
-Y_CORE = list_files("yombo/core")
-Y_LIB = list_files("yombo/lib")
-PY_MODULES = Y_CORE + Y_LIB
-
-
-#     ext_modules =  [
-#                     Extension("yombo.core.fuzzysearch", ["yombo/core/fuzzysearch.pyx"], extra_link_args=['-s']),
-#                     Extension("yombo.core.message", ["yombo/core/message.pyx"], extra_link_args=['-s']),
-#                     Extension("yombo.core.sqldict", ["yombo/core/sqldict.pyx"], extra_link_args=['-s']),
-# #                    Extension("yombo.core.voicecmd", ["yombo/core/voicecmd.pyx"], extra_link_args=['-s']),
-#
-#                     Extension("yombo.lib.configuration", ["yombo/lib/configuration.pyx"], extra_link_args=['-s']),
-#                     Extension("yombo.lib.configurationupdate", ["yombo/lib/configurationupdate.pyx"], extra_link_args=['-s']),
-#                     Extension("yombo.lib.commands", ["yombo/lib/commands.pyx"], extra_link_args=['-s']),
-#                     Extension("yombo.lib.devices", ["yombo/lib/devices.pyx"], extra_link_args=['-s']),
-#                     Extension("yombo.lib.downloadmodules", ["yombo/lib/downloadmodules.pyx"], extra_link_args=['-s']),
-#                     Extension("yombo.lib.gatewaycontrol", ["yombo/lib/gatewaycontrol.pyx"], extra_link_args=['-s']),
-# #                    Extension("yombo.lib.gatewaydata", ["yombo/lib/gatewaydata.pyx"], extra_link_args=['-s']),
-#                     Extension("yombo.lib.times", ["yombo/lib/times.pyx"], extra_link_args=['-s']),
-#                    ],
-#     data_files = [
-#                   ('yombo', ['yombod', 'yombo.tac', 'LICENSE', 'README']),
-#                   ('/etc', ['yombo.ini']),
-#                  ],
-# )
-
-if __name__ == "__main__":
-    print(Y_LIB)
-
-    setup(
-        name=NAME,
-        description=DESCRIPTION,
-        license=LICENSE,
-        url=URL,
-        version=VERSION,
-        author=AUTHOR,
-        author_email=AUTHOR_EMAIL,
-        maintainer=MAINTAINER,
-        maintainer_email=MAINTAINER_EMAIL,
-        keywords=KEYWORDS,
-        long_description=read("README.rst"),
-        # packages=PACKAGES,
-        # py_modules=PY_MODULES,
-        zip_safe=False,
-        classifiers=CLASSIFIERS,
-        install_requires=REQUIRES,
-    )
+setup(
+    name=PROJECT_PACKAGE_NAME,
+    version=yombo_const.__version__,
+    license=PROJECT_LICENSE,
+    url=PROJECT_URL,
+    download_url=DOWNLOAD_URL,
+    author=PROJECT_AUTHOR,
+    author_email=PROJECT_EMAIL,
+    description=PROJECT_DESCRIPTION,
+    packages=PACKAGES,
+    include_package_data=True,
+    zip_safe=False,
+    platforms='any',
+    install_requires=REQUIRES,
+    python_requires='>={}'.format(MIN_PY_VERSION),
+#    test_suite='tests',
+    keywords=['home', 'automation'],
+    entry_points={
+        'console_scripts': [
+            'hass = homeassistant.__main__:main'
+        ]
+    },
+    classifiers=PROJECT_CLASSIFIERS,
+)

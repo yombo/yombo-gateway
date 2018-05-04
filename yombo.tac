@@ -7,11 +7,15 @@
 :copyright: Copyright 2012-2018 by Yombo.
 :license: LICENSE for details.
 """
+print("starting...")
 import asyncio
+from distutils.dir_util import copy_tree
 from asyncio.tasks import ensure_future
-import sys
 import os
 from os.path import dirname, abspath
+import select
+import shlex
+import sys
 from twisted.internet import asyncioreactor
 import copy
 
@@ -45,14 +49,15 @@ def get_arguments():
         'debug': False,
         'debug_items': []
     }
-    from sys import stdin
-    import shlex
 
-    args = shlex.split(stdin.readline())
-    # now convert to dict. If just a -, make it true.
-    # if --, set the value after the -- as the value for the key
-    arguments = {k: True if v.startswith('-') else v
-               for k, v in zip(args, args[1:] + ["--"]) if k.startswith('-')}
+    if select.select([sys.stdin, ], [], [], 0.0)[0]:
+        args = shlex.split(sys.stdin.readline())
+        # now convert to dict. If just a -, make it true.
+        # if --, set the value after the -- as the value for the key
+        arguments = {k: True if v.startswith('-') else v
+                     for k, v in zip(args, args[1:] + ["--"]) if k.startswith('-')}
+    else:
+        arguments = {}
 
     # # Now it's time to remove th leading dashes
     # for k in arguments.keys():
@@ -119,9 +124,13 @@ def start():
         exit()
 
     working_dir = arguments['working_dir']
+    app_dir = arguments['app_dir']
     #ensure that usr data directory exists
+    print("%s, %s" % (app_dir + "/assets/working_dir/", working_dir + "/"))
+    copy_tree(app_dir + "/assets/working_dir/", working_dir + "/")
     if not os.path.exists('%s' % working_dir):
         os.makedirs('%s' % working_dir)
+        copy_tree(app_dir + "/assets/working_dir/", working_dir + "/")
     if not os.path.exists('%s' % working_dir):
         os.makedirs('%s/gpg' % working_dir)
     if not os.path.exists('%s/bak' % working_dir):

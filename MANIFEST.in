@@ -1,9 +1,10 @@
 recursive-include yombo *.py
 recursive-include yombo *.py
-include yombo.sh
+recursive-exclude yombo/modules *
+include ybo
 include yombo.tac
 include LICENSE
 include COPYING
 include HACKING.rst
 include README.rst
-include automation.txt-sample
+include requirements.
