@@ -19,20 +19,19 @@ Also calls module hooks as requested by other libraries and modules.
 """
 # Import python libraries
 import configparser
-import pip
-import os.path
-import traceback
 try:
     from hashlib import sha3_224 as sha224
 except ImportError:
     from hashlib import sha224
 from functools import partial, reduce
-from time import time
+import os.path
 from pyclbr import readmodule
+from subprocess import check_output, CalledProcessError
+from time import time
+import traceback
 
 # Import twisted libraries
-from twisted.internet import reactor
-
+from twisted.internet import reactor, threads
 from twisted.internet.defer import inlineCallbacks, maybeDeferred, Deferred, DeferredList
 
 # Import Yombo libraries
@@ -503,6 +502,15 @@ class Modules(YomboLibrary):
 
     @inlineCallbacks
     def do_import_modules(self):
+        def install_pip_module(module_name):
+            try:
+                # out = check_output(["pwd"])
+                out = check_output(['pip3', 'install', module_name])
+                t = 0, out
+            except CalledProcessError as e:
+                t = e.returncode, e.message
+            return t
+
         # logger.debug("Import modules: self._rawModulesList: {_rawModulesList}", _rawModulesList=self._rawModulesList)
 
 
@@ -527,9 +535,12 @@ class Modules(YomboLibrary):
                         if pkg_info is None:
                             logger.info("Attempting to install missing requirement: {line}", line=line)
                             try:
-                                pip_results = pip.main(['install', line])
-                                if pip_results != 0:
-                                    logger.info("Unable to install '%s'" % line)
+                                # This is not async. Which, isn't the best way, but system isn't really even
+                                # started anyways.
+                                pip_results = yield threads.deferToThread(install_pip_module, line)
+                                if pip_results[0] != 0:
+                                    logger.warn("Unable to install python package '%s'" % line)
+                                    logger.warn("Reason: {reason}", reason=pip_results[1])
                             except Exception as e:
                                 logger.info("Unable to install python package '{line}', reason: {e}",
                                             line=line, e=e)
@@ -622,6 +633,7 @@ class Modules(YomboLibrary):
                             self._InputTypes.platforms[name.lower()] = klass
                 except Exception as e:
                     pass
+        print("done with modules...")
 
     def module_invoke_failure(self, failure, module_name, hook_name):
         logger.warn("---==(failure during module invoke for hook ({module_name}::{hook_name})==----",
