@@ -11,7 +11,7 @@ if [[ "$EUID" -eq 0 ]]; then
 fi
 
 read -t .1 ECHOTAC
-$ARGUMENTS="$@"
+ARGUMENTS="$@"
 
 SCRIPTPATH="$(dirname "$(readlink -f "$0")")"
 rc=$?
@@ -22,9 +22,9 @@ WORK_DIR="$HOME/.yombo"
 LOGCFGFILE=$WORK_DIR/log/config.log
 LOGFILE=$WORK_DIR/log/service.log
 
-cd $SCRIPTPATH
+cd $SCRIPTPATH/..
 export SSL_CERT_FILE="$(python -m certifi)"
-YOMBO_SERVICE="$YOMBO_SERVICE -y $TACFILE"
+#YOMBO_SERVICE="$YOMBO_SERVICE -y $TACFILE"
 
 #Check if pyenv is being used and isn't loaded...
 if [ -f ".python-version" ] ; then
@@ -37,12 +37,14 @@ if [ -f ".python-version" ] ; then
 fi
 
 YOMBO_SERVICE="echo \"$ECHOTAC\" | twistd $ARGUMENTS"
-
+echo "About to call this command: $YOMBO_SERVICE"
 while :
 do
+  echo "Starting yombo svc..."
   eval $YOMBO_SERVICE
   OUT=$?
-  if [ $OUT -le "126" ]; then
+  echo "Last output: $OUT"
+  if [ $OUT -ge "126" ]; then
     # Gateway died for some reason or was told to quit, so, lets exit!
     exit $OUT
   fi

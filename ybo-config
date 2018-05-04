@@ -33,6 +33,13 @@ YOMBOVERSION=$($SCRIPTPATH/scripts/show_version)
 YOMBOVERSIONHASH=$(git -C "$SCRIPTPATH" log --pretty=format:'%h' -n 1)
 YOMBOFULLVERSION="$YOMBOVERSIONHASH-$YOMBOVERSION"
 
+function logonly {
+  echo "[$(date +'%D %T')] [$YOMBOFULLVERSION] [$1] $2" >> "$LOGFILE"
+  if [ "$SUDO_USER" != "" ]; then
+    chown "$REALUSER":"$REALUSER" "$LOGFILE"
+  fi
+}
+
 function log {
   echo "$2"
   echo "[$(date +'%D %T')] [$YOMBOFULLVERSION] [$1] $2" >> "$LOGFILE"
@@ -81,29 +88,20 @@ COMMANDS:
     -h, --help
 
   disable        Disable Yombo service, prevents Yombo from ruinning on system startup.
-
   enable         Enable Yombo service, configures Yombo to run on system startup.
-
   sudoers        Manage sudoers control file for user: '$REALUSER'
                  Options: 'install' to install sudoers file, or 'remove'.
-
   update         Upgrade the operating system with 'apt update && apt upgrade'. Also
                  updates Yombo Gateway software and it's dependants.
-
   version        Set the Yombo gateway source code branch. **Advanced users only**
                  Option: The version name, eg: master, develop, tagname
-
+  install-bash   Install bash completion scripts.
   log-cfg-clear  Clear configuration log.
-
   log-ybo-clear  Clear configuration log.
-
   log-cfg-show   Show configuration log.
-
-  log-ybo-show      Show Yombo service log.
-
+  log-ybo-show   Show Yombo service log.
   log-cfg-share  Share configuration log.
-
-  log-cfg-share  Share configuration log.
+  log-ybo-share  Share configuration log.
 
 Additional options:
   -Y, --accept   Always accept prompts.
@@ -172,7 +170,7 @@ Group=$REALUSER
 WorkingDirectory=/home/$REALUSER/.yombo/
 PIDFile=/home/yombo/.yombo/yombogateway.pid
 #ExecStartPre=/bin/bash --login -c 'env > /tmp/.yombo-magic-environment-file'
-ExecStart=ybo -daemon
+ExecStart=ybo daemon
 ExecStop=/bin/kill -s SIGINT \$MAINPID
 #EnvironmentFile=-/tmp/.yombo-magic-environment-file
 
@@ -295,6 +293,15 @@ function share-log {
   return 0
 }
 
+function share-log {
+  if [ ! -f $SHARELOG ];then
+    echo "No log entries found."
+    return 0
+  fi
+  more "$SHARELOG"
+  return 0
+}
+
 function do_update {
   need_sudo
   info "Calling yombo_update to update the system and Yombo Gateway software."
@@ -322,6 +329,69 @@ function update {
   return 0
 }
 
+function install-bash-completion {
+  need_sudo
+  info "Starting bash completion setup."
+  logonly "Starting to instasll /etc/bash_completion.d/ybo-cfg"
+  cat <<- EOF > //etc/bash_completion.d/ybo-config
+# This file is managed by yombo, use ybo-config to update.
+
+_ybo-config()
+{
+    local cur prev opts cmdopts
+    COMPREPLY=()
+    cur="\${COMP_WORDS[COMP_CWORD]}"
+    prev="\${COMP_WORDS[COMP_CWORD-1]}"
+    opts="install-bash disable enable sudoers update version log-cfg-clear log-ybo-clear log-cfg-show log-ybo-show log-cfg-share log-ybo-share help"
+    altopts="--accept --help"
+
+    if [[ \${cur} == -* ]] ; then
+      COMPREPLY=( \$(compgen -W "\${altopts}" -- \${cur}) )
+      return 0
+    fi
+
+    COMPREPLY=(\$(compgen -W "\${opts}" -- \${cur}))
+    return 0
+}
+complete -F _ybo-config ybo-config
+EOF
+  logonly "info" "Done with /etc/bash_completion.d/ybo-cfg"
+  . /etc/bash_completion.d/ybo-config
+  logonly "info" "Starting to instasll /etc/bash_completion.d/ybo-cfg"
+  cat <<- EOF > //etc/bash_completion.d/ybo
+# This file is managed by yombo, use ybo-config to update.
+
+_ybo()
+{
+    local cur prev opts cmdopts
+    COMPREPLY=()
+    cur="\${COMP_WORDS[COMP_CWORD]}"
+    prev="\${COMP_WORDS[COMP_CWORD-1]}"
+    opts="help -help motd daemon start stop urls version -debug -logfile -profiler -pid_path -pid_file -working_dir -version"
+    altopts="--accept --help"
+
+    if [[ \${cur} == -* ]] ; then
+      COMPREPLY=( \$(compgen -W "\${altopts}" -- \${cur}) )
+      return 0
+    fi
+
+    COMPREPLY=(\$(compgen -W "\${opts}" -- \${cur}))
+    return 0
+}
+complete -F _ybo ybo
+EOF
+  logonly "info" "Done with /etc/bash_completion.d/ybo"
+  . /etc/bash_completion.d/ybo
+  info "Done with bash completion setup."
+  echo ""
+  echo "You will need to run these commands to make it work with current session:"
+  echo ". /etc/bash_completion.d/ybo"
+  echo ". /etc/bash_completion.d/ybo-config"
+  echo ""
+  . /etc/bash_completion.d/ybo-config
+}
+
+
 if [ $# -lt 1 ]; then
   usage
   exit 0
@@ -339,6 +409,11 @@ do
       "enable" )
         RUN="enable_yombo"
         shift
+        ;;
+
+      "-H" | "--help" | "--help" | "-h" | "-?" )
+        RUN="help"
+        shift # past argument
         ;;
 
       "help" )
@@ -367,24 +442,31 @@ do
         ;;
 
       "log-cfg-show" )
-        RUN="more $LOGFILE"
+        SHARELOG="$LOGFILE"
+        RUN="show-log"
         shift # past argument
         ;;
 
       "log-ybo-show" )
-        RUN="more $LOGYBOFILE"
+        SHARELOG="$LOGYBOFILE"
+        RUN="show-log"
         shift # past argument
         ;;
 
-      "log-cfg-show")
+      "log-cfg-share")
         SHARELOG="$LOGFILE"
-        RUN="share-share" $LOGFILE
+        RUN="share-log"
         shift # pass command
         ;;
 
       "log-ybo-share")
         SHARELOG="$LOGYBOFILE"
         RUN="share-log"
+        shift # pass command
+        ;;
+
+      "install-bash")
+        RUN="install-bash-completion"
         shift # pass command
         ;;
 
@@ -409,21 +491,6 @@ do
         shift # pass command
         ;;
 
-
-
-      "-V"|"--version")
-        VERSION=$(dpkg -s hassbian-scripts | grep 'Version:' | awk '{print $2}')
-        RUN="echo $VERSION"
-        shift # past argument
-        ;;
-      "show-installed")
-        RUN="show-installed-suites"
-        shift # past argument
-        ;;
-      "-H"|"--help")
-        RUN="help"
-        shift # past argument
-        ;;
       * )
         usage
         exit 0
@@ -432,8 +499,6 @@ do
 done
 
 if [ "$RUN" != "" ]; then
-echo "Run 1"
   $RUN
-echo "Run 2"
   exit 0
 fi
