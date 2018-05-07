@@ -438,11 +438,11 @@ class MQTT(YomboLibrary):
 
     @inlineCallbacks
     def reload_mqtt_broker(self):
-        logger.warn("Reloading mosquitto service.")
         try:
             yield getProcessOutput("sudo", ['systemctl', 'kill', '-s', 'HUP', 'mosquitto.service'])
         except Exception as e:
             logger.warn("Error while trying to reload mosquitto (mqtt) service configs: {e}", e=e)
+            logger.error("Unable to reload mosquitto service. Run 'sudo ybo-config sudoers from command line.")
         yield sleep(0.5)
         running = yield self.check_mqtt_broker_running()
         return running
