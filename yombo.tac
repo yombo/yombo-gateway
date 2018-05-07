@@ -10,26 +10,35 @@
 print("starting...")
 import asyncio
 from distutils.dir_util import copy_tree
-from asyncio.tasks import ensure_future
 import os
 from os.path import dirname, abspath
 import select
 import shlex
 import sys
 from twisted.internet import asyncioreactor
-import copy
+
+""" Try to use a faster looper."""
+try:
+    import uvloop
+    loop = uvloop.new_event_loop()
+    asyncio.set_event_loop(loop)
+    asyncioreactor.install(eventloop=loop)
+except ImportError:
+    pass
 
 try:
-    from yombo.core.gwservice import GWService
+    import yombo.core.settings as settings
+    # import yombo.constants as yombo_constants
 except ImportError:
     sys.path.append(os.path.join(os.getcwd(), ""))
-    import yombo.constants as yombo_constants
+    import yombo.core.settings as settings
+    # import yombo.constants as yombo_constants
 
 stdoutbefore = getattr(sys.stdout, "encoding", None)
 stderrbefore = getattr(sys.stderr, "encoding", None)
 
 def show_help():
-    print("Yombo gateway help. V: %s\n" % yombo_constants.__version__)
+    # print("Yombo gateway help. V: %s\n" % yombo_constants.__version__)
     print("This file shouldn't be call directly by users. Please use either:")
     print("1) ybo - If installed by Yombo install scripts")
     print("2) %s/yombo.sh" % dirname(abspath(__file__)))
@@ -43,31 +52,23 @@ def get_arguments():
     :return:
     """
     defaults = {
-        'working_dir': "%s/.yombo" % os.path.expanduser("~"),
         'app_dir': dirname(abspath(__file__)),
-        'norestoreini': False,
         'debug': False,
-        'debug_items': []
+        'debug_items': [],
+        'norestoreini': False,
+        'restoreini': False,
+        'working_dir': "%s/.yombo" % os.path.expanduser("~"),
     }
 
-    if select.select([sys.stdin, ], [], [], 0.0)[0]:
+    # Reads arguments from stdin.
+    if select.select([sys.stdin, ], [], [], 0.05)[0]:
         args = shlex.split(sys.stdin.readline())
-        # now convert to dict. If just a -, make it true.
-        # if --, set the value after the -- as the value for the key
         arguments = {k: True if v.startswith('-') else v
                      for k, v in zip(args, args[1:] + ["--"]) if k.startswith('-')}
     else:
         arguments = {}
 
-    # # Now it's time to remove th leading dashes
-    # for k in arguments.keys():
-    #     old_k = copy(k)
-    #     print("k0: %s" % k)
-    #     k = (k[1:] if k.startswith('-') else k)
-    #     print("k1: %s" % k)
-    #     k = (k[1:] if k.startswith('-') else k)
-    #     print("k2: %s" % k)
-    #     arguments[k] =
+
     if any(key in arguments for key in ['-?', '-h', '-help', '--help', '--?']):
         show_help()
         exit()
@@ -96,27 +97,16 @@ def get_arguments():
         else:
             defaults['debug_items'] = ['*']
 
-    if '--noini' in arguments:
+    if '--norestoreini' in arguments:
         defaults['norestoreini'] = True
+
+    if '--restoreini' in arguments:
+        defaults['restoreini'] = True
 
     return defaults
 
-def attempt_uvloop():
-    """ Try to use a faster looper."""
-    try:
-        import uvloop
-        loop = uvloop.new_event_loop()
-        asyncio.set_event_loop(loop)
-        asyncioreactor.install(eventloop=loop)
-    except ImportError:
-        pass
-
 def start():
     """ Start Yombo. """
-    attempt_uvloop()
-
-    from twisted.application import service
-
     try:
         arguments = get_arguments()
     except Exception as e:
@@ -165,13 +155,18 @@ def start():
     # except ImportError:
     #     sys.path.append(os.path.join(os.getcwd(), ""))
     #     from yombo.core.gwservice import GWService
-    from yombo.core.gwservice import GWService
-    application = service.Application('yombo')
 
-    service = GWService()
-    service.settings(arguments)
-    service.setServiceParent(application)
-    service.start()
+    results = settings.init(arguments)
+    if results is False:
+        print("Error with loading yombo.ini. Quiting.")
+        exit(200)
+    from twisted.application import service as twisted_service
+    application = twisted_service.Application('yombo')
+
+    from yombo.core.gwservice import GWService
+    gwservice = GWService()
+    gwservice.setServiceParent(application)
+    gwservice.start()
     return application
 
 if __name__ == "builtins":
