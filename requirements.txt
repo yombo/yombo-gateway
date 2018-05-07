@@ -30,7 +30,7 @@ pytz
 service_identity
 six
 treq
-Twisted
+twisted
 unidecode
 uvloop
 voluptuous
