@@ -17,12 +17,6 @@ hashids
 -------
 Used to shorten long ints into strings and back.
 
-hjson
-------
-
-Human JSON - Allows users to create automation files without having to follow
-strict JSON format. This allows for less frustration and quicker setup.
-
 twistar
 -------
 
@@ -32,13 +26,3 @@ expiringdict
 -------------
 
 A dictionary which has data that expiring values. Useful for local caching but with TTL.
-
-six
----
-
-Six provides simple utilities for wrapping over differences between Python 2 and Python 3
-
-umsgpack
---------
-
-Light weight message pack, supports python 2 and 3.
