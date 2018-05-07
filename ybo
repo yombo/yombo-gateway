@@ -123,8 +123,6 @@ function start {
             eval "$(pyenv virtualenv-init -)"
           fi
         fi
-
-#       echo "starting daemon! $YOMBO_SERVICE"
     fi
 
     echo "Starting yombo, in interactive mode."

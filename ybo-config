@@ -208,31 +208,30 @@ function do_sudoers
 
   if [ "$SUDOERSMODE" == "install" ]; then
     info "Updating/creating sudoers file for: $REALUSER"
-    cat <<- EOF > /etc/sudoers.d/yombo_$REALUSER\.service
+    cat <<- EOF > /etc/sudoers.d/yombo_$REALUSER
 # This file is managed by yombo, use ybo-config to update.
 
-%$REALUSER ALL= NOPASSWD: /bin/systemctl enable yombo_$REALUSER.service
-%$REALUSER ALL= NOPASSWD: /bin/systemctl disable yombo_$REALUSER.service
-%$REALUSER ALL= NOPASSWD: /bin/systemctl start yombo_$REALUSER.service
-%$REALUSER ALL= NOPASSWD: /bin/systemctl stop yombo_$REALUSER.service
-%$REALUSER ALL= NOPASSWD: /bin/systemctl restart yombo_$REALUSER.service
-%$REALUSER ALL= NOPASSWD: /bin/systemctl enable yombo_$REALUSER
-%$REALUSER ALL= NOPASSWD: /bin/systemctl disable yombo_$REALUSER
-%$REALUSER ALL= NOPASSWD: /bin/systemctl start yombo_$REALUSER
-%$REALUSER ALL= NOPASSWD: /bin/systemctl stop yombo_$REALUSER
-%$REALUSER ALL= NOPASSWD: /bin/systemctl restart yombo_$REALUSER
-%$REALUSER ALL= NOPASSWD: /bin/systemctl enable mosquitto.service
-%$REALUSER ALL= NOPASSWD: /bin/systemctl disable mosquitto.service
-%$REALUSER ALL= NOPASSWD: /bin/systemctl start mosquitto.service
-%$REALUSER ALL= NOPASSWD: /bin/systemctl stop mosquitto.service
-%$REALUSER ALL= NOPASSWD: /bin/systemctl restart mosquitto.service
-%$REALUSER ALL= NOPASSWD: /bin/systemctl kill -s HUP mosquitto.service
-%$REALUSER ALL= NOPASSWD: /bin/systemctl enable mosquitto
-%$REALUSER ALL= NOPASSWD: /bin/systemctl disable mosquitto
-%$REALUSER ALL= NOPASSWD: /bin/systemctl start mosquitto
-%$REALUSER ALL= NOPASSWD: /bin/systemctl stop mosquitto
-%$REALUSER ALL= NOPASSWD: /bin/systemctl restart mosquitto
-%$REALUSER ALL= NOPASSWD: /bin/systemctl kill -s HUP mosquitto
+%$REALUSER ALL=NOPASSWD: /bin/systemctl enable yombo_$REALUSER.service
+%$REALUSER ALL=NOPASSWD: /bin/systemctl disable yombo_$REALUSER.service
+%$REALUSER ALL=NOPASSWD: /bin/systemctl start yombo_$REALUSER.service
+%$REALUSER ALL=NOPASSWD: /bin/systemctl stop yombo_$REALUSER.service
+%$REALUSER ALL=NOPASSWD: /bin/systemctl restart yombo_$REALUSER.service
+%$REALUSER ALL=NOPASSWD: /usr/sbin/service yombo_$REALUSER enable
+%$REALUSER ALL=NOPASSWD: /usr/sbin/service yombo_$REALUSER disable
+%$REALUSER ALL=NOPASSWD: /usr/sbin/service yombo_$REALUSER start
+%$REALUSER ALL=NOPASSWD: /usr/sbin/service yombo_$REALUSER stop
+%$REALUSER ALL=NOPASSWD: /usr/sbin/service yombo_$REALUSER restart
+%$REALUSER ALL=NOPASSWD: /bin/systemctl enable mosquitto.service
+%$REALUSER ALL=NOPASSWD: /bin/systemctl disable mosquitto.service
+%$REALUSER ALL=NOPASSWD: /bin/systemctl start mosquitto.service
+%$REALUSER ALL=NOPASSWD: /bin/systemctl stop mosquitto.service
+%$REALUSER ALL=NOPASSWD: /bin/systemctl restart mosquitto.service
+%$REALUSER ALL=NOPASSWD: /bin/systemctl kill -s HUP mosquitto.service
+%$REALUSER ALL=NOPASSWD: /usr/sbin/service mosquitto enable
+%$REALUSER ALL=NOPASSWD: /usr/sbin/service mosquitto disable
+%$REALUSER ALL=NOPASSWD: /usr/sbin/service mosquitto start
+%$REALUSER ALL=NOPASSWD: /usr/sbin/service mosquitto stop
+%$REALUSER ALL=NOPASSWD: /usr/sbin/service mosquitto restart
 EOF
     chmod 440 /etc/sudoers.d/yombo_$REALUSER
   elif [ "$SUDOERSMODE" == "remove" ]; then
