@@ -42,6 +42,7 @@ from twisted.internet.task import LoopingCall
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning, YomboCritical
 from yombo.core.library import YomboLibrary
+import yombo.core.settings as settings
 from yombo.utils import random_string, bytes_to_unicode, unicode_to_bytes, read_file, save_file, random_int
 
 from yombo.core.log import get_logger
@@ -95,7 +96,7 @@ class GPG(YomboLibrary):
             'oc.pool.sks-keyservers.net',
             'pool.sks-keyservers.net',
         ]
-        self.working_dir = self._Loader.command_line_arguments['working_dir']
+        self.working_dir = settings.arguments['working_dir']
         self.gpg = gnupg.GPG(gnupghome="%s/etc/gpg" % self.working_dir)
 
         self.__mypassphrase = None  # will be loaded by sync_keyring_to_db() calls
@@ -203,7 +204,7 @@ class GPG(YomboLibrary):
             yield self.send_my_gpg_key_to_keyserver()
         elif self.mykey_last_sent_keyserver() < int(time()) - (60*60*24*30):
             yield self.send_my_gpg_key_to_keyserver()
-
+            print("mykey_last_received_keyserver: %s" % self.mykey_last_received_keyserver())
             if self.mykey_last_received_keyserver() is None and \
                 self.mykey_last_sent_keyserver() < int(time()) - (60*60*6):
                     yield self.get_my_gpg_key_from_keyserver()

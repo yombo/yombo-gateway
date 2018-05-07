@@ -45,6 +45,7 @@ from twisted.internet.defer import inlineCallbacks, maybeDeferred, Deferred
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
+import yombo.core.settings as settings
 from yombo.utils import save_file, read_file, bytes_to_unicode
 import collections
 
@@ -99,9 +100,9 @@ class SSLCert(object):
         """
         self._FullName = 'yombo.gateway.lib.SSLCerts.SSLCert'
         self._Name = 'SSLCerts.SSLCert'
-        self._ParentLibrary = _parent_library
+        self._Parent = _parent_library
         self.source = source
-        self.working_dir = self._Loader.command_line_arguments['working_dir']
+        self.working_dir = settings.arguments['working_dir']
 
         self.sslname = sslcert.sslname
         self.cn = sslcert.cn
@@ -360,7 +361,7 @@ class SSLCert(object):
         certificate, then we will mark any requested certs as being bad/empty.
         :return: 
         """
-        system_fqdn = self._ParentLibrary.fqdn()
+        system_fqdn = self._Parent.fqdn()
         if system_fqdn != self.current_fqdn and self.current_fqdn is not None:
             logger.warn("System FQDN doesn't match current requested cert for: {sslname}", sslname=self.sslname)
             # print("%s != %s"  %( system_fqdn, self.current_fqdn))
@@ -373,7 +374,7 @@ class SSLCert(object):
             self.clean_section('next')
 
     def check_messages_of_the_unknown(self):
-        if self.sslname in self._ParentLibrary.received_message_for_unknown:
+        if self.sslname in self._Parent.received_message_for_unknown:
             logger.warn("We have messages for us. TODO: Implement this.")
 
     def check_is_valid(self, label=None):
@@ -663,9 +664,9 @@ class SSLCert(object):
         logger.debug("About to generate new csr request: {request}", request=request)
 
         try:
-            the_job = yield self._ParentLibrary.generate_csr_queue.put(request)
+            the_job = yield self._Parent.generate_csr_queue.put(request)
             results = the_job.result
-            self.next_fqdn = self._ParentLibrary.fqdn()
+            self.next_fqdn = self._Parent.fqdn()
         except Exception as e:
             self.next_csr_generation_error_count += 1
             if self.next_csr_generation_error_count < 5:
@@ -698,7 +699,7 @@ class SSLCert(object):
         Submit a CSR for signing, only if we have a CSR and KEY.
         :return:
         """
-        if self._ParentLibrary._Loader.operating_mode != 'run':
+        if self._Parent._Loader.operating_mode != 'run':
             return
 
         # self.next_submitted = int(time())
@@ -710,7 +711,7 @@ class SSLCert(object):
 
         # print("sslcert:submit_csr - csr_text: %s" % self.next_csr)
         if len(missing) == 0:
-            request = self._ParentLibrary.send_csr_request(self.next_csr, self.sslname)
+            request = self._Parent.send_csr_request(self.next_csr, self.sslname)
             logger.debug("Sending CSR Request from instance. Correlation id: {correlation_id}",
                          correlation_id=request['properties']['correlation_id'])
             self.next_submitted = int(time())
@@ -752,7 +753,7 @@ class SSLCert(object):
                 self.update_callback_component is not None and \
                 self.update_callback_function is not None:
             try:
-                method = self._ParentLibrary._Loader.find_function(
+                method = self._Parent._Loader.find_function(
                     self.update_callback_type,
                     self.update_callback_component,
                     self.update_callback_function,
@@ -793,37 +794,37 @@ class SSLCert(object):
                 'created': self.current_created,
                 'signed': self.current_signed,
                 'self_signed': False,
-                'cert_file': self._ParentLibrary._Atoms.get('working_dir') + "/etc/certs/%s.current.cert.pem" %
+                'cert_file': self._Parent._Atoms.get('working_dir') + "/etc/certs/%s.current.cert.pem" %
                             self.sslname,
-                'key_file': self._ParentLibrary._Atoms.get('working_dir') + "/etc/certs/%s.current.key.pem" %
+                'key_file': self._Parent._Atoms.get('working_dir') + "/etc/certs/%s.current.key.pem" %
                             self.sslname,
-                'chain_file': self._ParentLibrary._Atoms.get('working_dir') + "/etc/certs/%s.current.chain.pem" %
+                'chain_file': self._Parent._Atoms.get('working_dir') + "/etc/certs/%s.current.chain.pem" %
                             self.sslname,
             }
         else:
             logger.debug("Sending SELF SIGNED cert details for {sslname}", sslname=self.sslname)
-            if self._ParentLibrary.self_signed_created is None:
+            if self._Parent.self_signed_created is None:
                 raise YomboWarning("Self signed cert not avail. Try restarting gateway.")
             else:
-                key_crypt = crypto.load_privatekey(crypto.FILETYPE_PEM, self._ParentLibrary.self_signed_key)
+                key_crypt = crypto.load_privatekey(crypto.FILETYPE_PEM, self._Parent.self_signed_key)
                 if isinstance(key_crypt, tuple):
                     key_crypt = key_crypt[0]
-                cert_crypt = crypto.load_certificate(crypto.FILETYPE_PEM, self._ParentLibrary.self_signed_cert)
+                cert_crypt = crypto.load_certificate(crypto.FILETYPE_PEM, self._Parent.self_signed_cert)
                 if isinstance(cert_crypt, tuple):
                     cert_crypt = cert_crypt[0]
                 return {
-                    'key': self._ParentLibrary.self_signed_key,
-                    'cert': self._ParentLibrary.self_signed_cert,
+                    'key': self._Parent.self_signed_key,
+                    'cert': self._Parent.self_signed_cert,
                     'chain': None,
                     'key_crypt': key_crypt, ####
                     'cert_crypt': cert_crypt,
                     'chain_crypt': None,
-                    'expires': self._ParentLibrary.self_signed_expires,
-                    'created': self._ParentLibrary.self_signed_created,
-                    'signed': self._ParentLibrary.self_signed_created,
+                    'expires': self._Parent.self_signed_expires,
+                    'created': self._Parent.self_signed_created,
+                    'signed': self._Parent.self_signed_created,
                     'self_signed': True,
-                    'cert_file': self._ParentLibrary._Atoms.get('working_dir') + "/etc/certs/sslcert_selfsigned.cert.pem",
-                    'key_file': self._ParentLibrary._Atoms.get('working_dir') + "/etc/certs/%sslcert_selfsigned.key.pem",
+                    'cert_file': self._Parent._Atoms.get('working_dir') + "/etc/certs/sslcert_selfsigned.cert.pem",
+                    'key_file': self._Parent._Atoms.get('working_dir') + "/etc/certs/%sslcert_selfsigned.key.pem",
                     'chain_file': None,
                 }
 

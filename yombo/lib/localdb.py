@@ -44,9 +44,10 @@ from twisted.internet.defer import inlineCallbacks
 from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
+from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.core.exceptions import YomboWarning
+import yombo.core.settings as settings
 from yombo.utils import clean_dict, instance_properties, data_pickle, data_unpickle, bytes_to_unicode
 from yombo.utils.datatypes import coerce_value
 
@@ -267,7 +268,7 @@ class LocalDB(YomboLibrary):
         Check to make sure the database exists. Will create if missing, will also update schema if any
         changes are required.
         """
-        self.working_dir = self._Loader.command_line_arguments['working_dir']
+        self.working_dir = settings.arguments['working_dir']
         self.db_bulk_queue = {}
         self.db_bulk_queue_id_cols = {}
         self.save_bulk_queue_loop = None

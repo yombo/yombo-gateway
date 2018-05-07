@@ -49,6 +49,7 @@ from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 import yombo.utils
+import yombo.core.settings as settings
 
 SUPPORTED_DISTS = platform._supported_dists + ('arch', 'mageia', 'meego', 'vmware', 'bluewhite64',
                      'slamd64', 'ovs', 'system', 'mint', 'oracle')
@@ -265,12 +266,11 @@ class Atoms(YomboLibrary):
 
         self.triggers = {}
         # self._Automation = self._Libraries['automation']
-        self.working_dir = self._Loader.command_line_arguments['working_dir']
-        self.set('working_dir', self._Loader.command_line_arguments['working_dir'])
-        self.set('app_dir', self._Loader.command_line_arguments['app_dir'] )
+        self.working_dir = settings.arguments['working_dir']
+        self.set('working_dir', settings.arguments['working_dir'])
+        self.set('app_dir', settings.arguments['app_dir'] )
         logger.debug("Calling GPG init_from_config...")
         yield self._GPG._init_from_atoms_()
-
 
     def _load_(self, **kwargs):
         self._loaded = True

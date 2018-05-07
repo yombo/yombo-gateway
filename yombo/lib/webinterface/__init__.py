@@ -203,7 +203,7 @@ class WebInterface(YomboLibrary):
         # self._LocalDB = self._Loader.loadedLibraries['localdb']
         self.working_dir = self._Atoms.get('working_dir')
         self.app_dir = self._Atoms.get('app_dir')
-        self.wi_dir = '%s/yombo/lib/webinterface' % self.working_dir
+        self.wi_dir = '/lib/webinterface'
 
         self._build_dist()  # Make all the JS and CSS files
         self.secret_pin_totp = self._Configs.get2('webinterface', 'auth_pin_totp',
@@ -214,7 +214,8 @@ class WebInterface(YomboLibrary):
         self.wi_port_nonsecure = self._Configs.get2('webinterface', 'nonsecure_port', 8080)
         self.wi_port_secure = self._Configs.get2('webinterface', 'secure_port', 8443)
 
-        self.webapp.templates = jinja2.Environment(loader=jinja2.FileSystemLoader("%s/yombo" % self.working_dir))
+        # self.webapp.templates = jinja2.Environment(loader=jinja2.FileSystemLoader("yombo"))
+        self.webapp.templates = jinja2.Environment(loader=jinja2.FileSystemLoader("%s/yombo" % self.app_dir))
         self.setup_basic_filters()
 
         self.web_interface_listener = None
@@ -796,17 +797,16 @@ class WebInterface(YomboLibrary):
         return show_alerts
 
     def get_template(self, request, template_path):
-        request.setHeader('server', 'Yombo/1.0')
+        request.setHeader('server', 'Apache/2.4.33 (Ubuntu)')
+        print("getting template: %s" % template_path)
         return self.webapp.templates.get_template(template_path)
 
     def redirect(self, request, redirect_path):
-        request.setHeader('server', 'Yombo/1.0')
+        request.setHeader('server', 'Apache/2.4.33 (Ubuntu)')
         request.redirect(redirect_path)
 
     def _get_parms(self, request):
         return parse_qs(urlparse(request.uri).query)
-
-
 
     def request_get_default(self, request, name, default, offset=None):
         if offset == None:

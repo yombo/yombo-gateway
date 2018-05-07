@@ -203,8 +203,7 @@ class Loader(YomboLibrary, object):
             raise YomboWarning("Loader could not find requested component: {%s}"
                                % component_requested, '101', '__getitem__', 'loader')
 
-    def __init__(self, arguments, testing=False, loop=None):
-        self.command_line_arguments = arguments
+    def __init__(self, testing=False, loop=None):
         self._operating_mode = "system_init"
         self._run_phase = "system_init"
         self.unittest = testing
@@ -815,10 +814,10 @@ class Loader(YomboLibrary, object):
 
 _loader = None
 
-def setup_loader(arguments, testing=False):
+def setup_loader(testing=False):
     global _loader
     if not _loader:
-        _loader = Loader(arguments, testing)
+        _loader = Loader(testing)
     return _loader
 
 def get_loader():
@@ -836,7 +835,3 @@ def stop_loader():
     else:
         _loader.unload()
     return
-
-def get_argument(argument):
-    global _loader
-    _loader.command_line_arguments[argument]

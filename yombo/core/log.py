@@ -29,6 +29,8 @@ from twisted.logger import globalLogPublisher, FilteringLogObserver, InvalidLogL
 from twisted.internet.task import LoopingCall
 from twisted.internet import reactor
 
+import yombo.core.settings as settings
+
 def static_var(varname, value):
     """
     Sets a static variable within a function. This is an easy way to set a default.
@@ -56,7 +58,7 @@ def static_var(varname, value):
 loggers = {}
 open_files = {}
 observers = {}
-configCache = {}
+log_levels = {}
 logFirstRun = True
 
 logLevels = (
@@ -109,38 +111,26 @@ def get_logger(logname='yombolog', **kwargs):
     """
     global loggers
     global observers
-    global configCache
+    global log_levels
     global open_files
 
     # A simple cache or existing loggers...
     if logname in loggers:
         return loggers[logname]
 
-
     loglevel = None
     source = kwargs.get('source', logname)
-    json = kwargs.get('source', False)
 
     # Determine the logging level
     if len(loggers) == 0:
-        config_parser = configparser.SafeConfigParser()
-        try:
-            fp = open('yombo.ini')
-            config_parser.readfp(fp)
-            ini = config_parser
-            for option in ini.options('logging'):
-                value =  ini.get('logging', option)
-                configCache[option] = value
-            fp.close()
-        except IOError:
-            pass
-        except configparser.NoSectionError:
-            pass
+        import yombo.core.settings as settings
+        if 'logging' in settings.yombo_ini:
+            log_levels = settings.yombo_ini['logging']
 
     logFilter = LogLevelFilterPredicate()
     try:
-        if logname in configCache:
-          iniLogLevel = configCache[logname].lower()
+        if logname in log_levels:
+          iniLogLevel = log_levels[logname].lower()
           logFilter.setLogLevelForNamespace(logname, LogLevel.levelWithName(iniLogLevel))
 #        else:
 #          iniLogLevel = 'info'
@@ -149,12 +139,10 @@ def get_logger(logname='yombolog', **kwargs):
         invalidLogLevel = False
     except InvalidLogLevelError:
         logFilter.setLogLevelForNamespace(logname, LogLevel.info)
-        invalidLogLevel = True
-
-    # Yell at the user if they specified an invalid log level
-    if invalidLogLevel:
+        # Yell at the user if they specified an invalid log level
         loggers[logname].warn("yombo.ini file contained invalid log level {invalidLevel}, level has been set to INFO instead.",
-                           invalidLevel=configCache[logname].lower())
+                           invalidLevel=log_levels[logname].lower())
+        invalidLogLevel = True
 
     # Set up logging
     consoleFilterObserver = FilteringLogObserver(consoleLogObserver, (logFilter,))

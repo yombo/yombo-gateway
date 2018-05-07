@@ -41,6 +41,7 @@ import yombo.ext.polib as polib
 # Import Yombo libraries
 # from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
+import yombo.core.settings as settings
 from yombo.utils import unit_convert
 from yombo.core.log import get_logger
 
@@ -62,7 +63,7 @@ class Localize(YomboLibrary):
         return "Yombo localization and translation library"
 
     def _init_(self, **kwargs):
-        self.working_dir = self._Loader.command_line_arguments['working_dir']
+        self.working_dir = settings.arguments['working_dir']
         self.default_lang = self._Configs.get2('localize', 'default_lang', 'en', False)
 
         try:
@@ -244,7 +245,7 @@ class Localize(YomboLibrary):
             self.translator = self.get_translator()
             builtins.__dict__['_'] = self.handle_translate
         except Exception as e: # if problem with translation, at least return msgid...
-            logger.error("Unable to load translations. Gettng null one. Reason: %s" % e)
+            logger.error("Unable to load translations. Getting null one. Reason: %s" % e)
             logger.error("--------------------------------------------------------")
             logger.error("{error}", error=sys.exc_info())
             logger.error("---------------==(Traceback)==--------------------------")
@@ -285,6 +286,7 @@ class Localize(YomboLibrary):
                     if 'en' not in languages:
                         languages.append('en')  # if all else fails, show english.
                 kwargs['languages'] = languages
+                print("locale_files: %s" % self.locale_files)
                 return gettext.translation('yombo', self.locale_files, **kwargs)
                 # print _('', "Current locale: None")
                 # print _('webinterface', "There is {num} device turned on.", "There are {num} devices turned on.", 2)

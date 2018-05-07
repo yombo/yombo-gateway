@@ -56,24 +56,24 @@ can simply implement the hook: _configuration_set_:
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/configuration.html>`_
 """
 # Import python libraries
+from base64 import b64encode, b64decode
 import configparser
+from datetime import datetime
+from functools import partial
 try:
     from hashlib import sha3_224 as sha224
 except ImportError:
     from hashlib import sha224
-from time import time, localtime, strftime
 import msgpack
-from base64 import b64encode, b64decode
-from shutil import copy2 as copyfile
 import os
-from datetime import datetime
+from shutil import copy2 as copyfile
 import sys
+from time import time
 import traceback
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
     import json
-from functools import partial
 
 # Import twisted libraries
 from twisted.internet.task import LoopingCall
@@ -86,6 +86,7 @@ from yombo.core.exceptions import YomboWarning, InvalidArgumentError
 from yombo.utils import get_external_ip_address_v4, get_local_network_info
 from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
+import yombo.core.settings as settings
 from yombo.utils import dict_merge, global_invoke_all, is_string_bool, save_file
 
 logger = get_logger('library.configuration')
@@ -245,12 +246,11 @@ class Configuration(YomboLibrary):
         """
         self.exit_config_file = None  # Holds a complete configuration file to save when exiting.
         self.cache_dirty = False
-        self.configs = {}
-        self._loaded = False
+        self.configs = {}  # Holds actual config data
+        self.cfg_loaded = False
         self.yombo_ini_last_modified = 0
-        self.argments = self._Loader.command_line_arguments
-        self.working_dir = self._Loader.command_line_arguments['working_dir']
-        ini_norestore = self.argments['norestoreini']
+        self.working_dir = settings.arguments['working_dir']
+        ini_norestore = settings.arguments['norestoreini']
         self.yombo_ini_path = "%s/yombo.ini" % self.working_dir
         if os.path.exists(self.yombo_ini_path):
             if os.path.isfile(self.yombo_ini_path) is False:
@@ -263,7 +263,7 @@ class Configuration(YomboLibrary):
                 if ini_norestore:
                     self.restore_backup_yombi_ini()
             else:
-                if os.path.getsize(self.yombo_ini_path) < 5:
+                if os.path.getsize(self.yombo_ini_path) < 2:
                     logger.warn('yombo.ini appears corrupt, attempting to restore from backup.')
                     if ini_norestore:
                         self.restore_backup_yombi_ini()
@@ -272,9 +272,29 @@ class Configuration(YomboLibrary):
                 self.restore_backup_yombi_ini()
 
         self.loading_yombo_ini = True
-        self.last_yombo_ini_read = yield self.read_yombo_ini()
-        if self.last_yombo_ini_read is False:
+        if settings.yombo_ini is False:
             self._Loader.operating_mode = 'first_run'
+
+        for section, options in settings.yombo_ini.items():
+            for option, value in options.items():
+                try:
+                    value = yield self._GPG.decrypt(value)
+                except:
+                    pass
+                try:
+                    value = is_string_bool(value)
+                except:
+                    try:
+                        value = int(value)
+                    except:
+                        try:
+                            value = float(value)
+                        except:
+                            if value == "None":
+                                value = None
+                            else:
+                                value = str(value)
+                self.set(section, option, value)
 
         logger.debug("done parsing yombo.ini. Now about to parse yombo.ini.info.")
         try:
@@ -368,9 +388,9 @@ class Configuration(YomboLibrary):
         self._Configs.get('mqtt', 'server_allow_anonymous', False)
         self._Configs.get('misc', 'temperature_display', 'f')
         self._Configs.get('misc', 'length_display',  'imperial')  # will we ever get to metric?
+        self.cfg_loaded = True
 
-    def _load_(self, **kwargs):
-        self._loaded = True
+    # def _load_(self, **kwargs):
 
     def _started_(self, **kwargs):
         self.save(True, display_extra_warning=True)
@@ -390,50 +410,7 @@ class Configuration(YomboLibrary):
         """
         yield self.save(True)
 
-    @inlineCallbacks
-    def read_yombo_ini(self, update_self=True):
-        temp = {}
-        try:
-            timeString = strftime("%Y-%m-%d_%H:%M:%S", localtime())
-            copyfile('yombo.ini', "%s/bak/yombo_ini/%s_yombo.ini" % (self.working_dir, timeString))
-            config_parser = configparser.ConfigParser()
-            config_parser.read(self.yombo_ini_path)
-            for section in config_parser.sections():
-                temp[section] = {}
-                for option in config_parser.options(section):
-                    value = config_parser.get(section, option)
-                    value = yield self._GPG.decrypt(value)
-                    try:
-                        value = is_string_bool(value)
-                    except:
-                        try:
-                            value = int(value)
-                        except:
-                            try:
-                                value = float(value)
-                            except:
-                                if value == "None":
-                                    value = None
-                                else:
-                                    value = str(value)
 
-                    temp[section][option] = value
-                    if update_self:
-                        self.set(section, option, value)
-
-        except IOError:
-            logger.warn("yombo.ini doesn't exist. Setting run mode to 'first_run'.")
-            # self._Atoms.set('configuration.yombo_ini.found', False)
-            self.loading_yombo_ini = False
-            return False
-            # return
-        except configparser.NoSectionError as e:
-            # self._Atoms.set('configuration.yombo_ini.found', False)
-            logger.warn("CAUGHT ConfigParser.NoSectionError!!!!  In Loading. {error}", error=e)
-            return True
-        else:
-            # self._Atoms.set('configuration.yombo_ini.found', True)
-            return True
 
     def Configuration_i18n_atoms(self, **kwargs):
        return [
