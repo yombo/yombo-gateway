@@ -173,5 +173,5 @@ def route_home(webapp):
         def static(webinterface, request, session):
             request.responseHeaders.removeHeader('Expires')
             request.setHeader('Cache-Control', 'max-age=%s' % randint(3600, 7200))
-            return File(webinterface.wi_dir + "/static/dist")
+            return File(webinterface.app_dir + "/yombo/lib/webinterface/static/dist")
 
