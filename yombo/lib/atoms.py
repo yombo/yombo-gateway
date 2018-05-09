@@ -266,7 +266,6 @@ class Atoms(YomboLibrary):
 
         self.triggers = {}
         # self._Automation = self._Libraries['automation']
-        self.working_dir = settings.arguments['working_dir']
         self.set('working_dir', settings.arguments['working_dir'])
         self.set('app_dir', settings.arguments['app_dir'] )
         logger.debug("Calling GPG init_from_config...")
