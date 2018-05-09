@@ -798,7 +798,6 @@ class WebInterface(YomboLibrary):
 
     def get_template(self, request, template_path):
         request.setHeader('server', 'Apache/2.4.33 (Ubuntu)')
-        print("getting template: %s" % template_path)
         return self.webapp.templates.get_template(template_path)
 
     def redirect(self, request, redirect_path):
