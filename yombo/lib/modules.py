@@ -633,7 +633,6 @@ class Modules(YomboLibrary):
                             self._InputTypes.platforms[name.lower()] = klass
                 except Exception as e:
                     pass
-        print("done with modules...")
 
     def module_invoke_failure(self, failure, module_name, hook_name):
         logger.warn("---==(failure during module invoke for hook ({module_name}::{hook_name})==----",
@@ -1027,7 +1026,16 @@ class Modules(YomboLibrary):
         logit = getattr(logger, level)
         logit("({log_source}) {label}({type})::{method} - {msg}", label=label, type=type, method=method, msg=msg)
 
-    # @memoize_ttl(30)
+    def _device_changed_(self, **kwargs):
+        """
+        We listen for device updates so we can update module device caches.
+
+        :param kwargs:
+        :return:
+        """
+        for module_id, module in self.modules.items():
+            self.module_devices(module_id, self.gateway_id)
+
     @inlineCallbacks
     def module_devices(self, module_id, gateway_id=None):
         """

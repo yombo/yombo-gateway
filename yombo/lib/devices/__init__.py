@@ -940,6 +940,15 @@ class Devices(YomboLibrary):
         self.devices[device_id].add_to_db()
 
         try:
+            yield global_invoke_all('_device_changed_',
+                                    change_type='added',
+                                    called_by=self,
+                                    id=device_id,
+                                    device=self.devices[device_id],
+                                    )
+        except Exception as e:
+            pass
+        try:
             global_invoke_all('_device_added_',
                               called_by=self,
                               device=self.devices[device_id],
@@ -1011,9 +1020,18 @@ class Devices(YomboLibrary):
                         }
                     self._LocalDB.edit_variable_data(data_id, value)
 
-        if device_id in self.devices:
+        if device_id in self.devices:  # Load device variable cache
             yield self.devices[device_id].device_variables()
         # print("var_data_results: %s" % var_data_results)
+        try:
+            global_invoke_all('_device_variables_updated_',
+                              called_by=self,
+                              id=device_id,
+                              device=self.devices[device_id],
+                              )
+        except YomboHookStopProcessing as e:
+            pass
+
         return {
             'status': 'success',
             'code': var_data_results['code'],
@@ -1063,6 +1081,15 @@ class Devices(YomboLibrary):
         if called_from_device is not True:
             self.devices[device_id].delete(True)
         try:
+            yield global_invoke_all('_device_changed_',
+                                    change_type='deleted',
+                                    called_by=self,
+                                    id=device_id,
+                                    device=self.devices[device_id],
+                                    )
+        except Exception as e:
+            pass
+        try:
             yield global_invoke_all('_device_deleted_',
                                     called_by=self,
                                     id=self.device_id,
@@ -1099,7 +1126,7 @@ class Devices(YomboLibrary):
                                     called_by=self,
                                     id=device_id,
                                     data=data,
-                                    device=self.devices[device_id],
+                                    device=device,
                                     )
         except Exception as e:
             pass
@@ -1166,12 +1193,22 @@ class Devices(YomboLibrary):
                         'device_id': device_id,
                     }
 
+        yield device.device_variables()  # Update device variables cache
+        try:
+            yield global_invoke_all('_device_changed_',
+                                    change_type='edited',
+                                    called_by=self,
+                                    id=device_id,
+                                    device=self.devices[device_id],
+                                    )
+        except Exception as e:
+            pass
         try:
             yield global_invoke_all('_device_edited_',
                                     called_by=self,
                                     id=device_id,
                                     data=data,
-                                    device=self.devices[device_id],
+                                    device=device,
                                     )
         except Exception as e:
             pass
@@ -1223,6 +1260,15 @@ class Devices(YomboLibrary):
         if source != 'node':
             self.devices[device_id].enable(True)
         try:
+            yield global_invoke_all('_device_changed_',
+                                    change_type='enabled',
+                                    called_by=self,
+                                    id=device_id,
+                                    device=self.devices[device_id],
+                                    )
+        except Exception as e:
+            pass
+        try:
             yield global_invoke_all('_device_enabled_',
                                     called_by=self,
                                     id=self.device_id,
@@ -1270,6 +1316,16 @@ class Devices(YomboLibrary):
 
         if source != 'node':
             self.devices[device_id].disable(True)
+
+        try:
+            yield global_invoke_all('_device_changed_',
+                                    change_type='disabled',
+                                    called_by=self,
+                                    id=device_id,
+                                    device=self.devices[device_id],
+                                    )
+        except Exception as e:
+            pass
         try:
             yield global_invoke_all('_device_disabled_',
                                     called_by=self,
