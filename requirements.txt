@@ -3,7 +3,7 @@ asyncio==3.4.3
 certifi==2018.4.16
 cython==0.28.*
 decorator==4.3.0
-docutils=0.14
+docutils==0.14
 ephem==3.7.6.*
 gnupg==2.3.1
 hashids==1.2.0
@@ -12,7 +12,7 @@ klein==17.10.0
 logger==1.4
 markdown==2.6.11
 msgpack-python==0.5.6
-netaddr==0.10.7
+netaddr==0.7.19
 netifaces==0.10.7
 numpy==1.14.3
 parsedatetime==2.4
