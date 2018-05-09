@@ -80,7 +80,7 @@ class Localize(YomboLibrary):
 
         self.files = {}
 
-        self.locale_files = abspath('.') + "%s/locale/" % self.working_dir
+        self.locale_files = "%s/locale/" % self.working_dir
         self.translator = self.get_translator()
         builtins.__dict__['_'] = self.handle_translate
 
@@ -286,7 +286,7 @@ class Localize(YomboLibrary):
                     if 'en' not in languages:
                         languages.append('en')  # if all else fails, show english.
                 kwargs['languages'] = languages
-                print("locale_files: %s" % self.locale_files)
+                logger.debug("locale_files path: {path}", path=self.locale_files)
                 return gettext.translation('yombo', self.locale_files, **kwargs)
                 # print _('', "Current locale: None")
                 # print _('webinterface', "There is {num} device turned on.", "There are {num} devices turned on.", 2)
