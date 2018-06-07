@@ -238,6 +238,7 @@ class Automation(YomboLibrary):
 
         :return:
         """
+        logger.debug("AUtomation rule starting, about to iterate rules and validate&activate.")
         self.rules = self._Nodes.search({'node_type': 'automation_rules'})
         for rule_id, rule in self.rules.items():
             self.patch_automation_rule(rule)
@@ -256,7 +257,11 @@ class Automation(YomboLibrary):
         device_triggered = []
         states_triggered = []
 
+        logger.debug("System started, about to iterate rules and look for 'run_on_start' is True.")
         for rule_id, rule in self.rules.items():
+            print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  start")
+            logger.debug("Checking rule '{label}' has runstart. Type: {rule_type}",
+                         label=rule.label, rule_type=rule.data['trigger'])
             run_on_start = rule.data['config']['run_on_start']
             if run_on_start is True:
                 trigger = rule.data['trigger']
@@ -272,21 +277,29 @@ class Automation(YomboLibrary):
                                          action='set_status')
 
                 elif trigger_type == "state":
+                    print("checking state")
                     state = trigger['name']
                     gateway_id = trigger['gateway_id']
                     state_gateway_id = "%s::::::::%s" % (state, gateway_id)
-                    if state_gateway_id in states_triggered:
+                    if state in states_triggered:
+                        print("state already triggered...bye..")
                         continue
-                        states_triggered.append(state_gateway_id)
+                    states_triggered.append(state)
                     try:
+                        print("state about to call trigger_monitor")
                         self.trigger_monitor('state',
                                              _run_on_start=True,
                                              key=state,
-                                             value=self._States[key],
+                                             value=self._States.get(state, gateway_id=gateway_id),
+                                             value_full=self._States.get(state, full=True, gateway_id=gateway_id),
                                              action='set',
                                              gateway_id=gateway_id)
-                    except:
-                        pass
+                    except Exception as e:
+                        logger.warn("Error calling trigger_monitor: {e}", e=e)
+            print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  end")
+
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  done")
+        logger.debug("System started, DONE iterating rules and look for 'run_on_start' is True.")
 
     def get(self, requested_rule=None):
         """
@@ -579,18 +592,19 @@ class Automation(YomboLibrary):
         }
         logger.debug("Trigger_monitor get: {trigger_type}", trigger_type=trigger_type)
         if trigger_type == 'device':
-            logger.info("Running device trigger check.")
+            logger.debug("Running device trigger check.")
             device = kwargs['device']
             template_variables['trigger']['device'] = device
-            logger.info("Running device..template vars..")
+            logger.debug("Running device..template vars..")
             for rule_id, trigger in self.triggers['device'].items():
                 rule = self.get(rule_id)
-                # print("checking device rule: %s" % rule.label)
+                logger.debug("checking device rule: {label}", label=rule.label)
                 if _run_on_start is True and rule.data['config']['run_on_start'] is not True:
                     continue
                 # print("Trigger machine label: %s, actual device machine label: %s" % (trigger, device))
                 # print("Trigger machine label: %s, actual device machine label: %s" % (type(trigger), type(device)))
                 if trigger['device_machine_label'] == device.machine_label:
+                    logger.debug("Scheduling device rule to run: {label}", label=rule.label)
                     reactor.callLater(0.001, self.run_rule, rule_id, template_variables, **kwargs)
 
         elif trigger_type == 'scene':
@@ -602,6 +616,7 @@ class Automation(YomboLibrary):
                     reactor.callLater(0.001, self.run_rule, rule_id, template_variables, **kwargs)
 
         elif trigger_type == 'state':
+            logger.debug("Running state trigger check.")
             name = kwargs['key']
             gateway_id = kwargs['gateway_id']
             template_variables['trigger']['name'] = kwargs['key']
@@ -609,9 +624,10 @@ class Automation(YomboLibrary):
             template_variables['trigger']['value_full'] = kwargs['value_full']
             for rule_id, trigger in self.triggers['state'].items():
                 rule = self.get(rule_id)
+                logger.debug("checking state rule: {label}", label=rule.label)
                 # print("testing state action... %s and %s" % (_run_on_start, rule.data['config']['run_on_start']))
                 if _run_on_start is True and rule.data['config']['run_on_start'] is not True:
-                    # print("will continue since runonstart is true and config run on start is not true")
+                    logger.debug("State rule will not run since runonstart is true and config run on start is not true")
                     continue
                 # print("rule gatewayId = %s, trigger gatewayid: %s" % (gateway_id, trigger['gateway_id']))
                 # print("rule name = %s, trigger name: %s" % (name, trigger['name']))
@@ -621,6 +637,7 @@ class Automation(YomboLibrary):
                     # print("value type of action:> %s" % value_type)
                     if trigger['value'] == "" or trigger['value'] is None:
                         # print("trigger_monitor calling 1")
+                        logger.debug("Scheduling state rule to run: {label}", label=rule.label)
                         reactor.callLater(0.001, self.run_rule, rule_id, template_variables, **kwargs)
                         continue
 
