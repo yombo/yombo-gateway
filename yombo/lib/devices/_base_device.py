@@ -1,7 +1,6 @@
 # This file was created by Yombo for use with Yombo Python Gateway automation
 # software.  Details can be found at https://yombo.net
 """
-
 .. note::
 
   For development guides see: `Devices @ Module Development <https://yombo.net/docs/libraries/devices>`_
@@ -73,7 +72,7 @@ class Base_Device(object):
                 return ""
             else:
                 return area
-        except Exception as e:
+        except Exception:
             return ""
 
     @property
@@ -90,7 +89,7 @@ class Base_Device(object):
                 return ""
             else:
                 return location
-        except Exception as e:
+        except Exception:
             return ""
 
     @property
@@ -106,7 +105,7 @@ class Base_Device(object):
                 area = ""
             else:
                 area = area + " "
-        except Exception as e:
+        except Exception:
             area = ""
         return "%s%s" % (area, self.label)
 
@@ -1386,6 +1385,7 @@ class Base_Device(object):
             request_id = kwargs['request_id']
             requested_by = self._Parent.device_commands[request_id].requested_by
             kwargs['command'] = self._Parent.device_commands[request_id].command
+            command = kwargs['command']
         elif "requested_by" in kwargs:
             request_id = None
             requested_by = kwargs['requested_by']
@@ -1402,7 +1402,10 @@ class Base_Device(object):
 
         if command is None:
             if 'command' in kwargs:
-                command = self._Parent._Commands[kwargs['command']]
+                try:
+                    command = self._Parent._Commands[kwargs['command']]
+                except KeyError:
+                    command = None
             else:
                 # print("trying to get command_from_Status")
                 command = self.command_from_status(machine_status, machine_status_extra)
