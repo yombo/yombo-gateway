@@ -183,25 +183,21 @@ def data_pickle(data, encoder=None, zip_level=None):
             return json.dumps(data, separators=(',', ':'))
         except Exception as e:
             raise YomboWarning("Error encoding json: %s" % e)
-            # logger.warn("Error encoding json: %s" % e)
     elif encoder == 'msgpack':
         try:
             return msgpack.packb(data)
         except Exception as e:
             raise YomboWarning("Error encoding msgpack: %s" % e)
-            # logger.warn("Error encoding msgpack: %s" % e)
     elif encoder == 'msgpack_zip':
         try:
             return zlib.compress(msgpack.packb(data), zip_level)
         except Exception as e:
             raise YomboWarning("Error encoding msgpack: %s" % e)
-            # logger.warn("Error encoding msgpack: %s" % e)
     elif encoder == 'msgpack_base85':
         try:
             return base64.b85encode(msgpack.packb(data))
         except Exception as e:
             raise YomboWarning("Error encoding msgpack_base85: %s" % e)
-            # logger.warn("Error encoding msgpack_base85: %s" % e)
     elif encoder == 'msgpack_base85_zip':
         if isinstance(zip_level, int) is False:
             zip_level = 5
@@ -209,7 +205,6 @@ def data_pickle(data, encoder=None, zip_level=None):
             return base64.b85encode(zlib.compress(msgpack.packb(data), zip_level))
         except Exception as e:
             raise YomboWarning("Error encoding msgpack_base85_zip: %s" % e)
-            # logger.warn("Error encoding msgpack_base85_zip: %s" % e)
     elif encoder == 'zip':
         if isinstance(zip_level, int) is False:
             zip_level = 5
@@ -217,7 +212,6 @@ def data_pickle(data, encoder=None, zip_level=None):
             return base64.b85encode(zlib.compress(data))
         except Exception as e:
             raise YomboWarning("Error encoding msgpack_base85_zip: %s" % e)
-            # logger.warn("Error encoding msgpack_base85_zip: %s" % e)
     return data
 
 
@@ -848,10 +842,6 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operati
     :type attributes: list of dictionaries
     :param operation: Set weather to all matching, or highest matching. Either "any" or "highest".
     """
-    # logger.info("in do_search_instance...attributes: {attributes}", attributes=attributes)
-    # logger.info("in do_search_instance...haystack: {haystack}", haystack=haystack)
-    # logger.info("in do_search_instance...allowed_keys: {allowed_keys}", allowed_keys=allowed_keys)
-
     if limiter is None:
         limiter = .89
     if operation is None:
@@ -939,9 +929,6 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operati
                     #     return_list)
 
         if best_key is None:
-            # logger.info("in do_search_instance...attributes: {attributes}", attributes=attributes)
-            # logger.info("in do_search_instance...haystack: {haystack}", haystack=haystack)
-            # logger.info("in do_search_instance...allowed_keys: {allowed_keys}", allowed_keys=allowed_keys)
             raise KeyError("No items found above the cut off limit.")
         return (
             best_ratio >= best_limiter,  # the part that does the actual check.
