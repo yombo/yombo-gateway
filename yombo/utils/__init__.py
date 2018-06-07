@@ -50,13 +50,9 @@ from twisted.internet.fdesc import readFromFD, writeToFD, setNonBlocking
 # Import 3rd-party libs
 from yombo.ext.hashids import Hashids
 
-from yombo.core.log import get_logger
-from yombo.utils.decorators import deprecated, memoize_ttl, memoize_
-
-logger = get_logger('utils.__init__')
-
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
+from yombo.utils.decorators import deprecated, memoize_ttl, memoize_
 
 
 def get_python_package_info(package_name):
@@ -71,6 +67,13 @@ def get_python_package_info(package_name):
     except DistributionNotFound as e:
         return None
 
+# def get_mdns(hostname):
+#     import dns.resolver
+#     myRes = dns.resolver.Resolver()
+#     myRes.nameservers = ['224.0.0.251']  # mdns multicast address
+#     myRes.port = 5353  # mdns port
+#     a = myRes.query('hostname.local', 'A')
+#     return a[0].to_text()
 
 @inlineCallbacks
 def read_file(filename, convert_to_unicode=None):
@@ -179,36 +182,42 @@ def data_pickle(data, encoder=None, zip_level=None):
         try:
             return json.dumps(data, separators=(',', ':'))
         except Exception as e:
-            logger.warn("Error encoding json: %s" % e)
+            raise YomboWarning("Error encoding json: %s" % e)
+            # logger.warn("Error encoding json: %s" % e)
     elif encoder == 'msgpack':
         try:
             return msgpack.packb(data)
         except Exception as e:
-            logger.warn("Error encoding msgpack: %s" % e)
+            raise YomboWarning("Error encoding msgpack: %s" % e)
+            # logger.warn("Error encoding msgpack: %s" % e)
     elif encoder == 'msgpack_zip':
         try:
             return zlib.compress(msgpack.packb(data), zip_level)
         except Exception as e:
-            logger.warn("Error encoding msgpack_zip: %s" % e)
+            raise YomboWarning("Error encoding msgpack: %s" % e)
+            # logger.warn("Error encoding msgpack: %s" % e)
     elif encoder == 'msgpack_base85':
         try:
             return base64.b85encode(msgpack.packb(data))
         except Exception as e:
-            logger.warn("Error encoding msgpack_base85: %s" % e)
+            raise YomboWarning("Error encoding msgpack_base85: %s" % e)
+            # logger.warn("Error encoding msgpack_base85: %s" % e)
     elif encoder == 'msgpack_base85_zip':
         if isinstance(zip_level, int) is False:
             zip_level = 5
         try:
             return base64.b85encode(zlib.compress(msgpack.packb(data), zip_level))
         except Exception as e:
-            logger.warn("Error encoding msgpack_base85_zip: %s" % e)
+            raise YomboWarning("Error encoding msgpack_base85_zip: %s" % e)
+            # logger.warn("Error encoding msgpack_base85_zip: %s" % e)
     elif encoder == 'zip':
         if isinstance(zip_level, int) is False:
             zip_level = 5
         try:
             return base64.b85encode(zlib.compress(data))
         except Exception as e:
-            logger.warn("Error encoding msgpack_base85_zip: %s" % e)
+            raise YomboWarning("Error encoding msgpack_base85_zip: %s" % e)
+            # logger.warn("Error encoding msgpack_base85_zip: %s" % e)
     return data
 
 
