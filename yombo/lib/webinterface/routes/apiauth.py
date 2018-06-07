@@ -62,7 +62,6 @@ def route_apiauth(webapp):
         @webapp.route('/<string:apiauth_id>/details', methods=['GET'])
         @require_auth()
         def page_lib_apiauth_details_get(webinterface, request, session, apiauth_id):
-            # print("getting api auth: %s" % webinterface._APIAuth.active_api_auth)
             api_auth = webinterface._APIAuth.get(apiauth_id)
             if api_auth is None:
                 webinterface.add_alert('Invalid API Auth Key id.', 'warning')
@@ -106,8 +105,7 @@ def route_apiauth(webapp):
             api_auth = yield webinterface._APIAuth.create(
                 label=data['label'],
                 description=data['description'],
-                permissions=data['permissions'],
-                session=session['yomboapi_session']
+                permissions=data['permissions']
             )
 
             if api_auth is None:
@@ -118,7 +116,8 @@ def route_apiauth(webapp):
             msg = {
                 'header': 'API Auth key added',
                 'label': 'New API auth added successfully',
-                'description': '<p>New API Auth key: <strong>%s</strong></p>'
+                'description': '<p>New API Auth key has been created. Be sure to keep this key secure as it grants access to everything. </p>'
+                               '<p><strong>%s</strong></p>'
                                '<p>Continue to <strong><a href="/apiauth/index">API Auth key index</a></strong> or <a href="/apiauth/%s/details">View new API Auth Key</a>.</p>' %
                                (api_auth.auth_id, api_auth.auth_id),
             }
