@@ -15,10 +15,8 @@ import warnings
 import functools
 
 # Import Yombo libraries
-from yombo.core.log import get_logger
 import yombo.utils
 
-logger = get_logger('utils.utils')
 
 def deprecated(func):
     """
@@ -153,6 +151,6 @@ def timing(function):
         data = function(*args, **yombo.utils.clean_kwargs(**kwargs))
         end_time = time()
         mod_name = function.__module__
-        logger.debug("Function {mod_name}.{name} took {time} seconds to execute.", mod_name=mod_name, name=function.__name__, time=end_time - start_time)
+        print("Function %s.%s took %s seconds to execute." % (mod_name, function.__name__, (end_time - start_time)))
         return data
     return wrapped
