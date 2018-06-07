@@ -46,9 +46,6 @@ import shutil
 import time
 import zipfile
 
-
-from pprint import pprint
-
 # Import twisted libraries
 from twisted.internet import defer
 from twisted.web.client import downloadPage
@@ -135,11 +132,9 @@ class DownloadModules(YomboLibrary):
         for module in modules:
             modulelabel = module.machine_label.lower()
             moduleuuid = module.id
-            #pprint(module)
 
             if ( ( ( module.prod_version != '' and module.prod_version != None and module.prod_version != "*INVALID*") or
               ( module.dev_version != '' and module.dev_version != None and module.dev_version != "*INVALID*") ) and
-#              module.install_branch != 'local') and ( not os.path.exists("yombo/modules/%s/.git" % modulelabel )  ):
               module.install_branch != 'local') and ( not os.path.exists("yombo/modules/%s/.git" % modulelabel) and not os.path.exists("yombo/modules/%s/.freeze" % modulelabel)  ):
                 logger.debug("Module doesn't have freeze: yombo/modules/{modulelabel}/.freeze", modulelabel=modulelabel)
 
@@ -168,7 +163,6 @@ class DownloadModules(YomboLibrary):
 
                 logger.debug("Adding to download module queue: {modulelable} (zipurl})", modulelabel=modulelabel, zipurl=data['zip_file'])
                
-#                d = self.mysemaphore.run(downloadPage, data['zip_uri'], data['zip_file'])
                 d = self.mysemaphore.run(self.download_file, data)
                 self.allDownloads.append(d)
                 d.addErrback(self.download_file_failed, data)
@@ -234,7 +228,6 @@ class DownloadModules(YomboLibrary):
                     shutil.rmtree(os.path.join(root, d))
         z = zipfile.ZipFile(zip_file)
         z.extractall(modDir)
-        # listing = os.listdir(modDir)
         return "1"
 
     def unzip_file_failed(self, data, data2):
@@ -261,7 +254,7 @@ class DownloadModules(YomboLibrary):
         ModuleInstalled = self._LocalDBLibrary.get_model_class("ModuleInstalled")
 
         if module.install_at is None:
-            module_installed = self._LocalDBLibrary.modules_install_new(
+            self._LocalDBLibrary.modules_install_new(
                 {'module_id': module_id,
                  'installed_version': data['install_version'],
                  'install_at': int(time.time())
