@@ -722,12 +722,12 @@ class Gateways(YomboLibrary):
         if self.gateway_id != device_command.source_gateway_id:
             return
 
-        history = device_command.history[-1]
+        history = device_command.last_history()
         message = {
             'request_id': kwargs['device_command'].request_id,
-            'log_time': history[0],
-            'status': history[1],
-            'message': history[2],
+            'log_time': history['time'],
+            'status': history['status'],
+            'message': history['msg'],
         }
 
         topic = "lib/device_command_status/" + device_command.request_id
@@ -773,7 +773,6 @@ class Gateways(YomboLibrary):
         Publish a new notification, if it's from ourselves.
 
         :param kwargs:
-        :return:
         """
         # print("_device_status_: %s" % kwargs['command'])
         if self.ok_to_publish_updates is False:

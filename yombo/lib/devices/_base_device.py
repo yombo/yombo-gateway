@@ -904,7 +904,7 @@ class Base_Device(object):
 
         if delay is not None or not_before is not None:  # if we have a delay, make sure we have required items
             if max_delay is None and not_after is None:
-                logger.warn("max_delay and not_after missing when calling with delay or not_before. Setting to 60 seconds.")
+                logger.info("max_delay and not_after missing when calling with delay or not_before. Setting to 60 seconds.")
                 max_delay = 60
             if max_delay is not None and not_after is not None:
                 raise YomboWarning("'max_delay' and 'not_after' cannot be set at the same time.")

@@ -86,10 +86,10 @@
                                 </thead>
                                 <tbody>{% for history in device_command.history %}
                                      <tr>
-                                        <td>{{ history[0]|epoch_to_human}}</td>
-                                        <td>{{ history[1]}}</td>
-                                        <td>{{ history[3]}}</td>
-                                        <td>{{ history[2]}}</td>
+                                        <td>{{ history['time']|epoch_to_human}}</td>
+                                        <td>{{ history['status']}}</td>
+                                        <td>{{ history['gid']}}</td>
+                                        <td>{{ history['msg']}}</td>
                                      </tr>{% endfor %}
                                 </tbody>
                             </table>
@@ -97,10 +97,6 @@
                     </div>
                     <!-- /.panel-body -->
                 </div>
-
-
-
-
 
                     <h1 class="page-header"><a class="success" href="/devices/index">
   </a> Device Command Details<br>
