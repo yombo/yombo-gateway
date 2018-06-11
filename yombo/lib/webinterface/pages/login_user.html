@@ -30,40 +30,42 @@
     <!-- /.col-lg-12 -->
 </div>
 {% endif %}
+
+<!-- Modal -->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="myModalLabel">Login Required</h4>
+      </div>
+      <div class="modal-body">
+          <p>Logging into your Yombo account allows the gateway to validate you.
+          </p>
+          <div class="bs-callout bs-callout-primary" id=callout-images-ie-rounded-corners>
+              <h4>It's Safe</h4> <p>You're credentials (email and/or password) will not be stored
+              in plantext on the gateway. A hashed/encoded version that represents your account will be saved.
+              </p>
+          </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+<p><br></p>
+<p></p>
 <div class="row">
     <div class="col-md-6 col-md-offset-3">
-        <div class="login-panel panel panel-info">
-            <div class="panel-heading">
-                <img src="/static/img/logo-100px.png" height="50px" class="pull-left" align="middle">
-                <a href="#" data-toggle=modal data-target=#myModal> <i class="fa fa-question-circle fa-2x pull-right"></i></a>
-                <!-- Modal -->
-                <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
-                  <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                      <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                        <h4 class="modal-title" id="myModalLabel">Login Required</h4>
-                      </div>
-                      <div class="modal-body">
-                          <p>Logging into your Yombo account allows the gateway to validate you.
-                          </p>
-                          <div class="bs-callout bs-callout-primary" id=callout-images-ie-rounded-corners>
-                              <h4>It's Safe</h4> <p>You're credentials (email and/or password) will not be stored
-                              in plantext on the gateway. A hashed/encoded version that represents your account will be saved.
-                              </p>
-                          </div>
-                      </div>
-                      <div class="modal-footer">
-                        <button type="button" class="btn btn-primary">Close</button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <h2 style="text-align: center; margin-top: 10px;">{{ misc_wi_data.gateway_label() }}</h2>
-                <h3 class="panel-title"><center><strong></strong>
-                    <p> Sign into your account
-                    <br> <a target="_blank" href="https://my.yombo.net">Create / Manage Account</a></center></h3>
-            </div>
+        <div style="text-align: center">
+            <img src="/static/img/logo-100px.png" height="50px" >
+            <h3 style="text-align: center; margin-top: 10px;">Sign in to Yombo gateway<br></h3>
+
+            <h2 style="text-align: center; margin-top: 10px;">{{ misc_wi_data.gateway_label() }}
+            <a href="#" data-toggle=modal data-target=#myModal> <i class="fa fa-question-circle fa-sm pull-right"></i></a></h2>
+        </div>
+        <div class="login-panel panel">
             <div class="panel-body">
              <div>
                 <form action="/login/user" method="POST" role="form" id="login">
@@ -82,17 +84,45 @@
                         <br>
                         <div align="center" class="g-recaptcha" data-sitekey="6Lf-ECYTAAAAADt-HAksVV_OsiFEziODndQe-xnq" data-callback="enableSubmitBtn"></div>
                         <div>&nbsp;</div>
-                        <button type="submit" id="submit_login" class="btn btn-lg btn-info btn-block">Login</button>
+                        <button type="submit" id="submit_login" class="btn btn-lg btn-success btn-block">Sign in</button>
                     </fieldset>
                 </form>
              </div>
             </div>
         </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 col-md-offset-3">
+        <div class="panel">
+            <div class="panel-heading">
+                <center><h4>New to Yombo? <a target="_blank" href="https://my.yombo.net">Create an account.</a></h4></center>
+            </div>
+        </div>
         <div style="text-align: center">
             <h4>
-                This site is running <a href="https://yg2.in/f_gw_yombonet">Yombo Gateway</a> automation software.<br>
-                For help, see <a href="https://yg2.in/f_gw_docs">documentation</a>.</h4>
+                <p>This site is running <a href="https://yg2.in/f_gw_yombonet">Yombo Gateway</a> automation software.</p>
+                <p>For help, see <a href="https://yg2.in/f_gw_docs">documentation</a>.</p></h4>
         </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 col-md-offset-3">
+        <div style="text-align: center">
+            <div class="row" style="margin-top: 5em;">
+                <div class="col-md-6">
+                    <div style="text-align: center">
+                        <h4><a href="https://yombo.net/policies/terms_of_use">Terms</a></h4>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div style="text-align: center">
+                        <h4><a href="https://yombo.net/policies/privacy_policy">Privacy</a></h4>
+                    </div>
+                </div>
+            </div>
     </div>
 </div>
 {% endblock %}
