@@ -61,6 +61,7 @@ class Automation(YomboLibrary):
         'scene': {},
         'state': {},
     }
+    startup_items_checked = {}
 
     def __contains__(self, requested_rule):
         """
@@ -238,7 +239,7 @@ class Automation(YomboLibrary):
 
         :return:
         """
-        logger.debug("AUtomation rule starting, about to iterate rules and validate&activate.")
+        logger.debug("Automation rule starting, about to iterate rules and validate&activate.")
         self.rules = self._Nodes.search({'node_type': 'automation_rules'})
         for rule_id, rule in self.rules.items():
             self.patch_automation_rule(rule)
@@ -254,12 +255,11 @@ class Automation(YomboLibrary):
 
         :return:
         """
-        device_triggered = []
-        states_triggered = []
+        # device_triggered = []
+        # states_triggered = []
 
         logger.debug("System started, about to iterate rules and look for 'run_on_start' is True.")
         for rule_id, rule in self.rules.items():
-            print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  start")
             logger.debug("Checking rule '{label}' has runstart. Type: {rule_type}",
                          label=rule.label, rule_type=rule.data['trigger'])
             run_on_start = rule.data['config']['run_on_start']
@@ -268,37 +268,34 @@ class Automation(YomboLibrary):
                 trigger_type = trigger['trigger_type']
                 if trigger_type == 'device':
                     device = self.get_device(trigger['device_machine_label'])
-                    if device.device_id in device_triggered:
+                    if trigger_type in self.startup_items_checked and \
+                            device.device_id in self.startup_items_checked[trigger_type]:
                         continue
-                    device_triggered.append(device.device_id)
+
                     self.trigger_monitor('device',
                                          _run_on_start=True,
                                          device=device,
                                          action='set_status')
 
                 elif trigger_type == "state":
-                    print("checking state")
                     state = trigger['name']
-                    gateway_id = trigger['gateway_id']
-                    state_gateway_id = "%s::::::::%s" % (state, gateway_id)
-                    if state in states_triggered:
-                        print("state already triggered...bye..")
+                    if trigger_type in self.startup_items_checked and \
+                            state in self.startup_items_checked[trigger_type]:
                         continue
-                    states_triggered.append(state)
+
+                    gateway_id = trigger['gateway_id']
                     try:
-                        print("state about to call trigger_monitor")
                         self.trigger_monitor('state',
                                              _run_on_start=True,
                                              key=state,
                                              value=self._States.get(state, gateway_id=gateway_id),
                                              value_full=self._States.get(state, full=True, gateway_id=gateway_id),
                                              action='set',
-                                             gateway_id=gateway_id)
+                                             gateway_id=gateway_id,
+                                             called_by='_started_')
                     except Exception as e:
                         logger.warn("Error calling trigger_monitor: {e}", e=e)
-            print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  end")
 
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  done")
         logger.debug("System started, DONE iterating rules and look for 'run_on_start' is True.")
 
     def get(self, requested_rule=None):
@@ -409,7 +406,6 @@ class Automation(YomboLibrary):
         except Exception as e:
             logger.debug("validate_and_activate_rule got exception during ensure_data_minimum_fields: {e}", e)
 
-        # logger.debug("about to check trigger.")
         if data['trigger']['trigger_type'] is None:
             rule.is_valid_message = "No trigger type."
             raise YomboWarning("Trigger doesn't have any trigger type defined")
@@ -440,7 +436,6 @@ class Automation(YomboLibrary):
             raise YomboWarning("Rule has no actions. Disabling.")
 
         logger.debug("Automation rule, after basic checks: {rule}", rule=rule.data)
-        logger.debug("Setting up trigger.")
 
         if complete_validation:
             self.setup_rule_trigger(rule, data['trigger'])
@@ -585,58 +580,57 @@ class Automation(YomboLibrary):
         :param kwargs:
         :return:
         """
+        if trigger_type not in self.startup_items_checked:
+            self.startup_items_checked[trigger_type] = []
+        if 'called_by' not in kwargs:
+            kwargs['called_by'] = "trigger_monitor"
         template_variables = {
             'trigger': {
                 'type': trigger_type,
             }
         }
-        logger.debug("Trigger_monitor get: {trigger_type}", trigger_type=trigger_type)
+        logger.debug("Trigger_monitor started: {trigger_type}", trigger_type=trigger_type)
         if trigger_type == 'device':
-            logger.debug("Running device trigger check.")
             device = kwargs['device']
+            if device.device_id not in self.startup_items_checked[trigger_type]:
+                self.startup_items_checked[trigger_type].append(device.device_id)
+
             template_variables['trigger']['device'] = device
-            logger.debug("Running device..template vars..")
             for rule_id, trigger in self.triggers['device'].items():
                 rule = self.get(rule_id)
-                logger.debug("checking device rule: {label}", label=rule.label)
                 if _run_on_start is True and rule.data['config']['run_on_start'] is not True:
                     continue
-                # print("Trigger machine label: %s, actual device machine label: %s" % (trigger, device))
-                # print("Trigger machine label: %s, actual device machine label: %s" % (type(trigger), type(device)))
                 if trigger['device_machine_label'] == device.machine_label:
                     logger.debug("Scheduling device rule to run: {label}", label=rule.label)
                     reactor.callLater(0.001, self.run_rule, rule_id, template_variables, **kwargs)
 
         elif trigger_type == 'scene':
             scene = kwargs['scene']
+            if scene.scene_id not in self.startup_items_checked[trigger_type]:
+                self.startup_items_checked[trigger_type].append(scene.scene_id)
             template_variables['trigger']['scene'] = scene
             template_variables['trigger']['action'] = kwargs['action']
             for rule_id, trigger in self.triggers['scene'].items():
+                rule = self.get(rule_id)
                 if trigger['scene_machine_label'] == scene.machine_label and trigger['scene_action'] == kwargs['action']:
+                    logger.debug("Scheduling scene rule to run: {label}", label=rule.label)
                     reactor.callLater(0.001, self.run_rule, rule_id, template_variables, **kwargs)
 
         elif trigger_type == 'state':
-            logger.debug("Running state trigger check.")
             name = kwargs['key']
+            if name not in self.startup_items_checked[trigger_type]:
+                self.startup_items_checked[trigger_type].append(name)
             gateway_id = kwargs['gateway_id']
             template_variables['trigger']['name'] = kwargs['key']
             template_variables['trigger']['value'] = kwargs['value']
             template_variables['trigger']['value_full'] = kwargs['value_full']
             for rule_id, trigger in self.triggers['state'].items():
                 rule = self.get(rule_id)
-                logger.debug("checking state rule: {label}", label=rule.label)
-                # print("testing state action... %s and %s" % (_run_on_start, rule.data['config']['run_on_start']))
                 if _run_on_start is True and rule.data['config']['run_on_start'] is not True:
-                    logger.debug("State rule will not run since runonstart is true and config run on start is not true")
                     continue
-                # print("rule gatewayId = %s, trigger gatewayid: %s" % (gateway_id, trigger['gateway_id']))
-                # print("rule name = %s, trigger name: %s" % (name, trigger['name']))
-                # print("rule value = %s, trigger value: %s" % (kwargs['value'], trigger['value']))
                 if trigger['name'] == name and trigger['gateway_id'] == gateway_id:
                     value_type = trigger['value_type']
-                    # print("value type of action:> %s" % value_type)
                     if trigger['value'] == "" or trigger['value'] is None:
-                        # print("trigger_monitor calling 1")
                         logger.debug("Scheduling state rule to run: {label}", label=rule.label)
                         reactor.callLater(0.001, self.run_rule, rule_id, template_variables, **kwargs)
                         continue
@@ -665,9 +659,9 @@ class Automation(YomboLibrary):
                             logger.info("Trigger monitor couldn't force state value to bool.")
                             continue
 
-                    # print("rule value check = %s, trigger value: %s" % (value, trigger['value']))
                     if trigger['value'] == value:
-                        reactor.callLater(0.001, self.run_rule, rule_id, template_variables, **kwargs)
+                        reactor.callLater(0.001, self.run_rule, rule_id, template_variables,
+                                          called_by='trigger_monitor', **kwargs)
                         continue
 
     @inlineCallbacks
@@ -679,10 +673,13 @@ class Automation(YomboLibrary):
         :param kwargs:
         :return:
         """
+        # if 'called_by' in kwargs:
+        #     print("run_rule called by: %s" % kwargs['called_by'])
         rule = self.rules[rule_id]
-        logger.info("Rule is firing: {label}", label=rule.label)
+        logger.debug("Rule is about to start: {label}", label=rule.label)
         if rule_id in self.actions_running:
             if self.actions_running[rule_id] in ("running", "stopping"):
+                logger.debug("Rule is stopping since it's already running. %s" % rule.label)
                 return False  # already running
         self.actions_running[rule_id] = "running"
 
@@ -693,7 +690,7 @@ class Automation(YomboLibrary):
         data = rule.data
         self.validate_and_activate_rule(rule)  # check everything before firing. Something may have changed.
         if rule.is_valid is False:
-            logger.info("Rule is stopping since it's not valid. %s" % rule.label)
+            logger.debug("Rule is stopping since it's not valid. %s" % rule.label)
             return False
 
         if len(data['condition']) > 0:
@@ -717,6 +714,7 @@ class Automation(YomboLibrary):
                 return
 
         action_items = self.get_action_items(rule_id)
+        logger.info("Rule is firing {label} action:", label=rule.label)
         for action_id, action in action_items.items():
             action_type = action['action_type']
             if action_type not in self.action_types:
@@ -725,13 +723,10 @@ class Automation(YomboLibrary):
                 rule.is_valid = False
                 raise YomboWarning("Rule '%s': Action has invalid action type: %s" % (rule.label, action_type))
 
-            logger.info("Rule is firing {label} action:", label=rule.label, action=action_type)
 
             if action_type == "device":
                 device = self._Devices[action['device_machine_label']]
                 command = self._Commands[action['command_machine_label']]
-                logger.info("Rule is firing {label} action device: ", label=rule.label, device=device.label)
-                # print("rule... device firing Device: %s, command: %s" % (device.label, command.label))
                 device.command(cmd=command,
                                requested_by={'user_id': "System", "component": "yombo.lib.automation"},
                                control_method='automation',
@@ -755,7 +750,6 @@ class Automation(YomboLibrary):
             elif action_type == "scene":
                 local_scene = self._Scenes.get(action['scene_machine_label'])
                 scene_action = action['scene_action']
-                # print("rule... scene starting")
                 if scene_action == 'enable':
                     self._Scenes.enable(local_scene.scene_id)
                 elif scene_action == 'disable':
