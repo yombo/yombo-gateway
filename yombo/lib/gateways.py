@@ -21,11 +21,10 @@ a remote gateway, that automation rule should only fire on the master server.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/gateways.html>`_
 """
 from collections import deque
-import msgpack
+from copy import deepcopy
 from time import time
 import socket
 import traceback
-import zlib
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, maybeDeferred
@@ -35,7 +34,8 @@ from twisted.internet import reactor
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import do_search_instance, global_invoke_all, bytes_to_unicode, random_int, sleep
+from yombo.utils import (do_search_instance, global_invoke_all, bytes_to_unicode, random_int, sleep, data_pickle,
+                         data_unpickle)
 from yombo.constants import VERSION
 
 logger = get_logger('library.gateways')
@@ -264,10 +264,8 @@ class Gateways(YomboLibrary):
         self.library_phase = 4
         if self._States['loader.operating_mode'] != 'run':
             return
-        self.publish_data("all", "lib/gateways/online", "")
-        # print("!!!!!!!!!!!!!!!!!!gateways started!!!!!!!!!!!!!!!!1")
+        self.publish_data('gw', "all", "lib/gateway/online", "")
         reactor.callLater(5, self.send_all_info, set_ok_to_publish_updates=True)
-
         # self.test_send()
 
     @inlineCallbacks
@@ -277,7 +275,7 @@ class Gateways(YomboLibrary):
         """
         if hasattr(self, 'mqtt'):
             if self.mqtt is not None:
-                self.publish_data("all", "lib/gateways/offline", "")
+                self.publish_data('gw', "all", "lib/gateway/offline", "")
                 yield sleep(0.05)
         if hasattr(self, 'load_deferred'):
             if self.load_deferred is not None and self.load_deferred.called is False:
@@ -301,38 +299,20 @@ class Gateways(YomboLibrary):
                     self.gateways[self.gateway_id] = value
 
     def encrypt(self, data, destination_gateway_id=None):
-        data = msgpack.packb(data)
-        if len(data) > 800:
-            # beforeZlib = len(data)
-            data = zlib.compress(data, 3)  # 3 appears to be the best speed/compression ratio
-            # afterZlib = len(data)
-            # print("compression percent: %s -> %s : %s" % (beforeZlib, afterZlib, percentage(afterZlib, beforeZlib)))
-            content_encoding = "zlib"
-        else:
-            content_encoding = "none"
-
         if destination_gateway_id is None:
             destination_gateway_id = 'all'
         message = {
             'payload': data,
             'time_sent': time(),
-            'content_encoding': content_encoding,
             'source_gateway_id': self.gateway_id,
             'destination_gateway_id': destination_gateway_id,
         }
 
-        return msgpack.packb(message)
+        return data_pickle(message, 'json')
 
     def decrypt(self, incoming):
-        # data = yield self._GPG.decrypt_aes(self.account_mqtt_key, data)
-        message = msgpack.unpackb(incoming)
-        data = message[b'payload']
-        del message[b'payload']
-        message = bytes_to_unicode(message)
+        message = data_unpickle(incoming, 'json')
         message['time_received']: time()
-        if message['content_encoding'] == 'zlib':
-            data = zlib.decompress(data)
-        message['payload'] = msgpack.unpackb(data)
         return bytes_to_unicode(message)
 
     @inlineCallbacks
@@ -557,11 +537,9 @@ class Gateways(YomboLibrary):
 
             try:
                 if component_name == 'atoms':
-                    if all_requested:
-                        for name, value in message['payload'].items():
-                            self._Atoms.set_from_gateway_communications(name, value)
-                    else:
-                        print("got one atom...")
+                    for name, value in message['payload'].items():
+                        self._Atoms.set_from_gateway_communications(name, value)
+                elif component_name == 'atom':
                         self._Atoms.set_from_gateway_communications(opt1, message['payload'])
                 elif component_name == 'devices':
                     if all_requested:
@@ -570,7 +548,7 @@ class Gateways(YomboLibrary):
                     else:
                         pass
                         # print("single devices (%s) from %s message: %s" % (opt1, source_gw_id, message))
-                elif component_name == 'device_commands':
+                elif component_name == 'device_command':
                     self.incoming_data_device_command(source_gw_id, message)
                 elif component_name == 'device_command_status':
                     self.incoming_data_device_command_status(source_gw_id, message)
@@ -579,12 +557,11 @@ class Gateways(YomboLibrary):
                 elif component_name == 'notification':
                     self.incoming_data_notification(source_gw_id, message)
                 elif component_name == 'states':
-                    if all_requested:
-                        for name, value in message['payload'].items():
-                            self._States.set_from_gateway_communications(name, value)
-                    else:
+                    for name, value in message['payload'].items():
+                        self._States.set_from_gateway_communications(name, value)
+                elif component_name == 'state':
                         self._States.set_from_gateway_communications(opt1, message['payload'])
-                elif component_name == 'gateways':
+                elif component_name == 'gateway':
                     if opt1 == 'online':
                         # print("setting gw %s as online" % source_gw_id)
                         self.gateways[source_gw_id].com_status = 'online'
@@ -634,7 +611,7 @@ class Gateways(YomboLibrary):
         payload = message['payload']
 
         if payload['request_id'] not in self._Devices.device_commands:
-            self.publish_request(src_gateway_id, 'lib/device_commands/%s' % payload['request_id'], "")
+            self.publish_data('req', src_gateway_id, 'lib/device_commands/%s' % payload['request_id'], "")
         self._Devices.update_device_command(src_gateway_id,
                                             payload['request_id'],
                                             payload['log_time'],
@@ -681,7 +658,9 @@ class Gateways(YomboLibrary):
         if kwargs['gateway_id'] != self.gateway_id:
             return
 
-        self.publish_data('all', "lib/atoms/" + kwargs['key'], kwargs['value_full'])
+        message = deepcopy(kwargs['value_full'])
+        message['key'] = kwargs['key']
+        self.publish_data('gw', 'all', "lib/atom/" + kwargs['key'], message)
 
     def _device_command_(self, **kwargs):
         """
@@ -703,14 +682,13 @@ class Gateways(YomboLibrary):
             'device_command': device_command
         }
 
-        topic = "lib/device_commands/" + device_command['request_id']
+        topic = "lib/device_command/" + device_command['request_id']
         # print("sending _device_command_: %s -> %s" % (topic, message))
-        self.publish_data('all', topic, message)
+        self.publish_data('gw', 'all', topic, message)
 
     def _device_command_status_(self, **kwargs):
         """
-        A new command for a device has been sent. This is used to tell other gateways that either a local device
-        is about to do something, other another gateway should do something.
+        A device command has changed status. Update everyone else.
 
         :param kwargs:
         :return:
@@ -732,7 +710,7 @@ class Gateways(YomboLibrary):
 
         topic = "lib/device_command_status/" + device_command.request_id
         # print("sending _device_command_: %s -> %s" % (topic, message))
-        self.publish_data('all', topic, message)
+        self.publish_data('gw', 'all', topic, message)
 
     def _device_status_(self, **kwargs):
         """
@@ -741,32 +719,16 @@ class Gateways(YomboLibrary):
         :param kwargs:
         :return:
         """
-        # print("_device_status_: %s" % kwargs['command'])
         if self.ok_to_publish_updates is False:
             return
         device = kwargs['device']
         device_id = device.device_id
 
-        # print("checking if i should send this device_status.  %s != %s" % (self.gateway_id, device.gateway_id))
         if self.gateway_id != device.gateway_id:
             return
 
-        command = kwargs['command']
-        # print("device status command: %s" % command)
-        if command is not None:
-            command_id = command.command_id
-        else:
-            command_id = None
-
-        previous_status = kwargs['previous_status']
-        if previous_status is not None:
-            previous_status_out = previous_status.asdict()
-        else:
-            previous_status_out = None
-
         topic = "lib/device_status/" + device_id
-        # print("sending _device_status_: %s -> %s" % (topic, message))
-        self.publish_data('all', topic, kwargs['event'])
+        self.publish_data('gw', 'all', topic, kwargs['event'])
 
     def _notification_add_(self, **kwargs):
         """
@@ -793,7 +755,7 @@ class Gateways(YomboLibrary):
 
         topic = "lib/notification/" + notice.notification_id
         # print("sending _device_status_: %s -> %s" % (topic, message))
-        self.publish_data('all', topic, message)
+        self.publish_data('gw', 'all', topic, message)
 
     def _notification_delete_(self, **kwargs):
         """
@@ -821,7 +783,7 @@ class Gateways(YomboLibrary):
 
         topic = "lib/notification/" + notice.notification_id
         # print("sending _device_status_: %s -> %s" % (topic, message))
-        self.publish_data('all', topic, message)
+        self.publish_data('gw', 'all', topic, message)
 
     def _states_set_(self, **kwargs):
         """
@@ -837,50 +799,26 @@ class Gateways(YomboLibrary):
         if gateway_id != self.gateway_id and gateway_id not in ('global', 'cluster'):
             return
 
-        # print("gw sending states set: %s" % kwargs['key'])
-        self.publish_data('all', "lib/states/" + kwargs['key'], kwargs['value_full'])
+        message = deepcopy(kwargs['value_full'])
+        message['key'] = kwargs['key']
+        self.publish_data('gw', 'all', "lib/state/" + kwargs['key'], message)
 
-    def publish_request(self, dest_gw, topic, message):
-        if dest_gw != 'all' and  dest_gw not in self.gateways:
-            logger.info("Something requested gateway coms-request, but there's no gateway: {dest_gw}", dest_gw=dest_gw)
-            return
-
-        final_topic = '%s/%s' % (dest_gw, topic)
+    def publish_data(self, msg_type, destination_id, topic, message):
+        final_topic = 'ybo_%s/%s/%s/%s' % (msg_type, self.gateway_id, destination_id, topic)
         self.gateways[self.gateway_id].last_communications.append({
             'time': time(),
             'direction': 'sent',
             'topic': final_topic,
         })
-        if dest_gw != 'all':
-            self.gateways[dest_gw].last_communications.append({
-                'time': time(),
-                'direction': 'sent',
-                'topic': final_topic,
-            })
-        returnable = self.encrypt(message)
-        self.mqtt.publish("ybo_gw_req/%s/%s" % (self.gateway_id, final_topic), returnable)
-
-    def publish_data(self, destination_gw, topic, message):
-        if destination_gw != 'all' and destination_gw not in self.gateways:
-            logger.info("Something requested gateway coms-data, but there's no gateway: {destination_gw}",
-                        destination_gw=destination_gw)
-            return
-
-        final_topic = '%s/%s' % (destination_gw, topic)
-        self.gateways[self.gateway_id].last_communications.append({
-            'time': time(),
-            'direction': 'sent',
-            'topic': final_topic,
-        })
-        if destination_gw != 'all':
-            self.gateways[destination_gw].last_communications.append({
+        if destination_id in self.gateways:
+            self.gateways[destination_id].last_communications.append({
                 'time': time(),
                 'direction': 'sent',
                 'topic': final_topic,
             })
         outgoing_data = self.encrypt(message)
-        # print("gw sending publish data: final topic: ybo_gw/%s/%s" % (self.gateway_id, final_topic))
-        self.mqtt.publish("ybo_gw/%s/%s" % (self.gateway_id, final_topic), outgoing_data)
+        # logger.info("gateways publish data: {topic} {data}", topic=final_topic, data=outgoing_data)
+        self.mqtt.publish(final_topic, outgoing_data)
 
     def send_all_info(self, destination_gw=None, set_ok_to_publish_updates=None):
         # print("gw sending !!!!!!!!!!!!!!!!!!gateways send_all_info: %s - %s" % (destination_gw, self.ok_to_publish_updates))
@@ -895,9 +833,9 @@ class Gateways(YomboLibrary):
         return_gw = self.get_return_gw(destination_gw)
         # print("gw sending all atoms to: %s" % return_gw)
         if name is None or name == '#':
-            self.publish_data(return_gw,  "lib/atoms", self._Atoms.get('#'))
+            self.publish_data('gw', return_gw,  "lib/atoms", self._Atoms.get('#'))
         else:
-            self.publish_data(return_gw + 'lib/atoms/%s' % name, self._Atoms.get(name, full=True))
+            self.publish_data('gw', return_gw + 'lib/atom/%s' % name, self._Atoms.get(name, full=True))
 
     def send_all_device_commands(self, destination_gw=None, request_id=None):
         return_gw = self.get_return_gw(destination_gw)
@@ -906,10 +844,10 @@ class Gateways(YomboLibrary):
             return
         if request_id is None:
             found_device_commands = self._Devices.get_gateway_device_commands(destination_gw)
-            self.publish_data(return_gw, "lib/device_commands", found_device_commands)
+            self.publish_data('gw', return_gw, "lib/device_commands", found_device_commands)
         else:
             if request_id in self._Devices.device_commands:
-                self.publish_data(return_gw, "lib/device_commands", self._Devices.device_commands[request_id])
+                self.publish_data('gw', return_gw, "lib/device_commands", self._Devices.device_commands[request_id])
 
     def send_all_devices(self, destination_gw=None, name=None):
         return_gw = self.get_return_gw(destination_gw)
@@ -920,17 +858,17 @@ class Gateways(YomboLibrary):
                 # print("device: %s" % device)
                 devices[device['key']] = device['value'].to_mqtt_coms()
             # print("searching devices: %s" % devices)
-            self.publish_data(return_gw, "lib/devices", devices)
+            self.publish_data('gw', return_gw, "lib/devices", devices)
         else:
             device = self._Devices[name].to_mqtt_coms()
-            self.publish_data(return_gw, 'lib/devices/%s' % name, device)
+            self.publish_data('gw', return_gw, 'lib/devices/%s' % name, device)
 
     def send_all_states(self, destination_gw=None, name=None):
         return_gw = self.get_return_gw(destination_gw)
         if name is None or name == '#':
-            self.publish_data(return_gw, 'lib/states', self._States.get('#'))
+            self.publish_data('gw', return_gw, 'lib/states', self._States.get('#'))
         else:
-            self.publish_data(return_gw, 'lib/states/%s' % name, self._States.get(name, full=True))
+            self.publish_data('gw', return_gw, 'lib/state/%s' % name, self._States.get(name, full=True))
 
 
     def get_return_gw(self, destination_gw=None):
@@ -940,7 +878,7 @@ class Gateways(YomboLibrary):
 
     def test_send(self):
         data = {'hello': 'mom'}
-        self.publish_data('all/lib/asdf', data)
+        self.publish_data('gw', 'all/lib/asdf', data)
 
     def get_mqtt_passwords(self):
         passwords = {}
@@ -1119,6 +1057,20 @@ class Gateways(YomboLibrary):
         if 'gateway_id' not in api_data:
             api_data['gateway_id'] = self.gateway_id
 
+        if api_data['machine_label'].lower() == 'cluster':
+            return {
+                'status': 'failed',
+                'msg': "Couldn't add gateway: machine_label cannot be 'cluster' or 'all'",
+                'apimsg': "Couldn't add gateway: machine_label cannot be 'cluster' or 'all'",
+                'apimsghtml': "Couldn't add gateway: machine_label cannot be 'cluster' or 'all'",
+            }
+        if api_data['label'].lower() == 'cluster':
+            return {
+                'status': 'failed',
+                'msg': "Couldn't add gateway: label cannot be 'cluster' or 'all'",
+                'apimsg': "Couldn't add gateway: label cannot be 'cluster' or 'all'",
+                'apimsghtml': "Couldn't add gateway: label cannot be 'cluster' or 'all'",
+            }
         if source != 'amqp':
             try:
                 if 'session' in kwargs:
@@ -1155,6 +1107,20 @@ class Gateways(YomboLibrary):
         :param kwargs:
         :return:
         """
+        if api_data['machine_label'].lower() == 'cluster':
+            return {
+                'status': 'failed',
+                'msg': "Couldn't add gateway: machine_label cannot be 'cluster' or 'all'",
+                'apimsg': "Couldn't add gateway: machine_label cannot be 'cluster' or 'all'",
+                'apimsghtml': "Couldn't add gateway: machine_label cannot be 'cluster' or 'all'",
+            }
+        if api_data['label'].lower() == 'cluster':
+            return {
+                'status': 'failed',
+                'msg': "Couldn't add gateway: label cannot be 'cluster' or 'all'",
+                'apimsg': "Couldn't add gateway: label cannot be 'cluster' or 'all'",
+                'apimsghtml': "Couldn't add gateway: label cannot be 'cluster' or 'all'",
+            }
         try:
             if 'session' in kwargs:
                 session = kwargs['session']
@@ -1295,6 +1261,8 @@ class Gateways(YomboLibrary):
         """
         items = []
         for gateway_id, gateway in self.gateways.items():
+            if gateway.machine_label in ('cluster', 'all'):
+                continue
             items.append(gateway.asdict())
         return items
 
@@ -1453,7 +1421,27 @@ class Gateway:
             'machine_label': str(self.machine_label),
             'label': str(self.label),
             'description': str(self.description),
-            'status': int(self.status),
+            'com_status': str(self.com_status),
+            'internal_ipv4': str(self.internal_ipv4),
+            'external_ipv4': str(self.external_ipv4),
+            'internal_port': str(self.internal_port),
+            'external_port': str(self.external_port),
+            'internal_secure_port': str(self.internal_secure_port),
+            'external_secure_port': str(self.external_secure_port),
+            'internal_mqtt': str(self.internal_mqtt),
+            'internal_mqtt_le': str(self.internal_mqtt_le),
+            'internal_mqtt_ss': str(self.internal_mqtt_ss),
+            'internal_mqtt_ws': str(self.internal_mqtt_ws),
+            'internal_mqtt_ws_le': str(self.internal_mqtt_ws_le),
+            'internal_mqtt_ws_ss': str(self.internal_mqtt_ws_ss),
+            'external_mqtt': str(self.external_mqtt),
+            'external_mqtt_le': str(self.external_mqtt_le),
+            'external_mqtt_ss': str(self.external_mqtt_ss),
+            'external_mqtt_ws': str(self.external_mqtt_ws),
+            'external_mqtt_ws_le': str(self.external_mqtt_ws_le),
+            'external_mqtt_ws_ss': str(self.external_mqtt_ws_ss),
+            'version': str(self.version),
+            'status': str(self.status),
             'created_at': int(self.created_at),
             'updated_at': int(self.updated_at),
         }
@@ -1471,6 +1459,7 @@ class Gateway:
             'label': str(self.label),
             'description': str(self.description),
             'status': int(self.status),
+            'com_status': str(self.com_status),
             'created_at': int(self.created_at),
             'updated_at': int(self.updated_at),
         }
