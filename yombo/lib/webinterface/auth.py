@@ -179,6 +179,9 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
                 logger.error("Request: {request}", request=request)
                 logger.error("{trace}", trace=traceback.format_exc())
                 logger.error("--------------------------------------------------------")
+                content_type = request.getHeader('content-type').lower()
+                if 'json' in content_type:
+                    return return_api_error(request, 'Server Error', 500, traceback.format_exc())
                 page = webinterface.get_template(request, webinterface.wi_dir + '/pages/misc/traceback.html')
                 return page.render(traceback=traceback.format_exc())
 
@@ -259,14 +262,17 @@ def return_need_login(webinterface, request, session, api_message=None, **kwargs
     if check_needs_web_pin(webinterface, request, session):
         return return_need_pin(webinterface, request, **kwargs)
     else:
-        if 'api' in kwargs and kwargs['api'] is True:
+        content_type = request.getHeader('content-type').lower()
+        if ('api' in kwargs and kwargs['api'] is True) or 'json' in content_type:
             return return_api_error(request, 'Unauthorized', 401, api_message)
     page = webinterface.get_template(request, webinterface.wi_dir + '/pages/login_user.html')
     return page.render(alerts=webinterface.get_alerts())
 
 
 def return_need_pin(webinterface, request, **kwargs):
-    if 'api' in kwargs and kwargs['api'] is True:
+    content_type = request.getHeader('content-type').lower()
+    print("content_type: %s" % content_type)
+    if ('api' in kwargs and kwargs['api'] is True) or 'json' in content_type:
         return return_api_error(request, 'Unauthorized - Pin required', 401)
     if webinterface._display_pin_console_at < int(time()) - 30:
         webinterface._display_pin_console_at = int(time())
