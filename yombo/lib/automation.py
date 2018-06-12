@@ -714,7 +714,7 @@ class Automation(YomboLibrary):
                 return
 
         action_items = self.get_action_items(rule_id)
-        logger.info("Rule is firing {label} action:", label=rule.label)
+        logger.debug("Rule is firing {label} action:", label=rule.label)
         for action_id, action in action_items.items():
             action_type = action['action_type']
             if action_type not in self.action_types:
