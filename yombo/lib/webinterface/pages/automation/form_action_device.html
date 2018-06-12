@@ -154,7 +154,7 @@
         $('#inputvalues tbody').html(content);  // **better. give the table a ID, and replace**
 
         $.ajax({
-            url: '/api/v1/automation/device_inputs',
+            url: '/api/wi/automation/device_inputs',
             type: 'GET',
             data: {
                 rule_id:'{{rule.rule_id}}',

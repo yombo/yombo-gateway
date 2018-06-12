@@ -14,7 +14,7 @@ from yombo.lib.webinterface.routes.api_v1.__init__ import return_not_found, retu
 from yombo.utils import is_none
 
 def route_api_v1_automation(webapp):
-    with webapp.subroute("/api/v1") as webapp:
+    with webapp.subroute("/api/wi") as webapp:
 
         @webapp.route('/automation/device_inputs', methods=['GET'])
         @require_auth(api=True)
