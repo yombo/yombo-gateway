@@ -77,7 +77,6 @@ bcolor = {'debug':'\033[94m',
 
 @provider(ILogObserver)
 def simpleObserver(event):
-#    event['log_system'] = "asdf"
     print(event)
     print((formatEvent(event)))
 
@@ -132,17 +131,11 @@ def get_logger(logname='yombolog', **kwargs):
         if logname in log_levels:
           iniLogLevel = log_levels[logname].lower()
           logFilter.setLogLevelForNamespace(logname, LogLevel.levelWithName(iniLogLevel))
-#        else:
-#          iniLogLevel = 'info'
-#          iniLogLevel = False
-#        print "iniLogLevel: %s, logname: %s" % (iniLogLevel, logname)
-        invalidLogLevel = False
     except InvalidLogLevelError:
         logFilter.setLogLevelForNamespace(logname, LogLevel.info)
         # Yell at the user if they specified an invalid log level
         loggers[logname].warn("yombo.ini file contained invalid log level {invalidLevel}, level has been set to INFO instead.",
                            invalidLevel=log_levels[logname].lower())
-        invalidLogLevel = True
 
     # Set up logging
     consoleFilterObserver = FilteringLogObserver(consoleLogObserver, (logFilter,))
