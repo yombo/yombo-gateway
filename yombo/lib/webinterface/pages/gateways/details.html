@@ -28,6 +28,8 @@
                                 {{ gateway.machine_label }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Description: </label><br>
                                 {{ gateway.description }}<br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">Status: </label><br>
+                                {{ gateway.status|status_to_string }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Communication Status: </label><br>
                                 {{ gateway.com_status|capitalize }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Last Scene: </label><br>
@@ -60,7 +62,7 @@
                             <div class="panel-body">
                                 <label style="margin-top: 0px; margin-bottom: 0px">Internal IP: (IPv4 / IPv6)</label><br>
                                 {{ gateway.internal_ipv4 }} / {{ gateway.internal_ipv6 }}<br>
-                                <label style="margin-top: 0px; margin-bottom: 0px">External IP: (IPv4 / IPv6)</label><br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">External IP: (IPv4 / IPv6)</label><br>
                                 {{ gateway.external_ipv4 }} / {{ gateway.external_ipv6 }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Web Port: (Int / Ext) </label><br>
                                 {{ gateway.internal_port }} / {{ gateway.external_port }}<br>
