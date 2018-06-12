@@ -697,7 +697,6 @@ class Statistics(YomboLibrary):
             raise ValueError("names must be a string or list/tuple of strings")
 
         data = yield self._LocalDB.statistic_get_range(names, start, end, minimal=True)
-        # print("stats get: data: %s" % data)
         bm = BucketsManager()
         bm.process(data)
         stat = bm.get_stats(resolution, start, end)
@@ -714,12 +713,10 @@ class Statistics(YomboLibrary):
 
         to_save = []
         for bucket_time in list(self._counters.keys()):
-            # print "starting save _counters"
             for bucket_name in list(self._counters[bucket_time].keys()):
                 current_bucket = self._counters[bucket_time][bucket_name]
                 current_bucket_time = self._get_bucket_time('count', bucket_name=bucket_name)
                 if full or bucket_time < (current_bucket_time['time']):
-                    # print "int(bucket_time (%s) < (current_bucket_time (%s)) = %s" % (bucket_time, current_bucket_time['time'], (int(bucket_time < (current_bucket_time['time']))))
                     if 'restored_db_id' in current_bucket and current_bucket['restored_db_id'] is not False:
                         yield self._LocalDB.save_statistic(current_bucket, int(bucket_time < (current_bucket_time['time'])))
                     else:
@@ -748,11 +745,7 @@ class Statistics(YomboLibrary):
                 if full or bucket_time < (current_bucket_time['time']):
 
                     try:
-                        # print " "
-                        # print "Before calc averages: %s" % current_bucket
                         self.calc_averages(bucket_time, bucket_name)
-                        # print "After calc averages: %s" % current_bucket
-                        # print " "
                     except Exception as e:
                         logger.warn("Not saving average bucket_time (no values): {bucket_time}:{bucket_name}  Error: {e}",
                                     bucket_time=bucket_time, bucket_name=bucket_name, e=e)
@@ -828,9 +821,6 @@ class Statistics(YomboLibrary):
 
             median_90 = percentile(values_90, 0.50)
 
-            # print "sorted_values: %s" % sorted_values
-            # print "valpercentile90es_90: %s" % percentile90
-            # print "values_90: %s" % values_90
             average_data = {
                 'count': len(sorted_values),
                 'median': median,
@@ -888,7 +878,6 @@ class Statistics(YomboLibrary):
         #
         #       2) Match list of bucket_names with filters.
 
-        # print "find bucket time for: %s" % bucket_name
         def make_regex(bucket_lifetimes):
             thelist = {}
             for filter, data in bucket_lifetimes.items():
@@ -910,7 +899,6 @@ class Statistics(YomboLibrary):
                 try:
                     # get the match ratio
                     curRatio = stringDiffLib.ratio()
-                    # print "current ratio: %s" % curRatio
                 except TypeError:
                     break
                 # if this is the best ratio so far - save it and the value
@@ -929,7 +917,6 @@ class Statistics(YomboLibrary):
                 filters.append(filter)
 
         # now lets strip this down
-        # print "got filters: %s" % filters
         if len('filters') > 0:
             bucket_time = select_closest(regexs, bucket_name)
             return self.bucket_lifetimes[bucket_time]['size'], self.bucket_lifetimes[bucket_time]['lifetime']
@@ -948,7 +935,6 @@ class Statistics(YomboLibrary):
         """
         stats = yield self._LocalDB.get_uploadable_statistics(0)
         if len(stats) > 0:
-            # print " i have %s to upload" % len(stats)
 
             headers= {
                 "request_type": "stats_save",
@@ -969,8 +955,7 @@ class Statistics(YomboLibrary):
 
     @inlineCallbacks
     def upload_statistics_complete(self, msg=None, properties=None, **kwargs):
-        # print "upload_statistics_complete got properties: %s" % properties
-        print("upload_statistics_complete got message: %s" % msg)
+#        print("upload_statistics_complete got message: %s" % msg)
         if 'stats_completed' in msg and len(msg['stats_completed']) > 0:
             yield self._LocalDB.set_uploaded_statistics(2, msg['stats_completed'])
         if 'stats_failed' in msg and len(msg['stats_failed']) > 0:
