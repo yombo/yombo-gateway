@@ -89,10 +89,7 @@ class Device_Command(object):
                         id=self.request_id, status=val, error=e)
             self._status = 'unknown'
 
-        # print("device command checking callbacks for val: %s" % val)
-        # print("device command checking callbacks for val\ - cbs: %s" % self.callbacks[val])
         if val in self.callbacks:
-            # print("device command checking callbacks for val - cbs: %s" % self.callbacks[val])
             if len(self.callbacks[val]) > 0:
                 for callback in self.callbacks[val]:
                     callback(self)
@@ -104,7 +101,6 @@ class Device_Command(object):
         :param data: Basic details about the device command to get started.
         :param parent: A pointer to the device types instance.
         """
-        # print("new device_comamnd: %s" % data)
         self._Parent = parent
         self.source_gateway_id = data.get('source_gateway_id', self._Parent.gateway_id)
         self.local_gateway_id = self._Parent.gateway_id
@@ -169,7 +165,6 @@ class Device_Command(object):
             self._in_db = False
 
         if self.device.gateway_id == self.local_gateway_id:
-            # print("I should start....")
             self.started = False
             start = True
 
@@ -233,7 +228,7 @@ class Device_Command(object):
             self.finished_at = data['finished_at']
         if 'not_before_at' in data:
             self.not_before_at = data['not_before_at']
-            print("in device command, setting not before: %s (currently: %s_" % (self.not_before_at, time()))
+            # print("in device command, setting not before: %s (currently: %s_" % (self.not_before_at, time()))
         if 'not_after_at' in data:
             self.not_after_at = data['not_after_at']
         if 'history' in data:
@@ -251,11 +246,9 @@ class Device_Command(object):
             self.set_sent()
             return
         if self.broadcast_at is not None:
-            # logger.debug("not starting device command, already broadcast...")
             return
 
         if self.not_before_at is not None:
-            print("device command: start. Has a not-before-at")
             cur_at = time()
             if self.not_after_at < cur_at:
                 self.set_delay_expired(message='Unable to send message due to request being expired by "%s" seconds.'
