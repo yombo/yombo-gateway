@@ -153,6 +153,19 @@ def set_nested_dict(dic, keys, value):
     dic[keys[-1]] = value
 
 
+def ordereddict_to_dict(value):
+    """
+    Convert an ordered dict to a regular dict, recursive.
+
+    :param value:
+    :return:
+    """
+    for k, v in value.items():
+        if isinstance(v, dict):
+            value[k] = ordereddict_to_dict(v)
+    return dict(value)
+
+
 def data_pickle(data, encoder=None, zip_level=None):
     """
     Encodes data with an encoder type. The default is "msgpack_base85". This allows data to be sent to
