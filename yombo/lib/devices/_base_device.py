@@ -740,6 +740,7 @@ class Base_Device(object):
         #         'label': command['label'],
         #     }
         return {
+            'gateway_id': self.gateway_id,
             'area': self.area,
             'location': self.location,
             'area_label': self.area_label,
@@ -794,8 +795,8 @@ class Base_Device(object):
 
         return {
             'device_id': str(self.device_id),
-            'device_command': device_command,
-            'status_history': status_history,
+            'device_commands': device_command,
+            'status': status_history,
             }
 
     def command(self, cmd, pin=None, request_id=None, not_before=None, delay=None, max_delay=None,
