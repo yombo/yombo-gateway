@@ -27,6 +27,8 @@ def route_api_v1_device(webapp):
         @require_auth(api=True)
         def apiv1_device_details_get(webinterface, request, session, device_id):
             arguments = args_to_dict(request.args)
+            if len(device_id) > 200 or isinstance(device_id, str) is False:
+                return return_error(request, 'invalid device_id format', 400)
 
             if device_id in webinterface._Devices:
                 device = webinterface._Devices[device_id]
@@ -45,6 +47,11 @@ def route_api_v1_device(webapp):
         @require_auth(api=True)
         @inlineCallbacks
         def apiv1_device_command_get_post(webinterface, request, session, device_id, command_id):
+            if len(device_id) > 200 or isinstance(device_id, str) is False:
+                return return_error(request, 'invalid device_id format', 400)
+            if len(command_id) > 200 or isinstance(command_id, str) is False:
+                return return_error(request, 'invalid command_id format', 400)
+
             try:
                 wait_time = float(request.args.get('_wait')[0])
             except:
@@ -52,15 +59,20 @@ def route_api_v1_device(webapp):
 
             arguments = args_to_dict(request.args)
 
-            if 'inputs' in arguments:
-                inputs = arguments['inputs']
-            else:
-                inputs = None
+            # if 'inputs' in arguments:
+            #     inputs = arguments['inputs']
+            # else:
+            #     inputs = None
+            pin_code = arguments.get('pin_code', None)
+            delay = arguments.get('delay', None)
+            max_delay = arguments.get('max_delay', None)
+            not_before = arguments.get('not_before', None)
+            not_after = arguments.get('not_after', None)
+            inputs = arguments.get('inputs', None)
             if device_id in webinterface._Devices:
                 device = webinterface._Devices[device_id]
             else:
                 return return_not_found(request, 'Device not found')
-            # print("inputs: %s" % inputs)
             try:
                 request_id = device.command(
                     cmd=command_id,
@@ -69,8 +81,13 @@ def route_api_v1_device(webapp):
                         'component': 'yombo.gateway.lib.webinterface.routes.api_v1.devices.device_command',
                         'gateway': webinterface.gateway_id()
                     },
+                    pin=pin_code,
+                    delay=delay,
+                    max_delay=max_delay,
+                    not_before=not_before,
+                    not_after=not_after,
                     inputs=inputs,
-                    )
+                )
             except KeyError as e:
                 return return_not_found(request, 'Error with command: %s' % e)
             except YomboWarning as e:
