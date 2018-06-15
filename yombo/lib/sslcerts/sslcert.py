@@ -497,7 +497,7 @@ class SSLCert(object):
                 if getattr(self, "%s_key" % label) is None:
                     if os.path.exists("%s/etc/certs/%s.%s.key.pem" % (self.working_dir, self.sslname, label)):
                         key = yield read_file(
-                            "%s/etc/certs/%s.%s.key.pem" % self.working_dir, (self.sslname, label),
+                            "%s/etc/certs/%s.%s.key.pem" % (self.working_dir, self.sslname, label),
                             True
                         )
                         key_read = True
