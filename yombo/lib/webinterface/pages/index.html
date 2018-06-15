@@ -31,7 +31,7 @@
 
 <div class="row">
     <div cass="col-lg-12 col-md-12">
-        <h1 class="page-header">{{ _('Dashboard') }}&nbsp;&nbsp;&nbsp;<a href="#" data-toggle=modal data-target=#localModal><i class="fa fa-question "></i></a></h1>
+        <h1 class="page-header">{{ _('Dashboard') }}&nbsp;&nbsp;&nbsp;<a href="#" data-toggle=modal data-target=#localModal><i class="fa fa-question fa-xs"></i></a></h1>
     </div>
     <!-- /.col-lg-12 -->
 </div>
@@ -43,10 +43,14 @@
                 <div class="row" onclick="location.href='/devices/index';">
                     <div class="col-xs-8">
                         <i class="fa fa-wifi fa-3x"></i>
-                        {{ _('Devices') }}
                     </div>
                     <div class="col-xs-4 text-right">
                         <div class="large">{{ _devices|length }}</div>
+                    </div>
+                </div>
+                <div class="row" onclick="location.href='/devices/device_commands';">
+                    <div class="col-xs-12">
+                        {{ _('Devices') }}
                     </div>
                 </div>
             </div>
@@ -58,10 +62,14 @@
                 <div class="row" onclick="location.href='/modules/index';">
                     <div class="col-xs-8">
                         <i class="fa fa-puzzle-piece fa-3x"></i>
-                        {{ _('Modules') }}
                     </div>
                     <div class="col-xs-4 text-right">
                         <div class="large">{{ _modules|length }}</div>
+                    </div>
+                </div>
+                <div class="row" onclick="location.href='/devices/device_commands';">
+                    <div class="col-xs-12">
+                        {{ _('Modules') }}
                     </div>
                 </div>
             </div>
@@ -73,10 +81,14 @@
                 <div class="row" onclick="location.href='/devices/device_commands';">
                     <div class="col-xs-8">
                         <i class="fa fa-clock fa-3x"></i>
-                        {{ _('Delayed Commands') }}
                     </div>
                     <div class="col-xs-4 text-right">
                         <div class="large">{{ device_commands_delayed|length }}</div>
+                    </div>
+                </div>
+                <div class="row" onclick="location.href='/devices/device_commands';">
+                    <div class="col-xs-12">
+                        {{ _('Delayed Commands') }}
                     </div>
                 </div>
             </div>
@@ -88,10 +100,14 @@
                 <div class="row" onclick="location.href='/states/index';">
                     <div class="col-xs-8">
                         <i class="fa fa-list fa-3x"></i>
-                        {{ _('States') }}
                     </div>
                     <div class="col-xs-4 text-right">
                         <div class="large">{{ _states|length }}</div>
+                    </div>
+                </div>
+                <div class="row" onclick="location.href='/devices/device_commands';">
+                    <div class="col-xs-12">
+                        {{ _('States') }}
                     </div>
                 </div>
             </div>
