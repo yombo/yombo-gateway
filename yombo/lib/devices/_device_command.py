@@ -151,6 +151,7 @@ class Device_Command(object):
         self._dirty = is_true_false(data.get('dirty', True))
         self._source = data.get('_source', None)
         self.started = data.get('started', False)
+        self.idempotence = data.get('idempotence', None)
 
         if self._source == 'database':
             self._dirty = False
@@ -439,6 +440,7 @@ class Device_Command(object):
             "history": self.history,
             "status": self.status,
             "requested_by": self.requested_by,
+            "idempotence": self.idempotence,
         })
 
     def __repr__(self):

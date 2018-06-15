@@ -200,6 +200,7 @@ def create_table_device_commands(Registry, **kwargs):
         `history`           TEXT NOT NULL,
         `status`            TEXT NOT NULL,
         `requested_by`      TEXT,
+        `idempotence`       TEXT,
         `uploaded`          INTEGER NOT NULL DEFAULT 0,
         `uploadable`        INTEGER NOT NULL DEFAULT 0 /* For security, only items marked as 1 can be sent externally */
         );"""

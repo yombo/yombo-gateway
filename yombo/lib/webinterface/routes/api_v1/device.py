@@ -9,8 +9,8 @@ from twisted.internet.defer import inlineCallbacks
 
 from yombo.core.exceptions import YomboWarning
 from yombo.lib.webinterface.auth import require_auth
-from yombo.lib.webinterface.routes.api_v1.__init__ import return_good, return_not_found, return_error, return_unauthorized, args_to_dict
-from yombo.utils import epoch_to_string, bytes_to_unicode, sleep
+from yombo.lib.webinterface.routes.api_v1.__init__ import return_good, return_not_found, return_error, args_to_dict
+from yombo.utils import sleep
 
 def route_api_v1_device(webapp):
     with webapp.subroute("/api/v1") as webapp:
@@ -58,7 +58,8 @@ def route_api_v1_device(webapp):
                 wait_time = 2
 
             arguments = args_to_dict(request.args)
-
+            # print("api v1 dev args: %s" % request.args)
+            # print("api v1 dev arguments: %s" % arguments)
             # if 'inputs' in arguments:
             #     inputs = arguments['inputs']
             # else:
@@ -87,6 +88,7 @@ def route_api_v1_device(webapp):
                     not_before=not_before,
                     not_after=not_after,
                     inputs=inputs,
+                    idempotence=request.idempotence,
                 )
             except KeyError as e:
                 return return_not_found(request, 'Error with command: %s' % e)

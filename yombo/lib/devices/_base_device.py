@@ -24,6 +24,7 @@ from time import time
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks
+from twisted.internet.task import LoopingCall
 
 # Yombo Constants
 from yombo.constants.features import (FEATURE_ALL_OFF, FEATURE_ALL_ON, FEATURE_PINGABLE, FEATURE_POLLABLE,
@@ -36,7 +37,7 @@ from yombo.constants.commands import (COMMAND_TOGGLE, COMMAND_OPEN, COMMAND_ON, 
 from yombo.utils import is_true_false
 from yombo.core.exceptions import YomboPinCodeError, YomboWarning
 from yombo.core.log import get_logger
-from yombo.utils import random_string, global_invoke_all, do_search_instance
+from yombo.utils import random_string, global_invoke_all, do_search_instance, sha256_compact
 from yombo.lib.commands import Command  # used only to determine class type
 from ._device_command import Device_Command
 from ._device_status import Device_Status
@@ -800,7 +801,7 @@ class Base_Device(object):
             }
 
     def command(self, cmd, pin=None, request_id=None, not_before=None, delay=None, max_delay=None,
-                requested_by=None, inputs=None, not_after=None, callbacks=None, **kwargs):
+                requested_by=None, inputs=None, not_after=None, callbacks=None, idempotence=None, **kwargs):
         """
         Tells the device to a command. This in turn calls the hook _device_command_ so modules can process the command
         if they are supposed to.
@@ -863,6 +864,7 @@ class Base_Device(object):
         device_command = {
             "device": self,
             "pin": pin,
+            "idempotence": idempotence,
         }
         if isinstance(cmd, Command):
             command = cmd
@@ -975,6 +977,7 @@ class Base_Device(object):
         self.device_commands.appendleft(request_id)
 
         self._Parent.add_device_command_by_object(Device_Command(device_command, self._Parent))
+
         return request_id
 
     @inlineCallbacks

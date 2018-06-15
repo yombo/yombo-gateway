@@ -9,24 +9,11 @@ except ImportError:
 from twisted.internet.defer import inlineCallbacks
 
 from yombo.core.exceptions import YomboWarning
-from yombo.utils import ip_addres_in_local_network, bytes_to_unicode
+from yombo.utils import ip_addres_in_local_network, bytes_to_unicode, sha256_compact
+from yombo.lib.webinterface.routes.api_v1.__init__ import return_error, args_to_dict
 
 from yombo.core.log import get_logger
 logger = get_logger('library.webinterface.auth')
-
-
-def return_api_error(request, message=None, status=None, details=None):
-    request.setHeader('Content-Type', 'application/json')
-    if status is None:
-        status = 401
-    request.setResponseCode(status)
-    if message is None:
-        message = "Not authorized"
-    return json.dumps({
-        'status': status,
-        'message': message,
-        'details':details,
-    })
 
 
 def get_session(roles=None, *args, **kwargs):
@@ -56,6 +43,21 @@ def update_request(webinterface, request):
     request.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
     request.setHeader('Expires', '0')
 
+
+def check_idempotence(webinterface, request, session):
+    idempotence = request.getHeader('x-idempotence')
+    if idempotence is None:
+        arguments = args_to_dict(request.args)
+        idempotence = arguments.get('_idempotence', None)
+    request.idempotence = idempotence
+    if idempotence is not None:
+        idempotence = sha256_compact("%s:%s" % (session.user_id, idempotence))
+        if idempotence in webinterface.idempotence:
+            return return_error(request, 'idempotence error', 409,
+                                "This idempotence key has already be processed.")
+        webinterface.idempotence[idempotence] = int(time()
+        return True
+    return False
 
 def run_first(create_session=None, *args, **kwargs):
     def call(f, *args, **kwargs):
@@ -92,6 +94,7 @@ def run_first(create_session=None, *args, **kwargs):
         return wrapped_f
     return deco
 
+
 def require_auth(roles=None, login_redirect=None, *args, **kwargs):
     def call(f, *args, **kwargs):
         return f(*args, **kwargs)
@@ -102,7 +105,6 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
         def wrapped_f(webinterface, request, *a, **kw):
             update_request(webinterface, request)
             request.auth_id = None
-            # print("request uri: %s" % request.uri)
             host = request.getHeader('host')
             if host is None:
                 logger.info("Discarding request, appears to be malformed session id from require_auth")
@@ -136,6 +138,11 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
                     except YomboWarning as e:
                         logger.info("API request doesn't have session cookie. Bye bye: {e}", e=e)
                         return return_need_login(webinterface, request, False, **kwargs)
+
+            if 'api' in kwargs and kwargs['api'] is True:
+                results = check_idempotence(webinterface, request, session)
+                if isinstance(results, bool) is False:
+                    return results
 
             if session.session_type == "websession":  # if we have a session, then inspect to see if it's valid.
                 if 'auth' in session and session['auth'] is True:
@@ -179,9 +186,13 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
                 logger.error("Request: {request}", request=request)
                 logger.error("{trace}", trace=traceback.format_exc())
                 logger.error("--------------------------------------------------------")
-                content_type = request.getHeader('content-type').lower()
+                content_type = request.getHeader('content-type')
+                if isinstance(content_type, str):
+                    content_type = content_type.lower()
+                else:
+                    content_type = ''
                 if 'json' in content_type:
-                    return return_api_error(request, 'Server Error', 500, traceback.format_exc())
+                    return return_error(request, 'Server Error', 500, traceback.format_exc())
                 page = webinterface.get_template(request, webinterface.wi_dir + '/pages/misc/traceback.html')
                 return page.render(traceback=traceback.format_exc())
 
@@ -262,18 +273,25 @@ def return_need_login(webinterface, request, session, api_message=None, **kwargs
     if check_needs_web_pin(webinterface, request, session):
         return return_need_pin(webinterface, request, **kwargs)
     else:
-        content_type = request.getHeader('content-type').lower()
+        content_type = request.getHeader('content-type')
+        if isinstance(content_type, str):
+            content_type = content_type.lower()
+        else:
+            content_type = ''
         if ('api' in kwargs and kwargs['api'] is True) or 'json' in content_type:
-            return return_api_error(request, 'Unauthorized', 401, api_message)
+            return return_error(request, 'Unauthorized', 401, api_message)
     page = webinterface.get_template(request, webinterface.wi_dir + '/pages/login_user.html')
     return page.render(alerts=webinterface.get_alerts())
 
 
 def return_need_pin(webinterface, request, **kwargs):
-    content_type = request.getHeader('content-type').lower()
-    print("content_type: %s" % content_type)
+    content_type = request.getHeader('content-type')
+    if isinstance(content_type, str):
+        content_type = content_type.lower()
+    else:
+        content_type = ''
     if ('api' in kwargs and kwargs['api'] is True) or 'json' in content_type:
-        return return_api_error(request, 'Unauthorized - Pin required', 401)
+        return return_error(request, 'Unauthorized - Pin required', 401)
     if webinterface._display_pin_console_at < int(time()) - 30:
         webinterface._display_pin_console_at = int(time())
         webinterface.display_pin_console()

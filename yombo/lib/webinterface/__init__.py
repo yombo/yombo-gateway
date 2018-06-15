@@ -110,6 +110,7 @@ logger = get_logger("library.webinterface")
 class NotFound(Exception):
     pass
 
+
 class Yombo_Site(Site):
 
     def setup_log_queue(self, webinterface):
@@ -173,6 +174,7 @@ class Yombo_Site(Site):
             self.log_queue = []
             self.db_save_log(queue)
 
+
 class WebInterface(YomboLibrary):
     """
     Web interface framework.
@@ -193,14 +195,16 @@ class WebInterface(YomboLibrary):
         """
         return "Yombo web interface library"
 
+    @inlineCallbacks
     def _init_(self, **kwargs):
         self.web_interface_fully_started = False
         self.enabled = self._Configs.get('webinterface', 'enabled', True)
         if not self.enabled:
             return
 
+        self.idempotence = yield self._SQLDict.get('yombo.lib.device', 'idempotence')  # tracks if a request was already made
+
         self.gateway_id = self._Configs.get2('core', 'gwid', 'local', False)
-        # self._LocalDB = self._Loader.loadedLibraries['localdb']
         self.working_dir = self._Atoms.get('working_dir')
         self.app_dir = self._Atoms.get('app_dir')
         self.wi_dir = '/lib/webinterface'
@@ -361,6 +365,8 @@ class WebInterface(YomboLibrary):
 
         self.starting = False
         self.start_web_servers()
+        self.clean_idempotence_ids_loop = LoopingCall(self.clean_idempotence_ids)
+        self.clean_idempotence_ids_loop.start(1806, False)
 
     # @inlineCallbacks
     def _start_(self, **kwargs):
@@ -384,9 +390,19 @@ class WebInterface(YomboLibrary):
         self._Notifications.delete('webinterface:starting')
         self.web_interface_fully_started = True
 
-
         self.send_hook_listeners_ping_loop = LoopingCall(self.send_hook_listeners_ping_loop)
         self.send_hook_listeners_ping_loop.start(55, True)
+
+    def clean_idempotence_ids(self):
+        """
+        Removes older idempotence keys.
+
+        :return:
+        """
+        delete_time = int(time()) - 1800
+        for key in self.idempotence.keys():
+            if self.idempotence[key] < delete_time:
+                del self.idempotence[key]
 
     def send_hook_listeners_ping_loop(self):
         route_api_v1_stream_broadcast(self, 'ping', int(time()))
@@ -891,9 +907,6 @@ class WebInterface(YomboLibrary):
         self.webapp.templates.filters['display_encrypted'] = self._GPG.display_encrypted
         self.webapp.templates.filters['display_temperature'] = self._Localize.display_temperature
         self.webapp.templates.filters['yombo'] = self
-
-
-
 
     def restart(self, request, message=None, redirect=None):
         if message is None:

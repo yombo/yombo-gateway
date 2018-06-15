@@ -344,7 +344,7 @@ class Auth(object):
 
     @property
     def user_id(self) -> str:
-        return "apiauth:%s..." % self.auth_id[20:]
+        return self.auth_id
 
     def get(self, key, default="BRFEqgdgLgI0I8QM2Em2nWeJGEuY71TTo7H08uuT"):
         if key in self.auth_data:
