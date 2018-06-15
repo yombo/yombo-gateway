@@ -205,6 +205,7 @@ class Devices(YomboLibrary):
         """
         return list(self.devices.values())
 
+    @inlineCallbacks
     def _init_(self, **kwargs):
         """
         Sets up basic attributes.
@@ -232,7 +233,11 @@ class Devices(YomboLibrary):
 
         self.mqtt = None
 
-    # @inlineCallbacks
+        self.idempotence = yield self._SQLDict.get('yombo.lib.device', 'idempotence')  # tracks if a request was already made
+
+        self.clean_idempotence_ids_loop = LoopingCall(self.clean_idempotence_ids)
+        self.clean_idempotence_ids_loop.start(3600)
+
     def _load_(self, **kwargs):
         """
         Loads the devices from the database and loads device commands.
@@ -359,6 +364,12 @@ class Devices(YomboLibrary):
         #     # d.addErrback(self.import_device_failure, device)
         #     d.callback(1)
         #     yield d
+
+    def clean_idempotence_ids(self):
+        delete_time = int(time()) - 1800
+        for key in self.idempotence.keys():
+            if self.idempotence[key]['time'] < delete_time:
+                del self.idempotence[key]
 
     def sorted(self, key=None):
         """
