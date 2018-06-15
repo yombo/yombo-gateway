@@ -776,7 +776,7 @@ class Automation(YomboLibrary):
                 except Exception as e:
                     logger.warn("-==(Warning: Automation library had trouble with template==-")
                     logger.warn("Input template:")
-                    logger.warn("{template}", template=data['condition']['template'])
+                    logger.warn("{template}", template=self.action_templates["%s_%s" % (rule.rule_id, action['action_id'])])
                     logger.warn("---------------==(Traceback)==------------------------------")
                     logger.warn("{trace}", trace=traceback.format_exc())
                     logger.warn("------------------------------------------------------------")
