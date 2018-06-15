@@ -18,11 +18,12 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
 except ImportError:
     import json
 
-from datetime import datetime
-from docutils.core import publish_parts
 import base64
 import binascii
+from datetime import datetime
 from difflib import SequenceMatcher
+from docutils.core import publish_parts
+from hashlib import sha256
 import inspect
 import markdown
 import math
@@ -53,6 +54,11 @@ from yombo.ext.hashids import Hashids
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 from yombo.utils.decorators import deprecated, memoize_ttl, memoize_
+import yombo.ext.base62 as base62
+
+
+def sha256_compact(input):
+    return base62.encodebytes(sha256(unicode_to_bytes(input)).digest())
 
 
 def get_python_package_info(package_name):
