@@ -36,10 +36,6 @@ See more:
 * `Available modules <https://yg2.in/mod>`_
 * `Developing modules <https://yg2.in/dev>`_
 
-scripts
-----------
-Various helper scrips for the framework.
-
 utils
 ----------
 Misc utility functions to help Yombo Gateway get things done. See:
