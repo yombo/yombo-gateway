@@ -107,14 +107,10 @@ class AMQP(YomboLibrary):
         :return:
         """
         self._local_log("debug", "AMQP::_unload_")
-        # print "amqp - removing all clients.."
         for client_id, client in self.client_connections.items():
-            # print "amqp-clinet: %s" % client_id
             if client.is_connected:
                 try:
                     client.disconnect()  # this tells the factory to tell the protocol to close.
-    #                client.factory.stopTrying()  # Tell reconnecting factory to don't attempt connecting after disconnect.
-    #                client.factory.protocol.disconnect()
                 except:
                     pass
 
@@ -862,13 +858,12 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         logger.warn("pika factory clientConnectionLost, reason: %s" % reason.value)
         if self.AMQPClient.is_connected and str(reason.value) != "Connection was closed cleanly.":
             logger.warn("In PikaFactory clientConnectionLost. Reason: {reason}", reason=reason.value)
-        # print("pika factory clientConnectionLost 2")
         protocol.ReconnectingClientFactory.clientConnectionFailed(self, connector, reason)
-        # print("pika factory clientConnectionLost 3")
+        if protocol.ReconnectingClientFactory.continueTrying:
+            self.retry()
 
     def clientConnectionFailed(self, connector, reason):
         logger.info("In PikaFactory clientConnectionFailed. Reason: {reason}", reason=reason)
-        # self.AMQPClient.disconnected('failed')
         protocol.ReconnectingClientFactory.clientConnectionFailed(self, connector, reason)
 
 
@@ -911,7 +906,6 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
         self._local_log("debug", "PikaProtocol::connected")
         self.connection = connection
         self.channel = yield connection.channel()
-
         yield self.channel.basic_qos(prefetch_count=self.factory.AMQPClient.prefetch_count)
         self.channel.add_on_close_callback(self.on_connection_closed)
         # logger.debug("Setting AMQP connected to true.")
@@ -936,19 +930,6 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
             logger.info("close_channel: %s : %s" % (replyCode, replyText))
             # self.channel.close()
         self.factory.disconnected()
-
-    # def close(self):
-    #     """
-    #     Close the connection to Yombo.
-    #
-    #     :return:
-    #     """
-    #     self._local_log("debug", "PikaProtocol::close", "Trying to close!")
-    #     self.connected = False
-    #     try:
-    #         self.connection.close()
-    #     except:
-    #         pass
 
     def get_delivery_item(self):
         for priority in ['urgent', 'high', 'normal', 'low']:
