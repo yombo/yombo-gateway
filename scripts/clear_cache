@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+# Used clean up the folder structure of python compiled code cache files.
+#
+# Typically called by "ybo cache"
+
+SCRIPTPATH="$( dirname $( cd "$(dirname "$0")" ; pwd -P ))"
+echo "changing to: $SCRIPTPATH"
+cd "$SCRIPTPATH"
+
+echo "This script simply cleans up cached compiled python code files."
+pwd
+find . | grep -E "(__pycache__|\.pyc|\.pyo$)" | xargs rm -rf
+echo "[-] Local python cache files have been removed."

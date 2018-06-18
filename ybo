@@ -192,6 +192,12 @@ while true; do
       RUN_SHELL="$SCRIPTPATH/scripts/show_motd"
       shift
       ;;
+    "cache" )
+      # Show yombo motd
+      RUN="start_shell"
+      RUN_SHELL="$SCRIPTPATH/scripts/clear_cache"
+      shift
+      ;;
     "status")
       RUN="show_status"
       shift
