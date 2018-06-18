@@ -137,7 +137,7 @@ def start():
     os.chmod('%s/etc/certs' % working_dir, 0o700)
     os.chmod('%s/bak' % working_dir, 0o760)
 
-    os.system('gpg-agent --homedir %s/etc/gpg/ --daemon' % working_dir)
+    os.system('gpg-agent --homedir %s/etc/gpg/ --daemon > file 2>&1' % working_dir)
 
     results = settings.init(arguments)
     if results is False:
