@@ -7,7 +7,8 @@
   For more information see: `GW Service Core @ Module Development <https://yombo.net/docs/core/gwservice>`_
 
 
-This is the main class the is responsible for getting everything started.
+This is the main class the is responsible for getting everything started. This calls the loader
+library to get everything started.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
@@ -15,6 +16,8 @@ This is the main class the is responsible for getting everything started.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/core/module.html>`_
 """
+import multiprocessing
+
 # Import twisted libraries
 from twisted.internet import reactor
 from twisted.application.service import Service
@@ -38,7 +41,12 @@ class GWService(Service):
         After twisted is running to get, call loader library and various starter functions
         to get everything started.
         """
-        reactor.suggestThreadPoolSize(50)
+        # Threads are used for multiple items within the Yombo Gateway. They are used to prevent
+        # blocking code. We need at least 40 threads to make things run smoothly.
+        thread_count = multiprocessing.cpu_count() * 10
+        if thread_count < 50:
+            thread_count = 50
+        reactor.suggestThreadPoolSize(thread_count)
         reactor.callWhenRunning(self.start_loader_library)
 
     def startService(self):
