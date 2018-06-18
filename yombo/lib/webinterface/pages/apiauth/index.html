@@ -35,9 +35,8 @@
       applications to authenticate to the gateway. These API Auth keys can only be used to access this gateway,
       however, any gateway can receive and process commands for any device within it's cluster.
   </p><p>
-      To use the API Auth, simply set the HTTP header 'x-api-auth' with the value of an API Auth key <strong>or</strong>
-      include it in the query string paramenter named '_api_auth' like this:<br>
-      https://localhost:8443/api/vi/someurl?_api_auth=KEYVALUE
+      For details on usage, see
+      <a href="https://yombo.net/GWAPI:Overview" target="_blank">Gateway API Overview @ yombo.net</a>
   </p><p>
         Some modules automatically create API Auth keys, don't use these for your own scripts as they may change or
         go away. Be sure to create your own API Auth keys for your scripts or other applications.  It's recommended to
