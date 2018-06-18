@@ -55,7 +55,7 @@ def check_idempotence(webinterface, request, session):
         if idempotence in webinterface.idempotence:
             return return_error(request, 'idempotence error', 409,
                                 "This idempotence key has already be processed.")
-        webinterface.idempotence[idempotence] = int(time()
+        webinterface.idempotence[idempotence] = int(time())
         return True
     return False
 
