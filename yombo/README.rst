@@ -26,11 +26,6 @@ lib
 The primary framework of the Yombo Gateway is in the libraries.
 `Library reference <https://yg2.in/dev_lib>`_
 
-locale
-----------
-Contains base language translations for i18n.
-More details: https://yg2.in/dev_lib
-
 modules
 ----------
 The gateway ships with a few core modules, however, when a user requests modules
@@ -41,9 +36,9 @@ See more:
 * `Available modules <https://yg2.in/mod>`_
 * `Developing modules <https://yg2.in/dev>`_
 
-tests
+scripts
 ----------
-Where unit tests live.
+Various helper scrips for the framework.
 
 utils
 ----------
