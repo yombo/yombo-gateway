@@ -432,6 +432,9 @@ class Gateways(YomboLibrary):
                 return
             if device_search in self._Devices:
                 device = self._Devices[device_search]
+                if device.gateway_id != self.gateway_id:
+                    logger.info("Dropping MQTT device command request, i'm not the controlling gateway.: {device}",
+                                device=device_search)
             else:
                 logger.info("Dropping MQTT device command request, device_id is not found: {device}",
                             device=device_search)
