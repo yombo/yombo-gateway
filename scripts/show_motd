@@ -4,21 +4,16 @@
 """
 A simple MOTD generator than can be used to update
 """
+import argparse
 from collections import OrderedDict
 import configparser
 from datetime import timedelta
 import netifaces
-from os.path import dirname, abspath
+import os
 import platform
 import subprocess
 import re
 import sys
-
-yombo_path = dirname(dirname(abspath(__file__)))
-
-sys.path.append("%s/" % yombo_path)
-import yombo.constants as constants
-yombo_version = constants.VERSION
 
 
 class CN:
@@ -33,6 +28,7 @@ class CN:
     WHITE = '\033[37m'
     DONE = '\033[0m'
 
+
 class CB:
     """ Colors, bold"""
     BLACK = '\033[03;1m'
@@ -44,6 +40,7 @@ class CB:
     CYAN = '\033[36;1m'
     WHITE = '\033[37;1m'
     DONE = '\033[0m'
+
 
 class CBU:
     """ Colors, bold"""
@@ -57,32 +54,62 @@ class CBU:
     WHITE = '\033[37;1;4m'
     DONE = '\033[0m'
 
+parser = argparse.ArgumentParser()
+parser.add_argument('-w', nargs='?', help='Set working directory')
+args = parser.parse_args()
+
+if args.w is None:
+    data_path = "%s/.yombo" % os.path.expanduser("~")
+else:
+    data_path = args.w
+data_path_exists = os.path.isdir(data_path)
+
+program_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+sys.path.append(program_path)
+import yombo.constants as constants
+git_hash = subprocess.check_output(["git", "-C", program_path, "rev-parse", "--short", "HEAD"]).strip()
+git_branch = subprocess.check_output(["git", "-C", program_path, "rev-parse", "--abbrev-ref", "HEAD"]).strip()
+
+yombo_version = "%s -- %s:%s" % (constants.VERSION, git_branch.decode("utf-8"), git_hash.decode("utf-8"))
+
 internal_hostname = 'localhost'
 interfaces = netifaces.interfaces()
 for i in interfaces:
-    if i == 'lo':
+    if i == 'lo' or i.startswith('vir'):
         continue
     iface = netifaces.ifaddresses(i).get(netifaces.AF_INET)
     if iface != None:
-        for j in iface:
-            internal_hostname = str(j['addr'])
+        internal_hostname = str(iface[0]['addr'])
+        break
 
 yombo_ini = 'Not configured'
-yombo_path = dirname(dirname(abspath(__file__)))
-try:
-    config_parser = configparser.ConfigParser()
-    config_parser.read('%s/yombo.ini' % yombo_path)
-    yombo_ini = "Valid"
-except IOError as e:
-    pass
-except configparser.NoSectionError:
-    pass
-
-dns_fqdn = config_parser.get('dns', 'fqdn', fallback="None")
-internal_ip = config_parser.get('core', 'localipaddress_v4', fallback=internal_hostname)
-external_ip = config_parser.get('core', 'externalipaddress_v4', fallback="None")
-nonsecure_port = config_parser.get('webinterface', 'nonsecure_port', fallback=8080)
-secure_port = config_parser.get('webinterface', 'secure_port', fallback=8443)
+if data_path_exists is True:
+    try:
+        config_parser = configparser.ConfigParser()
+        config_parser.read('%s/yombo.ini' % data_path)
+        yombo_ini = "Valid"
+        dns_fqdn = config_parser.get('dns', 'fqdn', fallback="None")
+        internal_ip = config_parser.get('core', 'localipaddress_v4', fallback=internal_hostname)
+        external_ip = config_parser.get('core', 'externalipaddress_v4', fallback="None")
+        nonsecure_port = config_parser.get('webinterface', 'nonsecure_port', fallback=8080)
+        secure_port = config_parser.get('webinterface', 'secure_port', fallback=8443)
+        auth_pin_required = config_parser.get('webinterface', 'auth_pin_required', fallback=False)
+        auth_pin_type = config_parser.get('webinterface', 'auth_pin_type', fallback='')
+        auth_pin = config_parser.get('webinterface', 'auth_pin', fallback='')
+    except IOError as e:
+        pass
+    except configparser.NoSectionError:
+        pass
+else:
+    dns_fqdn = "None"
+    internal_ip = internal_hostname
+    external_ip = "None"
+    nonsecure_port = 8080
+    secure_port = 8443
+    auth_pin_required = False
+    auth_pin_type = ''
+    auth_pin = ''
 
 if dns_fqdn != "None":
     local = "http://127.0.0.1:%s" % nonsecure_port
@@ -98,12 +125,21 @@ else:
 data_yombo = OrderedDict()
 data_system = OrderedDict()
 data_system['Hostname'] = str(platform.node())
+data_yombo['yombo.ini'] = yombo_ini
 data_yombo['Yombo Version'] = yombo_version
 data_yombo['FQDN'] = dns_fqdn
+data_yombo['From anywhere'] = globaluri
 data_yombo['Local'] = local
 data_yombo['Internal'] = internal
 data_yombo['External'] = external
-data_yombo['From anywhere'] = globaluri
+
+if auth_pin_required in (True, 'true', 'True'):
+    if auth_pin_type == 'pin':
+        data_yombo['Auth pin'] = auth_pin
+    else:
+        data_yombo['Auth pin'] = 'Using TOPT, unable to display'
+else:
+    data_yombo['Auth pin'] = 'None required'
 
 with open('/proc/uptime', 'r') as f:
     uptime_seconds = float(f.readline().split()[0])
@@ -120,15 +156,18 @@ for line in all_info.split(b"\n"):
         break
 data_system['CPU'] = cpu_model
 
-df = subprocess.Popen(["df", "-h", yombo_path], stdout=subprocess.PIPE)
-output = df.communicate()[0].decode("utf-8")
-device, size, used, available, percent, mountpoint = \
-    output.split("\n")[1].split()
-data_system['Disk'] = "%s / %s" % (used, available)
+if data_path_exists is True:
+    df = subprocess.Popen(["df", "-h", data_path], stdout=subprocess.PIPE)
+    output = df.communicate()[0].decode("utf-8")
+    device, size, used, available, percent, mountpoint = \
+        output.split("\n")[1].split()
+    data_system['Disk'] = "%s / %s" % (used, available)
+else:
+    data_system['Disk'] = "Data directory not found"
 
 # Now convert the dict to a list.
 data_formatted = [
-    '%sYombo Gateway%s https://yombo.net' % (CB.BLUE, CB.DONE),
+    '',
     '',
     '%sYombo Access URLS and details%s' % (CBU.WHITE, CB.DONE),
 ]
@@ -141,6 +180,8 @@ for key, value in data_system.items():
     data_formatted.append("%s%s%s: %s" % (CB.RED, key, CB.DONE, value))
 
 logo = [
+'%sYombo Gateway%s Learn more at: https://yombo.net' % (CB.BLUE, CB.DONE),
+'                      ',
 ' YYYYYYY       YYYYYYY',
 ' Y:::::Y       Y:::::Y',
 ' Y:::::Y       Y:::::Y',

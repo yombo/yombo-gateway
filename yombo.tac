@@ -9,7 +9,6 @@
 import asyncio
 from distutils.dir_util import copy_tree
 import os
-from os.path import dirname, abspath
 import select
 import shlex
 import sys
@@ -39,7 +38,7 @@ stderrbefore = getattr(sys.stderr, "encoding", None)
 def show_help():
     print("This file shouldn't be called directly by users. Please use either:")
     print("1) ybo - If installed by Yombo install scripts")
-    print("2) %s/yombo.sh" % dirname(abspath(__file__)))
+    print("2) %s/yombo.sh" % os.path.dirname(os.path.abspath(__file__)))
     print("\n")
 
 def get_arguments():
@@ -50,7 +49,7 @@ def get_arguments():
     :return:
     """
     defaults = {
-        'app_dir': dirname(abspath(__file__)),
+        'app_dir': os.path.dirname(os.path.abspath(__file__)),
         'debug': False,
         'debug_items': [],
         'norestoreini': False,
@@ -71,11 +70,9 @@ def get_arguments():
         exit()
     if '-w' in arguments:
         defaults['working_dir'] = arguments['-w']
-    elif '--working_dir' in arguments:
-        defaults['working_dir'] = arguments['--working_dir']
-    if not os.path.exists('%s' % dirname(defaults['working_dir'])):
+    if not os.path.exists('%s' % os.path.dirname(defaults['working_dir'])):
         raise Exception("Invalid working directory '%s', the parent '%s' must exist." %
-                        (defaults['working_dir'], dirname(defaults['working_dir'])))
+                        (defaults['working_dir'], os.path.dirname(defaults['working_dir'])))
 
     if '-a' in arguments:
         defaults['app_dir'] = arguments['-a']
@@ -114,7 +111,6 @@ def start():
     working_dir = arguments['working_dir']
     app_dir = arguments['app_dir']
     #ensure that usr data directory exists
-    print("%s, %s" % (app_dir + "/assets/working_dir/", working_dir + "/"))
     copy_tree(app_dir + "/assets/working_dir/", working_dir + "/")
     if not os.path.exists('%s' % working_dir):
         os.makedirs('%s' % working_dir)

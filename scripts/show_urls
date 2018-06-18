@@ -1,20 +1,26 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import argparse
 import configparser
 import netifaces
-from os.path import dirname, abspath
+import os
+import sys
 
-print("Access Yombo Gateway:")
+parser = argparse.ArgumentParser()
+parser.add_argument('-w', nargs='?', help='Set working directory')
+args = parser.parse_args()
+
+print("Yombo Gateway web interface:")
 
 internal_hostname = None
 interfaces = netifaces.interfaces()
 for i in interfaces:
-    if i == 'lo':
+    if i == 'lo' or i.startswith('vir'):
         continue
     iface = netifaces.ifaddresses(i).get(netifaces.AF_INET)
     if iface != None:
-        for j in iface:
-            internal_hostname = str(j['addr'])
+        internal_hostname = str(iface[0]['addr'])
+        break
 
 def show_on_error():
     print("  On local machine:")
@@ -24,13 +30,18 @@ def show_on_error():
         print("  On local network:")
         print("   \033[32;1mhttp://%s:8080\033[0m" % internal_hostname)
 
+
+if args.w is None:
+    data_path = "%s/.yombo" % os.path.expanduser("~")
+else:
+    data_path = args.w
+
 try:
-    yombo_path = dirname(dirname(dirname(abspath(__file__))))
     config_parser = configparser.ConfigParser()
-    config_parser.read('%s/yombo.ini' % yombo_path)
-    dns_fqdn = config_parser.get('dns', 'fqdn', fallback=None)
-    internal_hostname = config_parser.get('core', 'localipaddress_v4', fallback=internal_hostname)
-    external_hostname = config_parser.get('core2', 'externalipaddress_v4')
+    config_parser.read('%s/yombo.ini' % data_path)
+    dns_fqdn = config_parser.get('dns', 'fqdn', fallback="None")
+    internal_ip = config_parser.get('core', 'localipaddress_v4', fallback=internal_hostname)
+    external_ip = config_parser.get('core', 'externalipaddress_v4', fallback="None")
     nonsecure_port = config_parser.get('webinterface', 'nonsecure_port', fallback=8080)
     secure_port = config_parser.get('webinterface', 'secure_port', fallback=8443)
 except IOError as e:
@@ -40,12 +51,11 @@ except configparser.NoSectionError:
     show_on_error()
     exit()
 
-
-if dns_fqdn is None:
+if dns_fqdn in (None, "none", "None"):
     local_hostname = "127.0.0.1"
     local = "http://%s:%s" % (local_hostname, nonsecure_port)
-    internal = "http://%s:%s" % (internal_hostname, nonsecure_port)
-    external = "https://%s:%s" % (external_hostname, secure_port)
+    internal = "http://%s:%s" % (internal_ip, nonsecure_port)
+    external = "https://%s:%s" % (external_ip, secure_port)
     print("  On local machine:")
     print("   \033[32;1m%s\033[0m" % local)
     print("")

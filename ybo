@@ -59,7 +59,8 @@ OPTIONS:
   -pid_path PATH     Set the pid path location
   -pid_file FILE     Set the pid path filename
   -daemon
-  -working_dir DIR   Set data storage directory
+  -w DIR             Set data storage directory
+  -tacfile FILE      TAC file locaiton
 
 Examples:
   Debugging:
@@ -90,7 +91,13 @@ function show_status
     exit 0
 }
 
-function start {
+function start_shell {
+    # Run a shell command
+
+    eval $RUN_SHELL $ARGUMENTS
+}
+
+function start_gateway {
     #Check if PID is running, if it is, then exit gracefully.
     if [ -e $PID_PATH/$PID_FILE ]; then
         mypid=`cat $PID_PATH/$PID_FILE`
@@ -100,7 +107,6 @@ function start {
       fi
     fi
 
-    #YOMBO_SERVICE="echo \"$ARGUMENTS\" | twistd --pidfile=$PID_PATH/$PID_FILE"
     TACOPTIONS="--pidfile=$PID_PATH/$PID_FILE -n -y $TACFILE"
 
     if [ $DAEMON -eq "1" ]; then
@@ -113,11 +119,9 @@ function start {
         cd $SCRIPTPATH
         export SSL_CERT_FILE="$(python -m certifi)"
 
-#        echo "checking pyenv"
-        #Check if pyenv is being used and isn't loaded...
+        # Check if pyenv is being used and isn't loaded...
         if [ -f ".python-version" ] ; then
           if ! [ -x "$(command -v pyenv)" ]; then
- #           echo "Yombo.sh setting up pyenv"
             export PATH="~/.pyenv/bin:$PATH"
             eval "$(pyenv init -)"
             eval "$(pyenv virtualenv-init -)"
@@ -137,7 +141,7 @@ function start {
     done
 }
 
-function stop {
+function stop_gateway {
     echo "Attempting to stop Yombo Gateway Service"
     if [ -e $PID_PATH/$PID_FILE ]; then
         mypid=`cat $PID_PATH/$PID_FILE`
@@ -160,7 +164,7 @@ PID_FILE=yombo.pid
 TACFILE=$SCRIPTPATH/yombo.tac
 SHOW_STATUS=false
 TACFILE="$SCRIPTPATH/yombo.tac"
-
+RUN_SHELL=
 ARGUMENTS=
 
 if [ $# -lt 1 ]; then
@@ -173,7 +177,7 @@ while true; do
   case "$1" in
     "daemon")
       # Run as daemon (used by systemd)
-      RUN="start"
+      RUN="start_gateway"
       DAEMON=1
       shift
       ;;
@@ -184,25 +188,27 @@ while true; do
       ;;
     "motd" )
       # Show yombo motd
-      $SCRIPTPATH/scripts/show_motd
-      exit 0
+      RUN="start_shell"
+      RUN_SHELL="$SCRIPTPATH/scripts/show_motd"
+      shift
       ;;
     "status")
       RUN="show_status"
       shift
       ;;
     "start")
-      RUN="start"
+      RUN="start_gateway"
       shift
       ;;
     "stop")
-      RUN="stop"
+      RUN="stop_gateway"
       shift
       ;;
     "urls")
       # Show yombo urls
-      $SCRIPTPATH/scripts/show_urls
-      exit 0
+      RUN="start_shell"
+      RUN_SHELL="$SCRIPTPATH/scripts/show_urls"
+      shift
       ;;
     "version")
       # Show version of yombo.
@@ -242,6 +248,12 @@ while true; do
       # Change TAC file location
       shift
       TACFILE=$1
+      shift
+      ;;
+    "-working_dir"|"-w")
+      # Set data storage directory
+      shift
+      ARGUMENTS="$ARGUMENTS -w $1"
       shift
       ;;
     \?)
