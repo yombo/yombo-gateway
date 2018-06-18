@@ -259,6 +259,7 @@ class Gateways(YomboLibrary):
         self.mqtt.subscribe("ybo_gw_req/+/%s/#" % self.gateway_id)
         self.mqtt.subscribe("ybo_gw/+/all/#")
         self.mqtt.subscribe("ybo_gw/+/%s/#" % self.gateway_id)
+        self.mqtt.subscribe("to_yombo/#")
 
     def _started_(self, **kwargs):
         self.library_phase = 4
@@ -386,6 +387,15 @@ class Gateways(YomboLibrary):
         # ybo_gw_req/src_gwid/dest_gwid|all/lib/devices/get/device_id - payload is blank
         topic_parts = topic.split('/', 10)
 
+        try:
+            message = self.decrypt(raw_payload)
+        except Exception as e:
+            message = None
+
+        if topic_parts[0] == "to_yombo":
+            self.mqtt_incoming_to_yombo(topic_parts, message)
+            return
+
         if len(topic_parts) < 5 == self.gateway_id:
             logger.debug("Gateway COMS received too short of a topic (discarding): {topic}", topic=topic)
             return
@@ -404,13 +414,7 @@ class Gateways(YomboLibrary):
             'topic': topic,
         })
 
-        if len(raw_payload) > 0:
-            try:
-                message = self.decrypt(raw_payload)
-            except Exception as e:
-                logger.warn("Gateways:MQTT received invalid data.")
-                return
-        else:
+        if len(message) == 0 or message is None:
             logger.warn("Empty payloads for inter gateway coms are not allowed!")
             return
 
@@ -418,6 +422,58 @@ class Gateways(YomboLibrary):
             yield self.mqtt_incomming_data(topic_parts, message)
         else:
             yield self.mqtt_incomming_request(topic_parts, message)
+
+    def mqtt_incoming_to_yombo(self, topics, message):
+        if topics[1] == "device_command":
+            device_search = topics[2]
+            command_search = topics[3]
+            if len(device_search) > 200 or isinstance(device_search, str) is False:
+                logger.info("Dropping MQTT device command request, device_id is too long or invalid.")
+                return
+            if device_search in self._Devices:
+                device = self._Devices[device_search]
+            else:
+                logger.info("Dropping MQTT device command request, device_id is not found: {device}",
+                            device=device_search)
+                return
+
+            if len(command_search) > 200 or isinstance(command_search, str) is False:
+                logger.info("Dropping MQTT device command request, command_id is too long or invalid.")
+                return
+            if device_search in self._Commands:
+                command = self._Commands[command_search]
+            else:
+                logger.info("Dropping MQTT device command request, command_id is not found: {command}",
+                            command=command_search)
+                return
+
+            pin_code = message.get('pin_code', None)
+            delay = message.get('delay', None)
+            max_delay = message.get('max_delay', None)
+            not_before = message.get('not_before', None)
+            not_after = message.get('not_after', None)
+            inputs = message.get('inputs', None)
+            idempotence = message.get('idempotence', None)
+            try:
+                request_id = device.command(
+                    cmd=command,
+                    requested_by={
+                        'user_id': None,
+                        'component': 'yombo.gateway.lib.gateways.mqtt',
+                        'gateway': self.gateway_id
+                    },
+                    pin=pin_code,
+                    delay=delay,
+                    max_delay=max_delay,
+                    not_before=not_before,
+                    not_after=not_after,
+                    inputs=inputs,
+                    idempotence=idempotence,
+                )
+            except KeyError as e:
+                return
+            except YomboWarning as e:
+                return
 
     @inlineCallbacks
     def mqtt_incomming_request(self, topics, message):
@@ -467,7 +523,7 @@ class Gateways(YomboLibrary):
                 return
 
         elif component_type == 'lib':
-            return_topic = source_gw_id + "/" + component_type + "/"+ component_name
+            # return_topic = source_gw_id + "/" + component_type + "/"+ component_name
             if len(topics) == 5 and opt1 == 'get':
                 all_requested = True
             else:
@@ -500,12 +556,10 @@ class Gateways(YomboLibrary):
 
     @inlineCallbacks
     def mqtt_incomming_data(self, topics, message):
-        print("mqtt_incomming_data now. topics: %s" % topics)
-        # print("mqtt_incomming_data now. message: %s" % message)
         # ybo_gw/src_gwid/dest_gwid|all/lib/atoms - all atoms from gateway
         # ybo_gw/src_gwid/dest_gwid|all/lib/atoms/name - single atom
         source_gw_id = topics[1]
-        dest_gw_id = topics[2]
+        # dest_gw_id = topics[2]
         component_type = topics[3]
         component_name = topics[4]
         # print("gateway received content: %s" % message)
@@ -869,7 +923,6 @@ class Gateways(YomboLibrary):
             self.publish_data('gw', return_gw, 'lib/states', self._States.get('#'))
         else:
             self.publish_data('gw', return_gw, 'lib/state/%s' % name, self._States.get(name, full=True))
-
 
     def get_return_gw(self, destination_gw=None):
         if destination_gw is None:
