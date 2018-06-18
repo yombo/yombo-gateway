@@ -42,6 +42,7 @@ class Device_Command(object):
         'broadcast': 30,
         'sent': 40,
         'received': 50,
+        'delayed': 55,
         'pending': 60,
         'done': 100,
         'canceled': 200,
