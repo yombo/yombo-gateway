@@ -1,4 +1,3 @@
-#import pyximport; pyximport.install()
 # This file was created by Yombo for use with Yombo Python gateway automation
 # software.  Details can be found at https://yombo.net
 """
@@ -7,7 +6,6 @@
 :copyright: Copyright 2012-2018 by Yombo.
 :license: LICENSE for details.
 """
-print("starting...")
 import asyncio
 from distutils.dir_util import copy_tree
 import os
@@ -37,9 +35,9 @@ except ImportError:
 stdoutbefore = getattr(sys.stdout, "encoding", None)
 stderrbefore = getattr(sys.stderr, "encoding", None)
 
+
 def show_help():
-    # print("Yombo gateway help. V: %s\n" % yombo_constants.__version__)
-    print("This file shouldn't be call directly by users. Please use either:")
+    print("This file shouldn't be called directly by users. Please use either:")
     print("1) ybo - If installed by Yombo install scripts")
     print("2) %s/yombo.sh" % dirname(abspath(__file__)))
     print("\n")
@@ -47,7 +45,7 @@ def show_help():
 def get_arguments():
     """
     Twisted tac files cannot accept options. So, they are read in via the
-    stdin....annoying and ugly
+    stdin....annoying and ugly.
 
     :return:
     """
@@ -67,7 +65,6 @@ def get_arguments():
                      for k, v in zip(args, args[1:] + ["--"]) if k.startswith('-')}
     else:
         arguments = {}
-
 
     if any(key in arguments for key in ['-?', '-h', '-help', '--help', '--?']):
         show_help()
@@ -105,6 +102,7 @@ def get_arguments():
 
     return defaults
 
+
 def start():
     """ Start Yombo. """
     try:
@@ -135,7 +133,6 @@ def start():
         os.makedirs('%s/etc/certs' % working_dir)
     if not os.path.exists('%s/locale' % working_dir):
         os.makedirs('%s/locale' % working_dir)
-    #logging directory
     if not os.path.exists('%s/log' % working_dir):
         os.makedirs('%s/log' % working_dir)
     if not os.path.exists('%s/opt' % working_dir):
@@ -150,12 +147,6 @@ def start():
 
     os.system('gpg-agent --homedir %s/etc/gpg/ --daemon' % working_dir)
 
-    # try:
-    #     from yombo.core.gwservice import GWService
-    # except ImportError:
-    #     sys.path.append(os.path.join(os.getcwd(), ""))
-    #     from yombo.core.gwservice import GWService
-
     results = settings.init(arguments)
     if results is False:
         print("Error with loading yombo.ini. Quiting.")
@@ -163,6 +154,7 @@ def start():
     from twisted.application import service as twisted_service
     application = twisted_service.Application('yombo')
 
+    # Gateway service is responsible for actually running everything.
     from yombo.core.gwservice import GWService
     gwservice = GWService()
     gwservice.setServiceParent(application)
