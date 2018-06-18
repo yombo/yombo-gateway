@@ -20,7 +20,6 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
     import json
-import msgpack
 import sys
 from time import time
 import traceback
@@ -34,7 +33,7 @@ from twisted.internet.task import LoopingCall
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import random_string, dict_has_key, bytes_to_unicode, is_true_false
+from yombo.utils import random_string, dict_has_key, is_true_false
 
 logger = get_logger('library.amqpyomb_handlers.amqpconfigs')
 
@@ -529,13 +528,15 @@ class AmqpConfigHandler(YomboLibrary):
 
     def connect_setup(self, init_defer):
         """
-        The connection was setup, but not quite ready to ask for configs. Just return a defer.
+        The connection was setup, but not quite ready to ask for configs. Just setup a defer.
+
         :return:
         """
         self.init_defer = init_defer
 
     def connected(self):
         """
+        Called when fully connected.
 
         :return:
         """
@@ -546,6 +547,7 @@ class AmqpConfigHandler(YomboLibrary):
     def disconnected(self):
         """
         Called by amqpyombo when the system is disconnected.
+
         :return:
         """
         if self._getAllConfigsLoggerLoop is not None and self._getAllConfigsLoggerLoop.running:
@@ -564,6 +566,7 @@ class AmqpConfigHandler(YomboLibrary):
     def _stop_(self):
         """
         Called by the Yombo system when it's time to shutdown. This in turn calls the disconnect.
+
         :return:
         """
         if self.init_defer.called is False:
