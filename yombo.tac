@@ -111,11 +111,7 @@ def start():
     working_dir = arguments['working_dir']
     app_dir = arguments['app_dir']
     #ensure that usr data directory exists
-    copy_tree(app_dir + "/assets/working_dir/", working_dir + "/")
-    if not os.path.exists('%s' % working_dir):
-        os.makedirs('%s' % working_dir)
-        copy_tree(app_dir + "/assets/working_dir/", working_dir + "/")
-    if not os.path.exists('%s' % working_dir):
+    if not os.path.exists('%s/gpg' % working_dir):
         os.makedirs('%s/gpg' % working_dir)
     if not os.path.exists('%s/bak' % working_dir):
         os.makedirs('%s/bak' % working_dir)
