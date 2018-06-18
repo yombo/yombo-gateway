@@ -17,6 +17,7 @@ from time import time, localtime, strftime
 # Import Yombo libraries
 from yombo.utils import is_string_bool
 
+
 def init(incoming_arguments):
     global arguments
     arguments = incoming_arguments
@@ -49,6 +50,7 @@ def init(incoming_arguments):
     last_yombo_ini_read = read_yombo_ini()
     if last_yombo_ini_read is False:
         yombo_ini = False
+
 
 def read_yombo_ini():
     """
@@ -99,6 +101,7 @@ def read_yombo_ini():
         # self._Atoms.set('configuration.yombo_ini.found', True)
         # print("yombo.ini: %s" % yombo_ini)
         return True
+
 
 def restore_backup_yombi_ini(arguments):
     """
