@@ -3,24 +3,19 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
     import json
-from time import time
-
-# Import twisted libraries
-from twisted.internet.defer import inlineCallbacks
-
-from yombo.core.exceptions import YomboWarning
-from yombo.lib.webinterface.auth import require_auth
-
-from yombo.utils import epoch_to_string, bytes_to_unicode
 
 
 def args_to_dict(arguments):
     results = {}
     for argument, value in arguments.items():
         value = value[0]
-        name = argument[0:argument.find('[')]
-        sub_name = argument[argument.find('[')+1 : argument.find(']')]
-        if name == sub_name:
+        if '[' in argument:
+            name = argument[0:argument.find('[')]
+            sub_name = argument[argument.find('[')+1 : argument.find(']')]
+            if name == sub_name:
+                sub_name = None
+        else:
+            name = argument
             sub_name = None
 
         if name not in results:
@@ -30,7 +25,7 @@ def args_to_dict(arguments):
                 results[name] = {}
 
         if sub_name is None:
-            results[name].append(value)
+            results[name] = value
         else:
             results[name][sub_name] = value
     return results
