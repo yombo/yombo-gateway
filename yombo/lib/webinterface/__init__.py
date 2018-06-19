@@ -202,7 +202,7 @@ class WebInterface(YomboLibrary):
         if not self.enabled:
             return
 
-        self.idempotence = yield self._SQLDict.get('yombo.lib.device', 'idempotence')  # tracks if a request was already made
+        self.idempotence = yield self._SQLDict.get('yombo.lib.webinterface', 'idempotence')  # tracks if a request was already made
 
         self.gateway_id = self._Configs.get2('core', 'gwid', 'local', False)
         self.working_dir = self._Atoms.get('working_dir')
@@ -906,6 +906,7 @@ class WebInterface(YomboLibrary):
         self.webapp.templates.filters['hide_none'] = yombo.utils.display_hide_none
         self.webapp.templates.filters['display_encrypted'] = self._GPG.display_encrypted
         self.webapp.templates.filters['display_temperature'] = self._Localize.display_temperature
+        self.webapp.templates.filters['json_human'] = yombo.utils.json_human
         self.webapp.templates.filters['yombo'] = self
 
     def restart(self, request, message=None, redirect=None):
