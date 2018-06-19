@@ -19,21 +19,15 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
     import json
-from datetime import datetime, timedelta
-from hashlib import sha256
 from time import time
 
 # Import twisted libraries
-from twisted.internet.task import LoopingCall
-from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
-from yombo.utils import random_string
-from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import search_instance, do_search_instance
+from yombo.utils import search_instance, do_search_instance, sha256_compact
 
 logger = get_logger('library.discovery')
 
@@ -157,45 +151,55 @@ class Discovery(YomboLibrary):
 
     def get(self, discover_id, source=None):
         """
-        Looks for a discovered device by it's id OR by the device_id and source.
+        Looks for a discovered device by it's id OR by the discover_id and source.
         """
-        if source is not None:
-            device_id = sha256(str(source, discover_id).encode('utf-8')).hexdigest()
-        else:
-            device_id = discover_id
+        discover_id = self.get_device_hash(discover_id, source)
         if discover_id in self.discovered:
-            return self.discovered[device_id]
+            return self.discovered[discover_id]
         raise KeyError("Could not find a matching discovered device.")
 
-    def new(self, **kwargs):
-        device_id = sha256(str(kwargs['source'] + kwargs['device_id']).encode('utf-8')).hexdigest()
-        if device_id in self.discovered:
-            self.discovered[device_id].enable()
-            return self.discovered[device_id]
+    def new(self, discover_id, device_data, **kwargs):
+        """
+        Creates a new auto-discovered device.
+        :param discover_id:
+        :param device_data:
+        :return:
+        """
+        newly_found = False
+        logger.debug("new device: {discover_id}", discover_id=discover_id)
+        source = device_data['source']
+        discover_id = self.get_device_hash(discover_id, source)
+        if discover_id in self.discovered:
+            self.discovered[discover_id].update_attributes(device_data)
+            self.discovered[discover_id].enable()
+            self.discovered[discover_id].touch()
+            return self.discovered[discover_id]
 
-        if device_id not in self.discovery_history:
-            self.discovery_history[device_id] = time()
-        kwargs['discovered_at'] = self.discovery_history[device_id]
+        self.discovered[discover_id] = DiscoveredDevice(self, discover_id, device_data)
+        discovered = self.discovered[discover_id]
+        if discover_id not in self.discovery_history:
+            self.discovery_history[discover_id] = time()
+            newly_found = True
 
-        self.discovered[device_id] = DiscoveredDevice(self, device_id, kwargs)
-        discovered = self.discovered[device_id]
-        if device_id not in self.discovery_history:
-            self.discovery_history[device_id] = time()
-            if 'notification_title' in kwargs:
-                notification_title = kwargs['notification_title']
-            else:
-                notification_title = "New %s device found." % kwargs['source']
-            if 'notification_message' in kwargs:
-                notification_message = kwargs['notification_message']
-            else:
-                notification_message = "<p>New %s device found:</p><p>Description: %s</p>" \
-                                       % (kwargs['source'], kwargs['display_description'])
-                if discovered.mfr != '':
-                    notification_message += "<p>Manufacturer: %s</p>" % discovered.mfr
-                if discovered.model != '':
-                    notification_message += "<p>Model: %s</p>" % discovered.model
-                if discovered.serial != '':
-                    notification_message += "<p>Serial: %s</p>" % discovered.serial
+        device_data['discovered_at'] = self.discovery_history[discover_id]
+
+        if 'notification_title' in kwargs:
+            notification_title = kwargs['notification_title']
+        else:
+            notification_title = "New %s device found." % device_data['source']
+        if 'notification_message' in kwargs:
+            notification_message = kwargs['notification_message']
+        else:
+            notification_message = "<p>New %s device found:</p><p>Description: %s</p>" \
+                                   % (device_data['source'], device_data['notification_description'])
+            if discovered.mfr != '':
+                notification_message += "<p>Manufacturer: %s</p>" % discovered.mfr
+            if discovered.model != '':
+                notification_message += "<p>Model: %s</p>" % discovered.model
+            if discovered.serial != '':
+                notification_message += "<p>Serial: %s</p>" % discovered.serial
+
+        if newly_found is True:
             self._Notifications.add({
                 'title': notification_title,
                 'message': notification_message,
@@ -206,6 +210,27 @@ class Discovery(YomboLibrary):
                 'always_show_allow_clear': True,
             })
         return discovered
+
+    def update(self, discover_id, data, source=None):
+        discover_id = self.get_device_hash(discover_id, source)
+        self.discovered[discover_id].update_attributes(data)
+
+    def touch(self, discover_id, source):
+        discover_id = self.get_device_hash(discover_id, source)
+        self.discovered[discover_id].touch()
+
+    def set_yombo_device(self, discover_id, yombo_device, source):
+        discover_id = self.get_device_hash(discover_id, source)
+        self.discovered[discover_id].yombo_device = yombo_device
+        return self.discovered[discover_id]
+
+    def get_device_hash(self, discover_id, source=None):
+        if discover_id in self.discovered:
+            return discover_id
+
+        if source is None:
+            source = 'unknown'
+        return sha256_compact(str(source + discover_id).encode('utf-8'))
 
     def disable(self, discovered_id):
         if discovered_id in self.discovered:
@@ -225,15 +250,15 @@ class DiscoveredDevice(object):
     """
     A single discovered device.
     """
-    def __init__(self, parent, device_id, data):
+    def __init__(self, parent, discover_id, data):
         """
         Setup the cron event.
         """
         self._Parent = parent
-        self.device_id = device_id
-        self.discovered_at = data['discovered_at']
+        self.discover_id = discover_id
+        self.discovered_at = data.get('discovered_at', time())
+        self.last_seen_at = data.get('last_seen_at', time())
         self.source = data['source']
-        self.display_description = data['display_description']
         self.description = data.get('description', '')
         self.mfr = data.get('mfr', '')
         self.model = data.get('model', '')
@@ -253,10 +278,10 @@ class DiscoveredDevice(object):
         """
         if 'source' in device:
             self.source = device["source"]
-        if 'display_description' in device:
-            self.display_description = device["display_description"]
         if 'description' in device:
             self.description = device["description"]
+        if 'mfr' in device:
+            self.mfr = device["mfr"]
         if 'model' in device:
             self.model = device["model"]
         if 'serial' in device:
@@ -271,6 +296,10 @@ class DiscoveredDevice(object):
             self.variables = device["variables"]
         if 'yombo_device' in device:
             self.yombo_device = device["yombo_device"]
+        if 'discovered_at' in device:
+            self.discovered_at = device["discovered_at"]
+        if 'last_seen_at' in device:
+            self.last_seen_at = device["last_seen_at"]
 
     def disable(self):
         self.enabled = False
@@ -278,8 +307,18 @@ class DiscoveredDevice(object):
     def enable(self):
         self.enabled = True
 
+    def touch(self):
+        self.last_seen_at = time()
+
+    def __str__(self):
+        return "Discovered: %s - %s" % (self.label, self.description)
+
     @property
-    def json_output(self):
+    def create_yombo_device_details(self):
+        """
+        Used to create a new device.
+        :return:
+        """
         out_variables = {}
         counter = 90
         for variable_name, variables in self.variables.items():
@@ -292,11 +331,48 @@ class DiscoveredDevice(object):
             else:
                 out_variables[variable_name]["new_%s" % counter] = variables
                 counter += 1
-        data = {
+        return json.dumps({
             'label': self.label,
             'machine_label': self.machine_label,
             'description': self.description,
             'device_type_id': self.device_type.device_type_id,
             'vars': out_variables,
+        })
+
+    def asdict(self):
+        """
+        Display all the various details about the discovered device.
+        :return:
+        """
+        out_variables = {}
+        counter = 90
+        for variable_name, variables in self.variables.items():
+            if variable_name not in out_variables:
+                out_variables[variable_name] = {}
+            if isinstance(variables, list):
+                for variable in variables:
+                    out_variables[variable_name]["new_%s" % counter] = variable
+                    counter += 1
+            else:
+                out_variables[variable_name]["new_%s" % counter] = variables
+                counter += 1
+        if self.yombo_device is not None:
+            yombo_device_id = self.yombo_device.device_id
+            yombo_device_label = self.yombo_device.full_label
+        else:
+            yombo_device_id = None
+            yombo_device_label = ''
+
+        return {
+            'label': self.label,
+            'machine_label': self.machine_label,
+            'description': self.description,
+            'source': self.source,
+            'device_type_id': self.device_type.device_type_id,
+            'device_type_machine_label': self.device_type.machine_label,
+            'yombo_device_id': yombo_device_id,
+            'yombo_device_label': yombo_device_label,
+            'model': self.model,
+            'serial': self.serial,
+            'vars': out_variables,
         }
-        return json.dumps(data)
