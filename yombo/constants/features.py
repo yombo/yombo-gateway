@@ -7,6 +7,7 @@ FEATURE_BRIGHTNESS = 'brightness'
 FEATURE_CHANNEL_CONTROL = 'channel_control'
 FEATURE_CONTROLLABLE = 'controllable'
 FEATURE_COLOR_TEMP = 'color_temp'
+FEATURE_COLOR_TYPE = 'color_type'
 FEATURE_DETECTS_MOTION = 'detects_motion'
 FEATURE_EFFECT = 'effect'
 FEATURE_FAN_MODE = "fan_mode"
