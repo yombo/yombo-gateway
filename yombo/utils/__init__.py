@@ -57,6 +57,10 @@ from yombo.utils.decorators import deprecated, memoize_ttl, memoize_
 import yombo.ext.base62 as base62
 
 
+def json_human(data):
+    return json.dumps(data, indent=4, sort_keys=True)
+
+
 def sha256_compact(input):
     return base62.encodebytes(sha256(unicode_to_bytes(input)).digest())
 
