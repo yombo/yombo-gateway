@@ -75,16 +75,13 @@ class Device_Command(object):
     @status.setter
     def status(self, val):
         try:
-#            logger.info("status setter1: {val}", val=val)
             status = val.lower()
-#            logger.info("status setter2: {status}", status=status)
             if status not in self.status_ids:
                 logger.warn("Device command {id} tried to set an invalid status: {status}",
                             id=self.request_id, status=val)
                 self._status = 'unknown'
             else:
                 self._status = status
-#                logger.info("status setter5: {status}", status=self._status)
         except AttributeError as e:
             logger.warn("Error setting device command {id} tried to set an invalid status: {status}, error: {error}",
                         id=self.request_id, status=val, error=e)

@@ -1310,7 +1310,7 @@ class Base_Device(object):
         for extra_key in list(new_extra.keys()):
             if extra_key not in self.STATUS_EXTRA:
                 logger.warn(
-                    "In future version, the 'status_extra' key '%s' will be removed. Update device class"
+                    "In future version, the 'status_extra' key '%s' will be removed. Or update device class"
                     " 'self.STATUS_EXTRA' to include this attribute." % extra_key)
                 # del new_extra[extra_key]
 
