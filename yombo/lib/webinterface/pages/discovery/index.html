@@ -38,21 +38,29 @@
                         <table width="100%" class="table table-striped table-bordered table-hover" id="dataTables-needadding">
                             <thead>
                                 <tr>
-                                    <tr><th>Description</th><th>Manufacturer</th><th>Model</th><th>Serial</th><th>Discovered</th><th>Action</th></tr>
+                                    <th>Source</th>
+                                    <th>Description</th>
+                                    <th>Manufacturer</th>
+                                    <th>Model</th>
+                                    <th>Serial</th>
+                                    <th>First<br>Found</th>
+                                    <th>Last<br>Found</th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody>{% for device_id, device in discovery.items() if device.yombo_device == None %}
                                  <tr>
-                                     <td>{{ device.display_description }}</td>
+                                     <td>{{ device.source }}</td>
+                                     <td>{{ device.description }}</td>
                                      <td>{{ device.mfr }}</td>
                                      <td>{{ device.model }}</td>
                                      <td>{{ device.serial }}</td>
                                      <td>{{ device.discovered_at|epoch_to_human }}</td>
+                                     <td>{{ device.last_seen_at|epoch_to_pretty_date }}</td>
                                      <td>
                                          {% if device.yombo_device == None %}
                                          <form action="/devices/add/{{device.device_type.device_type_id}}" method="post">
-                                            <input type="hidden" name="vars" value='{{device_type_id}}'>
-                                            <input type="hidden" name="json_output" value='{{device.json_output}}'>
+                                            <input type="hidden" name="json_output" value='{{device.create_yombo_device_details}}'>
                                             <button type="submit" class="btn btn-primary col-xs-12">Add Yombo Device</button>
                                         </form>
                                          {% else %}
@@ -72,16 +80,25 @@
                         <table width="100%" class="table table-striped table-bordered table-hover" id="dataTables-added">
                             <thead>
                                 <tr>
-                                    <tr><th>Description</th><th>Manufacturer</th><th>Model</th><th>Serial</th><th>Discovered</th><th>Action</th></tr>
+                                    <th>Source</th>
+                                    <th>Description</th>
+                                    <th>Manufacturer</th>
+                                    <th>Model</th>
+                                    <th>Serial</th>
+                                    <th>First<br>Found</th>
+                                    <th>Last<br>Found</th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody>{% for device_id, device in discovery.items() if device.yombo_device != None %}
                                  <tr>
-                                     <td>{{ device.display_description }}</td>
+                                     <td>{{ device.source }}</td>
+                                     <td>{{ device.description }}</td>
                                      <td>{{ device.mfr }}</td>
                                      <td>{{ device.model }}</td>
                                      <td>{{ device.serial }}</td>
                                      <td>{{ device.discovered_at|epoch_to_human }}</td>
+                                     <td>{{ device.last_seen_at|epoch_to_pretty_date }}</td>
                                      <td>
                                          {% if device.yombo_device == None %}
                                          <form action="/devices/add/{{device.device_type.device_type_id}}" method="post">

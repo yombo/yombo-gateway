@@ -110,6 +110,7 @@ def route_home(webapp):
                 session['auth_at'] = time()
                 session['yomboapi_session'] = login['session']
                 session['yomboapi_login_key'] = login['login_key']
+
                 request.received_cookies[webinterface._WebSessions.config.cookie_session_name] = session.session_id
                 return login_redirect(webinterface, request, session)
             else:
