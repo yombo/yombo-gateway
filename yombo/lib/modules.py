@@ -140,7 +140,6 @@ class Modules(YomboLibrary):
         """
         return self.get(module_requested)
 
-
     def __setitem__(self, module_requested, value):
         """
         Sets are not allowed. Raises exception.
@@ -309,13 +308,6 @@ class Modules(YomboLibrary):
                 yield self.module_invoke(module._Name, "_unload_", called_by=self)
             except YomboWarning:
                 pass
-            finally:
-                delete_component = module._FullName
-                # self.del_imported_module(module_id, module._Name.lower())
-                # if delete_component.lower() in self._Loader.loadedComponents:
-                #     print("modules.unload_modules....4 finally 4")
-                #     # del self._Loader.loadedComponents[delete_component.lower()]
-                #     print("modules.unload_modules....4 finally 5")
         yield self._Loader.library_invoke_all("_modules_unloaded_", called_by=self)
 
     @inlineCallbacks
@@ -328,8 +320,6 @@ class Modules(YomboLibrary):
             ini.readfp(fp)
             for section in ini.sections():
                 options = ini.options(section)
-                # print("options before loading: %s" % options)
-                # print("options before loading: %s" % type(options))
                 if 'mod_machine_label' in options:
                     mod_machine_label = ini.get(section, 'mod_machine_label')
                     options.remove('mod_machine_label')
@@ -486,19 +476,12 @@ class Modules(YomboLibrary):
                 continue
             self._rawModulesList[data['id']] = data
 
-        # print("getting DB modules.")
         modulesDB = yield self._LocalDB.get_modules()
-        # print("modulesdb: %s" % modulesDB)
-        # print " "
         for module in modulesDB:
-            # print "module: %s" % module
             self._rawModulesList[module.id] = module.__dict__
             self._rawModulesList[module.id]['load_source'] = 'sql'
-        # print "_rawModulesList: %s" % self._rawModulesList
 
         logger.debug("Building raw module list done.")
-
-#        logger.debug("Complete list of modules, before import: {rawModules}", rawModules=self._rawModulesList)
 
     @inlineCallbacks
     def do_import_modules(self):
@@ -510,9 +493,6 @@ class Modules(YomboLibrary):
             except CalledProcessError as e:
                 t = e.returncode, e.message
             return t
-
-        # logger.debug("Import modules: self._rawModulesList: {_rawModulesList}", _rawModulesList=self._rawModulesList)
-
 
         for module_id, module in self._rawModulesList.items():
             pathName = "yombo.modules.%s" % module['machine_label']
@@ -612,8 +592,6 @@ class Modules(YomboLibrary):
             self.modules[module_id]._module_device_types_cached = {}  # populated by Modules::module_init_invoke
             self.modules[module_id]._module_devices_cached = {}
             self.modules[module_id]._module_variables_cached = {}
-            # print "loading modules: %s" % self.modules[module_id]._machine_label
-            # print "loading modules: %s" % self.modules[module_id]._status
 
             possible_module_files = ['_devices', '_input_types']
             for possible_file_name in possible_module_files:
@@ -625,7 +603,6 @@ class Modules(YomboLibrary):
                     classes = readmodule(file_path)
                     for name, file_class_name in classes.items():
 
-                        # print("IT-load_validators21")
                         klass = getattr(module_tail, name)
                         if possible_file_name == '_devices':
                             self._DeviceTypes.platforms[name.lower()] = klass
@@ -651,18 +628,7 @@ class Modules(YomboLibrary):
 
         for module_id, module in self.modules.items():
 
-            # module_device_types = yield self._LocalDB.get_module_device_types(module_id)
-            # for module_device_type in module_device_types:
-            #     if module_device_type.id in self._Loader.loadedLibraries['devicetypes']:
-            #         self.modules[module_id]._device_types.append(module_device_type.id)
-            #     else:
-            #         logger.info("Module '{module}' has no device types.", module=module._label)
-
             logger.debug("Starting module_init_invoke for module: {module}", module=module)
-            # module._ModuleVariables = yield self.module_variables(
-            #     module._Name,
-            #     module_id,
-            #     )
             module._module_variables = partial(
                 self.module_variables,
                 module._Name,
@@ -679,9 +645,7 @@ class Modules(YomboLibrary):
                 self.module_device_types,
                 module_id,
             )
-            # print("calling do update module for module: %s" % module._label)
             yield self.do_update_module_cache(module)
-            # module._ModuleType = self._rawModulesList[module_id]['module_type']
 
             module._event_loop = self._Loader.event_loop
             module._AMQP = self._Loader.loadedLibraries['amqp']
@@ -1675,7 +1639,6 @@ class Modules(YomboLibrary):
         :param kwargs:
         :return:
         """
-        # print "disabling module: %s" % module_id
         api_data = {
             'status': 0,
         }
@@ -1799,12 +1762,6 @@ class Modules(YomboLibrary):
         :param kwargs:
         :return:
         """
-        # print "disabling module: %s" % module_id
-        api_data = {
-            'module_id': module_id,
-            'status': new_status,
-        }
-
         if module_id not in self.modules:
             raise YomboWarning("module_id doesn't exist. Nothing to disable.", 300, 'disable_module', 'Modules')
 
