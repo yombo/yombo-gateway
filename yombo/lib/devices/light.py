@@ -41,6 +41,20 @@ class Light(Device):
         if len(self.status_history) > 0:
             machine_status_extra = self.status_history[0].machine_status_extra
             if STATUS_EXTRA_BRIGHTNESS in machine_status_extra:
+                machine_status_extra[STATUS_EXTRA_BRIGHTNESS]
+            else:
+                return 0
+        return None
+
+    @property
+    def percent(self):
+        """
+        Return the brightness as a percent for this light. Returns a range between 0 and 100, converts based on the
+        'number_of_steps'.
+        """
+        if len(self.status_history) > 0:
+            machine_status_extra = self.status_history[0].machine_status_extra
+            if STATUS_EXTRA_BRIGHTNESS in machine_status_extra:
                 return translate_int_value(machine_status_extra[STATUS_EXTRA_BRIGHTNESS],
                                            0, self.FEATURES[FEATURE_BRIGHTNESS],
                                            0, 100)

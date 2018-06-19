@@ -3,7 +3,7 @@ from yombo.constants.features import (FEATURE_NUMBER_OF_STEPS,
     FEATURE_ALL_OFF, FEATURE_ALL_ON, FEATURE_PINGABLE, FEATURE_POLLABLE, FEATURE_SEND_UPDATES)
 from yombo.constants.commands import COMMAND_OFF, COMMAND_ON, COMMAND_SET_SPEED, COMMAND_SET_DIRECTION
 from yombo.constants.inputs import INPUT_DIRECTION, INPUT_SPEED
-from yombo.constants.status_extra import (STATUS_EXTRA_DIRECTION, STATUS_EXTRA_SPEED,
+from yombo.constants.status_extra import (STATUS_EXTRA_DIRECTION, STATUS_EXTRA_SPEED, STATUS_EXTRA_SPEED_LABEL,
     STATUS_EXTRA_OSCILLATING)
 
 from yombo.core.exceptions import YomboWarning
@@ -30,6 +30,7 @@ class Fan(Device):
         self.STATUS_EXTRA[STATUS_EXTRA_DIRECTION] = True
         self.STATUS_EXTRA[STATUS_EXTRA_OSCILLATING] = True
         self.STATUS_EXTRA[STATUS_EXTRA_SPEED] = True
+        self.STATUS_EXTRA[STATUS_EXTRA_SPEED_LABEL] = True
 
         self.FAN_SPEED_NAME_TO_INT = {
             SPEED_OFF: 0,
@@ -40,10 +41,69 @@ class Fan(Device):
 
         self.FAN_SPEED_INT_TO_NAME = {
             0: SPEED_OFF,
-            1: SPEED_LOW,
-            2: SPEED_MEDIUM,
-            3: SPEED_HIGH,
+            33: SPEED_LOW,
+            66: SPEED_MEDIUM,
+            99: SPEED_HIGH,
         }
+
+    def set_speed(self, speed, **kwargs):
+        """
+        Set the speed of a fan. Typically, these are the speeds:
+        0=off
+        1=slow
+        2=medium
+        3=fast
+
+        :param speed:
+        :param kwargs:
+        :return:
+        """
+        if 'inputs' not in kwargs:
+            kwargs['inputs'] = {}
+        kwargs['inputs'][INPUT_SPEED] = speed
+        if self.check_set_speed(speed) is False:
+            raise YomboWarning("Fan speed is invalid.")
+        return self.command(COMMAND_SET_SPEED, **kwargs)
+
+    def find_speed(self, input_value):
+        if input_value == 0:
+            return SPEED_OFF
+        elif input_value <= 33:
+            return SPEED_LOW
+        elif input_value <= 66:
+            return SPEED_MEDIUM
+        elif input_value <= 99:
+            return SPEED_HIGH
+
+    def set_brightness(self, brightness, **kwargs):
+        """
+        Set the brightness of the light, but the application or sender must know how many steps
+        the light can handle (100, 256, 1045, etc.)  Typically, light devices are controlled by
+        percentage and should actually use the set_percent() methid.
+
+
+        :param brightness:
+        :param kwargs:
+        :return:
+        """
+        if brightness <= 0:
+            return self.command(COMMAND_OFF, **kwargs)
+        else:
+            speed = self.find_speed(brightness)
+            return self.set_speed(speed, **kwargs)
+
+    def set_percent(self, percent, **kwargs):
+        """
+        Set the light based on a percent. Basically, just converts brightness to the devices
+        step range, and forwards request to set_brightness()
+
+        :param percent:
+        :param user_id:
+        :param component:
+        :param gateway_id:
+        :return:
+        """
+        return self.set_brightness(percent)
 
     @property
     def speed(self):
@@ -56,6 +116,17 @@ class Fan(Device):
                 return machine_status_extra[STATUS_EXTRA_SPEED]
             else:
                 return 0
+        return None
+
+    @property
+    def speed_label(self):
+        """
+        Return the current speed of a fan.
+        """
+        if len(self.status_history) > 0:
+            machine_status_extra = self.status_history[0].machine_status_extra
+            if STATUS_EXTRA_SPEED_LABEL in machine_status_extra:
+                return machine_status_extra[STATUS_EXTRA_SPEED_LABEL]
         return None
 
     @property
@@ -112,25 +183,6 @@ class Fan(Device):
             return True
         else:
             return False
-
-    def set_speed(self, speed, **kwargs):
-        """
-        Set the speed of a fan. Typically, these are the speeds:
-        0=off
-        1=slow
-        2=medium
-        3=fast
-
-        :param speed:
-        :param kwargs:
-        :return:
-        """
-        if 'inputs' not in kwargs:
-            kwargs['inputs'] = {}
-        kwargs['inputs'][INPUT_DIRECTION] = speed
-        if self.check_set_speed(speed) is False:
-            raise YomboWarning("Fan speed is invalid.")
-        return self.command(COMMAND_SET_SPEED, **kwargs)
 
     def check_set_direction(self, direction):
         """
