@@ -92,7 +92,7 @@ def route_devices(webapp):
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/devices/index", "Devices")
             webinterface.add_breadcrumb(request, "/devices/add", "Add Device - Select Device Type")
-            device_types = yield webinterface._DeviceTypes.addable()
+            device_types = yield webinterface._DeviceTypes.addable_device_types()
 
             return page.render(
                 alerts=webinterface.get_alerts(),

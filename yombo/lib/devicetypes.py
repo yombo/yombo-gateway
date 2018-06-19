@@ -402,7 +402,7 @@ class DeviceTypes(YomboLibrary):
                                _operation)
 
     @inlineCallbacks
-    def addable(self):
+    def addable_device_types(self):
         """
         Get a list of addable device types.
 
