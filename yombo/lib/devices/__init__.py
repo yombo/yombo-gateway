@@ -56,6 +56,7 @@ To send a command to a device is simple.
 """
 # Import python libraries
 
+import inspect
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
@@ -64,7 +65,6 @@ import msgpack
 import sys
 import traceback
 
-from hashlib import sha1
 from time import time
 from collections import OrderedDict
 
@@ -78,7 +78,7 @@ from ._device_command import Device_Command
 from yombo.core.exceptions import YomboDeviceError, YomboWarning, YomboHookStopProcessing
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import split, global_invoke_all, search_instance, do_search_instance, random_int, get_public_gw_id
+from yombo.utils import global_invoke_all, search_instance, do_search_instance, random_int
 logger = get_logger('library.devices')
 
 
@@ -320,7 +320,6 @@ class Devices(YomboLibrary):
                 record = record.__dict__
                 if record['energy_map'] is None:
                     record['energy_map'] = {"0.0":0, "1.0":0}
-                # print("record['energy_map']: %s" % record['energy_map'])
                 # record['energy_map'] = json.loads(str(record['energy_map']))
                 new_map = {}
                 for key, value in record['energy_map'].items():
@@ -347,17 +346,6 @@ class Devices(YomboLibrary):
                                       )
                 except YomboHookStopProcessing as e:
                     pass
-
-
-                        # print("devices: %s" % self.devices )
-        # for device_id, device in self.devices.items():
-        #     d = Deferred()
-        #     d.addCallback(lambda ignored: maybeDeferred(self.devices[device_id]._init_))
-        #     d.addErrback(self.import_device_failure, device)
-        #     # d.addCallback(lambda ignored: maybeDeferred(self.devices[device_id]._start_))
-        #     # d.addErrback(self.import_device_failure, device)
-        #     d.callback(1)
-        #     yield d
 
     def sorted(self, key=None):
         """
@@ -501,7 +489,6 @@ class Devices(YomboLibrary):
         #            return self.devices[device_id]
 
     def import_device_failure(self, failure, device):
-        print("ERRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR")
         logger.error("Got failure while creating device instance for '{label}': {failure}", failure=failure,
                      label=device['label'])
 
@@ -781,7 +768,12 @@ class Devices(YomboLibrary):
         :return: Pointer to requested device.
         :rtype: dict
         """
-        # logger.debug("looking for: {device_requested}", device_requested=device_requested)
+        if inspect.isclass(device_requested):
+            if isinstance(device_requested, Device):
+                return device_requested
+            else:
+                raise ValueError("Passed in an unknown object")
+
         if limiter is None:
             limiter = .89
 
@@ -908,13 +900,11 @@ class Devices(YomboLibrary):
             logger.debug("add new device results: {device_results}", device_results=device_results)
 
             if 'variable_data' in api_data and len(api_data['variable_data']) > 0:
-                # print("data['variable_data']: %s", data['variable_data'])
                 variable_results = yield self.set_device_variables(device_results['data']['id'],
                                                                    api_data['variable_data'],
                                                                    'add',
                                                                    source,
                                                                    session=session)
-                # print("variable_results: %s" % variable_results)
                 if variable_results['code'] > 299:
                     results = {
                         'status': 'failed',
@@ -968,9 +958,7 @@ class Devices(YomboLibrary):
     #todo: convert to use a deferred semaphore
     @inlineCallbacks
     def set_device_variables(self, device_id, variables, action_type=None, source=None, session=None):
-        # print("set variables: %s" % variables)
         for field_id, data in variables.items():
-            print("devices.set_device_variables.data: %s" % data)
             for data_id, value in data.items():
                 if value == "":
                     continue
@@ -983,7 +971,6 @@ class Devices(YomboLibrary):
                         'data_weight': 0,
                         'data': value,
                     }
-                    # print("Posting new variable: %s" % post_data)
                     try:
                         var_data_results = yield self._YomboAPI.request('POST', '/v1/variable/data',
                                                                         post_data,
@@ -996,13 +983,12 @@ class Devices(YomboLibrary):
                             'apimsghtml': "Couldn't add device variables: %s" % e.html_message,
                         }
                     data = var_data_results['data']
-                    self._LocalDB.add_variable_data(data)
+                    self._LocalDB.add_variable_data(var_data_results['data'])
                 else:
                     post_data = {
                         'data_weight': 0,
                         'data': value,
                     }
-                    print("PATCHing variable: %s" % post_data)
                     try:
                         var_data_results = yield self._YomboAPI.request(
                             'PATCH',
@@ -1021,7 +1007,6 @@ class Devices(YomboLibrary):
 
         if device_id in self.devices:  # Load device variable cache
             yield self.devices[device_id].device_variables()
-        # print("var_data_results: %s" % var_data_results)
         try:
             global_invoke_all('_device_variables_updated_',
                               called_by=self,
@@ -1150,7 +1135,6 @@ class Devices(YomboLibrary):
 
         api_data = {}
         for key, value in data.items():
-            # print("key (%s) is of type: %s" % (key, type(value)))
             if hasattr(device, key):
                 if isinstance(value, str) and len(value) == 0 :
                     # if key == 'energy_map':
@@ -1161,7 +1145,6 @@ class Devices(YomboLibrary):
                 api_data[key] = value
 
         if source != 'amqp':
-            # print("send this data to api: %s" % api_data)
             if 'session' in kwargs:
                 session = kwargs['session']
             else:
@@ -1169,7 +1152,6 @@ class Devices(YomboLibrary):
             device_results = yield self._YomboAPI.request('PATCH', '/v1/device/%s' % device_id,
                                                           api_data,
                                                           session=session)
-            # print("got this data from api: %s" % device_results)
             if device_results['code'] > 299:
                 return {
                     'status': 'failed',
