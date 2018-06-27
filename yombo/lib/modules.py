@@ -38,6 +38,7 @@ from twisted.internet.defer import inlineCallbacks, maybeDeferred, Deferred, Def
 from yombo.core.exceptions import YomboHookStopProcessing, YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
+import yombo.core.settings as settings
 from yombo.utils import search_instance, do_search_instance, dict_merge, read_file, bytes_to_unicode,\
     get_python_package_info, global_invoke_all
 from yombo.utils.decorators import memoize_ttl
@@ -204,7 +205,7 @@ class Modules(YomboLibrary):
         self.gateway_id = self._Configs.get('core', 'gwid', 'local', False)
         self._invoke_list_cache = {}  # Store a list of hooks that exist or not. A cache.
         self.hook_counts = {}  # keep track of hook names, and how many times it's called.
-        self.hooks_called = MaxDict(200, {})
+        self.hooks_called = MaxDict(400, {})
         self.module_search_attributes = ['_module_id', '_module_type', '_label', '_machine_label', '_description',
             '_short_description', '_medium_description', '_public', '_status']
         self.disabled_modules = {}
@@ -314,10 +315,11 @@ class Modules(YomboLibrary):
     def build_raw_module_list(self):
         logger.debug("Building raw module list start.")
         try:
-            fp = open("localmodules.ini")
-            ini = configparser.SafeConfigParser()
-            ini.optionxform=str
-            ini.readfp(fp)
+            localmodules_ini_path = "%s/localmodules.ini" % settings.arguments['working_dir']
+            ini = configparser.ConfigParser()
+            ini.optionxform = str
+            ini.read(localmodules_ini_path)
+
             for section in ini.sections():
                 options = ini.options(section)
                 if 'mod_machine_label' in options:
@@ -417,7 +419,6 @@ class Modules(YomboLibrary):
                 }
 
                 self._localModuleVars[mod_label] = {}
-                # print("options before adding: %s" % options)
                 for item in options:
                     logger.info("Adding module from localmodule.ini: {item}", item=mod_machine_label)
                     if item not in self._localModuleVars[mod_label]:
@@ -462,16 +463,13 @@ class Modules(YomboLibrary):
                     }
                     self._localModuleVars[mod_label][variable['field_machine_label']] = variable
 
-                # print("done importing variables frmom localmodule.ini")
-#            logger.debug("localmodule vars: {lvars}", lvars=self._localModuleVars)
-            fp.close()
+                logger.debug("Done importing variables frmom localmodule.ini")
         except IOError as xxx_todo_changeme:
             (errno, strerror) = xxx_todo_changeme.args
             logger.debug("localmodule.ini error: I/O error({errornumber}): {error}", errornumber=errno, error=strerror)
 
         # Local system modules.
         for module_name, data in SYSTEM_MODULES.items():
-            # print data
             if self._Configs.get('system_modules', data['machine_label'], 'enabled') != 'enabled':
                 continue
             self._rawModulesList[data['id']] = data
@@ -487,7 +485,6 @@ class Modules(YomboLibrary):
     def do_import_modules(self):
         def install_pip_module(module_name):
             try:
-                # out = check_output(["pwd"])
                 out = check_output(['pip3', 'install', module_name])
                 t = 0, out
             except CalledProcessError as e:
@@ -700,12 +697,6 @@ class Modules(YomboLibrary):
                 d.addCallback(lambda ignored: self.modules_invoke_log('debug', module._label, 'module', '_init_', 'Finished with call _init_.'))
                 d.callback(1)
                 results = yield d
-                # self.hooks_called[module._Name + ":_init"] = {
-                #     'module': module._Name,
-                #     'hook': "_init_",
-                #     'time': int(time()),
-                #     'called_by': "yombo.lib.modules",
-                # }
             except RuntimeWarning as e:
                 pass
             except Exception as e:
@@ -714,7 +705,7 @@ class Modules(YomboLibrary):
                 self.disabled_modules[module_id] = "Caught exception during call '_init_': %s" % e
 
     def _log_hook_called(self, results, name, module, hook, calling_component):
-        # print("results in _log_hook_called: %s" % results)
+        print("results in _log_hook_called: %s" % results)
         self.hooks_called[name] = {
             'module': module._Name,
             'hook': hook,
@@ -728,7 +719,6 @@ class Modules(YomboLibrary):
         # print("starting update_module_cache: %0.3f " % time())
         for module_id, module in self.modules.items():
             yield self.do_update_module_cache(module)
-        # print("done update_module_cache: %0.3f " % time())
 
     @inlineCallbacks
     def do_update_module_cache(self, module):
@@ -755,8 +745,6 @@ class Modules(YomboLibrary):
         final_results = None
 
         for hook in [hook_name, '_yombo_universal_hook_']:
-        # for hook in [hook_name]:
-            # if hook == '_yombo_universal_hook_':
             cache_key = requested_module + hook
             if cache_key in self._invoke_list_cache:
                 if self._invoke_list_cache[cache_key] is False:
@@ -766,7 +754,6 @@ class Modules(YomboLibrary):
                 self._invoke_list_cache[cache_key] is False
                 # logger.warn("Cache module hook ({cache_key})...SKIPPED", cache_key=cache_key)
                 return None
-                # raise YomboWarning("Cannot call YomboModule hooks")
             if not (hook.startswith("_") and hook.endswith("_")):
                 hook = module._Name.lower() + "_" + hook
             kwargs['hook_name'] = hook
@@ -785,9 +772,6 @@ class Modules(YomboLibrary):
 
                     try:
                         # self.modules_invoke_log('debug', module._label, 'module', hook, 'About to call %s.' % hook)
-                        # d = maybeDeferred(method, **kwargs)
-                        # d.addErrback(self.module_invoke_failure, module._Name, hook)
-                        # results = yield d
                         d = Deferred()
                         d.addCallback(lambda ignored: self.modules_invoke_log('debug', module._label, 'module', hook, 'About to call %s' % hook))
                         d.addCallback(lambda ignored: maybeDeferred(method, **kwargs))
@@ -809,10 +793,8 @@ class Modules(YomboLibrary):
 
                 else:
                     pass
-                    # logger.debug("----==(Module {module} doesn't have a callable function: {function})==-----", module=module._FullName, function=hook)
             else:
                 self._invoke_list_cache[cache_key] = False
-                # logger.debug("Cache module hook ({library}:{hook})...setting false", library=module._FullName, hook=hook)
             return final_results
 
     @inlineCallbacks
@@ -821,9 +803,6 @@ class Modules(YomboLibrary):
         Calls module_invoke for all loaded modules.
         """
         def add_results(value, results, label):
-            # print('Success results:', results)
-            # print('Success label:', label)
-            # print('Success value:', value)
             if value is not None:
                 results[label] = value
             return value
