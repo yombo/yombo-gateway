@@ -69,13 +69,13 @@ class YomboLibrary(Entity):
         if headers['message_type'] == 'response':
             self.amqp_incoming_response(headers=headers, **kwargs)
 
-    def amqp_incoming_request(self, headers, body, **kwargs):
+    def amqp_incoming_request(self, **kwargs):
         """
         This method should be implemented by any modules expecting to receive amqp incoming requests.
         """
         pass
 
-    def amqp_incoming_response(self, headers, body, **kwargs):
+    def amqp_incoming_response(self, **kwargs):
         """
         This method should be implemented by any modules expecting to receive amqp incoming responses.
         """
