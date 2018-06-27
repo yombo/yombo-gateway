@@ -163,8 +163,6 @@ class Localize(YomboLibrary):
             except Exception as e:
                 logger.warn("Unable list module local files: %s" % e)
 
-            # print "localize . self.files: %s" % self.files
-
             #always check english. If it gets updated, we need to update them all!
             hash_obj = sha224(open(self.files['en'][0], 'rb').read())
 
@@ -181,21 +179,14 @@ class Localize(YomboLibrary):
                 for fname in files[1:]:
                     hash_obj.update(open(fname, 'rb').read())
                 checksum = hash_obj.hexdigest()
-                # print "self.hashes: %s" % self.hashes
-                # print "checksum (%s): %s" % (lang, checksum)
                 if lang in self.hashes:
-                    # print "self.hashes[lang]: %s" % self.hashes[lang]
                     if checksum == self.hashes[lang]:
-                        # print "skipping lang due to checksum match: %s" % lang
                         self.hashes[lang] = checksum
                         continue
 
                 self.hashes[lang] = checksum
-                # print "not skipping lang due to checksum mismatch: %s" % lang
                 languages_to_update[lang] = 'aaa'
 
-            # print "languages_to_update: %s" % languages_to_update
-            # print "self.default_lang 11: %s" % self.default_lang()
             # If we have a default language, lets make sure we have language files for it.
             if self.default_lang() is not None:
                 if self.default_lang() not in self.files:
@@ -221,7 +212,6 @@ class Localize(YomboLibrary):
             if 'en' in languages_to_update and self.default_lang() not in languages_to_update:
                 languages_to_update[self.default_lang()] = 'a'
 
-            # print "localize . languages_to_update: %s" % languages_to_update
 
             # Always do english language updates first, it's the base of all.
             if 'en' in languages_to_update:
@@ -260,7 +250,6 @@ class Localize(YomboLibrary):
         :return:
         """
         for item in ('LANGUAGE', 'LC_ALL', 'LC_MESSAGES', 'LANG'):
-            # print "checking for possible default language in: %s" % item
             if item in environ:
                 try:
                     return environ.get(item).split(".")[0]

@@ -746,7 +746,6 @@ class Configuration(YomboLibrary):
                 self.set(section, option, default)
                 self.configs[section][option]['reads'] += 1
             self._Statistics.increment("lib.configuration.get.default", bucket_size=15, anon=True)
-            # print "returning default: %s" % default
             return default
         else:
             self._Statistics.increment("lib.configuration.get.nodefault", bucket_size=15, anon=True)

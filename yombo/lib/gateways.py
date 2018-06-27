@@ -1245,7 +1245,6 @@ class Gateways(YomboLibrary):
         :param kwargs:
         :return:
         """
-        #        print "enabling gateway: %s" % gateway_id
         api_data = {
             'status': 1,
         }
@@ -1282,7 +1281,6 @@ class Gateways(YomboLibrary):
         :param kwargs:
         :return:
         """
-#        print "disabling gateway: %s" % gateway_id
         api_data = {
             'status': 0,
         }

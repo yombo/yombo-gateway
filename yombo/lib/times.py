@@ -1059,7 +1059,6 @@ class Times(YomboLibrary, object):
         sunrise_end = self.sunrise() # for today
         sunset_end = self.sunset_twilight()  # for today
         logger.debug("_setup_next_dawn_dusk_event - Sunset: {sunset}", sunset=sunset)
-        #print "t = %s" % datetime.fromtimestamp(time.time())
         curtime = time.time()
         # First, determine we are closer to sunrise or sunset
         secsRise = sunrise - curtime#here
@@ -1260,7 +1259,6 @@ class Times(YomboLibrary, object):
             self.is_twilight = True
         else:
             self.is_twilight = False
-        #print "istwilight = %s" % self.is_twilight
 
     def _CalcLightDark(self):
         """

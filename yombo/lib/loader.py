@@ -288,7 +288,6 @@ class Loader(YomboLibrary, object):
 
         self.run_phase = "libraries_load"
         for name, config in HARD_LOAD.items():
-            # print "sigint: %s" % self.sigint
             if self.sigint:
                 return
             # self._log_loader('debug', name, 'library', 'load', 'About to call _load_.')
@@ -306,7 +305,6 @@ class Loader(YomboLibrary, object):
         self.run_phase = "modules_init"
         yield self._moduleLibrary.init_modules()
 
-#        logger.debug("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1Calling start function of libraries.")
         self.run_phase = "libraries_start"
         for name, config in HARD_LOAD.items():
             if self.sigint:
@@ -575,8 +573,6 @@ class Loader(YomboLibrary, object):
                         self.hook_counts[library._Name] = {}
                     if hook not in self.hook_counts:
                         self.hook_counts[library._Name][hook] = {'Total Count': {'count': 0}}
-                    # print "hook counts: %s" % self.hook_counts
-                    # print "hook counts: %s" % self.hook_counts[library._Name][hook]
                     if calling_component not in self.hook_counts[library._Name][hook]:
                         self.hook_counts[library._Name][hook][calling_component] = {'count': 0}
                     self.hook_counts[library._Name][hook][calling_component]['count'] = self.hook_counts[library._Name][hook][calling_component]['count'] + 1
@@ -672,9 +668,7 @@ class Loader(YomboLibrary, object):
                         etype=type(e), msg=e)
             raise ImportError(e)
         module_tail = reduce(lambda p1, p2: getattr(p1, p2), [module_root, ]+pymodulename.split('.')[1:])
-        # print "module_tail: %s   pyclassname: %s" % (module_tail, pyclassname)
         klass = getattr(module_tail, pyclassname)
-        # print "klass: %s  " % klass
 
         # Put the component into various lists for mgmt
         if not isinstance(klass, Callable):

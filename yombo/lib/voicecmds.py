@@ -90,7 +90,7 @@ from inspect import isclass
 import re
 
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.internet.defer import inlineCallbacks
 
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary

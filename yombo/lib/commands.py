@@ -584,7 +584,6 @@ class Commands(YomboLibrary):
         :return: Results on the success/fail of the request.
         :rtype: dict
         """
-#        print "disabling command: %s" % command_id
         api_data = {
             'status': 0,
         }

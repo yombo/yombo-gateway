@@ -138,9 +138,6 @@ class SQLDict(YomboLibrary):
         """
         for name, di in self._dictionaries.items():
             if di['dirty'] or save_all:
-                # logger.info("save_sql_dict {name} ", name=name)
-                # logger.info("save_sql_dict {ser} ", ser=di['dict']._SQLDictionary__serializer)
-#                logger.warn("save_sql_dict 3 {di}", di=di)
                 safe_data = {}  # Sometimes wierd datatype's happen...  Not good.
                 for key, item in di['dict'].items():
 
@@ -153,13 +150,8 @@ class SQLDict(YomboLibrary):
                     else:
                         safe_data[key] = item
 
-                # logger.info("save_sql_dict 4 {di}", di=safe_data)
-
-                # logger.info("save_sql_dict {safe_data} ", safe_data=safe_data)
-                # save_data = msgpack.packb(safe_data, use_bin_type=True)
                 yield self._Libraries['localdb'].set_sql_dict(di['component_name'],
                         di['dict_name'], safe_data)
-#                print "in save_sql_dict - returned from saving data into sql"
                 di['dirty'] = False
 
 
@@ -248,7 +240,6 @@ class SQLDictionary(dict):
         """
         After calling the dictionary __setitem__, update the database.
         """
-#        print "sqldictioary:__setitem__: %s:%s" % (key, value)
         super(SQLDictionary, self).__setitem__(key, value)
         if key not in self and len(self) >= self.__max_length:
             self.popitem()

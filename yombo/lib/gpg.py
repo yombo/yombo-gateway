@@ -543,7 +543,6 @@ class GPG(YomboLibrary):
         output_key = {}
 
         for record in input_keys:
-            # print "list keys: %s" % record
             uid = record['uids'][0]
             # split the string by ( or )
             uid_list = re.split(r'\(|\)', uid)
@@ -556,7 +555,6 @@ class GPG(YomboLibrary):
                 'email': uid_list[2],
             }
 
-            endpoint_type = None
             email_parts = uid_results['email'].split('@')
             if len(email_parts) > 2:
                 logger.warn("Skipping GPG key due to invalid UID: {uid}", uid=uid)
@@ -573,7 +571,7 @@ class GPG(YomboLibrary):
                 endpoint_type = "unknown"
             endpoint_id = email_parts[0]
 
-            key_comment = uid[uid.find("(")+1:uid.find(")")]
+            # key_comment = uid[uid.find("(")+1:uid.find(")")]
             key = {
                 'fullname': uid_results['name'],
                 'comment': uid_results['comment'],

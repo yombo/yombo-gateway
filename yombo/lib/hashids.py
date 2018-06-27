@@ -95,9 +95,7 @@ class HashIDS(YomboLibrary, object):
             return self.keys[hasher_name]['hasher'].encode(hashedid)
 
     def decode(self, id_to_hash, hasher_name):
-        # print("hashids decoding: %s: %s" % (key, id))
         if hasher_name in self.keys:
-            # print "hashids key found."
             return self.keys[hasher_name]['hasher'].decode(id_to_hash)
         else:
             return self.keys[hasher_name]['hasher'].decode(id_to_hash)
