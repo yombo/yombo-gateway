@@ -456,6 +456,12 @@ class Atoms(YomboLibrary):
                                             )
 
     def convert_to_human(self, value, value_type):
+        """
+        Convert various value types to a more human friendly display.
+        :param value:
+        :param value_type:
+        :return:
+        """
         if value_type == 'bool':
             results = yombo.utils.is_true_false(value)
             if results is not None:
@@ -467,49 +473,6 @@ class Atoms(YomboLibrary):
             return yombo.utils.epoch_to_string(value)
         else:
             return value
-
-        # if gateway_id is None:
-        #     gateway_id = self.gateway_id
-        # if gateway_id != self.gateway_id:
-        #     raise YomboWarning("Cannot set atom value for another gateway.")
-        #
-        # search_chars = ['#', '+']
-        # if any(s in key for s in search_chars):
-        #     raise YomboWarning("atom keys cannot have # or + in them, reserved for searching.")
-        #
-        # # Call any hooks
-        # already_set = False
-        # if self.library_state >= 2:  # but only if we are not during init.
-        #     try:
-        #         atom_changes = yield yombo.utils.global_invoke_all(
-        #             '_atoms_preset_',
-        #             called_by = self,
-        #             **{'keys': key, 'value': value, 'new': key in self.__Atoms})
-        #     except YomboHookStopProcessing as e:
-        #         logger.warning("Not saving atom '{state}'. Resource '{resource}' raised' YomboHookStopProcessing exception.",
-        #                        state=key, resource=e.by_who)
-        #         returnValue(None)
-        #     for moduleName, newValue in atom_changes.items():
-        #         if newValue is not None:
-        #             logger.debug("atoms::set Module ({moduleName}) changes atom value to: {newValue}",
-        #                          moduleName=moduleName, newValue=newValue)
-        #             self.__Atoms['key'] = newValue
-        #             already_set = True
-        #             break
-        #
-        # self._Statistics.increment("lib.atoms.set", bucket_size=15, anon=True)
-        # if not already_set:
-        #    self.__Atoms[key]= value
-        #
-        # if self.library_state >= 2:  # but only if we are not during init.
-        #     # Call any hooks
-        #     try:
-        #         state_changes = yield yombo.utils.global_invoke_all('_atoms_set_',
-        #                                                             called_by=self,
-        #                                                             **{'key': key, 'value': value})
-        #     except YomboHookStopProcessing:
-        #         pass
-        #
 
     def os_data(self):
         """
