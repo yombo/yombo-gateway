@@ -582,7 +582,6 @@ class AmqpConfigHandler(YomboLibrary):
         except:
             pass
 
-
     def check_download_done(self):
         """
         Called after 30 seconds to check if downloads have completed. If they haven't, it will just give up and move on.
@@ -631,11 +630,6 @@ class AmqpConfigHandler(YomboLibrary):
         # logger.info("headers: {headers}", headers=properties.headers)
 
         response_type = headers['response_type']
-        # print("!!!!!!!!!!!!!!amqpconfigs got response type: %s" % "get_" + response_type)
-        # print("!!!!!!!!!!!!!!")
-        # print("!!!!!!!!!!!!!!amqpconfigs __pending_updates: %s" % self.__pending_updates)
-        # print("!!!!!!!!!!!!!!")
-        # print("!!!!!!!!!!!!!!amqp_incoming_response body: %s" % body)
         if response_type not in self.config_items:
             raise YomboWarning("Configuration item '%s' not configured." % "get_" + response_type)
         self.__process_queue[random_string(length=10)] = {
@@ -643,9 +637,13 @@ class AmqpConfigHandler(YomboLibrary):
             'headers': headers,
             'properties': properties,
         }
-        self.__pending_updates["get_" + response_type]['status'] = 'received'
 
-        self.process_config_queue();
+        full_response_type = "get_" + response_type
+        if full_response_type not in self.__pending_updates:  # Ignore old request items.
+            logger.warn("Configuration item not requested, dropping: {response_type}", response_type=response_type)
+            return
+        self.__pending_updates[full_response_type]['status'] = 'received'
+        self.process_config_queue()
 
     @inlineCallbacks
     def process_config_queue(self):
@@ -1038,7 +1036,6 @@ class AmqpConfigHandler(YomboLibrary):
             self._append_full_download_queue(item)
 
     def item_purged(self, config_item, id):
-        # request device updates
         body = {
             "id": id
         }
