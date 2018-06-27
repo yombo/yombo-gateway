@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-echo "user: $USER, sudu_user: $SUDO_USER"
-exit 0
+
 if [ "$USER" = "root" ] && [ "$SUDO_USER" == "" ]; then
   echo "This script cannot be run as root directly and must be run"
   echo "as the user owning the Yombo gateway service."
@@ -27,7 +26,6 @@ if [[ $rc != 0 ]]; then
 else
  SCRIPTPATH=$(dirname "$TEMPSCRIPTPATH")
 fi
-echo "results: $SCRIPTPATH"
 cd "$SCRIPTPATH"
 
 usage()
@@ -43,17 +41,19 @@ OPTIONS:
 EOF
 }
 
-while getopts ":xa" opt; do
-  case $opt in
-    6)
+ARC=$(uname -m)
+while true; do
+#  echo "Command: $1"
+  case "$1" in
+    "6")
       ARC="x86_64"
+      shift
       ;;
-    a)
+    "a")
       ARC="arm"
+      shift
       ;;
-    \?)
-      ARC=$(uname -m)
-      ;;
+    * ) break ;;
   esac
 done
 
@@ -104,6 +104,7 @@ if [ "$ARC" != "x86_64" ]; then
   echo "Advanced compiler optimization enabled for your architecture."
 else
   OPTIMIZE="no"
+  echo "This hardware architecture doesn't support advanced compiler optimizations."
 fi
 
 $SCRIPTPATH/scripts/update_debian $OPTIMIZE
