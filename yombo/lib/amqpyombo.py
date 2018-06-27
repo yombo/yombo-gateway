@@ -394,9 +394,7 @@ class AMQPYombo(YomboLibrary):
                             deliver=None, correlation_info=None,
                             received_message_meta=None, sent_message_meta=None,
                             subscription_callback=None, **kwargs):
-        # if subscription_callback is None:
-        #     logger.warn("Received invalid message, no subscription_callback!")
-        #     return
+
         # arguments = {
         #     'body': body,
         #     'properties': properties,
@@ -406,8 +404,8 @@ class AMQPYombo(YomboLibrary):
         #     'received_message_meta': received_message_meta,
         #     'sent_message_meta': sent_message_meta,
         # }
-        # print("amqp_incoming................")
-        # print(headers)
+        # print("amqp_incoming................: %s" % arguments)
+
         ## Valiate that we have the required headers
         if 'message_type' not in headers:
             raise YomboWarning("Discarding request message, header 'message_type' is missing.")
@@ -423,7 +421,6 @@ class AMQPYombo(YomboLibrary):
         # Now, route the message. If it's a yombo message, send it to your AQMPYombo for delivery
         if correlation_info is not None and correlation_info['callback'] is not None and \
                         isinstance(correlation_info['callback'], collections.Callable) is True:
-            # print("amqp_incoming................ routing to correlation callback")
             logger.debug("calling message callback, not incoming queue callback")
             sent = maybeDeferred(
                 correlation_info['callback'],
