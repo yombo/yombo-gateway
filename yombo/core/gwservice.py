@@ -68,7 +68,7 @@ class GWService(Service):
         """
         Stop the service, shouldn't be called by anyone!
         
-        If the service needs to be stoped due to error, use an L{exceptions}.
+        If the service needs to be stopped due to error, use an L{exceptions}.
         """
         logger.info("Yombo Gateway stopping.")
         yield self.loader.unload()
