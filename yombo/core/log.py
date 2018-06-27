@@ -44,7 +44,7 @@ def static_var(varname, value):
         @static_var("my_variable", 0)
         def some_function(x):
             some_function.my_variable += 1
-            print "I've been called %s times." % some_function.my_variable
+            print("I've been called %s times." % some_function.my_variable)
 
     :param varname: variable name to create
     :param value: initial value to set.
