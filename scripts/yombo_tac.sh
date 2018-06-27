@@ -24,7 +24,6 @@ LOGFILE=$WORK_DIR/log/service.log
 
 cd $SCRIPTPATH/..
 export SSL_CERT_FILE="$(python -m certifi)"
-#YOMBO_SERVICE="$YOMBO_SERVICE -y $TACFILE"
 
 #Check if pyenv is being used and isn't loaded...
 if [ -f ".python-version" ] ; then
@@ -37,7 +36,6 @@ if [ -f ".python-version" ] ; then
 fi
 
 YOMBO_SERVICE="echo \"$ECHOTAC\" | twistd $ARGUMENTS"
-echo "About to call this command: $YOMBO_SERVICE"
 while :
 do
   echo "Starting yombo svc..."
