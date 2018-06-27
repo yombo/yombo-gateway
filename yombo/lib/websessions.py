@@ -162,27 +162,40 @@ class WebSessions(YomboLibrary):
                 raise YomboWarning("Session cookie not found.")
                 # logger.debug("has_session found session_id in cookie: {session_id}", session_id=session_id)
 
+        results = yield self.get_session_by_id(session_id)
+        return results
+
+    @inlineCallbacks
+    def get_session_by_id(self, session_id=None):
+        """
+        Checks if the session ID is in the active session dictionary. If not, it queries the
+        database and returns the session.
+
+        :param session_id: The requested session id
+        :return: session
+        """
         if session_id is None:
             raise YomboWarning("Session id is not valid.")
-
         if session_id == "LOGOFF":
             raise YomboWarning("Session has been logged off.")
         if self.validate_session_id(session_id) is False:
             raise YomboWarning("Invalid session id.")
         if session_id in self.active_sessions:
             if self.active_sessions[session_id].is_valid is True:
-                # print("returning valid session....")
                 return self.active_sessions[session_id]
             else:
-                raise YomboWarning("Invalid session is no longer valid.")
+                raise YomboWarning("Session is no longer valid.")
         else:
             try:
                 db_session = yield self._LocalDB.get_web_session(session_id)
             except Exception as e:
                 raise YomboWarning("Cannot find session id.")
             self.active_sessions[session_id] = Auth(self, db_session, source='database')
-            return self.active_sessions[session_id]
-        raise YomboWarning("Unknown session lookup error..")
+            if self.active_sessions[session_id].is_valid is True:
+                return self.active_sessions[session_id]
+            else:
+                raise YomboWarning("Session is no longer valid.")
+        raise YomboWarning("Unknown session lookup error.")
 
     def get_cookie_domain(self, request):
         fqdn = self._Configs.get("dns", 'fqdn', None, False)

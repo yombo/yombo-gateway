@@ -130,14 +130,27 @@ class APIAuth(YomboLibrary):
                 except:
                     auth_id = None
         if auth_id is None:
-            raise YomboWarning("x-api-auth header nor query string is found.")
+            raise YomboWarning("x-api-auth header nor _api_query query string is found.")
+
+        return self.get_session_by_id(auth_id)
+
+    def get_session_by_id(self, auth_id):
+        """
+        Gets an API Auth session based on a auth_id.
+
+        :param auth_id:
+        :return:
+        """
         if self.validate_auth_id(auth_id) is False:
             raise YomboWarning("api auth key has invalid characters.")
-
         try:
-            return self.get(auth_id)
+            session = self.get(auth_id)
         except KeyError as e:
-            raise YomboWarning("api auth isn't found")
+            raise YomboWarning("API Auth key isn't found")
+
+        if session.is_valid is False:
+            raise YomboWarning("API Auth key is no longer valid.")
+        return session
 
     def create(self, label, description=None, permissions=None, auth_data=None, is_valid=None):
         """
