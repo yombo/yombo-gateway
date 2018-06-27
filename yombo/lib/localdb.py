@@ -1552,7 +1552,7 @@ ORDER BY id desc"""
         if anonymous_allowed:
             records = yield self.dbconfig.select('statistics',
                  select='id as stat_id, bucket_time, bucket_size, bucket_type, bucket_name, bucket_value, bucket_average_data, bucket_time',
-                 where=['finished = 1 AND uploaded = ?', uploaded_type], limit=2000)
+                 where=['finished = 1 AND uploaded = ?', uploaded_type], limit=750)
         else:
             records = yield self.dbconfig.select('statistics', select='*',
                  where=['finished = 1 AND uploaded = ? and anon = 0', uploaded_type])
