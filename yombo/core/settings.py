@@ -90,11 +90,8 @@ def read_yombo_ini():
                 yombo_ini[section][option] = value
     except IOError:
         print("yombo.ini doesn't exist and didn't (or wasn't allowed to) find a backup copy.")
-        # self._Atoms.set('configuration.yombo_ini.found', False)
         return False
-        # return
     except configparser.NoSectionError as e:
-        # self._Atoms.set('configuration.yombo_ini.found', False)
         print("CAUGHT ConfigParser.NoSectionError!!!!  In Loading. %s" % str(e))
         return False
     else:
