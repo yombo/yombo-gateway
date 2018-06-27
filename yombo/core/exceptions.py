@@ -136,7 +136,7 @@ class YomboCritical(RuntimeWarning):
     """
     Extends *RuntimeWarning* - A **fatal error** gateway exception - **forces the gateway to quit**.
     """
-    def __init__(self, message, errorno=101, name="unknown", component="component"):
+    def __init__(self, message, errorno=101, name="unknown", component="component", exit_code=None):
         """
         Setup the YomboCritical. When caught, call the exit function of this exception to
         exit the gateway.
@@ -151,6 +151,9 @@ class YomboCritical(RuntimeWarning):
         :param component: What type of ojbect is calling: component, library, or module
         :type component: string
         """
+        if exit_code is None:
+            exit_code = 1
+        self.exit_code = exit_code
         self.message = message
         self.errorno = errorno
         self.component = component
@@ -174,11 +177,12 @@ class YomboCritical(RuntimeWarning):
         """
         from twisted.internet import reactor
         import os
-        # print "caught ctrl-c"
-        reactor.addSystemEventTrigger('after', 'shutdown', os._exit, 1)
+        print("Yombo critical stopping......")
+        reactor.addSystemEventTrigger('after', 'shutdown', os._exit, self.exit_code)
         try:
             reactor.stop()
         except ReactorNotRunning as e:
+            print("Unable to stop reactor....%s" % e)
             pass
 
 
