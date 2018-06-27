@@ -105,7 +105,7 @@ from twisted.internet import reactor
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
-from yombo.utils import percentile, global_invoke_all, pattern_search
+from yombo.utils import percentile, global_invoke_all, pattern_search, random_int
 from yombo.utils.decorators import memoize_ttl
 from yombo.core.log import get_logger
 
@@ -181,8 +181,8 @@ class Statistics(YomboLibrary):
         return self.init_deferred
 
     def _start_(self, **kwargs):
-        # self._upload_statistics_loop.start(5, False) # for testing...
-        self._upload_statistics_loop.start(603.1, False) # about every 10 minutes
+        return  # Yombo doesn't currently store statistics in the cloud.
+        self._upload_statistics_loop.start(random_int(60*10, .2), False)  # about every 10 minutes
 
     def _stop_(self, **kwargs):
         """
@@ -936,7 +936,7 @@ class Statistics(YomboLibrary):
         stats = yield self._LocalDB.get_uploadable_statistics(0)
         if len(stats) > 0:
 
-            headers= {
+            headers = {
                 "request_type": "stats_save",
             }
             request_msg = self._AMQPYombo.generate_message_request(
@@ -947,15 +947,14 @@ class Statistics(YomboLibrary):
                 stats)
             request_msg['callback'] = self.upload_statistics_complete
 
-            # logger.info("request_msg: {request_msg}", request_msg=request_msg)
+            # logger.debug("request_msg: {request_msg}", request_msg=request_msg)
             self._AMQPYombo.publish(**request_msg)
             self.last_upload_count = len(stats)
         else:
             self.last_upload_count = 0
 
-    @inlineCallbacks
-    def upload_statistics_complete(self, msg=None, properties=None, **kwargs):
-#        print("upload_statistics_complete got message: %s" % msg)
+    def upload_statistics_complete(self, msg=None, **kwargs):
+        logger.debug("upload_statistics_complete got message: {msg}", msg=msg)
         if 'stats_completed' in msg and len(msg['stats_completed']) > 0:
             yield self._LocalDB.set_uploaded_statistics(2, msg['stats_completed'])
         if 'stats_failed' in msg and len(msg['stats_failed']) > 0:
