@@ -178,7 +178,6 @@ class Localize(YomboLibrary):
                 hash_obj.update(open(fname, 'rb').read())
             checksum = hash_obj.hexdigest()
 
-            print("language: checksums: %s" % self.hashes)
             if checksum != self.hashes['en']:
                 self.hashes = {}
 
@@ -246,8 +245,8 @@ class Localize(YomboLibrary):
 
             builtins.__dict__['_'] = self.handle_translate
             self.translator = self.get_translator()
-            print("DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDd  trans load")
-            print(_('ui::label::dashboard', label='mitch'))
+            # print("DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDd  trans load")
+            # print(_('ui::label::dashboard', label='mitch'))
         except Exception as e: # if problem with translation, at least return msgid...
             logger.error("Unable to load translations. Getting null one. Reason: %s" % e)
             logger.error("--------------------------------------------------------")
