@@ -80,7 +80,7 @@
                                              {% elif module._load_source == 'system modules'%}
                                                  System module, cannot modify.
                                              {% else %}
-                                                 Module not loaded from cloud. Cannot modify.
+                                                 Module not loaded from cloud. Cannot modify. Source: {{module._load_source}}
                                              {% endif %}
 
                                          </tr>{% endfor %}
