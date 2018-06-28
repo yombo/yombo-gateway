@@ -5,34 +5,10 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: lokalise.co\n"
 "Project-Id-Version: Yombo Frontend\n"
-"PO-Revision-Date: 2018-06-28 09:07\n"
+"PO-Revision-Date: 2018-06-28 18:38\n"
 "Last-Translator: lokalise.co\n"
 "Language-Team: lokalise.co\n\n"
 "Language: el\n"
-
-msgid "atom::cpu.count"
-msgstr "Number of CPUs (cores) gateway has."
-
-msgid "atom::mem.total"
-msgstr "Total memory on gateway."
-
-msgid "atom::os"
-msgstr "Operating system type."
-
-msgid "atom::os.codename"
-msgstr "OS Codename."
-
-msgid "atom::os.family"
-msgstr "Family OS belongs to."
-
-msgid "atom::os.fullname"
-msgstr "Fullname of the OS platform."
-
-msgid "atom::os.kernel"
-msgstr "System kernel information."
-
-msgid "atom::os.relase"
-msgstr "OS Release information."
 
 msgid "command::close"
 msgstr "Close"
@@ -250,47 +226,113 @@ msgstr "Web interface configuration."
 msgid "config::config_section::yomboapi"
 msgstr "API related items for communicating with remote Yombo API system."
 
-msgid "lib_state::amqp.amqpyombo.state"
-msgstr "True if connected, False if connection isnt' fully established."
+msgid "device_platform::alarm_control_panel"
+msgstr "Alarm control panel"
 
-msgid "lib_state::is.dark"
-msgstr "True if it's dark. The sun is below 'twilighthorizon'."
+msgid "device_platform::calendar"
+msgstr "Calendar"
 
-msgid "lib_state::is.dawn"
-msgstr "True is sun is rising and above 'twilighthorizon', but below horizon."
+msgid "device_platform::camera"
+msgstr "Camera"
 
-msgid "lib_state::is.day"
-msgstr "True if it's daytime. Day time is when sun is above horizon."
+msgid "device_platform::climate"
+msgstr "Climate"
 
-msgid "lib_state::is.dusk"
-msgstr "True is sun is setting and above 'twilighthorizon', but below horizon."
+msgid "device_platform::configurator"
+msgstr "Configurator"
 
-msgid "lib_state::is.light"
-msgstr "True if it's light. This includes sun above 'twilighthorizon' and includes sun above horizon. "
+msgid "device_platform::conversation"
+msgstr "Conversation"
 
-msgid "lib_state::is.night"
-msgstr "True if it's dark. Night time is when sun is below horizon."
+msgid "device_platform::cover"
+msgstr "Cover"
+
+msgid "device_platform::device_tracker"
+msgstr "Device tracker"
+
+msgid "device_platform::digital_sensor"
+msgstr "Digital sensor"
+
+msgid "device_platform::fan"
+msgstr "Fan"
+
+msgid "device_platform::group"
+msgstr "Group"
+
+msgid "device_platform::history_graph"
+msgstr "History graph"
+
+msgid "device_platform::image_processing"
+msgstr "Image processing"
+
+msgid "device_platform::light"
+msgstr "Light"
+
+msgid "device_platform::lock"
+msgstr "Lock"
+
+msgid "device_platform::mailbox"
+msgstr "Mailbox"
+
+msgid "device_platform::media_player"
+msgstr "Media player"
+
+msgid "device_platform::notify"
+msgstr "Notify"
+
+msgid "device_platform::plant"
+msgstr "Plant"
+
+msgid "device_platform::proximity"
+msgstr "Proximity"
+
+msgid "device_platform::remote"
+msgstr "Remote"
+
+msgid "device_platform::scene"
+msgstr "Scene"
+
+msgid "device_platform::script"
+msgstr "Script"
+
+msgid "device_platform::sensor"
+msgstr "Sensor"
+
+msgid "device_platform::sun"
+msgstr "Sun"
+
+msgid "device_platform::switch"
+msgstr "Switch"
+
+msgid "device_platform::updater"
+msgstr "Updater"
+
+msgid "device_platform::weblink"
+msgstr "Weblink"
 
 msgid "lib_state::is.twilight"
 msgstr "True if it's twilight. Sun his below horizon, but less then 'twilighthorizon' below the horizon."
 
-msgid "lib_state::loader.operating_mode"
-msgstr "The mode the system is in. One of: first_run, config, run"
+msgid "lib::atom::cpu.count"
+msgstr "Number of CPUs (cores) gateway has."
 
-msgid "lib_state::localize.default_language"
-msgstr "Default language system is currently set to."
+msgid "lib::atom::mem.total"
+msgstr "Total memory on gateway."
 
-msgid "lib_state::next.moonrise"
-msgstr "When the next moon rise is."
+msgid "lib::atom::os"
+msgstr "Operating system type."
 
-msgid "lib_state::next.moonset"
-msgstr "When the next moon set is."
+msgid "lib::atom::os.codename"
+msgstr "OS Codename."
 
-msgid "lib_state::next.sunrise"
-msgstr "When the next time sun is at the horizon, and rising."
+msgid "lib::atom::os.family"
+msgstr "Family OS belongs to."
 
-msgid "lib_state::next.sunset"
-msgstr "When the next time sun is at the horizon, and setting."
+msgid "lib::atom::os.fullname"
+msgstr "Fullname of the OS platform."
+
+msgid "lib::atom::os.kernel"
+msgstr "System kernel information."
 
 msgid "lib::configs::yombo.ini::about"
 msgstr "This file stores configuration information about the gateway."
@@ -303,6 +345,45 @@ msgstr "It appears the Yombo gateway still running. All changes will be lost!"
 
 msgid "lib::configs::yombo.ini::still_running_pid"
 msgstr "Yombo process id (PID): {number}"
+
+msgid "lib::state::amqp.amqpyombo.state"
+msgstr "True if connected, False if connection isnt' fully established."
+
+msgid "lib::state::is.dark"
+msgstr "True if it's dark. The sun is below 'twilighthorizon'."
+
+msgid "lib::state::is.dawn"
+msgstr "True is sun is rising and above 'twilighthorizon', but below horizon."
+
+msgid "lib::state::is.day"
+msgstr "True if it's daytime. Day time is when sun is above horizon."
+
+msgid "lib::state::is.dusk"
+msgstr "True is sun is setting and above 'twilighthorizon', but below horizon."
+
+msgid "lib::state::is.light"
+msgstr "True if it's light. This includes sun above 'twilighthorizon' and includes sun above horizon. "
+
+msgid "lib::state::is.night"
+msgstr "True if it's dark. Night time is when sun is below horizon."
+
+msgid "lib::state::loader.operating_mode"
+msgstr "The mode the system is in. One of: first_run, config, run"
+
+msgid "lib::state::localize.default_language"
+msgstr "Default language system is currently set to."
+
+msgid "lib::state::next.moonrise"
+msgstr "When the next moon rise is."
+
+msgid "lib::state::next.moonset"
+msgstr "When the next moon set is."
+
+msgid "lib::state::next.sunrise"
+msgstr "When the next time sun is at the horizon, and rising."
+
+msgid "lib::state::next.sunset"
+msgstr "When the next time sun is at the horizon, and setting."
 
 msgid "lokalise.po.header"
 msgstr ""
@@ -317,11 +398,122 @@ msgstr ""
 "\"Language: en\n\""
 "\"Plural-Forms: nplurals=2; plural=(n!=1);\n\""
 
+msgid "panel::calendar"
+msgstr "Calendar"
+
+msgid "panel::config"
+msgstr "Configuration"
+
+msgid "panel::dev-events"
+msgstr "Events"
+
+msgid "panel::dev-info"
+msgstr "Info"
+
+msgid "panel::dev-mqtt"
+msgstr "MQTT"
+
+msgid "panel::dev-services"
+msgstr "Services"
+
+msgid "panel::dev-states"
+msgstr "States"
+
+msgid "panel::dev-templates"
+msgstr "Templates"
+
+msgid "panel::history"
+msgstr "History"
+
+msgid "panel::logbook"
+msgstr "Logbook"
+
+msgid "panel::mailbox"
+msgstr "Mailbox"
+
+msgid "panel::map"
+msgstr "Map"
+
+msgid "panel::shopping_list"
+msgstr "Shopping list"
+
+msgid "panel::states"
+msgstr "Overview"
+
+msgid "state::alarm_control_panel::armed"
+msgstr "Armed"
+
+msgid "state::alarm_control_panel::armed_away"
+msgstr "Armed away"
+
+msgid "state::alarm_control_panel::armed_custom_bypass"
+msgstr "Armed custom bypass"
+
+msgid "state::alarm_control_panel::armed_home"
+msgstr "Armed home"
+
+msgid "state::alarm_control_panel::armed_night"
+msgstr "Armed night"
+
+msgid "state::alarm_control_panel::arming"
+msgstr "Arming"
+
+msgid "state::alarm_control_panel::disarmed"
+msgstr "Disarmed"
+
+msgid "state::alarm_control_panel::disarming"
+msgstr "Disarming"
+
+msgid "state::alarm_control_panel::pending"
+msgstr "Pending"
+
+msgid "state::alarm_control_panel::triggered"
+msgstr "Triggered"
+
+msgid "state::automation::off"
+msgstr "Off"
+
+msgid "state::automation::on"
+msgstr "On"
+
+msgid "state::calendar::off"
+msgstr "Off"
+
+msgid "state::calendar::on"
+msgstr "On"
+
+msgid "state::camera::idle"
+msgstr "Idle"
+
+msgid "state::camera::recording"
+msgstr "Recording"
+
+msgid "state::camera::streaming"
+msgstr "Streaming"
+
+msgid "state::climate::auto"
+msgstr "Auto"
+
 msgid "state::climate::cool"
 msgstr "Cool"
 
 msgid "state::climate::cool_1"
 msgstr "Cool stage 1"
+
+msgid "state::climate::dry"
+msgstr "Dry"
+
+msgid "state::climate::eco"
+msgstr "Eco"
+
+msgid "state::climate::electric"
+msgstr "Electric"
+
+msgid "state::climate::fan_only"
+msgstr "Fan only"
+
+msgid "state::climate::gas"
+msgstr "Gas"
 
 msgid "state::climate::heat"
 msgstr "Heat"
@@ -335,38 +527,595 @@ msgstr "Heat stage 2"
 msgid "state::climate::heat_3"
 msgstr "Heat stage 3"
 
-msgid "state::common::off"
-msgstr ""
+msgid "state::climate::heat_pump"
+msgstr "Heat pump"
 
-msgid "state::common::on"
+msgid "state::climate::high_demand"
+msgstr "High demand"
+
+msgid "state::climate::idle"
+msgstr "Idle"
+
+msgid "state::climate::off"
+msgstr "Off"
+
+msgid "state::climate::on"
 msgstr "On"
 
-msgid "state::common::open"
-msgstr "Ανοιχτό"
+msgid "state::climate::performance"
+msgstr "Performance"
 
-msgid "state::common::running"
-msgstr "Running"
+msgid "state::cover::closed"
+msgstr "Closed"
 
-msgid "state::common::stopped"
+msgid "state::cover::closing"
+msgstr "Closing"
+
+msgid "state::cover::open"
+msgstr "Open"
+
+msgid "state::cover::opening"
+msgstr "Opening"
+
+msgid "state::cover::stopped"
 msgstr "Stopped"
 
-msgid "state::common:opening"
+msgid "state::default::off"
+msgstr "Κλειστό"
+
+msgid "state::default::on"
+msgstr "Ενεργός"
+
+msgid "state::default::open"
+msgstr "Ανοιχτό"
+
+msgid "state::default::opening"
 msgstr "Άνοιγμα"
+
+msgid "state::default::running"
+msgstr "Running"
+
+msgid "state::default::stopped"
+msgstr "Stopped"
+
+msgid "state::default::unavailable"
+msgstr "Unavailable"
+
+msgid "state::default::unknown"
+msgstr "Unknown"
+
+msgid "state::device_tracker::home"
+msgstr "Home"
+
+msgid "state::device_tracker::not_home"
+msgstr "Away"
+
+msgid "state::digital_sensor::battery::off"
+msgstr "Normal"
+
+msgid "state::digital_sensor::battery::on"
+msgstr "Low"
+
+msgid "state::digital_sensor::cold::off"
+msgstr "Off"
+
+msgid "state::digital_sensor::cold::on"
+msgstr "Cold"
+
+msgid "state::digital_sensor::connectivity::off"
+msgstr "Disconnected"
+
+msgid "state::digital_sensor::connectivity::on"
+msgstr "Connected"
+
+msgid "state::digital_sensor::default::off"
+msgstr "Off"
+
+msgid "state::digital_sensor::default::on"
+msgstr "Off"
+
+msgid "state::digital_sensor::door::off"
+msgstr "Closed"
+
+msgid "state::digital_sensor::door::on"
+msgstr "Open"
+
+msgid "state::digital_sensor::garage_door::off"
+msgstr "Closed"
+
+msgid "state::digital_sensor::garage_door::on"
+msgstr "Open"
+
+msgid "state::digital_sensor::gas::off"
+msgstr "Clear"
+
+msgid "state::digital_sensor::gas::on"
+msgstr "Detected"
+
+msgid "state::digital_sensor::heat::off"
+msgstr "Off"
+
+msgid "state::digital_sensor::heat::on"
+msgstr "Hot"
+
+msgid "state::digital_sensor::lock::off"
+msgstr "Locked"
+
+msgid "state::digital_sensor::lock::on"
+msgstr "Unlocked"
+
+msgid "state::digital_sensor::moisture::off"
+msgstr "Dry"
+
+msgid "state::digital_sensor::moisture::on"
+msgstr "Wet"
+
+msgid "state::digital_sensor::motion::off"
+msgstr "Off"
+
+msgid "state::digital_sensor::motion::on"
+msgstr "On"
+
+msgid "state::digital_sensor::occupancy::off"
+msgstr "Off"
+
+msgid "state::digital_sensor::occupancy::on"
+msgstr "On"
+
+msgid "state::digital_sensor::opening::off"
+msgstr "Closed"
+
+msgid "state::digital_sensor::opening::on"
+msgstr "Open"
+
+msgid "state::digital_sensor::presence::off"
+msgstr "Away"
+
+msgid "state::digital_sensor::presence::on"
+msgstr "Home"
+
+msgid "state::digital_sensor::problem::off"
+msgstr "OK"
+
+msgid "state::digital_sensor::problem::on"
+msgstr "Problem"
+
+msgid "state::digital_sensor::safety::off"
+msgstr "Safe"
+
+msgid "state::digital_sensor::safety::on"
+msgstr "Unsafe"
+
+msgid "state::digital_sensor::smoke::off"
+msgstr "Off"
+
+msgid "state::digital_sensor::smoke::on"
+msgstr "On"
+
+msgid "state::digital_sensor::sound::off"
+msgstr "Off"
+
+msgid "state::digital_sensor::sound::on"
+msgstr "On"
+
+msgid "state::digital_sensor::vibration::off"
+msgstr "Off"
+
+msgid "state::digital_sensor::vibration::on"
+msgstr "On"
+
+msgid "state::digital_sensor::window::off"
+msgstr "Closed"
+
+msgid "state::digital_sensor::window::on"
+msgstr "Open"
+
+msgid "state::fan::off"
+msgstr "Off"
+
+msgid "state::fan::on"
+msgstr "On"
+
+msgid "state::group::closed"
+msgstr "Closed"
+
+msgid "state::group::closing"
+msgstr "Closing"
+
+msgid "state::group::home"
+msgstr "Home"
+
+msgid "state::group::locked"
+msgstr "Locked"
+
+msgid "state::group::not_home"
+msgstr "Away"
+
+msgid "state::group::off"
+msgstr "Off"
+
+msgid "state::group::ok"
+msgstr "Ok"
+
+msgid "state::group::on"
+msgstr "On"
+
+msgid "state::group::open"
+msgstr "Open"
+
+msgid "state::group::opening"
+msgstr "Opening"
+
+msgid "state::group::problem"
+msgstr "Problem"
+
+msgid "state::group::stopped"
+msgstr "Stopped"
+
+msgid "state::group::unlocked"
+msgstr "Unlocked"
+
+msgid "state::light::off"
+msgstr "Off"
+
+msgid "state::light::on"
+msgstr "On"
+
+msgid "state::lock::locked"
+msgstr "Locked"
+
+msgid "state::lock::unlocked"
+msgstr "Unlocked"
+
+msgid "state::media_player::idle"
+msgstr "Idle"
+
+msgid "state::media_player::off"
+msgstr "Off"
+
+msgid "state::media_player::on"
+msgstr "On"
+
+msgid "state::media_player::paused"
+msgstr "Paused"
+
+msgid "state::media_player::playing"
+msgstr "Playing"
+
+msgid "state::media_player::standby"
+msgstr "Standby"
+
+msgid "state::plant::ok"
+msgstr "Off"
+
+msgid "state::plant::problem"
+msgstr "On"
+
+msgid "state::remote::off"
+msgstr "Off"
+
+msgid "state::remote::on"
+msgstr "On"
+
+msgid "state::scene::scening"
+msgstr "Scening"
+
+msgid "state::script::off"
+msgstr "Off"
+
+msgid "state::script::on"
+msgstr "On"
+
+msgid "state::sensor::off"
+msgstr "Off"
+
+msgid "state::sensor::on"
+msgstr "On"
+
+msgid "state::sun::above_horizon"
+msgstr "Above horizon"
+
+msgid "state::sun::below_horizon"
+msgstr "Below horizon"
+
+msgid "state::switch::off"
+msgstr "Off"
+
+msgid "state::switch::on"
+msgstr "ON"
+
+msgid "state::weather::clear_night"
+msgstr "Clear, night"
+
+msgid "state::weather::cloudy"
+msgstr "Cloudy"
+
+msgid "state::weather::fog"
+msgstr "Fog"
+
+msgid "state::weather::hail"
+msgstr "Hail"
+
+msgid "state::weather::lightning"
+msgstr "Lightning"
+
+msgid "state::weather::lightning_rainy"
+msgstr "Lightning, rainy"
+
+msgid "state::weather::partlycloudy"
+msgstr "Partly cloudy"
+
+msgid "state::weather::pouring"
+msgstr "Pouring"
+
+msgid "state::weather::rainy"
+msgstr "Rainy"
+
+msgid "state::weather::snowy"
+msgstr "Snowy"
+
+msgid "state::weather::snowy_rainy"
+msgstr "Snowy, rainy"
+
+msgid "state::weather::sunny"
+msgstr "Sunny"
+
+msgid "state::weather::windy"
+msgstr "Windy"
+
+msgid "state::weather::windy_variant"
+msgstr "Windy"
+
+msgid "state::zwave::default::dead"
+msgstr "Dead"
+
+msgid "state::zwave::default::initializing"
+msgstr "Initializing"
+
+msgid "state::zwave::default::ready"
+msgstr "Ready"
+
+msgid "state::zwave::default::sleeping"
+msgstr "Sleeping"
+
+msgid "state::zwave::query_stage::dead"
+msgstr "Dead ({query_stage})"
+
+msgid "state::zwave::query_stage::initializing"
+msgstr "Initializing ({query_stage})"
 
 msgid "system::current_language"
 msgstr "English"
 
-msgid "ui::label::automation rules"
-msgstr "Automation rules"
+msgid "ui::card::alarm_control_panel::arm_away"
+msgstr "Arm away"
 
-msgid "ui::label::available_automation_rules"
-msgstr "Available automation rules"
+msgid "ui::card::alarm_control_panel::arm_home"
+msgstr "Arm home"
 
-msgid "ui::label::configured_devices"
-msgstr "Configured devices"
+msgid "ui::card::alarm_control_panel::clear_code"
+msgstr "Clear"
 
-msgid "ui::label::current_language"
-msgstr "Current language"
+msgid "ui::card::alarm_control_panel::code"
+msgstr "Code"
+
+msgid "ui::card::alarm_control_panel::disarm"
+msgstr "Disarm"
+
+msgid "ui::card::alarm_control_panel::title"
+msgstr "Alarm Panel"
+
+msgid "ui::card::automation::last_triggered"
+msgstr "Last triggered"
+
+msgid "ui::card::automation::title"
+msgstr "Automation"
+
+msgid "ui::card::automation::trigger"
+msgstr "Trigger"
+
+msgid "ui::card::camera::not_available"
+msgstr "Image not available"
+
+msgid "ui::card::climate::aux_heat"
+msgstr "Aux heat"
+
+msgid "ui::card::climate::away_mode"
+msgstr "Away mode"
+
+msgid "ui::card::climate::currently"
+msgstr "Currently"
+
+msgid "ui::card::climate::fan_mode"
+msgstr "Fan mode"
+
+msgid "ui::card::climate::on_off"
+msgstr "On / off"
+
+msgid "ui::card::climate::operation"
+msgstr "Operation"
+
+msgid "ui::card::climate::swing_mode"
+msgstr "Swing mode"
+
+msgid "ui::card::climate::target_humidity"
+msgstr "Target humidity"
+
+msgid "ui::card::climate::target_temperature"
+msgstr "Target temperature"
+
+msgid "ui::card::cover::position"
+msgstr "Position"
+
+msgid "ui::card::cover::tilt_position"
+msgstr "Tilt position"
+
+msgid "ui::card::fan::direction"
+msgstr "Direction"
+
+msgid "ui::card::fan::oscillate"
+msgstr "Oscillate"
+
+msgid "ui::card::fan::speed"
+msgstr "Speed"
+
+msgid "ui::card::light::brightness"
+msgstr "Brightness"
+
+msgid "ui::card::light::color_temperature"
+msgstr "Color temperature"
+
+msgid "ui::card::light::effect"
+msgstr "Effect"
+
+msgid "ui::card::light::white_value"
+msgstr "White value"
+
+msgid "ui::card::lock::code"
+msgstr "Code"
+
+msgid "ui::card::lock::lock"
+msgstr "Lock"
+
+msgid "ui::card::lock::unlock"
+msgstr "Unlock"
+
+msgid "ui::card::media_player::sound_mode"
+msgstr "Sound mode"
+
+msgid "ui::card::media_player::source"
+msgstr "Source"
+
+msgid "ui::card::media_player::text_to_speak"
+msgstr "Text to speak"
+
+msgid "ui::card::persistent_notification::dismiss"
+msgstr "Dismiss"
+
+msgid "ui::card::scene::activate"
+msgstr "Activate"
+
+msgid "ui::card::script::execute"
+msgstr "Execute"
+
+msgid "ui::card::weather::attributes::air_pressure"
+msgstr "Air pressure"
+
+msgid "ui::card::weather::attributes::humidity"
+msgstr "Humidity"
+
+msgid "ui::card::weather::attributes::temperature"
+msgstr "Temperature"
+
+msgid "ui::card::weather::attributes::visibility"
+msgstr "Visibility"
+
+msgid "ui::card::weather::attributes::wind_speed"
+msgstr "Wind speed"
+
+msgid "ui::card::weather::forecast"
+msgstr "Forecast"
+
+msgid "ui::cardinal_direction::e"
+msgstr "E"
+
+msgid "ui::cardinal_direction::ene"
+msgstr "ENE"
+
+msgid "ui::cardinal_direction::ese"
+msgstr "ESE"
+
+msgid "ui::cardinal_direction::n"
+msgstr "N"
+
+msgid "ui::cardinal_direction::ne"
+msgstr "NE"
+
+msgid "ui::cardinal_direction::nne"
+msgstr "NNE"
+
+msgid "ui::cardinal_direction::nnw"
+msgstr "NNW"
+
+msgid "ui::cardinal_direction::nw"
+msgstr "NW"
+
+msgid "ui::cardinal_direction::s"
+msgstr "S"
+
+msgid "ui::cardinal_direction::se"
+msgstr "SE"
+
+msgid "ui::cardinal_direction::sse"
+msgstr "SSE"
+
+msgid "ui::cardinal_direction::ssw"
+msgstr "SSW"
+
+msgid "ui::cardinal_direction::sw"
+msgstr "SW"
+
+msgid "ui::cardinal_direction::w"
+msgstr "W"
+
+msgid "ui::cardinal_direction::wnw"
+msgstr "WNW"
+
+msgid "ui::cardinal_direction::wsw"
+msgstr "WSW"
+
+msgid "ui::common::cancel"
+msgstr "Cancel"
+
+msgid "ui::common::close"
+msgstr "Close"
+
+msgid "ui::common::current_language"
+msgstr "Current Language"
+
+msgid "ui::common::documentation"
+msgstr "Documentation"
+
+msgid "ui::common::email"
+msgstr "E-Mail"
+
+msgid "ui::common::loading"
+msgstr "Loading"
+
+msgid "ui::common::name"
+msgstr "Name"
+
+msgid "ui::common::number_devices_on"
+msgid_plural "ui::common::number_devices_on"
+msgstr[0] "There is {num} device turned on"
+msgstr[1] "There are {num} devices turned on"
+
+msgid "ui::common::restart"
+msgstr "Restart"
+
+msgid "ui::common::save"
+msgstr "Save"
+
+msgid "ui::common::shutdown"
+msgstr "Shutdown"
+
+msgid "ui::components::relative_time::future"
+msgstr "In {time}"
+
+msgid "ui::components::relative_time::never"
+msgstr "Never"
+
+msgid "ui::components::relative_time::past"
+msgstr "{time} ago"
+
+msgid "ui::form::login::log_in"
+msgstr "Log in"
+
+msgid "ui::form::login::password"
+msgstr "Password"
+
+msgid "ui::form::login::remember"
+msgstr "Remember"
 
 msgid "ui::label::dashboard"
 msgstr "Dashboard"
@@ -377,16 +1126,95 @@ msgstr "Delayed Commands"
 msgid "ui::label::devices"
 msgstr "Devices"
 
-msgid "ui::label::number_devices_on"
-msgid_plural "ui::label::number_devices_on"
-msgstr[0] "There is {num} device turned on"
-msgstr[1] "There are {num} devices turned on"
+msgid "ui::label::modules"
+msgstr "Modules"
 
 msgid "ui::label::states"
 msgstr "States"
 
-msgid "ui::label::stopping"
-msgstr "Stopping"
+msgid "ui::navigation::api_auth"
+msgstr "API Auth"
 
-msgid "ui::label::warning"
+msgid "ui::navigation::atoms"
+msgstr "Atoms"
+
+msgid "ui::navigation::automation"
+msgstr "Automation"
+
+msgid "ui::navigation::backup"
+msgstr "Backup"
+
+msgid "ui::navigation::basic_settings"
+msgstr "Basic Settings"
+
+msgid "ui::navigation::control"
+msgstr "Control"
+
+msgid "ui::navigation::debug"
+msgstr "Debug"
+
+msgid "ui::navigation::developer_tools"
+msgstr "Developer tools"
+
+msgid "ui::navigation::device_commands"
+msgstr "Device Commands"
+
+msgid "ui::navigation::devices"
+msgstr "Devices"
+
+msgid "ui::navigation::discovery"
+msgstr "Discovery"
+
+msgid "ui::navigation::dns"
+msgstr "DNS"
+
+msgid "ui::navigation::encryption_keys"
+msgstr "Encryption Keeys"
+
+msgid "ui::navigation::gateways"
+msgstr "Gateways"
+
+msgid "ui::navigation::home"
+msgstr "Home"
+
+msgid "ui::navigation::info"
+msgstr "Info"
+
+msgid "ui::navigation::locations"
+msgstr "Locations"
+
+msgid "ui::navigation::module_settings"
+msgstr "Module Settings"
+
+msgid "ui::navigation::modules"
+msgstr "Modules"
+
+msgid "ui::navigation::panel"
+msgstr "Panel"
+
+msgid "ui::navigation::scenes"
+msgstr "Scenes"
+
+msgid "ui::navigation::states"
+msgstr "States"
+
+msgid "ui::navigation::statistics"
+msgstr "Statistics"
+
+msgid "ui::navigation::status"
+msgstr "Status"
+
+msgid "ui::navigation::system"
+msgstr "System"
+
+msgid "ui::navigation::system_settings"
+msgstr "System Settings"
+
+msgid "ui::notifications::warning"
 msgstr "Warning"
+
+msgid "ui::user::log_out"
+msgstr "Log out"
+
+msgid "ui::user::profile"
+msgstr "User profile"
