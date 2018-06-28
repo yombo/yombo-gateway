@@ -43,7 +43,7 @@ from twisted.internet.defer import inlineCallbacks, Deferred
 from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboWarning
+from yombo.core.exceptions import YomboWarning, YomboCritical
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import random_string, unicode_to_bytes
@@ -143,7 +143,6 @@ class AMQP(YomboLibrary):
         :param correlation:
         :return:
         """
-        # print "correlation_ids_serializer: %s" % correlation
         if 'correlation_persistent' in correlation and correlation['correlation_persistent'] is False:
             raise YomboWarning("We don't save non-persistent items...")
         #todo: using sys or function tools to get the module name and function name to re-create a link.
@@ -169,7 +168,6 @@ class AMQP(YomboLibrary):
                                                         output['callback_component_type_function'] )
             except:
                 pass
-        # print "serializer output: %s" % output
         return output
 
     def clean_correlation_ids(self):
@@ -357,6 +355,7 @@ class AMQPClient(object):
         Called by pika_factory.incoming() after successfully completed negotiation. It's already been connected
         for a while, but now it's connected as far as the library is concerned.
         """
+        logger.debug("######## AMQPClient::connected 1")
         self._local_log("debug", "AMQP Client: {client_id} - Connected")
         self._connecting = False
         self.is_connected = True
@@ -460,7 +459,6 @@ class AMQPClient(object):
 
         if error_callback is not None:
             if isinstance(error_callback, collections.Callable) is False:
-                # print "Error_callback - %s" % error_callback
                 raise YomboWarning(
                       "AMQP Client:{%s} - If error_callback is set, it must be be callable" % self.client_id,
                         204, 'subscribe', 'AMQPClient')
@@ -520,11 +518,11 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         self._FullName = "yombo.gateway.lib.PikaFactory"
         # DO NOT CHANGE THESE!  Mitch Schwenk @ yombo.net
         # Reconnect sort-of fast, but random. ~25 second max wait
-        # This is set incase a server reboots, don't DDOS the servers!
-        self.initialDelay = 0.7
+        # This is set in-case a server reboots, don't DDOS the servers!
+        self.initialDelay = 0.9
         self.jitter = 0.2
-        self.factor = 1.82503912
-        self.maxDelay = 25 # this puts retrys around 17-26 seconds
+        self.factor = 1.72503912
+        self.maxDelay = 30  # this puts retries around 25-35 seconds
 
         self.AMQPClient = AMQPClient
         self.AMQPProtocol = None
@@ -549,7 +547,10 @@ class PikaFactory(protocol.ReconnectingClientFactory):
 
     def buildProtocol(self, addr):
         self._local_log("debug", "PikaFactory::buildProtocol")
-        self.resetDelay()
+        self.delay = 2
+        self.retries = 0
+        self._callID = None
+        self.continueTrying = 1
         self.AMQPProtocol = PikaProtocol(self)
         self.AMQPProtocol.ready.addCallback(self.AMQPProtocol.connected)
         return self.AMQPProtocol
@@ -564,14 +565,15 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         :return:
         """
         # First load the queues up with any configuration items...
+        self._local_log("debug", "PikaFactory::connected")
         self.AMQPProtocol.check_register_queues()
         self.AMQPProtocol.check_register_exchanges()
         self.AMQPProtocol.check_register_exchange_queue_bindings()
         self.AMQPProtocol.check_register_subscribe()
 
-        self.AMQPProtocol.check_delivery_queue() # now send to server.
+        self.AMQPProtocol.check_delivery_queue()  # now send to server.
 
-        self.AMQPClient.connected() # let the world know we are connected and ready.
+        self.AMQPClient.connected()  # let the world know we are connected and ready.
 
     def register_queue(self, queue_name, queue_durable, queue_arguments, register_persist):
         """
@@ -693,7 +695,7 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         """
         Queues up the message, and asks the protocol to send if connected.
         """
-        logger.debug("factory:publish: {kwargs}", kwargs=kwargs)
+        # logger.debug("factory:publish: {kwargs}", kwargs=kwargs)
 
         properties = kwargs.get('properties', {})
 
@@ -771,7 +773,6 @@ class PikaFactory(protocol.ReconnectingClientFactory):
             "reply_received_at": None,
             "reply_correlation_id": None,
             "replied_at": None,
-            # "replied_correlation_id": None,
             "round_trip_timing": None,
             "payload_size": len(body),
             "content_encoding": None,
@@ -796,7 +797,7 @@ class PikaFactory(protocol.ReconnectingClientFactory):
             correlation_info = {
                 "callback": callback,
                 "callback_component_type": callback_type,  # module or component
-                "callback_component_type_name": callback_name,  # module of compentnt name
+                "callback_component_type_name": callback_name,  # module of component name
                 "callback_component_type_function": callback_function,  # name of the function to call
                 "correlation_id": correlation_id,
                 "correlation_persistent": correlation_persistent,
@@ -812,7 +813,6 @@ class PikaFactory(protocol.ReconnectingClientFactory):
             'type': 'message',
             'fields': kwargs,
         })
-         # self.send_queue.append(kwargs)
 
         if self.AMQPProtocol:
             self.AMQPProtocol.check_delivery_queue()
@@ -828,7 +828,6 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         :return:
         """
         self._local_log("debug", "!!!!PikaFactory::close")
-#        print "amqp factory about to call close: %s" % self.AMQPProtocol
         self.AMQPProtocol.close()
 
     def disconnected(self):
@@ -855,7 +854,11 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         self.AMQPClient.disconnected('unknown')
 
     def clientConnectionLost(self, connector, reason):
-        logger.warn("pika factory clientConnectionLost, reason: %s" % reason.value)
+        # print("self.connection_state: %s" % self.AMQPProtocol.connection_state)
+        # print("error 1: %s" % connector)
+        # print("error 2: %s" % reason.__dict__)
+        # raise YomboCritical("something...")
+        logger.warn("pika factory clientConnectionLost, reason: {reason}", reason=reason.value)
         if self.AMQPClient.is_connected and str(reason.value) != "Connection was closed cleanly.":
             logger.warn("In PikaFactory clientConnectionLost. Reason: {reason}", reason=reason.value)
         protocol.ReconnectingClientFactory.clientConnectionFailed(self, connector, reason)
@@ -863,7 +866,7 @@ class PikaFactory(protocol.ReconnectingClientFactory):
             self.retry()
 
     def clientConnectionFailed(self, connector, reason):
-        logger.info("In PikaFactory clientConnectionFailed. Reason: {reason}", reason=reason)
+        logger.info("!!!!!!!!!!!!!!!!!!!!!!!1In PikaFactory clientConnectionFailed. Reason: {reason}", reason=reason)
         protocol.ReconnectingClientFactory.clientConnectionFailed(self, connector, reason)
 
 
@@ -890,7 +893,8 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
         self._connected = None
         self.connection = None
         self.check_delivery_queue_running = False
-        super(PikaProtocol, self).__init__(self.factory.AMQPClient.pika_parameters)
+        super(PikaProtocol, self).__init__(
+            parameters=self.factory.AMQPClient.pika_parameters)
 
     def _local_log(self, level, location="", msg=""):
         logit = getattr(logger, level)
@@ -908,9 +912,21 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
         self.channel = yield connection.channel()
         yield self.channel.basic_qos(prefetch_count=self.factory.AMQPClient.prefetch_count)
         self.channel.add_on_close_callback(self.on_connection_closed)
-        # logger.debug("Setting AMQP connected to true.")
+        self.channel.add_on_cancel_callback(self.on_consumer_cancelled)
+        logger.debug("Setting AMQP connected to true.")
         self._connected = True
         self.factory.connected()
+
+    def on_consumer_cancelled(self, method_frame):
+        """Invoked by pika when RabbitMQ sends a Basic.Cancel for a consumer
+        receiving messages.
+
+        :param pika.frame.Method method_frame: The Basic.Cancel frame
+
+        """
+        print('Consumer was cancelled remotely, shutting down: %r', method_frame)
+        if self._channel:
+            self._channel.close()
 
     def on_connection_closed(self, channel, replyCode, replyText):
         """
@@ -922,6 +938,7 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
         :param int reply_code: The server provided reply_code if given
         :param str reply_text: The server provided reply_text if given
         """
+        # logger.debug("$$$$$$$$$$$$$$$$$$ on_connection_closed %s: %s" % (replyCode, replyText))
         if replyCode == 403:
             logger.warn("AMQP access denied to login. Usually this happens when there is more then one instance of the same gateway running.")
         if replyCode == 404:
@@ -1082,11 +1099,9 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
         """
         Performs the actual registration of exchanges.
         """
-        # self._local_log("debug", "PikaProtocol::do_register_exchanges")
         # logger.debug("Do_register_exchanges, todo: {exchanges}", exchanges=self.factory.exchanges)
         for exchange_name in list(self.factory.exchanges.keys()):
             fields = self.factory.exchanges[exchange_name]
-            # print "do_register_exchanges, fields: %s" % fields
             if fields['registered'] is False:
                 self.delivery_queue['urgent'].append({
                     'type': 'exchange',
@@ -1127,39 +1142,26 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
                 del self.factory.consumers[queue_name]
         self.check_delivery_queue()
 
-    # @inlineCallbacks
     def receive_item(self, item, queue, queue_no_ack, subscription_callback):
         """
         This function is called with EVERY incoming message. We don't have logic here, just send to factory.
         """
-        # logger.debug("In PikaProtocol receive_item...{item}", item=item)
-
         (channel, deliver, props, msg,) = item
-        # print "protocol1: receive_item"
-        # print "protocol: item %s" % item
-        # print("protocol: queue %s" % queue)
-        # print "channel: queue_no_ack %s" % queue_no_ack
-        # print "deliver: callback %s" % callback
-        # print("props: deliver %s" % deliver)
-        # print("props: props %s" % props.__dict__)
-        # print "props: msg %s" % msg
-        # print "msg: item %s" % msg
-
         sent_message_meta = None
         correlation_info = None
-        is_yombo_msg = False
         correlation_id = None
         reply_to = None
 
+        queue_deferred = queue.get()  # get the queue again, so we can add another callback to get the next message.
+        queue_deferred.addCallback(self.receive_item, queue, queue_no_ack, subscription_callback)
+        queue_deferred.addErrback(self.receive_item_err)  # todo: use supplied error callback...  which one?
+
         if hasattr(props, 'headers') and 'yombo_msg_protocol_verion' in props.headers:
             try:
-                int(props.headers['yombo_msg_protocol_verion'])
+                yombo_protocol_version = int(props.headers['yombo_msg_protocol_verion'])
             except:
                 pass
             finally:
-                # If here, then this is most likely a yombo gateway protocol message. First,
-                # Use the signed headers from the source.
-                is_yombo_msg = True
 
                 try:
                     yombo_parsed_data = self.factory.AMQPClient._AMQP._AMQPYombo.amqp_incoming_parse(
@@ -1171,6 +1173,8 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
                         reply_to = headers['reply_to']
                 except YomboWarning as e:
                     logger.warn("While parsing yombo message: %s" % e)
+        else:
+            yombo_protocol_version = None
 
         if correlation_id is None and hasattr(props, 'correlation_id') and props.correlation_id is not None:
             correlation_id = props.correlation_id
@@ -1179,24 +1183,27 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
 
         if reply_to is not None:
             if reply_to.isalnum() is False or len(reply_to) < 15 or len(reply_to) > 84:
-                if is_yombo_msg:
+                if yombo_protocol_version is not None:
                     logger.warn("Discarding incoming message, invalid reply_to.")
-                    return
+                    return self._basic_ack(1, channel, deliver.delivery_tag)
                 else:
                     logger.warn("Message doesn't appear to have a friendly reply_to. Not long enough or contains odd characters.")
             else:
                 if reply_to in self.factory.AMQPClient._AMQP.messages_processed:
                     sent_message_meta = self.factory.AMQPClient._AMQP.messages_processed[reply_to]
 
-        # print("got yombo message b0 - reply_to: %s" % reply_to)
-        # print("got yombo message b3 - correlation_id: %s" % correlation_id)
-        # print("got yombo message b9 - all cors: %s" % self.factory.AMQPClient._AMQP.message_correlations)
+            # If there's no correlation and it's a Yombo message, ignore.
+            if reply_to not in self.factory.AMQPClient._AMQP.message_correlations and \
+                        yombo_protocol_version is not None:
+                    logger.warn("Ignoring incoming AMQP message: Correlation ID not found")
+                    return self._basic_ack(1, channel, deliver.delivery_tag)
+
 
         if correlation_id is not None:
             if correlation_id.isalnum() is False or len(correlation_id) < 15 or len(correlation_id) > 84:
-                if is_yombo_msg:
+                if yombo_protocol_version is not None:
                     logger.warn("Discarding incoming message, invalid correlation_id.")
-                    return
+                    return self._basic_ack(1, channel, deliver.delivery_tag)
                 else:
                     logger.warn("Message doesn't appear to have a friendly correlation_id. Not long enough or contains odd characters.")
             else:
@@ -1208,17 +1215,10 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
                         # print("got yombo message bd3")
                         if correlation_info['correlation_id'] is not None and \
                             correlation_info['received_correlation_id'] in self.factory.AMQPClient._AMQP.messages_processed:
-                            # print("got yombo message bd4")
                             sent_message_meta = self.factory.AMQPClient._AMQP.messages_processed[correlation_id]
-                if reply_to in self.factory.AMQPClient._AMQP.message_correlations:
-                    # print("got yombo message be1")
-                    if correlation_info is None:
+
+                if reply_to in self.factory.AMQPClient._AMQP.message_correlations and correlation_info is None:
                         correlation_info = self.factory.AMQPClient._AMQP.message_correlations[reply_to]
-                    # if sent_message_meta is None:
-                    #     print("got yombo message be2")
-                        # if reply_to in self.factory.AMQPClient._AMQP.messages_processed:
-                        #     # print("got yombo message be3")
-                        #     sent_message_meta = self.factory.AMQPClient._AMQP.messages_processed[reply_to]
 
         received_message_meta = {
             "msg_at": time(),
@@ -1252,7 +1252,7 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
             # received_message_meta['reply_correlation_id'] = time()
 
         # print("starting receiving stuff.....")
-        if is_yombo_msg is True:
+        if yombo_protocol_version is not None:
             received_message_meta.update(yombo_parsed_data['received_message_meta'])
             # print("got yombo message d1 - yombo_parsed_data: %s" % yombo_parsed_data['received_message_meta'])
         try:
@@ -1274,18 +1274,14 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
         if correlation_id is not None and correlation_id[0:2] != 'xx_':
             self.factory.AMQPClient._AMQP.messages_processed[correlation_id] = received_message_meta
 
-        d = queue.get()  # get the queue again, so we can add another callback to get the next message.
-        d.addCallback(self.receive_item, queue, queue_no_ack, subscription_callback)
-        d.addErrback(self.receive_item_err)  # todo: use supplied error callback...  which one?
-
         # Now, route the message. If it's a yombo message, send it to your AQMPYombo for delivery
-        if is_yombo_msg is True:
+        if yombo_protocol_version is not None:
             # print("amqp route: amqpyombo: %s" % correlation_info)
             the_callback = self.factory.AMQPClient._AMQP._AMQPYombo.amqp_incoming
 
         # Else if we have a correlation_id with a callback, send it there.
         elif correlation_info is not None and correlation_info['callback'] is not None and \
-            isinstance(correlation_info['callback'], collections.Callable) is True:
+                isinstance(correlation_info['callback'], collections.Callable) is True:
             # logger.info("amqp route: message callback from correlation_info")
             the_callback = correlation_info['callback']
 
@@ -1306,9 +1302,6 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
                                    )
 
         if not queue_no_ack:
-            # if it gets here, it's passed basic checks.
-            # logger.debug("AMQP Sending {status} due to valid request. Tag: {tag}",
-            #              status='ACK', tag=deliver.delivery_tag)
             sent.addCallback(self._basic_ack, channel, deliver.delivery_tag)
             sent.addErrback(self._basic_nack, channel, deliver.delivery_tag)
 
