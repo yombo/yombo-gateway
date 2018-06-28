@@ -2,6 +2,7 @@
 Locals Directory
 =====================
 
-Stores system internationalization files. These files are merged into the module internationalization files
-and stores them into ~/.yombo/locale/LC_MESSAGES
+Stores system translation files. WHen the Yombo Gateway loads, it merges any language
+files supplied by modules, if any. These are stored in the user's working directory, usually:
+~/.yombo/locale/LC_MESSAGES
 

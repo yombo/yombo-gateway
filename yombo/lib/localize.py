@@ -29,9 +29,8 @@ try:
     from hashlib import sha3_224 as sha224
 except ImportError:
     from hashlib import sha224
-# from time import gmtime, strftime
-from os.path import abspath
 import builtins
+from string import Formatter
 import sys
 import traceback
 
@@ -39,13 +38,22 @@ import traceback
 import yombo.ext.polib as polib
 
 # Import Yombo libraries
-# from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 import yombo.core.settings as settings
 from yombo.utils import unit_convert
 from yombo.core.log import get_logger
 
 logger = get_logger("library.localize")
+
+class YomboFormatter(Formatter):
+    def get_value(self, key, args, keywords):
+        if isinstance(key, str):
+            try:
+                return keywords[key]
+            except KeyError:
+                return key
+        else:
+            return Formatter.get_value(key, args, keywords)
 
 class Localize(YomboLibrary):
     """
@@ -80,7 +88,7 @@ class Localize(YomboLibrary):
 
         self.files = {}
 
-        self.locale_files = "%s/locale/" % self.working_dir
+        self.locale_files = "%s/locale/po/" % self.working_dir
         self.translator = self.get_translator()
         builtins.__dict__['_'] = self.handle_translate
 
@@ -170,6 +178,7 @@ class Localize(YomboLibrary):
                 hash_obj.update(open(fname, 'rb').read())
             checksum = hash_obj.hexdigest()
 
+            print("language: checksums: %s" % self.hashes)
             if checksum != self.hashes['en']:
                 self.hashes = {}
 
@@ -180,12 +189,15 @@ class Localize(YomboLibrary):
                     hash_obj.update(open(fname, 'rb').read())
                 checksum = hash_obj.hexdigest()
                 if lang in self.hashes:
+                    if path.exists(self.working_dir + '/locale/po/' + lang + '/LC_MESSAGES/yombo.mo') is False:
+                        languages_to_update[lang] = True
+                        continue
                     if checksum == self.hashes[lang]:
-                        self.hashes[lang] = checksum
+                        # self.hashes[lang] = checksum
                         continue
 
                 self.hashes[lang] = checksum
-                languages_to_update[lang] = 'aaa'
+                languages_to_update[lang] = True
 
             # If we have a default language, lets make sure we have language files for it.
             if self.default_lang() is not None:
@@ -210,10 +222,10 @@ class Localize(YomboLibrary):
 
             # English is the base of all language files. If English needs updating, we update the default too.
             if 'en' in languages_to_update and self.default_lang() not in languages_to_update:
-                languages_to_update[self.default_lang()] = 'a'
-
+                languages_to_update[self.default_lang()] = True
 
             # Always do english language updates first, it's the base of all.
+            print("languages to update: %s" % languages_to_update)
             if 'en' in languages_to_update:
                 self.do_update('en')
                 del languages_to_update['en']
@@ -232,8 +244,10 @@ class Localize(YomboLibrary):
             # Save the updated hash into the configuration for next time.
             self._Configs.set('localize', 'hashes', json.dumps(self.hashes, separators=(',',':')))
 
-            self.translator = self.get_translator()
             builtins.__dict__['_'] = self.handle_translate
+            self.translator = self.get_translator()
+            print("DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDd  trans load")
+            print(_('ui::label::dashboard', label='mitch'))
         except Exception as e: # if problem with translation, at least return msgid...
             logger.error("Unable to load translations. Getting null one. Reason: %s" % e)
             logger.error("--------------------------------------------------------")
@@ -256,77 +270,32 @@ class Localize(YomboLibrary):
                 except:
                     return None
 
-    def get_translator(self, languages=None, get_null=False):
-        if get_null is False:
-            try:
-                # The below code is for both python 2 and 3.
-                kwargs = {}
-                if sys.version_info[0] > 3:
-                    # In Python 2, ensure that the _() that gets installed into built-ins
-                    # always returns unicodes.  This matches the default behavior under
-                    # Python 3, although that keyword argument is not present in the
-                    # Python 3 API.
-                    kwargs['unicode'] = True
-
-                if languages is None:
-                    languages = []
-                    if self.default_lang() not in languages:
-                        languages.append(self.default_lang())  # toss in the gateway default language, which may be the system lang
-                    if 'en' not in languages:
-                        languages.append('en')  # if all else fails, show english.
-                kwargs['languages'] = languages
-                logger.debug("locale_files path: {path}", path=self.locale_files)
-                return gettext.translation('yombo', self.locale_files, **kwargs)
-                # print _('', "Current locale: None")
-                # print _('webinterface', "There is {num} device turned on.", "There are {num} devices turned on.", 2)
-            except Exception as e: # if problem with translation, at least return msgid...
-                logger.error("Unable to load translations: %s" % e)
-                # we will still install _() so our system doesn't break!
+    def get_translator(self, languages=None, get_null=None):
+        if get_null is True:
+            return gettext.NullTranslations()
+        if languages is None:
+            languages = []
+            if self.default_lang() not in languages:
+                languages.append(
+                    self.default_lang())  # toss in the gateway default language, which may be the system lang
+            if 'en' not in languages:
+                languages.append('en')  # if all else fails, show english.
+        logger.debug("locale_files path: {path}", path=self.locale_files)
+        try:
+            return gettext.translation('yombo', self.locale_files, languages)
+        except Exception as e: # if problem with translation, at least return msgid...
+            logger.warn("Ignore this if first running Yombo. Unable to load translations: %s" % e)
         return gettext.NullTranslations()
 
-    def handle_translate(self, msgctxt, msgid1=None, msgid2=None, num=None, translator=None):
-        # fix args...
-        # print "msgctxt: %s" % msgctxt
-        if msgid1 is None:
-            msgid1 = msgctxt
-            msgctxt = None
+    def handle_translate(self, msgid, default_text=None, translator=None, **kwargs):
 
         if translator is None:
             translator = self.translator
-
-        # print "msgctxt= %s, msgid1 =%s, msgid2=%s, num=%s" % (msgctxt, msgid1, msgid2, num)
-
-        msgkey1 = None
-        if msgctxt is not None and msgctxt is not "":
-            msgkey1 = msgctxt + self.MSGCTXT_GLUE + msgid1
-        else:
-            msgkey1 = msgid1
-
-        if msgid2 != None and num != None:
-            if msgctxt is not None and msgctxt is not "":
-                msgkey2 = msgctxt + self.MSGCTXT_GLUE + msgid2
-            else:
-                msgkey2 = msgid2
-            translation = translator.ngettext(msgkey1, msgkey2, num)
-            if translation == msgctxt + self.MSGCTXT_GLUE + msgid1:
-                return msgid1.format(num=num)
-            elif translation == msgctxt + self.MSGCTXT_GLUE + msgid2:
-                return msgid2.format(num=num)
-            else:
-                return translation
-        else:
-            if msgctxt is None:
-                translation = translator.gettext(msgkey1)
-                if translation == msgid1:
-                    return msgid1
-                else:
-                    return translation
-            else:
-                translation = translator.gettext(msgkey1)
-                if translation == msgctxt + self.MSGCTXT_GLUE + msgid1:
-                    return msgid1
-                else:
-                    return translation
+        yfmt = YomboFormatter()
+        translation = translator.gettext(msgid)
+        if translation == msgid and default_text is not None:
+            return yfmt.format(default_text, **kwargs)
+        return yfmt.format(translation, **kwargs)
 
     def do_update(self, language):
         """
@@ -334,14 +303,15 @@ class Localize(YomboLibrary):
         :param language:
         :return:
         """
-        output_folder = self.working_dir + '/locale/' + language + '/LC_MESSAGES'
+        logger.info("Localize combining files for language: {language}", language=language)
+        output_folder = self.working_dir + '/locale/po/' + language + '/LC_MESSAGES'
         # print "files in lang (%s): %s" % (lang, files)
 
         if not path.exists(output_folder):
             makedirs(output_folder)
 
         # merge files
-        with open(output_folder + '/combined.po', 'w') as outfile:
+        with open(output_folder + '/yombo.po', 'w') as outfile:
             # outfile.write("# BEGIN Combining files (%s) for locale: %s\n" % (strftime("%Y-%m-%d %H:%M:%S", gmtime()), language) )
             for fname in self.files[language]:
                 # outfile.write("# BEGIN File: %s\n" % fname)
@@ -349,9 +319,7 @@ class Localize(YomboLibrary):
                     outfile.write(infile.read())
                 # outfile.write("\n# END File: %s\n\n" % fname)
             # outfile.write("# END Combining files for locale: %s\n" % language)
-        po_lang = polib.pofile(output_folder + '/combined.po')
-        # po_lang = polib.pofile('yombo/utils/locale/es-yombo.po')
-        # print "saving po for labng: %s" % language
+        po_lang = polib.pofile(output_folder + '/yombo.po')
         po_lang.save_as_mofile(output_folder + "/yombo.mo")
 
     def parse_directory(self, directory, has_header=False):
@@ -361,7 +329,6 @@ class Localize(YomboLibrary):
         :param directory: The directory to check.
         :return:
         """
-        # print "Checking folder: %s" % directory
         for file in listdir(directory):
             if file.endswith(".po"):
                 filename = file.split('.')
@@ -370,22 +337,23 @@ class Localize(YomboLibrary):
                 name = filename.split('-')
                 locale = name[0].split('_')
                 if len(locale) == 0 or len(locale) > 2:
-                    logger.warn("Bad language_country code split. Must be <ISO 639 lang code>_<ISO 3166 REGION CODE (optional)>: {file}", file=file)
+                    logger.warn("Bad language_country code split. Must be <ISO 639 lang code>_<ISO 3166 REGION CODE (optional)>: {{locale}}",
+                                locale=locale[0])
 
                 if len(locale) >= 1:
                     if locale[0].islower() is False:
-                        logger.warn("Invalid file, ISO 639 lang code must be lower case: %s", file=file)
+                        logger.warn("Invalid file, ISO 639 lang code must be lower case: {locale}", locale=locale[0])
                         continue
                     elif len(locale[0]) != 2:
-                        logger.warn("Invalid file, ISO 639 lang code must be 2 letters: %s", file=file)
+                        logger.warn("Invalid file, ISO 639 lang code must be 2 letters: {locale}", locale=locale[0])
                         continue
 
                 if len(locale) == 2:
                     if locale[0].isupper() is False:
-                        logger.warn("Invalid file, ISO 6166 region code must be upper case: %s", file=file)
+                        logger.warn("Invalid file, ISO 6166 region code must be upper case: {locale}", locale=locale[0])
                         continue
                     elif len(locale[0]) != 2:
-                        logger.warn("Invalid file, ISO 6166 region code must be 2 letters: %s", file=file)
+                        logger.warn("Invalid file, ISO 6166 region code must be 2 letters: {locale}", locale=locale[0])
                         continue
 
                 logger.debug("Adding file: {file}  to locale: {lang}", file=file, lang=name[0])

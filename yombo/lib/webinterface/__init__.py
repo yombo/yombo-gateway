@@ -202,6 +202,7 @@ class WebInterface(YomboLibrary):
         if not self.enabled:
             return
 
+        self.translators = {}
         self.idempotence = yield self._SQLDict.get('yombo.lib.webinterface', 'idempotence')  # tracks if a request was already made
 
         self.gateway_id = self._Configs.get2('core', 'gwid', 'local', False)
@@ -290,11 +291,8 @@ class WebInterface(YomboLibrary):
 
         self.web_factory = None
 
-        # just here to set a password if it doesn't exist.
-        mqtt_password = self._Configs.get('mqtt_users', 'panel.webinterface', yombo.utils.random_string())
-
-    # def _start_(self):
-    #     self.webapp.templates.globals['_'] = _  # i18n
+    def _start_(self):
+        self.webapp.templates.globals['_'] = _  # i18n
 
     @property
     def operating_mode(self):
@@ -689,7 +687,14 @@ class WebInterface(YomboLibrary):
         :param request: The browser request.
         :return:
         """
-        return web_translator(self, request)
+        print("######################### i18n WI called!")
+        locales = self._Localize.parse_accept_language(request.getHeader('accept-language'))
+        locales_hash = yombo.utils.sha256_compact(''.join(str(e) for e in locales))
+        if locales_hash in self.translators:
+            return self.translators[locales_hash]
+        else:
+            self.translators[locales_hash] = web_translator(self, locales)
+        return self.translators[locales_hash]
 
     @inlineCallbacks
     def _get_nav_side_items(self, **kwargs):
@@ -1130,10 +1135,11 @@ class WebInterface(YomboLibrary):
         copytree('source/img/', 'dist/img/')
 
 class web_translator(object):
-    def __init__(self, webinterface, request):
+    def __init__(self, webinterface, locales):
         self.webinterface = webinterface
-        self.translator = webinterface._Localize.get_translator(webinterface._Localize.parse_accept_language(request.getHeader('accept-language')))
+        self.translator = webinterface._Localize.get_translator(locales)
 
-    def __call__(self, msgctxt, msgid1=None, msgid2=None, num=None, *args, **kwargs):
-        return self.webinterface._Localize.handle_translate(msgctxt, msgid1=msgid1, msgid2=msgid2, num=num,
-                                                     translator=self.translator)
+    def __call__(self, msgid, default_text=None, **kwargs):
+        print("##  web_translator __call__ kwargs: %s" % kwargs)
+        kwargs['translator'] = self.translator
+        return self.webinterface._Localize.handle_translate(msgid, default_text, **kwargs)
