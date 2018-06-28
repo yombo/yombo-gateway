@@ -39,4 +39,5 @@ def route_panel(webapp):
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/panel/index.html')
             return page.render(
                 alerts=webinterface.get_alerts(),
+                session=session,
                 )

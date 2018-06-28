@@ -58,8 +58,8 @@
                 useSSL: useTLS,
                 cleanSession: cleansession,
                 onSuccess: onConnect,
-			    userName : "yombogw_{{_local_gateway.gateway_id}}",
-                password : "{{_mqtt.client_remote_password1}}",
+			    userName : "{{session.session_type}}_{{session.session_id}}",
+                password : "none",
                 onFailure: function (message) {
                     $('#status').html("Connection failed: " + message.errorMessage + "Retrying...");
                     setTimeout(MQTTconnect, reconnectTimeout);
