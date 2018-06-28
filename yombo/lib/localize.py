@@ -328,48 +328,51 @@ class Localize(YomboLibrary):
         :param directory: The directory to check.
         :return:
         """
-        for file in listdir(directory):
-            if file.endswith(".po"):
-                filename = file.split('.')
-                filename = filename[0]
-                # print "Checking filename: %s" % file
-                name = filename.split('-')
-                locale = name[0].split('_')
-                if len(locale) == 0 or len(locale) > 2:
-                    logger.warn("Bad language_country code split. Must be <ISO 639 lang code>_<ISO 3166 REGION CODE (optional)>: {{locale}}",
-                                locale=locale[0])
+        for filename in listdir(directory):
+            if filename.endswith(".po") is False:
+                continue
+            filepart = filename.split('.')
+            filepart = filepart[0]
+            # print "Checking filename: %s" % file
+            locale = filepart.split('_')
+            if len(locale) == 0 or len(locale) > 2:
+                logger.warn("Bad language_country code split. Must be <ISO 639 lang code>_<ISO 3166 REGION CODE (optional)>: {{locale}}, file: {filename}",
+                            locale=locale[0], filename=filename)
 
-                if len(locale) >= 1:
-                    if locale[0].islower() is False:
-                        logger.warn("Invalid file, ISO 639 lang code must be lower case: {locale}", locale=locale[0])
-                        continue
-                    elif len(locale[0]) != 2:
-                        logger.warn("Invalid file, ISO 639 lang code must be 2 letters: {locale}", locale=locale[0])
-                        continue
+            if locale[0].islower() is False:
+                logger.warn("Invalid file, ISO 639 lang code must be lower case: {locale}, file: {filename}",
+                            locale=locale[0], filename=filename)
+                continue
+            elif len(locale[0]) not in (2, 3):
+                print("locale: %s" % locale)
+                logger.warn("Invalid file, ISO 639 lang code must be 2 (preferred) or 3 letters: {locale}, file: {filename}",
+                            locale=locale[0], filename=filename)
+                continue
 
-                if len(locale) == 2:
-                    if locale[0].isupper() is False:
-                        logger.warn("Invalid file, ISO 6166 region code must be upper case: {locale}", locale=locale[0])
-                        continue
-                    elif len(locale[0]) != 2:
-                        logger.warn("Invalid file, ISO 6166 region code must be 2 letters: {locale}", locale=locale[0])
-                        continue
+            if len(locale) == 2:
+                if locale[1].isupper() is False:
+                    logger.warn("Invalid file, ISO 6166 region code must be upper case: {locale}, file: {filename}",
+                                locale=locale[0], filename=filename)
+                    continue
+                elif len(locale[1]) not in (2, 3):
+                    logger.warn("Invalid file, ISO 6166 region code must be 2 letters: {locale}, file: {filename}",
+                                locale=locale[0], filename=filename)
+                    continue
 
-                logger.debug("Adding file: {file}  to locale: {lang}", file=file, lang=name[0])
-                if name[0] not in self.files:
-                    if path.exists(directory + "/" + file + ".head"):
-                        self.files[name[0]] = []
-                        self.files[name[0]].append(directory + "/" + file + ".head")
-                        self.files[name[0]].append(directory + "/" + file)
-                    else:
-                        if has_header == True:
-                            self.files[name[0]] = []
-                            self.files[name[0]].append(directory + "/" + file)
-                        else:
-                            logger.warn("Yombo core doesn't have a locale for: {lang}  Cannot merge file. Additionally, no '.head' file exists. (Help link soon.)",
-                                lang=name[0])
+            if filepart not in self.files:
+                if path.exists(directory + "/" + filename + ".head"):
+                    self.files[filepart] = []
+                    self.files[filepart].append(directory + "/" + filename + ".head")
+                    self.files[filepart].append(directory + "/" + filename)
                 else:
-                    self.files[name[0]].append(directory + "/" + file)
+                    if has_header == True:
+                        self.files[filepart] = []
+                        self.files[filepart].append(directory + "/" + filename)
+                    else:
+                        logger.warn("Yombo core doesn't have a locale for: {lang}  Cannot merge file. Additionally, no '.head' file exists. (Help link soon.)",
+                            lang=filepart)
+            else:
+                self.files[filepart].append(directory + "/" + filename)
 
     def get_ugettext(self, languages):
         """
