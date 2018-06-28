@@ -67,30 +67,46 @@ def run_first(create_session=None, *args, **kwargs):
         @wraps(f)
         @inlineCallbacks
         def wrapped_f(webinterface, request, *a, **kw):
+            session = None
             update_request(webinterface, request)
-            # request._ = webinterface.i18n(request)
             request.auth_id = None
+            host = request.getHeader('host')
+            if host is None:
+                logger.info("Discarding request, appears to be malformed host header")
+                return return_need_login(webinterface, request, False, **kwargs)
+            host_info = host.split(':')
+            request.requestHeaders.setRawHeaders('host_name', [host_info[0]])
+
+            if len(host_info) > 1:
+                request.requestHeaders.setRawHeaders('host_port', [host_info[1]])
+            else:
+                request.requestHeaders.setRawHeaders('host_port', [None])
+
+            if hasattr(request, 'breadcrumb') is False:
+                request.breadcrumb = []
+                webinterface.misc_wi_data['breadcrumb'] = request.breadcrumb
+
             try:
-                session = yield webinterface._WebSessions.get_session_from_request(request)
-                session.auth_type = "session"
+                session = webinterface._APIAuth.get_session_from_request(request)
+                session.touch()
             except YomboWarning as e:
                 try:
-                    session = webinterface._APIAuth.get_session_from_request(request)
-                    session.auth_type = "api_auth"
+                    session = yield webinterface._WebSessions.get_session_from_request(request)
                     session.touch()
                 except YomboWarning as e:
-                    session = False
+                    pass
 
             if create_session is True:
                 session = webinterface._WebSessions.create_from_request(request)
 
-            if session is not False:
+            if session is not None:
                 if 'auth' in session:
                     if session['auth'] is True:
                         session.touch()
                         request.auth_id = session['auth_id']
 
-            return call(f, webinterface, request, session, *a, **kw)
+            results = yield call(f, webinterface, request, session, *a, **kw)
+            return results
         return wrapped_f
     return deco
 
@@ -107,7 +123,7 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
             request.auth_id = None
             host = request.getHeader('host')
             if host is None:
-                logger.info("Discarding request, appears to be malformed session id from require_auth")
+                logger.info("Discarding request, appears to be malformed host header")
                 return return_need_login(webinterface, request, False, **kwargs)
             host_info = host.split(':')
             request.requestHeaders.setRawHeaders('host_name', [host_info[0]])
