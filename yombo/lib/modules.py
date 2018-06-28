@@ -705,7 +705,7 @@ class Modules(YomboLibrary):
                 self.disabled_modules[module_id] = "Caught exception during call '_init_': %s" % e
 
     def _log_hook_called(self, results, name, module, hook, calling_component):
-        print("results in _log_hook_called: %s" % results)
+        # logger.debug("results in _log_hook_called: {results}", results=results)
         self.hooks_called[name] = {
             'module': module._Name,
             'hook': hook,
