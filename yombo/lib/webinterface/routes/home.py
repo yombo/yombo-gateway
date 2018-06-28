@@ -95,7 +95,7 @@ def route_home(webapp):
                 webinterface.add_alert("%s: %s" % (e.errorno, e.message), 'warning')
                 page = webinterface.get_template(request, webinterface.wi_dir + '/pages/login_user.html')
                 return page.render(alerts=webinterface.get_alerts())
-            print("results: %s" % results)
+            # print("results: %s" % results)
             if results['code'] == 200:
                 login = results['response']['login']
 
@@ -142,8 +142,8 @@ def route_home(webapp):
                 return webinterface.redirect(request, '/login/pin')
 
             def create_pin_session(l_webinterface, l_request, l_session):
-                # if session is False:
-                #     session = webinterface._WebSessions.create(request)
+                if l_session is None:
+                    l_session = webinterface._WebSessions.create(request)
                 l_session['auth_pin'] = True
                 l_session['auth'] = False
                 l_session['auth_id'] = ''
