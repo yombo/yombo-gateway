@@ -19,6 +19,7 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
 except ImportError:
     import json
 from collections import deque, OrderedDict
+from copy import deepcopy
 from datetime import datetime
 from time import time
 
@@ -740,6 +741,14 @@ class Base_Device(object):
         #         'machine_label': command['machine_label'],
         #         'label': command['label'],
         #     }
+        def clean_device_variables(device_variables):
+            variables = deepcopy(device_variables)
+            for label, data in variables.items():
+                del data['data']
+                data['values'] = data['values_orig']
+                del data['values_orig']
+            return variables
+
         return {
             'gateway_id': self.gateway_id,
             'area': self.area,
@@ -772,22 +781,19 @@ class Base_Device(object):
             'device_platform': self.PLATFORM,
             'device_sub_platform': self.SUB_PLATFORM,
             'device_features': self.FEATURES,
-            'device_variables': self.device_variables_cached,
+            'device_variables': clean_device_variables(self.device_variables_cached),
             'enabled_status': self.enabled_status,
             }
 
-    def to_mqtt_coms(self):
+    def devices_status(self):
         """
-        Export device variables as a dictionary.
+        Used to get the current and previous status in one shot.
         """
-        # def take(n, iterable):
-        #     return list(islice(iterable, n))
-
-        if len(self.device_commands) > 0:
-            request_id = self.device_commands[0]
-            device_command = self._Parent.device_commands[request_id].asdict()
-        else:
-            device_command = []
+        # if len(self.device_commands) > 0:
+        #     request_id = self.device_commands[0]
+        #     device_command = self._Parent.device_commands[request_id].asdict()
+        # else:
+        #     device_command = []
 
         if len(self.status_history) > 0:
             status_history = self.status_history[0].asdict()
@@ -1265,14 +1271,14 @@ class Base_Device(object):
         # Convert the 0-1 range into a value in the right range.
         return rightMin + (valueScaled * rightSpan)
 
-    def get_status(self, history=0):
-        """
-        Gets the history of the device status.
-
-        :param history: How far back to go. 0 = previoius, 1 - the one before that, etc.
-        :return:
-        """
-        return self.status_history[history]
+    # def get_status(self, history=0):
+    #     """
+    #     Gets the history of the device status.
+    #
+    #     :param history: How far back to go. 0 = prevoius, 1 - the one before that, etc.
+    #     :return:
+    #     """
+    #     return self.status_history[history]
 
     def get_device_commands(self, history=0):
         """
@@ -1515,21 +1521,15 @@ class Base_Device(object):
             self._Parent.mqtt.publish("yombo/devices/%s/status" % self.machine_label, json.dumps(mqtt_message), 1)
         return kwargs, new_status['status_id']
 
-    def set_status_from_gateway_communications(self, payload):
+    def set_status_internal(self, status, source=None):
         """
-        Used by the gateway library to directly inject a new device status.
+        Primarily used by the gateway library to set a device status.
 
         :param new_status:
         :return:
         """
-        new_status = Device_Status(self._Parent, self, payload['status'])
-        self.status_history.appendleft(new_status)
-        # save_status = new_status.asdict()
-        # save_status['requested_by'] = data_pickle(save_status['requested_by'])
-        # save_status['machine_status_extra'] = data_pickle(save_status['machine_status_extra'])
-        # if self.test_device is False and self._Parent.is_master is True:
-        #     self._Parent._LocalDB.add_bulk_queue('device_status', 'insert', save_status, 'device_id')
-        self.send_status(**payload)
+        self.status_history.appendleft(Device_Status(self._Parent, self, status, source))
+        self.send_status(**status)
 
     def send_status(self, **kwargs):
         """
