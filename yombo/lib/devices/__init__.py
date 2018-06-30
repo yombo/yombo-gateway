@@ -563,16 +563,16 @@ class Devices(YomboLibrary):
         if request_id in self.device_commands:
             self.device_commands[request_id].gw_coms_set_status(src_gateway_id, log_time, status, message)
 
-    def get_gateway_device_commands(self, dest_gateway_id):
+    def get_gateway_device_commands(self, gateway_id):
         """
-        Gets all device commands for a gateway where the device's gateway is matches the requested.
+        Gets all the device command for a gateway_id.
 
         :param dest_gateway_id:
         :return:
         """
         results = []
         for device_command_id, device_command in self.device_commands.items():
-            if device_command.device.gateway_id == dest_gateway_id:
+            if device_command.device.gateway_id == gateway_id:
                 results.append(device_command.asdict())
         return results
 
