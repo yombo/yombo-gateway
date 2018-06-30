@@ -687,7 +687,6 @@ class WebInterface(YomboLibrary):
         :param request: The browser request.
         :return:
         """
-        print("######################### i18n WI called!")
         locales = self._Localize.parse_accept_language(request.getHeader('accept-language'))
         locales_hash = yombo.utils.sha256_compact(''.join(str(e) for e in locales))
         if locales_hash in self.translators:
