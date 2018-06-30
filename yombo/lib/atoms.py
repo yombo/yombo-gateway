@@ -346,9 +346,13 @@ class Atoms(YomboLibrary):
             results = yombo.utils.pattern_search(atom_requested, self.__Atoms[gateway_id])
             if len(results) > 1:
                 values = {}
-                # print("atoms: %s" % self.__Atoms[gateway_id])
                 for item in results:
-                    values[item] = self.__Atoms[gateway_id][item]
+                    if human is True:
+                        values[item] = self.__Atoms[gateway_id][item]['value_human']
+                    elif full is True:
+                        values[item] = self.__Atoms[gateway_id][item]
+                    else:
+                        values[item] = self.__Atoms[gateway_id][item]['value']
                 return values
             else:
                 raise KeyError("Searched for atom, none found: %s" % atom_requested)

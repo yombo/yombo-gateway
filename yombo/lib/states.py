@@ -375,7 +375,12 @@ class States(YomboLibrary, object):
             if len(results) > 1:
                 values = {}
                 for item in results:
-                    values[item] = self.__States[gateway_id][item]
+                    if human is True:
+                        values[item] = self.__States[gateway_id][item]['value_human']
+                    elif full is True:
+                        values[item] = self.__States[gateway_id][item]
+                    else:
+                        values[item] = self.__States[gateway_id][item]['value']
                 return values
             else:
                 raise KeyError("Searched for atoms, none found.")

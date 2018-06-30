@@ -6,8 +6,8 @@
 
   For more information see: `Gateways @ Module Development <https://yombo.net/docs/libraries/gateways>`_
 
-Handles inter-gateway communications. Any gateway within an account can communicate with another
-gateway using any master gateway's mqtt broker service.
+Handles inter-gateway communications and provides information about other gateways within the cluster.
+Any gateway within an account can communicate with another gateway using any master gateway's mqtt broker service.
 
 Slave gateways will connect to it's master's mqtt broker. All slave gateways will report device status, states, and
 atoms to the master. Scenes and automation rules can fire on any gateway, however, if status is required from
@@ -35,7 +35,7 @@ from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import (do_search_instance, global_invoke_all, bytes_to_unicode, random_int, sleep, data_pickle,
-                         data_unpickle)
+                         data_unpickle, random_string)
 from yombo.constants import VERSION
 
 logger = get_logger('library.gateways')
@@ -243,12 +243,6 @@ class Gateways(YomboLibrary):
                     else:
                         logger.warn("Cannot find an open MQTT port to the master gateway.")
 
-        # save for later use.
-        # self.encrypt = self._GPG.encrypt_aes
-        # self.decrypt = self._GPG.decrypt_aes
-        # self.encrypt = partial(self._GPG.encrypt_aes, self.account_mqtt_key)
-        # self.decrypt = partial(self._GPG.decrypt_aes, self.account_mqtt_key)
-
     def _start_(self, **kwargs):
         self.library_phase = 3
         if self._States['loader.operating_mode'] != 'run':
@@ -298,23 +292,6 @@ class Gateways(YomboLibrary):
                 self.gateways['local'] = value
                 if self.gateway_id != 'local':
                     self.gateways[self.gateway_id] = value
-
-    def encrypt(self, data, destination_gateway_id=None):
-        if destination_gateway_id is None:
-            destination_gateway_id = 'all'
-        message = {
-            'payload': data,
-            'time_sent': time(),
-            'source_gateway_id': self.gateway_id,
-            'destination_gateway_id': destination_gateway_id,
-        }
-
-        return data_pickle(message, 'json')
-
-    def decrypt(self, incoming):
-        message = data_unpickle(incoming, 'json')
-        message['time_received']: time()
-        return bytes_to_unicode(message)
 
     @inlineCallbacks
     def _load_gateways_from_database(self):
@@ -388,9 +365,9 @@ class Gateways(YomboLibrary):
         topic_parts = topic.split('/', 10)
 
         try:
-            message = self.decrypt(raw_payload)
-        except Exception as e:
-            message = None
+            message = self.decode_message(raw_payload)
+        except Exception:
+            return
 
         if topic_parts[0] == "to_yombo":
             self.mqtt_incoming_to_yombo(topic_parts, message)
@@ -402,17 +379,17 @@ class Gateways(YomboLibrary):
         if topic_parts[1] == self.gateway_id:
             logger.debug("discarding message that I sent.")
             return
-        if topic_parts[1] not in self.gateways:
-            logger.debug("Discarding message from gateway {gwid}, not in list of known gateways.", gwid=topic_parts[1])
+        if topic_parts[2] not in (self.gateway_id, 'all', 'cluster'):
+            logger.debug("MQTT message doesn't list us as a target, dropping")
             return
-        # print("if %s == %s:" % (topic_parts[1], self.gateway_id))
-        # print("got incoming: %s" % topic)
-        self.gateways[topic_parts[1]].last_scene = time()
-        self.gateways[topic_parts[1]].last_communications.append({
-            'time': time(),
-            'direction': 'received',
-            'topic': topic,
-        })
+
+        if topic_parts[1] in self.gateways:
+            self.gateways[topic_parts[1]].last_scene = time()
+            self.gateways[topic_parts[1]].last_communications.append({
+                'time': time(),
+                'direction': 'received',
+                'topic': topic,
+            })
 
         if len(message) == 0 or message is None:
             logger.warn("Empty payloads for inter gateway coms are not allowed!")
@@ -420,7 +397,7 @@ class Gateways(YomboLibrary):
 
         if topic_parts[0] == "ybo_gw":
             yield self.mqtt_incomming_data(topic_parts, message)
-        else:
+        elif topic_parts[0] == "ybo_gw_req":
             yield self.mqtt_incomming_request(topic_parts, message)
 
     def mqtt_incoming_to_yombo(self, topics, message):
@@ -480,8 +457,7 @@ class Gateways(YomboLibrary):
 
     @inlineCallbacks
     def mqtt_incomming_request(self, topics, message):
-        # ybo_gw_req/src_gwid/dest_gwid|all/lib/devices/get - payload is blank - get all device information
-        # ybo_gw_req/src_gwid/dest_gwid|all/lib/devices/get/device_id - payload is blank
+        # ybo_gw_req/src_gwid/dest_gwid|all/lib/devices/get - 'request_id' can be in the payload section of the message.
         # ybo_gw_req/src_gwid/dest_gwid|all/lib/devices/update/device_id - payload is full device, including meta and state
         # ybo_gw_req/src_gwid/dest_gwid|all/lib/states/get - payload is blank
         # ybo_gw_req/src_gwid/dest_gwid|all/lib/states/get/section/option - payload is blank
@@ -506,11 +482,10 @@ class Gateways(YomboLibrary):
             logger.info("Gateway COMS received invalid component type: {component_type}", component_type=component_type)
             return
 
-        if source_gw_id not in self.gateways:
+        if source_gw_id not in self.gateways and source_gw_id != "all":
             logger.info("Dropping gw comms message, gwid is invalid to us. Perhaps we need a restart?")
             return
 
-        self.gateways[source_gw_id].last_scene = time()
         if component_type == 'module':
             try:
                 module = self._Modules[component_name]
@@ -527,44 +502,49 @@ class Gateways(YomboLibrary):
 
         elif component_type == 'lib':
             # return_topic = source_gw_id + "/" + component_type + "/"+ component_name
-            if len(topics) == 5 and opt1 == 'get':
-                all_requested = True
-            else:
-                all_requested = False
+            if opt1 == 'get':
+                if 'requested_id' not in message:
+                    logger.info("Dropped MQTT request: requested_id is missing.")
+                    return
+                requested_id = message['requested_id']
 
-            if component_name == 'atoms':
-                if opt1 == 'get':
-                    if all_requested:
-                        self.send_all_atoms(source_gw_id)
+                if component_name == 'atoms':
+                    if requested_id == '':
+                        self.send_atoms(source_gw_id)
                     else:
-                        self.send_all_atoms(source_gw_id, topics[5])
-            elif component_name == 'devices':
-                if opt1 == 'get':
-                    if all_requested:
-                        self.send_all_devices(source_gw_id)
+                        self.send_atoms(source_gw_id, requested_id)
+                elif component_name == 'devices':
+                    if requested_id == '':
+                        self.send_devices(source_gw_id)
                     else:
-                        self.send_all_devices(source_gw_id, topics[5])
-            elif component_name == 'device_commands':
-                if opt1 == 'get':
-                    if all_requested:
-                        self.send_all_device_commands(source_gw_id)
+                        self.send_devices(source_gw_id, requested_id)
+                elif component_name == 'device_commands':
+                    if requested_id == '':
+                        self.send_device_commands(source_gw_id)
                     else:
-                        self.send_all_device_commands(source_gw_id, topics[5])
-            elif component_name == 'states':
-                if opt1 == 'get':
-                    if all_requested:
-                        self.send_all_states(source_gw_id)
+                        self.send_device_commands(source_gw_id, requested_id)
+                elif component_name == 'states':
+                    if requested_id == '':
+                        self.send_states(source_gw_id)
                     else:
-                        self.send_all_states(source_gw_id, topics[5])
+                        self.send_states(source_gw_id, requested_id)
 
     @inlineCallbacks
     def mqtt_incomming_data(self, topics, message):
-        # ybo_gw/src_gwid/dest_gwid|all/lib/atoms - all atoms from gateway
-        # ybo_gw/src_gwid/dest_gwid|all/lib/atoms/name - single atom
+        # ybo_gw/src_gwid/dest_gwid|all/lib/atoms
         source_gw_id = topics[1]
         # dest_gw_id = topics[2]
         component_type = topics[3]
         component_name = topics[4]
+        if len(topics) == 6:
+            opt1 = topics[5]
+        else:
+            opt1 = None
+        if len(topics) == 7:
+            opt2 = topics[6]
+        else:
+            opt2 = None
+
         # print("gateway received content: %s" % message)
 
         if component_type == 'module':
@@ -579,19 +559,6 @@ class Gateways(YomboLibrary):
                 logger.info("Received inter-gateway MQTT coms for module {module}, but module doesn't have function '_inter_gateway_mqtt_' Dropping.", module=component_name)
                 return
         elif component_type == 'lib':
-            if len(topics) == 5:
-                all_requested = True
-            else:
-                all_requested = False
-            if len(topics) == 6:
-                opt1 = topics[5]
-            else:
-                opt1 = None
-            if len(topics) == 7:
-                opt2 = topics[6]
-            else:
-                opt2 = None
-
             try:
                 if component_name == 'atoms':
                     for name, value in message['payload'].items():
@@ -860,6 +827,23 @@ class Gateways(YomboLibrary):
         message['key'] = kwargs['key']
         self.publish_data('gw', 'all', "lib/state/" + kwargs['key'], message)
 
+    def encode_message(self, data, destination_gateway_id=None):
+        if destination_gateway_id is None:
+            destination_gateway_id = 'all'
+        message = {
+            'payload': data,
+            'time_sent': time(),
+            'source_id': self.gateway_id,
+            'destination_id': destination_gateway_id,
+            'message_id': random_string(length=20)
+        }
+        return data_pickle(message, 'json')
+
+    def decode_message(self, incoming):
+        message = data_unpickle(incoming, 'json')
+        message['time_received']: time()
+        return bytes_to_unicode(message)
+
     def publish_data(self, msg_type, destination_id, topic, message):
         final_topic = 'ybo_%s/%s/%s/%s' % (msg_type, self.gateway_id, destination_id, topic)
         self.gateways[self.gateway_id].last_communications.append({
@@ -873,64 +857,66 @@ class Gateways(YomboLibrary):
                 'direction': 'sent',
                 'topic': final_topic,
             })
-        outgoing_data = self.encrypt(message)
-        # logger.info("gateways publish data: {topic} {data}", topic=final_topic, data=outgoing_data)
+
+        outgoing_data = self.encode_message(message)
+        logger.info("gateways publish data: {topic} {data}", topic=final_topic, data=outgoing_data)
         self.mqtt.publish(final_topic, outgoing_data)
 
-    def send_all_info(self, destination_gw=None, set_ok_to_publish_updates=None):
-        # print("gw sending !!!!!!!!!!!!!!!!!!gateways send_all_info: %s - %s" % (destination_gw, self.ok_to_publish_updates))
-
-        self.send_all_atoms(destination_gw)
-        self.send_all_devices(destination_gw)
-        self.send_all_states(destination_gw)
+    def send_all_info(self, destination_id=None, set_ok_to_publish_updates=None):
+        self.send_atoms(destination_id)
+        self.send_devices(destination_id)
+        self.send_states(destination_id)
         if set_ok_to_publish_updates is True:
             self.ok_to_publish_updates = True
 
-    def send_all_atoms(self, destination_gw=None, name=None):
-        return_gw = self.get_return_gw(destination_gw)
-        # print("gw sending all atoms to: %s" % return_gw)
-        if name is None or name == '#':
-            self.publish_data('gw', return_gw,  "lib/atoms", self._Atoms.get('#'))
+    def send_atoms(self, destination_id=None, atom_id=None):
+        return_gw = self.get_return_destination(destination_id)
+        if atom_id is None or atom_id == '#':
+            self.publish_data('gw', return_gw, 'lib/atoms', self._Atoms.get('#', full=True))
         else:
-            self.publish_data('gw', return_gw + 'lib/atom/%s' % name, self._Atoms.get(name, full=True))
+            atom = {atom_id: self._Atoms.get(atom_id, full=True)}
+            self.publish_data('gw', return_gw, 'lib/atoms', atom)
 
-    def send_all_device_commands(self, destination_gw=None, request_id=None):
-        return_gw = self.get_return_gw(destination_gw)
+    def send_device_commands(self, destination_id=None, request_id=None):
+        return_gw = self.get_return_destination(destination_id)
         if request_id is None and return_gw == 'all':
             logger.debug("device commands request must have request_id or return gateway id.")
             return
         if request_id is None:
-            found_device_commands = self._Devices.get_gateway_device_commands(destination_gw)
+            found_device_commands = self._Devices.get_gateway_device_commands(destination_id)
             self.publish_data('gw', return_gw, "lib/device_commands", found_device_commands)
-        else:
-            if request_id in self._Devices.device_commands:
-                self.publish_data('gw', return_gw, "lib/device_commands", self._Devices.device_commands[request_id])
+        elif request_id in self._Devices.device_commands:
+            device_command = {request_id: self._Devices.device_commands[request_id].asdict()}
+            self.publish_data('gw', return_gw, "lib/device_commands", device_command)
 
-    def send_all_devices(self, destination_gw=None, name=None):
-        return_gw = self.get_return_gw(destination_gw)
-        if name is None:
+    def send_devices(self, destination_id=None, device_id=None):
+        return_gw = self.get_return_destination(destination_id)
+        if device_id is None:
             found_devices = self._Devices.search(**{"gateway_id": self.gateway_id, 'status': 1})
             devices = {}
             for device in found_devices:
                 # print("device: %s" % device)
-                devices[device['key']] = device['value'].to_mqtt_coms()
+                devices[device['key']] = device['value'].asdict()
             # print("searching devices: %s" % devices)
             self.publish_data('gw', return_gw, "lib/devices", devices)
         else:
-            device = self._Devices[name].to_mqtt_coms()
-            self.publish_data('gw', return_gw, 'lib/devices/%s' % name, device)
+            if device_id in self._Devices:
+                device = self._Devices[device_id].asdict()
+                message = {device.device_id: device.asdict()}
+                self.publish_data('gw', return_gw, 'lib/devices', message)
 
-    def send_all_states(self, destination_gw=None, name=None):
-        return_gw = self.get_return_gw(destination_gw)
-        if name is None or name == '#':
-            self.publish_data('gw', return_gw, 'lib/states', self._States.get('#'))
+    def send_states(self, destination_id=None, state_id=None):
+        return_gw = self.get_return_destination(destination_id)
+        if state_id is None or state_id == '#':
+            self.publish_data('gw', return_gw, 'lib/states', self._States.get('#', full=True))
         else:
-            self.publish_data('gw', return_gw, 'lib/state/%s' % name, self._States.get(name, full=True))
+            state = {state_id: self._Atoms.get(state_id, full=True)}
+            self.publish_data('gw', return_gw, 'lib/atoms', state)
 
-    def get_return_gw(self, destination_gw=None):
-        if destination_gw is None:
+    def get_return_destination(self, destination_id=None):
+        if destination_id is None or destination_id is '':
             return 'all'
-        return destination_gw
+        return destination_id
 
     def test_send(self):
         data = {'hello': 'mom'}
