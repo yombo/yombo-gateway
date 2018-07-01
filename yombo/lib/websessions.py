@@ -19,6 +19,8 @@ import os
 from time import time
 from random import randint
 import hashlib
+from ratelimit import limits as ratelimits
+
 # Import twisted libraries
 from twisted.internet.task import LoopingCall
 from twisted.internet.defer import inlineCallbacks, Deferred
@@ -95,9 +97,8 @@ class WebSessions(YomboLibrary):
             'httponly': True,
             'secure': False,  # will change to true after SSL system/dns complete. - Mitch
         })
-        # self.active_sessions = {}
         self.clean_sessions_loop = LoopingCall(self.clean_sessions)
-        self.clean_sessions_loop.start(random_int(60*60, .2))  # Every hour-ish. Save to disk, or remove from memory.
+        self.clean_sessions_loop.start(random_int(60, .2))  # Every hour-ish. Save to disk, or remove from memory.
 
     def _stop_(self, **kwargs):
         self.unload_deferred = Deferred()
@@ -154,13 +155,10 @@ class WebSessions(YomboLibrary):
         if request is not None:
             cookie_session_name = self.config.cookie_session_name
             cookies = request.received_cookies
-            # logger.debug("has_session is looking for cookie: {cookie_session_name}", cookie_session_name=cookie_session_name)
-            # logger.debug("has_session found cookies: {cookies}", cookies=cookies)
             if cookie_session_name in cookies:
                 session_id = cookies[cookie_session_name]
             else:
                 raise YomboWarning("Session cookie not found.")
-                # logger.debug("has_session found session_id in cookie: {session_id}", session_id=session_id)
 
         results = yield self.get_session_by_id(session_id)
         return results
@@ -238,9 +236,11 @@ class WebSessions(YomboLibrary):
         else:
             return False
 
+    @ratelimits(calls=15, period=60)
     def create_from_request(self, request=None, data=None):
         """
         Creates a new session.
+
         :param request:
         :return:
         """
@@ -314,19 +314,20 @@ class WebSessions(YomboLibrary):
 
         Cleanup the stored sessions
         """
-        # logger.debug("clean_sessions()")
+        logger.debug("clean_sessions()")
         count = 0
-        # session_delete_at = int(time()) - self.config.max_session
-        # idle_delete_at = int(time()) - self.config.max_idle
-        # max_session_no_auth_at = int(time()) - self.config.max_session_no_auth
+        current_time = int(time())
         for session_id in list(self.active_sessions.keys()):
-            if self.active_sessions[session_id].check_valid() is False or self.active_sessions[session_id].is_valid is False:
+            session = self.active_sessions[session_id]
+
+            if session.check_valid() is False and session.created_at > current_time - 120 \
+                    and session.last_access > current_time - 45:
                 del self.active_sessions[session_id]
                 yield self._LocalDB.delete_web_session(session_id)
                 count += 1
-        # logger.debug("Deleted {count} sessions from the session store.", count=count)
+        logger.debug("Deleted {count} sessions from the session store.", count=count)
 
-        for session_id in list(self.active_sessions):
+        for session_id in list(self.active_sessions.keys()):
             session = self.active_sessions[session_id]
             if session.is_dirty >= 200 or close_deferred is not None or session.last_access < int(time() - (60*5)):
                 if session.in_db:
@@ -427,7 +428,8 @@ class Auth(object):
             'auth': None,
             'auth_id': None,
             'auth_at': None,
-            'yomboapi_session': None
+            'yomboapi_session': None,
+            'create_type': None,
         }
         self.update_attributes(record, True)
 
@@ -516,6 +518,9 @@ class Auth(object):
         else:
             if self.last_access < (int(time() - self._Parent.config.max_session_no_auth)):
                 self.expire_session()
+        if self.session_data['auth'] is not True:
+            return False
+
         return True
 
     def expire_session(self):

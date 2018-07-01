@@ -172,7 +172,7 @@ class Gateways(YomboLibrary):
         self.ok_to_publish_updates = False
         self.mqtt = None
         self.gateway_id = self._Configs.get('core', 'gwid', 'local', False)
-        self.is_master = self._Configs.get('core', 'is_master', True, False)
+        self.is_master = self._Configs.get2('core', 'is_master', True, False)
         self.master_gateway = self._Configs.get2('core', 'master_gateway', None, False)
         self.account_mqtt_key = self._Configs.get('core', 'account_mqtt_key', 'test', False)
         # self.load_deferred = None  # Prevents loader from moving on past _load_ until we are done.
@@ -208,45 +208,53 @@ class Gateways(YomboLibrary):
         self.master_websock_ssl = None
         self.master_websock_port = None
 
-        if self._Loader.operating_mode == 'run':
-            if self.is_master is True:
-                self.master_mqtt_host = 'i.' + self.gateways[self.gateway_id].fqdn
-                self.master_mqtt_ssl = False
-                self.master_mqtt_port = self.gateways[self.gateway_id].internal_mqtt
-                self.master_mqtt_port_ssl = self.gateways[self.gateway_id].internal_mqtt_le
-                self.master_websock_ssl = False
-                self.master_websock_port = self.gateways[self.gateway_id].internal_mqtt_ws
-                self.master_websock_port_ssl = self.gateways[self.gateway_id].internal_mqtt_ws_le
+        if self._Loader.operating_mode != 'run':
+            return
+        if self.master_gateway() not in self.gateways:
+            # Master has gone away...still start-up, just reassign us as master
+            logger.warn("It appears the master has disappeared. Setting this gateway it's own master.")
+            self._Configs.set('core', 'is_master', True)
+            self._Configs.set('core', 'master_gateway', self.gateway_id)
+            self._AMQPYombo.send_local_information()
+
+        if self.is_master() is True:
+            self.master_mqtt_host = 'i.' + self.gateways[self.gateway_id].fqdn
+            self.master_mqtt_ssl = False
+            self.master_mqtt_port = self.gateways[self.gateway_id].internal_mqtt
+            self.master_mqtt_port_ssl = self.gateways[self.gateway_id].internal_mqtt_le
+            self.master_websock_ssl = False
+            self.master_websock_port = self.gateways[self.gateway_id].internal_mqtt_ws
+            self.master_websock_port_ssl = self.gateways[self.gateway_id].internal_mqtt_ws_le
+        else:
+            master = self.gateways[self.master_gateway()]
+            # print("gateway is looking for master....")
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            result = sock.connect_ex(('i.' + master.fqdn, master.internal_mqtt_ss))
+            if result == 0:
+                self.master_mqtt_host = 'i.' + master.fqdn
+                self.master_mqtt_ssl = True
+                self.master_mqtt_port = master.internal_mqtt_le
+                self.master_mqtt_port_ssl = master.internal_mqtt_le
+                self.master_websock_ssl = True
+                self.master_websock_port = master.internal_mqtt_ws_le
+                self.master_websock_port_ssl = master.internal_mqtt_ws_le
             else:
-                master = self.gateways[self.master_gateway()]
-                # print("gateway is looking for master....")
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                result = sock.connect_ex(('i.' + master.fqdn, master.internal_mqtt_ss))
+                result = sock.connect_ex(('e.' + master.fqdn, master.external_mqtt_ss))
                 if result == 0:
-                    self.master_mqtt_host = 'i.' + master.fqdn
+                    self.master_mqtt_host = 'e.' + master.fqdn
                     self.master_mqtt_ssl = True
-                    self.master_mqtt_port = master.internal_mqtt_le
-                    self.master_mqtt_port_ssl = master.internal_mqtt_le
+                    self.master_mqtt_port = master.external_mqtt_le
+                    self.master_mqtt_port_ssl = master.external_mqtt_le
                     self.master_websock_ssl = True
-                    self.master_websock_port = master.internal_mqtt_ws_le
-                    self.master_websock_port_ssl = master.internal_mqtt_ws_le
+                    self.master_websock_port = master.external_mqtt_ws_le
+                    self.master_websock_port_ssl = master.external_mqtt_ws_le
                 else:
-                    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    result = sock.connect_ex(('e.' + master.fqdn, master.external_mqtt_ss))
-                    if result == 0:
-                        self.master_mqtt_host = 'e.' + master.fqdn
-                        self.master_mqtt_ssl = True
-                        self.master_mqtt_port = master.external_mqtt_le
-                        self.master_mqtt_port_ssl = master.external_mqtt_le
-                        self.master_websock_ssl = True
-                        self.master_websock_port = master.external_mqtt_ws_le
-                        self.master_websock_port_ssl = master.external_mqtt_ws_le
-                    else:
-                        logger.warn("Cannot find an open MQTT port to the master gateway.")
+                    logger.warn("Cannot find an open MQTT port to the master gateway.")
 
     def _start_(self, **kwargs):
         self.library_phase = 3
-        if self._States['loader.operating_mode'] != 'run':
+        if self._Loader.operating_mode != 'run':
             return
         self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming_wrapper,
                                    client_id='Yombo-gateways-%s' % self.gateway_id)
@@ -258,7 +266,7 @@ class Gateways(YomboLibrary):
 
     def _started_(self, **kwargs):
         self.library_phase = 4
-        if self._States['loader.operating_mode'] != 'run':
+        if self._Loader.operating_mode != 'run':
             return
         publish_data(self, 'gw', "all", "lib/gateway/online", "")
         reactor.callLater(3, send_all_info, self, set_ok_to_publish_updates=True)
@@ -325,6 +333,7 @@ class Gateways(YomboLibrary):
         database and we need to refresh existing gateways.
         """
         gateways = yield self._LocalDB.get_gateways()
+        print("gateways in database: %s" % gateways)
         for gateway in gateways:
             self.import_gateway(gateway)
 
