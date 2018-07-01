@@ -25,12 +25,12 @@ def route_setup_wizard(webapp):
                                )
 
         @webapp.route('/', methods=['GET'])
-        @require_auth_pin(login_redirect="/setup_wizard/1", create_session=True)
+        @require_auth_pin(login_redirect="/setup_wizard/1")
         def page_setup_wizard_home(webinterface, request, session):
             return webinterface.redirect(request, '/setup_wizard/1')
 
         @webapp.route('/restore_details',)
-        @require_auth_pin(login_redirect="/setup_wizard/restore", create_session=True)
+        @require_auth_pin(login_redirect="/setup_wizard/restore")
         @inlineCallbacks
         def page_setup_wizard_restore_details(webinterface, request, session):
             """
@@ -113,7 +113,7 @@ def route_setup_wizard(webapp):
                                )
 
         @webapp.route('/restore_complete',)
-        @require_auth_pin(login_redirect="/setup_wizard/restore", create_session=True)
+        @require_auth_pin(login_redirect="/setup_wizard/restore")
         @inlineCallbacks
         def page_setup_wizard_restore_complete(webinterface, request, session):
             """
@@ -162,7 +162,7 @@ def route_setup_wizard(webapp):
                                )
 
         @webapp.route('/1')
-        @require_auth_pin(login_redirect="/setup_wizard/1", create_session=True)
+        @require_auth_pin(login_redirect="/setup_wizard/1")
         def page_setup_wizard_1(webinterface, request, session):
             """
             Displays the welcome page. Doesn't do much.
@@ -171,13 +171,14 @@ def route_setup_wizard(webapp):
             :param session:
             :return:
             """
-            session.delete('restore_backup_file')
+            if session is not None:
+                session.delete('restore_backup_file')
             if session is not None and session is not False:
                 if session.get('setup_wizard_done', False) is True:
                     return webinterface.redirect(request, '/setup_wizard/%s' % session['setup_wizard_last_step'])
 
-            session.set('setup_wizard_last_step', 1)
-            if session is not False:
+            if session is not None:
+                session.set('setup_wizard_last_step', 1)
                 if session.get('setup_wizard_done', False) is True:
                     return webinterface.redirect(request, '/setup_wizard/%s' % session['setup_wizard_last_step'])
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/setup_wizard/1.html')
@@ -186,11 +187,10 @@ def route_setup_wizard(webapp):
                                )
 
         @webapp.route('/2')
-        @require_auth(login_redirect="/setup_wizard/2", create_session=True)
+        @require_auth(login_redirect="/setup_wizard/2")
         @inlineCallbacks
         def page_setup_wizard_2(webinterface, request, session):
-            # print("sw2 start")
-            if session is not None and session is not False:
+            if session is not None:
                 if session.get('setup_wizard_done', False) is True:
                     return webinterface.redirect(request, '/setup_wizard/%s' % session['setup_wizard_last_step'])
                 if session.get('setup_wizard_last_step', 1) not in (None, 1, 2, 3):
@@ -198,8 +198,6 @@ def route_setup_wizard(webapp):
                     return webinterface.redirect(request, '/setup_wizard/1')
 
             try:
-                # print("sw2 try1: %s" % session.session_type)
-                # print("sw2 try2: %s" % session.session_data)
                 results = yield webinterface._YomboAPI.request('GET',
                                                                '/v1/gateway/',
                                                                None,
@@ -236,7 +234,6 @@ def route_setup_wizard(webapp):
             if session.get('setup_wizard_done', False) is True:
                 return webinterface.redirect(request, '/setup_wizard/%s' % session['setup_wizard_last_step'])
             if session.get('setup_wizard_last_step', 1) not in (2, 3, 4):
-                # print "wiz step: %s" % webinterface._WebSessions.get(request, 'setup_wizard_last_step')
                 return webinterface.redirect(request, '/setup_wizard/1')
 
             available_gateways = session.get('available_gateways', None)
@@ -255,7 +252,8 @@ def route_setup_wizard(webapp):
                 session['setup_wizard_last_step'] = 2
                 return webinterface.redirect(request, '/setup_wizard/2')
 
-            output = yield page_setup_wizard_3_show_form(webinterface, request, session['setup_wizard_gateway_id'], available_gateways, session)
+            output = yield page_setup_wizard_3_show_form(webinterface, request, session['setup_wizard_gateway_id'],
+                                                         available_gateways, session)
             return output
 
         @webapp.route('/3', methods=['POST'])
@@ -284,7 +282,8 @@ def route_setup_wizard(webapp):
                 webinterface.add_alert("Selected gateway not found. Try again.")
                 return webinterface.redirect(request, "/setup_wizard/2")
 
-            output = yield page_setup_wizard_3_show_form(webinterface, request, submitted_gateway_id, available_gateways, session)
+            output = yield page_setup_wizard_3_show_form(webinterface, request, submitted_gateway_id,
+                                                         available_gateways, session)
             return output
 
         @inlineCallbacks
@@ -342,8 +341,6 @@ def route_setup_wizard(webapp):
             if 'twilighthorizon' not in settings['times']:
                 settings['times']['twilighthorizon'] = { 'data' : '-6'}
 
-            # print "settings: %s" % settings
-
             # session['setup_wizard_gateway_latitude'] = available_gateways[wizard_gateway_id]['variables']['latitude']
             # session['setup_wizard_gateway_longitude'] = available_gateways[wizard_gateway_id]['variables']['longitude']
             # session['setup_wizard_gateway_elevation'] = available_gateways[wizard_gateway_id]['variables']['elevation']
@@ -358,24 +355,20 @@ def route_setup_wizard(webapp):
                     session['setup_wizard_gateway_machine_label'] = available_gateways[wizard_gateway_id]['machine_label']
                     session['setup_wizard_gateway_label'] = available_gateways[wizard_gateway_id]['label']
                     session['setup_wizard_gateway_description'] = available_gateways[wizard_gateway_id]['description']
-            # print "session: %s" % session
-            # print "gateway_id: %s" % wizard_gateway_id
             fields = {
-                  'id' : session['setup_wizard_gateway_id'],
+                  'id': session['setup_wizard_gateway_id'],
                   'machine_label': session['setup_wizard_gateway_machine_label'],
                   'label': session['setup_wizard_gateway_label'],
                   'description': session['setup_wizard_gateway_description'],
             }
 
-            # print "gw_fields: %s" % fields
-
             session['setup_wizard_last_step'] = 3
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/setup_wizard/3.html')
             output = page.render(
-                               alerts=webinterface.get_alerts(),
-                               gw_fields=fields,
-                               settings=settings,
-                               )
+                                 alerts=webinterface.get_alerts(),
+                                 gw_fields=fields,
+                                 settings=settings,
+                                )
             return output
 
         @webapp.route('/4', methods=['GET'])
@@ -457,16 +450,17 @@ def route_setup_wizard(webapp):
         def page_setup_wizard_4_show_form(webinterface, request, session):
             if 'setup_wizard_gateway_is_master' in session and\
                             'setup_wizard_gateway_master_gateway' in session:
-                # print("found gateway master session data")
                 is_master = session['setup_wizard_gateway_is_master']
                 master_gateway = session['setup_wizard_gateway_master_gateway']
             else:
-                master_gateway = session.get('setup_wizard_gateway_master_gateway', 'None')
-                if master_gateway == 'local':
+                available_gateways = session.get('available_gateways')
+                if session['setup_wizard_gateway_id'] in available_gateways:
+                    gw = available_gateways[session['setup_wizard_gateway_id']]
+                    is_master = gw['is_master']
+                    master_gateway = gw['master_gateway']
+                else:
                     is_master = 1
                     master_gateway = None
-                else:
-                    is_master = 0
 
             security_items = {
                 'is_master': is_master,
@@ -477,7 +471,6 @@ def route_setup_wizard(webapp):
                 'send_anon_stats': session.get('setup_wizard_security_send_anon_stats', '1'),
                 }
 
-            print("security_items: %s" % security_items)
 
             session['setup_wizard_last_step'] = 4
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/setup_wizard/4.html')
@@ -504,7 +497,6 @@ def route_setup_wizard(webapp):
         @require_auth()
         @inlineCallbacks
         def page_setup_wizard_5_post(webinterface, request, session):
-            print("aaaa")
             if session.get('setup_wizard_done', False) is True:
                 return webinterface.redirect(request, '/setup_wizard/%s' % session['setup_wizard_last_step'])
             if session.get('setup_wizard_last_step', 1) not in (4, 5):
@@ -862,7 +854,6 @@ def route_setup_wizard(webapp):
                 print("SW7 - 11: %s" % dns_results)
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
-                print("SW7 - 11: %s" % dns_results)
                 return webinterface.redirect(request, 'pages/setup_wizard/6')
 
             print("SW7 - 12")
