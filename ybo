@@ -182,7 +182,6 @@ while true; do
       shift
       ;;
     "help" | "-help" | "--help" | "-?" )
-      echo "called help..."
       help
       exit 0
       ;;
