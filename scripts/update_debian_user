@@ -34,8 +34,8 @@ cd /home/$USER/.pyenv && git pull && cd -
 cd /opt/yombo-gateway
 git pull
 
-pyenv install 3.6.5 -s
-pyenv local 3.6.5
+pyenv install 3.6.6 -s
+pyenv local 3.6.6
 
 pip3 list --outdated --format=freeze | grep -v '^\-e' | cut -d = -f 1 | xargs -n1 pip3 install -U
 pip3 install -r requirements.txt
