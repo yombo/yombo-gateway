@@ -25,7 +25,6 @@ def route_home(webapp):
 
         @require_auth()
         def run_home(webinterface, request, session):
-            # print("run_home aaaaaa")
             page = webinterface.webapp.templates.get_template(webinterface.wi_dir + '/pages/index.html')
             delayed_device_commands = webinterface._Devices.get_delayed_commands()
             return page.render(alerts=webinterface.get_alerts(),
@@ -53,7 +52,7 @@ def route_home(webapp):
             try:
                 webinterface._WebSessions.close_session(request)
             except Exception as e:
-                print("Unable to close websession: %s" % e)
+                pass
             return request.redirect("/?")
 
         @webapp.route('/login/user', methods=['GET'])
@@ -95,18 +94,12 @@ def route_home(webapp):
                 webinterface.add_alert("%s: %s" % (e.errorno, e.message), 'warning')
                 page = webinterface.get_template(request, webinterface.wi_dir + '/pages/login_user.html')
                 return page.render(alerts=webinterface.get_alerts())
-            # print("results: %s" % results)
             if results['code'] == 200:
                 login = results['response']['login']
 
-                # print("login was good...")
-
-                # if session is False:
-                #     session = webinterface._WebSessions.create(request)
-                #
                 session['auth'] = True
                 session['auth_pin'] = True
-                session['auth_id'] = submitted_email
+                session.auth_id = submitted_email
                 session['auth_at'] = time()
                 session['yomboapi_session'] = login['session']
                 session['yomboapi_login_key'] = login['login_key']
@@ -124,7 +117,6 @@ def route_home(webapp):
                 session.delete('login_redirect')
             if location is None:
                 location = "/?"
-            # print("login_redirect: %s" % location)
             return webinterface.redirect(request, location)
 
         @webapp.route('/login/pin', methods=['GET'])
@@ -136,7 +128,6 @@ def route_home(webapp):
         @run_first(create_session=True)
         def page_login_pin_post(webinterface, request, session):
             submitted_pin = request.args.get('authpin')[0]
-
             if submitted_pin.isalnum() is False:
                 webinterface.add_alert('Invalid authentication.', 'warning')
                 return webinterface.redirect(request, '/login/pin')
@@ -146,15 +137,13 @@ def route_home(webapp):
                     l_session = webinterface._WebSessions.create(request)
                 l_session['auth_pin'] = True
                 l_session['auth'] = False
-                l_session['auth_id'] = ''
+                l_session.auth_id = None
                 l_session['auth_at'] = 0
                 l_session['yomboapi_session'] = ''
                 l_session['yomboapi_login_key'] = ''
                 request.received_cookies[l_webinterface._WebSessions.config.cookie_session_name] = l_session.session_id
 
-            print("pins: %s == %s" % (submitted_pin, webinterface.auth_pin()))
             if webinterface.auth_pin_type() == 'pin':
-                print("checking pin... : %s == %s" % (submitted_pin, webinterface.auth_pin()))
                 if submitted_pin == webinterface.auth_pin():
                     create_pin_session(webinterface, request, session)
                 else:
