@@ -807,7 +807,7 @@ class Configuration(YomboLibrary):
             # already have a value. If it's the same, we won't set it.
             if self.configs[section][option]['value'] == value:
                 self._Statistics.increment("lib.configuration.set.skipped_same_value", bucket_size=15, anon=True)
-                return
+                return value
             self._Statistics.increment("lib.configuration.set.update", bucket_size=15, anon=True)
 
         self.configs[section][option] = dict_merge(self.configs[section][option], {
@@ -824,6 +824,7 @@ class Configuration(YomboLibrary):
                                     option=option,
                                     value=value,
                                     )
+        return value
 
     def get_meta(self, section, option, meta_type='time'):
         try:
