@@ -402,6 +402,7 @@ class Auth(object):
         if self.auth_id is None:
             self.expire_session()
             return False
+        return True
 
     def rotate(self):
         old_auth_id = self.auth_id
