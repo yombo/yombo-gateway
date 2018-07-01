@@ -71,8 +71,7 @@
                     <table id="myTableId" class="table table-nonfluid table-striped table-hover table-sm">
                       <thead class="thead-default">
                         <tr>
-                          <th>Domain</th>
-                          <th>Available</th>
+                          <th>Domain Availability</th>
                         </tr>
                       </thead>
                       <tbody id="tBody"></tbody>
@@ -81,7 +80,7 @@
                     </p>
                     <hr>
                     {% endif %}
-                    <a class="btn btn-lg btn-primary" href="/setup_wizard/7">Skip Dynamic DNS <i class="fa fa-chevron-right pull-right"></i></a>
+                    <a class="btn btn-md btn-warning" href="/setup_wizard/7">Skip Dynamic DNS <i class="fa fa-chevron-right pull-right"></i></a>
                 </div>
             </div>
         </div>
@@ -156,15 +155,13 @@ function doSearch() {
                 $.each(resp, function (i, userData) {
                     var availField = "";
                     if (userData.available == false) {
-                        availField = '<button type="button" class="btn btn-sm btn-dangle disabled">Not Available</button>';
+                        availField = `<button type="button" class="btn btn-block btn-sm btn-dangle disabled">Not Available - ${val}.${userData.domain}</button>`;
                     } else {
-                        availField = '<button type="button" class="btn btn-sm btn-primary" onclick="submitter(this); return false;" id="'+val+'.'+userData.domain+'">Use this</button>';
+                        availField = `<button type="button" class="btn btn-block btn-md btn-primary" onclick="submitter(this); return false;" id="${val}.${userData.domain}">Select: <strong>${val}.${userData.domain}</strong></button>`;
                     }
                         trHTML +=
                             '<tr id="' + userData.id + '"><td width="10%">'
                             + availField
-                            + '</td><td>'
-                            + "<strong>" + val + "</strong>." + userData.domain
                             + '</td></tr>';
                 });
                 $('#tBody').append(trHTML);
