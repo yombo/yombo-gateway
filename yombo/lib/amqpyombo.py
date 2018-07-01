@@ -258,7 +258,7 @@ class AMQPYombo(YomboLibrary):
         if self.send_local_information_loop is not None and self.send_local_information_loop.running:
             self.send_local_information_loop.stop()
 
-    def send_local_information(self):
+    def send_local_information(self, full=False):
         """
         Say hello, send some information about us. What we use these IP addresses for:
 
@@ -295,8 +295,11 @@ class AMQPYombo(YomboLibrary):
             "external_mqtt_ws_le": self._Configs.get("mqtt", "server_listen_port_websockets_le_ssl"),
             "external_mqtt_ws_ss": self._Configs.get("mqtt", "server_listen_port_websockets_ss_ssl"),
         }
+        if full is True:
+            body['is_master'] = self._Configs.get("core", "is_master")
+            body['master_gateway'] = self._Configs.get("core", "master_gateway")
 
-        # logger.info("sending local information: {body}", body=body)
+            # logger.info("sending local information: {body}", body=body)
 
         requestmsg = self.generate_message_request(
             exchange_name='ysrv.e.gw_system',
