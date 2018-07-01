@@ -81,25 +81,25 @@ def mqtt_incoming_to_yombo(gateways, topics, message):
         device_search = topics[2]
         command_search = topics[3]
         if len(device_search) > 200 or isinstance(device_search, str) is False:
-            logger.info("Dropping MQTT device command request, device_id is too long or invalid.")
+            logger.debug("Dropping MQTT device command request, device_id is too long or invalid.")
             return
         if device_search in gateways._Devices:
             device = gateways._Devices[device_search]
             if device.gateway_id != gateways.gateway_id:
-                logger.info("Dropping MQTT device command request, i'm not the controlling gateway.: {device}",
+                logger.debug("Dropping MQTT device command request, i'm not the controlling gateway.: {device}",
                             device=device_search)
         else:
-            logger.info("Dropping MQTT device command request, device_id is not found: {device}",
+            logger.debug("Dropping MQTT device command request, device_id is not found: {device}",
                         device=device_search)
             return
 
         if len(command_search) > 200 or isinstance(command_search, str) is False:
-            logger.info("Dropping MQTT device command request, command_id is too long or invalid.")
+            logger.debug("Dropping MQTT device command request, command_id is too long or invalid.")
             return
         if command_search in gateways._Commands:
             command = gateways._Commands[command_search]
         else:
-            logger.info("Dropping MQTT device command request, command_id is not found: {command}",
+            logger.debug("Dropping MQTT device command request, command_id is not found: {command}",
                         command=command_search)
             return
 
@@ -157,10 +157,6 @@ def mqtt_incomming_request(gateways, topics, message):
 
     if component_type not in ('lib', 'module', 'system'):
         logger.info("Gateway COMS received invalid component type: {component_type}", component_type=component_type)
-        return
-
-    if source_id not in gateways.gateways and source_id != "all":
-        logger.info("Dropping gw comms message, gwid is invalid to us. Perhaps we need a restart?")
         return
 
     if component_type == 'module':
@@ -389,7 +385,7 @@ def publish_data(gateways, msg_type, destination_id, topic, message):
     message_id, outgoing_data = encode_message(gateways, message)
     gateways.mqtt.publish(final_topic, outgoing_data)
 
-    logger.info("gateways publish data: {topic} {data}", topic=final_topic, data=outgoing_data)
+    logger.debug("gateways publish data: {topic} {data}", topic=final_topic, data=outgoing_data)
     gateways.gateways[gateways.gateway_id].last_communications.append({
         'time': time(),
         'direction': 'sent',
