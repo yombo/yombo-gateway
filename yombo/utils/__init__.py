@@ -514,6 +514,10 @@ def unicode_to_bytes(input):
         return input
 
 
+def snake_case(input):
+    return input.replace(" ", "_").lower()
+
+
 def dict_has_key(dictionary, keys):
     """
     Check if a dictionary has the given list of keys
