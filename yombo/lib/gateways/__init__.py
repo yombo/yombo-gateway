@@ -215,7 +215,7 @@ class Gateways(YomboLibrary):
             logger.warn("It appears the master has disappeared. Setting this gateway it's own master.")
             self._Configs.set('core', 'is_master', True)
             self._Configs.set('core', 'master_gateway', self.gateway_id)
-            self._AMQPYombo.send_local_information()
+            self._AMQPYombo.send_local_information(full=True)
 
         if self.is_master() is True:
             self.master_mqtt_host = 'i.' + self.gateways[self.gateway_id].fqdn
