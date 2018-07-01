@@ -181,7 +181,7 @@ while true; do
       DAEMON=1
       shift
       ;;
-    "help" | "-help" | "--help" | "-?" )
+    "help" | "-h" | "-help" | "--help" | "-?" )
       help
       exit 0
       ;;
