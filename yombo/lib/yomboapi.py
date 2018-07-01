@@ -22,6 +22,8 @@ try:
     from hashlib import sha3_224 as sha224
 except ImportError:
     from hashlib import sha224
+import sys
+import traceback
 import treq
 
 try: import simplejson as json
@@ -286,8 +288,7 @@ class YomboAPI(YomboLibrary):
         else:
             session_type = 'Bearer'
 
-
-        logger.debug("session: {session_type} - {session}", session_type=session_type, session=session)
+        logger.debug("session: {session_type} {session}", session_type=session_type, session=session)
         headers = self.make_headers(session, session_type)
         logger.debug("headers: {headers}", headers=headers)
         if data is not None:
@@ -306,7 +307,7 @@ class YomboAPI(YomboLibrary):
         elif method == 'DELETE':
             results = yield self._delete(path, headers, data)
         else:
-            raise Exception("Bad request type?? %s: %s" % (method, path) )
+            raise YomboWarning("Bad request type?? %s: %s" % (method, path) )
 
         return results
 
@@ -317,39 +318,43 @@ class YomboAPI(YomboLibrary):
         response = yield treq.get(path, headers=headers, params=args)
         content = yield treq.content(response)
         # logger.debug("getting URL: {path}  headers: {headers}", path=path, agent=self.custom_agent, headers=headers)
-        final_response = self.decode_results(content, self.response_headers(response), response.code, response.phrase)
+        final_response = self.decode_results(content, self.response_headers(response), response.code, response.phrase,
+                                             path, headers, args)
         return final_response
 
     @inlineCallbacks
-    def _patch(self, path, headers, data):
+    def _patch(self, path, headers, args):
         # print("yapi patch called. path: %s... headers: %s... data: %s" % (path, headers, data))
-        response = yield treq.patch(path, data=data, agent=self.custom_agent, headers=headers)
+        response = yield treq.patch(path, data=args, agent=self.custom_agent, headers=headers)
         content = yield treq.content(response)
-        final_response = self.decode_results(content, self.response_headers(response), response.code, response.phrase)
+        final_response = self.decode_results(content, self.response_headers(response), response.code, response.phrase,
+                                             path, headers, args)
         return final_response
 
     @inlineCallbacks
-    def _post(self, path, headers, data):
+    def _post(self, path, headers, args):
         # print("yapi post called. path: %s... headers: %s... data: %s" % (path, headers, data))
 
-        response = yield treq.post(path, data=data, agent=self.custom_agent, headers=headers)
+        response = yield treq.post(path, data=args, agent=self.custom_agent, headers=headers)
         content = yield treq.content(response)
-        final_response = self.decode_results(content, self.response_headers(response), response.code, response.phrase)
-        # print("dddd: %s" % final_response)
+        final_response = self.decode_results(content, self.response_headers(response), response.code, response.phrase,
+                                             path, headers, args)
         return final_response
 
     @inlineCallbacks
-    def _put(self, path, headers, data):
-        response = yield treq.put(path, data=data, agent=self.custom_agent, headers=headers)
+    def _put(self, path, headers, args):
+        response = yield treq.put(path, data=args, agent=self.custom_agent, headers=headers)
         content = yield treq.content(response)
-        final_response = self.decode_results(content, self.response_headers(response), response.code, response.phrase)
+        final_response = self.decode_results(content, self.response_headers(response), response.code, response.phrase,
+                                             path, headers, args)
         return final_response
 
     @inlineCallbacks
     def _delete(self, path, headers, args={}):
         response = yield treq.delete(path, params=args, agent=self.custom_agent, headers=headers)
         content = yield treq.content(response)
-        final_response = self.decode_results(content, self.response_headers(response), response.code, response.phrase)
+        final_response = self.decode_results(content, self.response_headers(response), response.code, response.phrase,
+                                             path, headers, args)
         return final_response
 
     def response_headers(self, response):
@@ -359,11 +364,11 @@ class YomboAPI(YomboLibrary):
             data[key.lower()] = value
         return data
 
-    def decode_results(self, content, headers, code, phrase):
+    def decode_results(self, content, response_headers, code, phrase, path, request_headers, args):
         # print("decode_results headers: %s" % headers)
 
         # print(content)
-        content_type = headers['content-type'][0]
+        content_type = response_headers['content-type'][0]
         phrase = bytes_to_unicode(phrase)
 
         # print( "######  content: %s" % content)
@@ -393,7 +398,13 @@ class YomboAPI(YomboLibrary):
         content = bytes_to_unicode(content)
 
         if code >= 300:
-            logger.warn("error with request: {content}", content=content)
+            logger.warn("-----==( Error: API received an invalid response )==----")
+            logger.warn("Path: {path}", path=path)
+            logger.warn("Path: {request_headers}", request_headers=request_headers)
+            logger.warn("Data: {args}", args=args)
+            logger.warn("Content: {content}", content=content)
+            logger.warn("--------------------------------------------------------")
+
             if 'message' in content:
                 message = content['message']
             else:
@@ -410,7 +421,7 @@ class YomboAPI(YomboLibrary):
             'content_type': content_type,
             'code': code,
             'phrase': phrase,
-            'headers': headers,
+            'headers': request_headers,
         }
 
         if content_type == "string":
