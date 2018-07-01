@@ -16,20 +16,21 @@ Provides web interface for configuration of the Yombo system.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/webinterface.html>`_
 """
 # Import python libraries
-from OpenSSL import crypto
-import shutil
 from collections import OrderedDict
+from copy import deepcopy
+import jinja2
+from hashlib import sha256
+from klein import Klein
+from OpenSSL import crypto
+from operator import itemgetter
 from os import path, listdir, mkdir
+import shutil
 from time import time
 from urllib.parse import parse_qs, urlparse
-from operator import itemgetter
-import jinja2
-from klein import Klein
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
     import json
-from hashlib import sha256
 
 # Import twisted libraries
 from twisted.web.server import Site
@@ -732,23 +733,29 @@ class WebInterface(YomboLibrary):
         """
         # first, lets get the top levels already defined so children don't re-arrange ours.
         top_levels = {}
-        temp_list = sorted(NAV_SIDE_MENU, key=itemgetter('priority1', 'priority2', 'label2'))
+        add_on_menus = yield yombo.utils.global_invoke_all('_webinterface_add_routes_',
+                                                           called_by=self,
+                                                           )
+        nav_side_menu = deepcopy(NAV_SIDE_MENU)
+        for component, options in add_on_menus.items():
+            if 'nav_side' in options:
+                for new_menu in options['nav_side']:
+                    if new_menu['label1'] in nav_side_menu:
+                        the_index = nav_side_menu[new_menu['label1']].index("bar")
+                        new_menu['priority1'] = nav_side_menu[the_index]['priority1']
+                    if 'priority1' not in new_menu or isinstance(new_menu['priority1'], int) is False:
+                        new_menu['priority1'] = 1000
+                    if 'priority2' not in new_menu or isinstance(new_menu['priority2'], int) is False:
+                        new_menu['priority2'] = 100
+                nav_side_menu = nav_side_menu + options['nav_side']
+
+        temp_list = sorted(NAV_SIDE_MENU, key=itemgetter('priority1', 'label1', 'priority2'))
         for item in temp_list:
             label1 = item['label1']
             if label1 not in temp_list:
                 top_levels[label1] = item['priority1']
 
-        nav_side_menu = NAV_SIDE_MENU.copy()
-
-        add_on_menus = yield yombo.utils.global_invoke_all('_webinterface_add_routes_',
-                                                           called_by=self,
-                                                           )
         for component, options in add_on_menus.items():
-            if 'nav_side' in options:
-                for new_nav in options['nav_side']:
-                    if isinstance(new_nav['priority1'], int) is False:
-                        new_nav['priority1'] = top_levels[new_nav['label1']]
-                    nav_side_menu.append(new_nav)
             if 'menu_priorities' in options:  # allow modules to change the ordering of top level menus
                 for label, priority in options['menu_priorities'].items():
                     top_levels[label] = priority
@@ -763,9 +770,13 @@ class WebInterface(YomboLibrary):
         # build menu tree
         self.misc_wi_data['nav_side'] = OrderedDict()
 
-        temp_list = sorted(nav_side_menu, key=itemgetter('priority1', 'priority2', 'label2'))
+        temp_list = sorted(nav_side_menu, key=itemgetter('priority1', 'label1', 'priority2'))
         for item in temp_list:
-            label1 = item['label1']
+            item['label1_text'] = deepcopy(item['label1'])
+            item['label2_text'] = deepcopy(item['label2'])
+            label1 = "ui::navigation::" + yombo.utils.snake_case(item['label1'])
+            item['label1'] = "ui::navigation::" + yombo.utils.snake_case(item['label1'])
+            item['label2'] = "ui::navigation::" + yombo.utils.snake_case(item['label2'])
             if label1 not in self.misc_wi_data['nav_side']:
                 self.misc_wi_data['nav_side'][label1] = []
             self.misc_wi_data['nav_side'][label1].append(item)
@@ -1139,6 +1150,5 @@ class web_translator(object):
         self.translator = webinterface._Localize.get_translator(locales)
 
     def __call__(self, msgid, default_text=None, **kwargs):
-        print("##  web_translator __call__ kwargs: %s" % kwargs)
         kwargs['translator'] = self.translator
         return self.webinterface._Localize.handle_translate(msgid, default_text, **kwargs)

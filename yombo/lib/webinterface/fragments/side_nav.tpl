@@ -23,16 +23,16 @@
             {% set printed_nested_header = False -%}
             {% if items|length > 1 %}
 						<li>
-                            <a href="#" class="dropdown-collapse"><i class="{{ items[0].icon }}"></i> <span class="side-menu-title">{{ items[0].label1 }}</span><span class="fa fa-arrow-down pull-right"></span></a>
+                            <a href="#" class="dropdown-collapse"><i class="{{ items[0].icon }}"></i> <span class="side-menu-title">{{ _(items[0].label1, items[0].label1_text) }}</span><span class="fa fa-arrow-down pull-right"></span></a>
                             <ul class="nav nav-second-level">
                 {% for item in items -%}
                                     <li>
-                                        <a href="{{ item.url }}">{{ item.label2 }}</a>
+                                        <a href="{{ item.url }}">{{ _(items[0].label1, items[0].label2_text) }}</a>
                                     </li>
                 {% endfor -%}
 
             {%- else %}
-                        <li><a href="{{ items[0].url }}"><i class="{{ items[0].icon }}"></i> <span class="side-menu-title">{{ items[0].label1 }}</span></a></li>
+                        <li><a href="{{ items[0].url }}"><i class="{{ items[0].icon }}"></i> <span class="side-menu-title">{{ _(items[0].label1, items[0].label1_text) }}</span></a></li>
             {%- endif -%}
             {% if items|length > 1 %}
                             </ul>

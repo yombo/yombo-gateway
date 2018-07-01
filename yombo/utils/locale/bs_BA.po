@@ -1133,6 +1133,9 @@ msgstr "Modules"
 msgid "ui::label::states"
 msgstr "States"
 
+msgid "ui::messages::rate_limit_exceeded"
+msgstr "Too many attempts, try again later."
+
 msgid "ui::navigation::api_auth"
 msgstr "API Auth"
 
@@ -1175,6 +1178,9 @@ msgstr "Encryption Keeys"
 msgid "ui::navigation::gateways"
 msgstr "Gateways"
 
+msgid "ui::navigation::general"
+msgstr "General"
+
 msgid "ui::navigation::home"
 msgstr "Home"
 
@@ -1192,6 +1198,9 @@ msgstr "Modules"
 
 msgid "ui::navigation::panel"
 msgstr "Panel"
+
+msgid "ui::navigation::rules"
+msgstr "Rules"
 
 msgid "ui::navigation::scenes"
 msgstr "Scenes"

@@ -5,10 +5,10 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: lokalise.co\n"
 "Project-Id-Version: Yombo Frontend\n"
-"PO-Revision-Date: 2018-07-01 20:35\n"
+"PO-Revision-Date: 2018-07-01 20:34\n"
 "Last-Translator: lokalise.co\n"
 "Language-Team: lokalise.co\n\n"
-"Language: sv\n"
+"Language: ar\n"
 
 msgid "command::close"
 msgstr "Close"
@@ -561,16 +561,16 @@ msgid "state::cover::stopped"
 msgstr "Stopped"
 
 msgid "state::default::off"
-msgstr "Av"
+msgstr "Off"
 
 msgid "state::default::on"
-msgstr "På"
+msgstr "تشغيل"
 
 msgid "state::default::open"
-msgstr "Öppen"
+msgstr "Open"
 
 msgid "state::default::opening"
-msgstr "Öppnar"
+msgstr "Opening"
 
 msgid "state::default::running"
 msgstr "Running"
@@ -888,10 +888,10 @@ msgid "system::current_language"
 msgstr "English"
 
 msgid "ui::card::alarm_control_panel::arm_away"
-msgstr "Larma bortaläge"
+msgstr "Arm away"
 
 msgid "ui::card::alarm_control_panel::arm_home"
-msgstr "Larma hemmaläge"
+msgstr "Arm home"
 
 msgid "ui::card::alarm_control_panel::clear_code"
 msgstr "Clear"
@@ -1132,9 +1132,8 @@ msgstr "Modules"
 msgid "ui::label::states"
 msgstr "States"
 
-#, fuzzy
 msgid "ui::messages::rate_limit_exceeded"
-msgstr "För många försök, försök igen senare."
+msgstr "Too many attempts, try again later."
 
 msgid "ui::navigation::api_auth"
 msgstr "API Auth"

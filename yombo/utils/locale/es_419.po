@@ -5,7 +5,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: lokalise.co\n"
 "Project-Id-Version: Yombo Frontend\n"
-"PO-Revision-Date: 2018-06-28 18:38\n"
+"PO-Revision-Date: 2018-07-01 20:35\n"
 "Last-Translator: lokalise.co\n"
 "Language-Team: lokalise.co\n\n"
 "Language: es_419\n"
@@ -1132,6 +1132,10 @@ msgstr "Modules"
 msgid "ui::label::states"
 msgstr "States"
 
+#, fuzzy
+msgid "ui::messages::rate_limit_exceeded"
+msgstr "Demasiados intentos, inténtelo de nuevo más tarde."
+
 msgid "ui::navigation::api_auth"
 msgstr "API Auth"
 
@@ -1174,6 +1178,9 @@ msgstr "Encryption Keeys"
 msgid "ui::navigation::gateways"
 msgstr "Gateways"
 
+msgid "ui::navigation::general"
+msgstr "General"
+
 msgid "ui::navigation::home"
 msgstr "Home"
 
@@ -1191,6 +1198,9 @@ msgstr "Modules"
 
 msgid "ui::navigation::panel"
 msgstr "Panel"
+
+msgid "ui::navigation::rules"
+msgstr "Rules"
 
 msgid "ui::navigation::scenes"
 msgstr "Scenes"
