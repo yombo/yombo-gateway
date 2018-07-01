@@ -95,6 +95,7 @@ class AMQPYombo(YomboLibrary):
         self.controlHandler = AmqpControlHandler(self)
         self.configHandler = AmqpConfigHandler(self)
         self.systemHandler = AmqpSystemHandler(self)
+        self.gateway_id = self._Configs.get2('core', 'gwid', 'local', False)
 
         self.amqpyombo_options = {   # Stores data from sub-modules
             'connected': [],
@@ -272,10 +273,7 @@ class AMQPYombo(YomboLibrary):
 
         :return:
         """
-        gwid = self._Configs.get('core', 'gwid', 'local', False)
         body = {
-            "is_master": self._Configs.get("core", "is_master", True, False),
-            "master_gateway": self._Configs.get("core", "master_gateway", gwid, False),
             "internal_ipv4": self._Configs.get("core", "localipaddress_v4"),
             "external_ipv4": self._Configs.get("core", "externalipaddress_v4"),
             # "internal_ipv6": self._Configs.get("core", "externalipaddress_v6"),
