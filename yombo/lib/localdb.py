@@ -726,10 +726,9 @@ class LocalDB(YomboLibrary):
     #########################
     ###    Gateways     #####
     #########################
-
     @inlineCallbacks
     def get_gateways(self, status=None):
-        if status == True:
+        if status is True:
             records = yield self.dbconfig.select("gateways")
             return records
         elif status is None:
