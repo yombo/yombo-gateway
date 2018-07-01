@@ -30,7 +30,7 @@ from twisted.internet import reactor, threads
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 
-logger = get_logger('library.tasks')
+logger = get_logger('library.hash')
 
 MAX_DURATION = 300
 
@@ -101,7 +101,7 @@ class Hash(YomboLibrary):
         :return:
         """
         if max_time is None:
-            max_time = 300
+            max_time = MAX_DURATION
         else:
             try:
                 max_time = int(max_time)
@@ -110,12 +110,15 @@ class Hash(YomboLibrary):
 
         max_time = max_time * .95
         memory_base = 1
-        memory_min = 12
+        memory_min = 11
         memory_max = 17
         rounds_min = 0
         rounds_max = 16
-        duration = 0
+        duration = -1
         skip = 0
+        rounds_best = 8
+        memory_best = 10
+        duration_best = 300
         for memory_step in range(memory_min, memory_max):
             for rounds in range(rounds_min + round(memory_step * 0.4), rounds_max):
                 # We implement a skipper if we blast through some of the early checks.
@@ -161,8 +164,8 @@ class Hash(YomboLibrary):
                 # print("rounds=%s, memory=%s (%s), time=%.3f" % (rounds, memory_cost, memory_step, duration))
                 if duration > max_time:
                     break
-                memory_best = memory_step
                 rounds_best = rounds
+                memory_best = memory_step
                 duration_best = duration
             if rounds == rounds_min + round(memory_step * 0.4):
                 break
