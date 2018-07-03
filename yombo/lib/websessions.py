@@ -43,6 +43,7 @@ class WebSessions(YomboLibrary):
 
     def __delitem__(self, key):
         if key in self.active_sessions:
+            logger.info("Expiring session, delete request: {auth_id}", auth_id=self.active_sessions[key].auth_id)
             self.active_sessions[key].expire_session()
         return
 
@@ -87,7 +88,7 @@ class WebSessions(YomboLibrary):
 
         self.config = DictObject({
             'cookie_session_name': 'yombo_' + cookie_id,
-            'cookie_path' : '/',
+            'cookie_path': '/',
             'max_session': 15552000,  # How long session can be good for: 180 days
             'max_idle': 5184000,  # Max idle timeout: 60 days
             'max_session_no_auth': 600,  # If not auth in 10 mins, delete session
@@ -95,10 +96,10 @@ class WebSessions(YomboLibrary):
             'ignore_change_ip': True,
             'expired_message': 'Session expired',
             'httponly': True,
-            'secure': False,  # will change to true after SSL system/dns complete. - Mitch
+            'secure': False,
         })
         self.clean_sessions_loop = LoopingCall(self.clean_sessions)
-        self.clean_sessions_loop.start(random_int(60, .2))  # Every hour-ish. Save to disk, or remove from memory.
+        self.clean_sessions_loop.start(random_int(30, .2), False)  # Every hour-ish. Save to disk, or remove from memory.
 
     def _stop_(self, **kwargs):
         self.unload_deferred = Deferred()
@@ -114,7 +115,7 @@ class WebSessions(YomboLibrary):
         :rtype: list
         """
         yield self.clean_sessions(True)
-        sessions = yield self._LocalDB.get_web_sessions()
+        sessions = yield self._LocalDB.get_web_session()
         return sessions
 
     def get(self, key):
@@ -136,8 +137,9 @@ class WebSessions(YomboLibrary):
     def do_close_session(self, request):
         try:
             session = yield self.get_session_from_request(request)
-        except YomboWarning as e:
+        except YomboWarning:
             return
+        logger.info("Closing session: {auth_id} ", auth_id=session.auth_id)
         session.expire_session()
 
     @inlineCallbacks
@@ -179,7 +181,7 @@ class WebSessions(YomboLibrary):
         if self.validate_session_id(session_id) is False:
             raise YomboWarning("Invalid session id.")
         if session_id in self.active_sessions:
-            if self.active_sessions[session_id].is_valid is True:
+            if self.active_sessions[session_id].check_valid() is True:
                 return self.active_sessions[session_id]
             else:
                 raise YomboWarning("Session is no longer valid.")
@@ -187,7 +189,7 @@ class WebSessions(YomboLibrary):
             try:
                 db_session = yield self._LocalDB.get_web_session(session_id)
             except Exception as e:
-                raise YomboWarning("Cannot find session id.")
+                raise YomboWarning("Cannot find session id: %s" % e)
             self.active_sessions[session_id] = Auth(self, db_session, source='database')
             if self.active_sessions[session_id].is_valid is True:
                 return self.active_sessions[session_id]
@@ -197,7 +199,7 @@ class WebSessions(YomboLibrary):
 
     def get_cookie_domain(self, request):
         fqdn = self._Configs.get("dns", 'fqdn', None, False)
-        host = "%s" % request.getRequestHostname().decode();
+        host = "%s" % request.getRequestHostname().decode()
 
         if fqdn is None:
             return host
@@ -312,36 +314,37 @@ class WebSessions(YomboLibrary):
         """
         Called by loopingcall.
 
-        Cleanup the stored sessions
+        Cleanup the stored sessions from memory
         """
-        logger.debug("clean_sessions()")
         count = 0
         current_time = int(time())
         for session_id in list(self.active_sessions.keys()):
+            print("clean_sessions - Checking session id : %s" % session_id)
             session = self.active_sessions[session_id]
 
-            if session.check_valid() is False and session.created_at > current_time - 120 \
-                    and session.last_access > current_time - 45:
+            if session.check_valid() is False and session.created_at > current_time - 600 \
+                    and session.last_access > current_time - 120:
+                print("clean_sessions - deleting session - not valid and is old..: %s" % session.session_data)
                 del self.active_sessions[session_id]
                 yield self._LocalDB.delete_web_session(session_id)
                 count += 1
-        logger.debug("Deleted {count} sessions from the session store.", count=count)
 
-        for session_id in list(self.active_sessions.keys()):
-            session = self.active_sessions[session_id]
-            if session.is_dirty >= 200 or close_deferred is not None or session.last_access < int(time() - (60*5)):
+            if session.is_dirty >= 200 or close_deferred is not None or session.last_access < int(time() - (60*60)):
                 if session.in_db:
-                    # session.in_db = True
-                    logger.debug("updating old db session record: {id}", id=session_id)
+                    logger.debug("clean_sessions - syncing web session to DB: {id}", id=session_id)
                     yield self._LocalDB.update_web_session(session)
-                else:
-                    logger.debug("creating new db session record: {id}", id=session_id)
+                    session.is_dirty = 0
+                elif session.auth_id is not None:
+                    logger.info("clean_sessions - adding web session to DB: {id}", id=session_id)
                     yield self._LocalDB.save_web_session(session)
                     session.in_db = True
-                session.is_dirty = 0
-                if session.last_access < int(time() - (60*60*3)):   # delete session from memory after 3 hours
-                    logger.debug("Deleting session from memory: {session_id}", session_id=session_id)
+                    session.is_dirty = 0
+                if session.last_access < int(time() - (60*60*6)):
+                    # delete session from memory after 6 hours
+                    logger.debug("clean_sessions - Deleting session from memory only: {session_id}", session_id=session_id)
                     del self.active_sessions[session_id]
+
+        logger.debug("Deleted {count} sessions from the session store.", count=count)
 
         if close_deferred is not None and close_deferred is not True and close_deferred is not False:
             yield sleep(0.1)
@@ -406,6 +409,15 @@ class Auth(object):
         """
         return self.session_data.keys()
 
+    @property
+    def auth_id(self):
+        return self._auth_id
+
+    @auth_id.setter
+    def auth_id(self, val):
+        self._auth_id = val
+        self.auth_at = time()
+
     def __init__(self, WebSessions, record, source=None):
         self._Parent = WebSessions
         self.is_valid = True
@@ -417,18 +429,19 @@ class Auth(object):
 
         self.session_type = "websession"
 
+        self._auth_id = None
+        self.auth_at = None
+        self.auth_pin = None
+        self.auth_pin_at = None
+        self.created_by = None
         self.gateway_id = record['gateway_id']
         self.session_id = record['id']
         self.last_access = int(time())
         self.created_at = int(time())
         self.updated_at = int(time())
         self.session_data = {
-            'auth_pin': None,
-            'auth_pin_at': None,
-            'auth': None,
-            'auth_id': None,
-            'auth_at': None,
             'yomboapi_session': None,
+            'yomboapi_login_key': None,
             'create_type': None,
         }
         self.update_attributes(record, True)
@@ -442,6 +455,8 @@ class Auth(object):
         """
         if record is None:
             return
+        if 'auth_id' in record:
+            self.auth_id = record['auth_id']
         if 'is_valid' in record:
             self.is_valid = record['is_valid']
         if 'last_access' in record:
@@ -455,13 +470,15 @@ class Auth(object):
                 self.session_data.update(record['session_data'])
         if 'yomboapi_session' not in self.session_data:
             self.session_data['yombo_session'] = None
+            if 'yomboapi_login_key' not in self.session_data:
+                self.session_data['yomboapi_login_key'] = None
 
         if stay_clean is not True:
             self.is_dirty = 2000
 
     @property
     def user_id(self) -> str:
-        return self.session_data['auth_id']
+        return self.auth_id
 
     def get(self, key, default="BRFEqgdgLgI0I8QM2Em2nWeJGEuY71TTo7H08uuT"):
         if key in self.session_data:
@@ -500,25 +517,33 @@ class Auth(object):
         self.is_dirty += 1
 
     def check_valid(self):
+        """
+        Checks if a session is valid or not.
+
+        :return:
+        """
         if self.is_valid is False:
+            print("check_valid - is valid is false.")
             return False
 
         if self.created_at < (int(time() - self._Parent.config.max_session)):
+            logger.info("Expiring session, it's too old: {auth_id}", auth_id=self.auth_id)
             self.expire_session()
             return False
 
         if self.last_access < (int(time() - self._Parent.config.max_idle)):
+            logger.info("Expiring session, no recent access: {auth_id}", auth_id=self.auth_id)
             self.expire_session()
             return False
 
-        if 'auth_id' in self.session_data:
-            if self.session_data['auth_id'] is None and self.last_access < (int(time() - self._Parent.config.max_session_no_auth)):
-                self.expire_session()
-                return False
-        else:
-            if self.last_access < (int(time() - self._Parent.config.max_session_no_auth)):
-                self.expire_session()
-        if self.session_data['auth'] is not True:
+        if self.auth_id is None and self.last_access < (int(time() - self._Parent.config.max_session_no_auth)):
+            logger.info("Expiring session, no recent access and not authenticated: {auth_id}", auth_id=self.auth_id)
+            # print("self.last_access: %s, time: %s" % (self.last_access, int(time())))
+            self.expire_session()
+            return False
+
+        if self.auth_id is None:
+            print("check_valid - auth_id is none...")
             return False
 
         return True
@@ -528,8 +553,15 @@ class Auth(object):
         self.is_valid = False
         self.is_dirty = 20000
 
-    @property
-    def user_id(self) -> str:
-        if 'auth_id' in self.session_data:
-            return self.session_data['auth_id']
-        return None
+    def asdict(self):
+        return {
+            'auth_id': self.auth_id ,
+            'gateway_id': self.gateway_id,
+            'session_id': self.session_id,
+            'last_access': self.last_access,
+            'created_at': self.created_at,
+            'updated_at': self.updated_at,
+            'session_data': self.session_data,
+            'is_valid': self.is_valid,
+            'is_dirty': self.is_dirty,
+        }
