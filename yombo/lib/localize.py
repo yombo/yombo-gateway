@@ -140,8 +140,6 @@ class Localize(YomboLibrary):
         :param precision:
         :return:
         """
-        # print("bytes2human: %s" % size)
-        # print("bytes2human: %s" % type(size))
         suffixes = ['B', 'KB', 'MB', 'GB', 'TB']
         suffixIndex = 0
         while size > 1024 and suffixIndex < 4:
@@ -224,7 +222,6 @@ class Localize(YomboLibrary):
                 languages_to_update[self.default_lang()] = True
 
             # Always do english language updates first, it's the base of all.
-            print("languages to update: %s" % languages_to_update)
             if 'en' in languages_to_update:
                 self.do_update('en')
                 del languages_to_update['en']
@@ -245,8 +242,6 @@ class Localize(YomboLibrary):
 
             builtins.__dict__['_'] = self.handle_translate
             self.translator = self.get_translator()
-            # print("DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDd  trans load")
-            # print(_('ui::label::dashboard', label='mitch'))
         except Exception as e: # if problem with translation, at least return msgid...
             logger.error("Unable to load translations. Getting null one. Reason: %s" % e)
             logger.error("--------------------------------------------------------")
@@ -304,7 +299,6 @@ class Localize(YomboLibrary):
         """
         logger.info("Localize combining files for language: {language}", language=language)
         output_folder = self.working_dir + '/locale/po/' + language + '/LC_MESSAGES'
-        # print "files in lang (%s): %s" % (lang, files)
 
         if not path.exists(output_folder):
             makedirs(output_folder)
@@ -333,7 +327,6 @@ class Localize(YomboLibrary):
                 continue
             filepart = filename.split('.')
             filepart = filepart[0]
-            # print "Checking filename: %s" % file
             locale = filepart.split('_')
             if len(locale) == 0 or len(locale) > 2:
                 logger.warn("Bad language_country code split. Must be <ISO 639 lang code>_<ISO 3166 REGION CODE (optional)>: {{locale}}, file: {filename}",
@@ -344,13 +337,12 @@ class Localize(YomboLibrary):
                             locale=locale[0], filename=filename)
                 continue
             elif len(locale[0]) not in (2, 3):
-                print("locale: %s" % locale)
                 logger.warn("Invalid file, ISO 639 lang code must be 2 (preferred) or 3 letters: {locale}, file: {filename}",
                             locale=locale[0], filename=filename)
                 continue
 
             if len(locale) == 2:
-                if locale[1].isupper() is False:
+                if locale[1].isupper() is False and locale[1].isalpha() is True:
                     logger.warn("Invalid file, ISO 6166 region code must be upper case: {locale}, file: {filename}",
                                 locale=locale[0], filename=filename)
                     continue
@@ -382,8 +374,6 @@ class Localize(YomboLibrary):
         :param languages: list of locales to check, in order of list items.
         :return:
         """
-        # print "requested languages: %s" % languages
-
         translator = self.get_translator(languages)
         return translator.gettext
 
@@ -395,8 +385,6 @@ class Localize(YomboLibrary):
         :param languages: list of locales to check, in order of list items.
         :return:
         """
-        # print "requested languages: %s" % languages
-
         translator = self.get_translator(languages)
         return translator.ngettext
 
