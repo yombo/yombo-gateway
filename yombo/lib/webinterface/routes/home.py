@@ -97,10 +97,8 @@ def route_home(webapp):
             if results['code'] == 200:
                 login = results['response']['login']
 
-                session['auth'] = True
-                session['auth_pin'] = True
                 session.auth_id = submitted_email
-                session['auth_at'] = time()
+                session.auth_pin = True
                 session['yomboapi_session'] = login['session']
                 session['yomboapi_login_key'] = login['login_key']
 
@@ -135,10 +133,8 @@ def route_home(webapp):
             def create_pin_session(l_webinterface, l_request, l_session):
                 if l_session is None:
                     l_session = webinterface._WebSessions.create(request)
-                l_session['auth_pin'] = True
-                l_session['auth'] = False
+                l_session.auth_pin = True
                 l_session.auth_id = None
-                l_session['auth_at'] = 0
                 l_session['yomboapi_session'] = ''
                 l_session['yomboapi_login_key'] = ''
                 request.received_cookies[l_webinterface._WebSessions.config.cookie_session_name] = l_session.session_id
