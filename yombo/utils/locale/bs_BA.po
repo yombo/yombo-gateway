@@ -11,8 +11,8 @@ msgstr ""
 "Language: bg\n"
 "Plural-Forms: nplurals=2; plural=(n!=1);\n"
 
-msgid "command::close"
-msgstr "Close"
+msgid "command::close::label"
+msgstr "Zatvori"
 
 msgid "config::config_item::amqpyombo::port"
 msgstr "AMQP Yombo server port to connect to."
@@ -577,10 +577,10 @@ msgid "state::default::running"
 msgstr "Running"
 
 msgid "state::default::stopped"
-msgstr "Stopped"
+msgstr "Zaustavljen"
 
 msgid "state::default::unavailable"
-msgstr "Unavailable"
+msgstr "Nedostupan"
 
 msgid "state::default::unknown"
 msgstr "Unknown"
@@ -888,6 +888,12 @@ msgstr "Initializing ({query_stage})"
 msgid "system::current_language"
 msgstr "English"
 
+msgid "ui::alerts::devices::invalid_fan_direction"
+msgstr "Invalid fan direction."
+
+msgid "ui::alerts::devices::invalid_fan_speed"
+msgstr "Invalid fan speed."
+
 msgid "ui::card::alarm_control_panel::arm_away"
 msgstr "Arm away"
 
@@ -1074,11 +1080,20 @@ msgstr "Close"
 msgid "ui::common::current_language"
 msgstr "Current Language"
 
+msgid "ui::common::disable"
+msgstr "Onemogući"
+
 msgid "ui::common::documentation"
 msgstr "Documentation"
 
+msgid "ui::common::edit"
+msgstr "Edit"
+
 msgid "ui::common::email"
 msgstr "E-Mail"
+
+msgid "ui::common::enable"
+msgstr "Enable"
 
 msgid "ui::common::loading"
 msgstr "Loading"
@@ -1099,6 +1114,9 @@ msgstr "Save"
 
 msgid "ui::common::shutdown"
 msgstr "Shutdown"
+
+msgid "ui::common:enable"
+msgstr "Enable"
 
 msgid "ui::components::relative_time::future"
 msgstr "In {time}"

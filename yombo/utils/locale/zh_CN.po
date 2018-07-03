@@ -11,7 +11,7 @@ msgstr ""
 "Language: en\n"
 "Plural-Forms: nplurals=2; plural=(n!=1);\n"
 
-msgid "command::close"
+msgid "command::close::label"
 msgstr "关"
 
 msgid "config::config_item::amqpyombo::port"
@@ -578,10 +578,10 @@ msgid "state::default::running"
 msgstr "Running"
 
 msgid "state::default::stopped"
-msgstr "Stopped"
+msgstr "已停止"
 
 msgid "state::default::unavailable"
-msgstr "Unavailable"
+msgstr "不可用"
 
 msgid "state::default::unknown"
 msgstr "Unknown"
@@ -889,6 +889,12 @@ msgstr "Initializing ({query_stage})"
 msgid "system::current_language"
 msgstr "English"
 
+msgid "ui::alerts::devices::invalid_fan_direction"
+msgstr "Invalid fan direction."
+
+msgid "ui::alerts::devices::invalid_fan_speed"
+msgstr "Invalid fan speed."
+
 msgid "ui::card::alarm_control_panel::arm_away"
 msgstr "离家警戒"
 
@@ -1075,11 +1081,20 @@ msgstr "Close"
 msgid "ui::common::current_language"
 msgstr "Current Language"
 
+msgid "ui::common::disable"
+msgstr "禁用"
+
 msgid "ui::common::documentation"
 msgstr "Documentation"
 
+msgid "ui::common::edit"
+msgstr "Edit"
+
 msgid "ui::common::email"
 msgstr "E-Mail"
+
+msgid "ui::common::enable"
+msgstr "Enable"
 
 msgid "ui::common::loading"
 msgstr "Loading"
@@ -1100,6 +1115,9 @@ msgstr "Save"
 
 msgid "ui::common::shutdown"
 msgstr "Shutdown"
+
+msgid "ui::common:enable"
+msgstr "Enable"
 
 msgid "ui::components::relative_time::future"
 msgstr "In {time}"
