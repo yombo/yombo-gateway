@@ -335,6 +335,11 @@ class Base_Device(object):
     def is_off(self):
         return not self.is_on()
 
+    @property
+    def debug_data(self):
+        print("base device  debug data...")
+        return {}
+
     def __str__(self):
         """
         Print a string when printing the class.  This will return the device_id so that
@@ -564,6 +569,19 @@ class Base_Device(object):
         """
         for status in self.status_history:
             status.save_to_db()
+
+    def supports(self, feature, value=None):
+        """
+        Test if a feature is supported and that the value matches. If value is none, defaults to True.
+
+        :param feature:
+        :return:
+        """
+        if value is None:
+            value = True
+        if feature in self.FEATURES and self.FEATURES[feature] == value:
+            return True
+        return False
 
     @inlineCallbacks
     def device_variables(self):
