@@ -27,7 +27,7 @@
                             <ul class="nav nav-second-level">
                 {% for item in items -%}
                                     <li>
-                                        <a href="{{ item.url }}">{{ _(items[0].label1, items[0].label2_text) }}</a>
+                                        <a href="{{ item.url }}">{{ _(item.label2, item.label2_text) }}</a>
                                     </li>
                 {% endfor -%}
 
