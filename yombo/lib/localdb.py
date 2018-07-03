@@ -932,7 +932,6 @@ class LocalDB(YomboLibrary):
 
     @inlineCallbacks
     def add_node(self, data, **kwargs):
-        # print("add_node in lcoaldb: %s" % kwargs)
         node = Node()
         node.id = data.node_id
         node.parent_id = data.parent_id
@@ -1038,7 +1037,6 @@ class LocalDB(YomboLibrary):
             'meta': data_pickle(notice.meta, encoder='json'),
             'targets': data_pickle(notice.targets, encoder='json'),
         }
-        # print("saving notice: %s" %args)
         results = yield self.dbconfig.update('notifications', args, where=['id = ?', notice.notification_id])
         return results
 
@@ -1078,9 +1076,7 @@ class LocalDB(YomboLibrary):
                 })
             return output
         else:
-            # print("looking for auth_id: %s" % auth_id)
             record = yield ApiAuth.find(auth_id, where=['is_valid = 1'])
-            # print("get_api_auth - find - %s" % record)
             if record is None:
                 raise YomboWarning("No API Keys found.")
             record.auth_data = data_unpickle(record.auth_data)
@@ -1099,7 +1095,6 @@ class LocalDB(YomboLibrary):
 
     @inlineCallbacks
     def save_api_auth(self, api_auth):
-        # print("save_session: %s" % session_data)
         args = {
             'id': api_auth.auth_id,
             'label': api_auth.label,
@@ -1111,7 +1106,6 @@ class LocalDB(YomboLibrary):
             'last_access': api_auth.last_access,
             'updated_at': api_auth.updated_at,
         }
-        # print("saving new api auth key: %s" % args)
         yield self.dbconfig.insert('webinterface_api_auth', args, None, 'OR IGNORE')
 
     @inlineCallbacks
@@ -1143,49 +1137,53 @@ class LocalDB(YomboLibrary):
     #########################
     @inlineCallbacks
     def get_web_session(self, session_id=None):
+        def parse_record(data):
+            save_data = data_unpickle(data.session_data)
+            return {
+                'id': data.id,
+                'is_valid': coerce_value(data.is_valid, 'bool'),
+                'auth_id': save_data['auth_id'],
+                'auth_at': save_data['auth_at'],
+                'auth_pin': save_data['auth_pin'],
+                'auth_pin_at': save_data['auth_pin_at'],
+                'created_by': save_data['created_by'],
+                'gateway_id': data.gateway_id,
+                'session_data': save_data['session_data'],
+                'created_at': data.created_at,
+                'last_access': data.last_access,
+                'updated_at': data.updated_at,
+            }
+
         if session_id is None:
             records = yield Sessions.all()
             if len(records) == 0:
-                raise YomboWarning("No API Keys found.")
+                raise YomboWarning("Session not found in deep storage.")
             output = []
             for record in records:
-                record.session_data = data_unpickle(record.data)
-                output.append({
-                    'id': record.id,
-                    'is_valid': coerce_value(record.is_valid, 'bool'),
-                    'gateway_id': record.gateway_id,
-                    'session_data': record.session_data,
-                    'created_at': record.created_at,
-                    'last_access': record.last_access,
-                    'updated_at': record.updated_at,
-                })
-            return records
+                output.append(parse_record(record))
+            return output
         else:
-            # print("looking for session_id: %s" % session_id)
-
-#            record = yield Sessions.find(session_id, where=['is_valid = 1'])
             record = yield Sessions.find(session_id)
-            # print("get_api_auth - find - %s" % record)
             if record is None:
-                raise YomboWarning("No API Keys found.")
-            record.session_data = data_unpickle(record.session_data)
-            return {
-                'id': record.id,
-                'is_valid': coerce_value(record.is_valid, 'bool'),
-                'gateway_id': record.gateway_id,
-                'session_data': record.session_data,
-                'created_at': record.created_at,
-                'last_access': record.last_access,
-                'updated_at': record.updated_at,
-            }
+                raise YomboWarning("Session not found in deep storage.")
+            return parse_record(record)
 
     @inlineCallbacks
     def save_web_session(self, session):
+        save_data = data_pickle({
+            'session_data': session.session_data,
+            'auth_id': session.auth_id,
+            'auth_at': session.auth_at,
+            'auth_pin': session.auth_pin,
+            'auth_pin_at': session.auth_pin_at,
+            'created_by': session.created_by,
+        })
+
         args = {
             'id': session.session_id,
             'is_valid': coerce_value(session.is_valid, 'int'),
             'gateway_id': session.gateway_id,
-            'session_data': data_pickle(session.session_data),
+            'session_data': save_data,
             'created_at': session.created_at,
             'last_access': session.last_access,
             'updated_at': session.updated_at,
@@ -1194,9 +1192,18 @@ class LocalDB(YomboLibrary):
 
     @inlineCallbacks
     def update_web_session(self, session):
+        save_data = data_pickle({
+            'session_data': session.session_data,
+            'auth_id': session.auth_id,
+            'auth_at': session.auth_at,
+            'auth_pin': session.auth_pin,
+            'auth_pin_at': session.auth_pin_at,
+            'created_by': session.created_by,
+        })
+
         args = {
             'is_valid': coerce_value(session.is_valid, 'int'),
-            'session_data': data_pickle(session.session_data),
+            'session_data': save_data,
             'last_access': session.last_access,
             'updated_at': session.updated_at,
             }
@@ -1351,7 +1358,6 @@ GROUP BY name""" % (extra_where, str(int(time()) - 60 * 60 * 24 * 60))
     def get_sql_dict(self, component, dict_name):
         records = yield self.dbconfig.select('sqldict', select='dict_data',
                                              where=['component = ? AND dict_name = ?', component, dict_name])
-        # print("get sql dict: %s" % records)
         for record in records:
             try:
                 before = len(record['dict_data'])
@@ -1376,9 +1382,7 @@ GROUP BY name""" % (extra_where, str(int(time()) - 60 * 60 * 24 * 60))
         :param data1: Data
         :return: None
         """
-        # print("dict_data before pickle: %s" % dict_data)
         dict_data = data_pickle(dict_data, 'msgpack_base85_zip')
-        # print("dict_data before pickle: %s" % dict_data)
 
         args = {'component': component,
                 'dict_name': dict_name,
@@ -1388,13 +1392,12 @@ GROUP BY name""" % (extra_where, str(int(time()) - 60 * 60 * 24 * 60))
         records = yield self.dbconfig.select('sqldict', select='dict_name',
                                              where=['component = ? AND dict_name = ?', component, dict_name])
         if len(records) > 0:
-            # print("saving sqldict: data %s" % args)
-            # print("where: component = %s AND dict_name = %s" % (component, dict_name))
             results = yield self.dbconfig.update('sqldict', args,
                                                  where=['component = ? AND dict_name = ?', component, dict_name])
         else:
             args['created_at'] = args['updated_at']
             results = yield self.dbconfig.insert('sqldict', args, None, 'OR IGNORE')
+        return results
 
     #####################
     ### Statistics  #####
@@ -1977,11 +1980,16 @@ ORDER BY id desc"""
     @inlineCallbacks
     def add_variable_data(self, data, **kwargs):
         print("add_variable_data: data: %s" % data)
+
+        # add_variable_data: data: {'field_id': 'pVyrdoVdDglKbj', 'relation_id': 'j2z8gbJxkNl4qwM6',
+        #                           'relation_type': 'device', 'data_weight': 0, 'data': '4075575332',
+        #                           'updated_at': 1530552709, 'created_at': 1530552709, 'id': 'qZlMkAzWd8aW4pngyx'}
+
         args = {
             'id': data['id'],
             'field_id': data['field_id'],
-            'data_relation_id': data['data_relation_id'],
-            'data_relation_type': data['data_relation_type'],
+            'data_relation_id': data['relation_id'],
+            'data_relation_type': data['relation_type'],
             'data': data['data'],
             'data_weight': data['data_weight'],
             'updated_at': data['updated_at'],
