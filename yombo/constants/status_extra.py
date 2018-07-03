@@ -22,7 +22,6 @@ STATUS_EXTRA_TEMPERATURE_HIGH = "temperature_high"
 STATUS_EXTRA_TEMPERATURE_LOW = "temperature_low"
 STATUS_EXTRA_TRANSITION = 'transition'
 STATUS_EXTRA_WHITE_VALUE = 'white_value'
-STATUS_EXTRA_XY_COLOR = 'xy_color'
 
 SEVALUE_IDLE = 'idle'
 SEVALUE_RECORDING = 'recording'

@@ -8,6 +8,7 @@ ATR_TRANSITION = "transition"
 # Lists holding color values
 ATR_RGB_COLOR = "rgb_color"
 ATR_XY_COLOR = "xy_color"
+ATR_HS_COLOR = "hs_color"
 ATR_COLOR_TEMP = "color_temp"
 ATR_KELVIN = "kelvin"
 ATR_MIN_MIREDS = "min_mireds"

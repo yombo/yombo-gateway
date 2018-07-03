@@ -21,3 +21,5 @@ COMMAND_SET_SPEED = 'set_speed'
 COMMAND_TOGGLE = 'toggle'
 COMMAND_TRIGGER = 'trigger'
 COMMAND_UNLOCK = 'unlock'
+
+COMMAND_COMPONENT_INPUT = 'inputs'

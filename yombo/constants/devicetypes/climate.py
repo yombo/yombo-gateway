@@ -9,7 +9,10 @@ FEATURE_TARGET_HUMIDITY_LOW = "target_humidity_low"
 FEATURE_TARGET_TEMPERATURE = "target_temperature"
 FEATURE_TARGET_TEMPERATURE_HIGH = "target_temperature_high"
 FEATURE_TARGET_TEMPERATURE_LOW = "target_temperature_low"
+FEATURE_TARGET_TEMPERATURE_STEP = "target_temp_step"
 
+MODE_ON = 'on'
+MODE_OFF = 'off'
 MODE_AWAY = 'away'
 MODE_AUTO = 'auto'
 MODE_COOL = 'cool'
