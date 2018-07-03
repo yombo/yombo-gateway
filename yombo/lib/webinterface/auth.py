@@ -5,6 +5,7 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
     import json
+from ratelimit import RateLimitException
 
 from twisted.internet.defer import inlineCallbacks
 
@@ -59,6 +60,7 @@ def check_idempotence(webinterface, request, session):
         return True
     return False
 
+
 def run_first(create_session=None, *args, **kwargs):
     def call(f, *args, **kwargs):
         return f(*args, **kwargs)
@@ -73,7 +75,7 @@ def run_first(create_session=None, *args, **kwargs):
             host = request.getHeader('host')
             if host is None:
                 logger.info("Discarding request, appears to be malformed host header")
-                return return_need_login(webinterface, request, False, **kwargs)
+                return return_need_login(webinterface, request, None, **kwargs)
             host_info = host.split(':')
             request.requestHeaders.setRawHeaders('host_name', [host_info[0]])
 
@@ -96,14 +98,16 @@ def run_first(create_session=None, *args, **kwargs):
                 except YomboWarning as e:
                     pass
 
-            if create_session is True:
-                session = webinterface._WebSessions.create_from_request(request)
+            try:
+                if create_session is True:
+                    session = webinterface._WebSessions.create_from_request(request)
+            except RateLimitException as e:
+                logger.warn("Too many sessions being created, stopping this one!")
+                return _("ui::messages::rate_limit_exceeded", "Too many attempts, try again later.")
 
             if session is not None:
-                if 'auth' in session:
-                    if session['auth'] is True:
-                        session.touch()
-                        request.auth_id = session['auth_id']
+                if session.check_valid():
+                    request.auth_id = session.auth_id
 
             results = yield call(f, webinterface, request, session, *a, **kw)
             return results
@@ -121,10 +125,12 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
         def wrapped_f(webinterface, request, *a, **kw):
             update_request(webinterface, request)
             request.auth_id = None
+            # print(request)
+
             host = request.getHeader('host')
             if host is None:
                 logger.info("Discarding request, appears to be malformed host header")
-                return return_need_login(webinterface, request, False, **kwargs)
+                return return_need_login(webinterface, request, None, **kwargs)
             host_info = host.split(':')
             request.requestHeaders.setRawHeaders('host_name', [host_info[0]])
 
@@ -137,61 +143,43 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
                 request.breadcrumb = []
                 webinterface.misc_wi_data['breadcrumb'] = request.breadcrumb
 
-            if 'api' not in kwargs or kwargs['api'] is not True:
-                try:
-                    session = yield webinterface._WebSessions.get_session_from_request(request)
-                except YomboWarning as e:
-                    logger.warn("Discarding request, appears to be malformed session id, non-api: {e}", e=e)
-                    return return_need_login(webinterface, request, False, **kwargs)
-            else:
+            if 'api' in kwargs and kwargs['api'] is True:
                 try:
                     session = webinterface._APIAuth.get_session_from_request(request)
                     session.touch()
                 except YomboWarning as e:
-                    logger.debug("API request doesn't have api key. Checking for cookie session...")
+                    logger.debug("API key not found, trying web session (cookie).")
                     try:
                         session = yield webinterface._WebSessions.get_session_from_request(request)
                     except YomboWarning as e:
                         logger.info("API request doesn't have session cookie. Bye bye: {e}", e=e)
-                        return return_need_login(webinterface, request, False, **kwargs)
+                        return return_need_login(webinterface, request, None, **kwargs)
+                    results = check_idempotence(webinterface, request, session)
+                    if isinstance(results, bool) is False:
+                        return results
+            else:
+                try:
+                    session = yield webinterface._WebSessions.get_session_from_request(request)
+                except YomboWarning as e:
+                    setup_login_redirect(webinterface, request, None, login_redirect)
+                    logger.warn("Discarding request, non-api requests not accepted: {e}", e=e)
+                    logger.warn("Request: {request}", request=request)
+                    return return_need_login(webinterface, request, None, **kwargs)
 
-            if 'api' in kwargs and kwargs['api'] is True:
-                results = check_idempotence(webinterface, request, session)
-                if isinstance(results, bool) is False:
-                    return results
 
             if session.session_type == "websession":  # if we have a session, then inspect to see if it's valid.
-                if 'auth' in session and session['auth'] is True:
-                    session.touch()
-                    request.auth_id = session['auth_id']
-                else:
-                    return return_need_login(webinterface, request, False, **kwargs)
+                if session.check_valid() is False:
+                    return return_need_login(webinterface, request, session, **kwargs)
 
             elif session.session_type == "apiauth":  # If we have an API session, we are good if it's valid.
-                if session.is_valid is not True:
+                if session.check_valid() is False:
                     return return_need_login(webinterface,
                                              request,
-                                             False,
-                                             api_message="API Key isn't valid anymore.",
+                                             session,
+                                             api_message="API Key is not valid.",
                                              **kwargs)
-
-            else:  # session doesn't exist
-                if login_redirect is not None:  # only create a new session if we need too
-                    if session is False:
-                        try:
-                            session = webinterface._WebSessions.create_from_request(request)
-                        except YomboWarning as e:
-                            logger.warn("Discarding request, appears to be malformed request. Unable to create session.")
-                            return return_need_login(webinterface, request, False, **kwargs)
-                        session['auth_pin'] = False
-                        session['auth'] = False
-                        session['auth_id'] = ''
-                        session['auth_at'] = 0
-                        session['yomboapi_session'] = ''
-                        session['yomboapi_login_key'] = ''
-                        request.received_cookies[webinterface._WebSessions.config.cookie_session_name] = session.session_id
-                    session['login_redirect'] = login_redirect
-                return return_need_login(webinterface, request, session, **kwargs)
+            session.touch()
+            request.auth_id = session.auth_id
 
             try:
                 results = yield call(f, webinterface, request, session, *a, **kw)
@@ -229,8 +217,8 @@ def require_auth_pin(roles=None, login_redirect=None, create_session=None, *args
 
             host = request.getHeader('host')
             if host is None:
-                logger.info("Discarding request, appears to be malformed session id from require_auth_pin")
-                return return_need_login(webinterface, request, False, **kwargs)
+                logger.info("Discarding request, appears to be malformed host header")
+                return return_need_pin(webinterface, request, **kwargs)
             host_info = host.split(':')
             request.requestHeaders.setRawHeaders('host_name', [host_info[0]])
 
@@ -246,43 +234,73 @@ def require_auth_pin(roles=None, login_redirect=None, create_session=None, *args
             try:
                 session = yield webinterface._WebSessions.get_session_from_request(request)
             except YomboWarning as e:
-                logger.warn("No session found: {e}", e=e)
+                logger.info("No session found: {e}", e=e)
                 if create_session is True:
-                    session = yield webinterface._WebSessions.create_from_request(request)
+                    try:
+                        if create_session is True:
+                            session = webinterface._WebSessions.create_from_request(request)
+                    except RateLimitException as e:
+                        logger.warn("Too many sessions being created!")
+                        return _("ui::messages::rate_limit_exceeded", "Too many attempts, try again later.")
                 else:
                     session = None
 
+
             if check_needs_web_pin(webinterface, request, session):
+                if session is None:
+                    return return_need_pin(webinterface, request, **kwargs)
+
                 if session.session_type == 'websession':  # if we have a websession, then inspect to see if it's valid.
                     if 'auth_pin' in session:
                         if session['auth_pin'] is True:
                             session.touch()
-                            request.auth_id = session['auth_id']
+                            request.auth_id = session.auth_id
                             results = yield call(f, webinterface, request, session, *a, **kw)
                             return results
-                else:  # session doesn't exist
-                    if login_redirect is not None:  # only create a new session if we need too
-                        if session is None:
-                            try:
-                                session = webinterface._WebSessions.create_from_request(request)
-                            except YomboWarning as e:
-                                logger.warn(
-                                    "Discarding request, appears to be malformed request. Unable to create session.")
-                                return return_need_pin(webinterface, request, **kwargs)
-                            session['auth_pin'] = False
-                            session['auth'] = False
-                            session['auth_id'] = ''
-                            session['auth_at'] = 0
-                            session['yomboapi_session'] = ''
-                            session['yomboapi_login_key'] = ''
-                            request.received_cookies[webinterface._WebSessions.config.cookie_session_name] = session.session_id
-                        session['login_redirect'] = login_redirect
-                return return_need_pin(webinterface, request, **kwargs)
+                elif session.session_type == "apiauth":  # If we have an API session, we are good if it's valid.
+                    if session.check_valid() is False:
+                        return return_need_pin(webinterface, request, **kwargs)
+                    results = yield call(f, webinterface, request, session, *a, **kw)
+                    return results
+                else:
+                    return return_need_pin(webinterface, request, **kwargs)
+
             else:
+                if session.check_valid():
+                    request.auth_id = session.auth_id
                 results = yield call(f, webinterface, request, session, *a, **kw)
                 return results
         return wrapped_f
     return deco
+
+
+def setup_login_redirect(webinterface, request, session, login_redirect):
+    """
+    If login_redirect is not none, return a session. Either create a new session or
+    update the existing session.
+
+    :param webinterface:
+    :param request:
+    :param login_redirect:
+    :return:
+    """
+    if login_redirect is None:  # only create a new session if we need too
+        return
+
+    if session is None:
+        try:
+            session = webinterface._WebSessions.create_from_request(request)
+        except YomboWarning as e:
+            logger.warn("Discarding request, appears to be malformed request. Unable to create session.")
+            return return_need_login(webinterface, request, None)
+        except RateLimitException as e:
+            logger.warn("Too sessions being created!")
+            return _("ui::messages::rate_limit_exceeded", "Too many attempts, try again later.")
+
+    session.create_type = 'login_redirect'
+    request.received_cookies[webinterface._WebSessions.config.cookie_session_name] = session.session_id
+    session['login_redirect'] = login_redirect
+    return session
 
 
 def return_need_login(webinterface, request, session, api_message=None, **kwargs):
@@ -325,7 +343,10 @@ def check_needs_web_pin(webinterface, request, session):
     :param request:
     :return:
     """
-    # return True
+    # print("CNWP: %s" % session)
+    if session is not None and 'auth_pin' in session and session['auth_pin'] is True:
+        return False
+
     if webinterface.auth_pin_required is False:  # if user has configured gateway to not require a pin
         return False
 
@@ -336,9 +357,4 @@ def check_needs_web_pin(webinterface, request, session):
     if ip_addres_in_local_network(client_ip):
         return False
 
-    if session is False or session is None:
-        return True
-
-    if session['auth_pin'] is True:
-        return False
     return True  # catch all...just in case.
