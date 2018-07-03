@@ -588,7 +588,8 @@ class Devices(YomboLibrary):
                 items[request_id] = device_command
         return items
 
-    def command(self, device, cmd, pin=None, request_id=None, not_before=None, delay=None, max_delay=None, requested_by=None, inputs=None, **kwargs):
+    def command(self, device, cmd, pin=None, request_id=None, not_before=None, delay=None, max_delay=None,
+                requested_by=None, inputs=None, **kwargs):
         """
         Tells the device to a command. This in turn calls the hook _device_command_ so modules can process the command
         if they are supposed to.
@@ -627,7 +628,8 @@ class Devices(YomboLibrary):
         :return: The request id.
         :rtype: str
         """
-        return self.get(device).command(cmd, pin, request_id, not_before, delay, max_delay, requested_by=requested_by, inputs=inputs, **kwargs)
+        return self.get(device).command(cmd, pin, request_id, not_before, delay, max_delay, requested_by=requested_by,
+                                        inputs=inputs, **kwargs)
 
     def mqtt_incoming(self, topic, payload, qos, retain):
         """
