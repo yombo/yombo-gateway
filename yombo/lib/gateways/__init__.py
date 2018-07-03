@@ -333,7 +333,6 @@ class Gateways(YomboLibrary):
         database and we need to refresh existing gateways.
         """
         gateways = yield self._LocalDB.get_gateways()
-        print("gateways in database: %s" % gateways)
         for gateway in gateways:
             self.import_gateway(gateway)
 

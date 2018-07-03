@@ -264,7 +264,6 @@ class Notifications(YomboLibrary):
         except YomboHookStopProcessing:
             pass
 
-
     def add(self, notice, from_db=None, create_event=None):
         """
         Add a new notice.
