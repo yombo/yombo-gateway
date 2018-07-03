@@ -2,6 +2,7 @@ from yombo.constants.features import (FEATURE_NUMBER_OF_STEPS, FEATURE_ALL_ON, F
                                       FEATURE_POLLABLE, FEATURE_SEND_UPDATES, FEATURE_ALLOW_IN_SCENES)
 from yombo.constants.commands import COMMAND_ON, COMMAND_OFF, COMMAND_OPEN, COMMAND_CLOSE
 from yombo.constants.devicetypes.light import ATR_BRIGHTNESS, ATR_TRANSITION
+from yombo.constants.platforms import PLATFORM_BASE_SWITCH, PLATFORM_SWITCH, PLATFORM_RELAY, PLATFORM_APPLIANCE
 
 from yombo.lib.devices._device import Device
 from yombo.core.exceptions import YomboWarning
@@ -14,9 +15,9 @@ class Switch(Device):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.PLATFORM_BASE = "switch"
-        self.PLATFORM = "switch"
-        self.TOGGLE_COMMANDS = ['on', 'off']  # Put two command machine_labels in a list to enable toggling.
+        self.PLATFORM_BASE = PLATFORM_BASE_SWITCH
+        self.PLATFORM = PLATFORM_SWITCH
+        self.TOGGLE_COMMANDS = [COMMAND_ON, COMMAND_OFF]  # Put two command machine_labels in a list to enable toggling.
         self.FEATURES.update({
             FEATURE_ALL_ON: False,
             FEATURE_ALL_OFF: False,
@@ -62,7 +63,7 @@ class Relay(Switch):
     # Features this device can support
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.PLATFORM = "relay"
+        self.PLATFORM = PLATFORM_RELAY
         self.TOGGLE_COMMANDS = [COMMAND_OPEN, COMMAND_CLOSE]  # Put two command machine_labels in a list to enable toggling.
 
     def toggle(self):
@@ -78,5 +79,5 @@ class Appliance(Switch):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.PLATFORM = "appliance"
+        self.PLATFORM = PLATFORM_APPLIANCE
         self.FEATURES[FEATURE_ALLOW_IN_SCENES] = False

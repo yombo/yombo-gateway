@@ -4,7 +4,8 @@ Adds support for basic alarm types.
 from yombo.constants.features import FEATURE_ALLOW_IN_SCENES
 from yombo.constants.devicetypes.alarm import (COMMAND_ARM_AWAY, COMMAND_ARM_CUSTOM_BYPASS, COMMAND_ARM_HOME,
                                                COMMAND_ARM_NIGHT, COMMAND_DISARM, INPUT_BYPASS)
-from yombo.constants.commands import COMMAND_TRIGGER
+from yombo.constants.commands import COMMAND_COMPONENT_INPUT
+from yombo.constants.platforms import PLATFORM_BASE_ALARM, PLATFORM_ALARM
 
 from yombo.lib.devices._device import Device
 
@@ -15,8 +16,8 @@ class Alarm(Device):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.PLATFORM_BASE = "alarm"
-        self.PLATFORM = "alarm"
+        self.PLATFORM_BASE = PLATFORM_BASE_ALARM
+        self.PLATFORM = PLATFORM_ALARM
         # Put two command machine_labels in a list to enable toggling.
         self.TOGGLE_COMMANDS = [COMMAND_ARM_AWAY, COMMAND_DISARM]
         self.FEATURES[FEATURE_ALLOW_IN_SCENES] = False
@@ -47,9 +48,9 @@ class Alarm(Device):
         :param kwargs:
         :return:
         """
-        if 'inputs' not in kwargs:
-            kwargs['inputs'] = {}
-        kwargs['inputs'][INPUT_BYPASS] = zones
+        if COMMAND_COMPONENT_INPUT not in kwargs:
+            kwargs[COMMAND_COMPONENT_INPUT] = {}
+        kwargs[COMMAND_COMPONENT_INPUT][INPUT_BYPASS] = zones
         return self.command(COMMAND_ARM_CUSTOM_BYPASS, **kwargs)
 
     @property
@@ -70,5 +71,5 @@ class Alarm(Device):
 
     def generate_human_status(self, machine_status, machine_status_extra):
         if machine_status == 1:
-            return "Unarmed"
-        return "Disarmed"
+            return _("state::alarm_control_panel::armed", "Armed")
+        return _("state::alarm_control_panel::disarmed", "Disarmed")

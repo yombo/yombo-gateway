@@ -1,5 +1,6 @@
 from yombo.constants.features import FEATURE_ALLOW_IN_SCENES
 from yombo.constants.commands import COMMAND_LOCK, COMMAND_UNLOCK
+from yombo.constants.platforms import PLATFORM_BASE_LOCK, PLATFORM_LOCK
 
 from yombo.lib.devices._device import Device
 
@@ -10,8 +11,8 @@ class Lock(Device):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.PLATFORM_BASE = "lock"
-        self.PLATFORM = "lock"
+        self.PLATFORM_BASE = PLATFORM_BASE_LOCK
+        self.PLATFORM = PLATFORM_LOCK
         # Put two command machine_labels in a list to enable toggling.
         self.TOGGLE_COMMANDS = [COMMAND_LOCK, COMMAND_UNLOCK]
         self.FEATURES[FEATURE_ALLOW_IN_SCENES] = False
@@ -46,5 +47,6 @@ class Lock(Device):
 
     def generate_human_status(self, machine_status, machine_status_extra):
         if machine_status == 1:
-            return "Locked"
-        return "Unlocked"
+            return _("state::lock::locked", "Locked")
+        return _("state::lock::unlocked", "Unlocked")
+

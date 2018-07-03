@@ -1,9 +1,10 @@
 from yombo.constants.devicetypes.light import *
+from yombo.constants.commands import COMMAND_OFF, COMMAND_ON
 from yombo.constants.features import (FEATURE_BRIGHTNESS, FEATURE_COLOR_TEMP, FEATURE_EFFECT, FEATURE_PERCENT,
     FEATURE_RGB_COLOR, FEATURE_TRANSITION, FEATURE_WHITE_VALUE, FEATURE_XY_COLOR, FEATURE_NUMBER_OF_STEPS)
-from yombo.constants.status_extra import STATUS_EXTRA_BRIGHTNESS
-from yombo.constants.commands import COMMAND_OFF, COMMAND_ON
 from yombo.constants.inputs import INPUT_BRIGHTNESS
+from yombo.constants.platforms import PLATFORM_BASE_LIGHT, PLATFORM_COLOR_LIGHT, PLATFORM_LIGHT
+from yombo.constants.status_extra import STATUS_EXTRA_BRIGHTNESS, STATUS_EXTRA_RGB_COLOR
 
 from yombo.lib.devices._device import Device
 import yombo.utils.color as color_util
@@ -16,9 +17,9 @@ class Light(Device):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.PLATFORM_BASE = "light"
-        self.PLATFORM = "light"
-        self.TOGGLE_COMMANDS = ['on', 'off']  # Put two command machine_labels in a list to enable toggling.
+        self.PLATFORM_BASE = PLATFORM_BASE_LIGHT
+        self.PLATFORM = PLATFORM_LIGHT
+        self.TOGGLE_COMMANDS = [COMMAND_ON, COMMAND_OFF]  # Put two command machine_labels in a list to enable toggling.
         self.FEATURES.update({
             FEATURE_BRIGHTNESS: True,
             FEATURE_PERCENT: True,
@@ -31,6 +32,7 @@ class Light(Device):
             FEATURE_NUMBER_OF_STEPS: 255
         })
         self.STATUS_EXTRA[STATUS_EXTRA_BRIGHTNESS] = True
+        self.STATUS_EXTRA[STATUS_EXTRA_RGB_COLOR] = True
 
     @property
     def brightness(self):
@@ -99,19 +101,65 @@ class Light(Device):
                                          0, self.FEATURES[FEATURE_NUMBER_OF_STEPS])
         return self.set_brightness(brightness, **kwargs)
 
+    def set_color(self, rgb, **kwargs):
+        """
+        Set the color of a light.
+
+        :param rgb: a list of 3 integers representing red, green, blue.
+        :return:
+        """
+        command = COMMAND_ON
+        if 'inputs' not in kwargs:
+            kwargs['inputs'] = {}
+
+        kwargs['inputs'][ATR_RGB_COLOR] = rgb
+        return self.command(command, **kwargs)
+
+    @property
+    def hsv_color(self):
+        """
+        Return the HS color value [float, float, float].
+        """
+        return color_util.color_RGB_to_hsv(*self.rgb_color)
+
+    @property
+    def hs_color(self):
+        """
+        Return the HS color value [float, float, float].
+        """
+        return color_util.color_RGB_to_hsv(*self.rgb_color)
+
     @property
     def xy_color(self):
         """
-        Return the XY color value [float, float].
+        Return the HS color value [float, float, float].
         """
-        return None
+        return color_util.color_RGB_to_xy(*self.rgb_color)
+
+    @property
+    def xy_color_brightness(self):
+        """
+        Return the HS color value [float, float, float].
+        """
+        return color_util.color_RGB_to_xy_brightness(*self.rgb_color)
 
     @property
     def rgb_color(self):
         """
         Return the RGB color value [int, int, int].
         """
+        if len(self.status_history) > 0:
+            machine_status_extra = self.status_history[0].machine_status_extra
+            if STATUS_EXTRA_RGB_COLOR in machine_status_extra:
+                rgb = machine_status_extra[STATUS_EXTRA_RGB_COLOR]
+                return rgb
+            else:
+                return 0, 0, 0
         return None
+
+    @property
+    def rgb_hex(self):
+        return color_util.color_rgb_to_hex(*self.rgb_color)
 
     @property
     def color_temp(self):
@@ -198,12 +246,13 @@ class Color_Light(Light):
     """
     A generic light device.
     """
-    PLATFORM = "colorlight"
+    PLATFORM = PLATFORM_COLOR_LIGHT
 
     TOGGLE_COMMANDS = [COMMAND_ON, COMMAND_OFF]  # Put two command machine_labels in a list to enable toggling.
 
-    def _start_(self, **kwargs):
-        super()._start_()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.PLATFORM = PLATFORM_COLOR_LIGHT
         self.FEATURES[FEATURE_BRIGHTNESS] = True
         self.FEATURES[FEATURE_COLOR_TEMP] = False
         self.FEATURES[FEATURE_EFFECT] = False

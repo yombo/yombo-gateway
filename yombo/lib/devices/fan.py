@@ -3,6 +3,7 @@ from yombo.constants.features import (FEATURE_NUMBER_OF_STEPS,
     FEATURE_ALL_OFF, FEATURE_ALL_ON, FEATURE_PINGABLE, FEATURE_POLLABLE, FEATURE_SEND_UPDATES)
 from yombo.constants.commands import COMMAND_OFF, COMMAND_ON, COMMAND_SET_SPEED, COMMAND_SET_DIRECTION
 from yombo.constants.inputs import INPUT_DIRECTION, INPUT_SPEED
+from yombo.constants.platforms import PLATFORM_BASE_FAN, PLATFORM_FAN
 from yombo.constants.status_extra import (STATUS_EXTRA_DIRECTION, STATUS_EXTRA_SPEED, STATUS_EXTRA_SPEED_LABEL,
     STATUS_EXTRA_OSCILLATING)
 
@@ -16,8 +17,8 @@ class Fan(Device):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.PLATFORM_BASE = "fan"
-        self.PLATFORM = "fan"
+        self.PLATFORM_BASE = PLATFORM_BASE_FAN
+        self.PLATFORM = PLATFORM_FAN
         self.TOGGLE_COMMANDS = [COMMAND_ON, COMMAND_OFF]  # Put two command machine_labels in a list to enable toggling.
         self.FEATURES.update({
             FEATURE_ALL_ON: False,
@@ -160,7 +161,7 @@ class Fan(Device):
             if 'previous_on_speed' in self.meta:
                 return self.command(COMMAND_ON, inputs={INPUT_SPEED: self.meta['previous_on_speed']})
             else:
-                return self.command(COMMAND_ON, inputs={INPUT_SPEED: 4})
+                return self.command(COMMAND_ON, inputs={INPUT_SPEED: 3})
         else:
             return self.command(COMMAND_OFF)
 
@@ -172,7 +173,7 @@ class Fan(Device):
         if isinstance(speed, int):
             if speed >= 0 and speed <= 3:
                 return speed
-            raise KeyError("Invalid fan integer speed: %s" % speed)
+            raise YomboWarning(_("ui::alerts::devices::invalid_fan_speed", "Invalid fan speed."))
         if speed in self.FAN_SPEED_NAME_TO_INT:
             return self.FAN_SPEED_NAME_TO_INT[speed]
         else:
@@ -208,7 +209,7 @@ class Fan(Device):
             kwargs['inputs'] = {}
         kwargs['inputs'][INPUT_DIRECTION] = direction
         if self.check_set_direction(direction) is False:
-            raise YomboWarning("Fan direction is invalid.")
+            raise YomboWarning(_("ui::alerts::devices::invalid_fan_direction", "Invalid fan direction."))
         return self.command(COMMAND_SET_DIRECTION, **kwargs)
 
     @property

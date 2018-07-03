@@ -1,4 +1,5 @@
 from yombo.constants.commands import COMMAND_ON, COMMAND_OFF, COMMAND_STOP, COMMAND_PAUSE, COMMAND_START
+from yombo.constants.platforms import PLATFORM_BASE_MEDIA_PLAYER, PLATFORM_MEDIAPLAYER
 
 from yombo.lib.devices._device import Device
 
@@ -9,8 +10,8 @@ class Media_Player(Device):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.PLATFORM_BASE = "media_player"
-        self.PLATFORM = "media_player"
+        self.PLATFORM_BASE = PLATFORM_BASE_MEDIA_PLAYER
+        self.PLATFORM = PLATFORM_MEDIAPLAYER
         self.TOGGLE_COMMANDS = [COMMAND_START, COMMAND_PAUSE]
 
     def toggle(self):
@@ -22,5 +23,11 @@ class Media_Player(Device):
     def turn_on(self, **kwargs):
         return self.command(COMMAND_ON, **kwargs)
 
-    def turn_off(self, **kwargs):
-        return self.command(COMMAND_OFF, **kwargs)
+    def stop(self, **kwargs):
+        return self.command(COMMAND_STOP, **kwargs)
+
+    def start(self, **kwargs):
+        return self.command(COMMAND_START, **kwargs)
+
+    def pause(self, **kwargs):
+        return self.command(COMMAND_PAUSE, **kwargs)

@@ -8,13 +8,17 @@ from yombo.constants.devicetypes.climate import (FEATURE_AWAY_MODE, FEATURE_AUX_
                                                  FEATURE_HOLD_MODE, FEATURE_ON_OFF, FEATURE_TARGET_HUMIDITY,
                                                  FEATURE_TARGET_HUMIDITY_LOW, FEATURE_TARGET_HUMIDITY_HIGH,
                                                  FEATURE_TARGET_TEMPERATURE, FEATURE_TARGET_TEMPERATURE_LOW,
-                                                 FEATURE_TARGET_TEMPERATURE_HIGH)
+                                                 FEATURE_TARGET_TEMPERATURE_HIGH, FEATURE_TARGET_TEMPERATURE_STEP)
 from yombo.constants.status_extra import (STATUS_EXTRA_TEMPERATURE, STATUS_EXTRA_MODE, STATUS_EXTRA_HUMIDITY,
                                           STATUS_EXTRA_TARGET_TEMPERATURE, STATUS_EXTRA_TARGET_TEMPERATURE_LOW,
                                           STATUS_EXTRA_TARGET_TEMPERATURE_HIGH, STATUS_EXTRA_TARGET_HUMIDITY,
                                           STATUS_EXTRA_TARGET_HUMIDITY_LOW, STATUS_EXTRA_TARGET_HUMIDITY_HIGH,
                                           STATUS_EXTRA_TARGET_HUMIDITY
                                           )
+from yombo.constants.devicetypes.climate import (MODE_AUTO, MODE_COOL, MODE_HEAT, MODE_AWAY, MODE_OFF, MODE_ON,
+    MODE_COOL2, MODE_COOL3, MODE_HEAT2, MODE_HEAT3)
+from yombo.constants.platforms import PLATFORM_BASE_CLIMATE, PLATFORM_CLIMATE
+
 from yombo.lib.devices._device import Device
 
 class Climate(Device):
@@ -23,8 +27,8 @@ class Climate(Device):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.PLATFORM_BASE = "climate"
-        self.PLATFORM = "climate"
+        self.PLATFORM_BASE = PLATFORM_BASE_CLIMATE
+        self.PLATFORM = PLATFORM_CLIMATE
         self.FEATURES.update({
             FEATURE_ALL_ON: True,
             FEATURE_ALL_OFF: True,
@@ -44,7 +48,7 @@ class Climate(Device):
             FEATURE_TARGET_TEMPERATURE: True,
             FEATURE_TARGET_TEMPERATURE_LOW: False,
             FEATURE_TARGET_TEMPERATURE_HIGH: False,
-            FEATURE_MODES: ['on', 'off', 'auto', 'cool', 'heat', 'away']
+            FEATURE_MODES: [MODE_ON, MODE_OFF, MODE_AUTO, MODE_COOL, MODE_HEAT, MODE_AWAY]
         })
         self.STATUS_EXTRA[STATUS_EXTRA_TEMPERATURE] = True
         self.STATUS_EXTRA[STATUS_EXTRA_MODE] = True
@@ -105,13 +109,13 @@ class Climate(Device):
             if self.device_feature_is_active(FEATURE_DUAL_SETPOINTS) in (False, None):
                 return self.look_up_status_extra(STATUS_EXTRA_TARGET_TEMPERATURE)
 
-            if current_mode in ('cool', 'cool2', 'cool3', 'auto'):
+            if current_mode in (MODE_COOL, MODE_COOL2, MODE_COOL3, MODE_AUTO):
                 target = self.look_up_status_extra(FEATURE_TARGET_TEMPERATURE_HIGH)
                 if target is None:
                     return None
                 else:
                     return target
-            elif current_mode in ('heat', 'heat2', 'heat3', 'auto'):
+            elif current_mode in (MODE_HEAT, MODE_HEAT2, MODE_HEAT3, MODE_AUTO):
                 target = self.look_up_status_extra(FEATURE_TARGET_TEMPERATURE_HIGH)
                 if target is None:
                     return None
@@ -136,7 +140,7 @@ class Climate(Device):
         if len(self.status_history) > 0:
             status_current = self.machine_status_extra[0]
             if 'target_temp_step' in status_current:
-                return status_current['target_temp_step']
+                return status_current[FEATURE_TARGET_TEMPERATURE_STEP]
         return None
 
     @property
@@ -145,7 +149,7 @@ class Climate(Device):
         if len(self.status_history) > 0:
             status_current = self.machine_status_extra[0]
             if 'target_temp_high' in status_current:
-                return status_current['target_temp_high']
+                return status_current[FEATURE_TARGET_TEMPERATURE_HIGH]
         return None
 
     @property
@@ -154,7 +158,7 @@ class Climate(Device):
         if len(self.status_history) > 0:
             status_current = self.machine_status_extra[0]
             if 'target_temp_low' in status_current:
-                return status_current['target_temp_low']
+                return status_current[FEATURE_TARGET_TEMPERATURE_LOW]
         return None
 
     @property
@@ -162,8 +166,8 @@ class Climate(Device):
         """Return true if away mode is on."""
         if len(self.status_history) > 0:
             status_current = self.machine_status_extra[0]
-            if 'hold_mode' in status_current:
-                return status_current['hold_mode'] == 'away'
+            if FEATURE_HOLD_MODE in status_current:
+                return status_current[FEATURE_HOLD_MODE] == MODE_AWAY
         return None
 
     @property
@@ -171,8 +175,8 @@ class Climate(Device):
         """Return the current hold mode, e.g., home, away, temp."""
         if len(self.status_history) > 0:
             status_current = self.machine_status_extra[0]
-            if 'hold_mode' in status_current:
-                return status_current['hold_mode']
+            if FEATURE_HOLD_MODE in status_current:
+                return status_current[FEATURE_HOLD_MODE]
         return None
 
     @property

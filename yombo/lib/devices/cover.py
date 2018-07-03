@@ -6,6 +6,8 @@ A cover is considered open if the status is 0, close if it's 1.
 
 from yombo.constants.commands import COMMAND_OPEN, COMMAND_CLOSE
 from yombo.constants.features import FEATURE_ALLOW_IN_SCENES
+from yombo.constants.platforms import (PLATFORM_BASE_COVER, PLATFORM_COVER, PLATFORM_DOOR, PLATFORM_GARAGE_DOOR,
+    PLATFORM_WINDOW)
 from yombo.constants.status_extra import STATUS_EXTRA_PERCENT
 
 from yombo.lib.devices._device import Device
@@ -17,8 +19,8 @@ class Cover(Device):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.PLATFORM_BASE = "cover"
-        self.PLATFORM = "cover"
+        self.PLATFORM_BASE = PLATFORM_BASE_COVER
+        self.PLATFORM = PLATFORM_COVER
         # Put two command machine_labels in a list to enable toggling.
         self.TOGGLE_COMMANDS = [COMMAND_OPEN, COMMAND_CLOSE]
         self.FEATURES[FEATURE_ALLOW_IN_SCENES] = False
@@ -64,7 +66,7 @@ class Door(Cover):
     """
     def _init_(self):
         super()._init_()
-        self.PLATFORM = "door"
+        self.PLATFORM = PLATFORM_DOOR
 
 
 class Garage_Door(Cover):
@@ -73,7 +75,7 @@ class Garage_Door(Cover):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.PLATFORM = "garage_door"
+        self.PLATFORM = PLATFORM_GARAGE_DOOR
 
 
 class Window(Cover):
@@ -82,4 +84,4 @@ class Window(Cover):
     """
     def _init_(self):
         super()._init_()
-        self.PLATFORM = "window"
+        self.PLATFORM = PLATFORM_WINDOW

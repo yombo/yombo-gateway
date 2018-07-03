@@ -5,6 +5,8 @@ from yombo.constants.features import (FEATURE_NUMBER_OF_STEPS, FEATURE_ALL_ON, F
                                       FEATURE_POLLABLE, FEATURE_ALLOW_IN_SCENES, FEATURE_CONTROLLABLE,
                                       FEATURE_ALLOW_DIRECT_CONTROL)
 from yombo.constants.commands import COMMAND_HIGH, COMMAND_LOW
+from yombo.constants.platforms import (PLATFORM_BASE_SENSOR, PLATFORM_SENSOR, PLATFORM_DIGITAL_SENSOR,
+    PLATFORM_THERMOMETER)
 
 from yombo.lib.devices._device import Device
 
@@ -15,8 +17,8 @@ class Sensor(Device):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.PLATFORM_BASE = "sensor"
-        self.PLATFORM = "sensor"
+        self.PLATFORM_BASE = PLATFORM_BASE_SENSOR
+        self.PLATFORM = PLATFORM_SENSOR
         self.TOGGLE_COMMANDS = False  # Put two command machine_labels in a list to enable toggling.
         self.FEATURES.update({
             FEATURE_ALL_ON: False,
@@ -76,7 +78,7 @@ class Digital_Sensor(Sensor):
     """
     def _init_(self):
         super()._init_()
-        self.PLATFORM = "digital_sensor"
+        self.PLATFORM = PLATFORM_DIGITAL_SENSOR
 
     @property
     def is_high(self):
@@ -110,7 +112,7 @@ class Thermometer(Device):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.PLATFORM = "thermometer"
+        self.PLATFORM = PLATFORM_THERMOMETER
         self.temperature_unit = 'c'  # what temperature unit the device works in.
 
     @property

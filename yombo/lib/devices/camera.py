@@ -3,7 +3,8 @@ Various camera type devices.
 """
 from yombo.constants.features import (FEATURE_NUMBER_OF_STEPS, FEATURE_ALL_ON, FEATURE_ALL_OFF, FEATURE_PINGABLE,
                                       FEATURE_POLLABLE, FEATURE_ALLOW_IN_SCENES, FEATURE_DETECTS_MOTION)
-from yombo.constants.commands import COMMAND_STOP, COMMAND_RECORD
+from yombo.constants.commands import COMMAND_STOP, COMMAND_RECORD, COMMAND_ON, COMMAND_OFF
+from yombo.constants.platforms import PLATFORM_BASE_CAMERA, PLATFORM_CAMERA
 from yombo.constants.status_extra import SEVALUE_IDLE, SEVALUE_RECORDING
 from yombo.lib.devices._device import Device
 from yombo.utils.datatypes import coerce_value
@@ -15,9 +16,9 @@ class Camera(Device):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.PLATFORM_BASE = "camera"
-        self.PLATFORM = "camera"
-        self.TOGGLE_COMMANDS = ['on', 'off']  # Put two command machine_labels in a list to enable toggling.
+        self.PLATFORM_BASE = PLATFORM_BASE_CAMERA
+        self.PLATFORM = PLATFORM_CAMERA
+        self.TOGGLE_COMMANDS = [COMMAND_ON, COMMAND_OFF]  # Put two command machine_labels in a list to enable toggling.
         self.FEATURES.update({
             FEATURE_ALL_ON: False,
             FEATURE_ALL_OFF: False,
