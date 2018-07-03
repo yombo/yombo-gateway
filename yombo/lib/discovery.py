@@ -246,6 +246,13 @@ class Discovery(YomboLibrary):
             return True
         return False
 
+    def delete(self, discovered_id):
+        if discovered_id in self.discovered:
+            del self.discovered[discovered_id]
+            return True
+        return False
+
+
 class DiscoveredDevice(object):
     """
     A single discovered device.
