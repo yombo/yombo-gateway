@@ -297,7 +297,7 @@ class Localize(YomboLibrary):
         :param language:
         :return:
         """
-        logger.info("Localize combining files for language: {language}", language=language)
+        logger.debug("Localize combining files for language: {language}", language=language)
         output_folder = self.working_dir + '/locale/po/' + language + '/LC_MESSAGES'
 
         if not path.exists(output_folder):
