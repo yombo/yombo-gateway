@@ -188,7 +188,7 @@ class AMQP(YomboLibrary):
 
     def new(self, hostname=None, port=5671, virtual_host=None, username=None, password=None,
             use_ssl=True, connected_callback=None, disconnected_callback=None, error_callback=None,
-            client_id=None, keepalive=600, prefetch_count=10, critical=False):
+            client_id=None, keepalive=60, prefetch_count=10, critical=False):
         """
         Creates a new :py:class:AMQPClient instance. It will not auto-connect, just simply call the connect method
         when you're ready for the instance to start connecting. It will continue to attempt to connect if connection
