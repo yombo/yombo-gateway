@@ -36,6 +36,7 @@ from yombo.utils import (random_string, is_true_false, forgiving_float, forgivin
                          excerpt, make_link, format_markdown, display_hide_none)
 
 logger = get_logger("library.templates")
+logger_runtime = get_logger("library.templates.runtime")
 
 _WATCHDOG = object()
 
@@ -106,7 +107,10 @@ class Template(YomboLibrary, object):
         self.environment.globals['validate'] = self._Validate
         # self.environment.globals['voicecmds'] = self._VoiceCmds
 
-        self.environment.filters['debug'] = debug
+        self.environment.filters['debug'] = logger_runtime.debug
+        self.environment.filters['info'] = logger_runtime.info
+        self.environment.filters['warning'] = logger_runtime.warning
+        self.environment.filters['error'] = logger_runtime.error
         self.environment.filters['round'] = forgiving_round
         self.environment.filters['multiply'] = multiply
         self.environment.filters['log'] = logarithm
