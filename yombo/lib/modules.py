@@ -209,6 +209,7 @@ class Modules(YomboLibrary):
         self.module_search_attributes = ['_module_id', '_module_type', '_label', '_machine_label', '_description',
             '_short_description', '_medium_description', '_public', '_status']
         self.disabled_modules = {}
+        self.modules_that_are_starting = {}  # a place for modules to register their status.
 
     def _notification_get_targets_(self, **kwargs):
         """ Hosting here since loader isn't properly called... """
@@ -642,6 +643,16 @@ class Modules(YomboLibrary):
                 self.module_device_types,
                 module_id,
             )
+
+            module._module_starting = partial(
+                self.module_starting,
+                module,
+            )
+
+            module._module_started = partial(
+                self.module_started,
+                module,
+            )
             yield self.do_update_module_cache(module)
 
             module._event_loop = self._Loader.event_loop
@@ -1018,6 +1029,33 @@ class Modules(YomboLibrary):
             id = device_type_db['id']
             module._module_device_types_cached[id] = self._DeviceTypes.get(id)
         return module._module_device_types_cached
+
+    def module_starting(self, module_id):
+        self.modules_that_are_starting[module_id] = True
+        self.update_starting_modules_notification()
+
+    def module_started(self, module_id):
+        del self.modules_that_are_starting[module_id]
+        self.update_starting_modules_notification()
+
+    def update_starting_modules_notification(self):
+        if len(self.modules_that_are_starting) == 0:
+            self._Notifications.delete('modules_that_are_starting')
+        else:
+            module_labels = []
+            for module in self.modules_that_are_starting:
+                module_labels.append(module._label)
+            modules = "<br>".join(module_labels)
+            self._Notifications.add({'title': 'Modules still starting.',
+                                     'message': 'The following modules are still starting:<br>%s' % modules,
+                                     'source': 'Modules Library',
+                                     'persist': False,
+                                     'priority': 'high',
+                                     'always_show': True,
+                                     'always_show_allow_clear': False,
+                                     'id': 'modules_that_are_starting',
+                                     'local': True,
+                                    })
 
     @inlineCallbacks
     def module_variables(self, module_name, module_id):
