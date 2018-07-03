@@ -2,307 +2,343 @@
 {% import "lib/webinterface/fragments/macros.tpl" as macros%}
 
 {% block content %}
-            <div class="row">
-                <div class="col-lg-12">
-                    <h1 class="page-header"><a class="success" href="/devices/index">
-  </a> Device Information<br>
- {% if device.enabled_status == 0 %}
-                    <a class="btn btn-md btn-primary" href="/devices/{{device.device_id}}/edit">Edit Device</a>
-                    <a class="btn btn-md btn-success" href="/devices/{{device.device_id}}/enable">Enable Device</a>
-                    <a class="btn btn-md btn-danger" href="/devices/{{device.device_id}}/delete">Delete Device</a>
- {% elif device.enabled_status == 1  %}
-                    <a class="btn btn-md btn-primary" href="/devices/{{device.device_id}}/edit">Edit Device</a>
-                    <a class="btn btn-md btn-warning" href="/devices/{{device.device_id}}/disable">Disable Device</a>
-                    <a class="btn btn-md btn-danger" href="/devices/{{device.device_id}}/delete">Delete Device</a>
- {% elif device.enabled_status == 2  %}
-                    <a class="btn btn-md btn-danger" href="/devices/{{device.device_id}}/enable">Enable Device</a>
- {% endif %}
-                        </h1>
-                    <p></p>
-                </div>
-                <!-- /.col-lg-12 -->
+<div class="row">
+    <div class="col-lg-12">
+        <h1 class="page-header"><a class="success" href="/devices/index">
+</a> Device Information<br>
+{% if device.enabled_status == 0 %}
+        <a class="btn btn-md btn-primary" href="/devices/{{device.device_id}}/edit">Edit Device</a>
+        <a class="btn btn-md btn-success" href="/devices/{{device.device_id}}/enable">Enable Device</a>
+        <a class="btn btn-md btn-danger" href="/devices/{{device.device_id}}/delete">Delete Device</a>
+{% elif device.enabled_status == 1  %}
+        <a class="btn btn-md btn-primary" href="/devices/{{device.device_id}}/edit">Edit Device</a>
+        <a class="btn btn-md btn-warning" href="/devices/{{device.device_id}}/disable">Disable Device</a>
+        <a class="btn btn-md btn-danger" href="/devices/{{device.device_id}}/delete">Delete Device</a>
+{% elif device.enabled_status == 2  %}
+        <a class="btn btn-md btn-danger" href="/devices/{{device.device_id}}/enable">Enable Device</a>
+{% endif %}
+            </h1>
+        <p></p>
+    </div>
+    <!-- /.col-lg-12 -->
+</div>
+{% if device.enabled_status == 0 %}
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel panel-default panel-red">
+            <div class="panel-heading">
+                <label>Device Disabled</label>
             </div>
- {% if device.enabled_status == 0 %}
-            <div class="row">
-                <div class="col-lg-12">
-                    <div class="panel panel-default panel-red">
-                        <div class="panel-heading">
-                            <label>Device Disabled</label>
-                        </div>
-                        <!-- /.panel-heading -->
-                        <div class="panel-body">
-                            <label style="margin-top: 0px; margin-bottom: 0px">This device has been disabled and is not accessible to the
-                            system for automation purposes.</label>
-                        </div>
-                    </div>
-                </div>
-                <!-- /.col-lg-12 -->
+            <!-- /.panel-heading -->
+            <div class="panel-body">
+                <label style="margin-top: 0px; margin-bottom: 0px">This device has been disabled and is not accessible to the
+                system for automation purposes.</label>
             </div>
- {% elif device.enabled_status == 2  %}
-            <div class="row">
-                <div class="col-lg-12">
-                    <div class="panel panel-default panel-red">
-                        <div class="panel-heading">
-                            <label>Device Deleted</label>
-                        </div>
-                        <!-- /.panel-heading -->
-                        <div class="panel-body">
-                            <label style="margin-top: 0px; margin-bottom: 0px">This device has been deleted and is not accessible to the
-                            system for automation purposes.</label>
-                        </div>
-                    </div>
-                </div>
-                <!-- /.col-lg-12 -->
+        </div>
+    </div>
+    <!-- /.col-lg-12 -->
+</div>
+{% elif device.enabled_status == 2  %}
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel panel-default panel-red">
+            <div class="panel-heading">
+                <label>Device Deleted</label>
             </div>
- {% endif %}
-            <!-- /.row -->
-            <div class="row">
-                <div class="col-lg-12">
-                    {{ macros.modal("cmdresultmodal", 'Command Results', '
-                    <p><div id="cmdresult"></div></p>') }}
-                </div>
+            <!-- /.panel-heading -->
+            <div class="panel-body">
+                <label style="margin-top: 0px; margin-bottom: 0px">This device has been deleted and is not accessible to the
+                system for automation purposes.</label>
             </div>
-            <div class="row">
-                <div class="col-lg-12">
+        </div>
+    </div>
+    <!-- /.col-lg-12 -->
+</div>
+{% endif %}
+<!-- /.row -->
+<div class="row">
+    <div class="col-lg-12">
+        {{ macros.modal("cmdresultmodal", 'Command Results', '
+        <p><div id="cmdresult"></div></p>') }}
+    </div>
+</div>
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <label>Available Commands</label> (Click to send command, long click for more details.)
+            </div>
+            <!-- /.panel-heading -->
+            <div class="panel-body">
+                {% for command_id in device.available_commands() %}
+                <label style="margin-top: 0px; margin-bottom: 0px">
+                    <a id="{{command_id}}" class="deviceCmd" data-doc_value="{{ command_id }}" href="/api/v1/device/{{ device.device_id }}/command/{{ command_id }}">{{ _commands[command_id].label }}</a>
+                </label>&nbsp;&nbsp;
+                <div class="modal fade" id="modal_cmd_{{command_id}}" tabindex="-1" role="dialog">
+                  <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title">Command Details</h4>
+                      </div>
+                      <form id="form-cmd-{{command_id}}" action="/api/v1/device/{{ device.device_id }}/command/{{ command_id }}" method="POST">
+                      <div class="modal-body">
+                            <fieldset>
+                              {% for input_label, input in _devicetypes[device.device_type_id].commands[command_id]['inputs'].items()%}
+                                <label style="margin-top: 5px; margin-bottom: 0px">{{input.label}}</label><br>
+                                {{ input.notes }}<br>
+                                <div class="input-group">
+                                <input type="text" id="inputs[{{input.machine_label}}]" name="inputs[{{input.machine_label}}]" {%if input.value_required%} required{%endif%}>
+                                    <hr>
+                                </div>
+                              {% endfor %}
+                            </fieldset>
+                      </div>
+                      <div class="modal-footer">
+                          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                          <button type="submit" id="btn-form-cmd-{{command_id}}" class="btn btn-primary">Submit</button>
+                        </form>
+                      </div>
+                    </div><!-- /.modal-content -->
+                  </div><!-- /.modal-dialog -->
+                </div><!-- /.modal -->
+
+                {%- endfor %}
+                {%- if device.can_toggle() %}
+                <label style="margin-top: 0px; margin-bottom: 0px">
+                    <!--<a class="deviceCmd" data-doc_value="{{ special_toggle }}" href="/api/v1/device/{{ device.device_id }}/command/special__toggle">Toggle</a>-->
+                </label>&nbsp;&nbsp;
+
+                {%- endif %}
+            </div>
+        </div>
+        <!-- /.panel-body -->
+    </div>
+</div>
+<div class="row">
+    <div class="col-lg-12">
+        <ul class="nav nav-tabs">
+          <li class="active"><a data-toggle="tab" href="#details">Details</a></li>
+          <li><a data-toggle="tab" href="#history">History</a></li>
+          <li><a data-toggle="tab" href="#variables">Variables</a></li>
+          <li><a data-toggle="tab" href="#debug">Debug</a></li>
+        </ul>
+        <div class="tab-content">
+            <div id="details" class="tab-pane fade in active">
+                <br>
+                <div class="col-lg-6 col-md-6">
                     <div class="panel panel-default">
                         <div class="panel-heading">
-                            <label>Available Commands</label> (Click to send command, long click for more details.)
+                            <h4>Basic Information</h4>
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
-                            {% for command_id in device.available_commands() %}
-                            <label style="margin-top: 0px; margin-bottom: 0px">
-                                <a id="{{command_id}}" class="deviceCmd" data-doc_value="{{ command_id }}" href="/api/v1/device/{{ device.device_id }}/command/{{ command_id }}">{{ _commands[command_id].label }}</a>
-                            </label>&nbsp;&nbsp;
-                            <div class="modal fade" id="modal_cmd_{{command_id}}" tabindex="-1" role="dialog">
-                              <div class="modal-dialog" role="document">
-                                <div class="modal-content">
-                                  <div class="modal-header">
-                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                                    <h4 class="modal-title">Command Details</h4>
-                                  </div>
-                                  <form id="form-cmd-{{command_id}}" action="/api/v1/device/{{ device.device_id }}/command/{{ command_id }}" method="POST">
-                                  <div class="modal-body">
-                                        <fieldset>
-                                          {% for input_label, input in _devicetypes[device.device_type_id].commands[command_id]['inputs'].items()%}
-                                            <label style="margin-top: 5px; margin-bottom: 0px">{{input.label}}</label><br>
-                                            {{ input.notes }}<br>
-                                            <div class="input-group">
-                                            <input type="text" id="inputs[{{input.machine_label}}]" name="inputs[{{input.machine_label}}]" {%if input.value_required%} required{%endif%}>
-                                                <hr>
-                                            </div>
-                                          {% endfor %}
-                                        </fieldset>
-                                  </div>
-                                  <div class="modal-footer">
-                                      <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                                      <button type="submit" id="btn-form-cmd-{{command_id}}" class="btn btn-primary">Submit</button>
-                                    </form>
-                                  </div>
-                                </div><!-- /.modal-content -->
-                              </div><!-- /.modal-dialog -->
-                            </div><!-- /.modal -->
-
-                            {%- endfor %}
-                            {%- if device.can_toggle() %}
-                            <label style="margin-top: 0px; margin-bottom: 0px">
-                                <!--<a class="deviceCmd" data-doc_value="{{ special_toggle }}" href="/api/v1/device/{{ device.device_id }}/command/special__toggle">Toggle</a>-->
-                            </label>&nbsp;&nbsp;
-
-                            {%- endif %}
+                            <label style="margin-top: 0px; margin-bottom: 0px">Gateway: </label><br>
+                            {{ _gateways[device.gateway_id].label }} <br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Label: </label><br>
+                            {{ device.label }} <br>
+                            <i>Effective:</i> {{ _locations[device.area_id].label }} {{device.label}}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Machine Label: </label><br>
+                            {{ device.machine_label }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Location: </label><br>
+                            {{ _locations[device.location_id].label }} -> {{ _locations[device.area_id].label }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Description: </label><br>
+                            {{ device.description }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Status: </label><br>
+                            {{ device.enabled_status|status_to_string }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Pin Required // Pin Code: </label><br>
+                            {{ device.pin_required|yes_no }} // {{ device.pin_code }} <br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Device Type: </label><br>
+                            <a href="/devtools/config/device_types/{{ device.device_type_id }}/details">{{ _devicetypes[device.device_type_id].label }}</a><br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Controllable: </label><br>
+                            {{ device.is_controllable|yes_no }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Allow Direct Control: </label><br>
+                            {{ device.is_direct_controllable|yes_no }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Allowed in scenes: </label><br>
+                            {{ device.is_allowed_in_scenes|yes_no }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Statistic Type: </label><br>
+                            {{ device.statistic_type }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Statistic Label: </label><br>
+                            {{ device.statistic_label_slug }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Statistic Bucket Size: </label><br>
+                            {{ device.statistic_bucket_size }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Statistic Lifetime: </label><br>
+                            {{ device.statistic_lifetime }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Platform: </label><br>
+                            {% if device.PLATFORM_BASE != device.PLATFORM%} {{device.PLATFORM_BASE}} -> {%endif%}
+                            {{ device.PLATFORM }}
+                            {% if device.SUB_PLATFORM is not none%} -> {{device.SUB_PLATFORM}}{%endif%}
+                            <br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Features: </label><br>
+                            <ul>
+                            {% for feature, value in device.features.items() if value|string != 'False' %}
+                                <li>{{feature}} = {{value}}</li>
+                            {% endfor %}
+                            </ul>
+                            {{ device.attributes }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Energy Type: </label><br>
+                            {{ device.energy_type }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Energy Map: </label><br>
+                            {% if device.energy_map is none -%}
+                            None
+                            {% else -%}
+                            <table width="100%" class="table table-striped table-bordered table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>%</th><th>Energy Usage</th>
+                                    </tr>
+                                </thead>
+                                <tbody>{% for start_value, energy_usage in device.energy_map.items() %}
+                                     <tr>
+                                        <td>{{ start_value*100 }}% </td>
+                                        <td>{{ energy_usage }}</td>
+                            </label>&nbsp;&nbsp;</td>
+                                     </tr>{% endfor %}
+                                </tbody>
+                            </table>
+                            {% endif %}
                         </div>
                     </div>
                     <!-- /.panel-body -->
                 </div>
+                <div class="col-lg-6 col-md-6">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4>Current State</h4>
+                        </div>
+                        <!-- /.panel-heading -->
+                        <div class="panel-body">
+                            {% if device.status_history|length == 0 %} No status data available.
+                            {% else %}
+                            <label style="margin-top: 0px; margin-bottom: 0px">Human Message: </label><br>
+                            {{ device.status_all.human_message }}<br>
+                            <label style="margin-top: 0px; margin-bottom: 0px">Human Status: </label><br>
+                            {{ device.status_all.human_status }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Current Energy Usage: </label><br>
+                            {{ device.status_all.energy_usage }} {% if device.energy_type == 'electric' %} watts {% endif %}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Machine: </label><br>
+                            {{ device.status_all.machine_status }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Extra: </label><br>
+                            {{ device.status_all.machine_status_extra }}<br>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <!-- /.panel-body -->
+                </div>
+                <!-- /.col-lg-6 -->
             </div>
-            <div class="row">
-                <div class="col-lg-12">
-                    <ul class="nav nav-tabs">
-                      <li class="active"><a data-toggle="tab" href="#details">Details</a></li>
-                      <li><a data-toggle="tab" href="#history">History</a></li>
-                      <li><a data-toggle="tab" href="#variables">Variables</a></li>
-                    </ul>
-                    <div class="tab-content">
-                        <div id="details" class="tab-pane fade in active">
-                            <br>
-                            <div class="col-lg-6 col-md-6">
-                                <div class="panel panel-default">
-                                    <div class="panel-heading">
-                                        <h4>Basic Information</h4>
-                                    </div>
-                                    <!-- /.panel-heading -->
-                                    <div class="panel-body">
-                                        <label style="margin-top: 0px; margin-bottom: 0px">Gateway: </label><br>
-                                        {{ _gateways[device.gateway_id].label }} <br>
-                                        <label style="margin-top: 15px; margin-bottom: 0px">Label: </label><br>
-                                        {{ device.label }} <br>
-                                        <i>Effective:</i> {{ _locations[device.area_id].label }} {{device.label}}<br>
-                                        <label style="margin-top: 15px; margin-bottom: 0px">Machine Label: </label><br>
-                                        {{ device.machine_label }}<br>
-                                        <label style="margin-top: 15px; margin-bottom: 0px">Location: </label><br>
-                                        {{ _locations[device.location_id].label }} -> {{ _locations[device.area_id].label }}<br>
-                                        <label style="margin-top: 15px; margin-bottom: 0px">Description: </label><br>
-                                        {{ device.description }}<br>
-                                        <label style="margin-top: 15px; margin-bottom: 0px">Status: </label><br>
-                                        {{ device.enabled_status|status_to_string }}<br>
-                                        <label style="margin-top: 15px; margin-bottom: 0px">Pin Required // Pin Code: </label><br>
-                                        {{ device.pin_required|yes_no }} // {{ device.pin_code }} <br>
-                                        <label style="margin-top: 15px; margin-bottom: 0px">Device Type: </label><br>
-                                        <a href="/devtools/config/device_types/{{ device.device_type_id }}/details">{{ _devicetypes[device.device_type_id].label }}</a><br>
-                                        <label style="margin-top: 15px; margin-bottom: 0px">Controllable: </label><br>
-                                        {{ device.is_controllable|yes_no }}<br>
-                                        <label style="margin-top: 15px; margin-bottom: 0px">Allow Direct Control: </label><br>
-                                        {{ device.is_direct_controllable|yes_no }}<br>
-                                        <label style="margin-top: 15px; margin-bottom: 0px">Allowed in scenes: </label><br>
-                                        {{ device.is_allowed_in_scenes|yes_no }}<br>
-                                        <label style="margin-top: 15px; margin-bottom: 0px">Statistic Type: </label><br>
-                                        {{ device.statistic_type }}<br>
-                                        <label style="margin-top: 15px; margin-bottom: 0px">Statistic Label: </label><br>
-                                        {{ device.statistic_label_slug }}<br>
-                                        <label style="margin-top: 15px; margin-bottom: 0px">Statistic Bucket Size: </label><br>
-                                        {{ device.statistic_bucket_size }}<br>
-                                        <label style="margin-top: 15px; margin-bottom: 0px">Statistic Lifetime: </label><br>
-                                        {{ device.statistic_lifetime }}<br>
-                                        <label style="margin-top: 15px; margin-bottom: 0px">Platform: </label><br>
-                                        {% if device.PLATFORM_BASE != device.PLATFORM%} {{device.PLATFORM_BASE}} -> {%endif%}
-                                        {{ device.PLATFORM }}
-                                        {% if device.SUB_PLATFORM is not none%} -> {{device.SUB_PLATFORM}}{%endif%}
-                                        <br>
-                                        <label style="margin-top: 15px; margin-bottom: 0px">Features: </label><br>
-                                        {% for feature, value in device.features.items() if value|string != 'False' %}
-                                        {{feature}}{{ "," if not loop.last }}
-                                        {% endfor %}
-                                        {{ device.attributes }}<br>
-                                        <label style="margin-top: 15px; margin-bottom: 0px">Energy Type: </label><br>
-                                        {{ device.energy_type }}<br>
-                                        <label style="margin-top: 15px; margin-bottom: 0px">Energy Map: </label><br>
-                                        {% if device.energy_map is none -%}
-                                        None
-                                        {% else -%}
-                                        <table width="100%" class="table table-striped table-bordered table-hover">
-                                            <thead>
-                                                <tr>
-                                                    <th>%</th><th>Energy Usage</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>{% for start_value, energy_usage in device.energy_map.items() %}
-                                                 <tr>
-                                                    <td>{{ start_value*100 }}% </td>
-                                                    <td>{{ energy_usage }}</td>
-                                        </label>&nbsp;&nbsp;</td>
-                                                 </tr>{% endfor %}
-                                            </tbody>
-                                        </table>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                <!-- /.panel-body -->
-                            </div>
-                            <div class="col-lg-6 col-md-6">
-                                <div class="panel panel-default">
-                                    <div class="panel-heading">
-                                        <h4>Current State</h4>
-                                    </div>
-                                    <!-- /.panel-heading -->
-                                    <div class="panel-body">
-                                        {% if device.status_history|length == 0 %} No status data available.
-                                        {% else %}
-                                        <label style="margin-top: 0px; margin-bottom: 0px">Human Message: </label><br>
-                                        {{ device.status_all.human_message }}<br>
-                                        <label style="margin-top: 0px; margin-bottom: 0px">Human Status: </label><br>
-                                        {{ device.status_all.human_status }}<br>
-                                        <label style="margin-top: 15px; margin-bottom: 0px">Current Energy Usage: </label><br>
-                                        {{ device.status_all.energy_usage }} {% if device.energy_type == 'electric' %} watts {% endif %}<br>
-                                        <label style="margin-top: 15px; margin-bottom: 0px">Machine: </label><br>
-                                        {{ device.status_all.machine_status }}<br>
-                                        <label style="margin-top: 15px; margin-bottom: 0px">Extra: </label><br>
-                                        {{ device.status_all.machine_status_extra }}<br>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                <!-- /.panel-body -->
-                            </div>
-                            <!-- /.col-lg-6 -->
+            <div id="history" class="tab-pane fade">
+              <br>
+              <div class="col-lg-12">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h4>Device History</h4>
+                    </div>
+                    <!-- /.panel-heading -->
+                    <div class="panel-body">
+                       <div class="dataTable_wrapper">
+                            <table width="100%" class="table table-striped table-bordered table-hover" id="dataTables-history">
+                                <thead>
+                                    <tr>
+                                        <th>Time</th><th>Requested By</th><th>Reporting Source</th><th>Human</th><th>Energy Usage</th><th>Machine</th><th>Extra</th>
+                                    </tr>
+                                </thead>
+                                <tbody>{% for history in device.status_history %}
+                                     <tr>
+                                        <td> {{ history.set_at|epoch_to_human }}</td>
+                                        <td> User: {{ history.requested_by.user_id }}<br> Component: {{ history.requested_by.component }}</td>
+                                        <td> {{ history.reported_by }}</td>
+                                        <td> {{ history.human_status }}</td>
+                                        <td> {{ history.energy_usage }}</td>
+                                        <td> {{ history.machine_status }}</td>
+                                        <td> {{ history.machine_status_extra }}</td>
+                                     </tr>{% endfor %}
+                                </tbody>
+                            </table>
                         </div>
-                      <div id="history" class="tab-pane fade">
-                          <br>
-                        <div class="col-lg-12">
-                            <div class="panel panel-default">
-                                <div class="panel-heading">
-                                    <h4>Device History</h4>
-                                </div>
-                                <!-- /.panel-heading -->
-                                <div class="panel-body">
-                                   <div class="dataTable_wrapper">
-                                        <table width="100%" class="table table-striped table-bordered table-hover" id="dataTables-history">
-                                            <thead>
-                                                <tr>
-                                                    <th>Time</th><th>Requested By</th><th>Reporting Source</th><th>Human</th><th>Energy Usage</th><th>Machine</th><th>Extra</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>{% for history in device.status_history %}
-                                                 <tr>
-                                                    <td> {{ history.set_at|epoch_to_human }}</td>
-                                                    <td> User: {{ history.requested_by.user_id }}<br> Component: {{ history.requested_by.component }}</td>
-                                                    <td> {{ history.reported_by }}</td>
-                                                    <td> {{ history.human_status }}</td>
-                                                    <td> {{ history.energy_usage }}</td>
-                                                    <td> {{ history.machine_status }}</td>
-                                                    <td> {{ history.machine_status_extra }}</td>
-                                                 </tr>{% endfor %}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- /.panel-body -->
-                        </div>
-                      </div>
-                      <div id="variables" class="tab-pane fade">
-                          <br>
-                        <div class="col-lg-12">
-                            <div class="panel panel-default">
-                                <div class="panel-heading">
-                                    <h4>Device Variables</h4>
-                                </div>
-                                <!-- /.panel-heading -->
-                                <div class="panel-body">
-                                   {% if device_variables|length != 0 -%}
-                                   <div class="dataTable_wrapper">
-                                        <table width="100%" class="table table-striped table-bordered table-hover" id="dataTables-variables">
-                                            <thead>
-                                                <tr>
-                                                    <th>Field Label</th><th>Values</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>{% for field_label, variable in device_variables.items() %}
-                                                 <tr>
-                                                    <td> {{ variable.field_label }}</td>
-                                                    <td><table class="table table-striped table-bordered table-hover">
-                                                        <tbody>{% for data_id, data in variable.data.items() %}
-                                                        <tr>
-                                                            <td>{{ data.value_display }}</td>
-                                                        </tr>
-                                                        {%- endfor %}
-                                                        </tbody>
-
-                                                    </table></td>
-                                                 </tr>{% endfor %}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                                {% else %}
-                                    <h4>No Variables</h4>
-                                {% endif %}
-                            </div>
-                            <!-- /.panel-body -->
-                        </div>
-                      </div>
                     </div>
                 </div>
-            </div>
-            <!-- /.row -->
+              </div>
+          </div>
+          <div id="variables" class="tab-pane fade">
+                <br>
+                <div class="col-lg-12">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4>Device Variables</h4>
+                        </div>
+                        <!-- /.panel-heading -->
+                        <div class="panel-body">
+                           {% if device_variables|length != 0 -%}
+                           <div class="dataTable_wrapper">
+                                <table width="100%" class="table table-striped table-bordered table-hover" id="dataTables-variables">
+                                    <thead>
+                                        <tr>
+                                            <th>Field Label</th><th>Values</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>{% for field_label, variable in device_variables.items() %}
+                                         <tr>
+                                            <td> {{ variable.field_label }}</td>
+                                            <td><table class="table table-striped table-bordered table-hover">
+                                                <tbody>{% for data_id, data in variable.data.items() %}
+                                                <tr>
+                                                    <td>{{ data.value_display }}</td>
+                                                </tr>
+                                                {%- endfor %}
+                                                </tbody>
+
+                                            </table></td>
+                                         </tr>{% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        {% else %}
+                            <h4>No Variables</h4>
+                        {% endif %}
+                    </div>
+                    <!-- /.panel-body -->
+                </div>
+          </div>
+          <div id="debug" class="tab-pane fade">
+              <h4>Device Debug Information</h4>
+               <br>
+              {% if device.debug_data|length == 0 -%}
+              No device debug information found.
+              {% else %}
+               {% for debug_id, debug_info in device.debug_data.items() %}
+               <div class="panel panel-default">
+                   <div class="panel-heading">
+                       <h4>{{debug_info.title}}</h4>
+                   </div>
+                   <!-- /.panel-heading -->
+                   <div class="panel-body">
+                       <div class="dataTable_wrapper">
+                            <table width="100%" class="table table-striped table-bordered table-hover" id="dataTables-variables">
+                                <thead>
+                                    <tr>
+                                        {% for field in debug_info.fields %}<th>{{field}}</th>{% endfor %}
+                                    </tr>
+                                </thead>
+                                <tbody>{% for label, value in debug_info.data.items() %}
+                                     <tr>
+                                        <td> {{ label }}</td>
+                                        <td> {{ value }}</td>
+                                     </tr>{% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+               {% endif %}
+                <!-- /.panel-body -->
+          </div>
+        </div>
+    </div>
+</div>
+<!-- /.row -->
 {% endblock %}
 
 {% block body_bottom %}
