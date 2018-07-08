@@ -15,6 +15,10 @@ import yombo.utils
 def route_home(webapp):
     with webapp.subroute("") as webapp:
 
+        @webapp.route('/robots.txt')
+        def robots_txt(webinterface, request):
+            return "User-agent: *\nDisallow: /\n"
+
         @webapp.route('/')
         def home(webinterface, request):
             if webinterface.operating_mode == 'config':
