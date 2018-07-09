@@ -190,7 +190,7 @@ class Atoms(YomboLibrary):
 
     def __iter__(self):
         """ iter atoms. """
-        return self.__Atoms[self.gateway_id].__iter__()
+        return self.atoms[self.gateway_id].__iter__()
 
     def __len__(self):
         """
@@ -199,7 +199,7 @@ class Atoms(YomboLibrary):
         :return: The number of atoms defined.
         :rtype: int
         """
-        return len(self.__Atoms[self.gateway_id])
+        return len(self.atoms[self.gateway_id])
 
     def __str__(self):
         """
@@ -219,9 +219,9 @@ class Atoms(YomboLibrary):
         if gateway_id is None:
             gateway_id = self.gateway_id
 
-        if gateway_id not in self.__Atoms:
+        if gateway_id not in self.atoms:
             return []
-        return list(self.__Atoms[gateway_id].keys())
+        return list(self.atoms[gateway_id].keys())
 
     def items(self, gateway_id=None):
         """
@@ -233,9 +233,9 @@ class Atoms(YomboLibrary):
         if gateway_id is None:
             gateway_id = self.gateway_id
 
-        if gateway_id not in self.__Atoms:
+        if gateway_id not in self.atoms:
             return []
-        return list(self.__Atoms[gateway_id].items())
+        return list(self.atoms[gateway_id].items())
 
     def values(self, gateway_id=None):
         """
@@ -244,9 +244,9 @@ class Atoms(YomboLibrary):
         """
         if gateway_id is None:
             gateway_id = self.gateway_id
-        if gateway_id not in self.__Atoms:
+        if gateway_id not in self.atoms:
             return []
-        return list(self.__Atoms[gateway_id].values())
+        return list(self.atoms[gateway_id].values())
 
     @inlineCallbacks
     def _init_(self, **kwargs):
@@ -259,9 +259,9 @@ class Atoms(YomboLibrary):
         # self.gateway_id = 'local'
         self.gateway_id = self._Configs.get('core', 'gwid', 'local', False)
         self._loaded = False
-        self.__Atoms = {self.gateway_id: {}}
-        # if 'local' not in self.__Atoms:
-        #     self.__Atoms['local'] = {}
+        self.atoms = {self.gateway_id: {}}
+        # if 'local' not in self.atoms:
+        #     self.atoms['local'] = {}
         self.os_data()
 
         self.triggers = {}
@@ -293,7 +293,7 @@ class Atoms(YomboLibrary):
         if gateway_id is None:
             gateway_id = self.gateway_id
 
-        if key in self.__Atoms[gateway_id]:
+        if key in self.atoms[gateway_id]:
             return True
         return False
 
@@ -305,8 +305,8 @@ class Atoms(YomboLibrary):
         :return: Time() of last update
         :rtype: float
         """
-        if key in self.__Atoms:
-            return self.__Atoms[key]['updated_at']
+        if key in self.atoms:
+            return self.atoms[key]['updated_at']
         else:
             raise KeyError("Cannot get state time: %s not found" % key)
 
@@ -318,9 +318,9 @@ class Atoms(YomboLibrary):
         :rtype: dict
         """
         if gateway_id is None:
-            return self.__Atoms.copy()
-        if gateway_id in self.__Atoms:
-            return self.__Atoms[gateway_id].copy()
+            return self.atoms.copy()
+        if gateway_id in self.atoms:
+            return self.atoms[gateway_id].copy()
         else:
             return {}
 
@@ -341,31 +341,31 @@ class Atoms(YomboLibrary):
         self._Statistics.increment("lib.atoms.get", bucket_size=15, anon=True)
         search_chars = ['#', '+']
         if any(s in atom_requested for s in search_chars):
-            if gateway_id not in self.__Atoms:
+            if gateway_id not in self.atoms:
                 return {}
-            results = yombo.utils.pattern_search(atom_requested, self.__Atoms[gateway_id])
+            results = yombo.utils.pattern_search(atom_requested, self.atoms[gateway_id])
             if len(results) > 1:
                 values = {}
                 for item in results:
                     if human is True:
-                        values[item] = self.__Atoms[gateway_id][item]['value_human']
+                        values[item] = self.atoms[gateway_id][item]['value_human']
                     elif full is True:
-                        values[item] = self.__Atoms[gateway_id][item]
+                        values[item] = self.atoms[gateway_id][item]
                     else:
-                        values[item] = self.__Atoms[gateway_id][item]['value']
+                        values[item] = self.atoms[gateway_id][item]['value']
                 return values
             else:
                 raise KeyError("Searched for atom, none found: %s" % atom_requested)
 
         if human is True:
-            return self.__Atoms[gateway_id][atom_requested]['value_human']
+            return self.atoms[gateway_id][atom_requested]['value_human']
         elif full is True:
-            return self.__Atoms[gateway_id][atom_requested]
+            return self.atoms[gateway_id][atom_requested]
         else:
-            return self.__Atoms[gateway_id][atom_requested]['value']
+            return self.atoms[gateway_id][atom_requested]['value']
 
     @inlineCallbacks
-    def set(self, key, value, value_type=None, gateway_id=None, human_value=None):
+    def set(self, key, value, value_type=None, gateway_id=None, human_value=None, source=None):
         """
         Get the value of a given atom (key).
 
@@ -386,25 +386,25 @@ class Atoms(YomboLibrary):
             gateway_id = self.gateway_id
         # logger.debug('atoms:set: {gateway_id}: {key} = {value}', gateway_id=gateway_id, key=key, value=value)
 
-        if gateway_id not in self.__Atoms:
-            self.__Atoms[gateway_id] = {}
+        if gateway_id not in self.atoms:
+            self.atoms[gateway_id] = {}
 
         search_chars = ['#', '+']
         if any(s in key for s in search_chars):
             raise YomboWarning("state keys cannot have # or + in them, reserved for searching.")
 
-        if key in self.__Atoms[gateway_id]:
+        if key in self.atoms[gateway_id]:
             is_new = False
             # If state is already set to value, we don't do anything.
-            self.__Atoms[gateway_id][key]['updated_at'] = int(round(time()))
+            self.atoms[gateway_id][key]['updated_at'] = int(round(time()))
             if human_value is not None:
-                self.__Atoms[gateway_id][key]['value_human'] = human_value
-            if self.__Atoms[gateway_id][key]['value'] == value:
+                self.atoms[gateway_id][key]['value_human'] = human_value
+            if self.atoms[gateway_id][key]['value'] == value:
                 return
             self._Statistics.increment("lib.atoms.set.update", bucket_size=60, anon=True)
         else:
             is_new = True
-            self.__Atoms[gateway_id][key] = {
+            self.atoms[gateway_id][key] = {
                 'gateway_id': gateway_id,
                 'created_at': int(time()),
                 'updated_at': int(time()),
@@ -412,51 +412,54 @@ class Atoms(YomboLibrary):
             self._Statistics.increment("lib.atoms.set.new", bucket_size=60, anon=True)
 
 
-        self.__Atoms[gateway_id][key]['value'] = value
+        self.atoms[gateway_id][key]['value'] = value
         if is_new is True or value_type is not None:
-            self.__Atoms[gateway_id][key]['value_type'] = value_type
+            self.atoms[gateway_id][key]['value_type'] = value_type
 
         if human_value is not None:
-            self.__Atoms[gateway_id][key]['value_human'] = human_value
+            self.atoms[gateway_id][key]['value_human'] = human_value
         else:
-            self.__Atoms[gateway_id][key]['value_human'] = self.convert_to_human(value, value_type)
+            self.atoms[gateway_id][key]['value_human'] = self.convert_to_human(value, value_type)
 
         # Call any hooks
         yield yombo.utils.global_invoke_all('_atoms_set_',
                                             called_by=self,
                                             key=key,
                                             value=value,
-                                            value_full=self.__Atoms[gateway_id][key],
-                                            gateway_id=gateway_id
+                                            value_full=self.atoms[gateway_id][key],
+                                            gateway_id=gateway_id,
+                                            source=source,
                                             )
 
     @inlineCallbacks
-    def set_from_gateway_communications(self, key, values):
+    def set_from_gateway_communications(self, key, data):
         """
         Used by the gateway coms (mqtt) system to set atom values.
         :param key:
         :param values:
         :return:
         """
-        gateway_id = values['gateway_id']
+        gateway_id = data['gateway_id']
         if gateway_id == self.gateway_id:
             return
-        if gateway_id not in self.__Atoms:
-            self.__Atoms[gateway_id] = {}
-        self.__Atoms[values['gateway_id']][key] = {
-            'gateway_id': values['gateway_id'],
-            'value': values['value'],
-            'value_human': values['value_human'],
-            'value_type': values['value_type'],
-            'created_at': values['created_at'],
-            'updated_at': values['updated_at'],
+        if gateway_id not in self.atoms:
+            self.atoms[gateway_id] = {}
+        self.atoms[data['gateway_id']][key] = {
+            'gateway_id': data['gateway_id'],
+            'value': data['value'],
+            'value_human': data['value_human'],
+            'value_type': data['value_type'],
+            'created_at': data['created_at'],
+            'updated_at': data['updated_at'],
         }
+
         yield yombo.utils.global_invoke_all('_atoms_set_',
                                             called_by=self,
                                             key=key,
-                                            value=value,
-                                            value_full=self.__Atoms[gateway_id][key],
-                                            gateway_id=gateway_id
+                                            value=data['value'],
+                                            value_full=self.atoms[gateway_id][key],
+                                            gateway_id=gateway_id,
+                                            source='gateway_coms',
                                             )
 
     def convert_to_human(self, value, value_type):
