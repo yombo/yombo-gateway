@@ -571,7 +571,7 @@ class Automation(YomboLibrary):
                 'scene_action': trigger['scene_action'],
             }
 
-    def trigger_monitor(self, trigger_type, _run_on_start=None, **kwargs):
+    def trigger_monitor(self, trigger_type, _run_on_start=None, source=None, **kwargs):
         """
         Various libraries will call this when something happens to see if an automation rule
         needs to be triggered.
