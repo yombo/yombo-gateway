@@ -468,7 +468,7 @@ class Times(YomboLibrary, object):
             return ''
 
         if day_diff == 0:
-            if second_diff < 10:
+            if second_diff < 5:
                 return "just now"
             if second_diff < 60:
                 time_count = second_diff
