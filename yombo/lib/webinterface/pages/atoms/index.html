@@ -66,7 +66,7 @@
                                                 <tr><th>Gateway</th><th>Name</th><th>Value</th><th>Last Updated</th><th>Description</th></tr>
                                                 </tr>
                                             </thead>
-                                            <tbody>{% for gateway_id, atoms in _atoms._Atoms__Atoms.items() if gateway_id != _local_gateway.gateway_id %}
+                                            <tbody>{% for gateway_id, atoms in _atoms.atoms.items() if gateway_id != _local_gateway.gateway_id %}
                                                     {% for atom_name, data in atoms.items()%}
                                                  <tr>
                                                      <td><a href="/atoms/{{ atom }}/{{ atom_name }}/details">{{ atom_name }}</a></td>
