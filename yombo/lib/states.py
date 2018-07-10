@@ -436,17 +436,12 @@ class States(YomboLibrary, object):
             self.__States[gateway_id] = {}
         if key in self.__States[gateway_id]:
             is_new = False
-            # If state is already set to value, we don't do anything.
-            # print("stats key exists for gateway... %s" % key)
             self.__States[gateway_id][key]['updated_at'] = int(round(time()))
-            # print("old (%s) == new (%s)" % (self.__States[gateway_id][key]['value'], value))
 
             if self.__States[gateway_id][key]['value'] == value:
-                # print("not setting state...it matches....")
                 return
             self._Statistics.increment("lib.states.set.update", bucket_size=60, anon=True)
         else:
-            # print("New state: %s=%s" % (key, value))
             # logger.debug("Saving state: {key} = {value}", key=key, value=value)
             is_new = True
             self.__States[gateway_id][key] = {
@@ -545,41 +540,44 @@ class States(YomboLibrary, object):
             yield self._LocalDB.save_state_bulk(to_save)
 
     @inlineCallbacks
-    def set_from_gateway_communications(self, key, values):
+    def set_from_gateway_communications(self, key, data):
         """
         Used by the gateway coms (mqtt) system to set state values.
         :param key:
-        :param values:
+        :param data:
         :return:
         """
-        gateway_id = values['gateway_id']
+        gateway_id = data['gateway_id']
         if gateway_id == self.gateway_id:
             return
         if gateway_id not in self.__States:
             self.__States[gateway_id] = {}
-        self.__States[values['gateway_id']][key] = {
-            'gateway_id': values['gateway_id'],
-            'value': values['value'],
-            'value_human': values['value_human'],
-            'value_type': values['value_type'],
+        self.__States[data['gateway_id']][key] = {
+            'gateway_id': data['gateway_id'],
+            'value': data['value'],
+            'value_human': data['value_human'],
+            'value_type': data['value_type'],
             'live': False,
-            'created_at': values['created_at'],
-            'updated_at': values['updated_at'],
+            'created_at': data['created_at'],
+            'updated_at': data['updated_at'],
         }
 
         self._Automation.trigger_monitor('state',
                                          key=key,
-                                         value=values['value'],
+                                         value=data['value'],
+                                         value_full=self.__States[gateway_id][key],
                                          action='set',
-                                         gateway_id=gateway_id)
+                                         gateway_id=gateway_id,
+                                         source='gateway_coms')
 
         # Call any hooks
         yield global_invoke_all('_states_set_',
                                 called_by=self,
                                 key=key,
-                                value=values['value'],
+                                value=data['value'],
                                 value_full=self.__States[gateway_id][key],
                                 gateway_id=gateway_id,
+                                source="gateway_coms",
                                 )
 
     def convert_to_human(self, value, value_type):
