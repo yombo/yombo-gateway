@@ -218,8 +218,16 @@
                             {{ device.status_all.energy_usage }} {% if device.energy_type == 'electric' %} watts {% endif %}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Machine: </label><br>
                             {{ device.status_all.machine_status }}<br>
-                            <label style="margin-top: 15px; margin-bottom: 0px">Extra: </label><br>
-                            {{ device.status_all.machine_status_extra }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Extra status attributes: </label><br>
+                            {% if device.status_all.machine_status_extra|length == 0 %} None
+                            {% else %}
+                            {% for key, value in device.status_all.machine_status_extra.items() %}
+                            <em>{{key}}</em>: {{value}}<br>
+                            {% endfor %}
+                            {% endif %}
+                            <label style="margin-top: 15px; margin-bottom: 0px">Requested By: </label><br>
+                            <em>User ID:</em> {{ device.status_all.requested_by.user_id }}<br>
+                            <em>Component:</em> {{ device.status_all.requested_by.component }}<br>
                             {% endif %}
                         </div>
                     </div>

@@ -28,6 +28,10 @@
                             {{ device_command.command.label }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Created Time: </label><br>
                             {{ device_command.created_at|epoch_to_human }} ({{device_command.created_at|epoch_to_pretty_date}})<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Broadcast Time: </label><br>
+                            {{ device_command.broadcast_at|epoch_to_human }} ({{device_command.broadcast_at|epoch_to_pretty_date}})<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Accepted Time: </label><br>
+                            {{ device_command.accepted_at|epoch_to_human }} ({{device_command.accepted_at|epoch_to_pretty_date}})<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Sent Time: </label><br>
                             {{ device_command.sent_at|epoch_to_human }} ({{device_command.sent_at|epoch_to_pretty_date}})<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Received Time: </label><br>
