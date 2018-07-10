@@ -109,7 +109,7 @@ class Template(YomboLibrary, object):
 
         self.environment.filters['debug'] = logger_runtime.debug
         self.environment.filters['info'] = logger_runtime.info
-        self.environment.filters['warning'] = logger_runtime.warning
+        self.environment.filters['warn'] = logger_runtime.warn
         self.environment.filters['error'] = logger_runtime.error
         self.environment.filters['round'] = forgiving_round
         self.environment.filters['multiply'] = multiply
