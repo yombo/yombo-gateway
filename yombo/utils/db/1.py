@@ -219,7 +219,6 @@ def create_table_device_status(Registry, **kwargs):
         `status_id`            TEXT NOT NULL,
         `device_id`            TEXT NOT NULL, /* device_id */
         `command_id`           TEXT,
-        `gateway_id`           TEXT,
         `set_at`               REAL NOT NULL,
         `energy_usage`         INTEGER NOT NULL,
         `energy_type`          TEXT,
