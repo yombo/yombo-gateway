@@ -57,6 +57,12 @@ from yombo.utils.decorators import deprecated, memoize_ttl, memoize_
 import yombo.ext.base62 as base62
 
 
+def memory_usage():
+    return int(re.search(r'^VmRSS:\s+(\d+) kb$',
+        open('/proc/self/status','r').read(),
+        flags=re.IGNORECASE|re.MULTILINE).group(1))
+
+
 def json_human(data):
     return json.dumps(data, indent=4, sort_keys=True)
 
@@ -238,7 +244,7 @@ def data_pickle(data, encoder=None, zip_level=None):
     return data
 
 
-def data_unpickle(data, encoder=None, zip_level=None):
+def data_unpickle(raw_data, encoder=None, zip_level=None):
     """
     Unpack data packed with data_pickle.
 
@@ -247,6 +253,7 @@ def data_unpickle(data, encoder=None, zip_level=None):
     :param zip_level:
     :return:
     """
+    data = bytes_to_unicode(raw_data)
     if encoder is None:
         if zip_level is True or isinstance(zip_level, int):
             encoder = 'msgpack_base85_zip'
@@ -417,7 +424,7 @@ def public_to_string(pubic_value):
         return 'Unknown'
 
 
-def epoch_to_string(the_time, format_string=None):
+def epoch_to_string(the_time, format_string=None, milliseconds=None):
     if the_time is None:
         return "None"
     if isinstance(the_time, str):
@@ -429,9 +436,12 @@ def epoch_to_string(the_time, format_string=None):
             except:
                 return the_time
 
-    if format_string is None:
+    if milliseconds is True:
+        format_string = '%b %d %Y %H:%M:%S.%%s %Z'
+        return strftime(format_string, localtime(the_time)) % str(the_time-int(the_time))[2:5]
+    else:
         format_string = '%b %d %Y %H:%M:%S %Z'
-    return strftime(format_string, localtime(the_time))
+        return strftime(format_string, localtime(the_time))
 
 
 def convert_to_seconds(s):
@@ -487,7 +497,7 @@ def bytes_to_unicode(input):
         return dict((bytes_to_unicode(key), bytes_to_unicode(value)) for key, value in input.items())
     elif isinstance(input, list):
         return [bytes_to_unicode(element) for element in input]
-    elif isinstance(input, bytes):
+    elif isinstance(input, bytes) or isinstance(input, bytearray):
         try:
             return input.decode("utf-8")
         except Exception:
