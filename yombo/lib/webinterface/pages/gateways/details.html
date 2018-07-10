@@ -60,7 +60,11 @@
                             </div>
                             <!-- /.panel-heading -->
                             <div class="panel-body">
-                                <label style="margin-top: 0px; margin-bottom: 0px">Internal IP: (IPv4 / IPv6)</label><br>
+                                <label style="margin-top: 0px; margin-bottom: 0px">Ping delay:</label><br>
+                                {{ gateway.ping_roundtrip }} milliseconds ({{ gateway.ping_response_at|epoch_to_pretty_date}})<br>
+                                <label style="margin-top: 15px; margin-bottom: 15px">Clock difference</label><br>
+                                {{ gateway.ping_time_offset }} seconds <br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">Internal IP: (IPv4 / IPv6)</label><br>
                                 {{ gateway.internal_ipv4 }} / {{ gateway.internal_ipv6 }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">External IP: (IPv4 / IPv6)</label><br>
                                 {{ gateway.external_ipv4 }} / {{ gateway.external_ipv6 }}<br>
