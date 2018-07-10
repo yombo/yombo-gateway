@@ -32,6 +32,7 @@ try:
 except ImportError:
     from hashlib import sha256
 import pika
+from pika.exceptions import ChannelClosed
 import sys
 import traceback
 from time import time
@@ -854,7 +855,7 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         self.AMQPClient.disconnected('unknown')
 
     def clientConnectionLost(self, connector, reason):
-        # print("self.connection_state: %s" % self.AMQPProtocol.connection_state)
+        print("clientConnectionLost: self.connection_state: %s" % self.AMQPProtocol.connection_state)
         # print("error 1: %s" % connector)
         # print("error 2: %s" % reason.__dict__)
         # raise YomboCritical("something...")
@@ -862,7 +863,7 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         if self.AMQPClient.is_connected and str(reason.value) != "Connection was closed cleanly.":
             logger.warn("In PikaFactory clientConnectionLost. Reason: {reason}", reason=reason.value)
         protocol.ReconnectingClientFactory.clientConnectionFailed(self, connector, reason)
-        if protocol.ReconnectingClientFactory.continueTrying:
+        if self.continueTrying:
             self.retry()
 
     def clientConnectionFailed(self, connector, reason):
@@ -951,8 +952,8 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
     def get_delivery_item(self):
         for priority in ['urgent', 'high', 'normal', 'low']:
             if len(self.delivery_queue[priority]) > 0:
-                return self.delivery_queue[priority].popleft()
-        return None
+                return priority, self.delivery_queue[priority].popleft()
+        return None, None
 
     @inlineCallbacks
     def check_delivery_queue(self):
@@ -966,7 +967,7 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
         logger.debug("check_delivery_queue... Go")
 
         while True:
-            item = self.get_delivery_item()
+            priority, item = self.get_delivery_item()
             if item is None:
                 break
             if item['type'] == 'queue':
@@ -978,7 +979,7 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
             elif item['type'] == 'subscribe':
                 yield self.do_send_subscribe(item['fields'])
             elif item['type'] == 'message':
-                yield self.do_send_message(item['fields'])
+                yield self.do_send_message(priority, item)
 
         self.check_delivery_queue_running = False
 
@@ -1052,21 +1053,29 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
         self.factory.consumers[queue_name]['subscribed'] = True
 
     @inlineCallbacks
-    def do_send_message(self, fields):
+    def do_send_message(self, priority, item):
         """
         Sends an AMQP message
         """
         # logger.info("exchange=%s, routing_key=%s, body=%s, properties=%s " % (kwargs['exchange_name'],kwargs['routing_key'],kwargs['body'], kwargs['properties']))
         # self._local_log("debug", "PikaProtocol::do_send_message")
+        fields = item['fields']
         try:
             message_meta = fields['message_meta']
             fields['properties'] = pika.BasicProperties(**fields['properties'])
             fields['properties'].headers['msg_sent_at'] = str(time())
             # print("do_send_message fields: %s" % fields)
-            yield self.channel.basic_publish(exchange=fields['exchange_name'],
-                                             routing_key=fields['routing_key'],
-                                             body=fields['body'],
-                                             properties=fields['properties'])
+            try:
+                yield self.channel.basic_publish(exchange=fields['exchange_name'],
+                                                 routing_key=fields['routing_key'],
+                                                 body=fields['body'],
+                                                 properties=fields['properties'])
+            except ChannelClosed as e:
+                self.delivery_queue[priority].append(item)
+                if self.factory.continueTrying:
+                    self.factory.retry()
+                return
+
             message_meta['msg_sent_at'] = float(time())
             message_meta['send_success'] = True
 
