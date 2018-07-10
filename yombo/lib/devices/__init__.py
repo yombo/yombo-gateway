@@ -548,12 +548,13 @@ class Devices(YomboLibrary):
         Insert a new device command from a dictionary. Usually called by the gateways coms system.
 
         :param device_command:
+        :param called_from_mqtt_coms:
         :return:
         """
         self.device_commands[device_command['request_id']] = Device_Command(device_command, self, start=True)
         self.device_commands.move_to_end(device_command['request_id'], last=False)  # move to the front.
 
-    def update_device_command(self, src_gateway_id, request_id, log_time, status, message):
+    def update_device_command(self, request_id, status, message=None, log_time=None, gateway_id=None):
         """
         Update device command information based on dictionary items. Usually called by the gateway coms systems.
 
@@ -561,7 +562,7 @@ class Devices(YomboLibrary):
         :return:
         """
         if request_id in self.device_commands:
-            self.device_commands[request_id].gw_coms_set_status(src_gateway_id, log_time, status, message)
+            self.device_commands[request_id].set_status(status, message, log_time, gateway_id)
 
     def get_gateway_device_commands(self, gateway_id):
         """
