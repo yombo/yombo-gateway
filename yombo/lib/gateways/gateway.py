@@ -85,9 +85,10 @@ class Gateway:
         self.created_at = None
         self.version = None
         self.ping_request_id = None  # The last ID for the ping request
-        self.ping_request = None  # Time the ping was requested
-        self.ping_response = None  # When we got a response back
+        self.ping_request_at = None  # Time the ping was requested
+        self.ping_response_at = None  # When we got a response back
         self.ping_time_offset = None  # Time offset relating to current gateway
+        self.ping_roundtrip = None  # How many millisecond for last round trip.
 
         # communications information
         self.last_communications = deque([], 30)  # stores times and topics of the last few communications
