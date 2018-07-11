@@ -322,7 +322,7 @@ class LocalDB(YomboLibrary):
     def _load_(self, **kwargs):
         self.gateway_id = self._Configs.get('core', 'gwid', 'local', False)
         self.save_bulk_queue_loop = LoopingCall(self.save_bulk_queue)
-        self.save_bulk_queue_loop.start(61.1, False)
+        self.save_bulk_queue_loop.start(17, False)
 
     @inlineCallbacks
     def _stop_(self, **kwargs):
@@ -564,9 +564,7 @@ class LocalDB(YomboLibrary):
 
     @inlineCallbacks
     def set_device_status(self, device_id, status=1):
-        # device = yield Device.findBy(id=device_id)
-
-        results = yield self.dbconfig.update('devices', {'status': status},
+        yield self.dbconfig.update('devices', {'status': status},
                                              where=['id = ?', device_id])
 
     @inlineCallbacks
@@ -587,7 +585,7 @@ class LocalDB(YomboLibrary):
                                              limit=limit)
         data = []
         for record in records:
-            record['_source'] = "database"
+            record['source'] = "database"
             machine_status_extra = record['machine_status_extra']
             if machine_status_extra is None:
                 record['machine_status_extra'] = None
@@ -626,7 +624,7 @@ class LocalDB(YomboLibrary):
                                              limit=limit)
         data = []
         for record in records:
-            record['_source'] = "database"
+            record['source'] = "database"
             record['inputs'] = data_unpickle(record['inputs'])
             record['history'] = data_unpickle(record['history'])
             record['requested_by'] = data_unpickle(record['requested_by'])
@@ -2086,7 +2084,6 @@ ORDER BY id desc"""
         :param vals:
         :return:
         """
-        # print("insert_many: (%s) %s" % (table, vals))
         yield self.dbconfig.insertMany(table, vals)
 
     @inlineCallbacks
