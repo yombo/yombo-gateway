@@ -64,7 +64,7 @@ class Device_Status(object):
         self._FullName = 'yombo.gateway.lib.Devices.DeviceStatus'
         self._Name = 'Devices.DeviceStatus'
         self._Parent = _Parent
-        self._source = source
+        self.source = source
 
         self.device = device
         self.command = None
@@ -74,7 +74,6 @@ class Device_Status(object):
         else:
             self.status_id = random_string(length=15, char_set='extended')
 
-        self.gateway_id = self._Parent.gateway_id
         self.set_at = time()
         self.energy_usage = None
         self.energy_type = None
@@ -89,17 +88,16 @@ class Device_Status(object):
         self.uploadable = None
         self.fake_data = False
 
-        if self._source == 'database':
+        if self.source == 'database':
             self._dirty = False
             self._in_db = True
-        else: # includes 'gateway_coms'
+        else:  # includes 'gateway_coms'
             self._dirty = True
             self._in_db = False
             reactor.callLater(1, self.check_if_device_status_in_database)
 
         # print("device status: in db: %s, dirty: %s" % (self._in_db, self._dirty))
-        self.update_attributes(data, source='self')
-        reactor.callLater(1, self.save_to_db)
+        self.update_attributes(data)
 
     @inlineCallbacks
     def check_if_device_status_in_database(self):
@@ -112,7 +110,7 @@ class Device_Status(object):
             self._in_db = True
             self.save_to_db()
 
-    def update_attributes(self, device, source=None):
+    def update_attributes(self, device):
         """
         Sets various values from a device dictionary. This can be called when the device is first being setup or
         when being updated by the AMQP service.
@@ -131,8 +129,6 @@ class Device_Status(object):
                 self.command = self._Parent._Commands[device['command_id']]
             except Exception as E:
                 pass
-        if 'gateway_id' in device:
-            self.gateway_id = device["gateway_id"]
         if 'status_id' in device:
             self.status_id = device["status_id"]
         if 'set_at' in device:
@@ -161,19 +157,21 @@ class Device_Status(object):
             self.uploadable = device["uploadable"]
         if 'fake_data' in device:
             self.fake_data = device["fake_data"]
-        self._dirty = True
-        reactor.callLater(1, self.save_to_db)
 
-    def asdict(self):
+        if self.source != 'database' and self.fake_data is not True:
+            logger.debug("device status, done with update attr: {attrs}", attrs=self.asdict(True))
+            self._dirty = True
+            reactor.callLater(1, self.save_to_db)
+
+    def asdict(self, full=None):
         """
         Returns this item as a dictionary.
         :return:
         """
-        return OrderedDict({
+        results = OrderedDict({
             'status_id': self.status_id,
             'device_id': self.device_id,
             'command_id': self.command_id,
-            'gateway_id': self.gateway_id,
             'set_at': self.set_at,
             'energy_usage': self.energy_usage,
             'energy_type': self.energy_type,
@@ -187,17 +185,25 @@ class Device_Status(object):
             'uploaded': self.uploaded,
             'uploadable': self.uploadable,
         })
+        if full is True:
+            results['fake_data'] = self.fake_data
+            results['dirty'] = self._dirty
+            results['in_db'] = self._in_db
+            results['source'] = self.source
+        return results
 
-    def save_to_db(self, forced = None):
-        # print("device status, save to database... %s" % self.asdict())
+    def save_to_db(self, forced=None):
         # print("device status: save_to_db,,, in db: %s, dirty: %s, machine_status: %s" % (self._in_db, self._dirty, self.machine_status))
 
         if self.fake_data is True:
-            # print("not updating db, it's fake data!")
             self._dirty = False
             return
 
-        if self.device.gateway_id != self._Parent.gateway_id and self._Parent.is_master is not True:
+        if self.machine_status is None:
+            self._dirty = False
+            return
+
+        if self.device.gateway_id != self._Parent.gateway_id:
             self._dirty = False
             return
 
@@ -210,8 +216,10 @@ class Device_Status(object):
             data['requested_by'] = data_pickle(self.requested_by)
 
             if self._in_db is True:
+                # print("device status update, save to database... %s" % self.asdict(True))
                 self._Parent._LocalDB.add_bulk_queue('device_status', 'update', data, 'status_id')
             else:
+                # print("device status insert, save to database... %s" % self.asdict(True))
                 self._Parent._LocalDB.add_bulk_queue('device_status', 'insert', data, 'status_id')
             self._dirty = False
             self._in_db = True

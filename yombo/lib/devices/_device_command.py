@@ -103,6 +103,7 @@ class Device_Command(object):
         self.source_gateway_id = data.get('source_gateway_id', self._Parent.gateway_id)
         self.local_gateway_id = self._Parent.gateway_id
         self.request_id = data['request_id']
+
         if 'device' in data:
             self.device = data['device']
         elif 'device_id' in data:
@@ -147,14 +148,14 @@ class Device_Command(object):
         self.call_later = None
         self.created_at = data.get('created_at', time())
         self._dirty = is_true_false(data.get('dirty', True))
-        self._source = data.get('_source', None)
+        self.source = data.get('source', None)
         self.started = data.get('started', False)
         self.idempotence = data.get('idempotence', None)
 
-        if self._source == 'database':
+        if self.source == 'database':
             self._dirty = False
             self._in_db = True
-        elif self._source == 'gateway_coms':
+        elif self.source == 'gateway_coms':
             self._dirty = False
             self._in_db = False
             reactor.callLater(1, self.check_if_device_command_in_database)
@@ -236,10 +237,15 @@ class Device_Command(object):
             self.status = data['status']
 
     def start(self):
+        """
+        Send the device command to the device's command processor, which calls the '_device_command_'.
+
+        :return:
+        """
         if self.started is True:
             return
         self.started = True
-        if self._source == 'database' and self.status == 'sent':
+        if self.source == 'database' and self.status == 'sent':
             logger.debug(
                 "Discarding a device command message loaded from database it's already been sent.")
             self.set_sent()
@@ -252,7 +258,7 @@ class Device_Command(object):
             if self.not_after_at < cur_at:
                 self.set_delay_expired(message='Unable to send message due to request being expired by "%s" seconds.'
                                     % str(cur_at - self.not_after_at))
-                if self._source != 'database':  # Nothing should be loaded from the database that not a delayed command.
+                if self.source != 'database':  # Nothing should be loaded from the database that not a delayed command.
                     raise YomboWarning("Cannot setup delayed device command, it's already expired.")
             else:
                 when = self.not_before_at - cur_at
@@ -263,7 +269,7 @@ class Device_Command(object):
                     self.set_status('delayed')
                 return True
         else:
-            if self._source == 'database':  # Nothing should be loaded from the database that not a delayed command.
+            if self.source == 'database':  # Nothing should be loaded from the database that not a delayed command.
                 logger.debug("Discarding a device command message loaded from database because it's not meant to be called later.")
                 self.set_failed(message="Was loaded from database, but not meant to be called later.");
             else:
@@ -365,19 +371,16 @@ class Device_Command(object):
             message = "System reported command failed."
         self.set_finished(finished_at=finished_at, status='delay_expired', message=message)
 
-    def set_status(self, status, message=None, log_at=None):
-        self._dirty = True
-        self.status = status
-        if log_at is None:
-            log_at = time()
-        self.history.append(self.history_dict(log_at, status, message, self.local_gateway_id))
-
-    def gw_coms_set_status(self, src_gateway_id, log_at, status, message):
+    def set_status(self, status, message=None, log_at=None, gateway_id=None):
+        if gateway_id is None:
+            gateway_id = self.local_gateway_id
         self._dirty = True
         self.status = status
         if hasattr(self, '%s_at' % status):
             setattr(self, '%s_at' % status, log_at)
-        self.history.append((log_at, status, message, src_gateway_id, self.local_gateway_id))
+        if log_at is None:
+            log_at = time()
+        self.history.append(self.history_dict(log_at, status, message, gateway_id))
 
     def set_message(self, message):
         self._dirty = True

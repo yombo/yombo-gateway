@@ -192,7 +192,6 @@ class Base_Device(object):
         """
         Return the machine status of the device.
         """
-        # print("load history (%s): %s" % (self.label, len(self.status_history)))
         return self.machine_status
 
     @property
@@ -326,6 +325,8 @@ class Base_Device(object):
 
     @property
     def is_on(self):
+        if isinstance(self.machine_status, int) is False:
+            return False
         if int(self.machine_status) > 0:
             return True
         else:
@@ -333,11 +334,12 @@ class Base_Device(object):
 
     @property
     def is_off(self):
+        if isinstance(self.machine_status, int) is False:
+            return False
         return not self.is_on()
 
     @property
     def debug_data(self):
-        print("base device  debug data...")
         return {}
 
     def __str__(self):
@@ -695,7 +697,6 @@ class Base_Device(object):
         device_commands = self._Parent.device_commands
         results = OrderedDict()
         for id, DC in device_commands.items():
-            # print("DC: %s"  % DC.__dict__)
             if criteria is None:
                 if DC.device.device_id == self.device_id:
                     if DC.status in ('sent', 'received', 'pending'):
@@ -703,12 +704,9 @@ class Base_Device(object):
             else:
                 matches = True
                 for key, value in criteria.items():
-                    # print("commands_pending testing criteria: %s: %s" % (key, value))
                     if hasattr(DC, key):
                         test_value = getattr(DC, key)
-                        # print("test_value: %s" % test_value)
                         if isinstance(value, list):
-                            # print("got a list.. %s" % value)
                             if test_value not in value:
                                 matches = False
                                 break
@@ -751,14 +749,7 @@ class Base_Device(object):
             status_previous = self.status_history[1].asdict()
         else:
             status_previous = None
-        # print("device commands: %s" % self.device_commands)
-        # out_device_commands = {}
-        # for device_command_id in list(self.device_commands):
-        #     command = self._Commands[device_command_id]
-        #     out_device_commands[device_command_id] = {
-        #         'machine_label': command['machine_label'],
-        #         'label': command['label'],
-        #     }
+
         def clean_device_variables(device_variables):
             variables = deepcopy(device_variables)
             for label, data in variables.items():
@@ -801,27 +792,6 @@ class Base_Device(object):
             'device_features': self.FEATURES,
             'device_variables': clean_device_variables(self.device_variables_cached),
             'enabled_status': self.enabled_status,
-            }
-
-    def devices_status(self):
-        """
-        Used to get the current and previous status in one shot.
-        """
-        # if len(self.device_commands) > 0:
-        #     request_id = self.device_commands[0]
-        #     device_command = self._Parent.device_commands[request_id].asdict()
-        # else:
-        #     device_command = []
-
-        if len(self.status_history) > 0:
-            status_history = self.status_history[0].asdict()
-        else:
-            status_history = None
-
-        return {
-            'device_id': str(self.device_id),
-            'device_commands': device_command,
-            'status': status_history,
             }
 
     def command(self, cmd, pin=None, request_id=None, not_before=None, delay=None, max_delay=None,
@@ -925,7 +895,7 @@ class Base_Device(object):
                     search_device_command.cancel(message="This device command was superseded by a new persistent request.")
 
         if request_id is None:
-            request_id = random_string(length=18)  # print("in device command: request_id 2: %s" % request_id)
+            request_id = random_string(length=18)
 
         device_command['request_id'] = request_id
 
@@ -987,7 +957,6 @@ class Base_Device(object):
             inputs = {}
         else:
             for input_label, input_value in inputs.items():
-                # print("checking input: %s (%s)" % (input_label, type(input_label)))
                 try:
                     inputs[input_label] = self._Parent._DeviceTypes.validate_command_input(self.device_type_id, command.command_id, input_label, input_value)
                     # print("checking input: %s (%s)" % (input_label, type(input_label)))
@@ -1032,10 +1001,10 @@ class Base_Device(object):
             'requested_by': device_command.requested_by,
             'called_by': self,
             'pin': device_command.pin,
-            'stoponerror': False,
+            'source_gateway_id': device_command.source_gateway_id,
+            'source': device_command.source,
         }
         # logger.debug("calling _device_command_, request_id: {request_id}", request_id=device_command.request_id)
-        # print(self._Parent.device_commands)
         device_command.set_broadcast()
         results = yield global_invoke_all('_device_command_', **items)
         for component, result in results.items():
@@ -1055,6 +1024,7 @@ class Base_Device(object):
         """
         message = kwargs.get('message', None)
         log_time = kwargs.get('log_time', None)
+        source = kwargs.get('source', None)
         if request_id in self._Parent.device_commands:
             device_command = self._Parent.device_commands[request_id]
             device_command.set_sent(message=message, sent_at=log_time)
@@ -1065,6 +1035,7 @@ class Base_Device(object):
                               status=device_command.status,
                               status_id=device_command.status_id,
                               message=message,
+                              source=source,
                               )
         else:
             return
@@ -1078,6 +1049,7 @@ class Base_Device(object):
         """
         message = kwargs.get('message', None)
         log_time = kwargs.get('log_time', None)
+        source = kwargs.get('source', None)
         if request_id in self._Parent.device_commands:
             device_command = self._Parent.device_commands[request_id]
             device_command.set_accepted(message=message, accepted_at=log_time)
@@ -1087,6 +1059,7 @@ class Base_Device(object):
                               status=device_command.status,
                               status_id=device_command.status_id,
                               message=message,
+                              source=source,
                               )
         else:
             return
@@ -1100,6 +1073,7 @@ class Base_Device(object):
         """
         message = kwargs.get('message', None)
         log_time = kwargs.get('log_time', None)
+        source = kwargs.get('source', None)
         if request_id in self._Parent.device_commands:
             device_command = self._Parent.device_commands[request_id]
             device_command.set_sent(message=message, sent_at=log_time)
@@ -1109,6 +1083,7 @@ class Base_Device(object):
                               status=device_command.status,
                               status_id=device_command.status_id,
                               message=message,
+                              source=source,
                               )
         else:
             return
@@ -1122,6 +1097,7 @@ class Base_Device(object):
         """
         message = kwargs.get('message', None)
         log_time = kwargs.get('log_time', None)
+        source = kwargs.get('source', None)
         if request_id in self._Parent.device_commands:
             device_command = self._Parent.device_commands[request_id]
             device_command.set_received(message=message, received_at=log_time)
@@ -1131,6 +1107,7 @@ class Base_Device(object):
                               status=device_command.status,
                               status_id=device_command.status_id,
                               message=message,
+                              source=source,
                               )
         else:
             return
@@ -1145,6 +1122,7 @@ class Base_Device(object):
         """
         message = kwargs.get('message', None)
         log_time = kwargs.get('log_time', None)
+        source = kwargs.get('source', None)
         if request_id in self._Parent.device_commands:
             device_command = self._Parent.device_commands[request_id]
             device_command.set_pending(message=message, pending_at=log_time)
@@ -1154,6 +1132,7 @@ class Base_Device(object):
                               status=device_command.status,
                               status_id=device_command.status_id,
                               message=message,
+                              source=source,
                               )
         else:
             return
@@ -1169,6 +1148,7 @@ class Base_Device(object):
         """
         message = kwargs.get('message', None)
         log_time = kwargs.get('log_time', None)
+        source = kwargs.get('source', None)
         if request_id in self._Parent.device_commands:
             device_command = self._Parent.device_commands[request_id]
             device_command.set_failed(message=message, finished_at=log_time)
@@ -1181,6 +1161,7 @@ class Base_Device(object):
                               status=device_command.status,
                               status_id=device_command.status_id,
                               message=message,
+                              source=source,
                               )
         else:
             return
@@ -1195,6 +1176,7 @@ class Base_Device(object):
         """
         log_time = kwargs.get('log_time', None)
         message = kwargs.get('message', None)
+        source = kwargs.get('source', None)
         if request_id in self._Parent.device_commands:
             device_command = self._Parent.device_commands[request_id]
             device_command.set_canceled(message=message, finished_at=log_time)
@@ -1206,6 +1188,7 @@ class Base_Device(object):
                               status=device_command.status,
                               status_id=device_command.status_id,
                               message=message,
+                              source=source,
                               )
         else:
             return
@@ -1220,6 +1203,7 @@ class Base_Device(object):
         """
         log_time = kwargs.get('log_time', None)
         message = kwargs.get('message', None)
+        source = kwargs.get('source', None)
         if request_id in self._Parent.device_commands:
             device_command = self._Parent.device_commands[request_id]
             device_command.set_delay_expired(message=message, finished_at=log_time)
@@ -1231,6 +1215,7 @@ class Base_Device(object):
                               status=device_command.status,
                               status_id=device_command.status_id,
                               message=message,
+                              source=source,
                               )
         else:
             return
@@ -1247,6 +1232,7 @@ class Base_Device(object):
         """
         message = kwargs.get('message', None)
         log_time = kwargs.get('log_time', None)
+        source = kwargs.get('source', None)
         if request_id in self._Parent.device_commands:
             device_command = self._Parent.device_commands[request_id]
             device_command.set_finished(message=message, finished_at=log_time)
@@ -1256,6 +1242,7 @@ class Base_Device(object):
                               status=device_command.status,
                               status_id=device_command.status_id,
                               message=message,
+                              source=source,
                               )
         else:
             return
@@ -1435,10 +1422,8 @@ class Base_Device(object):
                 except KeyError:
                     command = None
             else:
-                # print("trying to get command_from_Status")
                 command = self.command_from_status(machine_status, machine_status_extra)
         else:
-            # print("set status - command found!")
             kwargs['command'] = command
 
         energy_usage, energy_type = self.energy_calc(command=command,
@@ -1486,7 +1471,6 @@ class Base_Device(object):
         self.set_status_machine_extra(**kwargs)
 
         if self._security_send_device_status() is True:
-            # print("SHOULD SEND UPDATED DEVIE STATUS!!!!!!")
             request_msg = self._Parent._AMQPYombo.generate_message_request(
                 exchange_name='ysrv.e.gw_device_status',
                 source='yombo.gateway.lib.devices.base_device',
@@ -1504,13 +1488,6 @@ class Base_Device(object):
                 request_type='save_device_status',
             )
             self._Parent._AMQPYombo.publish(**request_msg)
-        # if self.test_device is False:
-        #     save_status = new_status.asdict()
-        #     save_status['machine_status_extra'] = data_pickle(save_status['machine_status_extra'])
-        #     save_status['requested_by'] = data_pickle(save_status['requested_by'])
-        #     # print("requested by before: %s" % save_status['requested_by'])
-        #     # print("requested by after: %s" % save_status['requested_by'])
-        #     self._Parent._LocalDB.add_bulk_queue('device_status', 'insert', save_status, 'device_id')
 
         if self._Parent.mqtt != None:
             mqtt_message = {
@@ -1533,20 +1510,23 @@ class Base_Device(object):
                 mqtt_message['command_id'] = command.command_id
                 mqtt_message['command_machine_label'] = command.machine_label
             else:
-                # print("set status - no command found!")
                 mqtt_message['command_id'] = None
                 mqtt_message['command_machine_label'] = None
             self._Parent.mqtt.publish("yombo/devices/%s/status" % self.machine_label, json.dumps(mqtt_message), 1)
         return kwargs, new_status['status_id']
 
-    def set_status_internal(self, status, source=None):
+    def set_status_internal(self, status):
         """
         Primarily used by the gateway library to set a device status.
 
-        :param new_status:
+        :param status:
         :return:
         """
-        self.status_history.appendleft(Device_Status(self._Parent, self, status, source))
+        source = status.get('source', None)
+        # print("set_status_internal: input: %s" % status)
+        device_status = Device_Status(self._Parent, self, status, source)
+        # print("set_status_internal: as dict: %s" % device_status.asdict())
+        self.status_history.appendleft(device_status)
         self.send_status(**status)
 
     def send_status(self, **kwargs):
@@ -1588,12 +1568,15 @@ class Base_Device(object):
             previous_status = None
         device_type = self._Parent._DeviceTypes[self.device_type_id]
 
+        source = kwargs.get('source', None)
+
         message = {
             'device': self,
             'command': command,
             'request_id': kwargs.get('request_id', None),
             'reported_by': kwargs.get('reported_by', None),
             'gateway_id': kwargs.get('gateway_id', self.gateway_id),
+            'source': source,
             'event': {
                 'area': self.area,
                 'location': self.location,
