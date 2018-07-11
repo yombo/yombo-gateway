@@ -75,29 +75,6 @@ from yombo.utils import random_string, unicode_to_bytes, bytes_to_unicode, sleep
 
 logger = get_logger('library.mqtt')
 
-def sha512_crypt_mosquitto(password, salt_base64=None, rounds=None):
-    """
-    Used for generating a crypted version for mosquitto pasword file.
-
-    :param password:
-    :param salt_base64:
-    :param rounds:
-    :return:
-    """
-    if salt_base64 is None:
-        rand = random.SystemRandom()
-        salt_base64 = ''.join([rand.choice(string.ascii_letters + string.digits)
-                        for _ in range(16)])
-    salt = base64.b64decode(salt_base64)
-
-    m = hashlib.sha512()
-    m.update(unicode_to_bytes(password))
-    m.update(salt)
-    hashed_password = m.digest()
-    encoded_password = bytes_to_unicode(base64.b64encode(hashed_password))
-
-    return '$6$' + salt_base64 + "$" + encoded_password
-
 
 class MQTT(YomboLibrary):
     """
@@ -115,7 +92,6 @@ class MQTT(YomboLibrary):
         self.gateway_id = self._Configs.get('core', 'gwid', 'local', False)
         self.mosquitto_enabled = self._Configs.get('mqtt', 'mosquitto_enabled', False)
         self.mosquitto_config_file = "/etc/mosquitto/yombo/yombo.conf"
-        self.mosquitto_pass_file = "/etc/mosquitto/yombo/passwd"
         self.client_enabled = self._Configs.get('mqtt', 'client_enabled', True)
         self.server_enabled = self._Configs.get('mqtt', 'server_enabled', True)
         self.server_max_connections = self._Configs.get('mqtt', 'server_max_connections', 1000)
@@ -345,8 +321,6 @@ class MQTT(YomboLibrary):
             if self.mosquitto_running is False:
                 logger.error("MQTT failed to start!")
                 raise YomboCritical("MQTT failed to start, shutting down.")
-        else:
-            yield self.reload_mqtt_broker()  #reload the configs
 
     def _start_(self, **kwargs):
         """
@@ -428,17 +402,6 @@ class MQTT(YomboLibrary):
         running = yield self.check_mqtt_broker_running()
         return running
 
-    @inlineCallbacks
-    def reload_mqtt_broker(self):
-        try:
-            yield getProcessOutput("sudo", ['systemctl', 'kill', '-s', 'HUP', 'mosquitto.service'])
-        except Exception as e:
-            logger.warn("Error while trying to reload mosquitto (mqtt) service configs: {e}", e=e)
-            logger.error("Unable to reload mosquitto service. Run 'sudo ybo-config sudoers from command line.")
-        yield sleep(0.5)
-        running = yield self.check_mqtt_broker_running()
-        return running
-
     def _webinterface_add_routes_(self, **kwargs):
         """
         A demonstration of how to add menus and provide function calls to the web interface library. This would
@@ -451,14 +414,34 @@ class MQTT(YomboLibrary):
                 return {
                     'nav_side': [
                         {
-                        'label1': 'System Settings',
-                        'label2': 'MQTT',
-                        'priority1': None,  # Even with a value, 'Tools' is already defined and will be ignored.
-                        'priority2': 10000,
-                        'icon': 'fa fa-wrench fa-fw',
-                        'url': '/tools/mqtt',
-                        'tooltip': '',
-                        'opmode': 'run',
+                            'label1': 'System',
+                            'label2': 'MQTT Listen',
+                            'priority1': 6000,  # Even with a value, 'Tools' is already defined and will be ignored.
+                            'priority2': 10000,
+                            'icon': 'fa fa-wrench fa-fw',
+                            'url': '/system/mqtt-listen',
+                            'tooltip': '',
+                            'opmode': 'run',
+                        },
+                        {
+                            'label1': 'System',
+                            'label2': 'MQTT Log',
+                            'priority1': 6000,  # Even with a value, 'Tools' is already defined and will be ignored.
+                            'priority2': 10010,
+                            'icon': 'fa fa-wrench fa-fw',
+                            'url': '/system/mqtt-log',
+                            'tooltip': '',
+                            'opmode': 'run',
+                        },
+                        {
+                            'label1': 'System',
+                            'label2': 'MQTT Publish',
+                            'priority1': 6000,  # Even with a value, 'Tools' is already defined and will be ignored.
+                            'priority2': 10020,
+                            'icon': 'fa fa-wrench fa-fw',
+                            'url': '/system/mqtt-publish',
+                            'tooltip': '',
+                            'opmode': 'run',
                         },
                     ],
                     'routes': [
@@ -476,12 +459,26 @@ class MQTT(YomboLibrary):
         """
         with webapp.subroute("/") as webapp:
 
-            @webapp.route("/tools/mqtt")
+            @webapp.route("/system/mqtt-listen")
             @require_auth()
-            def page_tools_mqtt(webinterface, request, session):
-                page = webinterface.webapp.templates.get_template(webinterface.wi_dir + '/pages/mqtt/index.html')
+            def page_system_mqtt_listen(webinterface, request, session):
+                page = webinterface.webapp.templates.get_template(webinterface.wi_dir + '/pages/mqtt/listen.html')
+                return page.render(alerts=webinterface.get_alerts())
+
+            @webapp.route("/system/mqtt-log")
+            @require_auth()
+            def page_system_mqtt_log(webinterface, request, session):
+                page = webinterface.webapp.templates.get_template(webinterface.wi_dir + '/pages/mqtt/log.html')
                 return page.render(alerts=webinterface.get_alerts(),
+                                   log_outgoing=self._Gateways.coms.log_outgoing,
+                                   log_incoming=self._Gateways.coms.log_incoming,
                                    )
+
+            @webapp.route("/system/mqtt-publish")
+            @require_auth()
+            def page_system_mqtt_publish(webinterface, request, session):
+                page = webinterface.webapp.templates.get_template(webinterface.wi_dir + '/pages/mqtt/publish.html')
+                return page.render(alerts=webinterface.get_alerts())
 
             @webapp.route("/api/v1/mqtt")
             @run_first()
@@ -513,7 +510,7 @@ class MQTT(YomboLibrary):
                     raise YomboWarning("MQTT username has invalid characters")
                 return user
 
-            @webapp.route("/api/v1/mqtt/auth/user", methods=['POST'])
+            @webapp.route("/api/v1/mqtt/auth/user", methods=['POST', 'GET'])
             @run_first()
             @inlineCallbacks
             def api_v1_mqtt_auth_user(webinterface, request, session):
