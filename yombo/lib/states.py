@@ -462,8 +462,8 @@ class States(YomboLibrary, object):
                                     stoponerror=True,
                                     )
         except YomboHookStopProcessing as e:
-            logger.warning("Not saving state '{state}'. Resource '{resource}' raised' YomboHookStopProcessing exception.",
-                           state=key, resource=e.by_who)
+            logger.warn("Not saving state '{state}'. Resource '{resource}' raised' YomboHookStopProcessing exception.",
+                         state=key, resource=e.by_who)
             return None
 
         self.__States[gateway_id][key]['value'] = value
