@@ -54,7 +54,7 @@ from functools import reduce
 client._HTTP11ClientFactory.noisy = False
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboCritical, YomboWarning, YomboHookStopProcessing
+from yombo.core.exceptions import YomboCritical, YomboWarning, YomboHookStopProcessing, YomboRestart
 from yombo.utils.fuzzysearch import FuzzySearch
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
@@ -71,16 +71,16 @@ HARD_LOAD["LocalDB"] = {'operating_mode': 'all'}
 HARD_LOAD["SQLDict"] = {'operating_mode': 'all'}
 HARD_LOAD["GPG"] = {'operating_mode': 'all'}
 HARD_LOAD["Configuration"] = {'operating_mode': 'all'}
+HARD_LOAD["Localize"] = {'operating_mode': 'all'}
 HARD_LOAD["Hash"] = {'operating_mode': 'all'}
 HARD_LOAD["HashIDS"] = {'operating_mode': 'all'}
 HARD_LOAD["Discovery"] = {'operating_mode': 'all'}
 HARD_LOAD["Atoms"] = {'operating_mode': 'all'}
 HARD_LOAD["States"] = {'operating_mode': 'all'}
 HARD_LOAD["Statistics"] = {'operating_mode': 'all'}
+HARD_LOAD["YomboAPI"] = {'operating_mode': 'all'}
 HARD_LOAD["Startup"] = {'operating_mode': 'all'}
 HARD_LOAD["AMQP"] = {'operating_mode': 'run'}
-HARD_LOAD["YomboAPI"] = {'operating_mode': 'all'}
-HARD_LOAD["Localize"] = {'operating_mode': 'all'}
 HARD_LOAD["CronTab"] = {'operating_mode': 'all'}
 HARD_LOAD["DownloadModules"] = {'operating_mode': 'run'}
 HARD_LOAD["Times"] = {'operating_mode': 'all'}
@@ -273,7 +273,8 @@ class Loader(YomboLibrary, object):
 
         self.run_phase = "modules_import"
         self.operating_mode = self.operating_mode  # so we can update the State!
-        yield self._moduleLibrary.import_modules()
+        if self.operating_mode == 'run':
+            yield self._moduleLibrary.import_modules()
         for name, config in HARD_LOAD.items():
             if self.sigint:
                 return
@@ -311,7 +312,7 @@ class Loader(YomboLibrary, object):
                 return
             self._log_loader('debug', name, 'library', 'start', 'About to call _start_.')
             if self.check_operating_mode(config['operating_mode']):
-                libraryName =  name.lower()
+                libraryName = name.lower()
                 yield self.library_invoke(libraryName, "_start_", called_by=self)
                 HARD_LOAD[name]['_start_'] = True
             else:
@@ -399,7 +400,7 @@ class Loader(YomboLibrary, object):
         log("Loader: {label}({type})::{method} - {msg}", label=label, type=type, method=method, msg=msg)
 
     def import_libraries_failure(self, failure):
-        logger.error("Got failure during import of library: {failure}", failure=failure)
+        logger.error("Got failure during import of library: {failure}. Going to stop now.", failure=failure)
 
     @inlineCallbacks
     def import_libraries(self):
@@ -457,6 +458,7 @@ class Loader(YomboLibrary, object):
             library._Scenes = self.loadedLibraries['scenes']
             library._SQLDict = self.loadedLibraries['sqldict']
             library._SSLCerts = self.loadedLibraries['sslcerts']
+            library._Startup = self.loadedLibraries['startup']
             library._States = self.loadedLibraries['states']
             library._Statistics = self.loadedLibraries['statistics']
             library._Tasks = self.loadedLibraries['tasks']
