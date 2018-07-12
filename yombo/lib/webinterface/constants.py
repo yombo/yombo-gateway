@@ -187,16 +187,6 @@ NAV_SIDE_MENU = [
         'opmode': 'run',
     },
     {
-        'label1': 'System Settings',
-        'label2': 'Gateway Credentials',
-        'priority1': 3500,
-        'priority2': 4000,
-        'icon': 'fa fa-wrench fa-fw',
-        'url': '/configs/gateway_credentials',
-        'tooltip': '',
-        'opmode': 'run',
-    },
-    {
         'label1': 'Developer Tools',
         'label2': 'Config Tools',
         'priority1': 5000,
