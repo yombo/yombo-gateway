@@ -34,10 +34,16 @@ class YomboLibrary(Entity):
         self._Name = self.__class__.__name__
         self._FullName = "yombo.gateway.lib.%s" % (self.__class__.__name__)
 
+    def _init_(self, **kwargs):
+        """
+        Called to init the library, at the yombo gateway level.
+        """
+        pass
+
     def _load_(self, **kwargs):
         """
         Called when a library should start running its process
-        operations. 
+        operations.
         """
         pass
 
