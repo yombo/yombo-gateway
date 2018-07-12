@@ -1218,7 +1218,7 @@ class Times(YomboLibrary, object):
                                   stoponerror=True,
                                   )
             except YomboHookStopProcessing:
-                logger.warning("Stopping processing 'send_event_hook' due to YomboHookStopProcessing exception.")
+                logger.warn("Stopping processing 'send_event_hook' due to YomboHookStopProcessing exception.")
                 return
 
     def _CalcTwilight(self):
