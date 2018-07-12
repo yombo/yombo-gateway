@@ -401,6 +401,7 @@ class Loader(YomboLibrary, object):
 
     def import_libraries_failure(self, failure):
         logger.error("Got failure during import of library: {failure}. Going to stop now.", failure=failure)
+        raise YomboCritical("Load failure for gateway library.")
 
     @inlineCallbacks
     def import_libraries(self):
@@ -480,22 +481,6 @@ class Loader(YomboLibrary, object):
                 # d.addCallback(lambda ignored: self._log_loader('debug', name, 'library', 'init', 'Done with call _init_.'))
                 d.callback(1)
                 yield d
-                # d.addCallback(maybeDeferred, library._init_)
-                # self._log_loader('debug', name, 'library', 'init', 'Finished to call _init_.')
-                # try:
-                #     d = yield maybeDeferred(library._init_, self)
-                # except YomboCritical, e:
-                #     logger.error("---==(Critical Server Error in init function for library: {name})==----", name=name)
-                #     logger.error("--------------------------------------------------------")
-                #     logger.error("Error message: {e}", e=e)
-                #     logger.error("--------------------------------------------------------")
-                #     e.exit()
-                # except:
-                #     logger.error("-------==(Error in init function for library: {name})==---------", name=name)
-                #     logger.error("1:: {e}", e=sys.exc_info())
-                #     logger.error("---------------==(Traceback)==--------------------------")
-                #     logger.error("{e}", e=traceback.print_exc(file=sys.stdout))
-                #     logger.error("--------------------------------------------------------")
                 HARD_LOAD[name]['_init_'] = True
             else:
                 logger.error("----==(Library doesn't have init function: {name})==-----", name=name)
