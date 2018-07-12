@@ -52,17 +52,7 @@ class Template(YomboLibrary, object):
     """
     Handles compiling templates and rendering them when requested.
     """
-    def _init_(self, **kwargs):
-        """
-
-        :return:
-        """
-        pass
-
     def _load_(self, **kwargs):
-        def debug(text):
-            logger.info("Template says: {text}", text=text)
-
         self.environment = TemplateEnvironment()
         self.environment.globals['as_timestamp'] = self._Times.forgiving_as_timestamp
         self.environment.globals['float'] = forgiving_float
