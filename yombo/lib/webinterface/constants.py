@@ -128,6 +128,16 @@ NAV_SIDE_MENU = [
     },
     {
         'label1': 'System Settings',
+        'label2': 'Locations',
+        'priority1': 3500,
+        'priority2': 750,
+        'icon': 'fa fa-cog fa-fw',
+        'url': '/locations/index',
+        'tooltip': 'Show Locations',
+        'opmode': 'run',
+    },
+    {
+        'label1': 'System Settings',
         'label2': 'API Auth',
         'priority1': 3500,
         'priority2': 1000,
@@ -168,16 +178,6 @@ NAV_SIDE_MENU = [
     },
     {
         'label1': 'System Settings',
-        'label2': 'Locations',
-        'priority1': 3500,
-        'priority2': 3000,
-        'icon': 'fa fa-cog fa-fw',
-        'url': '/locations/index',
-        'tooltip': 'Show Locations',
-        'opmode': 'run',
-    },
-    {
-        'label1': 'System Settings',
         'label2': 'Yombo.Ini',
         'priority1': 3500,
         'priority2': 4000,
@@ -186,7 +186,16 @@ NAV_SIDE_MENU = [
         'tooltip': '',
         'opmode': 'run',
     },
-
+    {
+        'label1': 'System Settings',
+        'label2': 'Gateway Credentials',
+        'priority1': 3500,
+        'priority2': 4000,
+        'icon': 'fa fa-wrench fa-fw',
+        'url': '/configs/gateway_credentials',
+        'tooltip': '',
+        'opmode': 'run',
+    },
     {
         'label1': 'Developer Tools',
         'label2': 'Config Tools',
