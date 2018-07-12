@@ -319,7 +319,6 @@ class WebSessions(YomboLibrary):
         count = 0
         current_time = int(time())
         for session_id in list(self.active_sessions.keys()):
-            print("clean_sessions - Checking session id : %s" % session_id)
             session = self.active_sessions[session_id]
 
             if session.check_valid() is False and session.created_at > current_time - 600 \
