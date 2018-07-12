@@ -9,7 +9,7 @@ from ratelimit import RateLimitException
 
 from twisted.internet.defer import inlineCallbacks
 
-from yombo.core.exceptions import YomboWarning
+from yombo.core.exceptions import YomboWarning, YomboRestart
 from yombo.utils import ip_addres_in_local_network, bytes_to_unicode, sha256_compact
 from yombo.lib.webinterface.routes.api_v1.__init__ import return_error, args_to_dict
 
@@ -179,6 +179,26 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
                                              **kwargs)
             session.touch()
             request.auth_id = session.auth_id
+            # if session.session_type == "websession":
+            #     print("auth type websession")
+            #     try:
+            #         print("pre check_if_gw_info_needed")
+            #         yield webinterface._Startup.check_has_valid_gw_auth(session=session['yomboapi_session'])
+            #         print("post check_if_gw_info_needed")
+            #     except YomboRestart:
+            #         print("YomboRestart check_if_gw_info_needed")
+            #         webinterface._Notifications.add({'title': 'Restarting',
+            #                                          'message': 'The gateway has downloaded an update that requires a restart. Please wait.',
+            #                                          'source': 'System',
+            #                                          'persist': False,
+            #                                          'priority': 'high',
+            #                                          'always_show': True,
+            #                                          'always_show_allow_clear': False,
+            #                                          'id': 'system_rebooting',
+            #                                          'local': True,
+            #                                          })
+            #         page = webinterface.get_template(request, webinterface.wi_dir + '/pages/restart.html')
+            #         return page.render(alerts=webinterface.get_alerts())
 
             try:
                 results = yield call(f, webinterface, request, session, *a, **kw)
