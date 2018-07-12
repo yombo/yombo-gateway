@@ -37,7 +37,7 @@ from twisted.internet import reactor
 # Import Yombo libraries
 from yombo.constants import VERSION
 from yombo.ext.expiringdict import ExpiringDict
-from yombo.core.exceptions import YomboWarning, YomboWarningCredentails
+from yombo.core.exceptions import YomboWarning, YomboWarningCredentails, YomboRestart
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import bytes_to_unicode, unicode_to_bytes
@@ -74,7 +74,6 @@ class YomboAPI(YomboLibrary):
         return "Yombo Yombo API library"
 
     def _init_(self, **kwargs):
-        self.init_defer = None
         self.session_validation_cache = ExpiringDict()
         self.custom_agent = Agent(reactor, connectTimeout=20)
         self.contentType = self._Configs.get('yomboapi', 'contenttype', 'application/json', False)  # TODO: Msgpack later
@@ -87,11 +86,6 @@ class YomboAPI(YomboLibrary):
         self._api_auth = self._Configs.get('core', 'api_auth', None, False)  # to be encrypted with gpg later
         self.valid_api_auth = False
 
-        if self._Loader.operating_mode == 'run':
-            self.init_defer = Deferred()
-            self.validate_api_auth()
-            return self.init_defer
-
     def clear_session_cache(self, session=None):
         if session is None:
             self.session_validation_cache.clear()
@@ -101,79 +95,75 @@ class YomboAPI(YomboLibrary):
                 del self.session_validation_cache[hashed]  # None works too...
 
     @inlineCallbacks
-    def validate_api_auth(self):
+    def check_api_auth_valid(self):
         """
-        Validates that the system has a valid api auth key.
-
-        If the system session is invalid or expired, it will attempt to request a new api_auth key using
-        gateway credentials.
-
-        If the system is unable to complete this, the system will exit.
+        Validates that the system has a valid api auth key. Returns true/false.
 
         :return:
         """
-        logger.debug("About to validate api auth: %s" % self.api_auth)
+        logger.info("About to validate api auth: %s" % self.api_auth)
 
-        if self.valid_api_auth is not True:
-            if self.api_auth is not None:
-                results = yield self.do_validate_api_auth()
-                logger.debug("Do Validate Session results: {results}", results=results)
-            else:
-                results = False
+        if self.api_auth is not None:
+            results = yield self.do_check_api_auth_valid()
+            logger.info("Do Validate Session results: {results}", results=results)
+        else:
+            results = False
 
-            if results is True:
-                logger.debug("System has a valid api auth token.")
-                self.valid_api_auth = True
-            else:
-                logger.debug("System doesn't have a valid api auth token, will attempt to get one.")
-                results = yield self.new_gateway_api_auth()
-                logger.debug("Gateway login wit h key full results: {results}", results=results)
-                if results is False:
-                    self.valid_api_auth = False
-                    logger.warn("System has an invalid api auth token.")
-                else:
-                    new_session = results['response']['gateway_api_auth']
-                    logger.debug("System now has a valid auth token.")
-                    self.api_auth = new_session
-                    self.valid_api_auth = True
-
-        if self.init_defer is not None:
-            self.init_defer.callback(10)
+        self.valid_api_auth = results
+        return results
 
     @inlineCallbacks
-    def do_validate_api_auth(self):
+    def do_check_api_auth_valid(self, session=None):
         gateway_id = self.gateway_id()
         gateway_hash = self.gateway_hash()
         try:
             results = yield self.request("POST", "/v1/gateway/%s/check_api_auth" % gateway_id,
                                          {'gw_hash': gateway_hash,
-                                          'api_auth': self.api_auth})
+                                          'api_auth': self.api_auth},
+                                         session=session)
+
         except Exception as e:
             logger.debug("do_validate_api_auth API Error: {error}", error=e)
             return False
 
-        if (results['content']['code'] != 200):
+        data = results['data']
+        if data['gw_hash'] is False or data['api_auth'] is False:
             return False
         else:
-            return results['content']['response']['gateway_api_auth']
+            return True
 
     @inlineCallbacks
-    def new_gateway_api_auth(self):
-        gateway_id = self.gateway_id()
-        gateway_hash = self.gateway_hash()
+    def get_api_auth_keys(self, session=None, session_type=None):
+        """
+        Get new auth information for the current gateway. This includes the gateway's uuid, gateway hash, and
+        api_auth tokens.
+
+        If session is provided, it will use that information to collect the new tokens.
+
+        :param session: Session string to use.
+        :param session_type: Type of session.
+        :return:
+        """
         try:
-            results = yield self.request("POST", "/v1/gateway/%s/new_api_auth" % gateway_id,
-                                         {'gw_hash': gateway_hash})
+            results = yield self.request("GET", "/v1/gateway/%s/new_hash" % self.gateway_id(),
+                                         session=session,
+                                         session_type=session_type)
         except Exception as e:
-            logger.debug("$$$1 API Errror: {error}", error=e)
             return False
-
-        logger.info("new_gateway_api_auth Results from API for login w key: {results}", results=results)
-
-        if results['content']['code'] != 200:
-            return False
+        data = results['data']
+        logger.info("Gateway new hash results: {data}", data=data)
+        logger.debug("System now has a valid auth token.")
+        self.api_auth = data['api_auth']
+        self._Configs.set('core', 'api_auth', data['api_auth'])
+        self._Configs.set('core', 'gwhash', data['hash'])
+        self._Configs.set('core', 'gwuuid', data['uuid'])
+        self.valid_api_auth = True
+        results = yield self.check_api_auth_valid()
+        if results:
+            yield self._Configs.save(force_save=True)
+            raise YomboRestart("Mandatory gateway restart happening now.")
         else:
-            return results['content']
+            raise YomboWarning("Unable to get new gateway authentication information.")
 
     @inlineCallbacks
     def do_validate_login_key(self, login_key):
@@ -272,11 +262,10 @@ class YomboAPI(YomboLibrary):
         raise YomboWarning("Problem with request: %s" % result)
 
     @inlineCallbacks
-    def request(self, method, path, data=None, session=None):
+    def request(self, method, path, data=None, session=None, session_type=None):
         path = self.base_url + path
 
         logger.debug("{method}: {path}: {data}", method=method, path=path, data=data)
-        session_type = None
         if session is None:
             if self.api_auth is None:
                 if self.valid_api_auth is False:
@@ -285,7 +274,8 @@ class YomboAPI(YomboLibrary):
             session_type = 'Gateway'
         elif session is False:
             session = None
-        else:
+
+        if session_type is None:
             session_type = 'Bearer'
 
         logger.debug("session: {session_type} {session}", session_type=session_type, session=session)
@@ -318,43 +308,40 @@ class YomboAPI(YomboLibrary):
         response = yield treq.get(path, headers=headers, params=args)
         content = yield treq.content(response)
         # logger.debug("getting URL: {path}  headers: {headers}", path=path, agent=self.custom_agent, headers=headers)
-        final_response = self.decode_results(content, self.response_headers(response), response.code, response.phrase,
-                                             path, headers, args)
+        final_response = self.decode_results('get', content, self.response_headers(response), response.code,
+                                             response.phrase, path, headers, args)
         return final_response
 
     @inlineCallbacks
     def _patch(self, path, headers, args):
-        # print("yapi patch called. path: %s... headers: %s... data: %s" % (path, headers, data))
         response = yield treq.patch(path, data=args, agent=self.custom_agent, headers=headers)
         content = yield treq.content(response)
-        final_response = self.decode_results(content, self.response_headers(response), response.code, response.phrase,
-                                             path, headers, args)
+        final_response = self.decode_results('patch', content, self.response_headers(response), response.code,
+                                             response.phrase, path, headers, args)
         return final_response
 
     @inlineCallbacks
     def _post(self, path, headers, args):
-        # print("yapi post called. path: %s... headers: %s... data: %s" % (path, headers, data))
-
         response = yield treq.post(path, data=args, agent=self.custom_agent, headers=headers)
         content = yield treq.content(response)
-        final_response = self.decode_results(content, self.response_headers(response), response.code, response.phrase,
-                                             path, headers, args)
+        final_response = self.decode_results('post', content, self.response_headers(response), response.code,
+                                             response.phrase, path, headers, args)
         return final_response
 
     @inlineCallbacks
     def _put(self, path, headers, args):
         response = yield treq.put(path, data=args, agent=self.custom_agent, headers=headers)
         content = yield treq.content(response)
-        final_response = self.decode_results(content, self.response_headers(response), response.code, response.phrase,
-                                             path, headers, args)
+        final_response = self.decode_results('put', content, self.response_headers(response), response.code,
+                                             response.phrase, path, headers, args)
         return final_response
 
     @inlineCallbacks
     def _delete(self, path, headers, args={}):
         response = yield treq.delete(path, params=args, agent=self.custom_agent, headers=headers)
         content = yield treq.content(response)
-        final_response = self.decode_results(content, self.response_headers(response), response.code, response.phrase,
-                                             path, headers, args)
+        final_response = self.decode_results('delete', content, self.response_headers(response), response.code,
+                                             response.phrase, path, headers, args)
         return final_response
 
     def response_headers(self, response):
@@ -364,14 +351,10 @@ class YomboAPI(YomboLibrary):
             data[key.lower()] = value
         return data
 
-    def decode_results(self, content, response_headers, code, phrase, path, request_headers, args):
-        # print("decode_results headers: %s" % headers)
-
-        # print(content)
+    def decode_results(self, request_type, content, response_headers, code, phrase, path, request_headers, args):
         content_type = response_headers['content-type'][0]
         phrase = bytes_to_unicode(phrase)
 
-        # print( "######  content: %s" % content)
         if content_type == 'application/json':
             try:
                 content = json.loads(content)
@@ -394,13 +377,12 @@ class YomboAPI(YomboLibrary):
                     content_type = "dict"
                 except Exception:
                     content_type = "string"
-        # print("decode content: %s" % content)
         content = bytes_to_unicode(content)
 
         if code >= 300:
             logger.warn("-----==( Error: API received an invalid response )==----")
-            logger.warn("Path: {path}", path=path)
-            logger.warn("Path: {request_headers}", request_headers=request_headers)
+            logger.warn("Path: {request_type} {path}", request_type=request_type, path=path)
+            logger.warn("Header: {request_headers}", request_headers=request_headers)
             logger.warn("Data: {args}", args=args)
             logger.warn("Content: {content}", content=content)
             logger.warn("--------------------------------------------------------")
