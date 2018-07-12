@@ -577,7 +577,7 @@ def route_setup_wizard(webapp):
                 return next(iter(s.items()))
 
             gpg_selected = session.get("gpg_selected", "new")
-            i18n = webinterface.i18n(request)
+            # i18n = webinterface.i18n(request)
             session.set('setup_wizard_last_step', 5)
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/setup_wizard/5.html')
             gpg_existing = yield webinterface._LocalDB.get_gpg_key()
@@ -589,7 +589,7 @@ def route_setup_wizard(webapp):
             return page.render(
                 gpg_selected=gpg_selected,
                 gpg_existing=gpg_existing_sorted,
-                _=i18n,
+                # _=i18n,
                 )
 
         @webapp.route('/5_gpg_section')
@@ -688,8 +688,10 @@ def route_setup_wizard(webapp):
                     'label': session['setup_wizard_gateway_label'],
                     'description': session['setup_wizard_gateway_description'],
                 }
-                results = yield webinterface._YomboAPI.request('PATCH', '/v1/gateway/%s' % session['setup_wizard_gateway_id'],
-                                                               session=session['yomboapi_session'])
+                results = yield webinterface._YomboAPI.request(
+                    'PATCH', '/v1/gateway/%s' % session['setup_wizard_gateway_id'],
+                    data,
+                    session=session['yomboapi_session'])
                 if results['code'] > 299:
                     webinterface.add_alert(results['content']['html_message'], 'warning')
                     return webinterface.redirect(request, '/setup_wizard/5')
@@ -733,8 +735,6 @@ def route_setup_wizard(webapp):
             if submitted_gpg_action == 'new':  # make GPG keys!
                 print("gf 2")
                 logger.info("New gpg key will be generated on next restart.")
-                # reactor.callLater(0.0001, webinterface._GPG.generate_key)
-                # yield webinterface._GPG.generate_key()
             elif submitted_gpg_action == 'import':  # make GPG keys!
                 try:
                     submitted_gpg_private = request.args.get('gpg-private-key')[0]
