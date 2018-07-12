@@ -285,7 +285,7 @@ def require_auth_pin(roles=None, login_redirect=None, create_session=None, *args
                     return return_need_pin(webinterface, request, **kwargs)
 
             else:
-                if session.check_valid():
+                if session is not None and session.check_valid():
                     request.auth_id = session.auth_id
                 results = yield call(f, webinterface, request, session, *a, **kw)
                 return results
