@@ -190,12 +190,13 @@ class YomboRestart(RuntimeWarning):
     """
     Extends *RunningWarning* - Restarts the gateway, not a fatal exception.  
     """
+    message = ""
     def __init__(self, message):
         """
         :param message: The error message to log/display.
         :type message: string
         """
-        self.name = message
+        self.message = message
         self.exit()
 
     def __str__(self):
