@@ -8,7 +8,7 @@ from twisted.web.static import File
 
 # Import Yombo libraries
 from yombo.lib.webinterface.auth import require_auth_pin, require_auth, run_first
-from yombo.core.exceptions import YomboWarning
+from yombo.core.exceptions import YomboWarning, YomboRestart
 import yombo.ext.totp
 import yombo.utils
 
@@ -107,6 +107,11 @@ def route_home(webapp):
                 session['yomboapi_login_key'] = login['login_key']
 
                 request.received_cookies[webinterface._WebSessions.config.cookie_session_name] = session.session_id
+                try:
+                    webinterface._Startup.check_has_valid_gw_auth(login['session'])
+                except YomboRestart:
+                    page = webinterface.get_template(request, webinterface.wi_dir + '/pages/restart.html')
+                    return page.render(alerts=webinterface.get_alerts())
                 return login_redirect(webinterface, request, session)
             else:
                 webinterface.add_alert(results['msg'], 'warning')
