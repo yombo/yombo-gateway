@@ -732,8 +732,8 @@ class Statistics(YomboLibrary):
                         od['finished'] = int(bucket_time < (current_bucket_time['time']))
                         to_save.append(od)
 
-                if bucket_time < (current_bucket_time['time']):
-                    del self._counters[bucket_time][bucket_name]
+                # if bucket_time < (current_bucket_time['time']):
+                #     del self._counters[bucket_time][bucket_name]
             if len(self._counters[bucket_time]) == 0:
                 del self._counters[bucket_time]
 
