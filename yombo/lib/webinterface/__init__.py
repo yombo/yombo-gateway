@@ -380,7 +380,6 @@ class WebInterface(YomboLibrary):
             'id': 'webinterface:starting',
         })
         self._get_nav_side_items()
-        # print("Module_configs: %s" % self.module_config_links)
 
     def _started_(self, **kwargs):
         # if self.operating_mode != 'run':
@@ -419,7 +418,6 @@ class WebInterface(YomboLibrary):
         :param kwargs:
         :return:
         """
-        # print("web uni hook: %s" % hook_name)
         if hook_name in self.hook_listeners:
             for a_callback in self.hook_listeners[hook_name]:
                 # print("web uni hook a_callback: %s" % a_callback)
@@ -736,6 +734,7 @@ class WebInterface(YomboLibrary):
         add_on_menus = yield yombo.utils.global_invoke_all('_webinterface_add_routes_',
                                                            called_by=self,
                                                            )
+        logger.debug("_webinterface_add_routes_ results: {add_on_menus}", add_on_menus=add_on_menus)
         nav_side_menu = deepcopy(NAV_SIDE_MENU)
         for component, options in add_on_menus.items():
             if 'nav_side' in options:
@@ -756,6 +755,7 @@ class WebInterface(YomboLibrary):
                 top_levels[label1] = item['priority1']
 
         for component, options in add_on_menus.items():
+            logger.debug("component: {component}, options: {options}", component=component, options=options)
             if 'menu_priorities' in options:  # allow modules to change the ordering of top level menus
                 for label, priority in options['menu_priorities'].items():
                     top_levels[label] = priority
