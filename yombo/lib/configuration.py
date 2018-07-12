@@ -365,8 +365,6 @@ class Configuration(YomboLibrary):
 
         self.periodic_save_yombo_ini = LoopingCall(self.save)
         self.periodic_save_yombo_ini.start(randint(12600, 14400), False)  # every 3.5-4 hours
-        # self.periodic_load_yombo_ini = LoopingCall(self.check_if_yombo_ini_modified)
-        # self.periodic_load_yombo_ini.start(5)
 
         if self.get('core', 'first_run', None, False) is None:
             self.set('core', 'first_run', True)
@@ -448,12 +446,10 @@ class Configuration(YomboLibrary):
             logger.debug("saving config file...")
 
             if self.exit_config_file is not None:
-                # print("saving exit file..")
                 yield save_file(self.yombo_ini_path, self.exit_config_file)
 
             elif self.configs_dirty is True or force_save is True:
                 contents = yield self.generate_yombo_ini(display_extra_warning)
-                # print("yombo.ini contents: %s" % contents)
                 yield save_file(self.yombo_ini_path, contents)
 
             Config = configparser.ConfigParser()
@@ -727,7 +723,6 @@ class Configuration(YomboLibrary):
                 self.configs[section][option]['reads'] += 1
 #                return self.configs[section][option]
                 self._Statistics.increment("lib.configuration.get.value", bucket_size=15, anon=True)
-                # print("cfgs: %s:%s = %s" % (section, option, self.configs[section][option]['value']))
                 return self.configs[section][option]['value']
 
         # it's not here, so, if there is a default, lets save that for future reference and return it... English much?
@@ -771,8 +766,6 @@ class Configuration(YomboLibrary):
         :param value: What to return if no result is found, default = None.
         :type value: int or string
         """
-        # print("cfgs set: %s:%s = %s" % (section, option, value))
-
         if len(section) > self.MAX_SECTION_LENGTH:
             self._Statistics.increment("lib.configuration.set.invalid_length", bucket_size=15, anon=True)
             raise InvalidArgumentError("section cannot be more than %d chars" % self.MAX_OPTION_LENGTH)
