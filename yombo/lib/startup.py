@@ -122,13 +122,17 @@ class Startup(YomboLibrary):
             # System doesn't have valid auth info. Lets search through the session database and try to
             # find a user that will has access to refresh our auth information.
 
-            sessions = yield self._LocalDB.get_web_session()
-            if session is not None and isinstance(session, str):
-                yield try_get_api_auth_keys(session)
-            for session in sessions:
-                data = session['session_data']
-                if 'yomboapi_session' in data and isinstance(data['yomboapi_session'], str):
-                    yield try_get_api_auth_keys(data['yomboapi_session'])
+            try:
+                sessions = yield self._LocalDB.get_web_session()
+                if session is not None and isinstance(session, str):
+                    yield try_get_api_auth_keys(session)
+            except YomboWarning:
+                pass
+            else:
+                for session in sessions:
+                    data = session['session_data']
+                    if 'yomboapi_session' in data and isinstance(data['yomboapi_session'], str):
+                        yield try_get_api_auth_keys(data['yomboapi_session'])
 
             # If we here, then no valid session was found. Put system into config mode. It will be attempted
             # when the user access its. We will also display a notice.
