@@ -161,7 +161,7 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
                 try:
                     session = yield webinterface._WebSessions.get_session_from_request(request)
                 except YomboWarning as e:
-                    setup_login_redirect(webinterface, request, None, login_redirect)
+                    session = setup_login_redirect(webinterface, request, None, login_redirect)
                     logger.debug("Discarding request, api requests not accepted: {e}", e=e)
                     logger.debug("Request: {request}", request=request)
                     return return_need_login(webinterface, request, None, **kwargs)
