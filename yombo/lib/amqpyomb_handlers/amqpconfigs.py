@@ -397,7 +397,7 @@ class AmqpConfigHandler(YomboLibrary):
                     if filtered_data['status'] == 2:  # delete any nested items...
                         if config_item == 'gateway_modules':
                             self.item_purged(config_item, filtered_data['id'])
-                            if filtered_data['id'] in self.filtered_data['modules']:
+                            if filtered_data['id'] in filtered_data['modules']:
                                 self.db_delete_ids['modules'].append(filtered_data['id'])
                                 self.db_completed_ids['modules'].append(filtered_data['id'])
                             if filtered_data['id'] in self.db_existing_data['module_installed']:
