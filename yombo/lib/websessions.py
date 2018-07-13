@@ -174,6 +174,8 @@ class WebSessions(YomboLibrary):
         :param session_id: The requested session id
         :return: session
         """
+        print("get_session_by_id: %s" % session_id)
+        print("sessions in memory: %s" % self.active_sessions)
         if session_id is None:
             raise YomboWarning("Session id is not valid.")
         if session_id == "LOGOFF":
@@ -181,7 +183,7 @@ class WebSessions(YomboLibrary):
         if self.validate_session_id(session_id) is False:
             raise YomboWarning("Invalid session id.")
         if session_id in self.active_sessions:
-            if self.active_sessions[session_id].check_valid() is True:
+            if self.active_sessions[session_id].check_valid(auth_id_missing_ok=True) is True:
                 return self.active_sessions[session_id]
             else:
                 raise YomboWarning("Session is no longer valid.")
@@ -515,34 +517,34 @@ class Auth(object):
         self.last_access = int(time())
         self.is_dirty += 1
 
-    def check_valid(self):
+    def check_valid(self, auth_id_missing_ok=None):
         """
         Checks if a session is valid or not.
 
         :return:
         """
         if self.is_valid is False:
-            print("check_valid - is valid is false.")
+            logger.info("check_valid: is_valid is false, returning False")
             return False
 
         if self.created_at < (int(time() - self._Parent.config.max_session)):
-            logger.info("Expiring session, it's too old: {auth_id}", auth_id=self.auth_id)
+            logger.info("check_valid: Expiring session, it's too old: {auth_id}", auth_id=self.auth_id)
             self.expire_session()
             return False
 
         if self.last_access < (int(time() - self._Parent.config.max_idle)):
-            logger.info("Expiring session, no recent access: {auth_id}", auth_id=self.auth_id)
+            logger.info("check_valid: Expiring session, no recent access: {auth_id}", auth_id=self.auth_id)
             self.expire_session()
             return False
 
         if self.auth_id is None and self.last_access < (int(time() - self._Parent.config.max_session_no_auth)):
-            logger.info("Expiring session, no recent access and not authenticated: {auth_id}", auth_id=self.auth_id)
+            logger.info("check_valid: Expiring session, no recent access and not authenticated: {auth_id}", auth_id=self.auth_id)
             # print("self.last_access: %s, time: %s" % (self.last_access, int(time())))
             self.expire_session()
             return False
 
-        if self.auth_id is None:
-            print("check_valid - auth_id is none...")
+        if self.auth_id is None and auth_id_missing_ok is not True:
+            logger.info("check_valid: auth_id is None, returning False")
             return False
 
         return True
