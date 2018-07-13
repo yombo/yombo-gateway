@@ -93,7 +93,7 @@
                     <div class="form-group">
                         <label for="gateway_label">Gateway Label</label>
                         <div class="input-group">
-                            <input type="text" class="form-control" name="gateway_label" id="gateway_label" placeholder="'House', 'Garage', 'Shed'" value="{{ gw_fields.label }}" required>
+                            <input type="text" class="form-control" name="gateway_label" id="gateway_label" placeholder="'House', 'Garage', 'Shed'" value="{{ gw_fields.label }}" autofocus required>
                             <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
                         </div>
                     </div>
@@ -101,7 +101,7 @@
                         <label for="gateway_machine_label">Gateway Machine Label</label>
                         <br>Lower case, no spaces. Dashes and underscores are ok.
                         <div class="input-group">
-                            <input type="text" class="form-control" name="gateway_machine_label" id="gateway_machine_label" placeholder="'house', 'harage', 'shed'" value="{{ gw_fields.machine_label }}" autofocus required>
+                            <input type="text" class="form-control" name="gateway_machine_label" id="gateway_machine_label" placeholder="'house', 'harage', 'shed'" value="{{ gw_fields.machine_label }}" required>
                             <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
                         </div>
                     </div>
