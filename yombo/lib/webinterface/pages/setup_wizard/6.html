@@ -57,12 +57,22 @@
                     <h3>Dynamic DNS setup</h3>
                     <p><strong>DNS can only be changed once every 30 days.</strong></p>
                     <ul>
-                        <li>Current FQDN: {{ dns_fqdn }} </li>
-                        <li>Current Sub-domain: {{ dns_name }}</li>
-                        <li>Current Domain: {{ dns_domain }}</li>
-                        <li>Allowed Next Change: {{ allow_change|epoch_to_human }}</li>
+                        <li>{{_('ui::misc::current_fqdn', 'Current FQDN')}}: {{ dns_fqdn }} </li>
+                        <li>{{_('ui::misc::current_sub_domain', 'Current Sub-domain')}}: {{ dns_name }}</li>
+                        <li>{{_('ui::misc::current_top_level_domain', 'Current Domain')}}: {{ dns_domain }}</li>
+                        <li>{{_('ui::misc::allowed_next_change', 'Allowed next change')}}: {{ allow_change|epoch_to_human }}</li>
                     </ul>
-                    <hr>
+                    {% if dns_name == "" or dns_name == None-%}
+                    <a class="btn btn-md btn-warning" href="/setup_wizard/7">Skip Dynamic DNS - HTTP will not be available</a>
+                    {% else -%}
+                    <a class="btn btn-md btn-primary" href="/setup_wizard/7">Use Domain: {{dns_fqdn}}</a>
+                    {% endif %}
+                    <div style="width: 100%; height: 30px; border-bottom: 1px solid #555555; text-align: center">
+                      <span style="font-size: 40px; background-color: #FFFFFF; padding: 0 10px;">
+                        Or
+                      </span>
+                    </div>
+                    <p>&nbsp;</p>
                     {% if allow_change < current_time %}
                     <h4>Set new DNS</h4>
                     <p>
@@ -70,19 +80,18 @@
                     <label>Domain prefix: </label>
                     <input type="text" name="dns_name" id="dnsname" autofocus="autofocus">
                     <a class="btn btn-large btn-success" id="fire" href="#">Search</a>
-                    <table id="myTableId" class="table table-nonfluid table-striped table-hover table-sm">
+                    <table id="myTableId" class="table table-nonfluid table-sm">
                       <thead class="thead-default">
                         <tr>
                           <th>Domain Availability</th>
                         </tr>
                       </thead>
                       <tbody id="tBody"></tbody>
-                        <tr rowspan="2"><td><strong>Search for domains first.</strong></td> </tr>
+                        <tr><td><strong>Search for domains first.</strong></td> </tr>
                     </table>
                     </p>
                     <hr>
                     {% endif %}
-                    <a class="btn btn-md btn-warning" href="/setup_wizard/7">Skip Dynamic DNS <i class="fa fa-chevron-right pull-right"></i></a>
                 </div>
             </div>
         </div>
@@ -157,9 +166,11 @@ function doSearch() {
                 $.each(resp, function (i, userData) {
                     var availField = "";
                     if (userData.available == false) {
-                        availField = `<button type="button" class="btn btn-block btn-sm btn-dangle disabled">Not Available - ${val}.${userData.domain}</button>`;
+                        availField = `<button type="button" class="btn btn-block btn-sm btn-dangle disabled" style="margin: auto; width: 80%;">
+                        Not Available - ${val}.${userData.domain}</button>`;
                     } else {
-                        availField = `<button type="button" class="btn btn-block btn-md btn-primary" onclick="submitter(this); return false;" id="${val}.${userData.domain}">Select: <strong>${val}.${userData.domain}</strong></button>`;
+                        availField = `<button type="button" class="btn btn-block btn-md btn-primary" style="margin: auto; width: 80%;"
+                        onclick="submitter(this); return false;" id="${val}.${userData.domain}">Select: <strong>${val}.${userData.domain}</strong></button>`;
                     }
                         trHTML +=
                             '<tr id="' + userData.id + '"><td width="10%">'
