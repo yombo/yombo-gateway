@@ -731,9 +731,7 @@ def route_setup_wizard(webapp):
             session['setup_wizard_done'] = True
             session['setup_wizard_last_step'] = 7
 
-            print("gf 1")
             if submitted_gpg_action == 'new':  # make GPG keys!
-                print("gf 2")
                 logger.info("New gpg key will be generated on next restart.")
             elif submitted_gpg_action == 'import':  # make GPG keys!
                 try:
@@ -755,14 +753,11 @@ def route_setup_wizard(webapp):
                 else:
                     webinterface.add_alert("Existing GPG/PGP key not fount.")
                     return webinterface.redirect(request, '/setup_wizard/5')
-            print("gj 1")
-            session['gpg_selected'] = submitted_gpg_action
 
+            session['gpg_selected'] = submitted_gpg_action
             session['setup_wizard_last_step'] = 6
 
-            print("gj 4")
             results = yield form_setup_wizard_6(webinterface, request, session)
-            print("gj 5")
             return results
 
         @inlineCallbacks
