@@ -67,13 +67,13 @@
                     {% else -%}
                     <a class="btn btn-md btn-primary" href="/setup_wizard/7">Use Domain: {{dns_fqdn}}</a>
                     {% endif %}
+                    {% if allow_change < current_time %}
                     <div style="width: 100%; height: 30px; border-bottom: 1px solid #555555; text-align: center">
                       <span style="font-size: 40px; background-color: #FFFFFF; padding: 0 10px;">
                         Or
                       </span>
                     </div>
                     <p>&nbsp;</p>
-                    {% if allow_change < current_time %}
                     <h4>Set new DNS</h4>
                     <p>
                     <input type="hidden" name="dns_domain_id" />

@@ -35,7 +35,7 @@
     <!-- MQTT Websocket -->
     <script type="text/javascript" src="/static/js/mqttws31.min.js"></script>
     <script type="text/javascript">
-        var host = '{{_gateways.master_mqtt_host}}';
+        var host = window.location.hostname;
         var port = {{_gateways.master_websock_port_ssl}};
         var topic = 'yombo/devices/#';
         var useTLS = true;
@@ -68,13 +68,12 @@
 
             mqtt.onConnectionLost = onConnectionLost;
             mqtt.onMessageArrived = onMessageArrived;
-            console.log("Host: "+ host + ", Port: " + port + ", Path: " + path + " TLS: " + useTLS);
+            // console.log("Host: "+ host + ", Port: " + port + ", Path: " + path + " TLS: " + useTLS);
             mqtt.connect(options);
         };
 
         function onConnect() {
             $('#status').html('Connected');
-//            mqtt_client.subscribe(topic, { qos: 0 });
             mqtt.subscribe(topic, {qos: 0});
             $('#topic').html(topic);
         };
@@ -85,7 +84,6 @@
         };
 
         function onMessageArrived(message) {
-//			console.log("got a message!");
             var topic = message.destinationName;
             var payload = message.payloadString;
             console.log("Topic: " + topic + ", Message payload: " + payload);

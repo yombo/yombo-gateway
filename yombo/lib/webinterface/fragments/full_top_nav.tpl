@@ -67,19 +67,19 @@
 	                        <i class="fa fa-user fa-fw"></i>  <i class="fa fa-caret-down"></i>
 	                    </a>
 	                    <ul class="dropdown-menu dropdown-user">
-	                        <li><a href="https://yg2.in/f_gw_my_account"><i class="fa fa-user fa-fw"></i> User Profile</a>
+	                        <li><a href="https://yg2.in/f_gw_my_account"><i class="fa fa-user fa-fw"></i>&nbsp;User Profile</a>
 	                        </li>
-	                        <li><a href="https://yg2.in/f_gw_docs"><i class="fa fa-file-text fa-fw"></i> Documentation</a>
+	                        <li><a href="https://yg2.in/f_gw_docs"><i class="fa fa-book fa-fw"></i>&nbsp;Documentation</a>
 	                        </li>
-	                        <li><a href="https://yg2.in/f_gw_yombonet"><i class="fa fa-globe fa-fw"></i> Yombo.Net</a>
-	                        </li>
-	                        <li class="divider"></li>
-	                        <li><a class="confirm-logout" href="#"><i class="fa fa-sign-out fa-fw"></i> Logout</a>
+	                        <li><a href="https://yg2.in/f_gw_yombonet"><i class="fa fa-globe fa-fw"></i>&nbsp;Yombo.Net</a>
 	                        </li>
 	                        <li class="divider"></li>
-	                        <li><a class="confirm-restart" href="#"><i class="fa fa-recycle fa-fw"></i> Restart</a>
+	                        <li><a class="confirm-logout" href="#"><i class="fa fa-sign-out-alt fa-fw"></i>&nbsp;Logout</a>
 	                        </li>
-	                        <li><a class="confirm-shutdown" href="#"><i class="fa fa-power-off fa-fw"></i> Shutdown</a>
+	                        <li class="divider"></li>
+	                        <li><a class="confirm-restart" href="#"><i class="fa fa-recycle fa-fw"></i>&nbsp;Restart</a>
+	                        </li>
+	                        <li><a class="confirm-shutdown" href="#"><i class="fa fa-power-off fa-fw"></i>&nbsp;Shutdown</a>
 	                        </li>
 	                    </ul>
 	                    <!-- /.dropdown-user -->
