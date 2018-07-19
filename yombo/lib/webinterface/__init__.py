@@ -200,6 +200,9 @@ class WebInterface(YomboLibrary):
     def _init_(self, **kwargs):
         self.web_interface_fully_started = False
         self.enabled = self._Configs.get('webinterface', 'enabled', True)
+        self.is_master = self._Configs.get2("core", "is_master")
+        self.master_gateway = self._Configs.get2("core", "master_gateway")
+        self.enabled = self._Configs.get('core', 'enabled', True)
         if not self.enabled:
             return
 
@@ -273,7 +276,6 @@ class WebInterface(YomboLibrary):
         route_misc(self.webapp)
         route_modules(self.webapp)
         route_notices(self.webapp)
-        route_panel(self.webapp)
         route_scenes(self.webapp)
         route_scenes_device(self.webapp)
         route_scenes_pause(self.webapp)
@@ -286,14 +288,14 @@ class WebInterface(YomboLibrary):
         route_system(self.webapp)
         route_voicecmds(self.webapp)
 
+        if self.is_master():
+            route_panel(self.webapp)
+
         self.temp_data = ExpiringDict(max_age_seconds=1800)
         self.web_server_started = False
         self.web_server_ssl_started = False
 
         self.web_factory = None
-
-    def _start_(self):
-        self.webapp.templates.globals['_'] = _  # i18n
 
     @property
     def operating_mode(self):
@@ -367,7 +369,6 @@ class WebInterface(YomboLibrary):
         self.clean_idempotence_ids_loop = LoopingCall(self.clean_idempotence_ids)
         self.clean_idempotence_ids_loop.start(1806, False)
 
-    # @inlineCallbacks
     def _start_(self, **kwargs):
         self._Notifications.add({
             'title': 'System still starting',
@@ -380,6 +381,7 @@ class WebInterface(YomboLibrary):
             'id': 'webinterface:starting',
         })
         self._get_nav_side_items()
+        self.webapp.templates.globals['_'] = _  # i18n
 
     def _started_(self, **kwargs):
         # if self.operating_mode != 'run':
@@ -718,6 +720,7 @@ class WebInterface(YomboLibrary):
                        'url': '/tools/mqtt',
                        'tooltip': '',
                        'opmode': 'run',
+                       'cluster': 'any',
                        },
                    ],
                    'routes': [
@@ -770,8 +773,15 @@ class WebInterface(YomboLibrary):
         # build menu tree
         self.misc_wi_data['nav_side'] = OrderedDict()
 
+        is_master = self.is_master()
         temp_list = sorted(nav_side_menu, key=itemgetter('priority1', 'label1', 'priority2'))
         for item in temp_list:
+            if 'cluster' not in item:
+                item['cluster'] = 'any'
+            if item['cluster'] == 'master' and is_master is not True:
+                continue
+            if item['cluster'] == 'member' and is_master is True:
+                continue
             item['label1_text'] = deepcopy(item['label1'])
             item['label2_text'] = deepcopy(item['label2'])
             label1 = "ui::navigation::" + yombo.utils.snake_case(item['label1'])

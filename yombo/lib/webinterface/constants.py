@@ -8,6 +8,7 @@ NAV_SIDE_MENU = [
         'url': '/panel/index',
         'tooltip': 'System Panel',
         'opmode': 'run',
+        'cluster': 'master',
     },
     {
         'label1': 'Devices',
@@ -18,6 +19,7 @@ NAV_SIDE_MENU = [
         'url': '/devices/index',
         'tooltip': 'Show Devices',
         'opmode': 'run',
+        'cluster': 'any',
     },
     {
         'label1': 'Discovery',
@@ -28,6 +30,7 @@ NAV_SIDE_MENU = [
         'url': '/discovery/index',
         'tooltip': 'Auto discovered devices',
         'opmode': 'run',
+        'cluster': 'any',
     },
 
     {
@@ -39,6 +42,7 @@ NAV_SIDE_MENU = [
         'url': '/automation/index',
         'tooltip': 'Show Rules',
         'opmode': 'run',
+        'cluster': 'any',
     },
 
     {
@@ -50,6 +54,7 @@ NAV_SIDE_MENU = [
         'url': '/scenes/index',
         'tooltip': 'Control multiple items within a single scene.',
         'opmode': 'run',
+        'cluster': 'any',
     },
 
     {
@@ -61,6 +66,7 @@ NAV_SIDE_MENU = [
         'url': '/modules/index',
         'tooltip': '',
         'opmode': 'run',
+        'cluster': 'any',
     },
 
     {
@@ -72,6 +78,7 @@ NAV_SIDE_MENU = [
         'url': '/atoms/index',
         'tooltip': '',
         'opmode': 'run',
+        'cluster': 'any',
     },
     {
         'label1': 'Info',
@@ -82,6 +89,7 @@ NAV_SIDE_MENU = [
         'url': '/devices/device_commands',
         'tooltip': '',
         'opmode': 'run',
+        'cluster': 'any',
     },
 
     {
@@ -93,6 +101,7 @@ NAV_SIDE_MENU = [
         'url': '/states/index',
         'tooltip': '',
         'opmode': 'run',
+        'cluster': 'any',
     },
     {
         'label1': 'Info',
@@ -103,6 +112,7 @@ NAV_SIDE_MENU = [
         'url': '/voicecmds/index',
         'tooltip': '',
         'opmode': 'run',
+        'cluster': 'any',
     },
 
     {
@@ -114,6 +124,7 @@ NAV_SIDE_MENU = [
         'url': '/statistics/index',
         'tooltip': '',
         'opmode': 'run',
+        'cluster': 'any',
     },
 
     {
@@ -125,6 +136,7 @@ NAV_SIDE_MENU = [
         'url': '/configs/basic',
         'tooltip': '',
         'opmode': 'run',
+        'cluster': 'any',
     },
     {
         'label1': 'System Settings',
@@ -135,6 +147,7 @@ NAV_SIDE_MENU = [
         'url': '/locations/index',
         'tooltip': 'Show Locations',
         'opmode': 'run',
+        'cluster': 'any',
     },
     {
         'label1': 'System Settings',
@@ -145,6 +158,7 @@ NAV_SIDE_MENU = [
         'url': '/apiauth/index',
         'tooltip': '',
         'opmode': 'run',
+        'cluster': 'any',
     },
     {
         'label1': 'System Settings',
@@ -155,6 +169,7 @@ NAV_SIDE_MENU = [
         'url': '/configs/dns',
         'tooltip': '',
         'opmode': 'run',
+        'cluster': 'any',
     },
     {
         'label1': 'System Settings',
@@ -165,6 +180,7 @@ NAV_SIDE_MENU = [
         'url': '/configs/gpg/index',
         'tooltip': '',
         'opmode': 'run',
+        'cluster': 'any',
     },
     {
         'label1': 'System Settings',
@@ -175,6 +191,7 @@ NAV_SIDE_MENU = [
         'url': '/gateways/index',
         'tooltip': '',
         'opmode': 'run',
+        'cluster': 'any',
     },
     {
         'label1': 'System Settings',
@@ -185,6 +202,7 @@ NAV_SIDE_MENU = [
         'url': '/configs/yombo_ini',
         'tooltip': '',
         'opmode': 'run',
+        'cluster': 'any',
     },
     {
         'label1': 'Developer Tools',
@@ -195,6 +213,7 @@ NAV_SIDE_MENU = [
         'url': '/devtools/config/index',
         'tooltip': '',
         'opmode': 'run',
+        'cluster': 'any',
     },
 
     {
@@ -206,6 +225,7 @@ NAV_SIDE_MENU = [
         'url': '/system/backup',
         'tooltip': '',
         'opmode': 'run',
+        'cluster': 'any',
     },
     {
         'label1': 'System',
@@ -216,6 +236,7 @@ NAV_SIDE_MENU = [
         'url': '/system/control',
         'tooltip': '',
         'opmode': 'run',
+        'cluster': 'any',
     },
     {
         'label1': 'System',
@@ -226,6 +247,7 @@ NAV_SIDE_MENU = [
         'url': '/devtools/debug/index',
         'tooltip': '',
         'opmode': 'run',
+        'cluster': 'any',
     },
     {
         'label1': 'System',
@@ -236,6 +258,7 @@ NAV_SIDE_MENU = [
         'url': '/system/index',
         'tooltip': '',
         'opmode': 'run',
+        'cluster': 'any',
     },
 ]
 
