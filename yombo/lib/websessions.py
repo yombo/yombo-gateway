@@ -174,8 +174,6 @@ class WebSessions(YomboLibrary):
         :param session_id: The requested session id
         :return: session
         """
-        print("get_session_by_id: %s" % session_id)
-        print("sessions in memory: %s" % self.active_sessions)
         if session_id is None:
             raise YomboWarning("Session id is not valid.")
         if session_id == "LOGOFF":
