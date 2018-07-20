@@ -22,8 +22,6 @@ try:
     from hashlib import sha3_224 as sha224
 except ImportError:
     from hashlib import sha224
-import sys
-import traceback
 import treq
 
 try: import simplejson as json
@@ -41,6 +39,7 @@ from yombo.core.exceptions import YomboWarning, YomboWarningCredentails, YomboRe
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import bytes_to_unicode, unicode_to_bytes
+from yombo.constants import CONTENT_TYPE_JSON, CONTENT_TYPE_MSGPACK
 
 logger = get_logger('library.yomboapi')
 
@@ -76,7 +75,7 @@ class YomboAPI(YomboLibrary):
     def _init_(self, **kwargs):
         self.session_validation_cache = ExpiringDict()
         self.custom_agent = Agent(reactor, connectTimeout=20)
-        self.contentType = self._Configs.get('yomboapi', 'contenttype', 'application/json', False)  # TODO: Msgpack later
+        self.contentType = self._Configs.get('yomboapi', 'contenttype', CONTENT_TYPE_JSON, False)  # TODO: Msgpack later
         self.base_url = self._Configs.get('yomboapi', 'baseurl', "https://api.yombo.net/api", False)
 
         self.gateway_id = self._Configs.get2('core', 'gwid', 'local', False)
@@ -105,7 +104,7 @@ class YomboAPI(YomboLibrary):
 
         if self.api_auth is not None:
             results = yield self.do_check_api_auth_valid()
-            logger.info("Do Validate Session results: {results}", results=results)
+            logger.debug("Do Validate Session results: {results}", results=results)
         else:
             results = False
 
@@ -355,13 +354,13 @@ class YomboAPI(YomboLibrary):
         content_type = response_headers['content-type'][0]
         phrase = bytes_to_unicode(phrase)
 
-        if content_type == 'application/json':
+        if content_type == CONTENT_TYPE_JSON:
             try:
                 content = json.loads(content)
                 content_type = "dict"
             except Exception:
                 raise YomboWarning("Receive yombo api response reported json, but isn't: %s" % content)
-        elif content_type == 'application/msgpack':
+        elif content_type == CONTENT_TYPE_MSGPACK:
             try:
                 content = msgpack.loads(content)
                 content_type = "dict"

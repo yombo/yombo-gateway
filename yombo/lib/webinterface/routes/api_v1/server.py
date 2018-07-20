@@ -3,7 +3,6 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
     import json
-from time import time
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks
@@ -11,7 +10,7 @@ from twisted.internet.defer import inlineCallbacks
 from yombo.core.exceptions import YomboWarning
 from yombo.lib.webinterface.auth import require_auth
 from yombo.lib.webinterface.routes.api_v1.__init__ import return_good, return_not_found, return_error, return_unauthorized
-from yombo.utils import epoch_to_string, bytes_to_unicode
+from yombo.constants import CONTENT_TYPE_JSON
 
 def route_api_v1_server(webapp):
     with webapp.subroute("/api/v1") as webapp:
@@ -46,7 +45,7 @@ def route_api_v1_server(webapp):
                 'total': results['content']['pages']['total_items'],
                 'rows': results['data'],
             }
-            request.setHeader('Content-Type', 'application/json')
+            request.setHeader('Content-Type', CONTENT_TYPE_JSON)
             return json.dumps(data)
 
         @webapp.route('/server/dns/check_available/<string:dnsname>', methods=['GET'])
@@ -62,7 +61,7 @@ def route_api_v1_server(webapp):
             except YomboWarning as e:
                 return return_error(request, e.message, e.errorno)
 
-            request.setHeader('Content-Type', 'application/json')
+            request.setHeader('Content-Type', CONTENT_TYPE_JSON)
             return json.dumps(results['data'])
 
         @webapp.route('/server/devicetypes/index', methods=['GET'])
@@ -95,7 +94,7 @@ def route_api_v1_server(webapp):
                 'total': results['content']['pages']['total_items'],
                 'rows': results['data'],
             }
-            request.setHeader('Content-Type', 'application/json')
+            request.setHeader('Content-Type', CONTENT_TYPE_JSON)
             return json.dumps(data)
 
         @webapp.route('/server/input_type/index', methods=['GET'])
@@ -127,7 +126,7 @@ def route_api_v1_server(webapp):
                 'total': results['content']['pages']['total_items'],
                 'rows': results['data'],
             }
-            request.setHeader('Content-Type', 'application/json')
+            request.setHeader('Content-Type', CONTENT_TYPE_JSON)
             return json.dumps(data)
 
         @webapp.route('/server/modules/index', methods=['GET'])
@@ -159,7 +158,7 @@ def route_api_v1_server(webapp):
                 'total': results['content']['pages']['total_items'],
                 'rows': results['data'],
             }
-            request.setHeader('Content-Type', 'application/json')
+            request.setHeader('Content-Type', CONTENT_TYPE_JSON)
             return json.dumps(data)
 
         @webapp.route('/server/modules/show/<string:module_id>', methods=['GET'])
@@ -172,5 +171,5 @@ def route_api_v1_server(webapp):
             except YomboWarning as e:
                 return return_error(request, e.message, e.errorno)
 
-            request.setHeader('Content-Type', 'application/json')
+            request.setHeader('Content-Type', CONTENT_TYPE_JSON)
             return json.dumps(results['data'])

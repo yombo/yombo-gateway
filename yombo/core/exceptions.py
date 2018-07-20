@@ -10,8 +10,9 @@ gateway.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/core/exceptions.html>`_
 """
-
 from twisted.internet.error import ReactorNotRunning
+
+from yombo.constants import RESTART_EXIT_CODE, QUIT_ERROR_EXIT_CODE
 
 
 class YomboException(Exception):
@@ -152,7 +153,7 @@ class YomboCritical(RuntimeWarning):
         :type component: string
         """
         if exit_code is None:
-            exit_code = 1
+            exit_code = QUIT_ERROR_EXIT_CODE
         self.exit_code = exit_code
         self.message = message
         self.errorno = errorno
@@ -215,7 +216,7 @@ class YomboRestart(RuntimeWarning):
         """
         from twisted.internet import reactor
         import os
-        reactor.addSystemEventTrigger('after', 'shutdown', os._exit, 127)
+        reactor.addSystemEventTrigger('after', 'shutdown', os._exit, RESTART_EXIT_CODE)
         reactor.stop()
 
 

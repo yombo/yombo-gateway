@@ -4,6 +4,8 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
 except ImportError:
     import json
 
+from yombo.constants import CONTENT_TYPE_JSON
+
 
 def args_to_dict(arguments):
     results = {}
@@ -32,7 +34,7 @@ def args_to_dict(arguments):
 
 
 def return_good(request, message=None, payload=None, comments=None, code=None):
-    request.setHeader('Content-Type', 'application/json')
+    request.setHeader('Content-Type', CONTENT_TYPE_JSON)
     if comments is None:
         comments = {}
     if code is None:
@@ -51,7 +53,7 @@ def return_good(request, message=None, payload=None, comments=None, code=None):
 
 
 def return_not_found(request, message=None, code=None, comments=None):
-    request.setHeader('Content-Type', 'application/json')
+    request.setHeader('Content-Type', CONTENT_TYPE_JSON)
     if comments is None:
         comments = {}
     if code is None:
@@ -67,7 +69,7 @@ def return_not_found(request, message=None, code=None, comments=None):
 
 
 def return_error(request, message=None, code=None, comments=None):
-    request.setHeader('Content-Type', 'application/json')
+    request.setHeader('Content-Type', CONTENT_TYPE_JSON)
     if comments is None:
         comments = {}
     if code is None:
@@ -83,7 +85,7 @@ def return_error(request, message=None, code=None, comments=None):
 
 
 def return_unauthorized(request, message=None, code=None, comments=None):
-    request.setHeader('Content-Type', 'application/json')
+    request.setHeader('Content-Type', CONTENT_TYPE_JSON)
     if comments is None:
         comments = {}
     if code is None:

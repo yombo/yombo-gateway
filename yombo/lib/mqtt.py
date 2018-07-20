@@ -72,6 +72,7 @@ from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.lib.webinterface.auth import require_auth, run_first
 from yombo.utils import random_string, unicode_to_bytes, bytes_to_unicode, sleep
+from yombo.constants import CONTENT_TYPE_TEXT_PLAIN
 
 logger = get_logger('library.mqtt')
 
@@ -514,7 +515,7 @@ class MQTT(YomboLibrary):
             @run_first()
             @inlineCallbacks
             def api_v1_mqtt_auth_user(webinterface, request, session):
-                request.setHeader('Content-Type', 'text/plain')
+                request.setHeader('Content-Type', CONTENT_TYPE_TEXT_PLAIN)
                 response_code = 403
 
                 username = webinterface.request_get_default(request, 'username', "")
@@ -556,7 +557,7 @@ class MQTT(YomboLibrary):
                 if user['type'] == 'yombogw':
                     response_code = 200
 
-                request.setHeader('Content-Type', 'text/plain')
+                request.setHeader('Content-Type', CONTENT_TYPE_TEXT_PLAIN)
                 request.setResponseCode(response_code)
                 return
 
@@ -573,7 +574,7 @@ class MQTT(YomboLibrary):
 
                 # user = split_username(username)
                 response_code = 200
-                request.setHeader('Content-Type', 'text/plain')
+                request.setHeader('Content-Type', CONTENT_TYPE_TEXT_PLAIN)
                 request.setResponseCode(response_code)
                 return
 

@@ -126,8 +126,11 @@ HTTP_UNPROCESSABLE_ENTITY = 422
 HTTP_INTERNAL_SERVER_ERROR = 500
 
 CONTENT_TYPE_JSON = 'application/json'
+CONTENT_TYPE_MSGPACK = 'application/msgpack'
 CONTENT_TYPE_MULTIPART = 'multipart/x-mixed-replace; boundary={}'
 CONTENT_TYPE_TEXT_PLAIN = 'text/plain'
 
 # The exit code to send to request a restart
-RESTART_EXIT_CODE = 100
+RESTART_EXIT_CODE = 127
+QUIT_ERROR_EXIT_CODE = 1
+QUIT_EXIT_CODE = 0

@@ -51,6 +51,7 @@ from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import percentage, random_string, random_int, bytes_to_unicode, global_invoke_all
+from yombo.constants import CONTENT_TYPE_JSON, CONTENT_TYPE_MSGPACK, CONTENT_TYPE_TEXT_PLAIN
 
 # Handlers for processing various messages.
 from yombo.lib.amqpyomb_handlers.amqpcontrol import AmqpControlHandler
@@ -345,7 +346,7 @@ class AMQPYombo(YomboLibrary):
             self._Statistics.increment("lib.amqpyombo.received.discarded.content_encoding_invalid", bucket_size=15,
                                        anon=True)
             raise YomboWarning("Content Encoding must be either  'text' or 'zlib'. Got: " + properties.content_encoding)
-        if properties.content_type != 'text/plain' and properties.content_type != 'application/msgpack' and properties.content_type != 'application/json':
+        if properties.content_type != CONTENT_TYPE_TEXT_PLAIN and properties.content_type != CONTENT_TYPE_MSGPACK and properties.content_type != CONTENT_TYPE_JSON:
             self._Statistics.increment("lib.amqpyombo.received.discarded.content_type_invalid", bucket_size=15,
                                        anon=True)
             logger.warn('Error with contentType!')
@@ -370,12 +371,12 @@ class AMQPYombo(YomboLibrary):
             received_message_meta['compressed_size'] = len(msg)
             received_message_meta['compression_percent'] = None
 
-        if properties.content_type == 'application/json':
+        if properties.content_type == CONTENT_TYPE_JSON:
             if self._Validate.is_json(msg):
                 msg = bytes_to_unicode(json.loads(msg))
             else:
                 raise YomboWarning("Receive msg reported json, but isn't: %s" % msg)
-        elif properties.content_type == 'application/msgpack':
+        elif properties.content_type == CONTENT_TYPE_MSGPACK:
             if self._Validate.is_msgpack(msg):
                 msg = bytes_to_unicode(msgpack.loads(msg))
                 # print("msg: %s" % type(msg))
@@ -624,7 +625,7 @@ class AMQPYombo(YomboLibrary):
             },
             "properties": {
                 "user_id": self.user_id,  # system id is required to be able to send it.
-                "content_type": 'application/msgpack',
+                "content_type": CONTENT_TYPE_MSGPACK,
                 "content_encoding": None,
                 "headers": {
                     "yombo_msg_protocol_verion": PROTOCOL_VERSION,

@@ -11,6 +11,7 @@ from twisted.internet.defer import inlineCallbacks
 from yombo.lib.webinterface.auth import require_auth
 from yombo.lib.webinterface.routes.api_v1.__init__ import return_good, return_not_found, return_error, return_unauthorized
 from yombo.utils import epoch_to_string, bytes_to_unicode
+from yombo.constants import CONTENT_TYPE_JSON
 
 def route_api_v1_statistics(webapp):
     with webapp.subroute("/api/v1") as webapp:
@@ -20,7 +21,7 @@ def route_api_v1_statistics(webapp):
         @inlineCallbacks
         def apiv1_statistics_names(webinterface, request, session):
             records = yield webinterface._Libraries['localdb'].get_distinct_stat_names()
-            request.setHeader('Content-Type', 'application/json')
+            request.setHeader('Content-Type', CONTENT_TYPE_JSON)
             return json.dumps(records)
 
         @webapp.route('/statistics/echarts/buckets', methods=['GET', 'POST'])
@@ -207,5 +208,5 @@ def route_api_v1_statistics(webapp):
 
             }
 
-            request.setHeader('Content-Type', 'application/json')
+            request.setHeader('Content-Type', CONTENT_TYPE_JSON)
             return json.dumps(results)
