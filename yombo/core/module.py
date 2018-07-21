@@ -142,7 +142,7 @@ class YomboModule(Entity):
         variable information.
         """
         super().__init__()
-        self._Entity_type = "yombo_library"
+        self._Entity_type = "yombo_module"
         self._Name = self.__class__.__name__
         self._FullName = "yombo.gateway.modules.%s" % (self.__class__.__name__)
 
