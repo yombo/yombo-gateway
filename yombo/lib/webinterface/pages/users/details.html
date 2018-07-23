@@ -1,0 +1,117 @@
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+{% block head_css %}
+{% include 'lib/webinterface/fragments/select_css.tpl' %}
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-12">
+        <h1 class="page-header"><a class="success" href="/users/index" aria-label="Delete">
+        <i class="fa fa-arrow-left" aria-hidden="true"></i>
+        </a> User details</h1>
+        <p></p>
+    </div>
+    <!-- /.col-lg-12 -->
+</div>
+<!-- /.row -->
+{% if _users.owner_id == user.user_id %}
+<div class="bs-callout bs-callout-danger" style="margin-top: 0px;" id=callout-images-ie-rounded-corners>
+    <h4>This user owns the gateway!</h4>
+    <p>Because this is the gateway owner, nothing can be changed here.</p>
+</div>
+{% set is_owner = true %}
+{% else %}
+{% set is_owner = false %}
+{% endif %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <label>Details</label>
+            </div>
+            <!-- /.panel-heading -->
+            <div class="panel-body">
+                <label style="margin-top: 0px; margin-bottom: 0px">Name: </label><br>
+                {{ user.name}} <br>
+                <label style="margin-top: 15px; margin-bottom: 0px">Email: </label><br>
+                {{ user.email }}<br>
+            </div>
+        </div>
+        <!-- /.panel-body -->
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-12">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <label>User Roles</label>
+            </div>
+            <!-- /.panel-heading -->
+            <div class="panel-body">
+                {%- if user.roles|length == 0 %}
+                <strong>User has not been assigned any roles, good luck with that.</strong>
+                {% else %}
+                <ul style="padding-left: 10px">
+                {% for machine_label in user.roles %}
+                    {% set role = _users.get_role(machine_label) %}
+                    <li>{{role}} {{ role.label }} </li>
+                    <ul>
+                        <li  style="padding-bottom: 5px">{{ role.description}}</li>
+                    </ul>
+                {% endfor %}
+                </ul>
+                {% endif %}
+                {% if is_owner == false %}
+                <form method="post" id="addrole">
+                    <br>
+                <label> Add a role: </label><br>
+                <select name="role_label" id="role_label" class="selectpicker" data-size="10" data-live-search="true"  title="Select role to add.">
+                {% for role in _users.get_roles() if role.label not in user.roles %}
+                  <option value="{{role.machine_label}}" data-subtext="{{role.description|truncate(70)}}">{{role.label}}</option>
+                {% endfor %}
+                </select>
+                <p>
+                <label style="margin-top: 15px; margin-bottom: 0px">New Role Machine label:</label><br><span id="new_role_machine_label">Select role first.</span><br>
+                <label style="margin-top: 15px; margin-bottom: 0px">New Role Label:</label><br><span id="new_role_label">Select role first.</span><br>
+                <label style="margin-top: 15px; margin-bottom: 0px">New Role Description:</label><br><span id="new_role_description">Select role first.</span>
+                <br>
+                <button type="submit" id="submit_role" class="btn btn-success" style="margin-top: 15px; margin-bottom: 10px">Add role</button>
+                </p>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+<!-- /.row -->
+{% endblock %}
+
+{% block body_bottom_js %}
+{% include 'lib/webinterface/fragments/select_js.tpl' %}
+{% endblock %}
+
+{% block body_bottom %}
+<script>
+    function enableSubmitBtn(){
+        console.log("enableSubmitBtn")
+        document.getElementById("submit_role").disabled = false;
+    }
+    $('#submit_role').prop('disabled', true);
+    var rolesList = {
+    {%- for role in _users.get_roles() %}
+        "{{ role.machine_label }}": {
+        "machine_label": "{{ role.machine_label}}",
+        "label": "{{ role.label}}",
+        "description": "{{ role.description}}",
+       },
+    {% endfor %}
+    };
+
+$('#role_label').on('change',function(){
+  $("#new_role_machine_label").text(rolesList[$(this).val()]['machine_label']);
+  $("#new_role_label").text(rolesList[$(this).val()]['label']);
+  $("#new_role_description").text(rolesList[$(this).val()]['description']);
+  enableSubmitBtn();
+});
+</script>
+{% endblock %}

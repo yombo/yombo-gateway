@@ -1,0 +1,145 @@
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-12">
+        <h1 class="page-header"><a class="success" href="/roles/index" aria-label="Delete">
+        <i class="fa fa-arrow-left" aria-hidden="true"></i>
+        </a> Role details</h1>
+        <p></p>
+    </div>
+    <!-- /.col-lg-12 -->
+</div>
+<!-- /.row -->
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <label>Details for role: {{ role.label }}</label>
+            </div>
+            <!-- /.panel-heading -->
+            <div class="panel-body">
+                <label style="margin-top: 0px; margin-bottom: 0px">Machine Label: </label><br>
+                {{ role.machine_label}} <br>
+                <label style="margin-top: 15px; margin-bottom: 0px">Label: </label><br>
+                {{ role.label }}<br>
+                <label style="margin-top: 15px; margin-bottom: 0px">Description: </label><br>
+                {{ role.description }}<br>
+                <label style="margin-top: 15px; margin-bottom: 0px">Source: </label><br>
+                {{ role.source }}<br>
+            </div>
+        </div>
+        <!-- /.panel-body -->
+    </div>
+    <div class="col-lg-6">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <label>Users</label>
+            </div>
+            <!-- /.panel-heading -->
+            <div class="panel-body">
+                {{role.users}}
+                {%- set role_members = role.users %}
+                {%- if role_members|length == 0 %}
+                <strong>No users assigned.</strong>
+                {% else %}
+                <ul>
+                {% for member in role_members %}
+                    <li>{{ user.name }} &lt;{{member.email}}&gt;</li>
+                {% endfor %}
+                </ul>
+                {% endif %}
+            </div>
+        </div>
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <label>Auth Keys</label>
+            </div>
+            <!-- /.panel-heading -->
+            <div class="panel-body">
+                {%- set role_members = role.auth_keys %}
+                {%- if role_members|length == 0 %}
+                <strong>No auth keys assigned.</strong>
+                {% else %}
+                <ul>
+                {% for member in role_members %}
+                    <li>{{ member.label }}</li>
+                {% endfor %}
+                </ul>
+                {% endif %}
+            </div>
+        </div>
+        <!-- /.panel-body -->
+    </div>
+</div>
+<!-- /.row -->
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <label>Allow Permissions</label>
+            </div>
+            <!-- /.panel-heading -->
+            <div class="panel-body">
+                {%- if role.permissions['allow']|length == 0 %}
+                No allow permissions defined.
+                {% else %}
+                {% for permission in role.permissions['allow'] %}
+                <ul>
+                    <li><strong>Action: </strong>{{permission[1]}}</li>
+                    <li><strong>Resource: </strong>{{permission[0]}}</li>
+                </ul>
+                    {%- if not loop.last %}
+                    <hr>
+                    {%- endif %}
+                {%- endfor %}
+                {% endif %}
+                {%- if role.permissions['deny']|length > 0 %}
+                <strong>Deny</strong>
+                <ul>
+                {% for permission in role.permissions['deny'] %}
+                    <li>{{permission[1]}} <i class="fas fa-arrow-right"></i> {{permission[0]}}</li>
+                {% endfor %}
+                </ul>
+                {% endif %}
+            </div>
+        </div>
+        <!-- /.panel-body -->
+    </div>
+    <div class="col-lg-6">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <label>Deny Permissions</label>
+            </div>
+            <!-- /.panel-heading -->
+            <div class="panel-body">
+                {%- if role.permissions['deny']|length == 0 %}
+                No deny permissions defined.
+                {% else %}
+                {% for permission in role.permissions['allow'] %}
+                <ul>
+                    <li><strong>Action: </strong>{{permission[1]}}</li>
+                    <li><strong>Resource: </strong>{{permission[0]}}</li>
+                </ul>
+                    {%- if not loop.last %}
+                    <hr>
+                    {%- endif %}
+                {%- endfor %}
+                {% endif %}
+                {%- if role.permissions['deny']|length > 0 %}
+                <strong>Deny</strong>
+                <ul>
+                {% for permission in role.permissions['deny'] %}
+                    <li>{{permission[1]}} <i class="fas fa-arrow-right"></i> {{permission[0]}}</li>
+                {% endfor %}
+                </ul>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+<!-- /.row -->
+{% endblock %}
+
