@@ -33,6 +33,7 @@ def route_automation_template(webapp):
         @webapp.route('/<string:rule_id>/set_condition_template', methods=['GET'])
         @require_auth()
         def page_automation_condition_template_get(webinterface, request, session, rule_id):
+            session.has_access('automation:%s' % rule_id, 'edit', raise_error=True)
             try:
                 rule = webinterface._Automation.get(rule_id)
             except YomboWarning as e:
@@ -60,6 +61,7 @@ def route_automation_template(webapp):
         @webapp.route('/<string:rule_id>/set_condition_template', methods=['POST'])
         @require_auth()
         def page_automation_condition_template_post(webinterface, request, session, rule_id):
+            session.has_access('automation:%s' % rule_id, 'edit', raise_error=True)
             try:
                 rule = webinterface._Automation.get(rule_id)
             except YomboWarning as e:
@@ -90,6 +92,7 @@ def route_automation_template(webapp):
         @webapp.route('/<string:rule_id>/edit_action_template/<string:action_id>', methods=['GET'])
         @require_auth()
         def page_automation_action_template_edit_get(webinterface, request, session, rule_id, action_id):
+            session.has_access('automation:%s' % rule_id, 'edit', raise_error=True)
             try:
                 rule = webinterface._Automation.get(rule_id)
             except YomboWarning as e:
@@ -113,6 +116,7 @@ def route_automation_template(webapp):
         @webapp.route('/<string:rule_id>/edit_action_template/<string:action_id>', methods=['POST'])
         @require_auth()
         def page_automation_action_template_edit_post(webinterface, request, session, rule_id, action_id):
+            session.has_access('automation:%s' % rule_id, 'edit', raise_error=True)
             try:
                 rule = webinterface._Automation.get(rule_id)
             except YomboWarning as e:
@@ -161,6 +165,7 @@ def route_automation_template(webapp):
         @webapp.route('/<string:rule_id>/add_action_template', methods=['GET'])
         @require_auth()
         def page_automation_action_template_add_get(webinterface, request, session, rule_id):
+            session.has_access('automation:%s' % rule_id, 'edit', raise_error=True)
             try:
                 rule = webinterface._Automation.get(rule_id)
             except YomboWarning as e:
@@ -189,6 +194,7 @@ def route_automation_template(webapp):
         @webapp.route('/<string:rule_id>/add_action_template', methods=['POST'])
         @require_auth()
         def page_automation_action_template_add_post(webinterface, request, session, rule_id):
+            session.has_access('automation:%s' % rule_id, 'edit', raise_error=True)
             try:
                 rule = webinterface._Automation.get(rule_id)
             except YomboWarning as e:
@@ -221,6 +227,7 @@ def route_automation_template(webapp):
         @webapp.route('/<string:rule_id>/edit_action_template/<string:action_id>', methods=['GET'])
         @require_auth()
         def page_automation_action_template_edit_get(webinterface, request, session, rule_id, action_id):
+            session.has_access('automation:%s' % rule_id, 'edit', raise_error=True)
             try:
                 rule = webinterface._Automation.get(rule_id)
             except YomboWarning as e:
@@ -244,6 +251,7 @@ def route_automation_template(webapp):
         @webapp.route('/<string:rule_id>/edit_action_template/<string:action_id>', methods=['POST'])
         @require_auth()
         def page_automation_action_template_edit_post(webinterface, request, session, rule_id, action_id):
+            session.has_access('automation:%s' % rule_id, 'edit', raise_error=True)
             try:
                 rule = webinterface._Automation.get(rule_id)
             except YomboWarning as e:
@@ -294,6 +302,7 @@ def route_automation_template(webapp):
         @webapp.route('/<string:rule_id>/delete_action_template/<string:action_id>', methods=['GET'])
         @require_auth()
         def page_automation_action_template_delete_get(webinterface, request, session, rule_id, action_id):
+            session.has_access('automation:%s' % rule_id, 'edit', raise_error=True)
             try:
                 rule = webinterface._Automation.get(rule_id)
             except YomboWarning as e:
@@ -324,6 +333,7 @@ def route_automation_template(webapp):
         @webapp.route('/<string:rule_id>/delete_action_template/<string:action_id>', methods=['POST'])
         @require_auth()
         def page_automation_action_template_delete_post(webinterface, request, session, rule_id, action_id):
+            session.has_access('automation:%s' % rule_id, 'edit', raise_error=True)
             try:
                 rule = webinterface._Automation.get(rule_id)
             except YomboWarning as e:

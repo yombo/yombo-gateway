@@ -382,7 +382,7 @@ class YomboAPI(YomboLibrary):
             logger.warn("-----==( Error: API received an invalid response )==----")
             logger.warn("Path: {request_type} {path}", request_type=request_type, path=path)
             logger.warn("Header: {request_headers}", request_headers=request_headers)
-            logger.warn("Data: {args}", args=args)
+            logger.warn("Data sent: {args}", args=args)
             logger.warn("Content: {content}", content=content)
             logger.warn("--------------------------------------------------------")
 

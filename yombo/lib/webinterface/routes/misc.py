@@ -12,5 +12,4 @@ def route_misc(webapp):
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/misc/info.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/info", "Information")
-            return page.render(alerts=webinterface.get_alerts(),
-                               )
+            return page.render(alerts=webinterface.get_alerts())

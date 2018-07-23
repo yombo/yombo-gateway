@@ -1,3 +1,4 @@
+from yombo.core.exceptions import YomboNoAccess
 from yombo.lib.webinterface.auth import require_auth
 
 def route_atoms(webapp):
@@ -5,11 +6,15 @@ def route_atoms(webapp):
         @webapp.route('/')
         @require_auth()
         def page_atoms(webinterface, request, session):
+            if session.has_access('atom:*', 'view') is False:
+                raise YomboNoAccess(path="atom:*", action="view")
             return webinterface.redirect(request, '/atoms/index')
 
         @webapp.route('/index')
         @require_auth()
         def page_lib_atoms_index(webinterface, request, session):
+            if session.has_access('atom:*', 'view') is False:
+                raise YomboNoAccess(path="apiauth:*", action="view")
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/atoms/index.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/info", "Info")
@@ -20,6 +25,8 @@ def route_atoms(webapp):
         @webapp.route('/<string:gateway_id>/<string:atom_name>/details')
         @require_auth()
         def page_lib_atoms_details(webinterface, request, session, gateway_id, atom_name):
+            if session.has_access('atom:*', 'view') is False:
+                raise YomboNoAccess(path="atom:*", action="view")
             try:
                 atom = webinterface._Atoms.get(atom_name, full=True, gateway_id=gateway_id)
             except Exception as e:

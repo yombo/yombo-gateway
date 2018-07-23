@@ -81,14 +81,11 @@ def route_home(webapp):
             submitted_email = request.args.get('email')[0]
             submitted_password = request.args.get('password')[0]
             if webinterface.operating_mode == 'run':
-                results = yield webinterface._LocalDB.get_gateway_user_by_email(
-                    webinterface.gateway_id(),
-                    submitted_email
-                )
-                if len(results) != 1:
+                try:
+                    user = webinterface._Users.get(submitted_email)
+                except KeyError:
                     webinterface.add_alert('Email address not allowed to access gateway.', 'warning')
-                    #            webinterface._WebSessions.load(request)
-                    page = webinterface.get_template(request, webinterface.wi_dir + '/pages/login_user.html')
+                    page = webinterface.get_template(request, webinterface.wi_dir + '/pages/misc/login_user.html')
                     return page.render(alerts=webinterface.get_alerts())
 
             try:
@@ -96,7 +93,7 @@ def route_home(webapp):
                     submitted_email, submitted_password, submitted_g_recaptcha_response)
             except YomboWarning as e:
                 webinterface.add_alert("%s: %s" % (e.errorno, e.message), 'warning')
-                page = webinterface.get_template(request, webinterface.wi_dir + '/pages/login_user.html')
+                page = webinterface.get_template(request, webinterface.wi_dir + '/pages/misc/login_user.html')
                 return page.render(alerts=webinterface.get_alerts())
             if results['code'] == 200:
                 login = results['response']['login']
@@ -115,7 +112,7 @@ def route_home(webapp):
                 return login_redirect(webinterface, request, session)
             else:
                 webinterface.add_alert(results['msg'], 'warning')
-                page = webinterface.get_template(request, webinterface.wi_dir + '/pages/login_user.html')
+                page = webinterface.get_template(request, webinterface.wi_dir + '/pages/misc/login_user.html')
                 return page.render(alerts=webinterface.get_alerts())
 
         def login_redirect(webinterface, request, session=None, location=None):

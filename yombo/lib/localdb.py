@@ -26,7 +26,7 @@ A database API to SQLite3.
 """
 # Import python libraries
 from collections import OrderedDict
-
+from sqlite3 import IntegrityError
 import decimal
 import inspect
 from os import chmod
@@ -51,7 +51,7 @@ import yombo.core.settings as settings
 from yombo.utils import clean_dict, instance_properties, data_pickle, data_unpickle, bytes_to_unicode
 from yombo.utils.datatypes import coerce_value
 
-logger = get_logger('lib.localdb')
+logger = get_logger('library.localdb')
 
 LATEST_SCHEMA_VERSION = 1
 
@@ -183,7 +183,16 @@ class Tasks(DBObject):
 
 
 class Users(DBObject):
+    HASMANY = [{'name': 'user_roles', 'class_name': 'UserRoles', 'foreign_key': 'user_id'}]
     TABLENAME = 'users'
+
+
+class UserRoles(DBObject):
+    TABLENAME = 'user_roles'
+
+
+class Roles(DBObject):
+    TABLENAME = 'roles'
 
 
 class VariableData(DBObject):
@@ -446,14 +455,23 @@ class LocalDB(YomboLibrary):
                         send_data = []
                         for key, value in db_data.items():
                             send_data.append(value)
-                        yield self.insert_many(table, send_data)
+                        try:
+                            yield self.insert_many(table, send_data)
+                        except IntegrityError as e:
+                            logger.warn("Error trying to insert_many in bulk save: {e}", e=e)
                     elif queue_type == 'update':
                         send_data = []
                         for key, value in db_data.items():
                             send_data.append(value)
-                        yield self.update_many(table, send_data, self.db_bulk_queue_id_cols[table])
+                        try:
+                            yield self.update_many(table, send_data, self.db_bulk_queue_id_cols[table])
+                        except IntegrityError as e:
+                            logger.warn("Error trying to update_many in bulk save: {e}", e=e)
                     elif queue_type == 'delete':
-                        yield self.delete_many(table, db_data)
+                        try:
+                            yield self.delete_many(table, db_data)
+                        except IntegrityError as e:
+                            logger.warn("Error trying to delete_many in bulk save: {e}", e=e)
 
     @inlineCallbacks
     def make_backup(self, filename=None):
@@ -1060,14 +1078,14 @@ class LocalDB(YomboLibrary):
             output = []
             for record in records:
                 record.auth_data = data_unpickle(record.auth_data)
-                record.permissions = data_unpickle(record.permissions)
+                record.roles = data_unpickle(record.roles)
                 output.append({
                     'auth_id': record.id,
                     'label': record.label,
                     'description': record.description,
-                    'permissions': record.permissions,
                     'is_valid': coerce_value(record.is_valid, 'bool'),
                     'auth_data': record.auth_data,
+                    'roles': record.roles,
                     'created_at': record.created_at,
                     'last_access': record.last_access,
                     'updated_at': record.updated_at,
@@ -1078,14 +1096,14 @@ class LocalDB(YomboLibrary):
             if record is None:
                 raise YomboWarning("No API Keys found.")
             record.auth_data = data_unpickle(record.auth_data)
-            record.permissions = data_unpickle(record.permissions)
+            record.roles = data_unpickle(record.roles)
             return {
                 'auth_id': record.id,
                 'label': record.label,
                 'description': record.description,
-                'permissions': record.permissions,
                 'is_valid': coerce_value(record.is_valid, 'bool'),
                 'auth_data': record.auth_data,
+                'roles': record.roles,
                 'created_at': record.created_at,
                 'last_access': record.last_access,
                 'updated_at': record.updated_at,
@@ -1097,13 +1115,14 @@ class LocalDB(YomboLibrary):
             'id': api_auth.auth_id,
             'label': api_auth.label,
             'description': api_auth.description,
-            'permissions': data_pickle(api_auth.permissions),
             'is_valid': coerce_value(api_auth.is_valid, 'int'),
             'auth_data': data_pickle(api_auth.auth_data),
+            'roles': data_pickle(api_auth.roles),
             'created_at': api_auth.created_at,
             'last_access': api_auth.last_access,
             'updated_at': api_auth.updated_at,
         }
+        print("save_api_auth: %s" % args)
         yield self.dbconfig.insert('webinterface_api_auth', args, None, 'OR IGNORE')
 
     @inlineCallbacks
@@ -1112,7 +1131,7 @@ class LocalDB(YomboLibrary):
             'label': api_auth.label,
             'description': api_auth.description,
             'auth_data': data_pickle(api_auth.auth_data),
-            'permissions': data_pickle(api_auth.permissions),
+            'roles': data_pickle(api_auth.roles),
             'is_valid': coerce_value(api_auth.is_valid, 'bool'),
             'last_access': api_auth.last_access,
             'updated_at': api_auth.updated_at,
@@ -1140,13 +1159,13 @@ class LocalDB(YomboLibrary):
             return {
                 'id': data.id,
                 'is_valid': coerce_value(data.is_valid, 'bool'),
-                'auth_id': save_data['auth_id'],
-                'auth_at': save_data['auth_at'],
-                'auth_pin': save_data['auth_pin'],
-                'auth_pin_at': save_data['auth_pin_at'],
-                'created_by': save_data['created_by'],
+                'auth_id': save_data.get('auth_id', None),
+                'auth_at': save_data.get('auth_at', 0),
+                'auth_pin': save_data.get('auth_pin', False),
+                'auth_pin_at': save_data.get('auth_pin_at', 0),
+                'created_by': save_data.get('created_by', "unknown"),
                 'gateway_id': data.gateway_id,
-                'session_data': save_data['session_data'],
+                'session_data': save_data.get('session_data', {}),
                 'created_at': data.created_at,
                 'last_access': data.last_access,
                 'updated_at': data.updated_at,
@@ -1657,12 +1676,46 @@ ORDER BY id desc"""
     ###  Users              ###
     ###########################
     @inlineCallbacks
-    def get_gateway_user_by_email(self, gateway_id, email):
-        records = yield Users.find(where=['gateway_id = ? and email = ?', gateway_id, email])
-        results = []
+    def get_users(self):
+        records = yield Users.all()
+        return records
+
+    @inlineCallbacks
+    def get_roles(self):
+        records = yield Roles.all()
+        return records
+
+    @inlineCallbacks
+    def get_user_roles(self):
+        records = yield UserRoles.all()
+        # We need this as a dictionary....
+        roles = {}
         for record in records:
-            results.append(record.__dict__)  # we need a dictionary, not an object
-        return results
+            record.roles = data_unpickle(record.roles)
+            roles[record.email] = record.__dict__
+        return roles
+
+    @inlineCallbacks
+    def save_user_roles(self, user):
+        print("db:save_user Roles.... %s - %s" % (type(user), user))
+        records = yield UserRoles.find(where=['email = ?', user.email])
+        print("db:save got records: %s" % records)
+        if len(records) == 0:
+            print("got no records, will create a user record for roles...")
+            args = {
+                'email': user.email,
+                'roles': data_pickle(user.roles),
+                'updated_at': int(time()),
+                'created_at': int(time()),
+            }
+            yield self.dbconfig.insert('user_roles', args, None, 'OR IGNORE')
+        else:
+            print("save user roles found: %s" % records)
+            yield self.dbconfig.update("user_roles",
+                                       {'roles': data_pickle(user.roles),
+                                        'updated_at': int(time())},
+                                       where=['id = ?', records[0].id])
+
 
     ###########################
     ###  Variables          ###

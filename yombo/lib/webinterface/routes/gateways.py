@@ -8,11 +8,13 @@ def route_gateways(webapp):
         @webapp.route('/')
         @require_auth()
         def page_gateways(webinterface, request, session):
+            session.has_access('gateway:*', 'view', raise_error=True)
             return webinterface.redirect(request, '/gateways/index')
 
         @webapp.route('/index')
         @require_auth()
         def page_lib_gateways_index(webinterface, request, session):
+            session.has_access('gateway:*', 'view', raise_error=True)
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/gateways/index.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/gateways/index", "Gateways")
@@ -22,6 +24,7 @@ def route_gateways(webapp):
         @webapp.route('/<string:gateway_id>/details')
         @require_auth()
         def page_lib_gateways_details(webinterface, request, session, gateway_id):
+            session.has_access('gateway:%s' % gateway_id, 'view', raise_error=True)
             try:
                 gateway = webinterface._Gateways.get(gateway_id)
             except Exception as e:

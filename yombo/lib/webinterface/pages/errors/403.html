@@ -1,0 +1,23 @@
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-12">
+        <h1 class="page-header">No access</h1>
+    </div>
+    <!-- /.col-lg-12 -->
+</div>
+<br>
+<div class="row" style="margin: auto; width: 50%;">
+	<div class="col-sm-2">
+        <span class="fa-stack fa-2x">
+          <i class="fas fa-lock fa-stack-2x"></i>
+          <i class="fas fa-hand-paper fa-stack-1x fa-inverse" data-fa-transform="shrink-4 down-6" style="color:#ff4d56;"></i>
+        </span>
+    </div>
+	<div class="col-sm-7">
+        <span style="font-size: 1.4em">You do not have access to the requested resource.</span>
+    </div>
+    <!-- /.col-lg-12 -->
+</div>
+{% endblock %}

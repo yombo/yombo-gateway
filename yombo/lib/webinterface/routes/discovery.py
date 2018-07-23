@@ -43,11 +43,13 @@ def route_discovery(webapp):
         @webapp.route('/')
         @require_auth()
         def page_discovery(webinterface, request, session):
+            session.has_access('device:*', 'view', raise_error=True)
             return webinterface.redirect(request, '/discovery/index')
 
         @webapp.route('/index')
         @require_auth()
         def page_discovery_index(webinterface, request, session):
+            session.has_access('device:*', 'view', raise_error=True)
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/discovery/index.html')
             root_breadcrumb(webinterface, request)
             return page.render(
@@ -55,10 +57,11 @@ def route_discovery(webapp):
                 discovery=webinterface._Discovery.discovered,
             )
 
-        @webapp.route('/details/<string:device_id>')
+        @webapp.route('/<string:device_id>/details')
         @require_auth()
         @inlineCallbacks
         def page_discovery_details(webinterface, request, session, device_id):
+            session.has_access('device:*', 'view', raise_error=True)
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/discovery/details/%s" % device_id, "Device Details")
             discovered_device = webinterface._Discovery[device_id]

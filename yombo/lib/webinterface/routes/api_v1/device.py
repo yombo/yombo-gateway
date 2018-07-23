@@ -18,6 +18,7 @@ def route_api_v1_device(webapp):
         @webapp.route('/device', methods=['GET'])
         @require_auth(api=True)
         def apiv1_device_get(webinterface, request, session):
+            session.has_access('device:*', 'view', raise_error=True)
             return return_good(
                 request,
                 payload=webinterface._Devices.full_list_devices(),
@@ -26,6 +27,7 @@ def route_api_v1_device(webapp):
         @webapp.route('/device/<string:device_id>', methods=['GET'])
         @require_auth(api=True)
         def apiv1_device_details_get(webinterface, request, session, device_id):
+            session.has_access('device:%s' % device_id, 'view', raise_error=True)
             arguments = args_to_dict(request.args)
             if len(device_id) > 200 or isinstance(device_id, str) is False:
                 return return_error(request, 'invalid device_id format', 400)
@@ -47,6 +49,7 @@ def route_api_v1_device(webapp):
         @require_auth(api=True)
         @inlineCallbacks
         def apiv1_device_command_get_post(webinterface, request, session, device_id, command_id):
+            session.has_access('device:%s' % device_id, 'view', raise_error=True)
             if len(device_id) > 200 or isinstance(device_id, str) is False:
                 return return_error(request, 'invalid device_id format', 400)
             if len(command_id) > 200 or isinstance(command_id, str) is False:

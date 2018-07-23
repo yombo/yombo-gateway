@@ -689,6 +689,7 @@ class Modules(YomboLibrary):
             module._Tasks = self._Loader.loadedLibraries['tasks']
             module._Template = self._Loader.loadedLibraries['template']
             module._Times = self._Loader.loadedLibraries['times']
+            module._Users = self._Loader.loadedLibraries['users']
             module._YomboAPI = self._Loader.loadedLibraries['yomboapi']
             module._Variables = self._Loader.loadedLibraries['variables']
             module._Validate = self._Loader.loadedLibraries['validate']
@@ -851,7 +852,7 @@ class Modules(YomboLibrary):
                 # print("bbb2")
                 if d is not None:
                     # print("bbb3 - %s" % d)
-                    d.addCallback(add_results, results, label)
+                    d.addCallback(add_results, results, module)
                     dl_list.append(d)
             except YomboWarning:
                 pass

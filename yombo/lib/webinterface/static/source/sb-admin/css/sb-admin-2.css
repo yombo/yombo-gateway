@@ -32,8 +32,8 @@ body {
 @media(min-width:768px) {
     #page-wrapper {
         position: inherit;
-        margin: 50px 0 0 250px;
-        padding: 0 30px;
+        margin: 55px 0 0 215px;
+        padding: 0 15px;
         border-left: 1px solid #e7e7e7;
     }
 
@@ -240,7 +240,7 @@ body {
         width: 45px;
     }
     body.sidebar-closed #wrapper #sidebar li:hover {
-        width: 250px;
+        width: 215px;
     }
     body.sidebar-closed #wrapper #sidebar li:hover > a > .side-menu-title {
         display: inline !important;
@@ -309,7 +309,7 @@ body {
     .sidebar {
         z-index: 1;
         position: absolute;
-        width: 250px;
+        width: 215px;
     }
 
     .navbar-top-links .dropdown-messages,
@@ -536,4 +536,16 @@ table.dataTable thead .sorting:after {
 
 .panel-yellow a:hover {
     color: #df8a13;
+}
+
+.rotate-menu {
+    -moz-transition: all 0.2s linear;
+    -webkit-transition: all 0.2s linear;
+    transition: all 0.2s linear;
+}
+
+.rotate-menu.down {
+    -moz-transform:rotate(90deg);
+    -webkit-transform:rotate(90deg);
+    transform:rotate(90deg);
 }

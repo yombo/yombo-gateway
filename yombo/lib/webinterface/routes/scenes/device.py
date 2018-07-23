@@ -34,6 +34,7 @@ def route_scenes_device(webapp):
         @webapp.route('/<string:scene_id>/add_device', methods=['GET'])
         @require_auth()
         def page_scenes_action_device_add_get(webinterface, request, session, scene_id):
+            session.has_access('scene:%s' % scene_id, 'edit', raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
             except YomboWarning as e:
@@ -58,6 +59,7 @@ def route_scenes_device(webapp):
         @webapp.route('/<string:scene_id>/add_device', methods=['POST'])
         @require_auth()
         def page_scenes_action_device_add_post(webinterface, request, session, scene_id):
+            session.has_access('scene:%s' % scene_id, 'edit', raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
             except YomboWarning as e:
@@ -121,6 +123,7 @@ def route_scenes_device(webapp):
         @webapp.route('/<string:scene_id>/edit_device/<string:action_id>', methods=['GET'])
         @require_auth()
         def page_scenes_action_device_edit_get(webinterface, request, session, scene_id, action_id):
+            session.has_access('scene:%s' % scene_id, 'edit', raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
             except YomboWarning as e:
@@ -144,6 +147,7 @@ def route_scenes_device(webapp):
         @webapp.route('/<string:scene_id>/edit_device/<string:action_id>', methods=['POST'])
         @require_auth()
         def page_scenes_action_device_edit_post(webinterface, request, session, scene_id, action_id):
+            session.has_access('scene:%s' % scene_id, 'edit', raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
             except YomboWarning as e:
@@ -226,6 +230,7 @@ def route_scenes_device(webapp):
         @webapp.route('/<string:scene_id>/delete_device/<string:action_id>', methods=['GET'])
         @require_auth()
         def page_scenes_action_device_delete_get(webinterface, request, session, scene_id, action_id):
+            session.has_access('scene:%s' % scene_id, 'edit', raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
             except YomboWarning as e:
@@ -256,6 +261,7 @@ def route_scenes_device(webapp):
         @webapp.route('/<string:scene_id>/delete_device/<string:action_id>', methods=['POST'])
         @require_auth()
         def page_scenes_action_device_delete_post(webinterface, request, session, scene_id, action_id):
+            session.has_access('scene:%s' % scene_id, 'edit', raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
             except YomboWarning as e:

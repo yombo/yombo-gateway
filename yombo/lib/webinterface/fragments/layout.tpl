@@ -11,13 +11,11 @@
 	{% block head_top %}{% endblock %}
 
     <!-- Bootstrap Core CSS ad metisMenu -->
-    <link href="/static/css/bootstrap-metisMenu.min.css" rel="stylesheet">
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
     {% block head_css %}{% endblock %}
     {% block echarts %}{% endblock %}
     <!-- SB Admin 2 -->
-    <link href="/static/css/admin2.min.css" rel="stylesheet">
-    <!-- Bootsrap-Select CSS -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.12.2/css/bootstrap-select.min.css" rel="stylesheet">
+    <link href="/static/css/admin2-metisMenu.min.css" rel="stylesheet">
     <script defer src="/static/js/fontawesome-all.min.js"></script>
 
 	{% block head_bottom %}{% endblock %}
@@ -92,7 +90,7 @@
       </div>
     </div>
 
-    <div id="wrapper" class="bgimage">
+    <div id="wrapper" class="bgimage" style="margin-top: 5px;">
         <!-- Side Navigation -->
 		{%- include 'lib/webinterface/fragments/side_nav.tpl' -%}
         <!-- Page Content -->
@@ -195,10 +193,6 @@
     <!-- Custom Theme JavaScript -->
     <script src="/static/js/sb-admin2.min.js"></script>
 
-    <!-- Bootsrap-Select JavaScript -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.12.2/js/bootstrap-select.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.12.2/js/i18n/defaults-en_US.min.js"></script>
-
    {% block body_bottom %}{% endblock %}
     <script>
 
@@ -245,6 +239,9 @@
         window.location.href = "/system/control/shutdown";
     });
 
+    $(".rotate-menu").click(function(){
+     $(this).toggleClass("down")  ;
+    })
 </script>
    </body>
 </html>

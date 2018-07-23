@@ -38,6 +38,7 @@ def route_modules(webapp):
         @webapp.route('/')
         @require_auth()
         def page_modules(webinterface, request, session):
+            session.has_access('module:*', 'view', raise_error=True)
             return webinterface.redirect(request, '/modules/index')
 
         @webapp.route('/index')
@@ -50,6 +51,7 @@ def route_modules(webapp):
             :param session: User's session information.
             :return:
             """
+            session.has_access('module:*', 'view', raise_error=True)
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/modules/index.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/modules/index", "Modules")
@@ -59,6 +61,7 @@ def route_modules(webapp):
         @webapp.route('/server_index')
         @require_auth()
         def page_modules_server_index(webinterface, request, session):
+            session.has_access('module:*', 'view', raise_error=True)
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/modules/server_index.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/modules/index", "Server Modules")
@@ -69,6 +72,7 @@ def route_modules(webapp):
         @require_auth()
         @inlineCallbacks
         def page_modules_details_from_server(webinterface, request, session, module_id):
+            session.has_access('module:*', 'view', raise_error=True)
             try:
                 module_results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id,
                                                                       session=session['yomboapi_session'])
@@ -89,6 +93,7 @@ def route_modules(webapp):
         @require_auth()
         @inlineCallbacks
         def page_modules_add(webinterface, request, session, module_id):
+            session.has_access('module:*', 'add', raise_error=True)
             try:
                 module_results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id,
                                                                       session=session['yomboapi_session'])
@@ -140,7 +145,7 @@ def route_modules(webapp):
                                                      'local': True,
                                                      })
 
-                    page = webinterface.get_template(request, webinterface.wi_dir + '/pages/reboot_needed.html')
+                    page = webinterface.get_template(request, webinterface.wi_dir + '/pages/misc/reboot_needed.html')
                     msg={
                         'header': 'Module Added',
                         'label': 'Module added successfully',
@@ -181,6 +186,7 @@ def route_modules(webapp):
         @require_auth()
         @inlineCallbacks
         def page_modules_details(webinterface, request, session, module_id):
+            session.has_access('module:%s' % module_id, 'view', raise_error=True)
             try:
                 module = webinterface._Modules[module_id]
             except Exception as e:
@@ -203,6 +209,7 @@ def route_modules(webapp):
         @webapp.route('/<string:module_id>/disable', methods=['GET'])
         @require_auth()
         def page_modules_disable_get(webinterface, request, session, module_id):
+            session.has_access('module:%s' % module_id, 'disable', raise_error=True)
             try:
                 module = webinterface._Modules[module_id]
             except Exception as e:
@@ -222,6 +229,7 @@ def route_modules(webapp):
         @require_auth()
         @inlineCallbacks
         def page_modules_disable_post(webinterface, request, session, module_id):
+            session.has_access('module:%s' % module_id, 'disable', raise_error=True)
             try:
                 module = webinterface._Modules[module_id]
             except Exception as e:
@@ -263,7 +271,7 @@ def route_modules(webapp):
                                              'local': True,
                                              })
 
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/reboot_needed.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/misc/reboot_needed.html')
             return page.render(alerts=webinterface.get_alerts(),
                                msg=msg,
                                )
@@ -272,6 +280,7 @@ def route_modules(webapp):
         @require_auth()
         @inlineCallbacks
         def page_modules_edit_get(webinterface, request, session, module_id):
+            session.has_access('module:%s' % module_id, 'edit', raise_error=True)
             try:
                 module = webinterface._Modules.get(module_id)
             except Exception as e:
@@ -303,9 +312,10 @@ def route_modules(webapp):
         @require_auth()
         @inlineCallbacks
         def page_modules_edit_post(webinterface, request, session, module_id):
+            session.has_access('module:%s' % module_id, 'edit', raise_error=True)
             try:
                 module = webinterface._Modules[module_id]
-            except Exception as e:
+            except Exception:
                 webinterface.add_alert('Module ID was not found.', 'warning')
                 return webinterface.redirect(request, '/modules/index')
 
@@ -354,7 +364,7 @@ def route_modules(webapp):
                                              'local': True,
                                              })
 
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/reboot_needed.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/misc/reboot_needed.html')
             return page.render(alerts=webinterface.get_alerts(),
                                msg=msg,
                                )
@@ -379,10 +389,10 @@ def route_modules(webapp):
                                device_variables=device_variables,
                                )
 
-
         @webapp.route('/<string:module_id>/enable', methods=['GET'])
         @require_auth()
         def page_modules_enable_get(webinterface, request, session, module_id):
+            session.has_access('module:%s' % module_id, 'enable', raise_error=True)
             try:
                 module = webinterface._Modules[module_id]
             except Exception as e:
@@ -402,6 +412,7 @@ def route_modules(webapp):
         @require_auth()
         @inlineCallbacks
         def page_modules_enable_post(webinterface, request, session, module_id):
+            session.has_access('module:%s' % module_id, 'enable', raise_error=True)
             try:
                 module = webinterface._Modules[module_id]
             except Exception as e:
@@ -443,7 +454,7 @@ def route_modules(webapp):
                 'description': '',
             }
 
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/reboot_needed.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/misc/reboot_needed.html')
             return page.render(alerts=webinterface.get_alerts(),
                                msg=msg,
                                )
@@ -451,6 +462,7 @@ def route_modules(webapp):
         @webapp.route('/<string:module_id>/remove', methods=['GET'])
         @require_auth()
         def page_modules_remove_get(webinterface, request, session, module_id):
+            session.has_access('module:%s' % module_id, 'delete', raise_error=True)
             try:
                 module = webinterface._Modules[module_id]
             except Exception as e:
@@ -466,11 +478,11 @@ def route_modules(webapp):
                                module=module,
                                )
 
-
         @webapp.route('/<string:module_id>/remove', methods=['POST'])
         @require_auth()
         @inlineCallbacks
         def page_modules_remove_post(webinterface, request, session, module_id):
+            session.has_access('module:%s' % module_id, 'delete', raise_error=True)
             try:
                 module = webinterface._Modules[module_id]
             except Exception as e:
@@ -512,7 +524,7 @@ def route_modules(webapp):
                                              'local': True,
                                              })
 
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/reboot_needed.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/misc/reboot_needed.html')
             return page.render(alerts=webinterface.get_alerts(),
                                msg=msg,
                                )

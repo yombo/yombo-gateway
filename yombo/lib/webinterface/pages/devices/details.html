@@ -1,5 +1,8 @@
 {% extends "lib/webinterface/fragments/layout.tpl" %}
 {% import "lib/webinterface/fragments/macros.tpl" as macros%}
+{% block head_css %}
+{% include 'lib/webinterface/fragments/select_css.tpl' %}
+{% endblock %}
 
 {% block content %}
 <div class="row">
@@ -350,6 +353,8 @@
 {% endblock %}
 
 {% block body_bottom %}
+{% include 'lib/webinterface/fragments/select_js.tpl' %}
+
 <script type="text/javascript" src="/static/js/jquery.serializejson.min.js"></script>
 
     <!-- Make the tables pretty -->

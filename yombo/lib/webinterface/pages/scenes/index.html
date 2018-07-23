@@ -66,7 +66,11 @@
                                                  <a href="/scenes/{{ scene_id }}/duplicate_scene">Duplicate</a>
                                                  <a class="alert-danger" href="/scenes/{{ scene_id }}/delete">Delete</a>
                                                 {% elif scene.effective_status() == 1 -%}
-                                             <a href="/scenes/{{ scene_id }}/edit">Edit</a>
+                                                 <a class="alert-success" href="/scenes/{{ scene_id }}/start">Start Scene</a>
+            {%- if scene_id in _scenes.scenes_running and  _scenes.scenes_running[scene.scene_id] == "running"%}
+            <a class="alert-danger" href="/scenes/{{ scene_id }}/stop">Stop Scene</a>
+            {% endif %}
+                                                 <a href="/scenes/{{ scene_id }}/edit">Edit</a>
                                                  <a class="alert-warning" href="/scenes/{{ scene_id }}/disable">Disable</a>
                                                  <a href="/scenes/{{ scene_id }}/duplicate_scene">Duplicate</a>
                                                  <a class="alert-danger" href="/scenes/{{ scene_id }}/delete">Delete</a>

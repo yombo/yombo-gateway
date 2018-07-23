@@ -7,8 +7,8 @@
                     <h1 class="page-header">
                         <a class="success" href="/apiauth/index" aria-label="Delete"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
                         API Auth Key Information<br>
-                        <a class="btn btn-md btn-primary" href="/apiauth/{{apiauth.api_auth_id}}/edit">Edit API Auth</a>
-                        <a class="btn btn-md btn-danger" href="/apiauth/{{apiauth.api_auth_id}}/delete">Delete API Auth</a>
+                        <a class="btn btn-md btn-primary" href="/apiauth/{{apiauth.auth_id}}/edit">Edit API Auth</a>
+                        <a class="btn btn-md btn-danger" href="/apiauth/{{apiauth.auth_id}}/delete">Delete API Auth</a>
                     </h1>
                     <p></p>
 
@@ -38,6 +38,31 @@
                                 {{ apiauth.updated_at|epoch_to_human }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Created: </label><br>
                                 {{ apiauth.created_at|epoch_to_human }}<br>
+                            </div>
+                        </div>
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <label>Roles</label>
+                                This API Auth token has the following roles.
+                            </div>
+                            <!-- /.panel-heading -->
+                            <div class="panel-body">
+                    <table width="100%" class="table table-striped table-bordered table-hover" id="roles">
+                        <thead>
+                            <tr>
+                                <th>Label</th><th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {%- for label in apiauth.roles %}
+                            {%- set role = _users.get_role(label) %}
+                            {%- if role == 'none' %}{% continue %}{% endif %}
+                             <tr>
+                                 <td data-priority="1"><a href="/roles/{{role.role_id}}/details">{{ role.label }}</a></td>
+                                <td data-priority="1">{{ role.description }}</td>
+                             </tr>{% endfor %}
+                        </tbody>
+                    </table>
                             </div>
                         </div>
                         <div class="panel panel-default">

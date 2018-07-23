@@ -1,8 +1,8 @@
 {% extends "lib/webinterface/fragments/layout.tpl" %}
 {% import "lib/webinterface/pages/automation/macros.tpl" as smacro%}
 {% import "lib/webinterface/fragments/macros.tpl" as macros%}
-
 {% block head_css %}
+{% include 'lib/webinterface/fragments/select_css.tpl' %}
 <style>
 /* supersede bootstrap at the row level by being annoyingly specific
 */
@@ -214,10 +214,9 @@ else
                 <div class="panel-heading">
                     <label>Automation Items</label><br>
                      Add new:
-                    <select name="new_action_item" id="new_action_item" required class="selectpicker show-tick" title="Select...">
+                    <select name="new_action_item" id="new_action_item" class="selectpicker show-tick" title="Select..." data-size="10" required>
                         {%- for label, data in _automation.get_action_types().items() %}
-                            <option value="{{ data['add_url']|replace("{rule_id}", rule.rule_id)}}"
-                                >{{data.label}}</option>
+                            <option value="{{ data['add_url']|replace("{rule_id}", rule.rule_id)}}" >{{data.label}}</option>
                         {%- endfor %}
                     </select>
                 </div>
@@ -255,8 +254,10 @@ else
  <!-- /.row -->
 
 {% endblock %}
-{% block body_bottom_js %}{% include 'lib/webinterface/fragments/select_js.tpl' %}
-
+{% block body_bottom_js %}
+{% include 'lib/webinterface/fragments/select_js.tpl' %}
+{% endblock %}
+{% block body_bottom %}
 <script>
 
 $(function(){

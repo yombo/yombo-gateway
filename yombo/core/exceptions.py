@@ -220,6 +220,29 @@ class YomboRestart(RuntimeWarning):
         reactor.stop()
 
 
+class YomboNoAccess(YomboWarning):
+    """
+    Extends :class:`YomboWarning` - Resource accessed without required permissions.
+    """
+    def __init__(self, path=None, action=None, message="No access", name="unknown", component="component", html_message=None):
+        """
+        Setup the YomboWarning and then pass everying to YomboException
+
+        :param message: The error message to log/display.
+        :type message: string
+        :param errorno: The error number to log/display.
+        :type errorno: int
+        :param name: Name of the library, component, or module rasing the exception.
+        :type name: string
+        :param component: What type of ojbect is calling: component, library, or module
+        :type component: string
+        """
+        YomboException.__init__(self, message=message, errorno=403, name=name, component=component,
+                                html_message=html_message)
+        self.path = path
+        self.action = action
+
+
 class YomboImproperlyConfigured(YomboWarning):
     """
     Extends :class:`YomboWarning` - A missing configuration or improperly configured option.

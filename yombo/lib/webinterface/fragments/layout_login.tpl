@@ -11,10 +11,10 @@
 	{% block head_top %}{% endblock %}
 
     <!-- Bootstrap Core CSS ad metisMenu -->
-    <link href="/static/css/bootstrap-metisMenu.min.css" rel="stylesheet">
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
     {% block head_css %}{% endblock %}
     <!-- SB Admin 2 -->
-    <link href="/static/css/admin2.min.css" rel="stylesheet">
+    <link href="/static/css/admin2-metisMenu.min.css" rel="stylesheet">
     <script defer src="/static/js/fontawesome-all.min.js"></script>
 
 	{% block head_bottom %}{% endblock %}

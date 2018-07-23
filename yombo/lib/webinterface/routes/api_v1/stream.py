@@ -11,22 +11,58 @@ from yombo.lib.webinterface.auth import require_auth
 # from yombo.lib.webinterface.routes.api_v1.__init__ import return_good, return_not_found, return_error, return_unauthorized
 from yombo.utils import epoch_to_string, bytes_to_unicode, unicode_to_bytes, random_string
 
+HOOK_NAME_TO_PATH = {
+    '_device_status_': {
+        'path': 'device:',
+        'allow_non_wildcard': True,
+        'id_field': 'device_id',
+    },
+    '_notification_add_': {
+        'path': 'device:',
+        'allow_non_wildcard': True,
+        'id_field': 'notice_id',
+    },
+    '_notification_delete_': {
+        'path': 'notification:',
+        'allow_non_wildcard': False,
+        'id_field': 'notice_id',
+    },
+    '_notification_acked_': {
+        'path': 'notification:',
+        'allow_non_wildcard': False,
+        'id_field': 'notice_id',
+    },
+}
 
-def broadcast(webinterface, name, data):
+def broadcast(webinterface, hook_name, data):
     """
     Sends an event to all connected web event listeners
 
     :param webinterface:
-    :param name:
+    :param hook_name:
     :param data:
     :return:
     """
-    # print("broadcast: %s -> %s" % (name, data))
-    output = EventMsg(data, name)
+    output = EventMsg(data, hook_name)
     for spectator_id in list(webinterface.api_stream_spectators):
         spectator = webinterface.api_stream_spectators[spectator_id]
-        if not spectator.transport.disconnected:
-            spectator.write(output)
+        request = spectator['request']
+        session = spectator['session']
+        permissions = spectator['permissions']
+        hook_props = HOOK_NAME_TO_PATH[hook_name]
+        if hook_props['allow_non_wildcard'] is True:
+            permission_name = "%s%s" % (hook_props['path'], data[hook_props['id_field']])
+        else:
+            permission_name = "%s*" % hook_props['path']
+
+        if permission_name not in permissions:
+            permissions[permission_name] = session.has_access(permission_name, 'view')
+
+        if permissions[permission_name] is False:
+            continue
+
+        if not request.transport.disconnected:
+            request.write(output)
         else:
             del webinterface.api_stream_spectators[spectator_id]
 
@@ -43,27 +79,30 @@ def route_api_v1_stream(webapp, webinterface_local):
         @webapp.route('/stream', methods=['GET'])
         @require_auth(api=True)
         def apiv1_stream_get(webinterface, request, session):
-            print("Got a new stream.  Request: %s" % request)
+            session.has_access('system_options:*', 'stream', raise_error=True)
             request.setHeader('Content-type', 'text/event-stream')
             request.write(EventMsg(int(time()), 'ping'))
 
             # We'll want to write more things to this client later, so keep the request
             # around somewhere.
-            webinterface.api_stream_spectators[random_string(length=10)] = request
+            webinterface.api_stream_spectators[random_string(length=14)] = {
+                'request': request,
+                'session': session,
+                'permissions': {},
+            }
 
             # Indicate we're not done with this request by returning a deferred.
             # (In fact, this deferred will never fire, which is kinda fishy of us.)
             return defer.Deferred()
 
 def EventMsg(data, name=None):
-    """Format a Sever-Sent-Event message.
+    """
+    Format a Sever-Sent-Event message.
+
     :param data: message data, will be JSON-encoded.
     :param name: (optional) name of the event type.
     :rtype: str
     """
-    # We need to serialize the message data to a string.  SSE doesn't say that
-    # we must use JSON for that, but it's a convenient choice.
-    # print("sending sse data: %s" % data)
     if isinstance(data, int) or isinstance(data, float):
         jsonData = data
     else:
@@ -75,9 +114,6 @@ def EventMsg(data, name=None):
             jsonData = unicode_to_bytes(data)
             # print("sending sse jsonData2: %s" % jsonData)
             # assert '\n' not in jsonData
-
-    # Newlines make SSE messages slightly more complicated.  Fortunately for us,
-    # we don't have any in the messages we're using.
 
     if name:
         output = 'event: %s\n' % (name,)

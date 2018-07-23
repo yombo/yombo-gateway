@@ -33,6 +33,7 @@ def route_scenes_template(webapp):
         @webapp.route('/<string:scene_id>/add_template', methods=['GET'])
         @require_auth()
         def page_scenes_action_template_add_get(webinterface, request, session, scene_id):
+            session.has_access('scene:%s' % scene_id, 'edit', raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
             except YomboWarning as e:
@@ -61,6 +62,7 @@ def route_scenes_template(webapp):
         @webapp.route('/<string:scene_id>/add_template', methods=['POST'])
         @require_auth()
         def page_scenes_action_template_add_post(webinterface, request, session, scene_id):
+            session.has_access('scene:%s' % scene_id, 'edit', raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
             except YomboWarning as e:
@@ -116,6 +118,7 @@ def route_scenes_template(webapp):
         @webapp.route('/<string:scene_id>/edit_template/<string:action_id>', methods=['POST'])
         @require_auth()
         def page_scenes_action_template_edit_post(webinterface, request, session, scene_id, action_id):
+            session.has_access('scene:%s' % scene_id, 'edit', raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
             except YomboWarning as e:
@@ -166,6 +169,7 @@ def route_scenes_template(webapp):
         @webapp.route('/<string:scene_id>/delete_template/<string:action_id>', methods=['GET'])
         @require_auth()
         def page_scenes_action_template_delete_get(webinterface, request, session, scene_id, action_id):
+            session.has_access('scene:%s' % scene_id, 'edit', raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
             except YomboWarning as e:
@@ -196,6 +200,7 @@ def route_scenes_template(webapp):
         @webapp.route('/<string:scene_id>/delete_template/<string:action_id>', methods=['POST'])
         @require_auth()
         def page_scenes_action_template_delete_post(webinterface, request, session, scene_id, action_id):
+            session.has_access('scene:%s' % scene_id, 'edit', raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
             except YomboWarning as e:

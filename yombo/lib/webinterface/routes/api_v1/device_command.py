@@ -15,6 +15,7 @@ def route_api_v1_device_command(webapp):
         @webapp.route('/device_command/<string:device_command_id>', methods=['GET'])
         @require_auth(api=True)
         def apiv1_device_do_command_get_post(webinterface, request, session, device_command_id):
+            session.has_access('device_command:%s' % device_command_id, 'view', raise_error=True)
             if device_command_id in webinterface._Devices.device_commands:
                 device_command = webinterface._Devices.device_commands[device_command_id]
                 return return_good(

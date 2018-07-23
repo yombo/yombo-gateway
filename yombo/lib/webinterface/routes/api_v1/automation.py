@@ -19,6 +19,7 @@ def route_api_v1_automation(webapp):
         @webapp.route('/automation/device_inputs', methods=['GET'])
         @require_auth(api=True)
         def apiv1_automations_device_inputs_index(webinterface, request, session):
+            session.has_access('automation:*', 'view', raise_error=True)
             def local_error(message):
                 return "<tr><td colspan=4>%s</td><tr>\n" % message
 
@@ -70,51 +71,3 @@ def route_api_v1_automation(webapp):
                 inputs=inputs,
                 action_details=action_details,
                 )
-
-        # @webapp.route('/automation/inputs', methods=['GET'])
-        # @require_auth(api=True)
-        # def apiv1_automation_inputs_index(webinterface, request, session):
-        #     """
-        #     Gets input data for a given ruleid, device
-        #
-        #     :param webinterface:
-        #     :param request:
-        #     :param session:
-        #     :return:
-        #     """
-        #     try:
-        #         device_id = request.args.get('deviceid')[0]
-        #     except Exception:
-        #         return return_error(request, "'deviceid' required.")
-        #     try:
-        #         device = webinterface._Devices[device_id]
-        #     except Exception as e:
-        #         return return_error(request, "'deviceid' cannot be found.")
-        #     try:
-        #         command_id = request.args.get('commandid')[0]
-        #     except Exception:
-        #         return return_error(request, "'commandid' required.")
-        #     try:
-        #         command = webinterface._Commands[command_id]
-        #     except Exception:
-        #         return return_error(request, "'commandid' cannot be found.")
-        #
-        #     try:
-        #         rule_id = request.args.get('ruleid')[0]
-        #     except Exception:
-        #         return return_error(request, "'ruleid' required.")
-        #     try:
-        #         rule = webinterface._Automation[rule_id]
-        #     except Exception:
-        #         return return_error(request, "'ruleid' cannot be found.")
-        #
-        #     available_commands = device.available_commands()
-        #     command_inputs = available_commands[command_id]['inputs']
-        #     items = webinterface._Automation.get_action_items(rule_id)
-        #     data = command_inputs
-        #     # data = {
-        #     #     'total': results['content']['pages']['total_items'],
-        #     #     'rows': results['data'],
-        #     # }
-        #     request.setHeader('Content-Type', 'application/json')
-        #     return json.dumps(data)

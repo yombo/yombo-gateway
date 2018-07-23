@@ -205,7 +205,6 @@ def data_pickle(data, encoder=None, zip_level=None):
         else:
             encoder = 'msgpack_base85'
     if encoder not in ('json', 'msgpack', 'msgpack_zip', 'msgpack_base85', 'msgpack_base85_zip', 'zip'):
-        print("FORCED ENCODER TO JSON... %s -> %s" % (type(encoder), encoder))
         encoder = 'json'
     if encoder == 'json':
         try:
@@ -914,7 +913,6 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operati
     best_key = None
 
     key_list = []
-    # sorted_list = None
 
     for item_id, item in haystack.items():
         if status_value is not None:

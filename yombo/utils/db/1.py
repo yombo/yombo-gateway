@@ -28,20 +28,18 @@ def new_db_file(Registry, **kwargs):
     yield create_table_gpg_keys(Registry)
     yield create_table_input_types(Registry)
     yield create_table_locations(Registry)
-    # yield create_table_logs(Registry)
-    # yield create_table_meta(Registry)
     yield create_table_modules(Registry)
     yield create_table_module_device_types(Registry)
     yield create_table_module_installed(Registry)
     yield create_table_nodes(Registry)
     yield create_table_notifications(Registry)
-    yield create_table_permissions(Registry)
     yield create_table_sqldict(Registry)
     yield create_table_states(Registry)
     yield create_table_statistics(Registry)
     yield create_table_tasks(Registry)
     yield create_table_users(Registry)
-    yield create_table_user_permission(Registry)
+    yield create_table_roles(Registry)
+    yield create_table_access_control_list(Registry)
     yield create_table_webinterface_api_auth(Registry)
     yield create_table_webinterface_sessions(Registry)
     yield create_table_webinterface_logs(Registry)
@@ -495,6 +493,7 @@ def create_table_nodes(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(create_index('nodes', 'id'))
     yield Registry.DBPOOL.runQuery(create_index('nodes', 'parent_id'))
 
+
 @inlineCallbacks
 def create_table_notifications(Registry, **kwargs):
     """  """
@@ -520,6 +519,7 @@ def create_table_notifications(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('notifications', 'id'))
 
+
 @inlineCallbacks
 def create_table_sqldict(Registry, **kwargs):
     """  """
@@ -534,6 +534,7 @@ def create_table_sqldict(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('sqldict', 'dict_name'))
     yield Registry.DBPOOL.runQuery(create_index('sqldict', 'component'))
+
 
 @inlineCallbacks
 def create_table_states(Registry, **kwargs):
@@ -551,6 +552,7 @@ def create_table_states(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS name_gateway_id_IDX ON states (name, gateway_id)")
     yield Registry.DBPOOL.runQuery(create_index('states', 'created_at'))
+
 
 @inlineCallbacks
 def create_table_statistics(Registry, **kwargs):
@@ -574,6 +576,7 @@ def create_table_statistics(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery("CREATE UNIQUE INDEX IF NOT EXISTS table_b_t_IDX ON statistics (bucket_name, bucket_type, bucket_time)")
     yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS table_t_n_t_IDX ON statistics (finished, uploaded, anon)")
 
+
 @inlineCallbacks
 def create_table_tasks(Registry, **kwargs):
     """  """
@@ -592,48 +595,82 @@ def create_table_tasks(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('tasks', 'id'))
 
+
 @inlineCallbacks
 def create_table_users(Registry, **kwargs):
-    """  """
+    """ Store users """
     table = """CREATE TABLE `users` (
-        `id`         TEXT NOT NULL,
-        `gateway_id` TEXT NOT NULL,
-        `user_id`    TEXT NOT NULL,
-        `email`      TEXT NOT NULL,
-        `updated_at` INTEGER NOT NULL,
-        `created_at` INTEGER NOT NULL );"""
+        `id`                 TEXT NOT NULL,
+        `email`              TEXT NOT NULL,
+        `name`               TEXT NOT NULL,
+        `access_code_digits` TEXT,
+        `access_code_string` TEXT,
+        `updated_at`         INTEGER NOT NULL,
+        `created_at`         INTEGER NOT NULL );"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('users', 'id', unique=True))
     yield Registry.DBPOOL.runQuery(create_index('users', 'email'))
 
+
 @inlineCallbacks
-def create_table_user_permission(Registry, **kwargs):
+def create_table_roles(Registry, **kwargs):
     """  """
-    table = """CREATE TABLE `user_permission` (
+    table = """CREATE TABLE `roles` (
+        `id`            TEXT NOT NULL,
+        `machine_label` TEXT NOT NULL,
+        `label`         TEXT NOT NULL,
+        `description`   TEXT,
+        `permissions`   TEXT,
+        `updated_at`    INTEGER NOT NULL,
+        `created_at`    INTEGER NOT NULL
+        );"""
+    yield Registry.DBPOOL.runQuery(table)
+    yield Registry.DBPOOL.runQuery(create_index('roles', 'id', unique=True))
+    yield Registry.DBPOOL.runQuery(create_index('roles', 'machine_label', unique=True))
+
+
+@inlineCallbacks
+def create_table_user_roles(Registry, **kwargs):
+    """ Not stores in normal Yombo cloud. """
+    table = """CREATE TABLE `user_roles` (
+        `id`            INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        `email`       TEXT NOT NULL,
+        `roles`         TEXT NOT NULL,     -- msgpack list of roles
+        `updated_at`    INTEGER NOT NULL,
+        `created_at`    INTEGER NOT NULL
+        );"""
+    yield Registry.DBPOOL.runQuery(table)
+    yield Registry.DBPOOL.runQuery(create_index('roles', 'id', unique=True))
+    yield Registry.DBPOOL.runQuery(create_index('roles', 'user_id', unique=True))
+    yield Registry.DBPOOL.runQuery(create_index('roles', 'role_id', unique=True))
+
+
+@inlineCallbacks
+def create_table_access_control_list(Registry, **kwargs):
+    """  """
+    table = """CREATE TABLE `access_control_list` (
         `id`            TEXT NOT NULL,
         `user_id`       TEXT NOT NULL,
-        `gateway_id`    TEXT NOT NULL,
-        `permission_id` TEXT NOT NULL,
+        `role_id`       TEXT NOT NULL,
+        `access_type`   TEXT NOT NULL,
+        `resource`      TEXT NOT NULL,
+        `description`   TEXT,
         `updated_at`    INTEGER NOT NULL,
         `created_at`    INTEGER NOT NULL,
-    CONSTRAINT fk_user_permission
+    CONSTRAINT fk_acl_user
         FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+    CONSTRAINT fk_acl_role
+        FOREIGN KEY (role_id)
         REFERENCES users(id)
         ON DELETE CASCADE
         );"""
     yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('user_permission', 'id', unique=True))
+    yield Registry.DBPOOL.runQuery(create_index('access_control_list', 'id', unique=True))
+    yield Registry.DBPOOL.runQuery(create_index('access_control_list', 'user_id', unique=True))
+    yield Registry.DBPOOL.runQuery(create_index('access_control_list', 'role_id', unique=True))
 
-@inlineCallbacks
-def create_table_permissions(Registry, **kwargs):
-    """  """
-    table = """CREATE TABLE `permissions` (
-        `id`         TEXT NOT NULL,
-        `gateway_id` TEXT NOT NULL,
-        `updated_at` INTEGER NOT NULL,
-        `created_at` INTEGER NOT NULL );"""
-    yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('permissions', 'id', unique=True))
 
 @inlineCallbacks
 def create_table_webinterface_api_auth(Registry, **kwargs):
@@ -643,9 +680,9 @@ def create_table_webinterface_api_auth(Registry, **kwargs):
         `id`           TEXT NOT NULL, /* moduleUUID */
         `label`        TEXT NOT NULL,
         `description`  TEXT NOT NULL,
-        `permissions`  TEXT NOT NULL,
         `is_valid`     INTEGER NOT NULL,
-        `auth_data` TEXT NOT NULL,
+        `roles`        TEXT,
+        `auth_data`    TEXT NOT NULL,
         `created_at`   INTEGER NOT NULL,
         `last_access`  INTEGER NOT NULL,
         `updated_at`   INTEGER NOT NULL,
@@ -653,6 +690,7 @@ def create_table_webinterface_api_auth(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('webinterface_api_auth', 'created_at'))
     yield Registry.DBPOOL.runQuery(create_index('webinterface_api_auth', 'updated_at'))
+
 
 @inlineCallbacks
 def create_table_webinterface_sessions(Registry, **kwargs):
@@ -662,7 +700,6 @@ def create_table_webinterface_sessions(Registry, **kwargs):
         `id`           TEXT NOT NULL, /* moduleUUID */
         `is_valid`     INTEGER NOT NULL,
         `gateway_id`   TEXT NOT NULL,
-        `permissions`  TEXT,
         `session_data` TEXT NOT NULL,
         `created_at`   INTEGER NOT NULL,
         `last_access`  INTEGER NOT NULL,
@@ -672,13 +709,14 @@ def create_table_webinterface_sessions(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(create_index('webinterface_sessions', 'created_at'))
     yield Registry.DBPOOL.runQuery(create_index('webinterface_sessions', 'updated_at'))
 
+
 @inlineCallbacks
 def create_table_webinterface_logs(Registry, **kwargs):
     """  """
     # Used by the tasks library to start various tasks.
     table = """CREATE TABLE `webinterface_logs` (
-        `id`             INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-        `request_at`      INTEGER,
+        `id`                INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        `request_at`        INTEGER,
         `request_protocol`  TEXT NOT NULL,
         `referrer`          TEXT NOT NULL,
         `agent`             TEXT NOT NULL,
@@ -693,6 +731,7 @@ def create_table_webinterface_logs(Registry, **kwargs):
         `uploaded`          INTEGER DEFAULT 0
         );"""
     yield Registry.DBPOOL.runQuery(table)
+
 
 @inlineCallbacks
 def create_table_variable_groups(Registry, **kwargs):
@@ -738,6 +777,7 @@ def create_table_variable_fields(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(create_index('variable_fields', 'group_id'))
     #    yield Registry.DBPOOL.runQuery("CREATE UNIQUE INDEX IF NOT EXISTS device_types_machine_label_idx ON device_types (machine_label) ON CONFLICT IGNORE")
 
+
 @inlineCallbacks
 def create_table_variable_data(Registry, **kwargs):
     """  """
@@ -756,6 +796,7 @@ def create_table_variable_data(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS variable_data_id_type_idx ON variable_data (field_id, data_relation_id, data_relation_type)")
 
+
 # @inlineCallbacks
 # def create_trigger_delete_device_status(Registry, **kwargs):
 #     """  """
@@ -767,6 +808,7 @@ def create_table_variable_data(Registry, **kwargs):
     #     DELETE FROM device_status WHERE device_id = OLD.id;
     # END"""
     # yield Registry.DBPOOL.runQuery(trigger)
+
 
 @inlineCallbacks
 def create_trigger_delete_device_variable_data(Registry, **kwargs):
@@ -790,6 +832,7 @@ def create_trigger_delete_device_variable_data(Registry, **kwargs):
     # END"""
     # yield Registry.DBPOOL.runQuery(trigger)
 
+
 @inlineCallbacks
 def create_trigger_delete_module_variable_data(Registry, **kwargs):
     """  """
@@ -803,6 +846,7 @@ def create_trigger_delete_module_variable_data(Registry, **kwargs):
     END"""
     yield Registry.DBPOOL.runQuery(trigger)
 
+
 @inlineCallbacks
 def create_trigger_delete_variablegroups_variable_fields(Registry, **kwargs):
     """  """
@@ -813,6 +857,7 @@ def create_trigger_delete_variablegroups_variable_fields(Registry, **kwargs):
         DELETE FROM variable_fields WHERE group_id = OLD.id;
     END"""
     yield Registry.DBPOOL.runQuery(trigger)
+
 
 @inlineCallbacks
 def create_trigger_delete_variablefields_variable_data(Registry, **kwargs):
@@ -842,6 +887,7 @@ def create_view_devices_view(Registry, **kwargs):
     """
     yield Registry.DBPOOL.runQuery(view)
 
+
 @inlineCallbacks
 def create_view_modules_view(Registry, **kwargs):
     """  """
@@ -850,6 +896,7 @@ def create_view_modules_view(Registry, **kwargs):
     SELECT modules.*, module_installed.installed_version, module_installed. install_at, module_installed.last_check
     FROM modules LEFT OUTER JOIN module_installed ON modules.id = module_installed.module_id"""
     yield Registry.DBPOOL.runQuery(view)
+
 
 @inlineCallbacks
 def create_view_module_device_types_view(Registry, **kwargs):
@@ -860,6 +907,7 @@ def create_view_module_device_types_view(Registry, **kwargs):
     JOIN device_types ON module_device_types.device_type_id = device_types.id
     """
     yield Registry.DBPOOL.runQuery(view)
+
 
 @inlineCallbacks
 def create_view_variable_field_data_view(Registry, **kwargs):
@@ -881,6 +929,7 @@ def create_view_variable_field_data_view(Registry, **kwargs):
     JOIN variable_groups ON variable_fields.group_id = variable_groups.id"""
     yield Registry.DBPOOL.runQuery(view)
 
+
 @inlineCallbacks
 def create_view_variable_group_field_view(Registry, **kwargs):
     """  """
@@ -896,6 +945,7 @@ def create_view_variable_group_field_view(Registry, **kwargs):
     FROM variable_groups
     JOIN variable_fields ON variable_fields.group_id = variable_groups.id"""
     yield Registry.DBPOOL.runQuery(view)
+
 
 @inlineCallbacks
 def create_view_variable_group_field_data_view(Registry, **kwargs):
@@ -916,6 +966,7 @@ def create_view_variable_group_field_data_view(Registry, **kwargs):
     LEFT OUTER JOIN variable_data ON variable_data.field_id = variable_fields.id
     JOIN variable_groups ON variable_fields.group_id = variable_groups.id"""
     yield Registry.DBPOOL.runQuery(view)
+
 
 @inlineCallbacks
 def create_view_addable_device_types_view(Registry, **kwargs):

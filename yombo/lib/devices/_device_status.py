@@ -87,17 +87,20 @@ class Device_Status(object):
         self.uploaded = None
         self.uploadable = None
         self.fake_data = False
+        self._dirty = True
+        self._in_db = None
 
         if self.source == 'database':
-            self._dirty = False
             self._in_db = True
+            self.update_attributes(data)
+            self._dirty = False
         else:  # includes 'gateway_coms'
-            self._dirty = True
+            self.update_attributes(data)
             self._in_db = False
+            self._dirty = True
             reactor.callLater(1, self.check_if_device_status_in_database)
 
         # print("device status: in db: %s, dirty: %s" % (self._in_db, self._dirty))
-        self.update_attributes(data)
 
     @inlineCallbacks
     def check_if_device_status_in_database(self):
@@ -159,8 +162,8 @@ class Device_Status(object):
             self.fake_data = device["fake_data"]
 
         if self.source != 'database' and self.fake_data is not True:
-            logger.debug("device status, done with update attr: {attrs}", attrs=self.asdict(True))
             self._dirty = True
+            logger.debug("device status, done with update attr: {attrs}", attrs=self.asdict(True))
             reactor.callLater(1, self.save_to_db)
 
     def asdict(self, full=None):
@@ -207,6 +210,7 @@ class Device_Status(object):
             self._dirty = False
             return
 
+        # print("status: %s, dirty: %s" % (self.status_id, self._dirty))
         if self._dirty or forced is True:
             data = self.asdict()
             # if self.inputs is None:
@@ -216,10 +220,10 @@ class Device_Status(object):
             data['requested_by'] = data_pickle(self.requested_by)
 
             if self._in_db is True:
-                # print("device status update, save to database... %s" % self.asdict(True))
+                print("device status update, save to database... %s" % self.asdict(True))
                 self._Parent._LocalDB.add_bulk_queue('device_status', 'update', data, 'status_id')
             else:
-                # print("device status insert, save to database... %s" % self.asdict(True))
+                print("device status insert, save to database... %s" % self.asdict(True))
                 self._Parent._LocalDB.add_bulk_queue('device_status', 'insert', data, 'status_id')
             self._dirty = False
             self._in_db = True

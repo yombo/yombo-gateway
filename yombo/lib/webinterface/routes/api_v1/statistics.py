@@ -20,6 +20,7 @@ def route_api_v1_statistics(webapp):
         @require_auth(api=True)
         @inlineCallbacks
         def apiv1_statistics_names(webinterface, request, session):
+            session.has_access('statistic:*', 'view', raise_error=True)
             records = yield webinterface._Libraries['localdb'].get_distinct_stat_names()
             request.setHeader('Content-Type', CONTENT_TYPE_JSON)
             return json.dumps(records)
@@ -28,6 +29,7 @@ def route_api_v1_statistics(webapp):
         @require_auth(api=True)
         @inlineCallbacks
         def apiv1_statistics_echarts_buckets(webinterface, request, session):
+            session.has_access('statistic:*', 'view', raise_error=True)
             requested_stats = []
 
             chart_label = request.args.get('chart_label', ['Unlabeled', ])[0]

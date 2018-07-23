@@ -16,11 +16,13 @@ def route_system(webapp):
         @webapp.route('/')
         @require_auth()
         def page_modules(webinterface, request, session):
-            return webinterface.redirect(request, '/system/index')
+            session.has_access('system_options:*', 'status', raise_error=True)
+            return webinterface.redirect(request, '/system/status')
 
-        @webapp.route('/index')
+        @webapp.route('/status')
         @require_auth()
         def page_system_index(webinterface, request, session):
+            session.has_access('system_options:*', 'status', raise_error=True)
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/system/index.html')
             return page.render(alerts=webinterface.get_alerts(),
                                )
@@ -28,6 +30,7 @@ def route_system(webapp):
         @webapp.route('/backup')
         @require_auth()
         def page_system_backup(webinterface, request, session):
+            session.has_access('system_options:*', 'backup', raise_error=True)
             db_size = os.path.getsize("%s/etc/yombo.db" % webinterface.working_dir)
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/system/backup.html')
             return page.render(alerts=webinterface.get_alerts(),
@@ -38,6 +41,7 @@ def route_system(webapp):
         @require_auth()
         @inlineCallbacks
         def page_system_backup_config(webinterface, request, session):
+            session.has_access('system_options:*', 'backup', raise_error=True)
             try:
                 password1 = request.args.get('password1')[0]
                 password2 = request.args.get('password2')[0]
@@ -110,6 +114,7 @@ def route_system(webapp):
         @webapp.route('/backup/database')
         @require_auth()
         def page_system_backup_database(webinterface, request, session):
+            session.has_access('system_options:*', 'backup', raise_error=True)
             request.setHeader('Content-Description', 'File Transfer')
             request.setHeader('Content-Type', 'application/octet-stream')
             request.setHeader('Content-Disposition', 'attachment; filename=yombo.db')
@@ -123,6 +128,7 @@ def route_system(webapp):
         @webapp.route('/control')
         @require_auth()
         def page_system_control(webinterface, request, session):
+            session.has_access('system_options:*', 'control', raise_error=True)
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/system/control.html')
             return page.render(alerts=webinterface.get_alerts(),
                                )
@@ -130,10 +136,12 @@ def route_system(webapp):
         @webapp.route('/control/restart')
         @require_auth()
         def page_system_control_restart(webinterface, request, session):
+            session.has_access('system_options:*', 'control', raise_error=True)
             return webinterface.restart(request)
 
         @webapp.route('/control/shutdown')
         @require_auth()
         def page_system_control_shutdown(webinterface, request, session):
+            session.has_access('system_options:*', 'control', raise_error=True)
             return webinterface.shutdown(request)
 

@@ -35,11 +35,13 @@ def route_scenes(webapp):
         @webapp.route('/')
         @require_auth()
         def page_scenes(webinterface, request, session):
+            session.has_access('scene:*', 'view', raise_error=True)
             return webinterface.redirect(request, '/scenes/index')
 
         @webapp.route('/index')
         @require_auth()
         def page_scenes_index(webinterface, request, session):
+            session.has_access('scene:*', 'view', raise_error=True)
             root_breadcrumb(webinterface, request)
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/scenes/index.html')
             return page.render(
@@ -49,6 +51,7 @@ def route_scenes(webapp):
         @webapp.route('/<string:scene_id>/details', methods=['GET'])
         @require_auth()
         def page_scenes_details_get(webinterface, request, session, scene_id):
+            session.has_access('scene:%s' % scene_id, 'view', raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
             except YomboWarning as e:
@@ -67,6 +70,7 @@ def route_scenes(webapp):
         @webapp.route('/<string:scene_id>/start', methods=['GET'])
         @require_auth()
         def page_scenes_trigger_get(webinterface, request, session, scene_id):
+            session.has_access('scene:%s' % scene_id, 'start', raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
             except YomboWarning as e:
@@ -85,6 +89,7 @@ def route_scenes(webapp):
         @webapp.route('/<string:scene_id>/stop', methods=['GET'])
         @require_auth()
         def page_scenes_stop_trigger_get(webinterface, request, session, scene_id):
+            session.has_access('scene:%s' % scene_id, 'stop', raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
             except YomboWarning as e:
@@ -103,6 +108,7 @@ def route_scenes(webapp):
         @webapp.route('/add', methods=['GET'])
         @require_auth()
         def page_scenes_add_get(webinterface, request, session):
+            session.has_access('scene:*', 'add', raise_error=True)
             data = {
                 'label': webinterface.request_get_default(request, 'label', ""),
                 'machine_label': webinterface.request_get_default(request, 'machine_label', ""),
@@ -117,6 +123,7 @@ def route_scenes(webapp):
         @require_auth()
         @inlineCallbacks
         def page_scenes_add_post(webinterface, request, session):
+            session.has_access('scene:*', 'add', raise_error=True)
             data = {
                 'label': webinterface.request_get_default(request, 'label', ""),
                 'machine_label': webinterface.request_get_default(request, 'machine_label', ""),
@@ -137,6 +144,7 @@ def route_scenes(webapp):
         @webapp.route('/<string:scene_id>/edit', methods=['GET'])
         @require_auth()
         def page_scenes_edit_get(webinterface, request, session, scene_id):
+            session.has_access('scene:%s' % scene_id, 'edit', raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
             except YomboWarning as e:
@@ -163,6 +171,7 @@ def route_scenes(webapp):
         @webapp.route('/<string:scene_id>/edit', methods=['POST'])
         @require_auth()
         def page_scenes_edit_post(webinterface, request, session, scene_id):
+            session.has_access('scene:%s' % scene_id, 'edit', raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
             except YomboWarning as e:
@@ -206,6 +215,7 @@ def route_scenes(webapp):
         @webapp.route('/<string:scene_id>/delete', methods=['GET'])
         @require_auth()
         def page_scenes_details_post(webinterface, request, session, scene_id):
+            session.has_access('scene:%s' % scene_id, 'delete', raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
             except YomboWarning as e:
@@ -227,6 +237,7 @@ def route_scenes(webapp):
         @require_auth()
         @inlineCallbacks
         def page_scenes_delete_post(webinterface, request, session, scene_id):
+            session.has_access('scene:%s' % scene_id, 'delete', raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
             except YomboWarning as e:
@@ -256,6 +267,7 @@ def route_scenes(webapp):
         @webapp.route('/<string:scene_id>/disable', methods=['GET'])
         @require_auth()
         def page_scenes_disable_get(webinterface, request, session, scene_id):
+            session.has_access('scene:%s' % scene_id, 'disable', raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
             except YomboWarning as e:
@@ -273,6 +285,7 @@ def route_scenes(webapp):
         @webapp.route('/<string:scene_id>/disable', methods=['POST'])
         @require_auth()
         def page_scenes_disable_post(webinterface, request, session, scene_id):
+            session.has_access('scene:%s' % scene_id, 'disable', raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
             except YomboWarning as e:
@@ -319,6 +332,7 @@ def route_scenes(webapp):
         @webapp.route('/<string:scene_id>/enable', methods=['GET'])
         @require_auth()
         def page_scenes_enable_get(webinterface, request, session, scene_id):
+            session.has_access('scene:%s' % scene_id, 'enable', raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
             except YomboWarning as e:
@@ -336,6 +350,7 @@ def route_scenes(webapp):
         @webapp.route('/<string:scene_id>/enable', methods=['POST'])
         @require_auth()
         def page_scenes_enable_post(webinterface, request, session, scene_id):
+            session.has_access('scene:%s' % scene_id, 'enable', raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
             except YomboWarning as e:
@@ -363,6 +378,7 @@ def route_scenes(webapp):
         @webapp.route('/<string:scene_id>/move_up/<string:action_id>', methods=['GET'])
         @require_auth()
         def page_scenes_action_move_up_get(webinterface, request, session, scene_id, action_id):
+            session.has_access('scene:%s' % scene_id, 'edit', raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
             except YomboWarning as e:
@@ -386,6 +402,7 @@ def route_scenes(webapp):
         @webapp.route('/<string:scene_id>/move_down/<string:action_id>', methods=['GET'])
         @require_auth()
         def page_scenes_action_move_down_get(webinterface, request, session, scene_id, action_id):
+            session.has_access('scene:%s' % scene_id, 'edit', raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
             except YomboWarning as e:
@@ -410,6 +427,8 @@ def route_scenes(webapp):
         @require_auth()
         @inlineCallbacks
         def page_scenes_duplicate_scene_get(webinterface, request, session, scene_id):
+            session.has_access('scene:%s' % scene_id, 'view', raise_error=True)
+            session.has_access('scene:*', 'add', raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
             except YomboWarning as e:

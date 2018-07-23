@@ -3,7 +3,7 @@ from time import time
 
 from twisted.internet.defer import inlineCallbacks
 
-from yombo.core.exceptions import YomboWarning
+from yombo.core.exceptions import YomboWarning, YomboNoAccess
 from yombo.lib.webinterface.auth import require_auth
 from yombo.utils import random_string
 
@@ -12,11 +12,13 @@ def route_configs(webapp):
         @webapp.route('/')
         @require_auth()
         def page_configs(webinterface, request, session):
+            session.has_access('system_setting:*', 'view', raise_error=True)
             return webinterface.redirect(request, '/configs/basic')
 
         @webapp.route('/basic', methods=['GET'])
         @require_auth()
         def page_configs_basic_get(webinterface, request, session):
+            session.has_access('system_setting:*', 'view', raise_error=True)
             configs = webinterface._Configs.get("*", "*")
 
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/configs/basic.html')
@@ -30,6 +32,7 @@ def route_configs(webapp):
         @require_auth(login_redirect="/configs/basic")
         @inlineCallbacks
         def page_configs_basic_post(webinterface, request, session):
+            session.has_access('system_setting:*', 'edit', raise_error=True)
 
             valid_submit = True
             # more checks to come, just doing basic for now.
@@ -225,6 +228,8 @@ def route_configs(webapp):
         @webapp.route('/dns', methods=['GET'])
         @require_auth()
         def page_configs_dns_get(webinterface, request, session):
+            session.has_access('system_setting:*', 'view', raise_error=True)
+
             configs = webinterface._Configs.get("*", "*")
 
             dns_configs = webinterface._Configs.get("dns", "*")
@@ -249,6 +254,7 @@ def route_configs(webapp):
         @require_auth(login_redirect="/configs/basic")
         @inlineCallbacks
         def page_configs_dns_post(webinterface, request, session):
+            session.has_access('system_setting:*', 'edit', raise_error=True)
 
             try:
                 submitted_dns_name = request.args.get('dns_name')[0]  # underscore here due to jquery
@@ -313,6 +319,8 @@ def route_configs(webapp):
         @webapp.route('/yombo_ini')
         @require_auth(login_redirect="/configs/yombo_ini")
         def page_configs_yombo_ini(webinterface, request, session):
+            session.has_access('system_setting:*', 'view', raise_error=True)
+
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/configs/yombo_ini.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/configs/basic", "Yombo.ini")
@@ -324,6 +332,8 @@ def route_configs(webapp):
         @require_auth(login_redirect="/configs/gpg/index")
         @inlineCallbacks
         def page_gpg_keys_index(webinterface, request, session):
+            session.has_access('system_setting:*', 'view', raise_error=True)
+
             db_keys = yield webinterface._LocalDB.get_gpg_key()
             gw_fingerprint = webinterface._Configs.get('gpg', 'fingerprint')
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/configs/gpg_index.html')
@@ -338,8 +348,9 @@ def route_configs(webapp):
         @webapp.route('/gpg/generate_key')
         @require_auth(login_redirect="/configs/gpg/generate_key")
         def page_gpg_keys_generate_key(webinterface, request, session):
+            session.has_access('system_setting:*', 'view', raise_error=True)
+
             request_id = random_string(length=16)
-    #        self._Libraries['gpg'].generate_key(request_id)
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/configs/gpg_generate_key_started.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/gpg/index", "GPG Keys")
@@ -349,6 +360,8 @@ def route_configs(webapp):
         @webapp.route('/gpg/genrate_key_status')
         @require_auth(login_redirect="/configs/genrate_key_status")
         def page_gpg_keys_generate_key_status(webinterface, request, session):
+            session.has_access('system_setting:*', 'view', raise_error=True)
+
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/configs/gpg_generate_key_status.html')
             return page.render(atoms=webinterface._Libraries['atoms'].get_atoms(),
                                getattr=getattr,

@@ -33,7 +33,6 @@ def route_api_v1_system(webapp):
 
         @webapp.route('/tools/uptime')
         @run_first()
-        # @require_auth(api=True)
         def apiv1_system_tools_uptime(webinterface, request, session):
             if webinterface.web_interface_fully_started is False:
                 return return_error(request, message='Not ready yet.')

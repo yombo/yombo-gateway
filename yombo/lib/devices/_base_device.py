@@ -1523,8 +1523,8 @@ class Base_Device(object):
         :return:
         """
         source = status.get('source', None)
-        # print("set_status_internal: input: %s" % status)
-        device_status = Device_Status(self._Parent, self, status, source)
+        print("set_status_internal: source: %s" % source)
+        device_status = Device_Status(self._Parent, self, status, source=source)
         # print("set_status_internal: as dict: %s" % device_status.asdict())
         self.status_history.appendleft(device_status)
         self.send_status(**status)

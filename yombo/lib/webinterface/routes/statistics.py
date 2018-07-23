@@ -8,12 +8,14 @@ def route_statistics(webapp):
         @webapp.route('/')
         @require_auth()
         def page_statistics(webinterface, request, session):
+            session.has_access('statistic:*', 'view', raise_error=True)
             return webinterface.redirect(request, '/statistics/index')
 
         @webapp.route('/index')
         @require_auth()
         @inlineCallbacks
         def page_statistics_index(webinterface, request, session):
+            session.has_access('statistic:*', 'view', raise_error=True)
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/statistics/index.html')
             system_stats = yield webinterface._Libraries['localdb'].get_distinct_stat_names(search_name_start='lib.')
             device_stats = yield webinterface._Libraries['localdb'].get_distinct_stat_names(search_name_start='devices.')
@@ -25,32 +27,3 @@ def route_statistics(webapp):
                 device_stats=device_stats,
                 energy_stats=energy_stats,
             )
-        #
-        # @webapp.route('/<string:device_id>/details')
-        # @require_auth()
-        # def page_statistics_details(webinterface, request, session, device_id):
-        #     try:
-        #         device = webinterface._Devices[device_id]
-        #     except Exception as e:
-        #         webinterface.add_alert('Device ID was not found.  %s' % e, 'warning')
-        #         return webinterface.redirect(request, '/devices/index')
-        #     device_commands = device.available_commands()
-        #     page = webinterface.get_template(request, webinterface.wi_dir + '/pages/devices/device.html')
-        #     return page.render(alerts=webinterface.get_alerts(),
-        #                        device=device,
-        #                        device_commands=device_commands,
-        #                        )
-        #
-        # @webapp.route('/<string:device_id>/edit')
-        # @require_auth()
-        # def page_statistics_edit(webinterface, request, session, device_id):
-        #     try:
-        #         device = webinterface._Devices.get(device_id)
-        #     except Exception as e:
-        #         # print "device find errr: %s" % e
-        #         webinterface.add_alert('Device ID was not found.', 'warning')
-        #         return webinterface.redirect(request, '/devices/index')
-        #     page = webinterface.get_template(request, webinterface.wi_dir + '/pages/devices/device.html')
-        #     return page.render(alerts=webinterface.get_alerts(),
-        #                        device=device,
-        #                        )

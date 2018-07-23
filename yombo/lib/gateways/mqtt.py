@@ -451,6 +451,8 @@ class Gateway_Coms(object):
         else:
             if device_id in self._Parent._Devices:
                 device = self._Parent._Devices[device_id]
+                if device.gateway_id == gateway_id or device.status != 1:
+                    return
                 message[device_id] = device.status_all.asdict()
         self.publish_data('gw', return_gw, 'lib/device_status', message)
 

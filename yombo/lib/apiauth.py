@@ -21,6 +21,7 @@ from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
 from yombo.utils import random_string, random_int, sleep, bytes_to_unicode
 from yombo.utils.datatypes import coerce_value
+from yombo.utils.decorators import memoize_ttl
 
 logger = get_logger("library.apiauth")
 
@@ -72,7 +73,10 @@ class APIAuth(YomboLibrary):
     @inlineCallbacks
     def _init_(self, **kwargs):
         self.session_type = "apiauth"
+        self.created_items_not_from_db = []
         yield self.load_sessions()
+
+    def _started_(self, **kwargs):
         self._periodic_save_apiauths = LoopingCall(self.save_apiauths)
         self._periodic_save_apiauths.start(random_int(60*60*4, .2))  # Every four-ish. Save api auth records.
 
@@ -84,7 +88,6 @@ class APIAuth(YomboLibrary):
     def load_sessions(self):
         api_auths = yield self._LocalDB.get_api_auth()
         for auth in api_auths:
-            # print("apiauth: auth: %s" % auth)
             self.active_api_auth[auth['auth_id']] = Auth(self, auth, source='database')
 
     def get(self, key):
@@ -93,17 +96,13 @@ class APIAuth(YomboLibrary):
         :param key:
         :return:
         """
-        # print("Auth key search: %s" % key)
         if key in self.active_api_auth:
-            # print("Auth key search - found by keyid")
             return self.active_api_auth[key]
         else:
             for auth_id, auth in self.active_api_auth.items():
-                # print("Checking auth: %s = %s" % (auth.label, key))
                 if auth.label.lower() == key.lower():
                     return auth
 
-        # print("Auth key search - not FOUND!")
         raise KeyError("Cannot find api auth key: %s" % key)
 
     def close_session(self, request):
@@ -122,7 +121,6 @@ class APIAuth(YomboLibrary):
         """
         auth_id = None
         if request is not None:
-            # print("request: %s" % request)
             auth_id = bytes_to_unicode(request.getHeader(b'x-api-auth'))
             if auth_id is None:
                 try:
@@ -152,25 +150,28 @@ class APIAuth(YomboLibrary):
             raise YomboWarning("API Auth key is no longer valid.")
         return session
 
-    def create(self, label, description=None, permissions=None, auth_data=None, is_valid=None):
+    def register_active_auth(self, auth_id, source):
+        auth = self.get(auth_id)
+        auth.register_active_auth(source)
+
+    def create(self, label, description=None, roles=None, auth_data=None, is_valid=None, source=None):
         """
         Creates a new session.
+
         :return:
         """
-        # print("about to create new apiauth")
-        # all_auths = yield self.get_all()
         for auth_id, auth in self.active_api_auth.items():
             if auth.label.lower() == label.lower():
                 raise YomboWarning("Already exists.")
 
         if description is None:
             description = "No details."
-        if permissions is None:
-            permissions = {}
         if auth_data is None:
             auth_data = {}
         if is_valid not in (True, False):
             is_valid = True
+        if roles is None:
+            roles = []
 
         auth_id = random_string(length=randint(45, 50))
 
@@ -178,13 +179,27 @@ class APIAuth(YomboLibrary):
             'auth_id': auth_id,
             'label': label,
             'description': description,
-            'permissions': permissions,
             'auth_data': auth_data,
             'is_valid': is_valid,
+            'roles': roles,
+            'source': source,
         }
 
         self.active_api_auth[auth_id] = Auth(self, data)
+        if source not in (None, 'database'):
+            self.created_items_not_from_db.append(auth_id)
+
         return self.active_api_auth[auth_id]
+
+    def delete(self, auth_id):
+        """
+        Deletes an API Auth key.
+
+        :param auth_id:
+        :return:
+        """
+        auth = self.get(auth_id)
+        auth.expire_session()
 
     def rotate(self, auth_id):
         """
@@ -240,8 +255,8 @@ class APIAuth(YomboLibrary):
         Saves session information to disk.
         """
         for auth_id, session in self.active_api_auth.items():
-            if session.is_dirty >= 200 or force is True:
-                yield session.save()
+            if session.is_dirty >= 100 or force is True:
+                yield session.save(call_later_time=0)
 
 
 class Auth(object):
@@ -286,7 +301,7 @@ class Auth(object):
 
         :raises Exception: Always raised.
         """
-        return self.set(data_requested, value)
+        return self.setitem(data_requested, value)
 
     def __delitem__(self, data_requested):
         """
@@ -310,7 +325,7 @@ class Auth(object):
             self.is_dirty = 0
         else:
             self.in_db = False
-            self.is_dirty = 1
+            self.is_dirty = 1000
 
         self.session_type = "apiauth"
 
@@ -321,8 +336,9 @@ class Auth(object):
         self.created_at = int(time())
         self.updated_at = int(time())
         self.auth_data = {}
-        self.permissions = {}
-        self.update_attributes(record)
+        self.roles = []
+        self.source = None
+        self.update_attributes(record, stay_dirty=(source == 'database'))
 
     def update_attributes(self, record=None, stay_dirty=None):
         """
@@ -341,23 +357,52 @@ class Auth(object):
             self.label = record['label']
         if 'description' in record:
             self.description = record['description']
-        if 'permissions' in record:
-            self.permissions = record['permissions']
         if 'last_access' in record:
             self.last_access = record['last_access']
         if 'created_at' in record:
             self.created_at = record['created_at']
         if 'updated_at' in record:
             self.updated_at = record['updated_at']
+        if 'source' in record:
+            self.source = record['source']
         if 'auth_data' in record:
             if isinstance(record['auth_data'], dict):
                 self.auth_data.update(record['auth_data'])
+        if 'roles' in record:
+            if isinstance(record['roles'], list):
+                self.roles = record['roles']
         if stay_dirty is not True:
             self.save()
 
     @property
     def user_id(self) -> str:
         return self.auth_id
+
+    def register_active_auth(self, source):
+        self.source = source
+        self._Parent.created_items_not_from_db.append(self.auth_id)
+
+    def add_role(self, machine_label):
+        if isinstance(machine_label, str) is False:
+            logger.warn("Cannot add role, must be a string.")
+            return
+        if machine_label not in self.roles:
+            self.roles.append(machine_label)
+        self.is_dirty += 1
+
+    def remove_role(self, machine_label):
+        if isinstance(machine_label, str) is False:
+            logger.warn("Cannot remove role, must be a string.")
+            return
+        if machine_label in self.roles:
+            self.roles.remove(machine_label)
+        self.is_dirty += 1
+
+    def set_roles(self, roles):
+        if isinstance(roles, list) is False:
+            return
+        self.roles = roles
+        self.is_dirty += 1
 
     def get(self, key, default="BRFEqgdgLgI0I8QM2Em2nWeJGEuY71TTo7H08uuT"):
         if key in self.auth_data:
@@ -369,7 +414,7 @@ class Auth(object):
             # return None
             raise KeyError("Cannot find session key: %s" % key)
 
-    def set(self, key, val):
+    def setitem(self, key, val):
         if key == 'is_valid':
             raise YomboWarning("Use expire_session() method to expire this session.")
         if key == 'id' or key == 'session_id':
@@ -395,6 +440,17 @@ class Auth(object):
         self.last_access = int(time())
         self.is_dirty += 1
 
+    @memoize_ttl(60)
+    def has_access(self, path, action, raise_error=None):
+        """
+        Check if api auth has access  to a resource / access_type combination.
+
+        :param access_type:
+        :param resource:
+        :return:
+        """
+        return self._Parent._Users.has_access(self.roles, path, action, raise_error)
+
     def check_valid(self):
         if self.is_valid is False:
             return False
@@ -419,17 +475,27 @@ class Auth(object):
         self.save()
 
     @inlineCallbacks
-    def save(self, timeout=None):
-        if timeout is None:
-            timeout = 0.05
-        if self.in_db:
-            if timeout > 0:
-                reactor.callLater(timeout, self._Parent._LocalDB.update_api_auth, self)
+    def save(self, call_later_time=None):
+        if call_later_time is None or isinstance(call_later_time, int) is False:
+            call_later_time = 0.05
+        if self.in_db is True:
+            if call_later_time > 0:
+                if self.is_valid is True:
+                    reactor.callLater(call_later_time, self._Parent._LocalDB.update_api_auth, self)
+                else:
+                    reactor.callLater(call_later_time, self._Parent._LocalDB.delete_api_auth, self.auth_id)
+                    if self.auth_id in self._Parent.active_api_auth:
+                        del self._Parent.active_api_auth[self.auth_id]
             else:
-                yield self._Parent._LocalDB.update_api_auth(self)
+                if self.is_valid is True:
+                    yield self._Parent._LocalDB.update_api_auth(self)
+                else:
+                    yield self._Parent._LocalDB.delete_api_auth(self.auth_id)
+                    if self.auth_id in self._Parent.active_api_auth:
+                        del self._Parent.active_api_auth[self.auth_id]
         else:
-            if timeout > 0:
-                reactor.callLater(timeout, self._Parent._LocalDB.save_api_auth, self)
+            if call_later_time > 0:
+                reactor.callLater(call_later_time, self._Parent._LocalDB.save_api_auth, self)
             else:
                 yield self._Parent._LocalDB.save_api_auth(self)
             self.in_db = True

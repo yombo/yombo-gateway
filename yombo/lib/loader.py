@@ -103,8 +103,10 @@ HARD_LOAD["WebInterface"] = {'operating_mode': 'all'}
 HARD_LOAD["Tasks"] = {'operating_mode': 'all'}
 HARD_LOAD["Automation"] = {'operating_mode': 'all'}
 HARD_LOAD["Scenes"] = {'operating_mode': 'all'}
+HARD_LOAD["Users"] = {'operating_mode': 'all'}
 
 HARD_UNLOAD = OrderedDict()
+HARD_UNLOAD["Users"] = {'operating_mode': 'all'}
 HARD_UNLOAD["Gateways"] = {'operating_mode': 'all'}
 HARD_UNLOAD["SSLCerts"] = {'operating_mode': 'all'}
 HARD_UNLOAD["Scenes"] = {'operating_mode': 'all'}
@@ -466,6 +468,7 @@ class Loader(YomboLibrary, object):
             library._Template = self.loadedLibraries['template']
             library._Times = self.loadedLibraries['times']
             library._YomboAPI = self.loadedLibraries['yomboapi']
+            library._Users = self.loadedLibraries['users']
             library._Variables = self.loadedLibraries['variables']
             library._Validate = self.loadedLibraries['validate']
             library._WebSessions = self.loadedLibraries['websessions']
@@ -614,7 +617,7 @@ class Loader(YomboLibrary, object):
                 result = yield self.library_invoke(library_name, hook, **kwargs)
                 if result is None:
                     continue
-                results[library._FullName] = result
+                results[library] = result
             except YomboWarning:
                 pass
             except YomboHookStopProcessing as e:

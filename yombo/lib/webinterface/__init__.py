@@ -92,6 +92,7 @@ from yombo.lib.webinterface.routes.misc import route_misc
 from yombo.lib.webinterface.routes.modules import route_modules
 from yombo.lib.webinterface.routes.notices import route_notices
 from yombo.lib.webinterface.routes.panel import route_panel
+from yombo.lib.webinterface.routes.roles import route_roles
 from yombo.lib.webinterface.routes.scenes import route_scenes
 from yombo.lib.webinterface.routes.scenes.device import route_scenes_device
 from yombo.lib.webinterface.routes.scenes.pause import route_scenes_pause
@@ -101,6 +102,7 @@ from yombo.lib.webinterface.routes.scenes.template import route_scenes_template
 from yombo.lib.webinterface.routes.statistics import route_statistics
 from yombo.lib.webinterface.routes.states import route_states
 from yombo.lib.webinterface.routes.system import route_system
+from yombo.lib.webinterface.routes.users import route_users
 from yombo.lib.webinterface.routes.voicecmds import route_voicecmds
 from yombo.lib.webinterface.routes.setup_wizard import route_setup_wizard
 from yombo.lib.webinterface.constants import NAV_SIDE_MENU, DEFAULT_NODE, NOTIFICATION_PRIORITY_MAP_CSS
@@ -223,8 +225,9 @@ class WebInterface(YomboLibrary):
         self.wi_port_nonsecure = self._Configs.get2('webinterface', 'nonsecure_port', 8080)
         self.wi_port_secure = self._Configs.get2('webinterface', 'secure_port', 8443)
 
-        # self.webapp.templates = jinja2.Environment(loader=jinja2.FileSystemLoader("yombo"))
-        self.webapp.templates = jinja2.Environment(loader=jinja2.FileSystemLoader("%s/yombo" % self.app_dir))
+        # self.webapp.templates = jinja2.Environment(loader=jinja2.FileSystemLoader("yombo"),)
+        self.webapp.templates = jinja2.Environment(loader=jinja2.FileSystemLoader("%s/yombo" % self.app_dir),
+                                                   extensions=['jinja2.ext.loopcontrols'])
         self.setup_basic_filters()
 
         self.web_interface_listener = None
@@ -276,16 +279,19 @@ class WebInterface(YomboLibrary):
         route_misc(self.webapp)
         route_modules(self.webapp)
         route_notices(self.webapp)
+        route_roles(self.webapp)
         route_scenes(self.webapp)
         route_scenes_device(self.webapp)
         route_scenes_pause(self.webapp)
         route_scenes_scene(self.webapp)
         route_scenes_state(self.webapp)
         route_scenes_template(self.webapp)
-        route_setup_wizard(self.webapp)
+        if self.operating_mode != 'run':
+            route_setup_wizard(self.webapp)
         route_statistics(self.webapp)
         route_states(self.webapp)
         route_system(self.webapp)
+        route_users(self.webapp)
         route_voicecmds(self.webapp)
 
         if self.is_master():
@@ -349,6 +355,7 @@ class WebInterface(YomboLibrary):
         self.webapp.templates.globals['_mqtt'] = self._MQTT
         self.webapp.templates.globals['_nodes'] = self._Nodes
         self.webapp.templates.globals['_notifiticaions'] = self._Notifications
+        self.webapp.templates.globals['_users'] = self._Users
         self.webapp.templates.globals['_queue'] = self._Queue
         self.webapp.templates.globals['_scenes'] = self._Scenes
         self.webapp.templates.globals['_sqldict'] = self._SQLDict
@@ -500,6 +507,8 @@ class WebInterface(YomboLibrary):
                 logger.warn("Secure port has been disabled. With gateway stopped, edit yomobo.ini and change: webinterface->secure_port")
             else:
                 self.web_server_ssl_started = True
+                # print("########### WEBINTER: lib_webinterface")
+
                 cert = self._SSLCerts.get('lib_webinterface')
                 privkeypyssl = crypto.load_privatekey(crypto.FILETYPE_PEM, cert['key'])
                 certpyssl = crypto.load_certificate(crypto.FILETYPE_PEM, cert['cert'])
@@ -632,7 +641,7 @@ class WebInterface(YomboLibrary):
     @require_auth()
     def page_404(self, request, session, catchall):
         request.setResponseCode(404)
-        page = self.get_template(request, self.wi_dir + '/pages/404.html')
+        page = self.get_template(request, self.wi_dir + '/pages/errors/404.html')
         return page.render()
 
     @webapp.handle_errors(NotFound)
@@ -767,7 +776,6 @@ class WebInterface(YomboLibrary):
                     new_route(self.webapp)
             if 'configs' in options:
                 if 'settings_link' in options['configs']:
-                    component = self._Loader.get_loaded_component(component)
                     self.module_config_links[component._module_id] = options['configs']['settings_link']
 
         # build menu tree
@@ -1007,6 +1015,8 @@ class WebInterface(YomboLibrary):
         def copytree(src, dst, symlinks=False, ignore=None):
             src = 'yombo/lib/webinterface/static/' + src
             dst = 'yombo/lib/webinterface/static/' + dst
+            if path.exists(dst):
+                shutil.rmtree(dst)
             if path.isdir(src):
                 if not path.exists(dst):
                     mkdir(dst)
@@ -1020,15 +1030,25 @@ class WebInterface(YomboLibrary):
 
         CAT_SCRIPTS = [
             'source/bootstrap/dist/css/bootstrap.min.css',
-            'source/metisMenu/metisMenu.min.css',
         ]
-        CAT_SCRIPTS_OUT = 'dist/css/bootstrap-metisMenu.min.css'
+        CAT_SCRIPTS_OUT = 'dist/css/bootstrap.min.css'
+        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
+        CAT_SCRIPTS = [
+            'source/bootstrap/dist/css/bootstrap.min.css.map',
+        ]
+        CAT_SCRIPTS_OUT = 'dist/css/bootstrap.min.css.map'
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         CAT_SCRIPTS = [
             'source/bootstrap/dist/css/bootstrap.min.css',
         ]
         CAT_SCRIPTS_OUT = 'dist/css/bootstrap.min.css'
+        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
+        CAT_SCRIPTS = [
+            'source/bootstrap/dist/css/bootstrap-theme.min.css.map',
+            'source/metisMenu/metisMenu.min.css',
+        ]
+        CAT_SCRIPTS_OUT = 'dist/css/bootstrap-theme.min.css.map'
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         CAT_SCRIPTS = [
@@ -1038,17 +1058,12 @@ class WebInterface(YomboLibrary):
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         CAT_SCRIPTS = [
+            'source/metisMenu/metisMenu.min.css',
             'source/sb-admin/css/sb-admin-2.css',
             'source/sb-admin/css/yombo.css',
             ]
-        CAT_SCRIPTS_OUT = 'dist/css/admin2.min.css'
+        CAT_SCRIPTS_OUT = 'dist/css/admin2-metisMenu.min.css'
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
-
-        # CAT_SCRIPTS = [
-        #     'source/font-awesome5/css/fa-svg-with-js.css',
-        #     ]
-        # CAT_SCRIPTS_OUT = 'dist/css/font_awesome5.min.css'
-        # do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         CAT_SCRIPTS = [
             'source/datatables-plugins/integration/bootstrap/3/dataTables.bootstrap.css',
@@ -1152,6 +1167,7 @@ class WebInterface(YomboLibrary):
 
         # Just copy files
         copytree('source/bootstrap/dist/fonts/', 'dist/fonts/')
+        copytree('source/bootstrap-select/', 'dist/bootstrap-select/')
         copytree('source/img/', 'dist/img/')
 
 class web_translator(object):

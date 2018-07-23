@@ -9,7 +9,7 @@ from ratelimit import RateLimitException
 
 from twisted.internet.defer import inlineCallbacks
 
-from yombo.core.exceptions import YomboWarning, YomboRestart
+from yombo.core.exceptions import YomboWarning, YomboNoAccess
 from yombo.utils import ip_addres_in_local_network, bytes_to_unicode, sha256_compact
 from yombo.lib.webinterface.routes.api_v1.__init__ import return_error, args_to_dict
 
@@ -115,7 +115,7 @@ def run_first(create_session=None, *args, **kwargs):
     return deco
 
 
-def require_auth(roles=None, login_redirect=None, *args, **kwargs):
+def require_auth(roles=None, login_redirect=None, access_path=None, access_action=None, *args, **kwargs):
     def call(f, *args, **kwargs):
         return f(*args, **kwargs)
 
@@ -144,6 +144,8 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
                 webinterface.misc_wi_data['breadcrumb'] = request.breadcrumb
 
             if 'api' in kwargs and kwargs['api'] is True:
+                print("request: %s" % request)
+                print("request header: %s" % request.getHeader(b'x-api-auth'))
                 try:
                     session = webinterface._APIAuth.get_session_from_request(request)
                     session.touch()
@@ -152,7 +154,7 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
                     try:
                         session = yield webinterface._WebSessions.get_session_from_request(request)
                     except YomboWarning as e:
-                        logger.info("API request doesn't have session cookie. Bye bye: {e}", e=e)
+                        logger.info("API request doesn't have a valid auth key or session. Bye bye: {e}", e=e)
                         return return_need_login(webinterface, request, None, **kwargs)
                     results = check_idempotence(webinterface, request, session)
                     if isinstance(results, bool) is False:
@@ -200,9 +202,16 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
             #         page = webinterface.get_template(request, webinterface.wi_dir + '/pages/restart.html')
             #         return page.render(alerts=webinterface.get_alerts())
 
+            # def require_auth(roles=None, login_redirect=None, access_path=None, access_action=None, *args, **kwargs):
+            if access_path is not None and access_action is not None:
+                if session.has_access('module_amazonalexa:api', 'control') is False:
+                    return return_no_access(webinterface, request, **kwargs)
+                    pass
             try:
                 results = yield call(f, webinterface, request, session, *a, **kw)
                 return results
+            except YomboNoAccess as e:
+                return return_no_access(webinterface, request, e, **kwargs)
             except Exception as e:  # catch anything here...so can display details.
                 logger.error("---------------==(Traceback)==--------------------------")
                 logger.error("Function: {f}", f=f)
@@ -333,7 +342,7 @@ def return_need_login(webinterface, request, session, api_message=None, **kwargs
             content_type = ''
         if ('api' in kwargs and kwargs['api'] is True) or 'json' in content_type:
             return return_error(request, 'Unauthorized', 401, api_message)
-    page = webinterface.get_template(request, webinterface.wi_dir + '/pages/login_user.html')
+    page = webinterface.get_template(request, webinterface.wi_dir + '/pages/misc/login_user.html')
     return page.render(alerts=webinterface.get_alerts())
 
 
@@ -348,8 +357,20 @@ def return_need_pin(webinterface, request, **kwargs):
     if webinterface._display_pin_console_at < int(time()) - 30:
         webinterface._display_pin_console_at = int(time())
         webinterface.display_pin_console()
-    page = webinterface.get_template(request, webinterface.wi_dir + '/pages/login_pin.html')
+    page = webinterface.get_template(request, webinterface.wi_dir + '/pages/misc/login_pin.html')
     return page.render(alerts=webinterface.get_alerts())
+
+
+def return_no_access(webinterface, request, error, **kwargs):
+    content_type = request.getHeader('content-type')
+    if isinstance(content_type, str):
+        content_type = content_type.lower()
+    else:
+        content_type = ''
+    if ('api' in kwargs and kwargs['api'] is True) or 'json' in content_type:
+        return return_error(request, 'Forbidden - No access to protected resource', 403)
+    page = webinterface.get_template(request, webinterface.wi_dir + '/pages/errors/403.html')
+    return page.render(alerts=webinterface.get_alerts(), error=error)
 
 
 def check_needs_web_pin(webinterface, request, session):

@@ -328,10 +328,11 @@ CONFIG_ITEMS = {
         },
         'purgeable': True,
         'map': {
-            'id': 'id',
-            'gateway_id': 'gateway_id',
-            'user_id': 'user_id',
+            'user_id': 'id',
             'email': 'email',
+            'name': 'name',
+            'access_code_digits': 'access_code_digits',
+            'access_code_string': 'access_code_string',
             'created_at': 'created_at',
             'updated_at': 'updated_at',
         }
