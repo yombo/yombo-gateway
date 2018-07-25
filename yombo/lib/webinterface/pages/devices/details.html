@@ -313,12 +313,44 @@
                 </div>
           </div>
           <div id="debug" class="tab-pane fade">
+              <br>
+              {% if device.MACHINE_STATUS_EXTRA_FIELDS|length == 0 -%}
+              Device has no status extra fields.
+              {% else %}
+                <div class="panel panel-default">
+                   <div class="panel-heading">
+                       <h4>Status Extra</h4>
+                   </div>
+                   <!-- /.panel-heading -->
+                   <div class="panel-body">
+                       <div class="dataTable_wrapper">
+                            <table width="100%" class="table table-striped table-bordered table-hover" id="dataTables-variables">
+                                <thead>
+                                    <tr>
+                                        <th>Field name</th><th>Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody>{% for field_name, status in device.MACHINE_STATUS_EXTRA_FIELDS.items() %}
+                                     <tr>
+                                        <td> {{ field_name }}</td>
+                                        <td> {{ status }}</td>
+                                     </tr>{% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+               {% endif %}
+                <!-- /.panel-body -->
+
+
               <h4>Device Debug Information</h4>
                <br>
-              {% if device.debug_data|length == 0 -%}
+              {% set debug_data = device.debug_data %}
+              {% if debug_data|length == 0 -%}
               No device debug information found.
               {% else %}
-               {% for debug_id, debug_info in device.debug_data.items() %}
+               {% for debug_id, debug_info in debug_data.items() %}
                <div class="panel panel-default">
                    <div class="panel-heading">
                        <h4>{{debug_info.title}}</h4>
