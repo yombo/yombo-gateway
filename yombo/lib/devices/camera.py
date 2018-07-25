@@ -29,7 +29,7 @@ class Camera(Device):
             FEATURE_DETECTS_MOTION: False,
         })
 
-        # self.STATUS_EXTRA['mode'] = ['idle', 'streaming', 'recording']
+        # self.MACHINE_STATUS_EXTRA_FIELDS['mode'] = ['idle', 'streaming', 'recording']
 
     def toggle(self):
         if self.status_history[0].machine_status == SEVALUE_IDLE:

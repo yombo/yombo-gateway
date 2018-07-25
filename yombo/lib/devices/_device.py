@@ -6,21 +6,23 @@
 
   For development guides see: `Devices @ Module Development <https://yombo.net/docs/libraries/devices>`_
 
-A device class to be inherited by all device types.
+The device class is the base class all devices should inherit from. This class inherits from Device_Base for
+it's function processing and Device_Attributes to setup the device attributes.
+
+The attributes and functions in this class are intended to be overridden by subclasses, however, attributes from
+the Device_Attributes can also be overridden, but that is less common.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2012-2017 by Yombo.
+:copyright: Copyright 2012-2018 by Yombo.
 :license: LICENSE for details.
 """
-# Import python libraries
-from time import time
-
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
 from yombo.utils import instance_properties
-from ._base_device import Base_Device
+from ._device_base import Device_Base
+
 logger = get_logger('library.devices.device')
 
 # Yombo Constants
@@ -28,24 +30,45 @@ from yombo.constants.commands import (COMMAND_TOGGLE, COMMAND_OPEN, COMMAND_ON, 
                                       COMMAND_HIGH, COMMAND_LOW)
 
 
-class Device(Base_Device):
+class Device(Device_Base):
     """
     The parent to all child device types.
     """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    @property
+    def is_on(self):
+        if isinstance(self.machine_status, int) is False:
+            return False
+        if int(self.machine_status) > 0:
+            return True
+        else:
+            return False
 
-    def device_feature_is_active(self, feature_name):
-        if feature_name not in self.FEATURES:
+    @property
+    def is_off(self):
+        if isinstance(self.machine_status, int) is False:
             return False
-        value = self.FEATURES[feature_name]
-        if value is False:
-            return False
-        if value is True:
-            return True
-        if isinstance(value, dict) or isinstance(value, list):
-            return True
-        return False
+        return not self.is_on()
+
+    @property
+    def debug_data(self):
+        return {}
+
+    @property
+    def current_mode(self):
+        """
+        Return the current mode of operation for the device.
+        """
+        machine_status_extra = self.machine_status_extra
+        if 'mode' in machine_status_extra.machine_status_extra:
+            return machine_status_extra.machine_status_extra['mode']
+        return None
+
+    @property
+    def unit_of_measurement(self):
+        """
+        Return the unit of measurement of this device, if any.
+        """
+        return None
 
     def generate_human_status(self, machine_status, machine_status_extra):
         if machine_status == 1:
@@ -55,24 +78,6 @@ class Device(Base_Device):
     def generate_human_message(self, machine_status, machine_status_extra):
         human_status = self.generate_human_status(machine_status, machine_status_extra)
         return "%s is now %s" % (self.area_label, human_status)
-
-    def get_toggle_command(self):
-        """
-        If a device is toggleable, return True. It's toggleable if a device only has two commands.
-        :return: 
-        """
-        if self.can_toggle():
-            if self.device_commands > 0:
-                request_id = self.device_commands[0]
-                request = self._Parent.device_commands[request_id]
-                command_id = request.command.command_id
-                for toggle_command_id in self.TOGGLE_COMMANDS:
-                    if toggle_command_id == command_id:
-                        continue
-                    return self._Parent._Commands[toggle_command_id]
-            else:
-                raise YomboWarning("Device cannot be toggled, device is in unknown state.")
-        raise YomboWarning("Device cannot be toggled, it's not enabled for this device.")
 
     def available_status_modes_values(self):
         return instance_properties(self, startswith_filter='STATUS_MODES_')
@@ -137,6 +142,24 @@ class Device(Base_Device):
         if self.can_toggle() is False:
             return
         return self.command(COMMAND_TOGGLE)
+
+    def get_toggle_command(self):
+        """
+        If a device is toggleable, return True. It's toggleable if a device only has two commands.
+        :return:
+        """
+        if self.can_toggle():
+            if self.device_commands > 0:
+                request_id = self.device_commands[0]
+                request = self._Parent.device_commands[request_id]
+                command_id = request.command.command_id
+                for toggle_command_id in self.TOGGLE_COMMANDS:
+                    if toggle_command_id == command_id:
+                        continue
+                    return self._Parent._Commands[toggle_command_id]
+            else:
+                raise YomboWarning("Device cannot be toggled, device is in unknown state.")
+        raise YomboWarning("Device cannot be toggled, it's not enabled for this device.")
 
     def turn_on(self, **kwargs):
         for item in (COMMAND_ON, COMMAND_OPEN):

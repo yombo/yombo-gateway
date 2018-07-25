@@ -530,7 +530,7 @@ class LocalDB(YomboLibrary):
         device.area_id = data['area_id']
         device.label = data['label']
         device.machine_label = data['machine_label']
-        device.description = data.get('description', None)
+        device.description = data['description']
         device.pin_required = data['pin_required']
         device.pin_code = data['pin_code']
         device.pin_timeout = data['pin_timeout']

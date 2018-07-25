@@ -8,9 +8,11 @@
 Base device functions. Should not be directly inherited by other device types, instead
 inherit 'Device' from _device.py.
 
+This device inherits from _device_attributes.
+
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2012-2017 by Yombo.
+:copyright: Copyright 2012-2018 by Yombo.
 :license: LICENSE for details.
 """
 # Import python libraries
@@ -18,33 +20,28 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
     import json
-from collections import deque, OrderedDict
-from copy import deepcopy
+from collections import OrderedDict
 from datetime import datetime
 from time import time
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks
-from twisted.internet.task import LoopingCall
-
-# Yombo Constants
-from yombo.constants.features import (FEATURE_ALL_OFF, FEATURE_ALL_ON, FEATURE_PINGABLE, FEATURE_POLLABLE,
-                                      FEATURE_SEND_UPDATES, FEATURE_POWER_CONTROL, FEATURE_ALLOW_IN_SCENES,
-                                      FEATURE_CONTROLLABLE, FEATURE_ALLOW_DIRECT_CONTROL)
-from yombo.constants.commands import (COMMAND_TOGGLE, COMMAND_OPEN, COMMAND_ON, COMMAND_OFF, COMMAND_CLOSE,
-                                      COMMAND_HIGH, COMMAND_LOW)
 
 # Import Yombo libraries
-from yombo.utils import is_true_false
 from yombo.core.exceptions import YomboPinCodeError, YomboWarning
 from yombo.core.log import get_logger
-from yombo.utils import random_string, global_invoke_all, do_search_instance, sha256_compact
+from yombo.utils import random_string, global_invoke_all, do_search_instance
 from yombo.lib.commands import Command  # used only to determine class type
+
+# Import local items
+from ._device_attributes import Device_Attributes
 from ._device_command import Device_Command
 from ._device_status import Device_Status
+
 logger = get_logger('library.devices.device')
 
-class Base_Device(object):
+
+class Device_Base(Device_Attributes):
     """
     The base device contains all the core functions for devices. This calls should only be
     inherited by 'Device' class.
@@ -60,740 +57,6 @@ class Base_Device(object):
         * :py:meth:`get_status <Device.get_status>` - Get a latest device status object.
         * :py:meth:`set_status <Device.set_status>` - Set the device status.
     """
-    @property
-    def area(self) -> str:
-        """
-        Returns the label for the device's area_id.
-
-        :return:
-        """
-        locations = self._Parent._Locations.locations
-        try:
-            area = locations[self.area_id].label
-            if area.lower() == "none":
-                return ""
-            else:
-                return area
-        except Exception:
-            return ""
-
-    @property
-    def location(self) -> str:
-        """
-        Returns the label for the device location_id.
-
-        :return:
-        """
-        locations = self._Parent._Locations.locations
-        try:
-            location = locations[self.location_id].label
-            if location.lower() == "none":
-                return ""
-            else:
-                return location
-        except Exception:
-            return ""
-
-    @property
-    def area_label(self) -> str:
-        """
-        Returns the device's area label + device label.
-        :return:
-        """
-        locations = self._Parent._Locations.locations
-        try:
-            area = locations[self.area_id].label
-            if area.lower() == "none":
-                area = ""
-            else:
-                area = area + " "
-        except Exception:
-            area = ""
-        return "%s%s" % (area, self.label)
-
-    @property
-    def full_label(self) -> str:
-        """
-        Returns the device's location + area + device label.
-        :return:
-        """
-        locations = self._Parent._Locations.locations
-        try:
-            location = locations[self.location_id].label
-            if location.lower() == "none":
-                location = ""
-            else:
-                location = location + " "
-        except Exception as e:
-            location = ""
-
-        try:
-            area = locations[self.area_id].label
-            if area.lower() == "none":
-                area = ""
-            else:
-                area = area + " "
-        except Exception as e:
-            area = ""
-        return "%s%s%s" % (location, area, self.label)
-
-    @property
-    def statistic_label_slug(self):
-        """
-        Get statistics label. Use the user defined version or create one if doesn't exist.
-        :return:
-        """
-        if self.statistic_label in (None, "", "None", "none"):
-            locations = self._Parent._Locations.locations
-            new_label = ""
-            if self.location_id in locations:
-                location = locations[self.location_id].label
-                if location.lower() != "none":
-                    new_label = self._Validate.slugify(location)
-
-            if self.area_id in locations:
-                area = locations[self.area_id].label
-                if area.lower() != "none":
-                    if len(new_label) > 0:
-                        new_label = new_label + "." + self._Validate.slugify(location)
-                    else:
-                        new_label = self._Validate.slugify(location)
-            if len(new_label) > 0:
-                new_label = new_label + "." + self._Validate.slugify(self.machine_label)
-            else:
-                new_label = self._Validate.slugify(self.machine_label)
-            return new_label
-        else:
-            return self.statistic_label
-
-    @property
-    def should_poll(self) -> bool:
-        """
-        Return True if the device needs to be polled to get current status.
-        False if devices push status updates.
-
-        In most cases, the module handling the device will automatically poll the device periodically. For these
-        devices and for devices that don't send updates or are not polled, should return True.
-        """
-        return True
-
-    @property
-    def current_mode(self):
-        """
-        Return the current mode of operation for the device.
-        """
-        machine_status_extra = self.machine_status_extra
-        if 'mode' in machine_status_extra.machine_status_extra:
-            return machine_status_extra.machine_status_extra['mode']
-        return None
-
-    @property
-    def status(self):
-        """
-        Return the machine status of the device.
-        """
-        return self.machine_status
-
-    @property
-    def machine_status(self):
-        """
-        Get the current machine status for a device.
-
-        :return:
-        """
-        return self.status_all.machine_status
-
-    @property
-    def machine_status_extra(self):
-        """
-        Get the current machine status extra details for a device.
-
-        :return:
-        """
-        return self.status_all.machine_status_extra
-
-
-    @property
-    def status_all(self):
-        """
-        Return the device's current status. Will return fake status of
-        there is no current status which basically says the status is unknown.
-        """
-        if len(self.status_history) == 0:
-            requested_by = {
-                'user_id': 'Unknown',
-                'component': 'Unknown',
-            }
-            return Device_Status(self._Parent, self, {
-                'device_id': self.device_id,
-                'set_at': time(),
-                'energy_usage': 0,
-                'energy_type': self.energy_type,
-                'human_status': 'Unknown',
-                'human_message': 'Unknown status for device',
-                'machine_status': None,
-                'machine_status_extra': {},
-                'gateway_id': self.gateway_id,
-                'requested_by': requested_by,
-                'reported_by': None,
-                'request_id': None,
-                'uploaded': 0,
-                'uploadable': 1,
-                'fake_data': True,
-            })
-        return self.status_history[0]
-
-    @property
-    def unit_of_measurement(self):
-        """
-        Return the unit of measurement of this device, if any.
-        """
-        return None
-
-    @property
-    def icon(self):
-        """
-        Return the icon to use in the frontend, if any.
-        """
-        return None
-
-    @property
-    def icon_on_click(self):
-        """
-        Return the icon to use when icon is clicked, if any.
-        """
-        return None
-
-    @property
-    def device_picture(self):
-        """
-        Return the device picture to use in the frontend, if any.
-        """
-        return None
-
-    @property
-    def hidden(self) -> bool:
-        """
-        Return True if the device should be hidden from UIs.
-        """
-        return False
-
-    @property
-    def features(self) -> list:
-        """
-        Return a list of features this device supports.
-        """
-        features = {}
-        for feature, value in self.FEATURES.items():
-            if value is not False:
-                features[feature] = value
-        return features
-
-    @property
-    def device_type(self):
-        """
-        Returns the device type object for the device.
-        :return:
-        """
-        return self._Parent._DeviceTypes[self.device_type_id]
-
-    @property
-    def is_direct_controllable(self):
-        if self.device_feature_is_active(FEATURE_CONTROLLABLE) and \
-                    self.device_feature_is_active(FEATURE_ALLOW_DIRECT_CONTROL) and \
-                    is_true_false(self.allow_direct_control) and \
-                    is_true_false(self.controllable):
-            return True
-        return False
-
-    @property
-    def is_controllable(self):
-        if self.device_feature_is_active(FEATURE_ALLOW_DIRECT_CONTROL) and \
-                    is_true_false(self.controllable):
-            return True
-        return False
-
-    @property
-    def is_allowed_in_scenes(self):
-        if self.device_feature_is_active(FEATURE_ALLOW_IN_SCENES) and self.is_controllable:
-            return True
-        return False
-
-    @property
-    def is_dimmable(self):
-        return self.SUPPORT_BRIGHTNESS
-
-    @property
-    def is_on(self):
-        if isinstance(self.machine_status, int) is False:
-            return False
-        if int(self.machine_status) > 0:
-            return True
-        else:
-            return False
-
-    @property
-    def is_off(self):
-        if isinstance(self.machine_status, int) is False:
-            return False
-        return not self.is_on()
-
-    @property
-    def debug_data(self):
-        return {}
-
-    def __str__(self):
-        """
-        Print a string when printing the class.  This will return the device_id so that
-        the device can be identified and referenced easily.
-        """
-        return self.device_id
-
-    def __getitem__(self, key):
-        return self.__dict__[key]
-
-    def __repr__(self):
-        return repr(self.__dict__)
-
-    def __len__(self):
-        return len(self.__dict__)
-
-    def has_key(self, k):
-        return k in self.__dict__
-
-    def keys(self):
-        return list(self.__dict__.keys())
-
-    def values(self):
-        return list(self.__dict__.values())
-
-    def items(self):
-        return list(self.__dict__.items())
-
-    def __contains__(self, item):
-        return item in self.__dict__
-
-    def __iter__(self):
-        return iter(self.__dict__)
-
-    def __init__(self, device, _Parent, test_device=None):
-        """
-        :param device: *(list)* - A device as passed in from the devices class. This is a
-            dictionary with various device attributes.
-        :ivar callBeforeChange: *(list)* - A list of functions to call before this device has it's status
-            changed. (Not implemented.)
-        :ivar callAfterChange: *(list)* - A list of functions to call after this device has it's status
-            changed. (Not implemented.)
-        :ivar device_id: *(string)* - The UUID of the device.
-        :type device_id: string
-        :ivar device_type_id: *(string)* - The device type UUID of the device.
-        :ivar label: *(string)* - Device label as defined by the user.
-        :ivar description: *(string)* - Device description as defined by the user.
-        :ivar pin_required: *(bool)* - If a pin is required to access this device.
-        :ivar pin_code: *(string)* - The device pin number.
-            system to deliver commands and status update requests.
-        :ivar created_at: *(int)* - When the device was created; in seconds since EPOCH.
-        :ivar updated_at: *(int)* - When the device was last updated; in seconds since EPOCH.
-        :ivar status_history: *(dict)* - A dictionary of strings for current and up to the last 30 status values.
-        :ivar device_variables_cached: *(dict)* - The device variables as defined by various modules, with
-            values entered by the user.
-        :ivar available_commands: *(list)* - A list of command_id's that are valid for this device.
-        """
-        self._FullName = 'yombo.gateway.lib.Devices.Device'
-        self._Name = 'Devices.Device'
-        self._Parent = _Parent
-        self.call_before_command = []
-        self.call_after_command = []
-        self._security_send_device_status = self._Configs.get2("security", "amqpsenddevicestatus", True)
-
-        self.PLATFORM_BASE = "device"
-        self.PLATFORM = "device"
-        self.SUB_PLATFORM = None
-        # Features this device can support
-        self.FEATURES = {
-            FEATURE_POWER_CONTROL: True,
-            FEATURE_ALL_ON: False,
-            FEATURE_ALL_OFF: False,
-            FEATURE_PINGABLE: True,
-            FEATURE_POLLABLE: True,
-            FEATURE_SEND_UPDATES: True,
-            FEATURE_ALLOW_IN_SCENES: True,
-            FEATURE_CONTROLLABLE: True,
-            FEATURE_ALLOW_DIRECT_CONTROL: True,
-        }
-        self.TOGGLE_COMMANDS = False  # Put two command machine_labels in a list to enable toggling.
-
-        self.STATUS_EXTRA = {}
-        # self.STATUS_EXTRA = {
-        #     'mode': ['auto', 'on', 'off'],
-        #     'running': ['auto', 'on', 'off'],
-        # }
-
-        self.device_id = device["id"]
-        if test_device is None:
-            self.test_device = False
-        else:
-            self.test_device = test_device
-
-        memory_sizing = {
-            'x_small': {'other_device_commands': 2,  #less then 256mb
-                           'other_status_history': 2,
-                           'local_device_commands': 5,
-                           'local_status_history': 5},
-            'small': {'other_device_commands': 5,  #About 512mb
-                           'other_status_history': 5,
-                           'local_device_commands': 25,
-                           'local_status_history': 25},
-            'medium': {'other_device_commands': 25,  # About 1024mb
-                      'other_status_history': 25,
-                      'local_device_commands': 75,
-                      'local_status_history': 75},
-            'large': {'other_device_commands': 50,  # About 2048mb
-                       'other_status_history': 50,
-                       'local_device_commands': 125,
-                       'local_status_history': 125},
-            'x_large': {'other_device_commands': 100,  # About 4092mb
-                      'other_status_history': 100,
-                      'local_device_commands': 250,
-                      'local_status_history': 250},
-            'xx_large': {'other_device_commands': 200,  # About 8000mb
-                        'other_status_history': 200,
-                        'local_device_commands': 500,
-                        'local_status_history': 500},
-        }
-
-        sizes = memory_sizing[self._Parent._Atoms['mem.sizing']]
-        self.device_commands = deque({}, sizes['other_device_commands'])
-        self.status_history = deque({}, sizes['other_status_history'])
-
-        self.device_variables_cached = {}
-        # self.device_variables = self.device_variables
-        # self.device_variables = partial(self.device_variables)
-
-        #The following items are set from the databsae, module, or AMQP service.
-        self.device_type_id = None
-        self.gateway_id = None
-        self.location_id = None
-        self.area_id = None
-        self.machine_label = None
-        self.label = None
-        self.description = None
-        self.pin_required = None
-        self.pin_code = None
-        self.pin_timeout = None
-        self.voice_cmd = None
-        self.voice_cmd_order = None
-        self.statistic_label = None
-        self.statistic_type = None
-        self.statistic_bucket_size = None
-        self.statistic_lifetime = None
-        self.enabled_status = None  # not to be confused for device state. see status_history
-        self.created_at = None
-        self.updated_at = None
-        self.energy_tracker_device = None
-        self.energy_tracker_source = None
-        self.energy_map = None
-        self.energy_type = None
-        self.allow_direct_control = None
-        self.controllable = None
-        self.energy_type = None
-        self.device_is_new = True
-        self.device_serial = device["id"]
-        self.device_mfg = "Yombo"
-        self.device_model = "Yombo"
-
-        self.update_attributes(device, source='parent')
-        if device["gateway_id"] != self.gateway_id:
-            self.device_commands = deque({}, sizes['other_device_commands'])
-            self.status_history = deque({}, sizes['other_status_history'])
-        else:
-            self.device_commands = deque({}, sizes['local_device_commands'])
-            self.status_history = deque({}, sizes['local_status_history'])
-
-    @inlineCallbacks
-    def _init0_(self, **kwargs):
-        """
-        Performs items that require deferreds. This is for system use only.
-
-        :return:
-        """
-        yield self.device_variables()
-        self.device_variables_cached = yield self._Parent._Variables.get_variable_fields_data(
-            group_relation_type='device_type',
-            group_relation_id=self.device_type_id,
-            data_relation_id=self.device_id
-        )
-        if self.test_device is None or self.test_device is False:
-            self.meta = yield self._SQLDict.get('yombo.lib.device', 'meta_' + self.device_id)
-        else:
-            self.meta = {}
-
-        yield self._Parent._DeviceTypes.ensure_loaded(self.device_type_id)
-
-        if self.test_device is False and self.device_is_new is True:
-            self.device_is_new = False
-            yield self.load_status_history(35)
-            yield self.load_device_commands_history(35)
-
-    def _init_(self, **kwargs):
-        """
-        Used by devices to run their init. This is called after the system _init0_ is called.
-
-        :return:
-        """
-        pass
-
-    def _start0_(self, **kwargs):
-        """
-        This is called by the devices library when a new device is loaded for system use only.
-
-        :param kwargs:
-        :return:
-        """
-        pass
-
-    def _start_(self, **kwargs):
-        """
-        This is called by the devices library when a new device is loaded and is used by devices that need
-        to run any start up items.
-
-        :param kwargs:
-        :return:
-        """
-        pass
-
-    def _unload_(self, **kwargs):
-        """
-        About to unload. Lets save all the device status items.
-
-        :param kwargs:
-        :return:
-        """
-        for status in self.status_history:
-            status.save_to_db()
-
-    def supports(self, feature, value=None):
-        """
-        Test if a feature is supported and that the value matches. If value is none, defaults to True.
-
-        :param feature:
-        :return:
-        """
-        if value is None:
-            value = True
-        if feature in self.FEATURES and self.FEATURES[feature] == value:
-            return True
-        return False
-
-    @inlineCallbacks
-    def device_variables(self):
-        self.device_variables_cached = yield self._Parent._Variables.get_variable_fields_data(
-            group_relation_type='device_type',
-            group_relation_id=self.device_type_id,
-            data_relation_id=self.device_id
-        )
-        return self.device_variables_cached
-
-    def update_attributes(self, device, source=None):
-        """
-        Sets various values from a device dictionary. This can be called when the device is first being setup or
-        when being updated by the AMQP service.
-
-        This does not set any device state or status attributes.
-        :param device: 
-        :return: 
-        """
-        if 'device_type_id' in device:
-            self.device_type_id = device["device_type_id"]
-        if 'gateway_id' in device:
-            self.gateway_id = device["gateway_id"]
-        if 'location_id' in device:
-            self.location_id = device["location_id"]
-        if 'area_id' in device:
-            self.area_id = device["area_id"]
-        if 'machine_label' in device:
-            self.machine_label = device["machine_label"]
-        if 'label' in device:
-            self.label = device["label"]
-        if 'description' in device:
-            self.description = device["description"]
-        if 'pin_required' in device:
-            self.pin_required = int(device["pin_required"])
-        if 'pin_code' in device:
-            self.pin_code = device["pin_code"]
-        if 'pin_timeout' in device:
-            try:
-                self.pin_timeout = int(device["pin_timeout"])
-            except:
-                self.pin_timeout = None
-        if 'voice_cmd' in device:
-            self.voice_cmd = device["voice_cmd"]
-        if 'voice_cmd_order' in device:
-            self.voice_cmd_order = device["voice_cmd_order"]
-        if 'statistic_label' in device:
-            self.statistic_label = device["statistic_label"]  # 'myhome.groundfloor.kitchen'
-        if 'statistic_type' in device:
-            self.statistic_type = device["statistic_type"]
-        if 'statistic_bucket_size' in device:
-            self.statistic_bucket_size = device["statistic_bucket_size"]
-        if 'statistic_lifetime' in device:
-            self.statistic_lifetime = device["statistic_lifetime"]
-        if 'status' in device:
-            self.enabled_status = int(device["status"])
-        if 'created_at' in device:
-            self.created_at = int(device["created_at"])
-        if 'updated_at' in device:
-            self.updated_at = int(device["updated_at"])
-        if 'energy_tracker_device' in device:
-            self.energy_tracker_device = device['energy_tracker_device']
-        if 'energy_tracker_source' in device:
-            self.energy_tracker_source = device['energy_tracker_source']
-        if 'energy_type' in device:
-            self.energy_type = device['energy_type']
-
-        if 'energy_map' in device:
-            if device['energy_map'] is not None:
-                # create an energy map from a dictionary
-                energy_map_final = {}
-                if isinstance(device['energy_map'], dict) is False:
-                    device['energy_map'] = {"0.0":0,"1.0":0}
-
-                for percent, rate in device['energy_map'].items():
-                    energy_map_final[self._Parent._InputTypes.check('percent', percent)] = self._Parent._InputTypes.check('number' , rate)
-                energy_map_final = OrderedDict(sorted(list(energy_map_final.items()), key=lambda x_y: float(x_y[0])))
-                self.energy_map = energy_map_final
-            else:
-                self.energy_map = None
-
-        if 'controllable' in device:
-            self.controllable = device['controllable']
-        if 'allow_direct_control' in device:
-            self.allow_direct_control = device['allow_direct_control']
-
-        if self.device_is_new is True:
-            global_invoke_all('_device_updated_',
-                              called_by=self,
-                              id=self.device_id,
-                              device=self,
-                              )
-
-        if source != "parent":
-            self._Parent.edit_device(device, source="node")
-
-    def add_to_db(self):
-        if self._Parent.gateway_id == self.gateway_id:
-            self._Parent._LocalDB.add_device(self)
-
-    def save_to_db(self):
-        if self._Parent.gateway_id == self.gateway_id:
-            self._Parent._LocalDB.update_device(self)
-
-    @inlineCallbacks
-    def get_variable_fields(self):
-        variable_fields = self._Parent._DeviceTypes[self.device_type_id].get_variable_fields()
-        return variable_fields
-
-    def commands_pending(self, criteria=None, limit=None):
-        device_commands = self._Parent.device_commands
-        results = OrderedDict()
-        for id, DC in device_commands.items():
-            if criteria is None:
-                if DC.device.device_id == self.device_id:
-                    if DC.status in ('sent', 'received', 'pending'):
-                        results[id] = DC
-            else:
-                matches = True
-                for key, value in criteria.items():
-                    if hasattr(DC, key):
-                        test_value = getattr(DC, key)
-                        if isinstance(value, list):
-                            if test_value not in value:
-                                matches = False
-                                break
-                        else:
-                            if test_value != value:
-                                matches = False
-                                break
-                if matches:
-                    results[id] = DC
-
-            # if limit is not None and len(results) == limit:
-            #     return results
-        return results
-
-    def available_commands(self):
-        """
-        Returns available commands for the current device.
-        :return: 
-        """
-        return self._Parent._DeviceTypes.device_type_commands(self.device_type_id)
-
-    def in_available_commands(self, command):
-        """
-        Checks if a command label, machine_label, or command_id is a possible command for the given device.
-        :param command: 
-        :return: 
-        """
-        self.commands.get(command, command_list=self.available_commands())
-
-    def asdict(self):
-        """
-        Export device variables as a dictionary.
-        """
-        if len(self.status_history) > 0:
-            status_current = self.status_history[0].asdict()
-        else:
-            status_current = None
-
-        if len(self.status_history) > 1:
-            status_previous = self.status_history[1].asdict()
-        else:
-            status_previous = None
-
-        def clean_device_variables(device_variables):
-            variables = deepcopy(device_variables)
-            for label, data in variables.items():
-                del data['data']
-                data['values'] = data['values_orig']
-                del data['values_orig']
-            return variables
-
-        return {
-            'gateway_id': self.gateway_id,
-            'area': self.area,
-            'location': self.location,
-            'area_label': self.area_label,
-            'full_label': self.full_label,
-            'device_id': str(self.device_id),
-            'device_type_id': str(self.device_type_id),
-            'device_type_label': self._DeviceTypes[self.device_type_id].machine_label,
-            'machine_label': str(self.machine_label),
-            'label': str(self.label),
-            'description': str(self.description),
-            'statistic_label': str(self.statistic_label),
-            'statistic_type': str(self.statistic_type),
-            'statistic_bucket_size': str(self.statistic_bucket_size),
-            'statistic_lifetime': str(self.statistic_lifetime),
-            'pin_code': "********",
-            'pin_required': int(self.pin_required),
-            'pin_timeout': self.pin_timeout,
-            'voice_cmd': str(self.voice_cmd),
-            'voice_cmd_order': str(self.voice_cmd_order),
-            'created_at': int(self.created_at),
-            'updated_at': int(self.updated_at),
-            'device_commands': list(self.device_commands),
-            'status_current': status_current,
-            'status_previous': status_previous,
-            'device_serial': self.device_serial,
-            'device_mfg': self.device_mfg,
-            'device_model': self.device_model,
-            'device_platform': self.PLATFORM,
-            'device_sub_platform': self.SUB_PLATFORM,
-            'device_features': self.FEATURES,
-            'device_variables': clean_device_variables(self.device_variables_cached),
-            'enabled_status': self.enabled_status,
-            }
-
     def command(self, cmd, pin=None, request_id=None, not_before=None, delay=None, max_delay=None,
                 requested_by=None, inputs=None, not_after=None, callbacks=None, idempotence=None, **kwargs):
         """
@@ -1220,7 +483,6 @@ class Base_Device(object):
         else:
             return
 
-
     def device_command_done(self, request_id, **kwargs):
         """
         Called by any module that has completed processing of a command request.
@@ -1246,16 +508,6 @@ class Base_Device(object):
                               )
         else:
             return
-
-    def get_request(self, request_id):
-        """
-        Returns a request instance for a provided request_id.
-
-        :raises KeyError: When an invalid request_id is requested.        
-        :param request_id: A request id returned from a 'command()' call. 
-        :return: Device_Request instance
-        """
-        return self._Parent.device_commands[request_id]
 
     def energy_translate(self, value, leftMin, leftMax, rightMin, rightMax):
         """
@@ -1312,17 +564,17 @@ class Base_Device(object):
 
         # filter out previous invalid status extra values.
         for extra_key in list(previous_extra.keys()):
-            if extra_key not in self.STATUS_EXTRA:
+            if extra_key not in self.MACHINE_STATUS_EXTRA_FIELDS:
                 del previous_extra[extra_key]
 
         new_extra = kwargs.get('machine_status_extra', {})
 
         # filter out new invalid status extra values.
         for extra_key in list(new_extra.keys()):
-            if extra_key not in self.STATUS_EXTRA:
+            if extra_key not in self.MACHINE_STATUS_EXTRA_FIELDS:
                 logger.warn(
                     "In future version, the 'status_extra' key '%s' will be removed. Or update device class"
-                    " 'self.STATUS_EXTRA' to include this attribute." % extra_key)
+                    " 'self.MACHINE_STATUS_EXTRA_FIELDS' to include this attribute." % extra_key)
                 # del new_extra[extra_key]
 
         for key, value in new_extra.items():
@@ -1619,52 +871,44 @@ class Base_Device(object):
         """
         self._Parent._MessageLibrary.device_delay_cancel(self.device_id)
 
-    def get_delayed(self):
+    def delayed_commands(self):
         """
-        List messages that are to be sent at a later time.
+        Get commands that are delayed for this device. This is commands that are set to complete in the
+        future, and not pending.
         """
-        self._Parent._MessageLibrary.device_delay_list(self.device_id)
+        commands = {}
+        for request_id, device_command in self._Parent.device_commands.items():
+            if device_command.status == 'delayed' and device_command.device.device_id == self.device_id:
+                commands[request_id] = device_command
+        return commands
 
-    @inlineCallbacks
-    def load_status_history(self, limit=40):
-        """
-        Loads device history into the device instance. This method gets the
-         data from the db to actually set the values.
+    def pending_commands(self, criteria=None, limit=None):
+        device_commands = self._Parent.device_commands
+        results = OrderedDict()
+        for id, DC in device_commands.items():
+            if criteria is None:
+                if DC.device.device_id == self.device_id:
+                    if DC.status in ('sent', 'received', 'pending'):
+                        results[id] = DC
+            else:
+                matches = True
+                for key, value in criteria.items():
+                    if hasattr(DC, key):
+                        test_value = getattr(DC, key)
+                        if isinstance(value, list):
+                            if test_value not in value:
+                                matches = False
+                                break
+                        else:
+                            if test_value != value:
+                                matches = False
+                                break
+                if matches:
+                    results[id] = DC
 
-        :param limit: int - How many history items should be loaded. Default: 40
-        :return:
-        """
-        if limit is None:
-            limit = False
-
-        where = {
-            'device_id': self.device_id,
-        }
-        records = yield self._Parent._Libraries['LocalDB'].get_device_status(where, limit=limit)
-        if len(records) > 0:
-            for record in records:
-                self.status_history.appendleft(Device_Status(self._Parent, self, record, source='database'))
-
-    @inlineCallbacks
-    def load_device_commands_history(self, limit=40):
-        """
-        Loads device command history into the device instance. This method gets the
-        data from the db to actually set the values.
-
-        :param limit: int - How many history items should be loaded. Default: 40
-        :return:
-        """
-        if limit is None:
-            limit = False
-
-        where = {
-            'id': self.device_id,
-        }
-        records = yield self._Parent._Libraries['LocalDB'].get_device_commands(where, limit=limit)
-        if len(records) > 0:
-            for record in records:
-                if record['request_id'] not in self._Parent.device_commands:
-                    self._Parent.add_device_command_by_object(Device_Command(record, self, start=False))
+            # if limit is not None and len(results) == limit:
+            #     return results
+        return results
 
     def validate_command(self, command_requested):
         available_commands = self.available_commands()
@@ -1740,49 +984,20 @@ class Base_Device(object):
         self._Parent._LocalDB.set_device_status(self.device_id, 0)
         self.enabled_status = 0
 
-    def add_features(self, features):
+    def add_to_db(self):
         """
-        Adds additional features to a device.
+        Add this device to the database.
 
-        :param features: A dictionary of additional features.
         :return:
         """
-        for feature in features:
-            self.FEATURES[feature[0]] = feature[1]
+        if self._Parent.gateway_id == self.gateway_id:
+            self._Parent._LocalDB.add_device(self)
 
-    def delete_features(self, features):
+    def save_to_db(self):
         """
-        Removes features from a device. Accepts a list or a string for a single item.
+        Save this device to the database.
 
-        :param features: A list of features to remove from device.
         :return:
         """
-        if isinstance(features, list):
-            for feature in features:
-                del self.FEATURES[feature[0]]
-        else:
-            del self.FEATURES[features]
-
-    def add_status_extra_allow(self, status, values):
-        if status not in self.STATUS_EXTRA:
-            self.STATUS_EXTRA[status] = []
-        else:
-            if isinstance(self.STATUS_EXTRA[status], list) is False:
-                self.STATUS_EXTRA[status] = []
-
-        if isinstance(values, list):
-            for value in values:
-                self.STATUS_EXTRA[status].append(value)
-        else:
-            self.STATUS_EXTRA[status].append(values)
-
-    def add_status_extra_any(self, items):
-        for item in items:
-            self.STATUS_EXTRA[item] = True
-
-    def delete_status_extra(self, items):
-        if isinstance(items, list):
-            for item in items:
-                del self.FEATURES[item]
-        else:
-            del self.FEATURES[items]
+        if self._Parent.gateway_id == self.gateway_id:
+            self._Parent._LocalDB.update_device(self)

@@ -287,7 +287,7 @@ class DeviceTypes(YomboLibrary):
                               device_type_id=device_type_id,
                               device_type=device_type,
                               )
-            self.device_types[device_type_id] = DeviceType(device_type, self)
+            self.device_types[device_type_id] = DeviceType(self, device_type)
             yield self.device_types[device_type_id]._init_()
             global_invoke_all('_device_type_loaded_',
                               called_by=self,
@@ -956,7 +956,7 @@ class DeviceType(object):
     :ivar description: The description of the device type.
     :ivar inputTypeID: The type of input that is required as a variable.
     """
-    def __init__(self, device_type, _DeviceTypes):
+    def __init__(self, parent, device_type):
         """
         A device type object used to lookup more information. Any changes to this record will be updated
         into the database.
@@ -968,7 +968,7 @@ class DeviceType(object):
         """
         logger.debug("DeviceType::__init__: {device_type}", device_type=device_type)
 
-        self._DeviceTypes = _DeviceTypes
+        self._Parent = parent
         self.commands = {}
         self.device_type_id = device_type['id']
 
@@ -1001,15 +1001,15 @@ class DeviceType(object):
         :return:
         """
 
-        command_ids = yield self._DeviceTypes._LocalDB.get_device_type_commands(self.device_type_id)
+        command_ids = yield self._Parent._LocalDB.get_device_type_commands(self.device_type_id)
         self.commands.clear()
         logger.debug("Device type received command ids: {command_ids}", command_ids=command_ids)
         for command_id in command_ids:
             self.commands[command_id] = {
-                'command': self._DeviceTypes._Commands[command_id],
+                'command': self._Parent._Commands[command_id],
                 'inputs': {}
             }
-            inputs = yield self._DeviceTypes._LocalDB.device_type_command_inputs_get(self.device_type_id, command_id)
+            inputs = yield self._Parent._LocalDB.device_type_command_inputs_get(self.device_type_id, command_id)
             for input in inputs:
                 self.commands[command_id]['inputs'][input.machine_label] = {
                     'input_type_id': input.input_type_id,
@@ -1061,7 +1061,6 @@ class DeviceType(object):
                 self.platform = device_type["platform"]
 
     @inlineCallbacks
-#    @memoize_ttl(5)
     def get_variable_fields(self):
         """
         Get variable groups and fields from the database.
@@ -1074,9 +1073,6 @@ class DeviceType(object):
         return variables
 
     def __getitem__(self, key):
-        # print('devicetype __getitem__: ', key)
-        # print('devicetype repsonse __getitem__: ', getattr(self, key))
-        # print('devicetype repsonse __getitem__: ', type(getattr(self, key)))
         return getattr(self, key)
 
     def get_devices(self, gateway_id=None):
@@ -1096,8 +1092,8 @@ class DeviceType(object):
         ]
 
         try:
-            found, key, item, ratio, others = do_search_instance(attrs, self._DeviceTypes._Devices.devices,
-                                      self._DeviceTypes.device_type_search_attributes)
+            found, key, item, ratio, others = do_search_instance(attrs, self._Parent._Devices.devices,
+                                      self._Parent.device_type_search_attributes)
             if found:
                 devices = {}
                 for item in others:

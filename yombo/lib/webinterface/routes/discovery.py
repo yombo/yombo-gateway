@@ -59,7 +59,6 @@ def route_discovery(webapp):
 
         @webapp.route('/<string:device_id>/details')
         @require_auth()
-        @inlineCallbacks
         def page_discovery_details(webinterface, request, session, device_id):
             session.has_access('device:*', 'view', raise_error=True)
             root_breadcrumb(webinterface, request)

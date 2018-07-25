@@ -50,47 +50,40 @@ class Climate(Device):
             FEATURE_TARGET_TEMPERATURE_HIGH: False,
             FEATURE_MODES: [MODE_ON, MODE_OFF, MODE_AUTO, MODE_COOL, MODE_HEAT, MODE_AWAY]
         })
-        self.STATUS_EXTRA[STATUS_EXTRA_TEMPERATURE] = True
-        self.STATUS_EXTRA[STATUS_EXTRA_MODE] = True
+        self.MACHINE_STATUS_EXTRA_FIELDS[STATUS_EXTRA_TEMPERATURE] = True
+        self.MACHINE_STATUS_EXTRA_FIELDS[STATUS_EXTRA_MODE] = True
 
         self.temperature_unit = 'c'  # what temperature unit the device works in. Either 'c' or 'f'.
-
-    def look_up_status_extra(self, property_name):
-        if len(self.status_history) > 0:
-            status_current = self.status_history[0]
-            if property_name in status_current.machine_status_extra:
-                return status_current.machine_status_extra[property_name]
-        return None
 
     @property
     def current_mode(self):
         """ Return current operation ie. heat, cool, off, auto. """
-        return self.look_up_status_extra(STATUS_EXTRA_MODE)
+        return self.get_status_extra(STATUS_EXTRA_MODE)
 
     @property
     def current_humidity(self):
         """ Return the current humidity. """
-        return self.look_up_status_extra(STATUS_EXTRA_HUMIDITY)
+        return self.get_status_extra(STATUS_EXTRA_HUMIDITY)
 
     @property
     def current_temperature(self):
         """ Return the current temperature. """
-        return self.look_up_status_extra(STATUS_EXTRA_TEMPERATURE)
+        return self.get_status_extra(STATUS_EXTRA_TEMPERATURE)
 
     @property
     def target_humidity(self):
         """ Return the humidity we try to reach. """
-        return self.look_up_status_extra(STATUS_EXTRA_TARGET_HUMIDITY)
+        return self.get_status_extra(STATUS_EXTRA_TARGET_HUMIDITY)
 
     @property
     def target_humidity_high(self):
         """ Return the humidity we try to reach. """
-        return self.look_up_status_extra(STATUS_EXTRA_TARGET_HUMIDITY_LOW)
+        return self.get_status_extra(STATUS_EXTRA_TARGET_HUMIDITY_LOW)
 
     @property
     def target_humidity_low(self):
         """ Return the humidity we try to reach. """
-        return self.look_up_status_extra(STATUS_EXTRA_TARGET_HUMIDITY_LOW)
+        return self.get_status_extra(STATUS_EXTRA_TARGET_HUMIDITY_LOW)
 
     @property
     def modes_available(self):
@@ -106,17 +99,17 @@ class Climate(Device):
             return None
         if len(self.status_history) > 0:
             current_mode = self.current_mode
-            if self.device_feature_is_active(FEATURE_DUAL_SETPOINTS) in (False, None):
-                return self.look_up_status_extra(STATUS_EXTRA_TARGET_TEMPERATURE)
+            if self.has_device_feature(FEATURE_DUAL_SETPOINTS) in False:
+                return self.get_status_extra(STATUS_EXTRA_TARGET_TEMPERATURE)
 
             if current_mode in (MODE_COOL, MODE_COOL2, MODE_COOL3, MODE_AUTO):
-                target = self.look_up_status_extra(FEATURE_TARGET_TEMPERATURE_HIGH)
+                target = self.get_status_extra(FEATURE_TARGET_TEMPERATURE_HIGH)
                 if target is None:
                     return None
                 else:
                     return target
             elif current_mode in (MODE_HEAT, MODE_HEAT2, MODE_HEAT3, MODE_AUTO):
-                target = self.look_up_status_extra(FEATURE_TARGET_TEMPERATURE_HIGH)
+                target = self.get_status_extra(FEATURE_TARGET_TEMPERATURE_HIGH)
                 if target is None:
                     return None
                 else:
@@ -126,12 +119,12 @@ class Climate(Device):
     @property
     def target_temperature_range(self):
         """Return the temperature range we try to stay in. Used for auto mode."""
-        if self.device_feature_is_active(FEATURE_DUAL_SETPOINTS) in (False, None):
-            target = self.look_up_status_extra(STATUS_EXTRA_TARGET_TEMPERATURE)
+        if self.has_device_feature(FEATURE_DUAL_SETPOINTS) in False:
+            target = self.get_status_extra(STATUS_EXTRA_TARGET_TEMPERATURE)
             return target, target
 
-        low = self.look_up_status_extra(FEATURE_TARGET_TEMPERATURE_LOW)
-        high = self.look_up_status_extra(FEATURE_TARGET_TEMPERATURE_HIGH)
+        low = self.get_status_extra(FEATURE_TARGET_TEMPERATURE_LOW)
+        high = self.get_status_extra(FEATURE_TARGET_TEMPERATURE_HIGH)
         return low, high
 
     @property

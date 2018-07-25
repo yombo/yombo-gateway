@@ -24,7 +24,7 @@ class Cover(Device):
         # Put two command machine_labels in a list to enable toggling.
         self.TOGGLE_COMMANDS = [COMMAND_OPEN, COMMAND_CLOSE]
         self.FEATURES[FEATURE_ALLOW_IN_SCENES] = False
-        self.STATUS_EXTRA[STATUS_EXTRA_PERCENT] = True
+        self.MACHINE_STATUS_EXTRA_FIELDS[STATUS_EXTRA_PERCENT] = True
 
     def toggle(self, **kwargs):
         if self.machine_status == 0:

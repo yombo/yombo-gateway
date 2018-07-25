@@ -144,8 +144,6 @@ def require_auth(roles=None, login_redirect=None, access_path=None, access_actio
                 webinterface.misc_wi_data['breadcrumb'] = request.breadcrumb
 
             if 'api' in kwargs and kwargs['api'] is True:
-                print("request: %s" % request)
-                print("request header: %s" % request.getHeader(b'x-api-auth'))
                 try:
                     session = webinterface._APIAuth.get_session_from_request(request)
                     session.touch()

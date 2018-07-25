@@ -174,7 +174,7 @@ def route_devices(webapp):
 
             if ok_to_save:
                 try:
-                    results = yield webinterface._Devices.add_device(device, session=session['yomboapi_session'])
+                    results = yield webinterface._Devices.add_device(device, source="webinterface", session=session['yomboapi_session'])
                 except YomboWarning as e:
                     webinterface.add_alert("Cannot add device, reason: %s" % e.message)
                     return webinterface.redirect(request, '/devices')

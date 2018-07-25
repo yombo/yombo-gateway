@@ -1047,7 +1047,7 @@ class Modules(YomboLibrary):
             for module in self.modules_that_are_starting:
                 module_labels.append(module._label)
             modules = "<br>".join(module_labels)
-            self._Notifications.add({'title': 'Modules still starting.',
+            self._Notifications.add({'title': 'Modules still starting',
                                      'message': 'The following modules are still starting:<br>%s' % modules,
                                      'source': 'Modules Library',
                                      'persist': False,

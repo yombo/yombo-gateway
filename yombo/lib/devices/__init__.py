@@ -73,12 +73,14 @@ from twisted.internet.defer import inlineCallbacks, maybeDeferred, Deferred
 from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
-from ._device import Device
-from ._device_command import Device_Command
 from yombo.core.exceptions import YomboDeviceError, YomboWarning, YomboHookStopProcessing
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import global_invoke_all, search_instance, do_search_instance, random_int
+
+from ._device import Device
+from ._device_command import Device_Command
+
 logger = get_logger('library.devices')
 
 
@@ -442,8 +444,7 @@ class Devices(YomboLibrary):
             klass._Validate = self._Loader.loadedLibraries['validate']
             klass._VoiceCmds = self._Loader.loadedLibraries['voicecmds']
             try:
-                self.devices[device_id] = klass(device, self)
-                # self.devices[device_id]._start_()
+                self.devices[device_id] = klass(self, device)
             except Exception as e:
                 logger.error("Error while creating device instance: {e}", e=e)
                 logger.error("-------==(Error: While saving new config data)==--------")
@@ -577,17 +578,20 @@ class Devices(YomboLibrary):
                 results.append(device_command.asdict())
         return results
 
-    def get_delayed_commands(self):
+    def delayed_commands(self, requested_device_id=None):
         """
         Returns only device commands that are delayed.
 
         :return: 
         """
-        items = {}
-        for request_id, device_command in self.device_commands.items():
-            if device_command.status == 'delayed':
-                items[request_id] = device_command
-        return items
+        if requested_device_id is not None:
+            requested_device = self.get(requested_device_id)
+            return requested_device.delayed_commands()
+        else:
+            commands = {}
+            for device_id, device in self.devices.items():
+                commands.update(device.delayed_commands())
+            return commands
 
     def command(self, device, cmd, pin=None, request_id=None, not_before=None, delay=None, max_delay=None,
                 requested_by=None, inputs=None, **kwargs):
@@ -776,6 +780,10 @@ class Devices(YomboLibrary):
                 return device_requested
             else:
                 raise ValueError("Passed in an unknown object")
+        elif isinstance(device_requested, str) is False:
+            raise ValueError("device_requested must be device instance or a string.")
+        if device_requested in self.devices:
+            return self.devices[device_requested]
 
         if limiter is None:
             limiter = .89
@@ -901,7 +909,7 @@ class Devices(YomboLibrary):
                     'apimsghtml': "Couldn't add device: %s" % e.html_message,
                 }
             logger.debug("add new device results: {device_results}", device_results=device_results)
-
+            device_id = yield self.import_device(device_results['data'], source='database')
             if 'variable_data' in api_data and len(api_data['variable_data']) > 0:
                 variable_results = yield self.set_device_variables(device_results['data']['id'],
                                                                    api_data['variable_data'],

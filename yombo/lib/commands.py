@@ -305,6 +305,10 @@ class Commands(YomboLibrary):
                 return command_requested
             else:
                 raise ValueError("Passed in an unknown object")
+        elif isinstance(command_requested, str) is False:
+            raise ValueError("command_requested must be command instance or a string.")
+        if command_requested in self.commands:
+            return self.commands[command_requested]
 
         if limiter is None:
             limiter = .89

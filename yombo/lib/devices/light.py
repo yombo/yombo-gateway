@@ -31,8 +31,8 @@ class Light(Device):
             FEATURE_TRANSITION: False,
             FEATURE_NUMBER_OF_STEPS: 255
         })
-        self.STATUS_EXTRA[STATUS_EXTRA_BRIGHTNESS] = True
-        self.STATUS_EXTRA[STATUS_EXTRA_RGB_COLOR] = True
+        self.MACHINE_STATUS_EXTRA_FIELDS[STATUS_EXTRA_BRIGHTNESS] = True
+        self.MACHINE_STATUS_EXTRA_FIELDS[STATUS_EXTRA_RGB_COLOR] = True
 
     @property
     def brightness(self):
@@ -47,6 +47,10 @@ class Light(Device):
             else:
                 return 0
         return None
+
+    @property
+    def is_dimmable(self):
+        return True
 
     @property
     def percent(self):

@@ -30,7 +30,7 @@ def route_home(webapp):
         @require_auth()
         def run_home(webinterface, request, session):
             page = webinterface.webapp.templates.get_template(webinterface.wi_dir + '/pages/index.html')
-            delayed_device_commands = webinterface._Devices.get_delayed_commands()
+            delayed_device_commands = webinterface._Devices.delayed_commands()
             return page.render(alerts=webinterface.get_alerts(),
                                device_commands_delayed=delayed_device_commands,
                                )
