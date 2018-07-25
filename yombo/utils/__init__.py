@@ -559,18 +559,18 @@ def dict_has_key(dictionary, keys):
         return True
 
 
-def dict_find_key(symbol_dic, val):
+def dict_find_key(search_dictionary, val):
     """
-    Find a key of a dictionary for a given key.
+    Find a key of a dictionary for a given value.
 
-    :param symbol_dic: The dictionary to search.
-    :type symbol_dic: dict
+    :param search_dictionary: The dictionary to search.
+    :type search_dictionary: dict
     :param val: The value to search for.
     :type val: any valid dict key type
     :return: The key of dictionary dic given the value
     :rtype: any valid dict key type
     """
-    return [k for k, v in symbol_dic.items() if v == val][0]
+    return [k for k, v in search_dictionary.items() if v == val][0]
 
 
 def dict_has_value(dictionary, keys, value):
@@ -1208,7 +1208,7 @@ def random_string(**kwargs):
     .. code-block:: python
 
        from yombo.utils import random_string
-       someRandonness = random_string(letters="abcdef0123456") #make a hex value
+       someRandonness = random_string(letters="ABCDEF0123456789") #make a hex value
 
     :param length: Length of the output string. Default: 32
     :type length: int
@@ -1289,15 +1289,22 @@ def format_markdown(input_text, formatting=None):
     return input_text
 
 
-def display_hide_none(input, allow_string=None):
-    if input is None:
+def display_hide_none(value, allow_string=None):
+    """
+    Changes type None to display "".
+
+    :param value:
+    :param allow_string:
+    :return:
+    """
+    if value is None:
         return ""
-    if isinstance(input, str):
+    if isinstance(value, str):
         if allow_string is True:
-            return input
-        if input.lower() == "none":
+            return value
+        if value.lower() == "none":
             return ""
-    return input
+    return value
 
 
 def human_alpabet():
