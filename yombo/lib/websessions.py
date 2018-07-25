@@ -551,7 +551,6 @@ class Auth(object):
         :raise_error action:
         :return:
         """
-        print("web session checking auth")
         return self._Parent._Users.has_access(self.user.roles, path, action, raise_error)
 
     def check_valid(self, auth_id_missing_ok=None):

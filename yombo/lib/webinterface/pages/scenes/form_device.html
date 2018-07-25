@@ -34,13 +34,15 @@
                     ') }}
                     <br>
                     <div class="input-group">
-                        <select id="device_machine_label" name="device_machine_label" class="selectpicker show-tick form-control">
+                        <select id="device_machine_label" name="device_machine_label"
+                                class="selectpicker show-tick form-control" data-live-search="true">
                             {%- if data['device_machine_label'] == "" %}
                             {%- for device_id, device in _devices.sorted().items() if device.is_allowed_in_scenes -%}
                             <option value="{{device.machine_label}}">{{device.full_label}}</option>
                             {% endfor %}
                             {% else %}
-                            <option value="{{data['device_machine_label']}}" selected="selected">{{_devices[data['device_machine_label']].full_label}}</option>
+                            <option value="{{data['device_machine_label']}}" selected="selected">
+                                {{_devices[data['device_machine_label']].full_label}}</option>
                             {% endif %}
                         </select>
                     </div>

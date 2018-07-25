@@ -63,8 +63,11 @@
                                             <input type="hidden" name="json_output" value='{{device.create_yombo_device_details}}'>
                                             <button type="submit" class="btn btn-primary col-xs-12">Add Yombo Device</button>
                                         </form>
+                                         <form action="/discovery/{{device_id}}/details" method="get">
+                                            <button type="submit" class="btn btn-success col-xs-12">View Discovered Details</button>
+                                        </form>
                                          {% else %}
-                                         <form action="/devices/{{device.yombo_device.device_id}}/details" method="get">
+                                         <form action="/devices/{{discovered_device}}/details" method="get">
                                             <button type="submit" class="btn btn-success col-xs-12">View Yombo Device</button>
                                         </form>
                                          {% endif %}
