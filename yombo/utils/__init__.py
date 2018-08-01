@@ -314,7 +314,7 @@ def instance_properties(obj, startswith_filter=None, endwith_filter=None):
     return pr
 
 
-def translate_int_value(value, leftMin, leftMax, rightMin, rightMax):
+def translate_int_value(value, fromMin, fromMax, toMin, toMax):
     """
     Used to translate one scale to another. For example, a light can have 255 steps, but
     we want to display this in percent to a human. This function would return 50:
@@ -324,21 +324,21 @@ def translate_int_value(value, leftMin, leftMax, rightMin, rightMax):
 
     From: https://stackoverflow.com/questions/1969240/mapping-a-range-of-values-to-another
     :param value: The value to translate
-    :param leftMin: The 'from' range, starting position.
-    :param leftMax: The 'from' range, ending position.
-    :param rightMin: The 'to' range, starting position.
-    :param rightMax: The 'to' range, ending position.
+    :param fromMin: The 'from' range, starting position.
+    :param fromMax: The 'from' range, ending position.
+    :param toMin: The 'to' range, starting position.
+    :param toMax: The 'to' range, ending position.
     :return:
     """
     # Figure out how 'wide' each range is
-    leftSpan = leftMax - leftMin
-    rightSpan = rightMax - rightMin
+    leftSpan = fromMax - fromMin
+    rightSpan = toMax - toMin
 
     # Convert the left range into a 0-1 range (float)
-    valueScaled = float(value - leftMin) / float(leftSpan)
+    valueScaled = float(value - fromMin) / float(leftSpan)
 
     # Convert the 0-1 range into a value in the right range.
-    return int(round(rightMin + (valueScaled * rightSpan)))
+    return int(round(toMin + (valueScaled * rightSpan)))
 
 
 def convert_temp(i_temp):
@@ -349,8 +349,8 @@ def convert_temp(i_temp):
 
     Useful when you're too lazy to to use unit_convert below.
 
-    :param temp: A temperature to convert
-    :type temp: str
+    :param i_temp: A temperature to convert
+    :type i_temp: str
     :return: A tuple containing the value and new unit type
     :rtype: tuple
     """
@@ -706,7 +706,7 @@ def dict_merge(original, changes):
     return changes
 
 
-def dict_diff(dict2, dict1):
+def dict_diff(dict1, dict2):
     """
     Returns the differences between two dictionarys.
 
