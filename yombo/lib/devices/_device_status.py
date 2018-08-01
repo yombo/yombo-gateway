@@ -220,10 +220,10 @@ class Device_Status(object):
             data['requested_by'] = data_pickle(self.requested_by)
 
             if self._in_db is True:
-                print("device status update, save to database... %s" % self.asdict(True))
+                # print("device status update, save to database... %s" % self.asdict(True))
                 self._Parent._LocalDB.add_bulk_queue('device_status', 'update', data, 'status_id')
             else:
-                print("device status insert, save to database... %s" % self.asdict(True))
+                # print("device status insert, save to database... %s" % self.asdict(True))
                 self._Parent._LocalDB.add_bulk_queue('device_status', 'insert', data, 'status_id')
             self._dirty = False
             self._in_db = True
