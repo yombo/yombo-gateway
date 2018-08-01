@@ -174,8 +174,9 @@
                             <br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Features: </label><br>
                             <ul>
-                            {% for feature, value in device.features.items() if value|string != 'False' %}
-                                <li>{{feature}} = {{value}}</li>
+                            {% for feature, values in device.features|dictsort %}
+                            {% if device.features[feature] == 'False' %}{% continue %}{% endif %}
+                                <li>{{feature}} = {{ device.features[feature] }}</li>
                             {% endfor %}
                             </ul>
                             {{ device.attributes }}<br>
@@ -215,22 +216,25 @@
                             {% else %}
                             <label style="margin-top: 0px; margin-bottom: 0px">Human Message: </label><br>
                             {{ device.status_all.human_message }}<br>
-                            <label style="margin-top: 0px; margin-bottom: 0px">Human Status: </label><br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Human Status: </label><br>
                             {{ device.status_all.human_status }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Current Energy Usage: </label><br>
                             {{ device.status_all.energy_usage }} {% if device.energy_type == 'electric' %} watts {% endif %}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Machine: </label><br>
                             {{ device.status_all.machine_status }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Extra status attributes: </label><br>
-                            {% if device.status_all.machine_status_extra|length == 0 %} None
-                            {% else %}
-                            {% for key, value in device.status_all.machine_status_extra.items() %}
-                            <em>{{key}}</em>: {{value}}<br>
-                            {% endfor %}
-                            {% endif %}
+                            {%- for label, values in device.MACHINE_STATUS_EXTRA_FIELDS|dictsort %}
+                            {% if device.MACHINE_STATUS_EXTRA_FIELDS[label] is none %}{% continue %}{% endif %}
+                            <em>{{ label }}</em>:
+                            {%- if label in device.status_all.machine_status_extra %}
+                            {{device.status_all.machine_status_extra[label]}}
+                            {%- endif %}<br>
+                            {%- endfor %}
                             <label style="margin-top: 15px; margin-bottom: 0px">Requested By: </label><br>
                             <em>User ID:</em> {{ device.status_all.requested_by.user_id }}<br>
                             <em>Component:</em> {{ device.status_all.requested_by.component }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Reported By: </label><br>
+                            {{ device.status_all.reported_by }}<br>
                             {% endif %}
                         </div>
                     </div>
@@ -315,7 +319,15 @@
           <div id="debug" class="tab-pane fade">
               <br>
               {% if device.MACHINE_STATUS_EXTRA_FIELDS|length == 0 -%}
-              Device has no status extra fields.
+                <div class="panel panel-default">
+                   <div class="panel-heading">
+                       <h4>Status Extra</h4>
+                   </div>
+                   <!-- /.panel-heading -->
+                   <div class="panel-body">
+                      Device has no status extra fields.
+                   </div>
+                </div>
               {% else %}
                 <div class="panel panel-default">
                    <div class="panel-heading">
@@ -343,13 +355,19 @@
                {% endif %}
                 <!-- /.panel-body -->
 
-
-              <h4>Device Debug Information</h4>
-               <br>
+              <br>
               {% set debug_data = device.debug_data %}
               {% if debug_data|length == 0 -%}
-              No device debug information found.
-              {% else %}
+                <div class="panel panel-default">
+                   <div class="panel-heading">
+                       <h4>Debug information</h4>
+                   </div>
+                   <!-- /.panel-heading -->
+                   <div class="panel-body">
+                      No device debug information found.
+                   </div>
+                </div>
+               {% else %}
                {% for debug_id, debug_info in debug_data.items() %}
                <div class="panel panel-default">
                    <div class="panel-heading">
