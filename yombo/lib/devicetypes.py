@@ -46,7 +46,7 @@ BASE_DEVICE_TYPE_PLATFORMS = {
     'yombo.lib.devices.lock': ['Lock'],
     'yombo.lib.devices.mediaplayer': ['Media_Player'],
     'yombo.lib.devices.scene': ['Scene'],
-    'yombo.lib.devices.sensor': ['Sensor', 'Digital_Sensor', 'Thermometer'],
+    'yombo.lib.devices.sensor': ['Sensor', 'Binary_Sensor', 'Thermometer'],
     'yombo.lib.devices.switch': ['Switch', 'Relay', 'Appliance'],
     'yombo.lib.devices.tv': ['TV'],
 }
