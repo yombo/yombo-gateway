@@ -25,12 +25,17 @@ from datetime import datetime
 from time import time
 
 # Import twisted libraries
+from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
+from yombo.constants.commands import (COMMAND_COMPONENT_CALLED_BY, COMMAND_COMPONENT_COMMAND,
+    COMMAND_COMPONENT_COMMAND_ID, COMMAND_COMPONENT_DEVICE, COMMAND_COMPONENT_DEVICE_COMMAND,
+    COMMAND_COMPONENT_DEVICE_ID, COMMAND_COMPONENT_INPUTS, COMMAND_COMPONENT_PIN, COMMAND_COMPONENT_REQUEST_ID,
+    COMMAND_COMPONENT_REQUESTED_BY, COMMAND_COMPONENT_SOURCE, COMMAND_COMPONENT_SOURCE_GATEWAY_ID)
 from yombo.core.exceptions import YomboPinCodeError, YomboWarning
 from yombo.core.log import get_logger
-from yombo.utils import random_string, global_invoke_all, do_search_instance
+from yombo.utils import random_string, global_invoke_all, do_search_instance, dict_merge, dict_diff
 from yombo.lib.commands import Command  # used only to determine class type
 
 # Import local items
@@ -254,18 +259,18 @@ class Device_Base(Device_Attributes):
         :return:
         """
         items = {
-            'device_id': self.device_id,
-            'command_id': device_command.command.command_id,
-            'command': device_command.command,
-            'device': self,
-            'inputs': device_command.inputs,
-            'request_id': device_command.request_id,
-            'device_command': device_command,
-            'requested_by': device_command.requested_by,
-            'called_by': self,
-            'pin': device_command.pin,
-            'source_gateway_id': device_command.source_gateway_id,
-            'source': device_command.source,
+            COMMAND_COMPONENT_COMMAND: device_command.command,
+            COMMAND_COMPONENT_COMMAND_ID: device_command.command.command_id,
+            COMMAND_COMPONENT_DEVICE: self,
+            COMMAND_COMPONENT_DEVICE_ID: self.device_id,
+            COMMAND_COMPONENT_INPUTS: device_command.inputs,
+            COMMAND_COMPONENT_REQUEST_ID: device_command.request_id,
+            COMMAND_COMPONENT_DEVICE_COMMAND: device_command,
+            COMMAND_COMPONENT_REQUESTED_BY: device_command.requested_by,
+            COMMAND_COMPONENT_CALLED_BY: self,
+            COMMAND_COMPONENT_PIN: device_command.pin,
+            COMMAND_COMPONENT_SOURCE_GATEWAY_ID: device_command.source_gateway_id,
+            COMMAND_COMPONENT_SOURCE: device_command.source,
         }
         # logger.debug("calling _device_command_, request_id: {request_id}", request_id=device_command.request_id)
         device_command.set_broadcast()
@@ -583,6 +588,40 @@ class Device_Base(Device_Attributes):
         kwargs['machine_status_extra'] = previous_extra
         return kwargs
 
+    def generate_human_status(self, machine_status, machine_status_extra):
+        return machine_status
+
+    def generate_human_message(self, machine_status, machine_status_extra):
+        human_status = self.generate_human_status(machine_status, machine_status_extra)
+        return "%s is now %s" % (self.area_label, human_status)
+
+    def set_status_machine_extra(self, **kwargs):
+        pass
+
+    def set_status_delayed(self, delay=0.1, **kwargs):
+        """
+        Accepts all the arguments of set_status, but delays submitting to set_status. This
+        is used by devices that set several attributes separately, but quickly.
+
+        :param kwargs:
+        :return:
+        """
+        if kwargs is None:
+            raise ImportError("Must supply status arguments...")
+
+        self.status_delayed = dict_merge(self.status_delayed, kwargs)
+
+        if self.status_delayed_calllater is not None and self.status_delayed_calllater.active():
+            self.status_delayed_calllater.cancel()
+
+        self.status_delayed_calllater = reactor.callLater(delay, self.do_set_status_delayed)
+
+    def do_set_status_delayed(self):
+        if 'machine_status' not in self.status_delayed:
+            self.status_delayed['machine_status'] = self.machine_status
+        self.set_status(**self.status_delayed)
+        self.status_delayed.clear()
+
     def set_status(self, **kwargs):
         """
         Usually called by the device's command/logic module to set/update the
@@ -601,24 +640,19 @@ class Device_Base(Device_Attributes):
             - machine_status_extra *(dict)* - Extra status as a dictionary.
             - request_id *(string)* - Request ID that this should correspond to.
             - requested_by *(string)* - A dictionary containing user_id, component, and gateway.
-            - silent *(any)* - If defined, will not broadcast a status update
-              message; atypical.
+            - silent *(any)* - If defined, will not broadcast a status update message; atypical.
         """
-        kwargs = self.set_status_process(**kwargs)
-        kwargs, status_id = self._set_status(**kwargs)
+        self.status_delayed = dict_merge(self.status_delayed, kwargs)
+
+        kwargs_delayed = self.set_status_process(**self.status_delayed)
+        kwargs_delayed, status_id = self._set_status(**kwargs_delayed)
         # logger.info("set_status called...3: {kwargs}", kwargs=kwargs)
-        if 'silent' not in kwargs:
-            self.send_status(**kwargs)
+        if 'silent' not in kwargs_delayed:
+            self.send_status(**kwargs_delayed)
 
-    def generate_human_status(self, machine_status, machine_status_extra):
-        return machine_status
-
-    def generate_human_message(self, machine_status, machine_status_extra):
-        human_status = self.generate_human_status(machine_status, machine_status_extra)
-        return "%s is now %s" % (self.area_label, human_status)
-
-    def set_status_machine_extra(self, **kwargs):
-        pass
+        self.status_delayed = {}
+        if self.status_delayed_calllater is not None and self.status_delayed_calllater.active():
+            self.status_delayed_calllater.cancel()
 
     def _set_status(self, **kwargs):
         """
@@ -632,6 +666,14 @@ class Device_Base(Device_Attributes):
         command = None
         machine_status = kwargs['machine_status']
         machine_status_extra = kwargs.get('machine_status_extra', {})
+
+        # print("status: %s == %s" % (machine_status, self.machine_status))
+        if machine_status == self.machine_status:
+            added, removed, modified, same = dict_diff(machine_status_extra, self.machine_status_extra)
+            if len(added) == 0 and len(removed) == 0 and len(modified) == 0:
+                # print("values are the same...discarding set_status...")
+                return kwargs, None
+
         human_status = kwargs.get('human_status', self.generate_human_status(machine_status, machine_status_extra))
         human_message = kwargs.get('human_message', self.generate_human_message(machine_status, machine_status_extra))
         uploaded = kwargs.get('uploaded', 0)
@@ -685,7 +727,7 @@ class Device_Base(Device_Attributes):
 
         kwargs['request_id'] = request_id
         kwargs['requested_by'] = requested_by
-
+        # print("set_status kwargs: %s" % kwargs)
         reported_by = kwargs.get('reported_by', 'Unknown')
         kwargs['reported_by'] = reported_by
 
@@ -775,7 +817,7 @@ class Device_Base(Device_Attributes):
         :return:
         """
         source = status.get('source', None)
-        print("set_status_internal: source: %s" % source)
+        # print("set_status_internal: source: %s" % source)
         device_status = Device_Status(self._Parent, self, status, source=source)
         # print("set_status_internal: as dict: %s" % device_status.asdict())
         self.status_history.appendleft(device_status)
