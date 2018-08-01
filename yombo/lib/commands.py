@@ -16,8 +16,6 @@ The command (singular) class represents one command.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/commands.html>`_
 """
-import inspect
-
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, Deferred
 
@@ -26,6 +24,7 @@ from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import search_instance, do_search_instance, global_invoke_all
+from yombo.utils.decorators import memoize_ttl
 from yombo.utils.fuzzysearch import FuzzySearch
 logger = get_logger('library.commands')
 
@@ -273,6 +272,7 @@ class Commands(YomboLibrary):
         # if test_command:
         #     return self.commands[command_id]
 
+    @memoize_ttl(5)
     def get(self, command_requested, limiter=None, status=None, command_list=None):
         """
         Looks for commands by it's id, label, and machine_label.
@@ -300,13 +300,12 @@ class Commands(YomboLibrary):
         :return: Pointer to requested command.
         :rtype: dict
         """
-        if inspect.isclass(command_requested):
-            if isinstance(command_requested, Command):
-                return command_requested
-            else:
-                raise ValueError("Passed in an unknown object")
+        if isinstance(command_requested, Command):
+            return command_requested
+        elif command_requested is None:
+            raise KeyError("command_requested is None, so here is None")
         elif isinstance(command_requested, str) is False:
-            raise ValueError("command_requested must be command instance or a string.")
+            raise KeyError("command_requested must be command instance or a string.")
         if command_requested in self.commands:
             return self.commands[command_requested]
 
