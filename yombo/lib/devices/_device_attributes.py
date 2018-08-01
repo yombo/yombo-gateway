@@ -41,6 +41,7 @@ from ._device_command import Device_Command
 from ._device_status import Device_Status
 logger = get_logger('library.devices.device_attributes')
 
+
 class Device_Attributes(object):
     """
     This base class is the main bootstrap and is responsible for settings up all core attributes.
@@ -168,7 +169,7 @@ class Device_Attributes(object):
         """
         Return the machine status of the device.
         """
-        return self.machine_status
+        return self.status_all.machine_status
 
     @property
     def machine_status(self):
@@ -417,6 +418,8 @@ class Device_Attributes(object):
         self.device_serial = device["id"]
         self.device_mfg = "Yombo"
         self.device_model = "Yombo"
+        self.status_delayed = {}
+        self.status_delayed_calllater = None
 
         self.update_attributes(device, source='parent')
         if device["gateway_id"] != self.gateway_id:
@@ -798,11 +801,11 @@ class Device_Attributes(object):
         :return:
         """
         if isinstance(fields, list):
-            for feature in fields:
-                self.MACHINE_STATUS_EXTRA_FIELDS[feature] = True
+            for field in fields:
+                self.MACHINE_STATUS_EXTRA_FIELDS[field] = True
         elif isinstance(fields, dict):
-            for feature, value in fields:
-                self.MACHINE_STATUS_EXTRA_FIELDS[feature] = value
+            for field, value in fields:
+                self.MACHINE_STATUS_EXTRA_FIELDS[field] = value
         elif isinstance(fields, str):
             self.MACHINE_STATUS_EXTRA_FIELDS[fields] = True
 
@@ -818,10 +821,10 @@ class Device_Attributes(object):
                 del self.FEATURES[feature]
 
         if isinstance(fields, list):
-            for feature in fields:
-                remove_field(feature)
+            for field in fields:
+                remove_field(field)
         elif isinstance(fields, dict):
-            for feature, value in fields:
-                remove_field(feature)
+            for field, value in fields:
+                remove_field(field)
         elif isinstance(fields, str):
             remove_field(fields)
