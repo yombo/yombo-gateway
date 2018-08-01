@@ -54,7 +54,7 @@ from functools import reduce
 client._HTTP11ClientFactory.noisy = False
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboCritical, YomboWarning, YomboHookStopProcessing, YomboRestart
+from yombo.core.exceptions import YomboCritical, YomboWarning, YomboHookStopProcessing
 from yombo.utils.fuzzysearch import FuzzySearch
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
@@ -656,6 +656,7 @@ class Loader(YomboLibrary, object):
             logger.error("--------------------------------------------------------")
             logger.warn("An exception of type {etype} occurred in yombo.lib.nodes:import_component. Message: {msg}",
                         etype=type(e), msg=e)
+            logger.error("--------------------------------------------------------")
             raise ImportError(e)
         module_tail = reduce(lambda p1, p2: getattr(p1, p2), [module_root, ]+pymodulename.split('.')[1:])
         klass = getattr(module_tail, pyclassname)
