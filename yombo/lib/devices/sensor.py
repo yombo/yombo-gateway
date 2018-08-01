@@ -5,7 +5,7 @@ from yombo.constants.features import (FEATURE_NUMBER_OF_STEPS, FEATURE_ALL_ON, F
                                       FEATURE_POLLABLE, FEATURE_ALLOW_IN_SCENES, FEATURE_CONTROLLABLE,
                                       FEATURE_ALLOW_DIRECT_CONTROL)
 from yombo.constants.commands import COMMAND_HIGH, COMMAND_LOW
-from yombo.constants.platforms import (PLATFORM_BASE_SENSOR, PLATFORM_SENSOR, PLATFORM_DIGITAL_SENSOR,
+from yombo.constants.platforms import (PLATFORM_BASE_SENSOR, PLATFORM_SENSOR, PLATFORM_BINARY_SENSOR,
     PLATFORM_THERMOMETER)
 
 from yombo.lib.devices._device import Device
@@ -25,7 +25,7 @@ class Sensor(Device):
             FEATURE_ALL_OFF: False,
             FEATURE_PINGABLE: False,
             FEATURE_POLLABLE: True,
-            FEATURE_NUMBER_OF_STEPS: 2,
+            FEATURE_NUMBER_OF_STEPS: False,
             FEATURE_ALLOW_IN_SCENES: False,
             FEATURE_CONTROLLABLE: False,
             FEATURE_ALLOW_DIRECT_CONTROL: False,
@@ -72,13 +72,13 @@ class Sensor(Device):
         return None
 
 
-class Digital_Sensor(Sensor):
+class Binary_Sensor(Sensor):
     """
     A sensor that will be either high or low.
     """
     def _init_(self):
         super()._init_()
-        self.PLATFORM = PLATFORM_DIGITAL_SENSOR
+        self.PLATFORM = PLATFORM_BINARY_SENSOR
 
     @property
     def is_high(self):

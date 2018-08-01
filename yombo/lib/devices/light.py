@@ -34,40 +34,6 @@ class Light(Device):
         self.MACHINE_STATUS_EXTRA_FIELDS[STATUS_EXTRA_BRIGHTNESS] = True
         self.MACHINE_STATUS_EXTRA_FIELDS[STATUS_EXTRA_RGB_COLOR] = True
 
-    @property
-    def brightness(self):
-        """
-        Return the brightness of this light. Returns a range between 0 and 100, converts based on the
-        'number_of_steps'.
-        """
-        if len(self.status_history) > 0:
-            machine_status_extra = self.status_history[0].machine_status_extra
-            if STATUS_EXTRA_BRIGHTNESS in machine_status_extra:
-                machine_status_extra[STATUS_EXTRA_BRIGHTNESS]
-            else:
-                return 0
-        return None
-
-    @property
-    def is_dimmable(self):
-        return True
-
-    @property
-    def percent(self):
-        """
-        Return the brightness as a percent for this light. Returns a range between 0 and 100, converts based on the
-        'number_of_steps'.
-        """
-        if len(self.status_history) > 0:
-            machine_status_extra = self.status_history[0].machine_status_extra
-            if STATUS_EXTRA_BRIGHTNESS in machine_status_extra:
-                return translate_int_value(machine_status_extra[STATUS_EXTRA_BRIGHTNESS],
-                                           0, self.FEATURES[FEATURE_BRIGHTNESS],
-                                           0, 100)
-            else:
-                return 0
-        return None
-
     def set_brightness(self, brightness, **kwargs):
         """
         Set the brightness of the light, but the application or sender must know how many steps
@@ -118,6 +84,40 @@ class Light(Device):
 
         kwargs['inputs'][ATR_RGB_COLOR] = rgb
         return self.command(command, **kwargs)
+
+    @property
+    def is_dimmable(self):
+        return True
+
+    @property
+    def brightness(self):
+        """
+        Return the brightness of this light. Returns a range between 0 and 100, converts based on the
+        'number_of_steps'.
+        """
+        if len(self.status_history) > 0:
+            machine_status_extra = self.status_history[0].machine_status_extra
+            if STATUS_EXTRA_BRIGHTNESS in machine_status_extra:
+                return machine_status_extra[STATUS_EXTRA_BRIGHTNESS]
+            else:
+                return 0
+        return None
+
+    @property
+    def percent(self):
+        """
+        Return the brightness as a percent for this light. Returns a range between 0 and 100, converts based on the
+        'number_of_steps'.
+        """
+        if len(self.status_history) > 0:
+            machine_status_extra = self.status_history[0].machine_status_extra
+            if STATUS_EXTRA_BRIGHTNESS in machine_status_extra:
+                return translate_int_value(machine_status_extra[STATUS_EXTRA_BRIGHTNESS],
+                                           0, self.FEATURES[FEATURE_NUMBER_OF_STEPS],
+                                           0, 100)
+            else:
+                return 0
+        return None
 
     @property
     def hsv_color(self):
@@ -236,15 +236,10 @@ class Light(Device):
         return self.command(COMMAND_OFF, **kwargs)
 
     def generate_human_status(self, machine_status, machine_status_extra):
-        if 'brightness' not in machine_status_extra or machine_status_extra[STATUS_EXTRA_BRIGHTNESS] is None:
-            return "Unknown"
-        return str(translate_int_value(machine_status_extra[STATUS_EXTRA_BRIGHTNESS],
-                                       0, self.FEATURES[FEATURE_NUMBER_OF_STEPS], 0, 100)) + '%'
+        return str(self.percent) + '%'
 
     def generate_human_message(self, machine_status, machine_status_extra):
-        human_status = str(translate_int_value(machine_status_extra[STATUS_EXTRA_BRIGHTNESS],
-                                               0, self.FEATURES[FEATURE_NUMBER_OF_STEPS], 0, 100))
-        return "%s is now %s%%" % (self.area_label, human_status)
+        return "%s is now %s%%" % (self.area_label, self.percent)
 
 class Color_Light(Light):
     """

@@ -4,7 +4,7 @@ Adds support for basic alarm types.
 from yombo.constants.features import FEATURE_ALLOW_IN_SCENES
 from yombo.constants.devicetypes.alarm import (COMMAND_ARM_AWAY, COMMAND_ARM_CUSTOM_BYPASS, COMMAND_ARM_HOME,
                                                COMMAND_ARM_NIGHT, COMMAND_DISARM, INPUT_BYPASS)
-from yombo.constants.commands import COMMAND_COMPONENT_INPUT
+from yombo.constants.commands import COMMAND_COMPONENT_INPUTS
 from yombo.constants.platforms import PLATFORM_BASE_ALARM, PLATFORM_ALARM
 
 from yombo.lib.devices._device import Device
@@ -48,9 +48,9 @@ class Alarm(Device):
         :param kwargs:
         :return:
         """
-        if COMMAND_COMPONENT_INPUT not in kwargs:
-            kwargs[COMMAND_COMPONENT_INPUT] = {}
-        kwargs[COMMAND_COMPONENT_INPUT][INPUT_BYPASS] = zones
+        if COMMAND_COMPONENT_INPUTS not in kwargs:
+            kwargs[COMMAND_COMPONENT_INPUTS] = {}
+        kwargs[COMMAND_COMPONENT_INPUTS][INPUT_BYPASS] = zones
         return self.command(COMMAND_ARM_CUSTOM_BYPASS, **kwargs)
 
     @property
