@@ -60,8 +60,6 @@ class Localize(YomboLibrary):
     Provides internaltionalization and localization where possible.  Default language is 'en' (English). System and
     debug messages are never translated.
     """
-    MSGCTXT_GLUE = "\004"
-
     def __str__(self):
         """
         Returns the name of the library.
@@ -82,13 +80,13 @@ class Localize(YomboLibrary):
             self.hashes = json.loads(hashes)
 
         if 'en' not in self.hashes:
-            self.hashes['en'] = ''
+            self.hashes['en'] = None
 
         self.localization_degrees = self._Configs.get2("localization", "degrees", "f")
 
         self.files = {}
 
-        self.locale_files = "%s/locale/po/" % self.working_dir
+        self.locale_save_folder = "%s/locale/po/" % self.working_dir
         self.translator = self.get_translator()
         builtins.__dict__['_'] = self.handle_translate
 
@@ -147,7 +145,7 @@ class Localize(YomboLibrary):
             size = size / 1024.0  # apply the division
         return "%.*f%s" % (precision, size, suffixes[suffixIndex])
 
-    def _modules_created_(self, **kwargs):
+    def _modules_pre_init_(self, **kwargs):
         """
         Called just before modules get their _init_ called. However, all the gateway libraries are loaded.
 
@@ -169,7 +167,7 @@ class Localize(YomboLibrary):
             except Exception as e:
                 logger.warn("Unable list module local files: %s" % e)
 
-            #always check english. If it gets updated, we need to update them all!
+            # always check english. If it gets updated, we need to update them all!
             hash_obj = sha224(open(self.files['en'][0], 'rb').read())
 
             for fname in self.files['en'][1:]:
@@ -240,8 +238,10 @@ class Localize(YomboLibrary):
             # Save the updated hash into the configuration for next time.
             self._Configs.set('localize', 'hashes', json.dumps(self.hashes, separators=(',',':')))
 
-            builtins.__dict__['_'] = self.handle_translate
+            gettext._translations.clear()
             self.translator = self.get_translator()
+            builtins.__dict__['_'] = self.handle_translate
+
         except Exception as e: # if problem with translation, at least return msgid...
             logger.error("Unable to load translations. Getting null one. Reason: %s" % e)
             logger.error("--------------------------------------------------------")
@@ -274,9 +274,9 @@ class Localize(YomboLibrary):
                     self.default_lang())  # toss in the gateway default language, which may be the system lang
             if 'en' not in languages:
                 languages.append('en')  # if all else fails, show english.
-        logger.debug("locale_files path: {path}", path=self.locale_files)
+        logger.debug("locale_files path: {path}", path=self.locale_save_folder)
         try:
-            return gettext.translation('yombo', self.locale_files, languages)
+            return gettext.translation('yombo', self.locale_save_folder, languages)
         except Exception as e: # if problem with translation, at least return msgid...
             logger.warn("Ignore this if first running Yombo. Unable to load translations: %s" % e)
         return gettext.NullTranslations()
