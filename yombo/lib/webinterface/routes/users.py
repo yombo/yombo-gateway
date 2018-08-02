@@ -64,21 +64,15 @@ def route_users(webapp):
             except KeyError:
                 webinterface.add_alert('Requested user not found.', 'warning')
                 return webinterface.redirect(request, '/users')
-            if session.has_access('users:%s' % user.email, 'view') is False:
-                print("Current user not supposed to have access...")
 
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/users/details.html')
-            root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/users/someuser/details", user.name)
-            return page.render(
-                alerts=webinterface.get_alerts(),
-                user=user,
-            )
+            return return_user_details(webinterface, request, user)
+
 
         @webapp.route('/<string:user_requested>/details', methods=['POST'])
         @require_auth(access_path="module_amazonalexa:manage", access_action="view")
         def page_users_details_post(webinterface, request, session, user_requested):
             session.has_access('user:%s' % user_requested, 'view', raise_error=True)
+            session.has_access('user:%s' % user_requested, 'edit', raise_error=True)
             try:
                 role_label = request.args.get('role_label')[0]
             except KeyError:
@@ -91,8 +85,16 @@ def route_users(webapp):
                 webinterface.add_alert('Requested user not found.', 'warning')
                 return webinterface.redirect(request, '/users/index')
 
-            user.add_role(role_label)
+            try:
+                user.add_role(role_label)
+            except YomboWarning as e:
+                webinterface.add_alert('Error adding role: %s' % e)
+                return return_user_details(webinterface, request, user)
+            webinterface.add_alert('Role added to user.')
 
+            return return_user_details(webinterface, request, user)
+
+        def return_user_details(webinterface, request, user):
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/users/details.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/users/someuser/details", user.name)
@@ -100,6 +102,105 @@ def route_users(webapp):
                 alerts=webinterface.get_alerts(),
                 user=user,
             )
+
+        @webapp.route('/<string:user_requested>/remove_role/<string:role_id>', methods=['GET'])
+        @require_auth()
+        def page_users_remove_role_get(webinterface, request, session, user_requested, role_id):
+            session.has_access('user:%s' % user_requested, 'view', raise_error=True)
+            session.has_access('user:%s' % user_requested, 'edit', raise_error=True)
+            try:
+                user = webinterface._Users.get(user_requested)
+            except KeyError:
+                webinterface.add_alert('Requested user not found.', 'warning')
+                return webinterface.redirect(request, '/users')
+
+            try:
+                user.remove_role(role_id)
+            except YomboWarning as e:
+                webinterface.add_alert('Error removing role: %s' % e)
+                return return_user_details(webinterface, request, user)
+
+            webinterface.add_alert('Role removed from user.')
+            return webinterface.redirect(request, '/users/%s/details' % user.user_id)
+
+        @webapp.route('/<string:user_requested>/add_device_action', methods=['POST'])
+        @require_auth()
+        def page_users_add_device_action_post(webinterface, request, session, user_requested):
+            session.has_access('user:*', 'edit', raise_error=True)
+            try:
+                user = webinterface._Users.get(user_requested)
+            except KeyError:
+                webinterface.add_alert('Requested user not found.', 'warning')
+                return webinterface.redirect(request, '/users')
+
+            try:
+                device_machine_label = request.args.get('device_machine_label')[0]
+            except KeyError:
+                webinterface.add_alert('Invalid request.', 'warning')
+                return webinterface.redirect(request, '/users/index' % user_requested)
+
+            try:
+                device = webinterface._Devices.get(device_machine_label)
+            except KeyError:
+                webinterface.add_alert('Requested device could not be found.', 'warning')
+                return webinterface.redirect(request, '/users/%s/details' % user_requested)
+
+            actions = []
+            for action in ('allow_view', 'allow_control', 'allow_edit', 'allow_enable', 'allow_disable',
+                           'deny_view', 'deny_control', 'deny_edit', 'deny_enable', 'deny_disable'):
+                try:
+                    new_action = request.args.get(action)[0]
+                except (TypeError, KeyError):
+                    new_action = None
+                if new_action is None:
+                    continue
+                actions.append(action)
+
+            #
+            #     details = action.split('_')
+            #     if new_action == action:
+            #         if details[0] == 'deny':
+            #             if 'allow_%s' % details[1] in actions:
+            #                 actions.remove('allow_%s' % details[1])
+            #             if 'allow_%s' % details[1] in actions:
+            #                 actions.remove('allow_%s' % details[1])
+
+            try:
+                user.add_device(device.machine_label, actions)
+            except YomboWarning as e:
+                webinterface.add_alert('Error adding device actions: %s' % e)
+
+            print("add device final actyions: %s" % actions)
+            return webinterface.redirect(request, '/users/%s/details' % user.user_id)
+
+        @webapp.route('/<string:user_requested>/remove_device', methods=['POST'])
+        @require_auth()
+        def page_users_remove_device_post(webinterface, request, session, user_requested):
+            session.has_access('user:*', 'edit', raise_error=True)
+            try:
+                user = webinterface._Users.get(user_requested)
+            except KeyError:
+                webinterface.add_alert('Requested user not found.', 'warning')
+                return webinterface.redirect(request, '/users')
+
+            try:
+                device_machine_label = request.args.get('device_machine_label')[0]
+            except KeyError:
+                webinterface.add_alert('Invalid request.', 'warning')
+                return webinterface.redirect(request, '/users/index' % user_requested)
+
+            try:
+                device = webinterface._Devices.get(device_machine_label)
+            except KeyError:
+                webinterface.add_alert('Requested device could not be found.', 'warning')
+                return webinterface.redirect(request, '/users/%s/details' % user_requested)
+
+            try:
+                user.remove_device(device.machine_label)
+            except YomboWarning as e:
+                webinterface.add_alert('Error removing device actions: %s' % e)
+
+            return webinterface.redirect(request, '/users/%s/details' % user.user_id)
 
         @webapp.route('/add', methods=['GET'])
         @require_auth()

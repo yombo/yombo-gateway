@@ -60,27 +60,31 @@
                              <tr>
                                 <td data-priority="1" style="max-width: 10em;">
                                     <p><strong>Label:</strong><br>{{ role.label }}</p>
-                                    <p><strong>Decription:</strong><br>{{ role.description }}</p>
+                                    <p><strong>Description:</strong><br>{{ role.description }}</p>
+                                    <p><strong>Source:</strong><br>{{ role.source }}</p>
                                 </td>
                                 <td data-priority="3">
-                                    {%- set role_members = _users.list_roles_by_user() %}
-                                    {%- if role_members[label]|length > 0 %}
                                     <strong>Users</strong>
                                     <ul>
+                                    {%- set role_members = _users.list_roles_by_user() %}
+                                    {%- if role_members[label]|length > 0 %}
                                     {% for member in role_members[label] %}
                                         <li>{{ member.name }} &lt;{{member.email}}&gt;</li>
                                     {% endfor %}
-                                    </ul>
+                                    {% else %} <li>No users</li>
                                     {% endif %}
-                                    {%- set role_members = role.auth_keys %}
-                                    {%- if role_members|length > 0 %}
+                                    </ul>
+
                                     <strong>Auth Keys</strong>
                                     <ul>
+                                    {%- set role_members = role.auth_keys %}
+                                    {%- if role_members|length > 0 %}
                                     {% for member in role_members %}
                                         <li>{{member.label}}</li>
                                     {% endfor %}
-                                    </ul>
+                                    {% else %} <li>No auth keys</li>
                                     {% endif %}
+                                    </ul>
                                 </td>
                                 <td>
                                     {%- if role.permissions['allow']|length > 0 %}

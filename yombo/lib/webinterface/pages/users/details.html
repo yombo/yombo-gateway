@@ -24,7 +24,7 @@
 {% set is_owner = false %}
 {% endif %}
 <div class="row">
-    <div class="col-md-4">
+    <div class="col-md-6">
         <div class="panel panel-default">
             <div class="panel-heading">
                 <label>Details</label>
@@ -44,26 +44,72 @@
     <div class="col-md-12">
         <div class="panel panel-default">
             <div class="panel-heading">
+                <label>Device access</label>
+            </div>
+            <!-- /.panel-heading -->
+            <div class="panel-body">
+                {% if is_owner == false %}
+                <div class="col-md-5">
+                <form action="/users/{{user.user_id}}/add_device_action" method="post" id="adddevice">
+                <label> Add a device: </label><br>
+                <select name="device_machine_label" id="device_machine_label" class="selectpicker" data-size="10" data-live-search="true"  title="Select device to add.">
+                {%- for device_id, device in _devices.sorted().items()
+                    if device.enabled_status == 1%}
+                  <option value="{{device.machine_label}}" data-subtext="{{device.description|hide_none(default='No device description')|truncate(70)}}">{{device.full_label}}</option>
+                {%- endfor %}
+                </select>
+                    <br>
+                    <label> Device permissions: </label>
+                    <table style="width: 100%;">
+                        <tr style="vertical-align:text-top">
+                            <td>
+                                <input type="checkbox" id="allow_view" name="allow_view" value="allow_view">Allow view<br>
+                                <input type="checkbox" id="allow_control" name="allow_control" value="allow_control">Allow control<br>
+                                <input type="checkbox" id="allow_edit" name="allow_edit" value="allow_edit">Allow edit<br>
+                                <input type="checkbox" id="allow_enable" name="allow_enable" value="allow_enable">Allow enable<br>
+                                <input type="checkbox" id="allow_disable" name="allow_disable" value="allow_disable">Allow disable<br>
+                            </td>
+                            <td>
+                                <input type="checkbox" id="deny_view" name="deny_view" value="deny_view">Deny view<br>
+                                <input type="checkbox" id="deny_control" name="deny_control" value="deny_control">Deny control<br>
+                                <input type="checkbox" id="deny_edit" name="deny_edit" value="deny_edit">Deny edit<br>
+                                <input type="checkbox" id="deny_enable" name="deny_enable" value="deny_enable">Deny enable<br>
+                                <input type="checkbox" id="deny_disable" name="deny_disable" value="deny_disable">Deny disable<br>
+                            </td>
+                        </tr>
+                    </table>
+                    <button type="submit" id="submit_device" class="btn btn-success" style="margin-top: 15px; margin-bottom: 10px">Add device</button>
+                </form>
+                </div>
+                {% endif %}
+                <div class="col-md-7">
+                <label> User device permissions: </label><br>
+                {%- if user.devices|length == 0 %}
+                User has no specific device access
+                {% else %}
+                <ul style="padding-left: 10px">
+                {% for device, access_list in user.get_devices() %}
+                    <li>{{ device.full_label }}</li>
+                    <ul style="padding-left: 15px">{%for item in access_list%}<li>{{item}}</li>{%endfor%}</ul>
+                {% endfor %}
+                </ul>
+                {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-12">
+        <div class="panel panel-default">
+            <div class="panel-heading">
                 <label>User Roles</label>
             </div>
             <!-- /.panel-heading -->
             <div class="panel-body">
-                {%- if user.roles|length == 0 %}
-                <strong>User has not been assigned any roles, good luck with that.</strong>
-                {% else %}
-                <ul style="padding-left: 10px">
-                {% for machine_label in user.roles %}
-                    {% set role = _users.get_role(machine_label) %}
-                    <li>{{role}} {{ role.label }} </li>
-                    <ul>
-                        <li  style="padding-bottom: 5px">{{ role.description}}</li>
-                    </ul>
-                {% endfor %}
-                </ul>
-                {% endif %}
                 {% if is_owner == false %}
+                <div class="col-md-5">
                 <form method="post" id="addrole">
-                    <br>
                 <label> Add a role: </label><br>
                 <select name="role_label" id="role_label" class="selectpicker" data-size="10" data-live-search="true"  title="Select role to add.">
                 {% for role in _users.get_roles() if role.label not in user.roles %}
@@ -78,7 +124,23 @@
                 <button type="submit" id="submit_role" class="btn btn-success" style="margin-top: 15px; margin-bottom: 10px">Add role</button>
                 </p>
                 </form>
+                </div>
                 {% endif %}
+                <div class="col-md-7">
+                {%- if user.roles|length == 0 %}
+                <strong>User has not been assigned any roles, good luck with that.</strong>
+                {% else %}
+                <ul style="padding-left: 10px">
+                {% for machine_label in user.roles %}
+                    {% set role = _users.get_role(machine_label) %}
+                    <li>{{role}} {{ role.label }} <a href="/users/{{user.user_id}}/remove_role/{{role.role_id}}" class="btn btn-danger btn-xs" role="button">Remove</a> </li>
+                    <ul style="padding-left: 15px">
+                        <li  style="padding-bottom: 5px">{{ role.description}}</li>
+                    </ul>
+                {% endfor %}
+                </ul>
+                {% endif %}
+                </div>
             </div>
         </div>
     </div>
@@ -92,8 +154,26 @@
 
 {% block body_bottom %}
 <script>
-    function enableSubmitBtn(){
-        console.log("enableSubmitBtn")
+    function enableDeviceSubmitBtn(){
+        document.getElementById("submit_device").disabled = false;
+    }
+    $('#submit_device').prop('disabled', true);
+    var devicesList = {
+    {%- for device_id, device in _devices.devices.items()
+        if device.machine_label not in user.devices and device.enabled_status == 1%}
+        "{{ device.machine_label }}": {
+        "machine_label": "{{ device.machine_label}}",
+        "label": "{{ device.label}}",
+        "description": "{{ device.description}}",
+        "actions": [{{ '\"' + user.devices|join('\", \"') + '\"' }}]
+       },
+    {% endfor %}
+    };
+    $('#device_machine_label').on('change',function(){
+      enableDeviceSubmitBtn();
+    });
+
+    function enableRoleSubmitBtn(){
         document.getElementById("submit_role").disabled = false;
     }
     $('#submit_role').prop('disabled', true);
@@ -107,11 +187,12 @@
     {% endfor %}
     };
 
-$('#role_label').on('change',function(){
-  $("#new_role_machine_label").text(rolesList[$(this).val()]['machine_label']);
-  $("#new_role_label").text(rolesList[$(this).val()]['label']);
-  $("#new_role_description").text(rolesList[$(this).val()]['description']);
-  enableSubmitBtn();
-});
+    $('#role_label').on('change',function(){
+      $("#new_role_machine_label").text(rolesList[$(this).val()]['machine_label']);
+      $("#new_role_label").text(rolesList[$(this).val()]['label']);
+      $("#new_role_description").text(rolesList[$(this).val()]['description']);
+      enableRoleSubmitBtn();
+    });
+
 </script>
 {% endblock %}

@@ -35,21 +35,31 @@
     <div class="col-lg-6">
         <div class="panel panel-default">
             <div class="panel-heading">
-                <label>Users</label>
+                <label>Members</label>
             </div>
             <!-- /.panel-heading -->
             <div class="panel-body">
-                {{role.users}}
-                {%- set role_members = role.users %}
-                {%- if role_members|length == 0 %}
-                <strong>No users assigned.</strong>
-                {% else %}
+                <strong>Users</strong>
                 <ul>
-                {% for member in role_members %}
-                    <li>{{ user.name }} &lt;{{member.email}}&gt;</li>
+                {%- set role_members = _users.list_roles_by_user() %}
+                {%- if role_members[role.machine_label]|length > 0 %}
+                {% for member in role_members[role.machine_label] %}
+                    <li>{{ member.name }} &lt;{{member.email}}&gt;</li>
                 {% endfor %}
-                </ul>
+                {% else %} <li>No users</li>
                 {% endif %}
+                </ul>
+
+                <strong>Auth Keys</strong>
+                <ul>
+                {%- set role_members = role.auth_keys %}
+                {%- if role_members|length > 0 %}
+                {% for member in role_members %}
+                    <li>{{member.label}}</li>
+                {% endfor %}
+                {% else %} <li>No auth keys</li>
+                {% endif %}
+                </ul>
             </div>
         </div>
         <div class="panel panel-default">

@@ -7,42 +7,65 @@ A class to represent a user.
 :copyright: Copyright 2018 by Yombo.
 :license: LICENSE for details.
 """
+from twisted.internet import reactor
 
+from yombo.core.exceptions import YomboWarning
 from yombo.lib.users.role import Role
+from yombo.utils import data_pickle, data_unpickle
 from yombo.utils.decorators import memoize_ttl
 
+DEVICE_ACTIONS = ('allow_view', 'allow_control', 'allow_edit', 'allow_enable', 'allow_disable',
+                  'deny_view', 'deny_control', 'deny_edit', 'deny_enable', 'deny_disable')
 
 class User(object):
     """
     User class to manage role membership, etc.
     """
 
-    def __init__(self, parent, data={}, roles=[]):
+    def __init__(self, parent, data={}):
         """
         Setup a new user instance.
 
         :param parent: A reference to the users library.
         """
+        def repad(local_data):
+            """ Used to add the = back the base64... """
+            return local_data + "=" * (-len(local_data) % 4)
+
+        self._Parent = parent
         self.user_id: str = data['id']
         self.email: str = data['email']
         self.name: str = data['name']
         self.access_code_digits: int = data['access_code_digits']
         self.access_code_string: str = data['access_code_string']
+        self.devices: dict = {}  # {'device_id': ['edit', 'add', ...]
         self.roles: list = []
-        self._Parent = parent
-        if len(roles) > 0:
-            for a_role in roles:
-                if isinstance(a_role, Role):
-                    machine_label = a_role.machine_label
-                else:
-                    role = self._Parent.get_role(a_role)
-                    machine_label = role.machine_label
-                if machine_label is not None:
-                    self.roles.append(machine_label)
 
-    def add_role(self, role_label, source=None):
+        rbac_raw = self._Parent._Configs.get('user_rbac', self.user_id, None, False)
+        if rbac_raw is None:
+            rbac = {}
+        else:
+            rbac = data_unpickle(repad(self._Parent._Configs.get('user_rbac', self.user_id, None, False)), encoder='msgpack_base64')
+
+        if rbac is None:
+            rbac = {}
+
+        if 'roles' in rbac:
+            roles = rbac['roles']
+            if len(roles) > 0:
+                for role in roles:
+                    self.add_role(role, save=False)
+
+        if 'devices' in rbac:
+            devices = rbac['devices']
+            if len(devices) > 0:
+                for device_machine_label, actions in devices.items():
+                    self.add_device(device_machine_label, actions, save=False)
+        self.save_data()
+
+    def add_role(self, role_label, save=None):
         """
-        Simply add a role to this user
+        Add a role to this user
 
         :param role_label: A role instance, role_id, role machine_label, or role label.
         """
@@ -50,14 +73,38 @@ class User(object):
             machine_label = role_label.machine_label
         else:
             role = self._Parent.get_role(role_label)
+            if role is None:
+                raise YomboWarning("Role not found, cannot add role.")
             machine_label = role.machine_label
 
-        edited = False
         if machine_label not in self.roles:
-            edited = True
             self.roles.append(machine_label)
-        if edited and source != 'db':
-            self.sync_roles_to_db()
+            if save in (None, True):
+                self.save_data()
+
+    def remove_role(self, role_label, save=None):
+        """
+        Remove a role from this user
+
+        :param role_label: A role instance, role_id, role machine_label, or role label.
+        """
+        if role_label == 'admin' and self._Parent.owner_id == self.user_id:
+            return
+
+        if isinstance(role_label, Role):
+            machine_label = role_label.machine_label
+        else:
+            role = self._Parent.get_role(role_label)
+            if role is None:
+                raise YomboWarning("Role not found, cannot add role.")
+            machine_label = role.machine_label
+
+        if machine_label in self.roles:
+            self.roles.remove(machine_label)
+            if save in (None, True):
+                self.save_data()
+        else:
+            raise YomboWarning("User doesn't have requested role, cannot remove.")
 
     def get_roles(self):
         """
@@ -69,30 +116,79 @@ class User(object):
             except KeyError:
                 pass
 
-    def remove_role(self, role_label, source=None):
+    def add_device(self, device_id, actions, save=None):
         """
-        Remove role that is assigned to a user.
+        Adds access to a device
 
-        :param role_label: name of the role which needs to be removed
+        :param device_id: A device instance, device_id, device_machine_label, or device_label
+        :param action: Action for the device. edit, delete, view, control...
         """
-        if role_label == 'admin' and self._Parent.owner_id == self.user_id:
+        device = self._Parent._Devices.get(device_id)
+        # if device.machine_label not in self.devices:
+        self.devices[device.machine_label] = []
+
+        if isinstance(actions, list) is False:
+            actions = [actions]
+
+        for action in sorted(actions):
+            if action not in DEVICE_ACTIONS:
+                raise YomboWarning("Add device action is not acceptable: %s" % action)
+            if action in self.devices[device.machine_label]:
+                continue
+
+            details = action.split('_')
+
+            if details[0] == 'deny':
+                if 'allow_%s' % details[1] in self.devices[device.machine_label]:
+                    self.devices[device.machine_label].remove('allow_%s' % details[1])
+
+            self.devices[device.machine_label].append(action)
+        if save in (None, True):
+            self.save_data()
+
+    def remove_device(self, device_id, actions=None, save=None):
+        """
+        Remove device access from this user.
+
+        :param device_id: A device instance, device_id, device_machine_label, or device_label
+        :param action: Action for the device. edit, delete, view, control...
+        """
+        device = self._Parent._Devices.get(device_id)
+        if device.machine_label not in self.devices:
             return
-        if isinstance(role_label, Role) is False:
-            role = role_label
-            machine_label = role_label.machine_label
-        else:
-            role = self._Parent.get_role(role_label)
-            machine_label = role.machine_label
 
-        edited = False
-        for role in self.get_roles():
-            if role.get_name() == machine_label:
-                self.roles.remove(role)
-                edited = True
-                break
+        if actions is None:
+            del self.devices[device.machine_label]
+            if save in (None, True):
+                self.save_data()
+            return
 
-        if edited and source != 'db':
-            self.sync_roles_to_db()
+        if isinstance(actions, list) is False:
+            actions = [actions]
+
+        for action in actions:
+            if action not in DEVICE_ACTIONS:
+                raise YomboWarning("Remove device action is not acceptable: %s" % action)
+
+            if action in self.devices[device.machine_label]:
+                self.devices[device.machine_label].remove(action)
+
+        if len(self.devices[device.machine_label]) == 0:
+            del self.devices[device.machine_label]
+
+        if source != 'db':
+            self.save_data()
+
+    def get_devices(self):
+        """
+        Get a generator for all devices the user has specific access to, not including devices from roles.
+        """
+        devices = self.devices.copy()
+        for machine_label in devices:
+            try:
+                yield self._Parent._Devices[machine_label], devices[machine_label]
+            except KeyError:
+                pass
 
     @memoize_ttl(60)
     def has_access(self, path, action):
@@ -105,8 +201,17 @@ class User(object):
         """
         return self._Parent.has_access(self, self.roles, path, action)
 
-    def sync_roles_to_db(self):
-        self._Parent._LocalDB.save_user_roles(self)
+    def save_data(self):
+        """
+        Save the user device
+        :return:
+        """
+        tosave = {
+            'roles': self.roles,
+            'devices': self.devices
+        }
+        self._Parent._Configs.set('user_rbac', self.user_id, data_pickle(tosave, encoder="msgpack_base64").rstrip("="))
+        # reactor.callLater(1, self._Parent._LocalDB.save_user_data, self)
 
     def __repr__(self):
         return '<User %s>' % self.roles

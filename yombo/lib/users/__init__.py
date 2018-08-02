@@ -166,15 +166,16 @@ class Users(YomboLibrary):
             self.owner_user = self.get(self.owner_id)
             self.owner_user.add_role('admin')
 
-    def add_user(self, new_user, roles=[]):
+    def add_user(self, new_user):
         """
-        Primarily called by the users.py web interface routes to add a user to memory for any new users added.
+        Primarily called by the users.py web interface routes to add a new user.
 
         :param new_user:
         :param roles:
         :return:
         """
-        self.users[new_user['email']] = User(self, new_user, roles)
+        self.users[new_user['email']] = User(self, new_user)
+        # self.users[new_user['email']].sync_user_to_db()
 
     @inlineCallbacks
     def load_roles(self):
@@ -197,24 +198,22 @@ class Users(YomboLibrary):
     @inlineCallbacks
     def load_users(self):
         db_users = yield self._LocalDB.get_users()
-        db_user_roles = yield self._LocalDB.get_user_roles()
+        # db_user_roles = yield self._LocalDB.get_user_roles()
 
         for user in db_users:
-            if user.email in db_user_roles:
-                user_roles = db_user_roles[user.email]['roles']
-            else:
-                user_roles = []
-            self.users[user.email] = User(self, user.__dict__, user_roles)
+            # if user.email in db_user_roles:
+            #     user_roles = db_user_roles[user.email]['roles']
+            # else:
+            #     user_roles = []
+            self.users[user.email] = User(self, user.__dict__)
 
-    @inlineCallbacks
-    def load_user_roles(self):
-        db_users = yield self._LocalDB.get_user_roles()
-
-        for user in db_users:
-            self.users[user.email] = User(self, user.__dict__, [])
-
-    # @inlineCallbacks
     def add_role(self, data):
+        """
+        Add a new possible role to the system.
+
+        :param data:
+        :return:
+        """
         machine_label = data['machine_label']
         if machine_label in self.roles:
             raise YomboWarning("Role already exists.")
@@ -230,8 +229,14 @@ class Users(YomboLibrary):
                                          source='system',
                                          permissions=data['permissions'])
 
-    # @inlineCallbacks
     def add_permission_to_role(self, machine_label, permission):
+        """
+        Add a new permission to an existing role.
+
+        :param machine_label:
+        :param permission:
+        :return:
+        """
         role = self.get_role(machine_label)
         if role is None:
             raise YomboWarning("Role doesn't exist.")
