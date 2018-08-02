@@ -182,113 +182,119 @@ def ordereddict_to_dict(value):
     return dict(value)
 
 
-def data_pickle(data, encoder=None, zip_level=None):
+def data_pickle(data, encoder=None, zip=None):
     """
     Encodes data with an encoder type. The default is "msgpack_base85". This allows data to be sent to
     databases or nearly everywhere.
 
     :param data: String, list, or dictionary to be encoded.
     :param encoder: Optional encode method. One of: json, msgpack, msgpack_zip, msgpack_base85, msgpack_base85_zip
-    :param zip_level: True or a compression number from 1 to 9. Only works with msgpack_base85, and converts it to a
-      msgpack_base85_zip.
+    :param zip: True or a compression number from 1 to 9.
 
     :return: bytes (not string) of the encoded data that can be used with data_unpickle.
     """
-    if zip_level is True:
-        zip_level = 5
+    if zip is True:
+        has_zip = True
+        zip = 5
+    elif isinstance(zip, int):
+        has_zip = True
+        if zip < 1 or zip > 9:
+            zip = 5
+    elif zip is None:
+        has_zip = False
+        zip = 5
+    else:
+        has_zip = False
+        zip = 5
 
     if encoder is None:
-        if isinstance(zip_level, int):
-            if zip_level < 1 or zip_level > 9:
-                zip_level=5
+        if has_zip:
             encoder = 'msgpack_base85_zip'
         else:
             encoder = 'msgpack_base85'
-    if encoder not in ('json', 'msgpack', 'msgpack_zip', 'msgpack_base85', 'msgpack_base85_zip', 'zip'):
-        encoder = 'json'
-    if encoder == 'json':
+
+    if 'json' in encoder and 'msgack' in encoder:
+        raise YomboWarning("Pickle data can only have json or msgpack, not both.")
+    if 'base64' in encoder and 'base85' in encoder:
+        raise YomboWarning("Pickle data can only have base64 or base85, not both.")
+
+    if 'json' in encoder:
         try:
-            return json.dumps(data, separators=(',', ':'))
+            data = json.dumps(data, separators=(',', ':'))
         except Exception as e:
             raise YomboWarning("Error encoding json: %s" % e)
-    elif encoder == 'msgpack':
+    elif 'msgpack' in encoder:
         try:
-            return msgpack.packb(data)
+            data = msgpack.packb(data)
         except Exception as e:
             raise YomboWarning("Error encoding msgpack: %s" % e)
-    elif encoder == 'msgpack_zip':
+
+    if 'zip' in encoder:
         try:
-            return zlib.compress(msgpack.packb(data), zip_level)
-        except Exception as e:
-            raise YomboWarning("Error encoding msgpack: %s" % e)
-    elif encoder == 'msgpack_base85':
-        try:
-            return base64.b85encode(msgpack.packb(data))
-        except Exception as e:
-            raise YomboWarning("Error encoding msgpack_base85: %s" % e)
-    elif encoder == 'msgpack_base85_zip':
-        if isinstance(zip_level, int) is False:
-            zip_level = 5
-        try:
-            return base64.b85encode(zlib.compress(msgpack.packb(data), zip_level))
+            data = zlib.compress(data, zip)
         except Exception as e:
             raise YomboWarning("Error encoding msgpack_base85_zip: %s" % e)
-    elif encoder == 'zip':
-        if isinstance(zip_level, int) is False:
-            zip_level = 5
-        try:
-            return base64.b85encode(zlib.compress(data))
-        except Exception as e:
-            raise YomboWarning("Error encoding msgpack_base85_zip: %s" % e)
+
+    if 'base64' in encoder:
+        data = bytes_to_unicode(base64.b64encode(data))
+    elif 'base85' in encoder:
+        data = bytes_to_unicode(base64.b85encode(data))
+
     return data
 
 
-def data_unpickle(raw_data, encoder=None, zip_level=None):
+def data_unpickle(data, encoder=None, zip=None):
     """
     Unpack data packed with data_pickle.
 
     :param data:
     :param encoder:
-    :param zip_level:
+    :param zip: True if incoming data is zipped...
+
     :return:
     """
-    data = bytes_to_unicode(raw_data)
-    if encoder is None:
-        if zip_level is True or isinstance(zip_level, int):
-            encoder = 'msgpack_base85_zip'
-        else:
-            encoder = 'msgpack_base85'
+    if data is None:
+        return None
+    data = bytes_to_unicode(data)
 
-    if encoder == 'json':
+    if encoder is None:
+        # if zip_level is True or isinstance(zip_level, int):
+        #     encoder = 'msgpack_base85_zip'
+        # else:
+        encoder = 'msgpack_base85'
+
+    # Sometimes empty dictionaries are encoded...  This is a simple shortcut.
+    if encoder == "msgpack_base85_zip" and data == "cwTD&004mifd":
+        return {}
+    elif encoder == "msgpack_base85" and data == "fB":
+        return {}
+
+    if 'json' in encoder and 'msgack' in encoder:
+        raise YomboWarning("Unpickle data can only have json or msgpack, not both.")
+    if 'base64' in encoder and 'base85' in encoder:
+        raise YomboWarning("Unpickle data can only have base64 or base85, not both.")
+
+    if 'base64' in encoder:
+        data = base64.b64decode(data)
+    elif 'base85' in encoder:
+        data = base64.b85decode(data)
+
+    try:
+        data = zlib.decompress(data)
+    except Exception as e:
+        pass
+
+    if 'json' in encoder:
         try:
-            return json.loads(data)
-        except:
-            pass
-    elif encoder == 'msgpack':
+            data = bytes_to_unicode(json.loads(data))
+        except Exception as e:
+            raise YomboWarning("Error encoding json: %s" % e)
+    elif 'msgpack' in encoder:
         try:
-            return msgpack.unpackb(data, encoding='utf-8')
-        except:
-            pass
-    elif encoder == 'msgpack_zip':
-        try:
-            return zlib.decompress(msgpack.unpackb(data, encoding='utf-8'))
-        except:
-            pass
-    elif encoder == 'msgpack_base85':
-        try:
-            return msgpack.unpackb(base64.b85decode(data), encoding='utf-8')
-        except:
-            pass
-    elif encoder == 'msgpack_base85_zip':
-        try:
-            return msgpack.unpackb(zlib.decompress(base64.b85decode(data)), encoding='utf-8')
-        except:
-            pass
-    elif encoder == 'zip':
-        try:
-            return zlib.decompress(base64.b85decode(data))
-        except:
-            pass
+            data = bytes_to_unicode(msgpack.unpackb(data))
+        except Exception as e:
+            raise YomboWarning("Error encoding msgpack: %s" % e)
+
     return data
 
 
@@ -485,7 +491,7 @@ def clean_dict(dictionary, **kwargs):
 
 def bytes_to_unicode(input):
     """
-    Converts strings, lists, and dictionarys to unicde. Handles nested items too. Non-strings are untouched.
+    Converts strings, lists, and dictionarys to unicode. Handles nested items too. Non-strings are untouched.
     Inspired by: http://stackoverflow.com/questions/13101653/python-convert-complex-dictionary-of-strings-from-unicode-to-ascii
 
     :param input: Convert strings to unicode.
@@ -1289,7 +1295,7 @@ def format_markdown(input_text, formatting=None):
     return input_text
 
 
-def display_hide_none(value, allow_string=None):
+def display_hide_none(value, allow_string=None, default=None):
     """
     Changes type None to display "".
 
@@ -1298,7 +1304,10 @@ def display_hide_none(value, allow_string=None):
     :return:
     """
     if value is None:
-        return ""
+        if default is not None:
+            return default
+        else:
+            return default
     if isinstance(value, str):
         if allow_string is True:
             return value
