@@ -610,7 +610,7 @@ class LocalDB(YomboLibrary):
             else:
                 record['machine_status_extra'] = data_unpickle(machine_status_extra)
 
-            requested_by = data_unpickle(record['requested_by'])
+            requested_by = record['requested_by']
             if requested_by is None:
                 record['requested_by'] = None
             else:
@@ -1696,7 +1696,7 @@ ORDER BY id desc"""
         return roles
 
     @inlineCallbacks
-    def save_user_roles(self, user):
+    def save_user_data(self, user):
         print("db:save_user Roles.... %s - %s" % (type(user), user))
         records = yield UserRoles.find(where=['email = ?', user.email])
         print("db:save got records: %s" % records)
@@ -1704,6 +1704,7 @@ ORDER BY id desc"""
             print("got no records, will create a user record for roles...")
             args = {
                 'email': user.email,
+                'devices': data_pickle(user.roles),
                 'roles': data_pickle(user.roles),
                 'updated_at': int(time()),
                 'created_at': int(time()),
@@ -1712,8 +1713,11 @@ ORDER BY id desc"""
         else:
             print("save user roles found: %s" % records)
             yield self.dbconfig.update("user_roles",
-                                       {'roles': data_pickle(user.roles),
-                                        'updated_at': int(time())},
+                                       {
+                                           'devices': data_pickle(user.devices),
+                                           'roles': data_pickle(user.roles),
+                                           'updated_at': int(time())
+                                       },
                                        where=['id = ?', records[0].id])
 
 
