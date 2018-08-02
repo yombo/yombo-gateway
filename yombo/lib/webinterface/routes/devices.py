@@ -36,10 +36,15 @@ def add_devices_breadcrumb(webinterface, request, device_id):
     local_devices = []
     cluster_devices = []
     for select_device_id, select_device in webinterface._Devices.sorted().items():
-        if select_device.device_id == device_id:
-            data = (select_device.area_label, "$/devices/%s/details" % select_device_id)
+        if select_device.gateway_id == webinterface.gateway_id():
+            label = select_device.area_label
         else:
-            data = (select_device.area_label, "/devices/%s/details" % select_device_id)
+            label = select_device.full_label
+
+        if select_device.device_id == device_id:
+            data = (label, "$/devices/%s/details" % select_device_id)
+        else:
+            data = (label, "/devices/%s/details" % select_device_id)
 
         if select_device.gateway_id == webinterface.gateway_id():
             local_devices.append(data)
@@ -51,7 +56,7 @@ def add_devices_breadcrumb(webinterface, request, device_id):
         data['Local Gateway'] = OrderedDict()
         for item in local_devices:
             data['Local Gateway'][item[0]] = item[1]
-    if len(cluster_devices)  >0:
+    if len(cluster_devices) > 0:
         data['Local Cluster'] = OrderedDict()
         for item in cluster_devices:
             data['Local Cluster'][item[0]] = item[1]
