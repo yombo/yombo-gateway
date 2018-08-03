@@ -27,7 +27,7 @@
     <div class="col-md-6">
         <div class="panel panel-default">
             <div class="panel-heading">
-                <label>Details</label>
+                <h4>Details</h4>
             </div>
             <!-- /.panel-heading -->
             <div class="panel-body">
@@ -44,7 +44,7 @@
     <div class="col-md-12">
         <div class="panel panel-default">
             <div class="panel-heading">
-                <label>Device access</label>
+                <h4>Device access</h4>
             </div>
             <!-- /.panel-heading -->
             <div class="panel-body">
@@ -59,7 +59,7 @@
                 {%- endfor %}
                 </select>
                     <br>
-                    <label> Device permissions: </label>
+                    <h4> Device permissions: </h4>
                     <table style="width: 100%;">
                         <tr style="vertical-align:text-top">
                             <td>
@@ -103,7 +103,7 @@
     <div class="col-md-12">
         <div class="panel panel-default">
             <div class="panel-heading">
-                <label>User Roles</label>
+                <h4>User Roles</h4>
             </div>
             <!-- /.panel-heading -->
             <div class="panel-body">
@@ -133,7 +133,7 @@
                 <ul style="padding-left: 10px">
                 {% for machine_label in user.roles %}
                     {% set role = _users.get_role(machine_label) %}
-                    <li>{{role}} {{ role.label }} <a href="/users/{{user.user_id}}/remove_role/{{role.role_id}}" class="btn btn-danger btn-xs" role="button">Remove</a> </li>
+                    <li>{{role}} {{ role.label }} <a href="/users/{{user.user_id}}/unattach_role/{{role.role_id}}" class="btn btn-danger btn-xs" role="button">Remove</a> </li>
                     <ul style="padding-left: 15px">
                         <li  style="padding-bottom: 5px">{{ role.description}}</li>
                     </ul>

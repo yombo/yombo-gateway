@@ -41,29 +41,26 @@ class User(object):
         self.devices: dict = {}  # {'device_id': ['edit', 'add', ...]
         self.roles: list = []
 
-        rbac_raw = self._Parent._Configs.get('user_rbac', self.user_id, None, False)
+        rbac_raw = self._Parent._Configs.get('rbac_user_roles', self.user_id, None, False)
         if rbac_raw is None:
             rbac = {}
         else:
-            rbac = data_unpickle(repad(self._Parent._Configs.get('user_rbac', self.user_id, None, False)), encoder='msgpack_base64')
-
-        if rbac is None:
-            rbac = {}
+            rbac = data_unpickle(repad(rbac_raw), encoder='msgpack_base64')
 
         if 'roles' in rbac:
             roles = rbac['roles']
             if len(roles) > 0:
                 for role in roles:
-                    self.add_role(role, save=False)
+                    self.attach_role(role, save=False)
 
         if 'devices' in rbac:
             devices = rbac['devices']
             if len(devices) > 0:
                 for device_machine_label, actions in devices.items():
                     self.add_device(device_machine_label, actions, save=False)
-        self.save_data()
+        self.save()
 
-    def add_role(self, role_label, save=None):
+    def attach_role(self, role_label, save=None):
         """
         Add a role to this user
 
@@ -80,9 +77,9 @@ class User(object):
         if machine_label not in self.roles:
             self.roles.append(machine_label)
             if save in (None, True):
-                self.save_data()
+                self.save()
 
-    def remove_role(self, role_label, save=None):
+    def unattach_role(self, role_label, save=None):
         """
         Remove a role from this user
 
@@ -102,7 +99,7 @@ class User(object):
         if machine_label in self.roles:
             self.roles.remove(machine_label)
             if save in (None, True):
-                self.save_data()
+                self.save()
         else:
             raise YomboWarning("User doesn't have requested role, cannot remove.")
 
@@ -144,7 +141,7 @@ class User(object):
 
             self.devices[device.machine_label].append(action)
         if save in (None, True):
-            self.save_data()
+            self.save()
 
     def remove_device(self, device_id, actions=None, save=None):
         """
@@ -160,7 +157,7 @@ class User(object):
         if actions is None:
             del self.devices[device.machine_label]
             if save in (None, True):
-                self.save_data()
+                self.save()
             return
 
         if isinstance(actions, list) is False:
@@ -176,8 +173,8 @@ class User(object):
         if len(self.devices[device.machine_label]) == 0:
             del self.devices[device.machine_label]
 
-        if source != 'db':
-            self.save_data()
+        if save in (None, True):
+            self.save()
 
     def get_devices(self):
         """
@@ -201,7 +198,7 @@ class User(object):
         """
         return self._Parent.has_access(self, self.roles, path, action)
 
-    def save_data(self):
+    def save(self):
         """
         Save the user device
         :return:
@@ -210,8 +207,9 @@ class User(object):
             'roles': self.roles,
             'devices': self.devices
         }
-        self._Parent._Configs.set('user_rbac', self.user_id, data_pickle(tosave, encoder="msgpack_base64").rstrip("="))
-        # reactor.callLater(1, self._Parent._LocalDB.save_user_data, self)
+        self._Parent._Configs.set('rbac_user_roles', self.user_id,
+                                  data_pickle(tosave, encoder="msgpack_base64").rstrip("="),
+                                  ignore_case=True)
 
     def __repr__(self):
         return '<User %s>' % self.roles

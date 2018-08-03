@@ -13,7 +13,7 @@ Resounce syntax:
 
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
-from yombo.utils import random_string, sha256_compact
+from yombo.utils import sha256_compact, data_pickle, data_unpickle
 
 logger = get_logger('library.users.role')
 
@@ -43,24 +43,28 @@ class Role(object):
         """
         return self._Parent.list_role_users(self)
 
-    def __init__(self, parent, machine_label, label=None, description=None, source=None, role_id=None, permissions=[]):
+    def __init__(self, parent, machine_label=None, label=None, description=None, source=None, role_id=None,
+                 permissions=None):
         """
         Setup the role.
 
         :param parent: A reference to the users library.
         """
+        print("adding role to memopry: %s" % machine_label)
         self._Parent = parent
-        self.roles = self._Parent.roles
+        self.all_roles = self._Parent.roles
         if machine_label is None:
             raise YomboWarning("Role must have a machine_label.")
+        if machine_label in self.all_roles:
+            raise YomboWarning("Role machine_label already exists.: %s" % machine_label)
+
         if label is None:
             label = machine_label
-        if machine_label in self.roles:
-            raise YomboWarning("Role machine_label already exists.")
         if description is None:
             description = ""
         if role_id is None:
             role_id = sha256_compact(machine_label)
+
         self.role_id: str = role_id
         self.machine_label: str = machine_label
         self.label: str = label
@@ -73,9 +77,11 @@ class Role(object):
             'allow': [],
             'deny': [],
         }
-        for item in permissions:
-            self.add_rule(item['path'], item['action'], item['access'])
-        self.roles = []  # support nested roles - TODO
+
+        if isinstance(permissions, dict):
+            for access in ('allow', 'deny'):
+                self.permissions[access] = permissions[access]
+        self.save()
 
     def add_rule(self, path, action, access):
         """
@@ -98,6 +104,7 @@ class Role(object):
         permission = (path, action)
         if permission not in self.permissions[access]:
             self.permissions[access].append(permission)
+        self.save()
 
     def delete_rule(self, path, action, access):
         """
@@ -114,6 +121,7 @@ class Role(object):
         permission = (path, action)
         if permission in self.permissions[access]:
             self.permissions[access].remove(permission)
+        self.save()
 
     def has_access(self, req_path, req_action):
         """
@@ -204,6 +212,20 @@ class Role(object):
         logger.info("check_permission_match: Default, false false")
         return False, False
 
-    def __repr__(self):
-        return '<Role %s (%s)>' % (self.machine_label, self.role_id)
+    def save(self):
+        """
+        Save the user device
+        :return:
+        """
+        if self.source != "user":
+            return
 
+        tosave = {
+            'label': self.label,
+            'machine_label': self.machine_label,
+            'description': self.description,
+            'permissions': self.permissions
+        }
+        self._Parent._Configs.set('rbac_roles', self.role_id,
+                                  data_pickle(tosave, encoder="msgpack_base64").rstrip("="),
+                                  ignore_case=True)

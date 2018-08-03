@@ -102,12 +102,13 @@ def route_roles(webapp):
             }
 
             try:
-                role = yield webinterface._Users.add_role(data)
+                print("adding role data: %s" % data)
+                role = yield webinterface._Users.add_role(data, source="user")
             except YomboWarning as e:
                 webinterface.add_alert("Cannot add role. %s" % e.message, 'warning')
                 return page_roles_form(webinterface, request, session, 'add', data, "Add Role",)
 
-            webinterface.add_alert("New role '%s' added." % role.label)
+            webinterface.add_alert("New role '%s' added." % data['label'])
             return webinterface.redirect(request, "/roles/%s/details" % role.role_id)
 
         @webapp.route('/<string:role_id>/edit', methods=['GET'])

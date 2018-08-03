@@ -19,8 +19,7 @@ from yombo.core.log import get_logger
 from yombo.lib.users.role import Role
 from yombo.lib.users.user import User
 from yombo.lib.users.constants import SYSTEM_ROLES
-from yombo.utils import global_invoke_all
-from yombo.utils.decorators import memoize_ttl
+from yombo.utils import global_invoke_all, data_unpickle
 
 logger = get_logger('library.users')
 
@@ -125,13 +124,12 @@ class Users(YomboLibrary):
         """
         return self.users.values()
 
-    @inlineCallbacks
     def _init_(self, **kwargs):
         self.roles: dict = {}
         self.users: dict = {}
         self.owner_id = self._Configs.get('core', 'owner_id', None, False)
         self.owner_user = None
-        yield self.load_roles()
+        self.load_roles()
 
     @inlineCallbacks
     def _start_(self, **kwargs):
@@ -143,28 +141,25 @@ class Users(YomboLibrary):
         results = yield global_invoke_all('_roles_', called_by=self)
         logger.debug("_roles_ results: {results}", results=results)
         for component, roles in results.items():
-            for machine_label, data in roles.items():
-                if 'label' not in data:
-                    data['label'] = machine_label
-                if 'description' not in data:
-                    data['description'] = data['label']
-                if 'permissions' not in data:
-                    data['permissions'] = []
+            for machine_label, role_data in roles.items():
+                if 'label' not in role_data:
+                    role_data['label'] = machine_label
+                if 'description' not in role_data:
+                    role_data['description'] = role_data['label']
+                if 'permissions' not in role_data:
+                    role_data['permissions'] = []
                 else:
-                    if isinstance(data['permissions'], list) is False:
+                    if isinstance(role_data['permissions'], list) is False:
                         logger.warn("Cannot add role, permissions must be a list. Role: {machine_label}",
                                     machine_label=machine_label)
                         continue
-                self.roles[machine_label] = Role(self, machine_label,
-                                                 label=data['label'],
-                                                 description=data['description'],
-                                                 source=component._FullName,
-                                                 permissions=data['permissions'])
+                role_data['machine_label'] = machine_label
+                self.roles[machine_label] = self.add_role(role_data, source="system")
 
         yield self.load_users()
         if self.owner_id is not None:
             self.owner_user = self.get(self.owner_id)
-            self.owner_user.add_role('admin')
+            self.owner_user.attach_role('admin')
 
     def add_user(self, new_user):
         """
@@ -177,23 +172,24 @@ class Users(YomboLibrary):
         self.users[new_user['email']] = User(self, new_user)
         # self.users[new_user['email']].sync_user_to_db()
 
-    @inlineCallbacks
     def load_roles(self):
-        self.roles.clear()
-        for machine_label, data in SYSTEM_ROLES.items():
-            self.roles[machine_label] = Role(self, machine_label,
-                                             label=data['label'],
-                                             description=data['description'],
-                                             source='system',
-                                             permissions=data['permissions'])
+        def repad(local_data):
+            """ Used to add the = back the base64... """
+            return local_data + "=" * (-len(local_data) % 4)
 
-        db_roles = yield self._LocalDB.get_roles()
-        for role in db_roles:
-            self.roles[role.machine_label] = Role(self, role.machine_label,
-                                                  label=role.label,
-                                                  description=role.description,
-                                                  source='database',
-                                                  role_id=role.id)
+        self.roles.clear()
+        for machine_label, role_data in SYSTEM_ROLES.items():
+            role_data['machine_label'] = machine_label
+            self.roles[machine_label] = self.add_role(role_data, source="system")
+
+        user_roles = self._Configs.get('rbac_roles', '*', {}, False)
+        print("user_roles: %s" % user_roles)
+        for role_id, role_data_raw in user_roles.items():
+            print("role_data_raw: %s" % role_data_raw)
+            role_data = data_unpickle(repad(role_data_raw), encoder='msgpack_base64')
+            print("role_data: %s" % role_data)
+            # permissions = role_data['permissions']  # unpack the permissions, only to be re-packed later.
+            self.roles[machine_label] = self.add_role(role_data, source="user")
 
     @inlineCallbacks
     def load_users(self):
@@ -207,13 +203,16 @@ class Users(YomboLibrary):
             #     user_roles = []
             self.users[user.email] = User(self, user.__dict__)
 
-    def add_role(self, data):
+    def add_role(self, data, source=None):
         """
         Add a new possible role to the system.
 
         :param data:
         :return:
         """
+        if source not in ('system', 'user', 'module'):
+            raise YomboWarning("Add_role requires a source to be: system, user, or module.")
+
         machine_label = data['machine_label']
         if machine_label in self.roles:
             raise YomboWarning("Role already exists.")
@@ -223,11 +222,13 @@ class Users(YomboLibrary):
             data['description'] = machine_label
         if 'permissions' not in data:
             data['permissions'] = []
-        self.roles[machine_label] = Role(self, machine_label,
+        self.roles[machine_label] = Role(self,
+                                         machine_label=machine_label,
                                          label=data['label'],
                                          description=data['description'],
-                                         source='system',
+                                         source=source,
                                          permissions=data['permissions'])
+        return self.roles[machine_label]
 
     def add_permission_to_role(self, machine_label, permission):
         """

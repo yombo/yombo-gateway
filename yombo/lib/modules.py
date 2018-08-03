@@ -228,7 +228,7 @@ class Modules(YomboLibrary):
 
     @inlineCallbacks
     def init_modules(self):
-        yield self._Loader.library_invoke_all("_modules_created_", called_by=self)
+        yield self._Loader.library_invoke_all("_modules_pre_init_", called_by=self)
         logger.debug("starting modules::init....")
         yield self.module_init_invoke()  # Call "_init_" of modules
         yield self._Loader.library_invoke_all("_modules_inited_", called_by=self)
@@ -240,7 +240,7 @@ class Modules(YomboLibrary):
 
         **Hooks implemented**:
 
-        * _modules_created_ : Only called to libraries, is called before modules called for _init_.
+        * _modules_pre_init_ : Only called to libraries, is called before modules called for _init_.
         * _init_ : Only called to modules, is called as part of the _init_ sequence.
         * _modules_inited_ : Only called to libraries, is called after modules called for _init_.
         * _preload_ : Only called to modules, is called before _load_.

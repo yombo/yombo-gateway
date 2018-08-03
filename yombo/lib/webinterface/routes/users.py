@@ -86,7 +86,7 @@ def route_users(webapp):
                 return webinterface.redirect(request, '/users/index')
 
             try:
-                user.add_role(role_label)
+                user.attach_role(role_label)
             except YomboWarning as e:
                 webinterface.add_alert('Error adding role: %s' % e)
                 return return_user_details(webinterface, request, user)
@@ -103,9 +103,9 @@ def route_users(webapp):
                 user=user,
             )
 
-        @webapp.route('/<string:user_requested>/remove_role/<string:role_id>', methods=['GET'])
+        @webapp.route('/<string:user_requested>/unattach_role/<string:role_id>', methods=['GET'])
         @require_auth()
-        def page_users_remove_role_get(webinterface, request, session, user_requested, role_id):
+        def page_users_unattach_role_get(webinterface, request, session, user_requested, role_id):
             session.has_access('user:%s' % user_requested, 'view', raise_error=True)
             session.has_access('user:%s' % user_requested, 'edit', raise_error=True)
             try:
@@ -115,7 +115,7 @@ def route_users(webapp):
                 return webinterface.redirect(request, '/users')
 
             try:
-                user.remove_role(role_id)
+                user.unattach_role(role_id)
             except YomboWarning as e:
                 webinterface.add_alert('Error removing role: %s' % e)
                 return return_user_details(webinterface, request, user)

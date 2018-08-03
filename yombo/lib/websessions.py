@@ -444,7 +444,6 @@ class Auth(object):
             'yomboapi_login_key': None,
             'create_type': None,
         }
-        # self.roles = []
         self.update_attributes(record, True)
 
     def update_attributes(self, record=None, stay_clean=None):
@@ -473,9 +472,6 @@ class Auth(object):
             self.session_data['yombo_session'] = None
             if 'yomboapi_login_key' not in self.session_data:
                 self.session_data['yomboapi_login_key'] = None
-        # if 'roles' in record:
-        #     if isinstance(record['roles'], list):
-        #         self.roles = record['roles']
 
         if stay_clean is not True:
             self.is_dirty = 2000
@@ -487,23 +483,6 @@ class Auth(object):
     @property
     def user(self) -> str:
         return self._Parent._Users.get(self.auth_id)
-
-    # def set_roles(self, roles):
-    #     if isinstance(roles, list) is False:
-    #         return
-    #     self.roles = roles
-    #
-    # def add_role(self, label):
-    #     if isinstance(label, str) is False:
-    #         return
-    #     if label not in self.roles:
-    #         self.roles.append(label)
-    #
-    # def remove_role(self, label):
-    #     if isinstance(label, str) is False:
-    #         return
-    #     if label in self.roles:
-    #         self.roles.remove(label)
 
     def get(self, key, default="BRFEqgdgLgI0I8QM2Em2nWeJGEuY71TTo7H08uuT"):
         if key in self.session_data:

@@ -382,15 +382,15 @@ class Auth(object):
         self.source = source
         self._Parent.created_items_not_from_db.append(self.auth_id)
 
-    def add_role(self, machine_label):
+    def attach_role(self, machine_label):
         if isinstance(machine_label, str) is False:
-            logger.warn("Cannot add role, must be a string.")
+            logger.warn("Cannot attach role, must be a string.")
             return
         if machine_label not in self.roles:
             self.roles.append(machine_label)
         self.is_dirty += 1
 
-    def remove_role(self, machine_label):
+    def unattach_role(self, machine_label):
         if isinstance(machine_label, str) is False:
             logger.warn("Cannot remove role, must be a string.")
             return

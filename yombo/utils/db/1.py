@@ -38,8 +38,8 @@ def new_db_file(Registry, **kwargs):
     yield create_table_statistics(Registry)
     yield create_table_tasks(Registry)
     yield create_table_users(Registry)
-    yield create_table_user_roles(Registry)
-    yield create_table_roles(Registry)
+    # yield create_table_user_roles(Registry)
+    # yield create_table_roles(Registry)
     yield create_table_access_control_list(Registry)
     yield create_table_webinterface_api_auth(Registry)
     yield create_table_webinterface_sessions(Registry)
@@ -613,37 +613,37 @@ def create_table_users(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(create_index('users', 'email'))
 
 
-@inlineCallbacks
-def create_table_roles(Registry, **kwargs):
-    """  """
-    table = """CREATE TABLE `roles` (
-        `id`            TEXT NOT NULL,
-        `machine_label` TEXT NOT NULL,
-        `label`         TEXT NOT NULL,
-        `description`   TEXT,
-        `permissions`   TEXT,
-        `updated_at`    INTEGER NOT NULL,
-        `created_at`    INTEGER NOT NULL
-        );"""
-    yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('roles', 'id', unique=True))
-    yield Registry.DBPOOL.runQuery(create_index('roles', 'machine_label', unique=True))
-
-
-@inlineCallbacks
-def create_table_user_roles(Registry, **kwargs):
-    """ Not stores in normal Yombo cloud. """
-    table = """CREATE TABLE `user_roles` (
-        `id`            INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-        `email`         TEXT NOT NULL,
-        `devices`       TEXT NOT NULL,     -- msgpack list of devices
-        `roles`         TEXT NOT NULL,     -- msgpack list of roles
-        `updated_at`    INTEGER NOT NULL,
-        `created_at`    INTEGER NOT NULL
-        );"""
-    yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('user_roles', 'id', unique=True))
-    yield Registry.DBPOOL.runQuery(create_index('user_roles', 'email', unique=True))
+# @inlineCallbacks
+# def create_table_roles(Registry, **kwargs):
+#     """  """
+#     table = """CREATE TABLE `roles` (
+#         `id`            INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+#         `machine_label` TEXT NOT NULL,
+#         `label`         TEXT NOT NULL,
+#         `description`   TEXT,
+#         `permissions`   TEXT,
+#         `updated_at`    INTEGER NOT NULL,
+#         `created_at`    INTEGER NOT NULL
+#         );"""
+#     yield Registry.DBPOOL.runQuery(table)
+#     yield Registry.DBPOOL.runQuery(create_index('roles', 'id', unique=True))
+#     yield Registry.DBPOOL.runQuery(create_index('roles', 'machine_label', unique=True))
+#
+#
+# @inlineCallbacks
+# def create_table_user_roles(Registry, **kwargs):
+#     """ Not stores in normal Yombo cloud. """
+#     table = """CREATE TABLE `user_roles` (
+#         `id`            INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+#         `email`         TEXT NOT NULL,
+#         `devices`       TEXT NOT NULL,     -- msgpack list of devices
+#         `roles`         TEXT NOT NULL,     -- msgpack list of roles
+#         `updated_at`    INTEGER NOT NULL,
+#         `created_at`    INTEGER NOT NULL
+#         );"""
+#     yield Registry.DBPOOL.runQuery(table)
+#     yield Registry.DBPOOL.runQuery(create_index('user_roles', 'id', unique=True))
+#     yield Registry.DBPOOL.runQuery(create_index('user_roles', 'email', unique=True))
 
 
 @inlineCallbacks

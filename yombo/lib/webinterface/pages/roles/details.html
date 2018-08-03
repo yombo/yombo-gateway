@@ -13,10 +13,10 @@
 <!-- /.row -->
 
 <div class="row">
-    <div class="col-lg-6">
+    <div class="col-lg-5">
         <div class="panel panel-default">
             <div class="panel-heading">
-                <label>Details for role: {{ role.label }}</label>
+                <h4>{{_("ui::header::basic_information")}}</h4>
             </div>
             <!-- /.panel-heading -->
             <div class="panel-body">
@@ -32,10 +32,10 @@
         </div>
         <!-- /.panel-body -->
     </div>
-    <div class="col-lg-6">
+    <div class="col-lg-7">
         <div class="panel panel-default">
             <div class="panel-heading">
-                <label>Members</label>
+                <h4>Members</h4>
             </div>
             <!-- /.panel-heading -->
             <div class="panel-body">
@@ -46,7 +46,7 @@
                 {% for member in role_members[role.machine_label] %}
                     <li>{{ member.name }} &lt;{{member.email}}&gt;</li>
                 {% endfor %}
-                {% else %} <li>No users</li>
+                {% else %} <li>{{_("ui::common::none")}}</li>
                 {% endif %}
                 </ul>
 
@@ -57,27 +57,9 @@
                 {% for member in role_members %}
                     <li>{{member.label}}</li>
                 {% endfor %}
-                {% else %} <li>No auth keys</li>
+                {% else %} <li>{{_("ui::common::none")}}</li>
                 {% endif %}
                 </ul>
-            </div>
-        </div>
-        <div class="panel panel-default">
-            <div class="panel-heading">
-                <label>Auth Keys</label>
-            </div>
-            <!-- /.panel-heading -->
-            <div class="panel-body">
-                {%- set role_members = role.auth_keys %}
-                {%- if role_members|length == 0 %}
-                <strong>No auth keys assigned.</strong>
-                {% else %}
-                <ul>
-                {% for member in role_members %}
-                    <li>{{ member.label }}</li>
-                {% endfor %}
-                </ul>
-                {% endif %}
             </div>
         </div>
         <!-- /.panel-body -->
@@ -89,7 +71,7 @@
     <div class="col-lg-6">
         <div class="panel panel-default">
             <div class="panel-heading">
-                <label>Allow Permissions</label>
+                <h4>Allow Permissions</h4>
             </div>
             <!-- /.panel-heading -->
             <div class="panel-body">
@@ -121,7 +103,7 @@
     <div class="col-lg-6">
         <div class="panel panel-default">
             <div class="panel-heading">
-                <label>Deny Permissions</label>
+                <h4>Deny Permissions</h4>
             </div>
             <!-- /.panel-heading -->
             <div class="panel-body">
