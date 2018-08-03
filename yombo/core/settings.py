@@ -69,6 +69,7 @@ def read_yombo_ini():
         copyfile(yombo_ini_path, "%s/bak/yombo_ini/%s_yombo.ini" % (working_dir, timeString))
 
         config_parser = configparser.ConfigParser()
+        config_parser.optionxform = str
         config_parser.read(yombo_ini_path)
         for section in config_parser.sections():
             yombo_ini[section] = {}

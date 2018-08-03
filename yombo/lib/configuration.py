@@ -66,8 +66,10 @@ except ImportError:
     from hashlib import sha224
 import msgpack
 import os
+import re
 from shutil import copy2 as copyfile
 import sys
+import textwrap
 from time import time
 import traceback
 try:  # Prefer simplejson if installed, otherwise json will work swell.
@@ -530,25 +532,36 @@ class Configuration(YomboLibrary):
 
         #now we save the sections and the items...with i18n comments!
         for section, options in configs.items():
-            i18n_label = _('config::config_section::', "%s" % section)
-            if i18n_label != "%s" % section:
-                contents += "# %s: %s\n" % (section, i18n_label)
+            contents += "\n################################################################################\n"
+            contents += "## {0: ^74} ##\n".format(section)
+
+            i18n_label = _("config::config_section::%s" % section, "Well Mr Hippo, that didn't work. Now what?")
+            if i18n_label != "Well Mr Hippo, that didn't work. Now what?":
+                contents += "##\n"
+                description = textwrap.dedent(i18n_label).strip()
+                desc_out = textwrap.fill(description, initial_indent='## ', subsequent_indent='## ', width=75)
+                # desc_out = re.sub("\n", " ##\n", desc_out)
+                contents += "%s\n" % desc_out
+            contents += "################################################################################\n"
             contents += "[%s]\n" % section
+
 
             try:
                 for item, data in options.items():
                     if section in self.configs_details:
                         if item in self.configs_details[section]:
                             if 'encrypt' in self.configs_details[section][item]:
-                                # print("encrypt: config before (%s:%s): %s" % (section, item, data))
                                 try:
                                     data = yield self._GPG.encrypt(data)
                                 except YomboWarning as e:
                                     logger.info("Tried to encrypt a yombo.ini value, but gpg not ready. Saving cleartext.")
-                                # print("encrypt: config after (%s:%s): %s" % (section, item, data))
-                    i18n_label = _('config::config_item::%s::%s' % (section, item))
-                    if i18n_label != 'config::config_item::%s::%s' % (section, item):
-                        contents += "# %s: %s\n" % (item, i18n_label)
+                    i18n_label = _("config::config_item::%s::%s" % (section, item), "Well Mr Hippo, that didn't work. Now what?")
+                    if i18n_label != "Well Mr Hippo, that didn't work. Now what?":
+                        description = "%s->%s: %s" % (section, item, i18n_label)
+                        description = textwrap.dedent(description).strip()
+                        desc_out = textwrap.fill(description, initial_indent='# ', subsequent_indent='#       ', width=75)
+                        contents += "%s\n" % desc_out
+                        # contents += "# %s->%s: %s\n" % (section, item, i18n_label)
                     temp = str(data).split("\n")
                     temp = "\n\t".join(temp)
                     contents += "%s = %s\n" % (item, temp)
@@ -606,7 +619,8 @@ class Configuration(YomboLibrary):
                 except:
                     pass
 
-    def get2(self, section, option, default="Jx^pG!+M3UByJc*MdJVz", set_if_missing=True, set=None, **kwargs):
+    def get2(self, section, option, default="7vce#hvjGW%w$~bA6jYv[P:*.kv6mAg934+HQhPpbDFJF2Nw9rU+saNvpVL2",
+             set_if_missing=True, set=None, **kwargs):
         """
         Like :py:meth:`get() <get>` below, however, this returns a callable to retrieve the value instead of an actual
         value. The callable can also be used to set the value of the configuration item too. See
@@ -642,12 +656,10 @@ class Configuration(YomboLibrary):
 
         self.get(section, option, default, set_if_missing, set, **kwargs)
 
-        section = section.lower()
-        option = option.lower()
-
         return partial(self.get, section, option, default, set_if_missing)
 
-    def get(self, section, option, default="Jx^pG!+M3UByJc*MdJVz", set_if_missing=True, set=None, **kwargs):
+    def get(self, section, option, default="7vce#hvjGW%w$~bA6jYv[P:*.kv6mAg934+HQhPpbDFJF2Nw9rU+saNvpVL2",
+            set_if_missing=True, set=None, ignore_case=None, **kwargs):
         """
         Read value of configuration option, return None if it don't exist or
         default if defined.  Tries to type cast with int first before
@@ -688,8 +700,9 @@ class Configuration(YomboLibrary):
             self._Statistics.increment("lib.configuration.set.invalid_length", bucket_size=15, anon=True)
             raise InvalidArgumentError("option cannot be more than %d chars" % self.MAX_OPTION_LENGTH)
 
-        section = section.lower()
-        option = option.lower()
+        if ignore_case is not False:
+            section = section.lower()
+            option = option.lower()
 
         if section == 'yombo':
             if option in self.yombo_vars:
@@ -721,7 +734,6 @@ class Configuration(YomboLibrary):
 
             elif option in self.configs[section]:
                 self.configs[section][option]['reads'] += 1
-#                return self.configs[section][option]
                 self._Statistics.increment("lib.configuration.get.value", bucket_size=15, anon=True)
                 return self.configs[section][option]['value']
 
@@ -730,7 +742,7 @@ class Configuration(YomboLibrary):
             self._Statistics.increment("lib.configuration.get.empty_string", bucket_size=15, anon=True)
             return ""
 
-        if default != "Jx^pG!+M3UByJc*MdJVz":
+        if default != "7vce#hvjGW%w$~bA6jYv[P:*.kv6mAg934+HQhPpbDFJF2Nw9rU+saNvpVL2":
             if set_if_missing:
                 self.set(section, option, default)
                 self.configs[section][option]['reads'] += 1
@@ -744,7 +756,7 @@ class Configuration(YomboLibrary):
                 raise KeyError("Configuration option doesn't exist: %s -> %s" % (section, option))
 
     @inlineCallbacks
-    def set(self, section, option, value, **kwargs):
+    def set(self, section, option, value, ignore_case=None, **kwargs):
         """
         Set value of configuration option for a given section.  The option length
         **cannot exceed 1000 characters**.  The value cannot exceed 5000 bytes.
@@ -755,7 +767,8 @@ class Configuration(YomboLibrary):
 
         .. code-block:: python
 
-           gatewayUUID = self._Config.set("section_name", "myoption", "New Value")
+           gatewayUUID = self._Config.set("section_name"
+           , "myoption", "New Value")
 
         :raises InvalidArgumentError: When an argument is invalid or illegal.
         :raises KeyError: When the requested section and option are not found.
@@ -784,8 +797,9 @@ class Configuration(YomboLibrary):
                 raise InvalidArgumentError("value cannot be more than %d chars" %
                     self.MAX_VALUE)
 
-        section = section.lower()
-        option = option.lower()
+        if ignore_case is not True:
+            section = section.lower()
+            option = option.lower()
 
         if section not in self.configs:
             self.configs[section] = {}
