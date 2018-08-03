@@ -5,7 +5,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: lokalise.co\n"
 "Project-Id-Version: Yombo Frontend\n"
-"PO-Revision-Date: 2018-07-03 19:58\n"
+"PO-Revision-Date: 2018-08-03 01:22\n"
 "Last-Translator: lokalise.co\n"
 "Language-Team: lokalise.co\n\n"
 "Language: de\n"
@@ -14,7 +14,7 @@ msgid "command::close::label"
 msgstr "Close"
 
 msgid "config::config_item::amqpyombo::port"
-msgstr "AMQP Yombo server port to connect to."
+msgstr "The AQMP port that Yombo AQMP connects to."
 
 msgid "config::config_item::amqpyombo:hostname"
 msgstr "AMQP Yombo server name to connect to."
@@ -202,11 +202,23 @@ msgstr "Items specific to the localize library."
 msgid "config::config_section::location"
 msgstr "Location information about the gateway. Used for calculating light/dark, sunrise, etc."
 
+msgid "config::config_section::logging"
+msgstr "Allows fine grained control of console logging. See https://yombo.net/docs/gateway/logging for details."
+
 msgid "config::config_section::mqtt"
 msgstr "Items specific to the statistics library."
 
+msgid "config::config_section::rbac_roles"
+msgstr "Role Based Access Control - User roles. Stores user create roles here. These fields are not meant to be directly edited."
+
+msgid "config::config_section::rbac_user_roles"
+msgstr "Role Based Access Control - Roles and device permissions for users. These fields are not meant to be directly edited."
+
 msgid "config::config_section::sqldict"
 msgstr "Specific items relating to the SQLDict library."
+
+msgid "config::config_section::sslcerts"
+msgstr "Stores some SSL certificate information here. Primary storage location is the database."
 
 msgid "config::config_section::statistics"
 msgstr "Items specific to the statistics library."
@@ -362,7 +374,7 @@ msgid "lib::state::is.dusk"
 msgstr "True is sun is setting and above 'twilighthorizon', but below horizon."
 
 msgid "lib::state::is.light"
-msgstr "True if it's light. This includes sun above 'twilighthorizon' and includes sun above horizon. "
+msgstr "True if it's light. This includes sun above 'twilighthorizon' and includes sun above horizon."
 
 msgid "lib::state::is.night"
 msgstr "True if it's dark. Night time is when sun is below horizon."
@@ -1100,6 +1112,9 @@ msgstr "Loading"
 msgid "ui::common::name"
 msgstr "Name"
 
+msgid "ui::common::none"
+msgstr "Keiner"
+
 msgid "ui::common::number_devices_on"
 msgid_plural "ui::common::number_devices_on"
 msgstr[0] "There is {num} device turned on"
@@ -1135,6 +1150,9 @@ msgstr "Password"
 msgid "ui::form::login::remember"
 msgstr "Remember"
 
+msgid "ui::header::basic_information"
+msgstr "Basic Information"
+
 msgid "ui::label::dashboard"
 msgstr "Dashboard"
 
@@ -1147,11 +1165,26 @@ msgstr "Devices"
 msgid "ui::label::modules"
 msgstr "Modules"
 
+msgid "ui::label::roles"
+msgstr "Roles"
+
 msgid "ui::label::states"
 msgstr "States"
 
 msgid "ui::messages::rate_limit_exceeded"
 msgstr "Too many attempts, try again later."
+
+msgid "ui::misc::allowed_next_change"
+msgstr "Allowed next change"
+
+msgid "ui::misc::current_fqdn"
+msgstr "Current FQDN"
+
+msgid "ui::misc::current_sub_domain"
+msgstr "Current Sub-domain"
+
+msgid "ui::misc::current_top_level_domain"
+msgstr "Current Domain"
 
 msgid "ui::navigation::api_auth"
 msgstr "API Auth"
@@ -1189,8 +1222,9 @@ msgstr "Discovery"
 msgid "ui::navigation::dns"
 msgstr "DNS"
 
+#, fuzzy
 msgid "ui::navigation::encryption_keys"
-msgstr "Encryption Keeys"
+msgstr "Encryption Keys"
 
 msgid "ui::navigation::gateways"
 msgstr "Gateways"
