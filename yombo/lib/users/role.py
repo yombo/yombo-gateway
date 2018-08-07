@@ -147,18 +147,18 @@ class Role(object):
         # allow permissions to see if there's an explicit allow
         # logger.info("has_access: req_path: {path}, req_action: {action}", path=req_path, action=req_action)
         # logger.info("has_access: permissions deny: %s" % self.permissions['deny'])
-        for permission_id, permission in self.permissions['allow'].items():
+        for permission_id, permission in self.permissions['deny'].items():
             matched, wildcard = self.check_permission_match(req_platform, req_item, req_action, permission)
             if matched is None:
-                logger.info("deny, not matched.")
+                logger.debug("deny, not matched.")
                 continue
 
             if matched is True:
                 if wildcard is True:
-                    logger.info("has_access: deny WILDCARD matched, returning false...")
+                    logger.debug("has_access: deny WILDCARD matched, returning false...")
                     possible_deny = True
                 else:
-                    logger.info("has_access: deny matched, returning false...")
+                    logger.debug("has_access: deny matched, returning false...")
                     return False
 
         logger.info("has_access: permissions allow: %s" % self.permissions['allow'])
