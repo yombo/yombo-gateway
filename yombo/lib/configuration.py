@@ -66,7 +66,6 @@ except ImportError:
     from hashlib import sha224
 import msgpack
 import os
-import re
 from shutil import copy2 as copyfile
 import sys
 import textwrap
@@ -85,11 +84,12 @@ from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning, InvalidArgumentError
-from yombo.utils import get_external_ip_address_v4, get_local_network_info
+from yombo.utils import get_local_network_info
 from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
 import yombo.core.settings as settings
-from yombo.utils import dict_merge, global_invoke_all, is_string_bool, save_file
+from yombo.utils import dict_merge, global_invoke_all, is_string_bool, save_file, data_pickle, data_unpickle
+from yombo.utils.location import detect_location_info
 
 logger = get_logger('library.configuration')
 
@@ -107,10 +107,8 @@ class Configuration(YomboLibrary):
     MAX_VALUE_LENGTH = 10000
 
     # Yombo constants. Used for versioning and misc tracking.
-    yombo_vars = {
-        'version': '0.12.0',
-    }
-    configs = {'core': {}, 'zz_configmetadata': {}}  # Contains all the config items
+
+    configs = {'core': {}}  # Contains all the config items
     configs_details = {
         'core': {
             'gwhash': {
@@ -246,6 +244,7 @@ class Configuration(YomboLibrary):
 
         Import the configuration items into the database, also prime the configs for reading.
         """
+        self.location_info = None
         self.exit_config_file = None  # Holds a complete configuration file to save when exiting.
         self.cache_dirty = False
         self.configs = {}  # Holds actual config data
@@ -283,19 +282,6 @@ class Configuration(YomboLibrary):
                     value = yield self._GPG.decrypt(value)
                 except:
                     pass
-                try:
-                    value = is_string_bool(value)
-                except:
-                    try:
-                        value = int(value)
-                    except:
-                        try:
-                            value = float(value)
-                        except:
-                            if value == "None":
-                                value = None
-                            else:
-                                value = str(value)
                 self.set(section, option, value)
 
         logger.debug("done parsing yombo.ini. Now about to parse yombo.ini.info.")
@@ -331,17 +317,22 @@ class Configuration(YomboLibrary):
             self._Libraries['localdb'].truncate('devicestatus')
             self.set('local', 'deletedevicehistory', False)
 
-        if self.get('core', 'externalipaddress_v4', False, False) is False or self.get('core', 'externalipaddresstime', False, False) is False:
-            ipv4_external = yield get_external_ip_address_v4()
-            self.set("core", "externalipaddress_v4", ipv4_external)
-            self.set("core", "externalipaddresstime", int(time()))
+        current_time = int(time())
+        # Ask external services what they know about us.
+        # detected_location states are based off this and is set in the locations library.
+        # times uses this
+        self.location_info = self.get('core', 'locationinfo', None, False)
+        if self.location_info is None or \
+                self.get('core', 'locationinfotime', 0, False) < current_time - 3600:
+            self.location_info = yield detect_location_info()
+            self.set('core', 'locationinfo', data_pickle(self.location_info, encoder="msgpack_base64", local=True))
+            self.set('core', 'locationinfotime', current_time)
         else:
-            if int(self.configs['core']['externalipaddresstime']['value']) < (int(time()) - 3600):
-                ipv4_external = yield get_external_ip_address_v4()
-                self.set("core", "externalipaddress_v4", ipv4_external)
-                self.set("core", "externalipaddresstime", int(time()))
+            self.location_info = data_unpickle(self.location_info, encoder="msgpack_base64")
+        self.set("core", "externalipaddress_v4", self.location_info['ip'])
 
-        if self.get('core', 'localipaddress_v4', False, False) is False or self.get('core', 'localipaddresstime', False, False) is False:
+        if self.get('core', 'localipaddress_v4', False, False) is False or \
+                self.get('core', 'localipaddresstime', False, False) is False:
             address_info = get_local_network_info()
             self.set("core", "localipaddress_v4", address_info['ipv4']['address'])
             self.set("core", "localipaddress_netmask_v4", address_info['ipv4']['netmask'])
@@ -365,8 +356,8 @@ class Configuration(YomboLibrary):
                 # self.set("core", "localipaddress_network_v6", address_info['ipv6']['network'])
                 self.set("core", "localipaddresstime", int(time()))
 
-        self.periodic_save_yombo_ini = LoopingCall(self.save)
-        self.periodic_save_yombo_ini.start(randint(12600, 14400), False)  # every 3.5-4 hours
+        self.save_loop = LoopingCall(self.save)
+        self.save_loop.start(randint(12600, 14400), False)  # every 3.5-4 hours
 
         if self.get('core', 'first_run', None, False) is None:
             self.set('core', 'first_run', True)
@@ -396,8 +387,8 @@ class Configuration(YomboLibrary):
         self.save(True, display_extra_warning=True)
 
     def _stop_(self, **kwargs):
-        if self.periodic_save_yombo_ini is not None and self.periodic_save_yombo_ini.running:
-            self.periodic_save_yombo_ini.stop()
+        if self.save_loop is not None and self.save_loop.running:
+            self.save_loop.stop()
 
         # if self.periodic_load_yombo_ini is not None and self.periodic_load_yombo_ini.running:
         #     self.periodic_load_yombo_ini.stop()
@@ -521,8 +512,6 @@ class Configuration(YomboLibrary):
         # first parse sections to make sure each section has a value!
         configs = {}
         for section, options in self.configs.items():
-            if section == 'zz_configmetadata':
-                continue
             if section not in configs:
                 configs[section] = {}
             for item, data in options.items():
@@ -703,14 +692,6 @@ class Configuration(YomboLibrary):
         if ignore_case is not False:
             section = section.lower()
             option = option.lower()
-
-        if section == 'yombo':
-            if option in self.yombo_vars:
-                self._Statistics.increment("lib.configuration.get.value", bucket_size=15, anon=True)
-                return self.yombo_vars[option]
-            else:
-                self._Statistics.increment("lib.configuration.get.none", bucket_size=15, anon=True)
-            raise KeyError("Requested configuration not found: %s : %s" % (section, option))
 
         if section == "*":  # Get all sections and options.
             results = {}

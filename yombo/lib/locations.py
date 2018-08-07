@@ -20,7 +20,7 @@ from collections import OrderedDict
 from time import time
 
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks, Deferred
+from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
@@ -138,31 +138,71 @@ class Locations(YomboLibrary):
     def values(self):
         return list(self.locations.values())
 
+    @inlineCallbacks
     def _init_(self, **kwargs):
         """
         Setups up the basic framework. Nothing is loaded in here until the
         Load() stage.
         """
-        self.load_deferred = None  # Prevents loader from moving on past _load_ until we are done.
         self.locations = {}
         self.location_search_attributes = ['location_id', 'gateway_id', 'location', 'machine_label', 'destination',
             'data_type']
-        self.load_deferred = Deferred()
-        self._load_locations_from_database()
-        return self.load_deferred
 
-    # def _load_(self):
-    #     """
-    #     Loads all locations from DB to various arrays for quick lookup.
-    #     """
+        yield self._load_locations_from_database()
 
-    def _stop_(self, **kwargs):
-        """
-        Cleans up any pending deferreds.
-        """
-        if hasattr(self, 'load_deferred'):
-            if self.load_deferred is not None and self.load_deferred.called is False:
-                self.load_deferred.callback(1)  # if we don't check for this, we can't stop!
+        location_info = self._Configs.location_info
+        if location_info['ip'] is not None:
+            self._States.set('detected_location.source', location_info['source'], 'string')
+            self._States.set('detected_location.ip', location_info['ip'], 'string')
+            self._States.set('detected_location.country_code', location_info['country_code'], 'string')
+            self._States.set('detected_location.country_name', location_info['country_name'], 'string')
+            self._States.set('detected_location.region_code', location_info['region_code'], 'string')
+            self._States.set('detected_location.region_name', location_info['region_name'], 'string')
+            self._States.set('detected_location.city', location_info['city'], 'string')
+            self._States.set('detected_location.zip_code', location_info['zip_code'], 'string')
+            self._States.set('detected_location.time_zone', location_info['time_zone'], 'string')
+            self._States.set('detected_location.latitude', location_info['latitude'], 'float')
+            self._States.set('detected_location.longitude', location_info['longitude'], 'float')
+            self._States.set('detected_location.elevation', location_info['elevation'], 'int')
+            self._States.set('detected_location.isp', location_info['isp'], 'string')
+            self._States.set('detected_location.use_metric', location_info['use_metric'], 'bool')
+
+            data = {
+                'latitude': float(self._Configs.get('location', 'latitude', None, False)),
+                'longitude': float(self._Configs.get('location', 'longitude', None, False)),
+                'elevation': int(self._Configs.get('location', 'elevation', None, False)),
+                'city': str(self._Configs.get('location', 'city', None, False)),
+                'country_code': str(self._Configs.get('location', 'country_code', None, False)),
+                'country_name': str(self._Configs.get('location', 'country_name', None, False)),
+                'region_code': str(self._Configs.get('location', 'region_code', None, False)),
+                'region_name': str(self._Configs.get('location', 'region_name', None, False)),
+                'time_zone': str(self._Configs.get('location', 'time_zone', None, False)),
+                'zip_code': str(self._Configs.get('location', 'zip_code', None, False)),
+            }
+            for label, value in data.items():
+                if value in (None, '', 'None'):
+                    self._Configs.set('location', label, location_info[label])
+
+            if self._Configs.get('location', 'searchbox', None, False) in (None, '', 'None'):
+                searchbox = "%s, %s, %s" % (location_info['city'],
+                                          location_info['region_code'],
+                                          location_info['country_code'])
+                self._Configs.set('location', 'searchbox', searchbox)
+        else:
+            self._States.set('detected_location.source', None)
+            self._States.set('detected_location.ip', None)
+            self._States.set('detected_location.country_code', None)
+            self._States.set('detected_location.country_name', None)
+            self._States.set('detected_location.region_code', None)
+            self._States.set('detected_location.region_name', None)
+            self._States.set('detected_location.city', None)
+            self._States.set('detected_location.zip_code', None)
+            self._States.set('detected_location.time_zone', None)
+            self._States.set('detected_location.latitude', None)
+            self._States.set('detected_location.longitude', None)
+            self._States.set('detected_location.isp', None)
+            self._States.set('detected_location.elevation', 800, 'int')
+            self._States.set('detected_location.use_metric', True, 'bool')
 
     @inlineCallbacks
     def _load_locations_from_database(self):
@@ -176,7 +216,6 @@ class Locations(YomboLibrary):
         locations = yield self._LocalDB.get_locations()
         for location in locations:
             self.import_location(location.__dict__)
-        self.load_deferred.callback(10)
 
     def import_location(self, location, test_location=False):
         """
