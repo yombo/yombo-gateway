@@ -508,14 +508,7 @@ class Times(YomboLibrary, object):
             return "%s %s" % (time_count, time_ago)
         return str(day_diff // 365) + " years ago"
 
-    def get_time_zone(input):
-        """
-        Attempt to get time zone from string, otherwise return None.
-        """
-        try:
-            return pytz.timezone(input)
-        except pytz.exceptions.UnknownTimeZoneError:
-            return None
+
 
     def utc_from_timestamp(self, timestamp: float) -> datetime:
         """
@@ -664,7 +657,7 @@ class Times(YomboLibrary, object):
                 return max_time
         return a_time
 
-    def get_time_zone(time_zone_str: str):
+    def get_time_zone(self, time_zone_str: str):
         """
         Get time zone from string. Return None if unable to determine.
 
