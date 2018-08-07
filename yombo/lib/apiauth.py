@@ -336,6 +336,7 @@ class Auth(object):
         self.created_at = int(time())
         self.updated_at = int(time())
         self.auth_data = {}
+        self.item_permissions: dict = {}  # {'device': {'machine_label': ['edit', 'add', ...]} }
         self.roles = []
         self.source = None
         self.update_attributes(record, stay_dirty=(source == 'database'))
@@ -368,6 +369,9 @@ class Auth(object):
         if 'auth_data' in record:
             if isinstance(record['auth_data'], dict):
                 self.auth_data.update(record['auth_data'])
+        if 'item_permissions' in record:
+            if isinstance(record['item_permissions'], dict):
+                self.item_permissions = record['item_permissions']
         if 'roles' in record:
             if isinstance(record['roles'], list):
                 self.roles = record['roles']
@@ -441,7 +445,7 @@ class Auth(object):
         self.is_dirty += 1
 
     @memoize_ttl(60)
-    def has_access(self, path, action, raise_error=None):
+    def has_access(self, platform, item, action):
         """
         Check if api auth has access  to a resource / access_type combination.
 
@@ -449,7 +453,7 @@ class Auth(object):
         :param resource:
         :return:
         """
-        return self._Parent._Users.has_access(self.roles, path, action, raise_error)
+        return self._Parent._Users.has_access(self.item_permissions, self.roles, platform, item, action, raise_error)
 
     def check_valid(self):
         if self.is_valid is False:

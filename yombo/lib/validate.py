@@ -33,10 +33,6 @@ from unicodedata import normalize
 from typing import Any, Union, TypeVar, Callable, Sequence, Dict
 import voluptuous as vol
 
-
-# from twisted.internet.defer import inlineCallbacks, Deferred
-# from twisted.internet.task import LoopingCall
-
 # Import Yombo libraries
 from yombo.core.exceptions import Invalid
 from yombo.core.library import YomboLibrary
@@ -110,6 +106,14 @@ class Validate(YomboLibrary):
         if not os.access(file_in, os.R_OK):
             raise Invalid('file not readable')
         return file_in
+
+    def is_id_string(self, string, min=4, max=100):
+        s = vol.Schema(vol.All(
+            str,
+            vol.Length(min=min, max=max),
+            vol.Match(r"^[a-zA-Z_0-9. ]+$")
+        ))
+        return s(string)
 
     def ensure_list(self, value: Union[T, Sequence[T]]) -> Sequence[T]:
         """Wrap value in list if it is not one."""

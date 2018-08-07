@@ -7,7 +7,8 @@ SYSTEM_ROLES = {
         'description': 'Full access to everything.',
         'permissions': [
             {
-                'path': '*:*',
+                'platform': '*',
+                'item': '*',
                 'action': '*',
                 'access': 'allow',
             }
@@ -23,67 +24,80 @@ SYSTEM_ROLES = {
         'description': 'Given to most users so they can control all devices. Specific devices can be blocked at the device level. This role also grants views to states, atoms, and other low level items.',
         'permissions': [
             {
-                'path': 'atom:*',
+                'platform': 'atom',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             },
             {
-                'path': 'automation:*',
+                'platform': 'automation',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             },
             {
-                'path': 'device:*',
+                'platform': 'device',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             },
             {
-                'path': 'device:*',
+                'platform': 'device',
+                'item': '*',
                 'action': 'control',
                 'access': 'allow',
             },
             {
-                'path': 'gateway:*',
+                'platform': 'gateway',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             },
             {
-                'path': 'location:*',
+                'platform': 'location',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             },
             {
-                'path': 'module:*',
+                'platform': 'module',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             },
             {
-                'path': 'notifications_view:*',
+                'platform': 'notifications',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             },
             {
-                'path': 'panel_view:*',
+                'platform': 'panel',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             },
             {
-                'path': 'scene:*',
+                'platform': 'scene',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             },
             {
-                'path': 'state:*',
+                'platform': 'state',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             },
             {
-                'path': 'statistic:*',
+                'platform': 'statistic',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             },
             {
-                'path': 'user:*',
+                'platform': 'user',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             },
@@ -94,7 +108,8 @@ SYSTEM_ROLES = {
         'description': 'Can view anything within the system.',
         'permissions': [
             {
-                'path': '*:*',
+                'platform': '*',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -105,7 +120,8 @@ SYSTEM_ROLES = {
         'description': 'View configured API Auth keys.',
         'permissions': [
             {
-                'path': 'apiauth:*',
+                'platform': 'apiauth',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -116,12 +132,14 @@ SYSTEM_ROLES = {
         'description': 'Edit configured API Auth keys.',
         'permissions': [
             {
-                'path': 'apiauth:*',
+                'platform': 'apiauth',
+                'item': '*',
                 'action': 'edit',
                 'access': 'allow',
             },
             {
-                'path': 'apiauth:*',
+                'platform': 'apiauth',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -132,7 +150,8 @@ SYSTEM_ROLES = {
         'description': 'Add new API Auth keys.',
         'permissions': [
             {
-                'path': 'apiauth:*',
+                'platform': 'apiauth',
+                'item': '*',
                 'action': 'add',
                 'access': 'allow',
             }
@@ -143,12 +162,14 @@ SYSTEM_ROLES = {
         'description': 'Delete API Auth keys.',
         'permissions': [
             {
-                'path': 'apiauth:*',
+                'platform': 'apiauth',
+                'item': '*',
                 'action': 'delete',
                 'access': 'allow',
             },
             {
-                'path': 'apiauth:*',
+                'platform': 'apiauth',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -159,7 +180,8 @@ SYSTEM_ROLES = {
         'description': 'Full access to API Auth keys.',
         'permissions': [
             {
-                'path': 'apiauth:*',
+                'platform': 'apiauth',
+                'item': '*',
                 'action': '*',
                 'access': 'allow',
             }
@@ -170,7 +192,8 @@ SYSTEM_ROLES = {
         'description': 'View system defined atoms.',
         'permissions': [
             {
-                'path': 'atom:*',
+                'platform': 'atom',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -181,7 +204,8 @@ SYSTEM_ROLES = {
         'description': 'View configured automation rules.',
         'permissions': [
             {
-                'path': 'automation:*',
+                'platform': 'automation',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -192,12 +216,14 @@ SYSTEM_ROLES = {
         'description': 'Edit configured automation rules.',
         'permissions': [
             {
-                'path': 'automation:*',
+                'platform': 'automation',
+                'item': '*',
                 'action': 'edit',
                 'access': 'allow',
             },
             {
-                'path': 'automation:*',
+                'platform': 'automation',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -208,7 +234,8 @@ SYSTEM_ROLES = {
         'description': 'Add new automation rules.',
         'permissions': [
             {
-                'path': 'automation:*',
+                'platform': 'automation',
+                'item': '*',
                 'action': 'add',
                 'access': 'allow',
             }
@@ -219,12 +246,14 @@ SYSTEM_ROLES = {
         'description': 'Delete configured automation rules.',
         'permissions': [
             {
-                'path': 'automation:*',
+                'platform': 'automation',
+                'item': '*',
                 'action': 'delete',
                 'access': 'allow',
             },
             {
-                'path': 'automation:*',
+                'platform': 'automation',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -235,12 +264,14 @@ SYSTEM_ROLES = {
         'description': 'Start configured automation rules.',
         'permissions': [
             {
-                'path': 'automation:*',
+                'platform': 'automation',
+                'item': '*',
                 'action': 'start',
                 'access': 'allow',
             },
             {
-                'path': 'automation:*',
+                'platform': 'automation',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -251,12 +282,14 @@ SYSTEM_ROLES = {
         'description': 'Stop configured automation rules.',
         'permissions': [
             {
-                'path': 'automation:*',
+                'platform': 'automation',
+                'item': '*',
                 'action': 'stop',
                 'access': 'allow',
             },
             {
-                'path': 'automation:*',
+                'platform': 'automation',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -267,12 +300,14 @@ SYSTEM_ROLES = {
         'description': 'Enable configured automation rules.',
         'permissions': [
             {
-                'path': 'automation:*',
+                'platform': 'automation',
+                'item': '*',
                 'action': 'enable',
                 'access': 'allow',
             },
             {
-                'path': 'automation:*',
+                'platform': 'automation',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -283,12 +318,14 @@ SYSTEM_ROLES = {
         'description': 'Start configured automation rules.',
         'permissions': [
             {
-                'path': 'automation:*',
+                'platform': 'automation',
+                'item': '*',
                 'action': 'disable',
                 'access': 'allow',
             },
             {
-                'path': 'automation:*',
+                'platform': 'automation',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -299,7 +336,8 @@ SYSTEM_ROLES = {
         'description': 'Full control over automation rules.',
         'permissions': [
             {
-                'path': 'automation:*',
+                'platform': 'automation',
+                'item': '*',
                 'action': '*',
                 'access': 'allow',
             }
@@ -310,7 +348,8 @@ SYSTEM_ROLES = {
         'description': 'Able to view devices.',
         'permissions': [
             {
-                'path': 'device:*',
+                'platform': 'device',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -321,12 +360,14 @@ SYSTEM_ROLES = {
         'description': 'Able to edit devices.',
         'permissions': [
             {
-                'path': 'device:*',
+                'platform': 'device',
+                'item': '*',
                 'action': 'edit',
                 'access': 'allow',
             },
             {
-                'path': 'device:*',
+                'platform': 'device',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -337,12 +378,14 @@ SYSTEM_ROLES = {
         'description': 'Able to delete devices.',
         'permissions': [
             {
-                'path': 'device:*',
+                'platform': 'device',
+                'item': '*',
                 'action': 'delete',
                 'access': 'allow',
             },
             {
-                'path': 'device:*',
+                'platform': 'device',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -353,7 +396,8 @@ SYSTEM_ROLES = {
         'description': 'Able to add new devices.',
         'permissions': [
             {
-                'path': 'device:*',
+                'platform': 'device',
+                'item': '*',
                 'action': 'add',
                 'access': 'allow',
             }
@@ -364,12 +408,14 @@ SYSTEM_ROLES = {
         'description': 'Able to control devices.',
         'permissions': [
             {
-                'path': 'device:*',
+                'platform': 'device',
+                'item': '*',
                 'action': 'control',
                 'access': 'allow',
             },
             {
-                'path': 'device:*',
+                'platform': 'device',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -380,12 +426,14 @@ SYSTEM_ROLES = {
         'description': 'Able to enable devices.',
         'permissions': [
             {
-                'path': 'device:*',
+                'platform': 'device',
+                'item': '*',
                 'action': 'enable',
                 'access': 'allow',
             },
             {
-                'path': 'device:*',
+                'platform': 'device',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -396,12 +444,14 @@ SYSTEM_ROLES = {
         'description': 'Able to disable devices.',
         'permissions': [
             {
-                'path': 'device:*',
+                'platform': 'device',
+                'item': '*',
                 'action': 'disable',
                 'access': 'allow',
             },
             {
-                'path': 'device:*',
+                'platform': 'device',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -412,7 +462,8 @@ SYSTEM_ROLES = {
         'description': 'Full access to devices. This includes edit, add, delete, view, and control.',
         'permissions': [
             {
-                'path': 'device:*',
+                'platform': 'device',
+                'item': '*',
                 'action': '*',
                 'access': 'allow',
             }
@@ -423,7 +474,8 @@ SYSTEM_ROLES = {
         'description': 'Able to view device commands.',
         'permissions': [
             {
-                'path': 'device_command:*',
+                'platform': 'device_command',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -434,7 +486,8 @@ SYSTEM_ROLES = {
         'description': 'View configured gateways within the cluster.',
         'permissions': [
             {
-                'path': 'gateway:*',
+                'platform': 'gateway',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -445,7 +498,8 @@ SYSTEM_ROLES = {
         'description': 'View configured locations.',
         'permissions': [
             {
-                'path': 'location:*',
+                'platform': 'location',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -456,12 +510,14 @@ SYSTEM_ROLES = {
         'description': 'Edit configured locations.',
         'permissions': [
             {
-                'path': 'location:*',
+                'platform': 'location',
+                'item': '*',
                 'action': 'edit',
                 'access': 'allow',
             },
             {
-                'path': 'location:*',
+                'platform': 'location',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -472,12 +528,14 @@ SYSTEM_ROLES = {
         'description': 'Add new locations.',
         'permissions': [
             {
-                'path': 'location:*',
+                'platform': 'location',
+                'item': '*',
                 'action': 'add',
                 'access': 'allow',
             },
             {
-                'path': 'location:*',
+                'platform': 'location',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -488,12 +546,14 @@ SYSTEM_ROLES = {
         'description': 'Delete configured locations.',
         'permissions': [
             {
-                'path': 'location:*',
+                'platform': 'location',
+                'item': '*',
                 'action': 'delete',
                 'access': 'allow',
             },
             {
-                'path': 'location:*',
+                'platform': 'location',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -504,7 +564,8 @@ SYSTEM_ROLES = {
         'description': 'Full access to the location administration.',
         'permissions': [
             {
-                'path': 'location:*',
+                'platform': 'location',
+                'item': '*',
                 'action': '*',
                 'access': 'allow',
             }
@@ -515,7 +576,8 @@ SYSTEM_ROLES = {
         'description': 'View configured modules.',
         'permissions': [
             {
-                'path': 'module:*',
+                'platform': 'module',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -526,12 +588,14 @@ SYSTEM_ROLES = {
         'description': 'Edit configured modules.',
         'permissions': [
             {
-                'path': 'module:*',
+                'platform': 'module',
+                'item': '*',
                 'action': 'edit',
                 'access': 'allow',
             },
             {
-                'path': 'module:*',
+                'platform': 'module',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -542,12 +606,14 @@ SYSTEM_ROLES = {
         'description': 'Add new modules.',
         'permissions': [
             {
-                'path': 'module:*',
+                'platform': 'module',
+                'item': '*',
                 'action': 'add',
                 'access': 'allow',
             },
             {
-                'path': 'module:*',
+                'platform': 'module',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -558,12 +624,14 @@ SYSTEM_ROLES = {
         'description': 'Delete configured modules.',
         'permissions': [
             {
-                'path': 'module:*',
+                'platform': 'module',
+                'item': '*',
                 'action': 'delete',
                 'access': 'allow',
             },
             {
-                'path': 'module:*',
+                'platform': 'module',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -574,12 +642,14 @@ SYSTEM_ROLES = {
         'description': 'Enable configured modules.',
         'permissions': [
             {
-                'path': 'module:*',
+                'platform': 'module',
+                'item': '*',
                 'action': 'enable',
                 'access': 'allow',
             },
             {
-                'path': 'module:*',
+                'platform': 'module',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -590,12 +660,14 @@ SYSTEM_ROLES = {
         'description': 'Disable configured modules.',
         'permissions': [
             {
-                'path': 'module:*',
+                'platform': 'module',
+                'item': '*',
                 'action': 'disable',
                 'access': 'allow',
             },
             {
-                'path': 'module:*',
+                'platform': 'module',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -606,7 +678,8 @@ SYSTEM_ROLES = {
         'description': 'Full control over modules.',
         'permissions': [
             {
-                'path': 'module:*',
+                'platform': 'module',
+                'item': '*',
                 'action': '*',
                 'access': 'allow',
             }
@@ -617,7 +690,8 @@ SYSTEM_ROLES = {
         'description': 'View notifications.',
         'permissions': [
             {
-                'path': 'notification:*',
+                'platform': 'notification',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -628,12 +702,14 @@ SYSTEM_ROLES = {
         'description': 'Delete notifications.',
         'permissions': [
             {
-                'path': 'notification:*',
+                'platform': 'notification',
+                'item': '*',
                 'action': 'delete',
                 'access': 'allow',
             },
             {
-                'path': 'notification:*',
+                'platform': 'notification',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -644,7 +720,8 @@ SYSTEM_ROLES = {
         'description': 'View panel.',
         'permissions': [
             {
-                'path': 'panel:*',
+                'platform': 'panel',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -655,7 +732,8 @@ SYSTEM_ROLES = {
         'description': 'View configured scenes.',
         'permissions': [
             {
-                'path': 'scene:*',
+                'platform': 'scene',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -666,12 +744,14 @@ SYSTEM_ROLES = {
         'description': 'Edit configured scenes.',
         'permissions': [
             {
-                'path': 'scene:*',
+                'platform': 'scene',
+                'item': '*',
                 'action': 'edit',
                 'access': 'allow',
             },
             {
-                'path': 'scene:*',
+                'platform': 'scene',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -682,7 +762,8 @@ SYSTEM_ROLES = {
         'description': 'Add new scenes.',
         'permissions': [
             {
-                'path': 'scene:*',
+                'platform': 'scene',
+                'item': '*',
                 'action': 'add',
                 'access': 'allow',
             }
@@ -693,12 +774,14 @@ SYSTEM_ROLES = {
         'description': 'Delete configured scenes.',
         'permissions': [
             {
-                'path': 'scene:*',
+                'platform': 'scene',
+                'item': '*',
                 'action': 'delete',
                 'access': 'allow',
             },
             {
-                'path': 'scene:*',
+                'platform': 'scene',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -709,12 +792,14 @@ SYSTEM_ROLES = {
         'description': 'Start configured scenes.',
         'permissions': [
             {
-                'path': 'scene:*',
+                'platform': 'scene',
+                'item': '*',
                 'action': 'start',
                 'access': 'allow',
             },
             {
-                'path': 'scene:*',
+                'platform': 'scene',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -725,12 +810,14 @@ SYSTEM_ROLES = {
         'description': 'Stop configured scenes.',
         'permissions': [
             {
-                'path': 'scene:*',
+                'platform': 'scene',
+                'item': '*',
                 'action': 'stop',
                 'access': 'allow',
             },
             {
-                'path': 'scene:*',
+                'platform': 'scene',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -741,12 +828,14 @@ SYSTEM_ROLES = {
         'description': 'Enable configured scenes.',
         'permissions': [
             {
-                'path': 'scene:*',
+                'platform': 'scene',
+                'item': '*',
                 'action': 'enable',
                 'access': 'allow',
             },
             {
-                'path': 'scene:*',
+                'platform': 'scene',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -757,12 +846,14 @@ SYSTEM_ROLES = {
         'description': 'Disable configured scenes.',
         'permissions': [
             {
-                'path': 'scene:*',
+                'platform': 'scene',
+                'item': '*',
                 'action': 'disable',
                 'access': 'allow',
             },
             {
-                'path': 'scene:*',
+                'platform': 'scene',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -773,7 +864,8 @@ SYSTEM_ROLES = {
         'description': 'Full control over modules.',
         'permissions': [
             {
-                'path': 'scene:*',
+                'platform': 'scene',
+                'item': '*',
                 'action': '*',
                 'access': 'allow',
             }
@@ -784,7 +876,8 @@ SYSTEM_ROLES = {
         'description': 'View system states.',
         'permissions': [
             {
-                'path': 'state:*',
+                'platform': 'state',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -795,7 +888,8 @@ SYSTEM_ROLES = {
         'description': 'View statistics.',
         'permissions': [
             {
-                'path': 'statistic:*',
+                'platform': 'statistic',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -806,7 +900,8 @@ SYSTEM_ROLES = {
         'description': 'Allow user to backup the system.',
         'permissions': [
             {
-                'path': 'system_options:*',
+                'platform': 'system_options',
+                'item': '*',
                 'action': 'backup',
                 'access': 'allow',
             }
@@ -817,7 +912,8 @@ SYSTEM_ROLES = {
         'description': 'Allow user to shutdown or restart the gateway software.',
         'permissions': [
             {
-                'path': 'system_options:*',
+                'platform': 'system_options',
+                'item': '*',
                 'action': 'control',
                 'access': 'allow',
             }
@@ -828,7 +924,8 @@ SYSTEM_ROLES = {
         'description': 'View various system status pages.',
         'permissions': [
             {
-                'path': 'system_options:*',
+                'platform': 'system_options',
+                'item': '*',
                 'action': 'status',
                 'access': 'allow',
             }
@@ -839,7 +936,8 @@ SYSTEM_ROLES = {
         'description': 'Allow to connection to the system event stream. This permits live access to nearly any system even change.',
         'permissions': [
             {
-                'path': 'system_options:*',
+                'platform': 'system_options',
+                'item': '*',
                 'action': 'stream',
                 'access': 'allow',
             }
@@ -850,7 +948,8 @@ SYSTEM_ROLES = {
         'description': 'Allows connections to the MQTT broker.',
         'permissions': [
             {
-                'path': 'system_options:*',
+                'platform': 'system_options',
+                'item': '*',
                 'action': 'mqtt',
                 'access': 'allow',
             }
@@ -861,7 +960,8 @@ SYSTEM_ROLES = {
         'description': 'View any system settings. Use caution, it can review various details about the installation.',
         'permissions': [
             {
-                'path': 'system_setting:*',
+                'platform': 'system_setting',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -872,7 +972,8 @@ SYSTEM_ROLES = {
         'description': 'Edit any system settings. Use caution, people can break things easily.',
         'permissions': [
             {
-                'path': 'system_setting:*',
+                'platform': 'system_setting',
+                'item': '*',
                 'action': 'edit',
                 'access': 'allow',
             }
@@ -883,7 +984,8 @@ SYSTEM_ROLES = {
         'description': 'View configured users.',
         'permissions': [
             {
-                'path': 'user:*',
+                'platform': 'user',
+                'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
@@ -894,7 +996,8 @@ SYSTEM_ROLES = {
         'description': 'Edit configured users.',
         'permissions': [
             {
-                'path': 'user:*',
+                'platform': 'user',
+                'item': '*',
                 'action': 'edit',
                 'access': 'allow',
             }
@@ -905,7 +1008,8 @@ SYSTEM_ROLES = {
         'description': 'Add new users.',
         'permissions': [
             {
-                'path': 'user:*',
+                'platform': 'user',
+                'item': '*',
                 'action': 'add',
                 'access': 'allow',
             }
@@ -916,7 +1020,8 @@ SYSTEM_ROLES = {
         'description': 'Delete configured users.',
         'permissions': [
             {
-                'path': 'user:*',
+                'platform': 'user',
+                'item': '*',
                 'action': 'delete',
                 'access': 'allow',
             }
@@ -927,7 +1032,8 @@ SYSTEM_ROLES = {
         'description': 'Full access to the user administration.',
         'permissions': [
             {
-                'path': 'user:*',
+                'platform': 'user',
+                'item': '*',
                 'action': '*',
                 'access': 'allow',
             }

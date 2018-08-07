@@ -44,7 +44,7 @@
                 {%- set role_members = _users.list_roles_by_user() %}
                 {%- if role_members[role.machine_label]|length > 0 %}
                 {% for member in role_members[role.machine_label] %}
-                    <li>{{ member.name }} &lt;{{member.email}}&gt;</li>
+                    <li><a href="/users/{{member.user_id}}/details">{{ member.name }} &lt;{{member.email}}&gt;</a></li>
                 {% endfor %}
                 {% else %} <li>{{_("ui::common::none")}}</li>
                 {% endif %}
@@ -55,9 +55,9 @@
                 {%- set role_members = role.auth_keys %}
                 {%- if role_members|length > 0 %}
                 {% for member in role_members %}
-                    <li>{{member.label}}</li>
+                    <li><a href="/roles/{{member.role_id}}/details">{{member.label}}</a></li>
                 {% endfor %}
-                {% else %} <li>{{_("ui::common::none")}}</li>
+                    {% else %} <li>{{_("ui::common::none")}}</li>
                 {% endif %}
                 </ul>
             </div>
@@ -78,10 +78,11 @@
                 {%- if role.permissions['allow']|length == 0 %}
                 No allow permissions defined.
                 {% else %}
-                {% for permission in role.permissions['allow'] %}
-                <ul>
-                    <li><strong>Action: </strong>{{permission[1]}}</li>
-                    <li><strong>Resource: </strong>{{permission[0]}}</li>
+                {% for permission_id, permission in role.permissions['allow'].items() %}
+                <ul style="padding-left: 15px">
+                    <li><strong>Platform: </strong>{{permission['platform']}}</li>
+                    <li><strong>Item: </strong>{{permission['item']}}</li>
+                    <li><strong>Actions: </strong>{{permission['action']}}</li>
                 </ul>
                     {%- if not loop.last %}
                     <hr>
@@ -110,10 +111,11 @@
                 {%- if role.permissions['deny']|length == 0 %}
                 No deny permissions defined.
                 {% else %}
-                {% for permission in role.permissions['allow'] %}
-                <ul>
-                    <li><strong>Action: </strong>{{permission[1]}}</li>
-                    <li><strong>Resource: </strong>{{permission[0]}}</li>
+                {% for permission_id, permission in role.permissions['deny'].items() %}
+                <ul style="padding-left: 15px">
+                    <li><strong>Platform: </strong>{{permission['platform']}}</li>
+                    <li><strong>Item: </strong>{{permission['item']}}</li>
+                    <li><strong>Actions: </strong>{{permission['action']}}</li>
                 </ul>
                     {%- if not loop.last %}
                     <hr>

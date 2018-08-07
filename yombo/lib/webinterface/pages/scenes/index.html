@@ -52,7 +52,11 @@
                                             <th>Label</th><th>Machine Label</th><th>Status</th><th>Actions</th>
                                         </tr>
                                     </thead>
-                                    <tbody>{% for scene_id, scene in _scenes.get().items() if scene.gateway_id == _local_gateway.gateway_id%}
+                                    <tbody>{% for scene_id, scene in _scenes.get().items() if
+                                                scene.gateway_id == _local_gateway.gateway_id
+                                                and scene.machine_label in item_permissions['scene']
+                                                and 'allow_view' in item_permissions['scene'][scene.machine_label]
+                                            %}
                                          <tr>
                                              <td data-priority="1">
                                                  <a href="/scenes/{{ scene_id }}/details">{{ scene.label }}</a><br>

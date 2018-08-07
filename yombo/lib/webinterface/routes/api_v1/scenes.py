@@ -19,7 +19,7 @@ def route_api_v1_scene(webapp):
         @webapp.route('/scene/device_inputs', methods=['GET'])
         @require_auth(api=True)
         def apiv1_scenes_device_inputs_index(webinterface, request, session):
-            session.has_access('scene:*', 'view', raise_error=True)
+            session.has_access('scene', '*', 'view', raise_error=True)
             def local_error(message):
                 return "<tr><td colspan=4>%s</td><tr>\n" % message
 

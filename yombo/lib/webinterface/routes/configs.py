@@ -12,13 +12,13 @@ def route_configs(webapp):
         @webapp.route('/')
         @require_auth()
         def page_configs(webinterface, request, session):
-            session.has_access('system_setting:*', 'view', raise_error=True)
+            session.has_access('system_setting', '*', 'view')
             return webinterface.redirect(request, '/configs/basic')
 
         @webapp.route('/basic', methods=['GET'])
         @require_auth()
         def page_configs_basic_get(webinterface, request, session):
-            session.has_access('system_setting:*', 'view', raise_error=True)
+            session.has_access('system_setting', '*', 'view')
             configs = webinterface._Configs.get("*", "*")
 
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/configs/basic.html')
@@ -32,7 +32,7 @@ def route_configs(webapp):
         @require_auth(login_redirect="/configs/basic")
         @inlineCallbacks
         def page_configs_basic_post(webinterface, request, session):
-            session.has_access('system_setting:*', 'edit', raise_error=True)
+            session.has_access('system_setting', '*', 'edit')
 
             valid_submit = True
             # more checks to come, just doing basic for now.
@@ -228,7 +228,7 @@ def route_configs(webapp):
         @webapp.route('/dns', methods=['GET'])
         @require_auth()
         def page_configs_dns_get(webinterface, request, session):
-            session.has_access('system_setting:*', 'view', raise_error=True)
+            session.has_access('system_setting', '*', 'view')
 
             configs = webinterface._Configs.get("*", "*")
 
@@ -254,7 +254,7 @@ def route_configs(webapp):
         @require_auth(login_redirect="/configs/basic")
         @inlineCallbacks
         def page_configs_dns_post(webinterface, request, session):
-            session.has_access('system_setting:*', 'edit', raise_error=True)
+            session.has_access('system_setting', '*', 'edit')
 
             try:
                 submitted_dns_name = request.args.get('dns_name')[0]  # underscore here due to jquery
@@ -319,7 +319,7 @@ def route_configs(webapp):
         @webapp.route('/yombo_ini')
         @require_auth(login_redirect="/configs/yombo_ini")
         def page_configs_yombo_ini(webinterface, request, session):
-            session.has_access('system_setting:*', 'view', raise_error=True)
+            session.has_access('system_setting', '*', 'view')
 
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/configs/yombo_ini.html')
             webinterface.home_breadcrumb(request)
@@ -332,7 +332,7 @@ def route_configs(webapp):
         @require_auth(login_redirect="/configs/gpg/index")
         @inlineCallbacks
         def page_gpg_keys_index(webinterface, request, session):
-            session.has_access('system_setting:*', 'view', raise_error=True)
+            session.has_access('system_setting', '*', 'view')
 
             db_keys = yield webinterface._LocalDB.get_gpg_key()
             gw_fingerprint = webinterface._Configs.get('gpg', 'fingerprint')
@@ -348,7 +348,7 @@ def route_configs(webapp):
         @webapp.route('/gpg/generate_key')
         @require_auth(login_redirect="/configs/gpg/generate_key")
         def page_gpg_keys_generate_key(webinterface, request, session):
-            session.has_access('system_setting:*', 'view', raise_error=True)
+            session.has_access('system_setting', '*', 'view')
 
             request_id = random_string(length=16)
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/configs/gpg_generate_key_started.html')
@@ -360,7 +360,7 @@ def route_configs(webapp):
         @webapp.route('/gpg/genrate_key_status')
         @require_auth(login_redirect="/configs/genrate_key_status")
         def page_gpg_keys_generate_key_status(webinterface, request, session):
-            session.has_access('system_setting:*', 'view', raise_error=True)
+            session.has_access('system_setting', '*', 'view')
 
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/configs/gpg_generate_key_status.html')
             return page.render(atoms=webinterface._Libraries['atoms'].get_atoms(),

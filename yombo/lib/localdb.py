@@ -1672,44 +1672,6 @@ ORDER BY id desc"""
         results = yield self.dbconfig.insert('tasks', data, None, 'OR IGNORE')
         return results
 
-
-    # ###########################
-    # ###  Roles              ###
-    # ###########################
-    # @inlineCallbacks
-    # def get_roles(self):
-    #     records = yield Roles.all()
-    #     return records
-    #
-    # @inlineCallbacks
-    # def save_role(self, role):
-    #     if role.source != "user":
-    #         return
-    #     records = yield Roles.find(where=['machine_label = ?', role.machine_label])
-    #     print("db:save_role got records: %s" % records)
-    #     if len(records) == 0:
-    #         print("got no records, will create a roles record")
-    #         args = {
-    #             'label': role.label,
-    #             'machine_label': role.machine_label,
-    #             'description': role.description,
-    #             'permissions': data_pickle(role.permissions),
-    #             'updated_at': int(time()),
-    #             'created_at': int(time()),
-    #         }
-    #         yield self.dbconfig.insert('roles', args, None, 'OR IGNORE')
-    #     else:
-    #         print("save role found: %s" % records)
-    #         yield self.dbconfig.update("roles",
-    #                                    {
-    #                                        'label': role.label,
-    #                                        'machine_label': role.machine_label,
-    #                                        'description': role.description,
-    #                                        'permissions': data_pickle(role.permissions),
-    #                                        'updated_at': int(time())
-    #                                    },
-    #                                    where=['id = ?', records[0].id])
-
     ###########################
     ###  Users              ###
     ###########################
@@ -1718,15 +1680,15 @@ ORDER BY id desc"""
         records = yield Users.all()
         return records
 
-    @inlineCallbacks
-    def get_user_roles(self):
-        records = yield UserRoles.all()
-        # We need this as a dictionary....
-        roles = {}
-        for record in records:
-            record.roles = data_unpickle(record.roles)
-            roles[record.email] = record.__dict__
-        return roles
+    # @inlineCallbacks
+    # def get_user_roles(self):
+    #     records = yield UserRoles.all()
+    #     # We need this as a dictionary....
+    #     roles = {}
+    #     for record in records:
+    #         record.roles = data_unpickle(record.roles)
+    #         roles[record.email] = record.__dict__
+    #     return roles
 
     @inlineCallbacks
     def save_user_data(self, user):

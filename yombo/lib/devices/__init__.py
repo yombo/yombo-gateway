@@ -712,6 +712,30 @@ class Devices(YomboLibrary):
                 self.mqtt.publish('yombo/devices/%s/status' % device.machine_label,
                                   json.dumps(device.status_all))
 
+    def device_permissions(self, session):
+        """
+        Returns a dictionary of devices the current user/auth id has access to. Returns a dict and list of access
+        permissions.
+
+        :param field: A string referencing an attribute of a device.
+        :type field: string
+        :return:f
+        """
+        permissions, item_permissions = self._Users.get_access(session.item_permissions, session.roles, 'device')
+        # print("user_available_devices... %s" % item_permissions['device'])
+        return item_permissions['device']
+
+    def device_user_access(self, device_id, access_type=None):
+        """
+        Gets all users that have access to this device.
+
+        :param access_type: If set to 'direct', then gets list of users that are specifically added to this device.
+            if set to 'roles', returns access based on role membership.
+        :return:
+        """
+        device = self.get(device_id)
+        return device.device_user_access(access_type)
+
     def list_devices(self, field=None):
         """
         Return a list of devices, returning the value specified in field.
@@ -775,13 +799,11 @@ class Devices(YomboLibrary):
         :return: Pointer to requested device.
         :rtype: dict
         """
-        if inspect.isclass(device_requested):
-            if isinstance(device_requested, Device):
-                return device_requested
-            else:
-                raise ValueError("Passed in an unknown object")
+        if isinstance(device_requested, Device):
+            return device_requested
         elif isinstance(device_requested, str) is False:
             raise ValueError("device_requested must be device instance or a string.")
+
         if device_requested in self.devices:
             return self.devices[device_requested]
 

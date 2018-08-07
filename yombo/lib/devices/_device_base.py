@@ -905,6 +905,31 @@ class Device_Base(Device_Attributes):
                           **message,
                           )
 
+    def device_user_access(self, access_type=None):
+        """
+        Gets all users that have access to this device.
+
+        :param access_type: If set to 'direct', then gets list of users that are specifically added to this device.
+            if set to 'roles', returns access based on role membership.
+        :return:
+        """
+        if access_type is None:
+            access_type = 'direct'
+
+        if access_type == 'direct':
+            permissions = {}
+            for email, user in self._Parent._Users.users.items():
+                item_permissions = user.item_permissions
+                if 'device' in item_permissions and self.machine_label in item_permissions['device']:
+                    if email not in permissions:
+                        permissions[email] = []
+                    for action in item_permissions['device'][self.machine_label]:
+                        if action not in permissions[email]:
+                            permissions[email].append(action)
+            return permissions
+        elif access_type == 'roles':
+            return {}
+
     def remove_delayed(self):
         """
         Remove any messages that might be set to be called later that

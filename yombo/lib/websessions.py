@@ -416,7 +416,16 @@ class Auth(object):
     @auth_id.setter
     def auth_id(self, val):
         self._auth_id = val
+        self.user = self._Parent._Users.get(self.auth_id)
         self.auth_at = time()
+
+    @property
+    def item_permissions(self):
+        return self.user.item_permissions
+
+    @property
+    def roles(self):
+        return self.user.roles
 
     def __init__(self, WebSessions, record, source=None):
         self._Parent = WebSessions
@@ -430,6 +439,7 @@ class Auth(object):
         self.session_type = "websession"
 
         self._auth_id = None
+        self.user = None
         self.auth_at = None
         self.auth_pin = None
         self.auth_pin_at = None
@@ -480,10 +490,6 @@ class Auth(object):
     def user_id(self) -> str:
         return self.auth_id
 
-    @property
-    def user(self) -> str:
-        return self._Parent._Users.get(self.auth_id)
-
     def get(self, key, default="BRFEqgdgLgI0I8QM2Em2nWeJGEuY71TTo7H08uuT"):
         if key in self.session_data:
             self.last_access = int(time())
@@ -521,16 +527,19 @@ class Auth(object):
         self.is_dirty += 1
 
     @memoize_ttl(60)
-    def has_access(self, path, action, raise_error=None):
+    def has_access(self, platform, item, action, raise_error=None):
         """
         Check if api auth has access  to a resource / access_type combination.
 
-        :param path:
+        :param platform:
+        :param item:
+        :param raise_error:
         :param action:
-        :raise_error action:
+        :raise_error YomboNoAccess:
         :return:
         """
-        return self._Parent._Users.has_access(self.user.roles, path, action, raise_error)
+        return self._Parent._Users.has_access(
+            self.user.item_permissions, self.user.roles, platform, item, action, raise_error)
 
     def check_valid(self, auth_id_missing_ok=None):
         """
@@ -553,7 +562,8 @@ class Auth(object):
             return False
 
         if self.auth_id is None and self.last_access < (int(time() - self._Parent.config.max_session_no_auth)):
-            logger.info("check_valid: Expiring session, no recent access and not authenticated: {auth_id}", auth_id=self.auth_id)
+            logger.info("check_valid: Expiring session, no recent access and not authenticated: {auth_id}",
+                        auth_id=self.auth_id)
             # print("self.last_access: %s, time: %s" % (self.last_access, int(time())))
             self.expire_session()
             return False

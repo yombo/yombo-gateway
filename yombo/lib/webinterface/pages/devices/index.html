@@ -48,9 +48,9 @@
     <div class="col-lg-12">
         <div class="panel panel-default">
             <div class="panel-heading">
-                {% if _modules|length > 0 and _devicetypes|length > 0 %}
+                {%- if _modules|length > 0 and _devicetypes|length > 0 %}
                 <a href="/devices/add" class="btn btn-md btn-primary">Add New Device</a>
-                {% endif %}
+                {%- endif %}
             </div>
             <!-- /.panel-heading -->
             <div class="panel-body">
@@ -83,7 +83,11 @@
                                         <th>Name</th><th>Location</th><th>Area</th><th>Description</th><th>Device Type</th><th>Device Status</th><th>Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody>{% for device_id, device in _devices.items() if device.enabled_status == 1 and device.gateway_id == _local_gateway.gateway_id%}
+                                <tbody>{% for device_id, device in _devices.items() if device.enabled_status == 1
+                                            and device.gateway_id == _local_gateway.gateway_id
+                                            and device.machine_label in item_permissions['device']
+                                            and 'allow_view' in item_permissions['device'][device.machine_label]
+                                        %}
                                      <tr>
                                         <td data-priority="1">
                                             <a href="/devices/{{ device.device_id }}/details">{{ _locations.locations[device.area_id].label|hide_none }} {{ device.label }}</a>
@@ -94,14 +98,13 @@
                                         <td data-priority="6">{{ _devicetypes[device.device_type_id].label }}</td>
                                         <td data-priority="2">{{ device.status_all.human_status }}</td>
                                         <td data-priority="2">
-                                            {% if device.enabled_status == 0 -%}
+                                            {%- if device.enabled_status == 0 -%}
                                          <a href="/devices/{{ device.device_id }}/edit">Edit</a> &nbsp; <a class="alert-success" href="/devices/{{ device.device_id }}/enable">Enable</a> &nbsp; <a class="alert-danger" href="/devices/{{ device.device_id }}/delete">Delete</a>
-                                            {% elif device.enabled_status == 1 -%}
+                                            {%- elif device.enabled_status == 1 -%}
                                          <a href="/devices/{{ device.device_id }}/edit">Edit</a> &nbsp; <a class="alert-warning" href="/devices/{{ device.device_id }}/disable">Disable</a> &nbsp; <a class="alert-danger" href="/devices/{{ device.device_id }}/delete">Delete</a>
-                                            {% elif device.enabled_status == 2 -%}
+                                            {%- elif device.enabled_status == 2 -%}
                                          <a class="alert-success"  href="/devices/{{ device.device_id }}/disable">Enable</a>
-                                            {% endif %}
-
+                                            {%- endif %}
                                         </td>
                                      </tr>{% endfor %}
                                 </tbody>
@@ -117,7 +120,11 @@
                                         <th>Gateway</th><th>Name</th><th>Location</th><th>Area</th><th>Description</th><th>Device Type</th><th>Device Status</th>
                                     </tr>
                                 </thead>
-                                <tbody>{% for device_id, device in _devices.items() if device.gateway_id != _local_gateway.gateway_id %}
+                                <tbody>{% for device_id, device in _devices.items() if device.enabled_status == 1
+                                            and device.gateway_id != _local_gateway.gateway_id
+                                            and device.machine_label in item_permissions['device']
+                                            and 'allow_view' in item_permissions['device'][device.machine_label]
+                                        %}
                                      <tr>
                                         <td>{{ _gateways[device.gateway_id].label }}</td>
                                         <td>
@@ -142,7 +149,10 @@
                                         <th>Name</th><th>Gateway</th><th>Area</th><th>Location</th><th>Description</th><th>Device Type</th><th>Device Status</th><th>Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody>{% for deviceID, device in _devices.items() if device.enabled_status == 0 %}
+                                <tbody>{% for device_id, device in _devices.items() if device.enabled_status == 0
+                                            and device.machine_label in item_permissions['device']
+                                            and 'allow_view' in item_permissions['device'][device.machine_label]
+                                        %}
                                      <tr>
                                         <td data-priority="1">
                                             <a href="/devices/{{ device.device_id }}/details">{{ _locations[device.area_id].label|hide_none }} {{ device.label }}</a>

@@ -42,7 +42,6 @@ def route_locations(webapp):
         @webapp.route('/')
         @require_auth()
         def page_lib_location(webinterface, request, session):
-            session.has_access('location:*', 'view', raise_error=True)
             return webinterface.redirect(request, '/locations/index')
 
         @webapp.route('/index')
@@ -55,7 +54,7 @@ def route_locations(webapp):
             :param session: User's session information.
             :return:
             """
-            session.has_access('location:*', 'view', raise_error=True)
+            session.has_access('location', '*', 'view')
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/locations/index.html')
             root_breadcrumb(webinterface, request)
             # print("webinterface._Locations.locations: %s" % webinterface._Locations.locations)
@@ -66,7 +65,7 @@ def route_locations(webapp):
         @require_auth()
         @inlineCallbacks
         def page_lib_location_details_get(webinterface, request, session, location_id):
-            session.has_access('location:%s' % location_id, 'view', raise_error=True)
+            session.has_access('location', location_id, 'view')
             try:
                 DL_results = yield webinterface._YomboAPI.request('GET', '/v1/location/%s' % location_id,
                                                                   session=session['yomboapi_session'])
@@ -87,7 +86,7 @@ def route_locations(webapp):
         @webapp.route('/add', methods=['GET'])
         @require_auth()
         def page_lib_location_add_get(webinterface, request, session):
-            session.has_access('location:*', 'add', raise_error=True)
+            session.has_access('location', '*', 'add')
             data = {
                 'location_type': webinterface.request_get_default(request, 'location_type', ""),
                 'machine_label': webinterface.request_get_default(request, 'machine_label', ""),
@@ -102,7 +101,7 @@ def route_locations(webapp):
         @require_auth()
         @inlineCallbacks
         def page_lib_location_add_post(webinterface, request, session):
-            session.has_access('location:*', 'add', raise_error=True)
+            session.has_access('location', '*', 'add')
             data = {
                 'location_type': webinterface.request_get_default(request, 'location_type', ""),
                 'machine_label': webinterface.request_get_default(request, 'machine_label', ""),
@@ -132,7 +131,7 @@ def route_locations(webapp):
         @require_auth()
         @inlineCallbacks
         def page_lib_location_edit_get(webinterface, request, session, location_id):
-            session.has_access('location:%s' % location_id, 'edit', raise_error=True)
+            session.has_access('location', location_id, 'edit')
             try:
                 DL_results = yield webinterface._YomboAPI.request('GET', '/v1/location/%s' % location_id,
                                                                   session=session['yomboapi_session'])
@@ -153,7 +152,7 @@ def route_locations(webapp):
         @require_auth()
         @inlineCallbacks
         def page_lib_location_edit_post(webinterface, request, session, location_id):
-            session.has_access('location:%s' % location_id, 'edit', raise_error=True)
+            session.has_access('location', location_id, 'edit')
             data = {
                 'voice_cmd': webinterface.request_get_default(request, 'voice_cmd', ""),
                 'label': webinterface.request_get_default(request, 'label', ""),
@@ -205,7 +204,7 @@ def route_locations(webapp):
         @require_auth()
         @inlineCallbacks
         def page_lib_location_delete_get(webinterface, request, session, location_id):
-            session.has_access('location:%s' % location_id, 'delete', raise_error=True)
+            session.has_access('location', location_id, 'delete')
             try:
                 DL_results = yield webinterface._YomboAPI.request('GET', '/v1/location/%s' % location_id,
                                                                   session=session['yomboapi_session'])
@@ -226,7 +225,7 @@ def route_locations(webapp):
         @require_auth()
         @inlineCallbacks
         def page_lib_location_delete_post(webinterface, request, session, location_id):
-            session.has_access('location:%s' % location_id, 'delete', raise_error=True)
+            session.has_access('location', location_id, 'delete')
             try:
                 confirm = request.args.get('confirm')[0]
             except:

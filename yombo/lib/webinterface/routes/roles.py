@@ -42,13 +42,13 @@ def route_roles(webapp):
         @webapp.route('/')
         @require_auth()
         def page_roles(webinterface, request, session):
-            session.has_access('role:*', 'view', raise_error=True)
+            session.has_access('role', '*', 'view', raise_error=True)
             return webinterface.redirect(request, '/roles/index')
 
         @webapp.route('/index')
         @require_auth()
         def page_roles_index(webinterface, request, session):
-            session.has_access('role:*', 'view', raise_error=True)
+            session.has_access('role', '*', 'view', raise_error=True)
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/roles/index.html')
             root_breadcrumb(webinterface, request)
             return page.render(
@@ -59,7 +59,7 @@ def route_roles(webapp):
         @webapp.route('/<string:role_id>/details', methods=['GET'])
         @require_auth()
         def page_roles_details_get(webinterface, request, session, role_id):
-            session.has_access('role:%s' % role_id, 'view', raise_error=True)
+            session.has_access('role', role_id, 'view', raise_error=True)
             try:
                 role = webinterface._Users.get_role(role_id)
             except KeyError:
@@ -80,7 +80,7 @@ def route_roles(webapp):
         @webapp.route('/add', methods=['GET'])
         @require_auth()
         def page_roles_add_get(webinterface, request, session):
-            session.has_access('role:*', 'add', raise_error=True)
+            session.has_access('role', '*', 'add', raise_error=True)
             data = {
                 'label': webinterface.request_get_default(request, 'label', ""),
                 'machine_label': webinterface.request_get_default(request, 'machine_label', ""),
@@ -94,7 +94,7 @@ def route_roles(webapp):
         @require_auth()
         @inlineCallbacks
         def page_roles_add_post(webinterface, request, session):
-            session.has_access('role:*', 'add', raise_error=True)
+            session.has_access('role', '*', 'add', raise_error=True)
             data = {
                 'label': webinterface.request_get_default(request, 'label', ""),
                 'machine_label': webinterface.request_get_default(request, 'machine_label', ""),
@@ -114,7 +114,7 @@ def route_roles(webapp):
         @webapp.route('/<string:role_id>/edit', methods=['GET'])
         @require_auth()
         def page_roles_edit_get(webinterface, request, session, role_id):
-            session.has_access('role:%s' % role_id, 'edit', raise_error=True)
+            session.has_access('role', role_id, 'edit', raise_error=True)
             try:
                 role = webinterface._Users.get_role(role_id)
             except KeyError:
@@ -142,7 +142,7 @@ def route_roles(webapp):
         @webapp.route('/<string:role_id>/edit', methods=['POST'])
         @require_auth()
         def page_roles_edit_post(webinterface, request, session, role_id):
-            session.has_access('role:%s' % role_id, 'edit', raise_error=True)
+            session.has_access('role', role_id, 'edit', raise_error=True)
             try:
                 role = webinterface._Users.get_role(role_id)
             except KeyError:

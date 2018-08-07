@@ -32,6 +32,7 @@ from twisted.internet import reactor
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
+from yombo.lib.nodes import Node
 from yombo.utils import (is_true_false, random_string, sleep, global_invoke_all, dict_filter, dict_merge,
                          bytes_to_unicode)
 from yombo.utils.datatypes import coerce_value
@@ -298,6 +299,46 @@ class Automation(YomboLibrary):
 
         logger.debug("System started, DONE iterating rules and look for 'run_on_start' is True.")
 
+    def automation_user_access(self, rule_id, access_type=None):
+        """
+        Gets all users that have access to this automation rule.
+
+        :param access_type: If set to 'direct', then gets list of users that are specifically added to this device.
+            if set to 'roles', returns access based on role membership.
+        :return:
+        """
+        if access_type is None:
+            access_type = 'direct'
+
+        rule = self.get(rule_id)
+
+        if access_type == 'direct':
+            permissions = {}
+            for email, user in self._Users.users.items():
+                item_permissions = user.item_permissions
+                if 'automation' in item_permissions and rule.machine_label in item_permissions['automation']:
+                    if email not in permissions:
+                        permissions[email] = []
+                    for action in item_permissions['automation'][rule.machine_label]:
+                        if action not in permissions[email]:
+                            permissions[email].append(action)
+            return permissions
+        elif access_type == 'roles':
+            return {}
+
+    def sorted(self, key=None):
+        """
+        Returns an OrderedDict, sorted by key.  If key is not set, then default is 'label'.
+
+        :param key: Attribute contained in a automation rule to sort by.
+        :type key: str
+        :return: All devices, sorted by key.
+        :rtype: OrderedDict
+        """
+        if key is None:
+            key = 'label'
+        return OrderedDict(sorted(iter(self.rules.items()), key=lambda i: getattr(i[1], key)))
+
     def get(self, requested_rule=None):
         """
         Return the requested rule, if it's found.
@@ -305,11 +346,16 @@ class Automation(YomboLibrary):
         :param requested_rule:
         :return:
         """
+        if isinstance(requested_rule, Node):
+            if requested_rule.node_type == 'automation_rules':
+                return requested_rule
+            else:
+                raise YomboWarning("Must submit an automation_rule node type of automation_rules if submitting an instance")
         if requested_rule is None:
             return OrderedDict(sorted(self.rules.items(), key=lambda x: x[1].label))
         if requested_rule in self.rules:
             return self.rules[requested_rule]
-        requested_rule = requested_rule.lower
+        requested_rule = requested_rule.lower()
         for temp_rule_id, rule in self.rules.items():
             if rule.machine_label.lower() == requested_rule:
                 return rule

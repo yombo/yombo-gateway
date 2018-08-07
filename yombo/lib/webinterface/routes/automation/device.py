@@ -34,7 +34,7 @@ def route_automation_device(webapp):
         @webapp.route('/<string:rule_id>/set_trigger_device', methods=['GET'])
         @require_auth()
         def page_automation_trigger_set_device_get(webinterface, request, session, rule_id):
-            session.has_access('automation:%s' % rule_id, 'edit', raise_error=True)
+            session.has_access('automation', rule_id, 'edit', raise_error=True)
             try:
                 rule = webinterface._Automation.get(rule_id)
             except YomboWarning as e:
@@ -60,7 +60,7 @@ def route_automation_device(webapp):
         @webapp.route('/<string:rule_id>/set_trigger_device', methods=['POST'])
         @require_auth()
         def page_automation_trigger_set_device_post(webinterface, request, session, rule_id):
-            session.has_access('automation:%s' % rule_id, 'edit', raise_error=True)
+            session.has_access('automation', rule_id, 'edit', raise_error=True)
             try:
                 rule = webinterface._Automation.get(rule_id)
             except YomboWarning as e:
@@ -106,7 +106,7 @@ def route_automation_device(webapp):
         @webapp.route('/<string:rule_id>/add_action_device', methods=['GET'])
         @require_auth()
         def page_automation_action_device_add_get(webinterface, request, session, rule_id):
-            session.has_access('automation:%s' % rule_id, 'edit', raise_error=True)
+            session.has_access('automation', rule_id, 'edit', raise_error=True)
             try:
                 rule = webinterface._Automation.get(rule_id)
             except YomboWarning as e:
@@ -131,7 +131,7 @@ def route_automation_device(webapp):
         @webapp.route('/<string:rule_id>/add_action_device', methods=['POST'])
         @require_auth()
         def page_automation_action_device_add_post(webinterface, request, session, rule_id):
-            session.has_access('automation:%s' % rule_id, 'edit', raise_error=True)
+            session.has_access('automation', rule_id, 'edit', raise_error=True)
             try:
                 rule = webinterface._Automation.get(rule_id)
             except YomboWarning as e:
@@ -191,7 +191,7 @@ def route_automation_device(webapp):
         @webapp.route('/<string:rule_id>/edit_action_device/<string:action_id>', methods=['GET'])
         @require_auth()
         def page_automation_action_device_edit_get(webinterface, request, session, rule_id, action_id):
-            session.has_access('automation:%s' % rule_id, 'edit', raise_error=True)
+            session.has_access('automation', rule_id, 'edit', raise_error=True)
             try:
                 rule = webinterface._Automation.get(rule_id)
             except YomboWarning as e:
@@ -215,7 +215,7 @@ def route_automation_device(webapp):
         @webapp.route('/<string:rule_id>/edit_action_device/<string:action_id>', methods=['POST'])
         @require_auth()
         def page_automation_action_device_edit_post(webinterface, request, session, rule_id, action_id):
-            session.has_access('automation:%s' % rule_id, 'edit', raise_error=True)
+            session.has_access('automation', rule_id, 'edit', raise_error=True)
             try:
                 rule = webinterface._Automation.get(rule_id)
             except YomboWarning as e:
@@ -298,7 +298,7 @@ def route_automation_device(webapp):
         @webapp.route('/<string:rule_id>/delete_action_device/<string:action_id>', methods=['GET'])
         @require_auth()
         def page_automation_action_device_delete_get(webinterface, request, session, rule_id, action_id):
-            session.has_access('automation:%s' % rule_id, 'edit', raise_error=True)
+            session.has_access('automation', rule_id, 'edit', raise_error=True)
             try:
                 rule = webinterface._Automation.get(rule_id)
             except YomboWarning as e:
@@ -329,7 +329,7 @@ def route_automation_device(webapp):
         @webapp.route('/<string:rule_id>/delete_action_device/<string:action_id>', methods=['POST'])
         @require_auth()
         def page_automation_action_device_delete_post(webinterface, request, session, rule_id, action_id):
-            session.has_access('automation:%s' % rule_id, 'edit', raise_error=True)
+            session.has_access('automation', rule_id, 'edit', raise_error=True)
             try:
                 rule = webinterface._Automation.get(rule_id)
             except YomboWarning as e:

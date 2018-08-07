@@ -23,6 +23,7 @@ from twisted.internet.defer import inlineCallbacks
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
+from yombo.lib.nodes import Node
 from yombo.utils import (random_string, sleep, is_true_false, global_invoke_all, dict_filter, dict_merge,
                          bytes_to_unicode)
 
@@ -237,6 +238,33 @@ class Scenes(YomboLibrary, object):
                 }
                 self.scene_types_extra[action['platform'].lower()] = action
 
+    def scene_user_access(self, scene_id, access_type=None):
+        """
+        Gets all users that have access to this scene.
+
+        :param access_type: If set to 'direct', then gets list of users that are specifically added to this device.
+            if set to 'roles', returns access based on role membership.
+        :return:
+        """
+        if access_type is None:
+            access_type = 'direct'
+
+        scene = self.get(scene_id)
+
+        if access_type == 'direct':
+            permissions = {}
+            for email, user in self._Users.users.items():
+                item_permissions = user.item_permissions
+                if 'scene' in item_permissions and scene.machine_label in item_permissions['scene']:
+                    if email not in permissions:
+                        permissions[email] = []
+                    for action in item_permissions['scene'][scene.machine_label]:
+                        if action not in permissions[email]:
+                            permissions[email].append(action)
+            return permissions
+        elif access_type == 'roles':
+            return {}
+
     def scene_types_urls_sorted(self):
         """
         Return scene_type_urls, but sorted by display value.
@@ -265,6 +293,12 @@ class Scenes(YomboLibrary, object):
         :param requested_scene:
         :return:
         """
+        if isinstance(requested_scene, Node):
+            if requested_scene.node_type == 'scene':
+                return requested_scene
+            else:
+                raise YomboWarning("Must submit a node type of scene if submitting an instance")
+
         if requested_scene is None:
             return OrderedDict(sorted(self.scenes.items(), key=lambda x: x[1].label))
         if requested_scene in self.scenes:

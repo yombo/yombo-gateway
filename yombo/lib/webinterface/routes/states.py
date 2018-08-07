@@ -9,13 +9,13 @@ def route_states(webapp):
         @webapp.route('/')
         @require_auth()
         def page_states(webinterface, request, session):
-            session.has_access('state:*', 'view', raise_error=True)
+            session.has_access('state', '*', 'view', raise_error=True)
             return webinterface.redirect(request, '/states/index')
 
         @webapp.route('/index')
         @require_auth()
         def page_states_index(webinterface, request, session):
-            session.has_access('state:*', 'view', raise_error=True)
+            session.has_access('state', '*', 'view', raise_error=True)
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/states/index.html')
             # i18n = webinterface.i18n(request)
             webinterface.home_breadcrumb(request)
@@ -28,7 +28,7 @@ def route_states(webapp):
         @require_auth()
         @inlineCallbacks
         def page_states_details(webinterface, request, session, gateway_id, state_name):
-            session.has_access('state:%s' % state_name, 'view', raise_error=True)
+            session.has_access('state', state_name, 'view', raise_error=True)
             try:
                 state = webinterface._States.get(state_name, full=True, gateway_id=gateway_id)
             except Exception as e:

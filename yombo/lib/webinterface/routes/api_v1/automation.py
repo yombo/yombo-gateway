@@ -19,12 +19,13 @@ def route_api_v1_automation(webapp):
         @webapp.route('/automation/device_inputs', methods=['GET'])
         @require_auth(api=True)
         def apiv1_automations_device_inputs_index(webinterface, request, session):
-            session.has_access('automation:*', 'view', raise_error=True)
+            session.has_access('automation', '*', 'view')
             def local_error(message):
                 return "<tr><td colspan=4>%s</td><tr>\n" % message
 
             try:
                 rule_id = request.args.get('rule_id')[0]
+                rule_id = webinterface._Validate.is_id_string(rule_id)
             except Exception:
                 return local_error("The 'rule_id' is required.")
             try:

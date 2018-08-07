@@ -33,7 +33,7 @@ def route_automation_pause(webapp):
         @webapp.route('/<string:rule_id>/add_action_pause', methods=['GET'])
         @require_auth()
         def page_automation_action_pause_add_get(webinterface, request, session, rule_id):
-            session.has_access('automation:%s' % rule_id, 'edit', raise_error=True)
+            session.has_access('automation', rule_id, 'edit', raise_error=True)
             try:
                 rule = webinterface._Automation.get(rule_id)
             except YomboWarning as e:
@@ -66,7 +66,7 @@ def route_automation_pause(webapp):
         @webapp.route('/<string:rule_id>/add_action_pause', methods=['POST'])
         @require_auth()
         def page_automation_action_pause_add_post(webinterface, request, session, rule_id):
-            session.has_access('automation:%s' % rule_id, 'edit', raise_error=True)
+            session.has_access('automation', rule_id, 'edit', raise_error=True)
             try:
                 rule = webinterface._Automation.get(rule_id)
             except YomboWarning as e:
@@ -103,7 +103,7 @@ def route_automation_pause(webapp):
         @webapp.route('/<string:rule_id>/edit_action_pause/<string:action_id>', methods=['GET'])
         @require_auth()
         def page_automation_action_pause_edit_get(webinterface, request, session, rule_id, action_id):
-            session.has_access('automation:%s' % rule_id, 'edit', raise_error=True)
+            session.has_access('automation', rule_id, 'edit', raise_error=True)
             try:
                 rule = webinterface._Automation.get(rule_id)
             except YomboWarning as e:
@@ -127,7 +127,7 @@ def route_automation_pause(webapp):
         @webapp.route('/<string:rule_id>/edit_action_pause/<string:action_id>', methods=['POST'])
         @require_auth()
         def page_automation_action_pause_edit_post(webinterface, request, session, rule_id, action_id):
-            session.has_access('automation:%s' % rule_id, 'edit', raise_error=True)
+            session.has_access('automation', rule_id, 'edit', raise_error=True)
             try:
                 rule = webinterface._Automation.get(rule_id)
             except YomboWarning as e:
@@ -183,7 +183,7 @@ def route_automation_pause(webapp):
         @webapp.route('/<string:rule_id>/delete_action_pause/<string:action_id>', methods=['GET'])
         @require_auth()
         def page_automation_action_pause_delete_get(webinterface, request, session, rule_id, action_id):
-            session.has_access('automation:%s' % rule_id, 'edit', raise_error=True)
+            session.has_access('automation', rule_id, 'edit', raise_error=True)
             try:
                 rule = webinterface._Automation.get(rule_id)
             except YomboWarning as e:

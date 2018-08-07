@@ -463,14 +463,14 @@ class MQTT(YomboLibrary):
             @webapp.route("/system/mqtt-listen")
             @require_auth()
             def page_system_mqtt_listen(webinterface, request, session):
-                session.has_access('system_options:*', 'mqtt', raise_error=True)
+                session.has_access('system_options:*', 'mqtt')
                 page = webinterface.webapp.templates.get_template(webinterface.wi_dir + '/pages/mqtt/listen.html')
                 return page.render(alerts=webinterface.get_alerts())
 
             @webapp.route("/system/mqtt-log")
             @require_auth()
             def page_system_mqtt_log(webinterface, request, session):
-                session.has_access('system_options:*', 'mqtt', raise_error=True)
+                session.has_access('system_options:*', 'mqtt')
                 page = webinterface.webapp.templates.get_template(webinterface.wi_dir + '/pages/mqtt/log.html')
                 return page.render(alerts=webinterface.get_alerts(),
                                    log_outgoing=self._Gateways.coms.log_outgoing,
@@ -480,7 +480,7 @@ class MQTT(YomboLibrary):
             @webapp.route("/system/mqtt-publish")
             @require_auth()
             def page_system_mqtt_publish(webinterface, request, session):
-                session.has_access('system_options:*', 'mqtt', raise_error=True)
+                session.has_access('system_options:*', 'mqtt')
                 page = webinterface.webapp.templates.get_template(webinterface.wi_dir + '/pages/mqtt/publish.html')
                 return page.render(alerts=webinterface.get_alerts())
 
@@ -488,7 +488,7 @@ class MQTT(YomboLibrary):
             @run_first()
             @inlineCallbacks
             def api_v1_mqtt(webinterface, request, session):
-                session.has_access('system_options:*', 'mqtt', raise_error=True)
+                session.has_access('system_options:*', 'mqtt')
                 topic = request.args.get('topic')[0]  # please do some validation!!
                 message = request.args.get('message')[0]  # please do some validation!!
                 qos = int(request.args.get('qos')[0])  # please do some validation!!

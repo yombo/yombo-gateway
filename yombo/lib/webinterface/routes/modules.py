@@ -38,7 +38,6 @@ def route_modules(webapp):
         @webapp.route('/')
         @require_auth()
         def page_modules(webinterface, request, session):
-            session.has_access('module:*', 'view', raise_error=True)
             return webinterface.redirect(request, '/modules/index')
 
         @webapp.route('/index')
@@ -51,7 +50,7 @@ def route_modules(webapp):
             :param session: User's session information.
             :return:
             """
-            session.has_access('module:*', 'view', raise_error=True)
+            session.has_access('module', '*', 'view')
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/modules/index.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/modules/index", "Modules")
@@ -61,7 +60,7 @@ def route_modules(webapp):
         @webapp.route('/server_index')
         @require_auth()
         def page_modules_server_index(webinterface, request, session):
-            session.has_access('module:*', 'view', raise_error=True)
+            session.has_access('module', '*', 'view')
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/modules/server_index.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/modules/index", "Server Modules")
@@ -72,7 +71,7 @@ def route_modules(webapp):
         @require_auth()
         @inlineCallbacks
         def page_modules_details_from_server(webinterface, request, session, module_id):
-            session.has_access('module:*', 'view', raise_error=True)
+            session.has_access('module', module_id, 'view')
             try:
                 module_results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id,
                                                                       session=session['yomboapi_session'])
@@ -93,7 +92,7 @@ def route_modules(webapp):
         @require_auth()
         @inlineCallbacks
         def page_modules_add(webinterface, request, session, module_id):
-            session.has_access('module:*', 'add', raise_error=True)
+            session.has_access('module', '*', 'add', raise_error=True)
             try:
                 module_results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id,
                                                                       session=session['yomboapi_session'])
@@ -186,7 +185,7 @@ def route_modules(webapp):
         @require_auth()
         @inlineCallbacks
         def page_modules_details(webinterface, request, session, module_id):
-            session.has_access('module:%s' % module_id, 'view', raise_error=True)
+            session.has_access('module', module_id, 'view', raise_error=True)
             try:
                 module = webinterface._Modules[module_id]
             except Exception as e:
@@ -209,7 +208,7 @@ def route_modules(webapp):
         @webapp.route('/<string:module_id>/disable', methods=['GET'])
         @require_auth()
         def page_modules_disable_get(webinterface, request, session, module_id):
-            session.has_access('module:%s' % module_id, 'disable', raise_error=True)
+            session.has_access('module', module_id, 'disable', raise_error=True)
             try:
                 module = webinterface._Modules[module_id]
             except Exception as e:
@@ -229,7 +228,7 @@ def route_modules(webapp):
         @require_auth()
         @inlineCallbacks
         def page_modules_disable_post(webinterface, request, session, module_id):
-            session.has_access('module:%s' % module_id, 'disable', raise_error=True)
+            session.has_access('module', module_id, 'disable', raise_error=True)
             try:
                 module = webinterface._Modules[module_id]
             except Exception as e:
@@ -280,7 +279,7 @@ def route_modules(webapp):
         @require_auth()
         @inlineCallbacks
         def page_modules_edit_get(webinterface, request, session, module_id):
-            session.has_access('module:%s' % module_id, 'edit', raise_error=True)
+            session.has_access('module', module_id, 'edit', raise_error=True)
             try:
                 module = webinterface._Modules.get(module_id)
             except Exception as e:
@@ -312,7 +311,7 @@ def route_modules(webapp):
         @require_auth()
         @inlineCallbacks
         def page_modules_edit_post(webinterface, request, session, module_id):
-            session.has_access('module:%s' % module_id, 'edit', raise_error=True)
+            session.has_access('module', module_id, 'edit', raise_error=True)
             try:
                 module = webinterface._Modules[module_id]
             except Exception:
@@ -392,7 +391,7 @@ def route_modules(webapp):
         @webapp.route('/<string:module_id>/enable', methods=['GET'])
         @require_auth()
         def page_modules_enable_get(webinterface, request, session, module_id):
-            session.has_access('module:%s' % module_id, 'enable', raise_error=True)
+            session.has_access('module', module_id, 'enable', raise_error=True)
             try:
                 module = webinterface._Modules[module_id]
             except Exception as e:
@@ -412,7 +411,7 @@ def route_modules(webapp):
         @require_auth()
         @inlineCallbacks
         def page_modules_enable_post(webinterface, request, session, module_id):
-            session.has_access('module:%s' % module_id, 'enable', raise_error=True)
+            session.has_access('module', module_id, 'enable', raise_error=True)
             try:
                 module = webinterface._Modules[module_id]
             except Exception as e:
@@ -462,7 +461,7 @@ def route_modules(webapp):
         @webapp.route('/<string:module_id>/remove', methods=['GET'])
         @require_auth()
         def page_modules_remove_get(webinterface, request, session, module_id):
-            session.has_access('module:%s' % module_id, 'delete', raise_error=True)
+            session.has_access('module', module_id, 'delete', raise_error=True)
             try:
                 module = webinterface._Modules[module_id]
             except Exception as e:
@@ -482,7 +481,7 @@ def route_modules(webapp):
         @require_auth()
         @inlineCallbacks
         def page_modules_remove_post(webinterface, request, session, module_id):
-            session.has_access('module:%s' % module_id, 'delete', raise_error=True)
+            session.has_access('module', module_id, 'delete', raise_error=True)
             try:
                 module = webinterface._Modules[module_id]
             except Exception as e:

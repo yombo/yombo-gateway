@@ -13,6 +13,8 @@ Manages users within the gateway. All users are loaded on startup.
 from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
+from yombo.constants import (DEVICE_ACTIONS, AUTOMATION_ACTIONS, SCENE_ACTIONS, ITEMIZED_PERMISSION_PLATFORMS,
+                             PERMISSION_PLATFORMS)
 from yombo.core.exceptions import YomboWarning, YomboNoAccess
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
@@ -129,6 +131,7 @@ class Users(YomboLibrary):
         self.users: dict = {}
         self.owner_id = self._Configs.get('core', 'owner_id', None, False)
         self.owner_user = None
+
         self.load_roles()
 
     @inlineCallbacks
@@ -183,24 +186,15 @@ class Users(YomboLibrary):
             self.roles[machine_label] = self.add_role(role_data, source="system")
 
         user_roles = self._Configs.get('rbac_roles', '*', {}, False)
-        print("user_roles: %s" % user_roles)
         for role_id, role_data_raw in user_roles.items():
-            print("role_data_raw: %s" % role_data_raw)
             role_data = data_unpickle(repad(role_data_raw), encoder='msgpack_base64')
-            print("role_data: %s" % role_data)
-            # permissions = role_data['permissions']  # unpack the permissions, only to be re-packed later.
             self.roles[machine_label] = self.add_role(role_data, source="user")
 
     @inlineCallbacks
     def load_users(self):
         db_users = yield self._LocalDB.get_users()
-        # db_user_roles = yield self._LocalDB.get_user_roles()
 
         for user in db_users:
-            # if user.email in db_user_roles:
-            #     user_roles = db_user_roles[user.email]['roles']
-            # else:
-            #     user_roles = []
             self.users[user.email] = User(self, user.__dict__)
 
     def add_role(self, data, source=None):
@@ -313,32 +307,247 @@ class Users(YomboLibrary):
                 role_users.append(user)
         return role_users
 
-    def has_access(self, roles, path, action, raise_error=None):
+    def get_item_permissions_for_item(self, platform, item):
+        """
+        List all users and their permissions for a specific platform
+
+        :return:
+        """
+        platform = platform.lower()
+        if platform not in ITEMIZED_PERMISSION_PLATFORMS:
+            return {}
+
+        platform_item, platform_item_key, platform_actions = self.get_platform_item(platform, item)
+
+        permissions = {}
+        for email, user in self.users.items():
+            if platform_item_key in user.item_permissions[platform]:
+                permissions[email] = user.item_permissions[platform][platform_item_key]
+        return permissions
+
+    def get_platform_item(self, platform, item=None, item_permissions=None):
+        if item in ('*', None):
+            if platform == 'automation':
+                platform_actions = AUTOMATION_ACTIONS
+                platform_item = self._Automation.rules
+            elif platform == 'device':
+                platform_actions = DEVICE_ACTIONS
+                platform_item = self._Devices.devices
+            elif platform == 'scene':
+                platform_actions = SCENE_ACTIONS
+                platform_item = self._Scenes.scenes
+            else:
+                platform_actions = None
+                platform_item = None
+            return platform_item, None, platform_actions
+
+        if platform == 'automation':
+            platform_item = self._Automation.get(item)
+            platform_item_key = platform_item.machine_label
+            platform_actions = AUTOMATION_ACTIONS
+        elif platform == 'device':
+            platform_item = self._Devices.get(item)
+            platform_item_key = platform_item.machine_label
+            platform_actions = DEVICE_ACTIONS
+        elif platform == 'scene':
+            platform_item = self._Scenes.get(item)
+            platform_item_key = platform_item.machine_label
+            platform_actions = SCENE_ACTIONS
+        else:
+            platform_item = None
+            platform_item_key = None
+            platform_actions = None
+
+        if item_permissions is None:
+            return platform_item, platform_item_key, platform_actions
+
+        if platform in item_permissions:
+            if platform_item_key in item_permissions[platform]:
+                item_actions = item_permissions[platform]
+                return platform_item, platform_item_key, platform_actions, item_permissions[platform][platform_item_key]
+        return platform_item, platform_item_key, platform_actions, []
+
+    def get_platform_items(self, platform):
+        if platform == 'automation':
+            return self._Automation.rules
+        elif platform == 'device':
+            return self._Devices.devices
+        elif platform == 'scene':
+            return self._Scenes.scenes
+        return {}
+
+    def has_access(self, item_permissions, roles, platform, item, action, raise_error=None):
         """
         Usually called by either the user instance, websession instance, or auth key instance. Checks if the provided
         list (strings) of roles will allow or deny the path/action combo.
 
         :return: Boolean
         """
-        path = path.lower()
+        def return_access(value):
+            if value is True:
+                return True
+
+            if value is False:
+                if raise_error is not True:
+                    return False
+            raise YomboNoAccess(path="%s:%s" % (platform, item), action=action)
+
+        if raise_error is None:
+            raise_error = True
+
+        platform = platform.lower()
         action = action.lower()
 
-        logger.debug("has_access: path: {path}, action: {action}", path=path, action=action)
+        logger.debug("has_access: platform: {platform}, item: {item}, action: {action}",
+                    platform=platform, item=item, action=action)
+        logger.debug("has_access: has item_permissions: {item_permissions}", item_permissions=item_permissions)
         logger.debug("has_access: has roles: {roles}", roles=roles)
+
+        # Admins have full access.
         if 'admin' in roles:
             return True
 
-        for a_role in self.get_roles(roles):
-            results = a_role.has_access(path, action)
+        # Check if a specific item has a special access listed
+        platform_item, platform_item_key, platform_actions = self.get_platform_item(platform, item)
 
-            logger.debug("has_access: results for role.has_access: %s" % results)
-            if isinstance(results, bool):  # returns None if no matches were found.
-                if results is False and raise_error is True:
-                    raise YomboNoAccess(path=path, action=action)
-                return results
-        if raise_error is True:
-            raise YomboNoAccess(path=path, action=action)
-        return False
+        if platform_item is not None:
+            if platform_item_key in item_permissions[platform]:
+                item_actions = item_permissions[platform][platform_item_key]
+                if "deny_%s" % action in item_actions:
+                    return return_access(False)
+                if "allow_%s" % action in item_actions:
+                    return True
+
+        for a_role in self.get_roles(roles):
+            results = a_role.has_access(platform, item, action)
+            logger.info("has_access: results for role.has_access: %s" % results)
+            return return_access(results)
+        return return_access(False)
+
+    def get_access(self, in_item_permissions, in_roles, requested_platform=None):
+        """
+        Gets list of access end points for the user. This includes all devices and all rules for all roles the
+        user belongs to.
+
+        :return: Boolean
+        """
+        out_permissions = {
+            'allow': {},
+            'deny': {},
+        }
+
+        # go thru all roles and setup base items
+        for role_machine_label in in_roles:
+            role = self.get_role(role_machine_label)
+
+            for access_type in ('allow', 'deny'):
+                for permission_id, permission in role.permissions[access_type].items():
+                    platform = permission['platform']
+                    if access_type == 'allow':
+                        if platform in out_permissions['deny']:
+                            if permission['item'] in out_permissions['deny'][platform]:
+                                if permission['action'] in out_permissions['deny'][platform][permission['item']]:
+                                    continue
+
+                    if access_type == 'deny':
+                        if platform in out_permissions['allow']:
+                            if permission['item'] in out_permissions['allow'][platform]:
+                                if permission['action'] in out_permissions['allow'][platform][permission['item']]:
+                                    out_permissions['allow'][platform][permission['item']].remove(permission['action'])
+
+                    if platform not in out_permissions[access_type]:
+                        out_permissions[access_type][platform] = {}
+                    if permission['item'] not in out_permissions[access_type][platform]:
+                        out_permissions[access_type][platform][permission['item']] = []
+                    if permission['action'] not in out_permissions[access_type][platform][permission['item']]:
+                        out_permissions[access_type][platform][permission['item']].append(permission['action'])
+
+        # Now apply bulk role permissions to individual item_permissions..
+        out_item_permission = {}
+
+        ############################
+        def add_itemized_platform(source_platform, destination_platform=None):
+            if destination_platform is None:
+                destination_platform = source_platform
+
+            if requested_platform is not None and destination_platform != requested_platform:
+                return
+
+            if destination_platform not in out_item_permission:
+                out_item_permission[destination_platform] = {}
+
+            for item, actions in out_permissions[access_type][source_platform].items():
+                try:
+                    platform_item, platform_item_key, platform_actions = self.get_platform_item(destination_platform,
+                                                                                                item)
+                except:
+                    continue
+                if item == '*':
+                    for the_id, the_item in platform_item.items():
+                        machine_label = the_item.machine_label
+                        if the_id not in out_item_permission[destination_platform]:
+                            out_item_permission[destination_platform][machine_label] = []
+                        for action in actions:
+                            if action == '*':
+                                for temp_action in platform_actions:
+                                    if temp_action.startswith("allow_") and \
+                                            temp_action not in out_item_permission[destination_platform][machine_label]:
+                                        out_item_permission[destination_platform][machine_label].append(temp_action)
+                            else:
+                                if action not in out_item_permission[destination_platform][machine_label]:
+                                    out_item_permission[destination_platform][machine_label].append(
+                                        "%s_%s" % (access_type, action))
+                else:
+                    if platform_item_key not in out_item_permission[destination_platform]:
+                        out_item_permission[destination_platform][platform_item_key] = []
+                    for action in actions:
+                        if action not in out_item_permission[destination_platform][platform_item_key]:
+                            out_item_permission[destination_platform][platform_item_key].append("%s_%s" % (access_type, action))
+        ############################
+
+        for platform in ITEMIZED_PERMISSION_PLATFORMS:
+            for access_type in ('allow', 'deny'):
+                if '*' in out_permissions[access_type]:
+                    for temp_platform in PERMISSION_PLATFORMS:
+                        add_itemized_platform('*', temp_platform)
+                elif platform in out_permissions[access_type]:
+                    add_itemized_platform(platform)
+
+        # now apply user/session specific item_permissions..
+        # print("get_access: starting specific items......")
+        # print("get_access: requested_platform: %s" % requested_platform)
+        # print("get_access: in_item_permissions: %s" % in_item_permissions)
+        for platform, items in in_item_permissions.items():
+            # print("get_access: platform: %s" % platform)
+            if requested_platform is not None and platform != requested_platform:
+                continue
+            for item_id, actions in items.items():
+                platform_item, platform_item_key, platform_actions = self.get_platform_item(platform, item_id)
+                for action in actions:
+                    access_type, action = action.split("_")
+                    # If we have an allow, remove any deny items.
+                    if access_type == 'deny':
+                        if platform in out_item_permission:
+                            if platform_item_key in out_item_permission[platform]:
+                                allow_action = "allow_%s" % action
+                                if allow_action in out_item_permission[platform][platform_item_key]:
+                                    out_item_permission[platform][platform_item_key].remove(allow_action)
+
+                    # If we have an deny, remove any allow items.
+                    if access_type == 'allow':
+                        if platform in out_item_permission:
+                            if platform_item_key not in out_item_permission[platform]:
+                                deny_action = "deny_%s" % action
+                                if deny_action in out_item_permission[platform][platform_item_key]:
+                                    out_item_permission[platform][platform_item_key].remove(deny_action)
+
+                    if platform not in out_item_permission:
+                        out_item_permission[platform] = {}
+                    if platform_item_key not in out_item_permission[platform]:
+                        out_item_permission[platform][platform_item_key] = []
+                    out_item_permission[platform][platform_item_key].append("%s_%s" % (access_type, action))
+
+        return out_permissions, out_item_permission
 
     def get(self, requested_id):
             if requested_id in self.users:

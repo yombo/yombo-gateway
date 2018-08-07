@@ -115,7 +115,8 @@ def run_first(create_session=None, *args, **kwargs):
     return deco
 
 
-def require_auth(roles=None, login_redirect=None, access_path=None, access_action=None, *args, **kwargs):
+def require_auth(roles=None, login_redirect=None, access_platform=None, access_item=None, access_action=None,
+                 *args, **kwargs):
     def call(f, *args, **kwargs):
         return f(*args, **kwargs)
 
@@ -200,16 +201,15 @@ def require_auth(roles=None, login_redirect=None, access_path=None, access_actio
             #         page = webinterface.get_template(request, webinterface.wi_dir + '/pages/restart.html')
             #         return page.render(alerts=webinterface.get_alerts())
 
-            # def require_auth(roles=None, login_redirect=None, access_path=None, access_action=None, *args, **kwargs):
-            if access_path is not None and access_action is not None:
-                if session.has_access('module_amazonalexa:api', 'control') is False:
-                    return return_no_access(webinterface, request, **kwargs)
+            if access_platform is not None and access_item is not None and access_action is not None:
+                if session.has_access(access_platform, access_item, access_action) is False:
+                    return return_no_access(webinterface, request, "No access", **kwargs)
                     pass
             try:
                 results = yield call(f, webinterface, request, session, *a, **kw)
                 return results
             except YomboNoAccess as e:
-                return return_no_access(webinterface, request, e, **kwargs)
+                return return_no_access(webinterface, request, "No access", **kwargs)
             except Exception as e:  # catch anything here...so can display details.
                 logger.error("---------------==(Traceback)==--------------------------")
                 logger.error("Function: {f}", f=f)

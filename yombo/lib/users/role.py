@@ -44,13 +44,12 @@ class Role(object):
         return self._Parent.list_role_users(self)
 
     def __init__(self, parent, machine_label=None, label=None, description=None, source=None, role_id=None,
-                 permissions=None):
+                 permissions=None, saved_permissions=None):
         """
         Setup the role.
 
         :param parent: A reference to the users library.
         """
-        print("adding role to memopry: %s" % machine_label)
         self._Parent = parent
         self.all_roles = self._Parent.roles
         if machine_label is None:
@@ -74,71 +73,82 @@ class Role(object):
             source = "system"
         self.source: str = source
         self.permissions = {
-            'allow': [],
-            'deny': [],
+            'allow': {},
+            'deny': {},
         }
 
-        if isinstance(permissions, dict):
-            for access in ('allow', 'deny'):
-                self.permissions[access] = permissions[access]
+        if isinstance(saved_permissions, dict):
+            self.permissions = saved_permissions
+        if isinstance(permissions, list):
+            for permission in permissions:
+                self.add_rule(permission)
         self.save()
 
-    def add_rule(self, path, action, access):
+    def permission_id(self, permission):
+        return sha256_compact("%s:%s:%s:%s" %
+                              (permission['platform'],
+                               permission['item'],
+                               permission['action'],
+                               permission['access']))
+
+    def add_rule(self, permission):
         """
         Add a rule to the ACL
 
-        :param path: A resource that is to be matched. devices:*, web:/url/path
-        :param action: edit, view, delete...etc
-        :param access: One of 'allow' or 'deny'
+        :param permission: A dict containing the permission items.
         """
-        path = path.lower()
-        action = action.lower()
-        access = access.lower()
+        if all(name in permission for name in ('platform', 'item', 'action', 'access')) is False:
+            raise YomboWarning("Permission is missing a key.")
 
-        if len(path.split(':')) != 2:
-            raise YomboWarning("path must be in the format of:  class:item, example: devices:*")
+        permission['access'] = permission['access'].lower()
+        access = permission['access']
 
         if access not in ('allow', 'deny'):
             raise YomboWarning('access must be one of: allow, deny')
 
-        permission = (path, action)
-        if permission not in self.permissions[access]:
-            self.permissions[access].append(permission)
+        permission['id'] = self.permission_id(permission)
+        permission['platform'] = permission['platform'].lower()
+        permission['action'] = permission['action'].lower()
+
+        if permission['id'] not in self.permissions[access]:
+            self.permissions[access][permission['id']] = permission
         self.save()
 
-    def delete_rule(self, path, action, access):
+    def delete_rule(self, permission_id):
         """
         Delete a rule from the current role
 
-        :param path: A resource that is to be matched. devices:*, web:/url/path
+        :param platform: A resource that is to be matched. devices:*, web:/url/platform
         :param action: edit, view, delete...etc
         :param access: One of 'allow' or 'deny'
         """
-        path = path.lower()
-        action = action.lower()
-        access = access.lower()
-
-        permission = (path, action)
-        if permission in self.permissions[access]:
-            self.permissions[access].remove(permission)
+        if permission_id in self.permissions['allow']:
+            del self.permissions['allow'][permission_id]
+        elif permission_id in self.permissions['deny']:
+            del self.permissions['deny'][permission_id]
+        else:
+            return
         self.save()
 
-    def has_access(self, req_path, req_action):
+    def has_access(self, req_platform, req_item, req_action):
         """
         Checks if the role has any permissions matching the requested path and requested action.  Returns
         true if the access is allowed, otherwise false.
 
-        :param req_path:
+        :param req_platform:
+        :param req_item:
         :param req_action:
         :return: bool
         """
+        req_platform = req_platform.lower()
+        req_action = req_action.lower()
         possible_deny = None
         # First check if there's an explicit deny. If it's a wildcard match, we will also check
         # allow permissions to see if there's an explicit allow
-        logger.info("has_access: req_path: {path}, req_action: {action}", path=req_path, action=req_action)
-        logger.info("has_access: permissions deny: %s" % self.permissions['deny'])
-        for permission in self.permissions['deny']:
-            matched, wildcard = self.check_permission_match(req_path, req_action, permission)
+        # logger.info("has_access: req_path: {path}, req_action: {action}", path=req_path, action=req_action)
+        # logger.info("has_access: permissions deny: %s" % self.permissions['deny'])
+        for permission_id, permission in self.permissions['allow'].items():
+            matched, wildcard = self.check_permission_match(req_platform, req_item, req_action, permission)
             if matched is None:
                 logger.info("deny, not matched.")
                 continue
@@ -152,8 +162,8 @@ class Role(object):
                     return False
 
         logger.info("has_access: permissions allow: %s" % self.permissions['allow'])
-        for permission in self.permissions['allow']:
-            matched, wildcard = self.check_permission_match(req_path, req_action, permission)
+        for permission_id, permission in self.permissions['allow'].items():
+            matched, wildcard = self.check_permission_match(req_platform, req_item, req_action, permission)
             if matched is None:
                 logger.info("has_access: allow, not matched.")
                 continue
@@ -173,41 +183,37 @@ class Role(object):
         logger.info("has_access: default, returning none.")
         return None
 
-    def check_permission_match(self, req_path, req_action, permission):
+    def check_permission_match(self, req_platform, req_item, req_action, permission):
         """
         Helper function for has_access. Just determines if the requested path and action matches
         the proviced permission.
 
-        :param req_path:
+        :param req_platform:
+        :param req_item:
         :param req_action:
         :param permission:
         :return: bool, bool
         """
         logger.debug("check_permission_match: req_path: {path}, req_action: {action}, permission: {permission}",
-                    path=req_path, action=req_action, permission=permission)
+                    path=req_platform, action=req_action, permission=permission)
 
         action_match_wild = False
 
-        perm_path, perm_action = permission
-        if perm_action == "*":
-            action_match_wild = True
-        elif req_action != perm_action:
+        if req_platform != permission['platform']:
+            logger.debug("check_permission_match: req_platform don't match: none, none")
+            return None, None
+
+        if permission['action'] == "*":
+            pass
+        elif req_action != permission['action']:
             logger.debug("check_permission_match: req_action don't match: none, none")
             return None, None
 
-        perm_class, perm_item = perm_path.split(':')
-        req_class, req_item = req_path.split(':')
-        if req_class != perm_class:
-            logger.debug("check_permission_match: req_class don't match: none, none")
-            return None, None
-
-        if perm_item == "*":
+        if permission['item'] == "*":
             logger.debug("check_permission_match: wildcard item match, true true")
             return True, True
-        if perm_item == req_item:
-            logger.debug("check_permission_match: item match, true {action_match_wild}",
-                        action_match_wild=action_match_wild)
-            return True, action_match_wild
+        if permission['item'] == req_item:
+            return True, False
 
         logger.info("check_permission_match: Default, false false")
         return False, False
@@ -224,7 +230,7 @@ class Role(object):
             'label': self.label,
             'machine_label': self.machine_label,
             'description': self.description,
-            'permissions': self.permissions
+            'saved_permissions': self.permissions
         }
         self._Parent._Configs.set('rbac_roles', self.role_id,
                                   data_pickle(tosave, encoder="msgpack_base64").rstrip("="),

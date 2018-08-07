@@ -5,20 +5,20 @@ def route_notices(webapp):
         @webapp.route('/')
         @require_auth()
         def page_modules(webinterface, request, session):
-            session.has_access('notification:*', 'view', raise_error=True)
+            session.has_access('notification', '*', 'view', raise_error=True)
             return webinterface.redirect(request, '/notifications/index')
 
         @webapp.route('/index')
         @require_auth()
         def page_notifications_index(webinterface, request, session):
-            session.has_access('notification:*', 'view', raise_error=True)
+            session.has_access('notification', '*', 'view', raise_error=True)
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/notifications/index.html')
             return page.render(alerts=webinterface.get_alerts())
 
         @webapp.route('/<string:notification_id>/details')
         @require_auth()
         def page_notifications_details(webinterface, request, session, notification_id):
-            session.has_access('notification:%s' % notification_id, 'view', raise_error=True)
+            session.has_access('notification', notification_id, 'view', raise_error=True)
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/notifications/details.html')
             try:
                 webinterface._Notifications.ack(notification_id)
@@ -33,7 +33,7 @@ def route_notices(webapp):
         @webapp.route('/<string:notification_id>/delete')
         @require_auth()
         def page_notifications_edit(webinterface, request, session, notification_id):
-            session.has_access('notification:%s' % notification_id, 'view', raise_error=True)
+            session.has_access('notification', notification_id, 'view', raise_error=True)
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/notifications/delete.html')
             return page.render(alerts=webinterface.get_alerts(),
                                notice=webinterface._Notifications[notification_id],

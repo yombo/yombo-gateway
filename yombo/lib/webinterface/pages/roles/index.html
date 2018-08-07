@@ -44,12 +44,11 @@
         <div class="panel panel-default">
             <div class="panel-heading">
                 <a href="/roles/add" class="btn btn-md btn-primary pull-right">Add Role</a>
-                <label>Defined roles</label>
+                <h4>Defined roles</h4>
                 <br>&nbsp;
             </div>
             <!-- /.panel-heading -->
             <div class="panel-body">
-                {{_users.roles}}
                 <div class="dataTable_wrapper">
                     <table width="100%" class="table table-striped table-bordered table-hover" id="roles">
                         <thead>
@@ -59,8 +58,8 @@
                         </thead>
                         <tbody>{% for role_label, role in _users.roles.items() %}
                              <tr>
-                                <td data-priority="1" style="max-width: 10em;">  {{role_label}} - {{ role.role_id }}
-                                    <p><strong>Label:</strong><br>{{ role.label }}</p>
+                                <td data-priority="1" style="max-width: 10em;">
+                                    <p><strong>Label:</strong><br><a href="/roles/{{ role.role_id }}/details">{{ role.label }}</a></p>
                                     <p><strong>Description:</strong><br>{{ role.description }}</p>
                                     <p><strong>Source:</strong><br>{{ role.source }}</p>
                                 </td>
@@ -70,7 +69,7 @@
                                     {%- set role_members = _users.list_roles_by_user() %}
                                     {%- if role_members[role_label]|length > 0 %}
                                     {% for member in role_members[role_label] %}
-                                        <li>{{ member.name }} &lt;{{member.email}}&gt;</li>
+                                        <li><a href="/users/{{member.user_id}}/details">{{ member.name }} &lt;{{member.email}}&gt;</a></li>
                                     {% endfor %}
                                     {% else %} <li>{{_("ui::common::none")}}</li>
                                     {% endif %}
@@ -83,7 +82,7 @@
                                     {% for member in role_members %}
                                         <li>{{member.label}}</li>
                                     {% endfor %}
-                                    {% else %} <li>No auth keys</li>
+                                    {% else %} <li>{{_("ui::common::none")}}</li>
                                     {% endif %}
                                     </ul>
                                 </td>

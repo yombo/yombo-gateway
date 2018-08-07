@@ -79,7 +79,7 @@ def route_api_v1_stream(webapp, webinterface_local):
         @webapp.route('/stream', methods=['GET'])
         @require_auth(api=True)
         def apiv1_stream_get(webinterface, request, session):
-            session.has_access('system_options:*', 'stream', raise_error=True)
+            session.has_access('system_options', '*', 'stream', raise_error=True)
             request.setHeader('Content-type', 'text/event-stream')
             request.write(EventMsg(int(time()), 'ping'))
 

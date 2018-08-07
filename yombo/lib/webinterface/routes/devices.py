@@ -32,10 +32,17 @@ from yombo.core.log import get_logger
 
 logger = get_logger("library.webinterface.route_devices")
 
-def add_devices_breadcrumb(webinterface, request, device_id):
+def add_devices_breadcrumb(webinterface, request, device_id, session):
     local_devices = []
     cluster_devices = []
+
+    permissions, item_permissions = webinterface._Users.get_access(session.item_permissions, session.roles, 'device')
+
     for select_device_id, select_device in webinterface._Devices.sorted().items():
+        if select_device.enabled_status != 1 or select_device.machine_label not in item_permissions['device'] or \
+                'allow_view' not in item_permissions['device'][select_device.machine_label]:
+            continue
+
         if select_device.gateway_id == webinterface.gateway_id():
             label = select_device.area_label
         else:
@@ -69,26 +76,31 @@ def route_devices(webapp):
         @webapp.route('/')
         @require_auth()
         def page_devices(webinterface, request, session):
-            session.has_access('device:*', 'view', raise_error=True)
+            session.has_access('device', '*', 'view')
             return webinterface.redirect(request, '/devices/index')
 
         @webapp.route('/index')
         @require_auth()
         def page_devices_index(webinterface, request, session):
-            session.has_access('device:*', 'view', raise_error=True)
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/devices/index.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/devices/index", "Devices")
+            permissions, item_permissions = webinterface._Users.get_access(session.item_permissions,
+                                                                           session.roles,
+                                                                           'device')
             return page.render(
                 alerts=webinterface.get_alerts(),
                 request=request,
+                user=session.user,
+                permissions=permissions,
+                item_permissions=item_permissions,
             )
 
         @webapp.route('/add')
         @require_auth()
         @inlineCallbacks
         def page_devices_add_select_device_type_get(webinterface, request, session):
-            session.has_access('device:*', 'add', raise_error=True)
+            session.has_access('device', '*', 'add')
 
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/devices/add_select_device_type.html')
             webinterface.home_breadcrumb(request)
@@ -105,7 +117,7 @@ def route_devices(webapp):
         @require_auth()
         @inlineCallbacks
         def page_devices_add_post(webinterface, request, session, device_type_id):
-            session.has_access('device:*', 'add', raise_error=True)
+            session.has_access('device', '*', 'add')
 
             try:
                 device_type = webinterface._DeviceTypes[device_type_id]
@@ -238,7 +250,8 @@ def route_devices(webapp):
         @require_auth()
         @inlineCallbacks
         def page_devices_details(webinterface, request, session, device_id):
-            session.has_access('device:%s' % device_id, 'view', raise_error=True)
+            print("asaaaa 1: %s" % device_id)
+            session.has_access('device', device_id, 'view')
 
             try:
                 device = webinterface._Devices[device_id]
@@ -249,7 +262,7 @@ def route_devices(webapp):
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/devices/details.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/devices/index", "Devices")
-            add_devices_breadcrumb(webinterface, request, device_id)
+            add_devices_breadcrumb(webinterface, request, device_id, session)
             device_variables = yield device.device_variables()
             return page.render(alerts=webinterface.get_alerts(),
                                device=device,
@@ -260,7 +273,7 @@ def route_devices(webapp):
         @webapp.route('/<string:device_id>/delete', methods=['GET'])
         @require_auth()
         def page_device_delete_get(webinterface, request, session, device_id):
-            session.has_access('device:%s' % device_id, 'delete', raise_error=True)
+            session.has_access('device', device_id, 'delete')
 
             try:
                 device = webinterface._Devices[device_id]
@@ -282,7 +295,7 @@ def route_devices(webapp):
         @require_auth()
         @inlineCallbacks
         def page_device_delete_post(webinterface, request, session, device_id):
-            session.has_access('device:%s' % device_id, 'delete', raise_error=True)
+            session.has_access('device', device_id, 'delete')
 
             try:
                 device = webinterface._Devices[device_id]
@@ -314,7 +327,7 @@ def route_devices(webapp):
         @webapp.route('/<string:device_id>/disable', methods=['GET'])
         @require_auth()
         def page_device_disable_get(webinterface, request, session, device_id):
-            session.has_access('device:%s' % device_id, 'disable', raise_error=True)
+            session.has_access('device', device_id, 'disable')
 
             try:
                 device = webinterface._Devices[device_id]
@@ -335,7 +348,7 @@ def route_devices(webapp):
         @require_auth()
         @inlineCallbacks
         def page_device_disable_post(webinterface, request, session, device_id):
-            session.has_access('device:%s' % device_id, 'disable', raise_error=True)
+            session.has_access('device', device_id, 'disable')
 
             try:
                 device = webinterface._Devices[device_id]
@@ -364,7 +377,7 @@ def route_devices(webapp):
         @webapp.route('/<string:device_id>/enable', methods=['GET'])
         @require_auth()
         def page_device_enable_get(webinterface, request, session, device_id):
-            session.has_access('device:%s' % device_id, 'enable', raise_error=True)
+            session.has_access('device', device_id, 'enable')
 
             try:
                 device = webinterface._Devices[device_id]
@@ -385,7 +398,7 @@ def route_devices(webapp):
         @require_auth()
         @inlineCallbacks
         def page_device_enable_post(webinterface, request, session, device_id):
-            session.has_access('device:%s' % device_id, 'enable', raise_error=True)
+            session.has_access('device', device_id, 'enable')
 
             try:
                 device = webinterface._Devices[device_id]
@@ -414,7 +427,7 @@ def route_devices(webapp):
         @require_auth()
         @inlineCallbacks
         def page_devices_edit_get(webinterface, request, session, device_id):
-            session.has_access('device:%s' % device_id, 'edit', raise_error=True)
+            session.has_access('device', device_id, 'edit')
 
             try:
                 device_api_results = yield webinterface._YomboAPI.request('GET', '/v1/device/%s' % device_id,
@@ -449,7 +462,7 @@ def route_devices(webapp):
         @require_auth()
         @inlineCallbacks
         def page_devices_edit_post(webinterface, request, session, device_id):
-            session.has_access('device:%s' % device_id, 'edit', raise_error=True)
+            session.has_access('device', device_id, 'edit')
 
             device = webinterface._Devices.devices[device_id]
             device_id = device.device_id
@@ -572,7 +585,7 @@ def route_devices(webapp):
         @webapp.route('/device_commands')
         @require_auth()
         def page_devices_device_commands(webinterface, request, session):
-            session.has_access('device_command:*', 'view', raise_error=True)
+            session.has_access('device_command', '*', 'view')
 
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/devices/device_commands.html')
             # print "delayed queue active: %s" % webinterface._Devices.delay_queue_active
@@ -586,7 +599,7 @@ def route_devices(webapp):
         @webapp.route('/device_commands/<string:device_command_id>/details')
         @require_auth()
         def page_devices_device_commands_details(webinterface, request, session, device_command_id):
-            session.has_access('device_command:%s' % device_command_id, 'view', raise_error=True)
+            session.has_access('device_command', device_command_id, 'view')
 
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/devices/device_command_details.html')
             # print "delayed queue active: %s" % webinterface._Devices.delay_queue_active
