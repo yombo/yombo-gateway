@@ -81,31 +81,29 @@ class Times(YomboLibrary, object):
         if PatchEnvironment:
             self.runned_for_tests()
 
-        self.obs = ephem.Observer()
-        self.obs.lat = str(self._Configs.get('location', 'latitude', 0))
-        self.obs.lon = str(self._Configs.get('location', 'longitude', 0))
-        self.obs.elevation = int(self._Configs.get('location', 'elevation', 800))
-        # print("self.obs.lat: %s" % self._Configs.get('location', 'latitude', 0))
-        # print("self.obs.lon: %s" % self._Configs.get('location', 'longitude', 0))
+        self.setup_obs()
 
-        self.obsTwilight = ephem.Observer()
-        self.obsTwilight.horizon = str(self._Configs.get('times', 'twilighthorizon', '-6')) # civil = -6, nautical = -12, astronomical = -18
-        self.obsTwilight.lat = str(self._Configs.get('location', 'latitude', 0))
-        self.obsTwilight.lon = str(self._Configs.get('location', 'longitude', 0))
-        self.obsTwilight.elevation = int(self._Configs.get('location', 'elevation', 800))
-
-        # print("done w times init 55")
         self.is_now_init = True
         self._setup_light_dark_events()
         self._setup_day_night_events()  # includes next sunrise, sunset, is sun visable, etc.
         self._setup_next_twilight_events() # needs to be called before setupNextDawnDuskEvent
-        # print("done w times init 66")
         self._setup_next_dawn_dusk_event()
         self._setup_moon_events()
-        # print("done w times init 77")
         self._setup_weekday_events()
         self.is_now_init = False
-        # print("done w times init")
+
+    def setup_obs(self):
+        self.obs = ephem.Observer()
+        self.obs.lat = str(self._Configs.get('location', 'latitude', 38.576694))
+        self.obs.lon = str(self._Configs.get('location', 'longitude', -121.493259))
+        self.obs.elevation = int(self._Configs.get('location', 'elevation', 800))
+
+        self.obsTwilight = ephem.Observer()
+        # civil = -6, nautical = -12, astronomical = -18
+        self.obsTwilight.horizon = str(self._Configs.get('times', 'twilighthorizon', '-6'))
+        self.obsTwilight.lat = str(self._Configs.get('location', 'latitude', 38.576694))
+        self.obsTwilight.lon = str(self._Configs.get('location', 'longitude', -121.493259))
+        self.obsTwilight.elevation = int(self._Configs.get('location', 'elevation', 800))
 
     @property
     def next_new_moon(self):
