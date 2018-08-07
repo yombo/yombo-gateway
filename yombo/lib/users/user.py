@@ -26,10 +26,6 @@ class User(object):
 
         :param parent: A reference to the users library.
         """
-        def repad(local_data):
-            """ Used to add the = back the base64... """
-            return local_data + "=" * (-len(local_data) % 4)
-
         self._Parent = parent
         self.user_id: str = data['id']
         self.email: str = data['email']
@@ -43,7 +39,7 @@ class User(object):
         if rbac_raw is None:
             rbac = {}
         else:
-            rbac = data_unpickle(repad(rbac_raw), encoder='msgpack_base64')
+            rbac = data_unpickle(rbac_raw, encoder='msgpack_base64')
 
         if 'roles' in rbac:
             roles = rbac['roles']
@@ -197,7 +193,7 @@ class User(object):
                 pass
 
     @memoize_ttl(60)
-    def has_access(self, platform, item, action):
+    def has_access(self, platform, item, action, raise_error=None):
         """
         Check if user has access  to a resource / access_type combination.
 
@@ -205,7 +201,7 @@ class User(object):
         :param resource:
         :return:
         """
-        return self._Parent.has_access(self, self.item_permissions, self.roles, platform, item, action)
+        return self._Parent.has_access(self, self.item_permissions, self.roles, platform, item, action, raise_error)
 
     def save(self):
         """
@@ -217,7 +213,7 @@ class User(object):
             'item_permissions': self.item_permissions
         }
         self._Parent._Configs.set('rbac_user_roles', self.user_id,
-                                  data_pickle(tosave, encoder="msgpack_base64").rstrip("="),
+                                  data_pickle(tosave, encoder="msgpack_base64", local=True),
                                   ignore_case=True)
 
     def __repr__(self):

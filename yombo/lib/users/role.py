@@ -233,5 +233,5 @@ class Role(object):
             'saved_permissions': self.permissions
         }
         self._Parent._Configs.set('rbac_roles', self.role_id,
-                                  data_pickle(tosave, encoder="msgpack_base64").rstrip("="),
+                                  data_pickle(tosave, encoder="msgpack_base64", local=True),
                                   ignore_case=True)

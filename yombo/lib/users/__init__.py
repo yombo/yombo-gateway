@@ -176,10 +176,6 @@ class Users(YomboLibrary):
         # self.users[new_user['email']].sync_user_to_db()
 
     def load_roles(self):
-        def repad(local_data):
-            """ Used to add the = back the base64... """
-            return local_data + "=" * (-len(local_data) % 4)
-
         self.roles.clear()
         for machine_label, role_data in SYSTEM_ROLES.items():
             role_data['machine_label'] = machine_label
@@ -187,7 +183,7 @@ class Users(YomboLibrary):
 
         user_roles = self._Configs.get('rbac_roles', '*', {}, False)
         for role_id, role_data_raw in user_roles.items():
-            role_data = data_unpickle(repad(role_data_raw), encoder='msgpack_base64')
+            role_data = data_unpickle(role_data_raw, encoder='msgpack_base64')
             self.roles[machine_label] = self.add_role(role_data, source="user")
 
     @inlineCallbacks
@@ -390,7 +386,11 @@ class Users(YomboLibrary):
             if value is False:
                 if raise_error is not True:
                     return False
-            raise YomboNoAccess(path="%s:%s" % (platform, item), action=action)
+            raise YomboNoAccess(item_permissions=item_permissions,
+                                roles=roles,
+                                platform=platform,
+                                item=item,
+                                action=action)
 
         if raise_error is None:
             raise_error = True
@@ -398,10 +398,9 @@ class Users(YomboLibrary):
         platform = platform.lower()
         action = action.lower()
 
-        logger.debug("has_access: platform: {platform}, item: {item}, action: {action}",
-                    platform=platform, item=item, action=action)
-        logger.debug("has_access: has item_permissions: {item_permissions}", item_permissions=item_permissions)
-        logger.debug("has_access: has roles: {roles}", roles=roles)
+        logger.info("has_access: platform: {platform}, item: {item}, action: {action}",
+                     platform=platform, item=item, action=action)
+        logger.info("has_access: has roles: {roles}", roles=roles)
 
         # Admins have full access.
         if 'admin' in roles:
