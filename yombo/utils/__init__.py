@@ -182,7 +182,7 @@ def ordereddict_to_dict(value):
     return dict(value)
 
 
-def data_pickle(data, encoder=None, zip=None):
+def data_pickle(data, encoder=None, zip=None, local=None):
     """
     Encodes data with an encoder type. The default is "msgpack_base85". This allows data to be sent to
     databases or nearly everywhere.
@@ -237,6 +237,8 @@ def data_pickle(data, encoder=None, zip=None):
 
     if 'base64' in encoder:
         data = bytes_to_unicode(base64.b64encode(data))
+        if local is True:
+            data = data.rstrip("=")
     elif 'base85' in encoder:
         data = bytes_to_unicode(base64.b85encode(data))
 
@@ -275,6 +277,7 @@ def data_unpickle(data, encoder=None, zip=None):
         raise YomboWarning("Unpickle data can only have base64 or base85, not both.")
 
     if 'base64' in encoder:
+        data = data + "=" * (-len(data) % 4)
         data = base64.b64decode(data)
     elif 'base85' in encoder:
         data = base64.b85decode(data)
@@ -1091,8 +1094,6 @@ def ip_address_in_network(ip_address, subnetwork):
     if version1 != version2:
         raise ValueError("incompatible IP versions")
 
-    # print("lower: %s, ip: %s, upper: %s" % (ip_lower, ip_integer, ip_upper))
-    # print(ip_lower <= ip_integer <= ip_upper)
     return (ip_lower <= ip_integer <= ip_upper)
 
 
@@ -1162,40 +1163,6 @@ def subnetwork_to_ip_range(subnetwork):
         pass
 
     raise ValueError("invalid subnetwork")
-
-@inlineCallbacks
-def get_external_ip_address_v4():
-    """
-    Get the IP address of this machine as seen from the outside world.  THis
-    function is primarily used during various internal testing of the Yombo
-    Gateway.  This information is reported to the Yombo Service, however, the
-    Yombo Service already knows you're IP address during the process of
-    downloading configuration files.
-
-    Yombo servers will only use this information if server "getpeer.ip()" function
-    results in a private IP address.  See: http://en.wikipedia.org/wiki/Private_network
-    This assists in Yombo performing various tests internally, but still providing
-    an ability to do further tests.
-
-    Gives Yombo servers a hint of your external ip address from your view. This
-    should be the same as what Yombo servers see when you connect.
-
-    This is called only once during the startup phase.  Calling this function too
-    often can result in the gateway being blocked by whatismyip.org
-
-    .. warning::
-
-       This is 100% blocking code. A replacement will be coming soon.
-
-    :return: An ip address
-    :rtype: string
-    """
-    import treq
-
-    response = yield treq.get("https://api.ipify.org")
-    content = yield treq.content(response)
-    return content.decode().strip()
-
 
 def ip_address_to_int(address):
     return struct_unpack("!I", socket.inet_aton(address))[0]
@@ -1386,7 +1353,6 @@ def global_invoke_all(hook, **kwargs):
     :param kwargs: kwargs to send to the function.
     :return: a dictionary of results.
     """
-    # print("global_invoke will call: %s" % hook)
     lib_results = yield get_component('yombo.gateway.lib.loader').library_invoke_all(hook, True, **kwargs)
     modules_results = yield get_component('yombo.gateway.lib.modules').module_invoke_all(hook, True, **kwargs)
     return dict_merge(modules_results, lib_results)
