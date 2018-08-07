@@ -73,7 +73,7 @@ from twisted.internet.defer import inlineCallbacks, maybeDeferred, Deferred
 from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboDeviceError, YomboWarning, YomboHookStopProcessing
+from yombo.core.exceptions import YomboWarning, YomboHookStopProcessing
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import global_invoke_all, search_instance, do_search_instance, random_int
@@ -602,8 +602,6 @@ class Devices(YomboLibrary):
         If a pin is required, "pin" must be included as one of the arguments. All **kwargs are sent with the
         hook call.
 
-        :raises YomboDeviceError: Raised when:
-
             - cmd doesn't exist
             - delay or max_delay is not a float or int.
 
@@ -673,7 +671,7 @@ class Devices(YomboLibrary):
         try:
             device_label = self.get(parts[2].replace("_", " "))
             device = self.get(device_label)
-        except YomboDeviceError as e:
+        except KeyError as e:
             logger.info("Received MQTT request for a device that doesn't exist: %s" % parts[2])
             return
 
@@ -792,9 +790,9 @@ class Devices(YomboLibrary):
         :raises KeyError: When item requested cannot be found.
         :param device_requested: The device ID, machine_label, or device label to search for.
         :type device_requested: string
-        :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
-        :type limiter_override: float
-        :param status: Deafult: 1 - The status of the device to check for.
+        :param limiter: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
+        :type limiter: float
+        :param status: Default: 1 - The status of the device to check for.
         :type status: int
         :return: Pointer to requested device.
         :rtype: dict
