@@ -526,15 +526,15 @@ class Auth(object):
         self.last_access = int(time())
         self.is_dirty += 1
 
-    @memoize_ttl(60)
+    @memoize_ttl(30)
     def has_access(self, platform, item, action, raise_error=None):
         """
         Check if api auth has access  to a resource / access_type combination.
 
         :param platform:
         :param item:
-        :param raise_error:
         :param action:
+        :param raise_error:
         :raise_error YomboNoAccess:
         :return:
         """

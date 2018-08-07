@@ -444,13 +444,15 @@ class Auth(object):
         self.last_access = int(time())
         self.is_dirty += 1
 
-    @memoize_ttl(60)
-    def has_access(self, platform, item, action):
+    @memoize_ttl(30)
+    def has_access(self, platform, item, action, raise_error=None):
         """
         Check if api auth has access  to a resource / access_type combination.
 
-        :param access_type:
-        :param resource:
+        :param platform:
+        :param item:
+        :param action:
+        :param raise_error:
         :return:
         """
         return self._Parent._Users.has_access(self.item_permissions, self.roles, platform, item, action, raise_error)
