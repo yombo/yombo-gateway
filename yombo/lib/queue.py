@@ -19,7 +19,7 @@ This library implements a modified version of a queue developed by Terry Jones
 import traceback
 
 # Import twisted libraries
-from twisted.internet.defer import Deferred, DeferredList
+from twisted.internet.defer import Deferred, DeferredList, inlineCallbacks, maybeDeferred
 
 #Import third party extensions
 from yombo.ext.txrdq.rdq import ResizableDispatchQueue
@@ -74,6 +74,11 @@ class Queue(YomboLibrary):
             logger.error("---------------==(Traceback)==--------------------------")
             logger.error("{trace}", trace=traceback.format_exc())
             logger.error("--------------------------------------------------------")
+
+    @inlineCallbacks
+    def run_job(self, func, *args, **kwargs):
+        results = yield maybeDeferred(func, *args, **args)
+        return results
 
     def new(self, name, worker_callback, width=None, size=None, save_on_exit=None):
         """
