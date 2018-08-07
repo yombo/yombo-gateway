@@ -28,7 +28,7 @@ try: import simplejson as json
 except ImportError: import json
 
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks, Deferred
+from twisted.internet.defer import inlineCallbacks
 from twisted.web.client import Agent
 from twisted.internet import reactor
 
