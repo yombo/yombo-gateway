@@ -71,6 +71,27 @@ class YomboWarning(YomboException):
         YomboException.__init__(self, message, errorno, name, component, html_message)
 
 
+class YomboInvalidValidation(YomboException):
+    """
+    Extends *Exception* - Invalid item.
+    """
+
+    def __init__(self, message, errorno=119, name="unknown", component="validate"):
+        """
+        Setup the YomboWarning and then pass everying to YomboException
+
+        :param message: The error message to log/display.
+        :type message: string
+        :param errorno: The error number to log/display.
+        :type errorno: int
+        :param name: Name of the library, component, or module rasing the exception.
+        :type name: string
+        :param component: What type of ojbect is calling: component, library, or module
+        :type component: string
+        """
+        YomboException.__init__(self, message, errorno, name, component)
+
+
 class Invalid(YomboException):
     """
     Extends *Exception* - Invalid item.
@@ -94,7 +115,8 @@ class Invalid(YomboException):
 
 class YomboWarningCredentails(YomboException):
     """
-    Extends *Exception* - A non-fatal warning gateway exception that is used when api credentials are needed. Used in web interface, usually.
+    Extends *Exception* - A non-fatal warning gateway exception that is used when api credentials are needed.
+    Used in web interface, usually.
     """
 
     def __init__(self, message, errorno=101, name="unknown", component="component"):
@@ -142,7 +164,6 @@ class YomboCritical(RuntimeWarning):
         Setup the YomboCritical. When caught, call the exit function of this exception to
         exit the gateway.
 
-        :todo: Add to logging once the logging library is completed.
         :param message: The error message to log/display.
         :type message: string
         :param errorno: The error number to log/display.
@@ -192,6 +213,7 @@ class YomboRestart(RuntimeWarning):
     Extends *RunningWarning* - Restarts the gateway, not a fatal exception.  
     """
     message = ""
+
     def __init__(self, message):
         """
         :param message: The error message to log/display.
@@ -224,14 +246,14 @@ class YomboNoAccess(YomboWarning):
     """
     Extends :class:`YomboWarning` - Resource accessed without required permissions.
     """
-    def __init__(self, path=None, action=None, message="No access", name="unknown", component="component", html_message=None):
+
+    def __init__(self, item_permissions=None, roles=None, platform=None, item=None, action=None,
+                 message="No access", name="unknown", component="component", html_message=None):
         """
         Setup the YomboWarning and then pass everying to YomboException
 
         :param message: The error message to log/display.
         :type message: string
-        :param errorno: The error number to log/display.
-        :type errorno: int
         :param name: Name of the library, component, or module rasing the exception.
         :type name: string
         :param component: What type of ojbect is calling: component, library, or module
@@ -239,7 +261,10 @@ class YomboNoAccess(YomboWarning):
         """
         YomboException.__init__(self, message=message, errorno=403, name=name, component=component,
                                 html_message=html_message)
-        self.path = path
+        print("Request refused: %s - %s - %s" % (platform, item, action))
+        self.item_permissions = item_permissions
+        self.roles = roles
+        self.platform = platform
         self.action = action
 
 
@@ -312,101 +337,6 @@ class YomboFileError(YomboWarning):
     Extends :class:`YomboWarning` - A missing configuration or improperly configured option.
     """
     pass
-
-
-class YomboDeviceError(Exception):
-    """
-    Extends *Exception* - A non-fatal device exception used to catch device errors.
-
-    Depending on where the error was caused, this expection will have varying
-    amounts of information.
-        
-    kwargs accepts and processes the following:
-        
-        - device_id - The device_id the error is about.
-        - errorno - An error number for further sorting/processing.
-        
-    Additionally, if this is the result of a search exception, it may also
-    contain some of the error components of the :class:`YomboFuzzySearchError`,
-    such as:
-        
-        - key: The best matching key, in this case would be the device_id (string).
-        - value: The best matchin value, in this case would be the device instance (object).
-        - ratio: The ratio as a percent of closeness. IE: .32
-        - others: Other top 5 choices in a dictionary to choose from.  Each with the
-          key, value, and ratio values as above.  The key for each dictionary is the match ratio.
-
-    :cvar device_id: (string) The device_id if known, otherwise will be None.
-    :cvar errorno: (int) An error number for further error sorting/handling.
-    :cvar key: (string) If from a fuzzy search exception, will be the best possible device_id.
-    :cvar others: (dict) If from a fuzzy search exception, will be a dictionary of other alternatives.
-    :cvar searchFor: (string) If from a fuzzy search exception, will be the requested search key.
-    :cvar ratio: (float) If from a fuzzy search exception, the match confidence in percent as .80 for 80%.
-    :cvar value: (device) If from a fuzzy search exception, will be the best possible device instance.
-    """
-    def __init__(self, message, **kwargs):
-        """
-        :param message: The error message to log/display.
-        :type message: string
-        :param kwargs: Various key/value pair arguments.
-
-        """
-        Exception.__init__(self)
-        self.message = message
-        if 'errorno' in kwargs:
-            self.errorno = kwargs['errorno']
-        else:
-            self.errorno = None
-
-        if 'device_id' in kwargs:
-            self.device_id = kwargs['device_id']
-        else:
-            self.device_id = None
-
-        if 'key' in kwargs:
-            self.searchFor = kwargs['searchFor']
-        else:
-            self.key = None
-
-        if 'key' in kwargs:
-            self.key = kwargs['key']
-        else:
-            self.key = None
-
-        if 'value' in kwargs:
-            self.value = kwargs['value']
-        else:
-            self.value = None
-
-        if 'ratio' in kwargs:
-            self.ratio = kwargs['ratio']
-        else:
-            self.ratio = None
-        
-        if 'others' in kwargs:
-            self.others = kwargs['others']
-        else:
-            self.others = None
-
-    def __str__(self):
-        """
-        Formats the exception for logging to text.
-
-        @return: A formated string of the error message.
-        @rtype: C{string}
-        """
-        output = "Device API Error: '%s'" % self.message
-        return repr(output)
-
-    def dump(self):
-        """
-        Returns the exception components as a dictionary.
-
-        @returns: The exception components as a diction.
-        @rtype: C{dict}
-        """
-        return {'message': self.message,
-                'name': self.name}
 
 
 class YomboFuzzySearchError(Exception):
