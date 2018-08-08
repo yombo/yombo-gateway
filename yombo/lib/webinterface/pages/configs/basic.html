@@ -106,12 +106,13 @@
 					<label for="master_gateway" data-toggle="tooltip" title="Select the master gateway.">Select master gateway</label>
 					<a href="#" data-toggle="modal" data-target="#gwmaster"><i class="fa fa-question fa-lg"></i></a>
 					<div class="input-group">
-						<select name="master_gateway" id="master_gateway" required class="selectpicker show-tick" title="Select...">
-							{%- if _gateways.is_master == 1 -%}
-							<option value="{{_local_gateway.gateway_id}}" style="background: #e6f7ff; color: #000;" selected>I'm the master!</option>
+						<select name="master_gateway" id="master_gateway" required
+								class="form-control selectpicker show-tick" title="Select...">
+							{%- if _gateways.is_master() == true -%}
+							<option value="{{_local_gateway.gateway_id}}" style="background: #e6f7ff; color: #000;" data-subtext="Currently a master gateway" selected>{{_local_gateway.label}}</option>
 							<option data-divider="true"></option>
 							{%- endif -%}
-							{% for id, gateway in _gateways.gateways.items() if gateway.gateway_id != _local_gateway.gateway_id or _gateways.is_master == 0 -%}
+							{% for id, gateway in _gateways.gateways.items() if gateway.gateway_id != _local_gateway.gateway_id or _gateways.is_master() == false -%}
 							<option value="{{ id }}"{% if _gateways.master_gateway() == id %} selected{% endif %}>{{ gateway.label }}
 							{% if id == _local_gateway.gateway_id %} (This gateway){%endif%}</option>
 							{%- endfor %}
@@ -402,11 +403,8 @@
       }
     );
   });
-</script>
 
-    <!-- Make the tables pretty -->
-    <script>
-$('form').on('keyup keypress', function(e) {
+  $('form').on('keyup keypress', function(e) {
   var keyCode = e.keyCode || e.which;
   if((keyCode== 13) && ($(event.target)[0]!=$("textarea")[0])) {
     if ($(event.target)[0]==$("#search_txt")[0]) {
@@ -479,7 +477,6 @@ $('form').validate({
 		var jq = window.jQuery;
 		jq('#qrcode_here').empty().qrcode(qroptions);
 
-//		$('#qrcode_here_mitch').html(qrcode(qroptions));
 	});
 	var qroptions = {
 		// render method: 'canvas', 'image' or 'div'

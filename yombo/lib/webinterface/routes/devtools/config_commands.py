@@ -1,3 +1,5 @@
+import voluptuous as vol
+
 from twisted.internet.defer import inlineCallbacks
 
 from yombo.lib.webinterface.auth import require_auth
@@ -24,6 +26,7 @@ def route_devtools_config_commands(webapp):
         @require_auth()
         @inlineCallbacks
         def page_devtools_commands_details_get(webinterface, request, session, command_id):
+            command_id = webinterface._Validate.id_string(command_id)
             try:
                 command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id,
                                                                        session=session['yomboapi_session'])
@@ -48,6 +51,7 @@ def route_devtools_config_commands(webapp):
         @require_auth()
         @inlineCallbacks
         def page_devtools_commands_delete_get(webinterface, request, session, command_id):
+            command_id = webinterface._Validate.id_string(command_id)
             try:
                 command_results = yield webinterface._YomboAPI.request(
                     'GET',
@@ -74,8 +78,10 @@ def route_devtools_config_commands(webapp):
         @require_auth()
         @inlineCallbacks
         def page_devtools_commands_delete_post(webinterface, request, session, command_id):
+            command_id = webinterface._Validate.id_string(command_id)
             try:
                 confirm = request.args.get('confirm')[0]
+                confirm = webinterface._Validate.basic_word(confirm)
             except:
                 return webinterface.redirect(request,
                                              '/devtools/config/commands/%s/details' % command_id)
@@ -120,6 +126,7 @@ def route_devtools_config_commands(webapp):
         @require_auth()
         @inlineCallbacks
         def page_devtools_commands_disable_get(webinterface, request, session, command_id):
+            command_id = webinterface._Validate.id_string(command_id)
             try:
                 command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id,
                                                                        session=session['yomboapi_session'])
@@ -140,8 +147,10 @@ def route_devtools_config_commands(webapp):
         @require_auth()
         @inlineCallbacks
         def page_devtools_commands_disable_post(webinterface, request, session, command_id):
+            command_id = webinterface._Validate.id_string(command_id)
             try:
                 confirm = request.args.get('confirm')[0]
+                confirm = webinterface._Validate.basic_word(confirm)
             except:
                 return webinterface.redirect(request,
                                              '/devtools/config/commands/%s/details' % command_id)
@@ -186,6 +195,7 @@ def route_devtools_config_commands(webapp):
         @require_auth()
         @inlineCallbacks
         def page_devtools_commands_enable_get(webinterface, request, session, command_id):
+            command_id = webinterface._Validate.id_string(command_id)
             try:
                 command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id,
                                                                        session=session['yomboapi_session'])
@@ -206,8 +216,10 @@ def route_devtools_config_commands(webapp):
         @require_auth()
         @inlineCallbacks
         def page_devtools_commands_enable_post(webinterface, request, session, command_id):
+            command_id = webinterface._Validate.id_string(command_id)
             try:
                 confirm = request.args.get('confirm')[0]
+                confirm = webinterface._Validate.basic_word(confirm)
             except:
                 return webinterface.redirect(request,
                                              '/devtools/config/commands/%s/details' % command_id)
@@ -308,6 +320,7 @@ def route_devtools_config_commands(webapp):
         @require_auth()
         @inlineCallbacks
         def page_devtools_commands_edit_get(webinterface, request, session, command_id):
+            command_id = webinterface._Validate.id_string(command_id)
             try:
                 command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id,
                                                                        session=session['yomboapi_session'])
@@ -336,6 +349,7 @@ def route_devtools_config_commands(webapp):
         @require_auth()
         @inlineCallbacks
         def page_devtools_commands_edit_post(webinterface, request, session, command_id):
+            command_id = webinterface._Validate.id_string(command_id)
             data = {
                 'voice_cmd': webinterface.request_get_default(request, 'voice_cmd', ""),
                 'label': webinterface.request_get_default(request, 'label', ""),

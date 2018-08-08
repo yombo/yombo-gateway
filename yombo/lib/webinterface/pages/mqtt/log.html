@@ -28,8 +28,8 @@
                         </thead>
                         <tbody>{% for entry in log_incoming %}
                              <tr>
-                                <td>{{ entry.message.time_sent|epoch_to_human(milliseconds=True) }}<br> <br>
-                                    {{ entry.received|epoch_to_human(milliseconds=True) }}</td>
+                                <td>{{ entry.message.time_sent|epoch_to_string(milliseconds=True) }}<br> <br>
+                                    {{ entry.received|epoch_to_string(milliseconds=True) }}</td>
                                  <td><strong>Topic:</strong>{{ entry.topic }}<br>
                                  <strong>Message ID:</strong>{{ entry.message.message_id }}<br>
                                  <strong>Source ID:</strong>{{ entry.message.source_id }}<br>
@@ -52,7 +52,7 @@
                         </thead>
                         <tbody>{% for entry in log_outgoing %}
                              <tr>
-                                <td>{{ entry.sent|epoch_to_human }}</td>
+                                <td>{{ entry.sent|epoch_to_string }}</td>
                                  <td><strong>Topic:</strong>{{ entry.topic }}<br>
                                  <strong>Message ID:</strong>{{ entry.message.message_id }}<br>
                                  <strong>Source ID:</strong>{{ entry.message.source_id }}<br>

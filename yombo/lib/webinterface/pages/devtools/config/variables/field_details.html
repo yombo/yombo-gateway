@@ -40,11 +40,11 @@
                             <label style="margin-top: 15px; margin-bottom: 0px">Weight: </label><br>
                             {{ var_field.field_weight }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Status: </label><br>
-                            {{ var_field.status|status_to_string }}<br>
+                            {{ _(var_field.status|status_to_string) }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Updated: </label><br>
-                            {{ var_field.updated_at|epoch_to_human }} ({{ var_field.created_at|epoch_to_pretty_date }}) <br>
+                            {{ var_field.updated_at|epoch_to_string }} ({{ var_field.created_at|epoch_get_age }}) <br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Created: </label><br>
-                            {{ var_field.created_at|epoch_to_human }}<br>
+                            {{ var_field.created_at|epoch_to_string }}<br>
                         </div>
                     </div>
                 </div>

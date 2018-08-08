@@ -27,23 +27,23 @@
                 <label style="margin-top: 15px; margin-bottom: 0px">Command: </label><br>
                 {{ device_command.command.label }}<br>
                 <label style="margin-top: 15px; margin-bottom: 0px">Created Time: </label><br>
-                {{ device_command.created_at|epoch_to_human }} ({{device_command.created_at|epoch_to_pretty_date}})<br>
+                {{ device_command.created_at|epoch_to_string }} ({{device_command.created_at|epoch_get_age}})<br>
                 <label style="margin-top: 15px; margin-bottom: 0px">Broadcast Time: </label><br>
-                {{ device_command.broadcast_at|epoch_to_human }} ({{device_command.broadcast_at|epoch_to_pretty_date}})<br>
+                {{ device_command.broadcast_at|epoch_to_string }} ({{device_command.broadcast_at|epoch_get_age}})<br>
                 <label style="margin-top: 15px; margin-bottom: 0px">Accepted Time: </label><br>
-                {{ device_command.accepted_at|epoch_to_human }} ({{device_command.accepted_at|epoch_to_pretty_date}})<br>
+                {{ device_command.accepted_at|epoch_to_string }} ({{device_command.accepted_at|epoch_get_age}})<br>
                 <label style="margin-top: 15px; margin-bottom: 0px">Sent Time: </label><br>
-                {{ device_command.sent_at|epoch_to_human }} ({{device_command.sent_at|epoch_to_pretty_date}})<br>
+                {{ device_command.sent_at|epoch_to_string }} ({{device_command.sent_at|epoch_get_age}})<br>
                 <label style="margin-top: 15px; margin-bottom: 0px">Received Time: </label><br>
-                {{ device_command.received_at|epoch_to_human }} ({{device_command.received_at|epoch_to_pretty_date}})<br>
+                {{ device_command.received_at|epoch_to_string }} ({{device_command.received_at|epoch_get_age}})<br>
                 <label style="margin-top: 15px; margin-bottom: 0px">Pending Time: </label><br>
-                {{ device_command.pending_at|epoch_to_human }} ({{device_command.pending_at|epoch_to_pretty_date}})<br>
+                {{ device_command.pending_at|epoch_to_string }} ({{device_command.pending_at|epoch_get_age}})<br>
                 <label style="margin-top: 15px; margin-bottom: 0px">Finished Time: </label><br>
-                {{ device_command.finished_at|epoch_to_human }} ({{device_command.finished_at|epoch_to_pretty_date}})<br>
+                {{ device_command.finished_at|epoch_to_string }} ({{device_command.finished_at|epoch_get_age}})<br>
                 <label style="margin-top: 15px; margin-bottom: 0px">Not Before Time: </label><br>
-                {{ device_command.not_before_at|epoch_to_human }} ({{device_command.not_before_at|epoch_to_pretty_date}})<br>
+                {{ device_command.not_before_at|epoch_to_string }} ({{device_command.not_before_at|epoch_get_age}})<br>
                 <label style="margin-top: 15px; margin-bottom: 0px">Not After Time: </label><br>
-                {{ device_command.not_after_at|epoch_to_human }} ({{device_command.not_after_at|epoch_to_pretty_date}})<br>
+                {{ device_command.not_after_at|epoch_to_string }} ({{device_command.not_after_at|epoch_get_age}})<br>
                 <label style="margin-top: 15px; margin-bottom: 0px">Request Id: </label><br>
                 {{ device_command.request_id }}<br>
                 <label style="margin-top: 15px; margin-bottom: 0px">Persistent Request Id: </label><br>
@@ -90,7 +90,7 @@
                     </thead>
                     <tbody>{% for history in device_command.history %}
                          <tr>
-                            <td>{{ history['time']|epoch_to_human}}</td>
+                            <td>{{ history['time']|epoch_to_string}}</td>
                             <td>{{ history['status']}}</td>
                             <td>{{ history['gid']}}</td>
                             <td>{{ history['msg']}}</td>

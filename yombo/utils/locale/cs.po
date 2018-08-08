@@ -5,7 +5,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: lokalise.co\n"
 "Project-Id-Version: Yombo Frontend\n"
-"PO-Revision-Date: 2018-08-03 01:22\n"
+"PO-Revision-Date: 2018-08-08 01:23\n"
 "Last-Translator: lokalise.co\n"
 "Language-Team: lokalise.co\n\n"
 "Language: cs\n"
@@ -1091,8 +1091,14 @@ msgstr "Close"
 msgid "ui::common::current_language"
 msgstr "Current Language"
 
+msgid "ui::common::deleted"
+msgstr "Deleted"
+
 msgid "ui::common::disable"
 msgstr "Zakázat"
+
+msgid "ui::common::disabled"
+msgstr "Zakázáno"
 
 msgid "ui::common::documentation"
 msgstr "Documentation"
@@ -1105,6 +1111,9 @@ msgstr "E-Mail"
 
 msgid "ui::common::enable"
 msgstr "Enable"
+
+msgid "ui::common::enabled"
+msgstr "Povoleno"
 
 msgid "ui::common::loading"
 msgstr "Loading"
@@ -1119,6 +1128,15 @@ msgid "ui::common::number_devices_on"
 msgid_plural "ui::common::number_devices_on"
 msgstr[0] "There is {num} device turned on"
 msgstr[1] "There are {num} devices turned on"
+
+msgid "ui::common::private"
+msgstr "Private"
+
+msgid "ui::common::public"
+msgstr "Public"
+
+msgid "ui::common::public_pending"
+msgstr "Public pending"
 
 msgid "ui::common::restart"
 msgstr "Restart"

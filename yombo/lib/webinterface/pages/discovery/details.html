@@ -40,11 +40,11 @@
                             <label style="margin-top: 15px; margin-bottom: 0px">Serial: </label><br>
                             {{ discovered_device.serial }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Discovered: </label><br>
-                            {{ discovered_device.discovered_at|epoch_to_human }}<br>
-                            {{ discovered_device.discovered_at|epoch_to_pretty_date }}<br>
+                            {{ discovered_device.discovered_at|epoch_to_string }}<br>
+                            {{ discovered_device.discovered_at|epoch_get_age }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Last Scene: </label><br>
-                            {{ discovered_device.last_seen_at|epoch_to_human }}<br>
-                            {{ discovered_device.last_seen_at|epoch_to_pretty_date }}<br>
+                            {{ discovered_device.last_seen_at|epoch_to_string }}<br>
+                            {{ discovered_device.last_seen_at|epoch_get_age }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Variables: </label><br>
                             <ul>
                                 {% for name, value in discovered_device.variables.items() %}

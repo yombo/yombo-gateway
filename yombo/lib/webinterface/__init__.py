@@ -47,7 +47,8 @@ from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 import yombo.ext.totp
 import yombo.utils
-
+import yombo.utils.converters as converters
+import yombo.utils.datetime as dt_util
 from yombo.lib.webinterface.auth import require_auth_pin, require_auth, run_first
 
 from yombo.lib.webinterface.routes.api_v1.automation import route_api_v1_automation
@@ -931,10 +932,11 @@ class WebInterface(YomboLibrary):
         self.webapp.templates.filters['yes_no'] = yombo.utils.is_yes_no
         self.webapp.templates.filters['excerpt'] = yombo.utils.excerpt
         self.webapp.templates.filters['make_link'] = yombo.utils.make_link
-        self.webapp.templates.filters['status_to_string'] = yombo.utils.status_to_string
-        self.webapp.templates.filters['public_to_string'] = yombo.utils.public_to_string
-        self.webapp.templates.filters['epoch_to_human'] = yombo.utils.epoch_to_string
-        self.webapp.templates.filters['epoch_to_pretty_date'] = self._Times.get_age # yesterday, 5 minutes ago, etc.
+        self.webapp.templates.filters['status_to_string'] = converters.status_to_string
+        self.webapp.templates.filters['public_to_string'] = converters.public_to_string
+        self.webapp.templates.filters['epoch_to_string'] = converters.epoch_to_string
+        self.webapp.templates.filters['epoch_get_age'] = dt_util.get_age  # yesterday, 5 minutes ago, etc.
+        self.webapp.templates.filters['epoch_get_age_exact'] = dt_util.get_age_exact  # yesterday, 5 minutes ago, etc.
         self.webapp.templates.filters['format_markdown'] = yombo.utils.format_markdown
         self.webapp.templates.filters['hide_none'] = yombo.utils.display_hide_none
         self.webapp.templates.filters['display_encrypted'] = self._GPG.display_encrypted

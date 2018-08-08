@@ -49,11 +49,11 @@
                             <label style="margin-top: 15px; margin-bottom: 0px">Weight: </label><br>
                             {{ group.group_weight }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Status: </label><br>
-                            {{ group.status|status_to_string }}<br>
+                            {{ _(group.status|status_to_string) }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Created: </label><br>
-                            {{ group.created_at|epoch_to_human }} ({{ group.created_at|epoch_to_pretty_date }}) <br>
+                            {{ group.created_at|epoch_to_string }} ({{ group.created_at|epoch_get_age }}) <br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Updated: </label><br>
-                            {{ group.updated_at|epoch_to_human }}<br>
+                            {{ group.updated_at|epoch_to_string }}<br>
                         </div>
                     </div>
                 </div>

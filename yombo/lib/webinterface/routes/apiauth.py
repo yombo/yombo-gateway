@@ -19,11 +19,21 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
     import json
+import voluptuous as vol
 
 from twisted.internet.defer import inlineCallbacks
 
+from yombo.core.log import get_logger
 from yombo.lib.webinterface.auth import require_auth
-from yombo.core.exceptions import YomboNoAccess
+import yombo.utils.validators as val
+
+logger = get_logger("library.webinterface.routes.apiauth")
+
+APIAUTH_SUBMIT_FIELDS = vol.Schema({
+    vol.Required('label'): val.string,
+    vol.Required('description'): val.string,
+    vol.Required('is_valid'): val.boolean,
+})
 
 def route_apiauth(webapp):
     """
@@ -64,7 +74,7 @@ def route_apiauth(webapp):
         @webapp.route('/<string:apiauth_id>/details', methods=['GET'])
         @require_auth()
         def page_lib_apiauth_details_get(webinterface, request, session, apiauth_id):
-            apiauth_id = webinterface._Validate.is_id_string(apiauth_id)
+            apiauth_id = webinterface._Validate.id_string(apiauth_id)
             if session.has_access('apiauth', apiauth_id, 'view', raise_error=False) is False:
                 webinterface.add_alert("You don't have access to edit this.", 'warning')
                 return webinterface.redirect(request, '/apiauth/index')
@@ -93,9 +103,13 @@ def route_apiauth(webapp):
             data = {
                 'label': webinterface.request_get_default(request, 'label', ""),
                 'description': webinterface.request_get_default(request, 'description', ""),
-                'permissions': webinterface.request_get_default(request, 'permissions', {}),
                 'is_valid': webinterface.request_get_default(request, 'is_valid', True),
             }
+            try:
+                APIAUTH_SUBMIT_FIELDS(data)
+            except vol.MultipleInvalid as e:
+                logger.info("Error adding apiauth key: {error}", e=e)
+
 
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/apiauth/add", "Add")
@@ -145,7 +159,7 @@ def route_apiauth(webapp):
         @webapp.route('/<string:apiauth_id>/edit', methods=['GET'])
         @require_auth()
         def page_lib_apiauth_edit_get(webinterface, request, session, apiauth_id):
-            apiauth_id = webinterface._Validate.is_id_string(apiauth_id)
+            apiauth_id = webinterface._Validate.id_string(apiauth_id)
             if session.has_access('apiauth', apiauth_id, 'edit', raise_error=False) is False:
                 webinterface.add_alert("You don't have access to edit this.", 'warning')
                 return webinterface.redirect(request, '/apiauth/index')
@@ -171,7 +185,7 @@ def route_apiauth(webapp):
         @webapp.route('/<string:apiauth_id>/edit', methods=['POST'])
         @require_auth()
         def page_lib_apiauth_edit_post(webinterface, request, session, apiauth_id):
-            apiauth_id = webinterface._Validate.is_id_string(apiauth_id)
+            apiauth_id = webinterface._Validate.id_string(apiauth_id)
             if session.has_access('apiauth', apiauth_id, 'edit', raise_error=False) is False:
                 webinterface.add_alert("You don't have access to edit this.", 'warning')
                 return webinterface.redirect(request, '/apiauth/index')
@@ -220,7 +234,7 @@ def route_apiauth(webapp):
         @webapp.route('/<string:apiauth_id>/delete', methods=['GET'])
         @require_auth()
         def page_lib_apiauth_delete_get(webinterface, request, session, apiauth_id):
-            apiauth_id = webinterface._Validate.is_id_string(apiauth_id)
+            apiauth_id = webinterface._Validate.id_string(apiauth_id)
             if session.has_access('apiauth', '*', 'delete', raise_error=False) is False:
                 webinterface.add_alert("You don't have access to delete this.", 'warning')
                 return webinterface.redirect(request, '/apiauth/%s/details' % apiauth_id)
@@ -248,7 +262,7 @@ def route_apiauth(webapp):
         @webapp.route('/<string:apiauth_id>/delete', methods=['POST'])
         @require_auth()
         def page_lib_apiauth_delete_post(webinterface, request, session, apiauth_id):
-            apiauth_id = webinterface._Validate.is_id_string(apiauth_id)
+            apiauth_id = webinterface._Validate.id_string(apiauth_id)
             if session.has_access('apiauth', '*', 'delete', raise_error=False) is False:
                 webinterface.add_alert("You don't have access to delete this.", 'warning')
                 return webinterface.redirect(request, '/apiauth/%s/details' % apiauth_id)
@@ -289,7 +303,7 @@ def route_apiauth(webapp):
         @webapp.route('/<string:apiauth_id>/rotate', methods=['GET'])
         @require_auth()
         def page_lib_apiauth_rotate_get(webinterface, request, session, apiauth_id):
-            apiauth_id = webinterface._Validate.is_id_string(apiauth_id)
+            apiauth_id = webinterface._Validate.id_string(apiauth_id)
             if session.has_access('apiauth', apiauth_id, 'edit', raise_error=False) is False:
                 webinterface.add_alert("You don't have access to edit this.", 'warning')
                 return webinterface.redirect(request, '/apiauth/%s/details' % apiauth_id)
@@ -317,7 +331,7 @@ def route_apiauth(webapp):
         @webapp.route('/<string:apiauth_id>/rotate', methods=['POST'])
         @require_auth()
         def page_lib_apiauth_rotate_post(webinterface, request, session, apiauth_id):
-            apiauth_id = webinterface._Validate.is_id_string(apiauth_id)
+            apiauth_id = webinterface._Validate.id_string(apiauth_id)
             if session.has_access('apiauth', apiauth_id, 'edit', raise_error=False) is False:
                 webinterface.add_alert("You don't have access to edit this.", 'warning')
                 return webinterface.redirect(request, '/apiauth/%s/details' % apiauth_id)

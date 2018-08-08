@@ -36,9 +36,9 @@ above or below the horizon (saturn, moon, sun, etc), and then they will transiti
 """
 # Import python libraries
 from calendar import timegm as CalTimegm
-from datetime import datetime, timedelta, tzinfo
+from datetime import datetime, timedelta
 import ephem
-import parsedatetime as pdt
+
 import time
 from typing import Any
 import pytz
@@ -51,7 +51,8 @@ from yombo.core.exceptions import InvalidArgumentError, YomboHookStopProcessing
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import is_one_zero, global_invoke_all
-from yombo.utils.decorators import static_var
+import yombo.utils.datetime as dt
+
 
 logger = get_logger('library.times')
 
@@ -433,277 +434,6 @@ class Times(YomboLibrary, object):
         Nothing to do.
         """
         pass
-
-    #############################
-    # Misc helper functions
-    #############################
-
-    def get_age(self, time: Any) -> str:
-        """
-        Get a datetime object or a int() Epoch timestamp and return a
-        pretty string like 'an hour ago', 'Yesterday', '3 months ago',
-        'just now', etc
-
-        Make sure date is not in the past, or else it won't work.
-
-        Modified from: http://stackoverflow.com/questions/1551382/user-friendly-time-format-in-python
-        """
-
-        now = datetime.now()
-        if type(time) is float:
-            time = int(round(time))
-        if type(time) is int:
-            diff = now - datetime.fromtimestamp(time)
-        elif isinstance(time, datetime):
-            diff = now - time
-        elif not time:
-            # print "using current time..."
-            diff = now - now
-        second_diff = diff.seconds
-        day_diff = diff.days
-
-        if day_diff < 0:
-            return ''
-
-        if day_diff == 0:
-            if second_diff < 5:
-                return "just now"
-            if second_diff < 60:
-                time_count = second_diff
-                time_ago = "seconds ago"
-                return "%s %s" % (time_count, time_ago)
-            if second_diff < 120:
-                return "a minute ago"
-            if second_diff < 3600:
-                time_count = second_diff // 60
-                time_ago = "minutes ago"
-                if time_count == 1:
-                    time_ago = "minute ago"
-                return "%s %s" % (time_count, time_ago)
-            if second_diff < 7200:
-                return "an hour ago"
-            if second_diff < 86400:
-                return str(second_diff // 3600) + " hours ago"
-        if day_diff == 1:
-            return "Yesterday"
-        if day_diff < 7:
-            time_count = day_diff
-            time_ago = "days ago"
-            if time_count == 1:
-                time_ago = "day ago"
-            return "%s %s" % (time_count, time_ago)
-        if day_diff < 60:
-            time_count = day_diff // 7
-            time_ago = "weeks ago"
-            if time_count == 1:
-                time_ago = "week ago"
-            return "%s %s" % (time_count, time_ago)
-        if day_diff < 365:
-            time_count = day_diff // 30
-            time_ago = "months ago"
-            if time_count == 1:
-                time_ago = "month ago"
-            return "%s %s" % (time_count, time_ago)
-        return str(day_diff // 365) + " years ago"
-
-
-
-    def utc_from_timestamp(self, timestamp: float) -> datetime:
-        """
-        Gets UTC from a provided timestamp.
-        """
-        return datetime.utcfromtimestamp(timestamp).replace(tzinfo=self.UTC)
-
-    def as_local(self, dattim: datetime) -> datetime:
-        """
-        Convert a UTC datetime object to local time zone.
-        """
-        if dattim.tzinfo == self.DEFAULT_TIME_ZONE:
-            return dattim
-        elif dattim.tzinfo is None:
-            dattim = self.UTC.localize(dattim)
-
-        return dattim.astimezone(self.DEFAULT_TIME_ZONE)
-
-    def timestamp_custom(self, value, date_format="%Y-%m-%d", local=True):
-        """
-        Create a timestamp from a value. First, attempts to convert input to a datetime
-        and then applies date_format to it.
-        """
-        try:
-            date = self.utc_from_timestamp(value)
-
-            if local:
-                date = self.as_local(date)
-
-            return date.strftime(date_format)
-        except (ValueError, TypeError):
-            # If timestamp can't be converted
-            return value
-
-    def timestamp_local(self, value):
-        """
-        Filter to convert given timestamp to local date/time.
-        """
-        try:
-            return self.as_local(
-                self.utc_from_timestamp(value)).strftime(self.DATE_STR_FORMAT)
-        except (ValueError, TypeError):
-            # If timestamp can't be converted
-            return value
-
-    def timestamp_utc(self, value):
-        """
-        Filter to convert given timestamp to UTC date/time.
-        """
-        try:
-            return self.utc_from_timestamp(value).strftime(self.DATE_STR_FORMAT)
-        except (ValueError, TypeError):
-            # If timestamp can't be converted
-            return value
-
-    def forgiving_as_timestamp(self, value):
-        """
-        Try to convert value to timestamp.
-        """
-        try:
-            return self.as_timestamp(value)
-        except (ValueError, TypeError):
-            return None
-
-    def now(self, time_zone: tzinfo = None) -> datetime:
-        """
-        Get time now in in the specified time zone.
-        """
-        return datetime.now(time_zone or self.DEFAULT_TIME_ZONE)
-
-    def utcnow(self) -> datetime:
-        """
-        Get time now in UTC time.
-
-        :return:
-        """
-        return datetime.now(self.UTC)
-
-    @static_var("calendar", pdt.Calendar())
-    def time_from_string(self, time_string: str, source_time = None) -> tuple:
-        """
-        Using the parsedatetime library, use human terms to get various dates and times. This method
-        returns epoch times UTC, but does consider the system local time zone and daylight savings times.
-
-        Also, check out :py:meth:`get_next_time() <get_next_time>` if you want the next a specific time of
-        day occurs.
-
-        .. code-block:: python
-
-            a_time = self._Times.time_from_string('tomorrow 10pm')
-            a_time = self._Times.time_from_string('1 hour ago')
-
-        :param time_string: A human time to convert to epoch, considering local timezone.
-        :type time_string: str
-        :return: A tuple. First item is EPOCH in seconds, second a datetime instance.
-        :rtype: tuple
-        """
-        if source_time is None:
-            source_time = datetime.fromtimestamp(time.time())
-        if isinstance(time_string, str) is False:
-            time_string = str(time_string) + "s"
-        # print("aaaa 111: %s (%s)", (time_string, type(time_string)))
-        time_struct, what = self.time_from_string.calendar.parse(time_string, source_time)
-        # print("aaaa 112: %s (%s)" % (time_struct, type(time_struct)))
-
-        dt = None
-
-        # what was returned (see http://code-bear.com/code/parsedatetime/docs/)
-        # 0 = failed to parse
-        # 1 = date (with current time, as a struct_time)
-        # 2 = time (with current date, as a struct_time)
-        # 3 = datetime
-        if what in (1, 2, 3):
-            # result is struct_time
-            dt = datetime(*time_struct[:6])
-        elif what == 3:
-            # result is a datetime
-            dt = time_struct
-        return (int(dt.strftime('%s')), dt)
-
-    @static_var("calendar", pdt.Calendar())
-    def get_next_time(self, some_time, max=None):
-        """
-        This is used when trying to get the next time it's a specific time. If it's passed for today, it
-        prepends 'tomorrow' to the request to get tomorrow's specific time.
-
-        .. code-block:: python
-
-            a_time = self._Times.get_next_time('1:15pm')
-
-        :param some_time: A human time to convert to epoch, considering local timezone.
-        :type some_time: str
-        :return: A tuple. First item is EPOCH in seconds, second a datetime instance.
-        :rtype: tuple
-        """
-        a_time = self.time_from_string(some_time)
-        cur_time = time.time()
-        if a_time[0] < cur_time:
-            a_time = self.time_from_string("tomorrow " + some_time)
-
-        if isinstance(max, int) and max > 0:
-            max_time = cur_time + max
-            if a_time > max_time:
-                return a_time
-            else:
-                return max_time
-        return a_time
-
-    def get_time_zone(self, time_zone_str: str):
-        """
-        Get time zone from string. Return None if unable to determine.
-
-        Async friendly.
-        :param time_zone_str: String to get timezone from.
-        :return: pytz timezone.
-        :rtype: timezone
-        """
-        try:
-            return pytz.timezone(time_zone_str)
-        except pytz.exceptions.UnknownTimeZoneError:
-            return None
-
-    def day_of_week(self, year, month, day):
-        """
-        Get the day of the week.
-        From: http://stackoverflow.com/questions/9847213/which-day-of-week-given-a-date-python
-
-        :param year: Any year after 1700
-        :type year: int
-        :param month: The month
-        :type month: int
-        :param day: The day
-        :type day: int
-        :return: Day of the week in english.
-        :rtype: str
-        """
-        offset = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
-        week = ['Sunday',
-                'Monday',
-                'Tuesday',
-                'Wednesday',
-                'Thursday',
-                'Friday',
-                'Saturday']
-        afterFeb = 1
-        if month > 2: afterFeb = 0
-        aux = year - 1700 - afterFeb
-        # dayOfWeek for 1700/1/1 = 5, Friday
-        dayOfWeek = 5
-        # partial sum of days betweem current date and 1700/1/1
-        dayOfWeek += (aux + afterFeb) * 365
-        # leap year correction
-        dayOfWeek += aux / 4 - aux / 100 + (aux + 100) / 400
-        # sum monthly and day offsets
-        dayOfWeek += offset[month - 1] + (day - 1)
-        dayOfWeek %= 7
-        return dayOfWeek, week[dayOfWeek]
 
     ### Functions dealing with celestial objects
 
@@ -1108,7 +838,7 @@ class Times(YomboLibrary, object):
             self.is_weekend = True
 
         self.day_of_week = day_map[day_number]
-        reactor.callLater(self.get_next_time('12:00am')[0] - time.time(), self._setup_weekday_events)
+        reactor.callLater(dt.get_next_time('12:00am')[0] - time.time(), self._setup_weekday_events)
 
     def _send_now_night(self):
         """

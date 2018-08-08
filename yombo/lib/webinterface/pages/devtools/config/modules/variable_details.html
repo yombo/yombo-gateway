@@ -57,7 +57,7 @@
                                                          <a class="btn btn-sm btn-danger" href="/devtools/config/variables/group/{{ variable_group.id}}/delete">Delete</a>
                                                          <br>
                                                          <label>Label:</label> {{ variable_group.group_label }}<br>
-                                                         <label>Status:</label> <span class="{% if variable_group.status != 1 %}label-warning{% endif %}">{{ variable_group.status|status_to_string }}</span><br>
+                                                         <label>Status:</label> <span class="{% if variable_group.status != 1 %}label-warning{% endif %}">{{ _(variable_group.status|status_to_string) }}</span><br>
                                                          <label>Description:</label> {{ variable_group.group_description }}
                                                      </td>
                                                      <td>
@@ -101,7 +101,7 @@
                                                          <a class="btn btn-sm btn-danger" href="/devtools/config/variables/group/{{ variable_group.id}}/delete">Delete</a>
                                                          <br>
                                                          <label>Label:</label> {{ variable_group.group_label }}<br>
-                                                         <label>Status:</label> <span class="{% if variable_group.status != 1 %}label-warning{% endif %}">{{ variable_group.status|status_to_string }}</span><br>
+                                                         <label>Status:</label> <span class="{% if variable_group.status != 1 %}label-warning{% endif %}">{{ _(variable_group.status|status_to_string) }}</span><br>
                                                          <label>Description:</label> {{ variable_group.group_description }}
                                                      </td>
                                                      <td>
@@ -145,7 +145,7 @@
                                                          <a class="btn btn-sm btn-danger" href="/devtools/config/variables/group/{{ variable_group.id}}/delete">Delete</a>
                                                          <br>
                                                          <label>Label:</label> {{ variable_group.group_label }}<br>
-                                                         <label>Status:</label> <span class="{% if variable_group.status != 1 %}label-warning{% endif %}">{{ variable_group.status|status_to_string }}</span><br>
+                                                         <label>Status:</label> <span class="{% if variable_group.status != 1 %}label-warning{% endif %}">{{ _(variable_group.status|status_to_string) }}</span><br>
                                                          <label>Description:</label> {{ variable_group.group_description }}
                                                      </td>
                                                      <td>

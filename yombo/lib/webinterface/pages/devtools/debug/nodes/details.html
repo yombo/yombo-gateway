@@ -43,11 +43,11 @@
                                 <label style="margin-top: 15px; margin-bottom: 0px">Weight: </label><br>
                                 {{ node.weight }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Status: </label><br>
-                                {{ node.status|status_to_string }}<br>
+                                {{ _(node.status|status_to_string) }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Updated: </label><br>
-                                {{ node.updated_at|epoch_to_human }} ({{ node.updated_at|epoch_to_pretty_date }}) <br>
+                                {{ node.updated_at|epoch_to_string }} ({{ node.updated_at|epoch_get_age }}) <br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Created: </label><br>
-                                {{ node.created_at|epoch_to_human }}<br>
+                                {{ node.created_at|epoch_to_string }}<br>
                             </div>
                         </div>
                     </div>

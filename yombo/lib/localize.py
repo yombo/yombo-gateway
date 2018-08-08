@@ -40,7 +40,7 @@ import yombo.ext.polib as polib
 # Import Yombo libraries
 from yombo.core.library import YomboLibrary
 import yombo.core.settings as settings
-from yombo.utils import unit_convert
+from yombo.utils.converters import unit_convert
 from yombo.core.log import get_logger
 
 logger = get_logger("library.localize")

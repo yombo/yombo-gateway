@@ -52,19 +52,19 @@
                             <label style="margin-top: 15px; margin-bottom: 0px">Development Branch: </label><br>
                             {{ module.dev_branch }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Status: </label><br>
-                            {% if module.status|status_to_string == "Disabled"
+                            {% if module.status|status_to_string == "ui::common::disabled"
                             %}<span class="alert-warning">Disabled</span>{%
-                            elif module.status|status_to_string == "Deleted"
+                            elif module.status|status_to_string == "ui::common::deleted"
                             %}<span class="alert-warning">Deleted</span>{%
                             else
-                            %}{{module.status|status_to_string}}{% endif %}
+                            %}{{ _(module.status|status_to_string) }}{% endif %}
                             <br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Public: </label><br>
-                            {{ module.public|public_to_string }}<br>
+                            {{ _(module.public|public_to_string) }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Updated: </label><br>
-                            {{ module.updated_at|epoch_to_human }} ({{ module.updated_at|epoch_to_pretty_date }})<br>
+                            {{ module.updated_at|epoch_to_string }} ({{ module.updated_at|epoch_get_age }})<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Created: </label><br>
-                            {{ module.created_at|epoch_to_human }}<br>
+                            {{ module.created_at|epoch_to_string }}<br>
                         </div>
                     </div>
                 </div>
@@ -157,12 +157,12 @@
                                     </thead>
                                     <tbody>{% for variable_group in module.variable_groups %}
                                          <tr>
-                                             <td><a href="/devtools/config/variables/group/{{ variable_group.id }}/details">{{ variable_group.group_label }}</a> ( {% if variable_group.status|status_to_string == "Disabled"
+                                             <td><a href="/devtools/config/variables/group/{{ variable_group.id }}/details">{{ variable_group.group_label }}</a> ( {% if variable_group.status|status_to_string == "ui::common::disabled"
                             %}<span class="alert-warning">Disabled</span>{%
-                            elif variable_group.status|status_to_string == "Deleted"
+                            elif variable_group.status|status_to_string == "ui::common::deleted"
                             %}<span class="alert-warning">Deleted</span>{%
                             else
-                            %}{{variable_group.status|status_to_string}}{% endif %})</td>
+                            %}{{ _(variable_group.status|status_to_string) }}{% endif %})</td>
                                              <td>{% for variable_field in module.variable_fields %}
                                                  <ul>
                                                  {% if variable_field.group_id == variable_group.id %}

@@ -105,7 +105,7 @@
                                 <label style="margin-top: 15px; margin-bottom: 0px">Is Valid: </label><br>
                                 {{ rule.is_valid }} - {{ rule.is_valid_message }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Status: </label><br>
-                                {{ rule.effective_status()|status_to_string }}<br>
+                                {{ _(rule.effective_status()|status_to_string) }}<br>
                             </div>
                             <div class="col-lg-8">
                                 <label style="margin-top: 0px; margin-bottom: 0px">Description: </label><br>

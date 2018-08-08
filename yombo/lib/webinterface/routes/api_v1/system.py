@@ -7,7 +7,8 @@ from time import time
 
 from yombo.lib.webinterface.auth import require_auth, run_first
 from yombo.lib.webinterface.routes.api_v1.__init__ import return_good, return_not_found, return_error, return_unauthorized
-from yombo.utils import epoch_to_string, bytes_to_unicode, random_string
+from yombo.utils import random_string
+from yombo.utils.converters import epoch_to_string
 
 def route_api_v1_system(webapp):
     with webapp.subroute("/api/v1") as webapp:

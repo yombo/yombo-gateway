@@ -107,7 +107,7 @@
                                 <label style="margin-top: 0px; margin-bottom: 0px">Description: </label><br>
                                 {{ scene.description() }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Status: </label><br>
-                                {{ scene.effective_status()|status_to_string }}<br>
+                                {{ _(scene.effective_status()|status_to_string) }}<br>
                             </div>
                         </div>
                     </div>

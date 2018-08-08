@@ -10,8 +10,8 @@ from twisted.internet.defer import inlineCallbacks
 
 from yombo.lib.webinterface.auth import require_auth
 from yombo.lib.webinterface.routes.api_v1.__init__ import return_good, return_not_found, return_error, return_unauthorized
-from yombo.utils import epoch_to_string, bytes_to_unicode
 from yombo.constants import CONTENT_TYPE_JSON
+from yombo.utils.converters import epoch_to_string
 
 def route_api_v1_statistics(webapp):
     with webapp.subroute("/api/v1") as webapp:

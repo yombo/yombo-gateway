@@ -49,8 +49,8 @@
                                             <td>{{ section }}</td>
                                             <td>{{ item }}</td>
                                             <td>{{ data['value']|excerpt(25) }}</td>
-                                            <td>{{ data['updated_at']|epoch_to_human }}</td>
-                                            <td>{{ data['created_at']|epoch_to_human }}</td>
+                                            <td>{{ data['updated_at']|epoch_to_string }}</td>
+                                            <td>{{ data['created_at']|epoch_to_string }}</td>
                                             <td>{{ data['writes'] }}</td>
                                             <td>{{ data['reads'] }}</td>
                                             <td>Edit, Delete</td>

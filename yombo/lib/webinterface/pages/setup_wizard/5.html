@@ -67,7 +67,7 @@
                             <option disabled>Select Existing:</option>
                             <option data-divider="true"></option>
                             {% for id in gpg_existing %}
-                            <option value="{{ id }}"{% if gpg_selected == id %} selected{% endif %}>Size: {{ gpg_existing[id]['length'] }} Created: {{ gpg_existing[id]['created']|epoch_to_human }} - ID: {{ id }}</option>
+                            <option value="{{ id }}"{% if gpg_selected == id %} selected{% endif %}>Size: {{ gpg_existing[id]['length'] }} Created: {{ gpg_existing[id]['created']|epoch_to_string }} - ID: {{ id }}</option>
                             {% endfor %}
                             <option data-divider="true"></option>
                             {% endif %}

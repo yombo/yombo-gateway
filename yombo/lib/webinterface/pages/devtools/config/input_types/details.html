@@ -43,13 +43,13 @@
                             <label style="margin-top: 15px; margin-bottom: 0px">Platform: </label><br>
                             {{ input_type.platform }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Status: </label><br>
-                            {{ input_type.status|status_to_string }}<br>
+                            {{ _(input_type.status|status_to_string) }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Public: </label><br>
-                            {{ input_type.public|public_to_string }}<br>
+                            {{ _(input_type.public|public_to_string) }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Updated: </label><br>
-                            {{ input_type.updated_at|epoch_to_human }} ({{ input_type.updated_at|epoch_to_pretty_date }}) <br>
+                            {{ input_type.updated_at|epoch_to_string }} ({{ input_type.updated_at|epoch_get_age }}) <br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Created: </label><br>
-                            {{ input_type.created_at|epoch_to_human }}<br>
+                            {{ input_type.created_at|epoch_to_string }}<br>
                         </div>
                     </div>
                 </div>

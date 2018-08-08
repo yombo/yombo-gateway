@@ -45,11 +45,12 @@ from time import time
 from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
+import yombo.core.settings as settings
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 import yombo.utils
-import yombo.core.settings as settings
+import yombo.utils.converters as converters
 
 SUPPORTED_DISTS = platform._supported_dists + ('arch', 'mageia', 'meego', 'vmware', 'bluewhite64',
                      'slamd64', 'ovs', 'system', 'mint', 'oracle')
@@ -474,7 +475,7 @@ class Atoms(YomboLibrary):
                 return value
 
         elif value_type == 'epoch':
-            return yombo.utils.epoch_to_string(value)
+            return converters.epoch_to_string(value)
         else:
             return value
 

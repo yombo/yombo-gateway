@@ -39,9 +39,9 @@
                             <label style="margin-top: 15px; margin-bottom: 0px">Maximum Value: </label><br>
                             {{ device_command_input.value_max }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Updated: </label><br>
-                            {{ device_command_input.updated_at|epoch_to_human }} ({{ device_command_input.updated_at|epoch_to_pretty_date }}) <br>
+                            {{ device_command_input.updated_at|epoch_to_string }} ({{ device_command_input.updated_at|epoch_get_age }}) <br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Created: </label><br>
-                            {{ device_command_input.created_at|epoch_to_human }}<br>
+                            {{ device_command_input.created_at|epoch_to_string }}<br>
                         </div>
                     </div>
                 </div>
@@ -61,13 +61,13 @@
                             <label style="margin-top: 15px; margin-bottom: 0px">Category: </label><br>
                             {{ input_type.category_label }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Status: </label><br>
-                            {{ input_type.status|status_to_string }}<br>
+                            {{ _(input_type.status|status_to_string) }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Public: </label><br>
-                            {{ input_type.public|public_to_string }}<br>
+                            {{ _(input_type.public|public_to_string) }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Updated: </label><br>
-                            {{ input_type.updated_at|epoch_to_human }} ({{ input_type.updated_at|epoch_to_pretty_date }}) <br>
+                            {{ input_type.updated_at|epoch_to_string }} ({{ input_type.updated_at|epoch_get_age }}) <br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Created: </label><br>
-                            {{ input_type.created_at|epoch_to_human }}<br>
+                            {{ input_type.created_at|epoch_to_string }}<br>
                         </div>
                     </div>
                 </div>
@@ -87,13 +87,13 @@
                             <label style="margin-top: 15px; margin-bottom: 0px">Voice Command: </label><br>
                             {{ command.voice_cmd }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Status: </label><br>
-                            {{ command.status|status_to_string }}<br>
+                            {{ _(command.status|status_to_string) }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Public: </label><br>
-                            {{ command.public|public_to_string }}<br>
+                            {{ _(command.public|public_to_string) }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Updated: </label><br>
-                            {{ command.updated_at|epoch_to_human }} ({{ command.updated_at|epoch_to_pretty_date }}) <br>
+                            {{ command.updated_at|epoch_to_string }} ({{ command.updated_at|epoch_get_age }}) <br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Created: </label><br>
-                            {{ command.created_at|epoch_to_human }}<br>
+                            {{ command.created_at|epoch_to_string }}<br>
                         </div>
                     </div>
                 </div>

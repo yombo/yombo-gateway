@@ -45,11 +45,11 @@
                             <label style="margin-top: 15px; margin-bottom: 0px">Is Valid: </label><br>
                             {{ apiauth.is_valid }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Last Access: </label><br>
-                            {{ apiauth.last_access|epoch_to_human }}<br>
+                            {{ apiauth.last_access|epoch_to_string }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Updated: </label><br>
-                            {{ apiauth.updated_at|epoch_to_human }}<br>
+                            {{ apiauth.updated_at|epoch_to_string }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Created: </label><br>
-                            {{ apiauth.created_at|epoch_to_human }}<br>
+                            {{ apiauth.created_at|epoch_to_string }}<br>
                         </div>
                     </div>
                 </div>

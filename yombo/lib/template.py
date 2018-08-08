@@ -31,9 +31,12 @@ from twisted.internet.defer import inlineCallbacks
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
-from yombo.utils import (random_string, is_true_false, forgiving_float, forgiving_round, multiply, logarithm,
-                         fail_when_undefined, strptime, is_yes_no, status_to_string, public_to_string, epoch_to_string,
-                         excerpt, make_link, format_markdown, display_hide_none)
+from yombo.utils import (forgiving_float, forgiving_round, multiply, logarithm, fail_when_undefined, strptime,
+                         is_yes_no, excerpt, make_link, format_markdown, display_hide_none)
+
+import yombo.utils.datetime as dt
+import yombo.utils.converters as converters
+#status_to_string, public_to_string, epoch_to_string
 
 logger = get_logger("library.templates")
 logger_runtime = get_logger("library.templates.runtime")
@@ -54,14 +57,13 @@ class Template(YomboLibrary, object):
     """
     def _load_(self, **kwargs):
         self.environment = TemplateEnvironment()
-        self.environment.globals['as_timestamp'] = self._Times.forgiving_as_timestamp
+        self.environment.globals['as_timestamp'] = dt.forgiving_as_timestamp
         self.environment.globals['float'] = forgiving_float
         self.environment.globals['log'] = logarithm
-        self.environment.globals['now'] = self._Times.now
-        self.environment.globals['relative_time'] = self._Times.get_age
+        self.environment.globals['now'] = dt.now
         self.environment.globals['sleep'] = sleep
         self.environment.globals['strptime'] = strptime
-        self.environment.globals['utcnow'] = self._Times.utcnow
+        self.environment.globals['utcnow'] = dt.utcnow
 
         # self.environment.globals['yombo'] = self
         self.environment.globals['local_gateway'] = self._Gateways.get_local()
@@ -93,6 +95,7 @@ class Template(YomboLibrary, object):
         self.environment.globals['statistics'] = self._Statistics
         self.environment.globals['tasks'] = self._Tasks
         self.environment.globals['times'] = self._Times
+        self.environment.globals['users'] = self._Users
         self.environment.globals['variables'] = self._Variables
         self.environment.globals['validate'] = self._Validate
         # self.environment.globals['voicecmds'] = self._VoiceCmds
@@ -104,9 +107,9 @@ class Template(YomboLibrary, object):
         self.environment.filters['round'] = forgiving_round
         self.environment.filters['multiply'] = multiply
         self.environment.filters['log'] = logarithm
-        self.environment.filters['timestamp_custom'] = self._Times.timestamp_custom
-        self.environment.filters['timestamp_local'] = self._Times.timestamp_local
-        self.environment.filters['timestamp_utc'] = self._Times.timestamp_utc
+        self.environment.filters['timestamp_custom'] = dt.timestamp_custom
+        self.environment.filters['timestamp_local'] = dt.timestamp_local
+        self.environment.filters['timestamp_utc'] = dt.timestamp_utc
         self.environment.filters['is_defined'] = fail_when_undefined
         self.environment.filters['max'] = max
         self.environment.filters['min'] = min
@@ -114,10 +117,11 @@ class Template(YomboLibrary, object):
         self.environment.filters['yes_no'] = is_yes_no
         self.environment.filters['excerpt'] = excerpt
         self.environment.filters['make_link'] = make_link
-        self.environment.filters['status_to_string'] = status_to_string
-        self.environment.filters['public_to_string'] = public_to_string
-        self.environment.filters['epoch_to_human'] = epoch_to_string
-        self.environment.filters['epoch_to_pretty_date'] = self._Times.get_age # yesterday, 5 minutes ago, etc.
+        self.environment.filters['status_to_string'] = converters.status_to_string
+        self.environment.filters['public_to_string'] = converters.public_to_string
+        self.environment.filters['epoch_to_string'] = converters.epoch_to_string
+        self.environment.filters['epoch_get_age'] = dt.get_age  # yesterday, 5 minutes ago, etc.
+        self.environment.filters['epoch_get_age_exact'] = dt.get_age_exact  # yesterday, 5 minutes ago, etc.
         self.environment.filters['format_markdown'] = format_markdown
         self.environment.filters['hide_none'] = display_hide_none
         self.environment.filters['display_encrypted'] = self._GPG.display_encrypted

@@ -43,13 +43,13 @@
                             <label style="margin-top: 15px; margin-bottom: 0px">Category: </label><br>
                             {{ category.label }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Status: </label><br>
-                            {{ device_type.status|status_to_string }}<br>
+                            {{ _(device_type.status|status_to_string) }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Public: </label><br>
-                            {{ device_type.public|public_to_string }}<br>
+                            {{ _(device_type.public|public_to_string) }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Updated: </label><br>
-                            {{ device_type.updated_at|epoch_to_human }} ({{ device_type.updated_at|epoch_to_pretty_date }}) <br>
+                            {{ device_type.updated_at|epoch_to_string }} ({{ device_type.updated_at|epoch_get_age }}) <br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Created: </label><br>
-                            {{ device_type.created_at|epoch_to_human }}<br>
+                            {{ device_type.created_at|epoch_to_string }}<br>
                         </div>
                     </div>
                 </div>

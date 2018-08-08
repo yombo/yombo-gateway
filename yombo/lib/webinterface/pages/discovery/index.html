@@ -55,8 +55,8 @@
                                      <td>{{ device.mfr }}</td>
                                      <td>{{ device.model }}</td>
                                      <td>{{ device.serial }}</td>
-                                     <td>{{ device.discovered_at|epoch_to_human }}</td>
-                                     <td>{{ device.last_seen_at|epoch_to_pretty_date }}</td>
+                                     <td>{{ device.discovered_at|epoch_to_string }}</td>
+                                     <td>{{ device.last_seen_at|epoch_get_age }}</td>
                                      <td>
                                          {% if device.yombo_device == None %}
                                          <form action="/devices/add/{{device.device_type.device_type_id}}" method="post">
@@ -100,8 +100,8 @@
                                      <td>{{ device.mfr }}</td>
                                      <td>{{ device.model }}</td>
                                      <td>{{ device.serial }}</td>
-                                     <td>{{ device.discovered_at|epoch_to_human }}</td>
-                                     <td>{{ device.last_seen_at|epoch_to_pretty_date }}</td>
+                                     <td>{{ device.discovered_at|epoch_to_string }}</td>
+                                     <td>{{ device.last_seen_at|epoch_get_age }}</td>
                                      <td>
                                          {% if device.yombo_device == None %}
                                          <form action="/devices/add/{{device.device_type.device_type_id}}" method="post">

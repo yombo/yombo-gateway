@@ -51,15 +51,15 @@
                                 <select title="Select stats to view..." data-live-search="true" class="selectpicker show-tick form-control" required name="bucket_name" id="bucket_name">
                                 <optgroup label="Devices">
                                 {% for record in device_stats %}
-                                        <option value="{{record.bucket_name}}" data-subtext="({{record.count}}) {{record.bucket_time_min|epoch_to_human}} -> {{record.bucket_time_max|epoch_to_human}}">{{record.bucket_name}}</option>
+                                        <option value="{{record.bucket_name}}" data-subtext="({{record.count}}) {{record.bucket_time_min|epoch_to_string}} -> {{record.bucket_time_max|epoch_to_string}}">{{record.bucket_name}}</option>
                                 {%- endfor %}
                                 <optgroup label="Energy">
                                 {% for record in energy_stats %}
-                                        <option value="{{record.bucket_name}}" data-subtext="({{record.count}}) {{record.bucket_time_min|epoch_to_human}} -> {{record.bucket_time_max|epoch_to_human}}">{{record.bucket_name}}</option>
+                                        <option value="{{record.bucket_name}}" data-subtext="({{record.count}}) {{record.bucket_time_min|epoch_to_string}} -> {{record.bucket_time_max|epoch_to_string}}">{{record.bucket_name}}</option>
                                 {%- endfor %}
                                 <optgroup label="System">
                                 {% for record in system_stats %}
-                                        <option value="{{record.bucket_name}}" data-subtext="({{record.count}}) {{record.bucket_time_min|epoch_to_human}} -> {{record.bucket_time_max|epoch_to_human}}">{{record.bucket_name}}</option>
+                                        <option value="{{record.bucket_name}}" data-subtext="({{record.count}}) {{record.bucket_time_min|epoch_to_string}} -> {{record.bucket_time_max|epoch_to_string}}">{{record.bucket_name}}</option>
                                 {%- endfor %}
                                 </select>
                             </div>

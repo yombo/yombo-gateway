@@ -19,7 +19,6 @@ except ImportError:
     import json
 
 import base64
-import binascii
 from datetime import datetime
 from difflib import SequenceMatcher
 from docutils.core import publish_parts
@@ -28,18 +27,13 @@ import inspect
 import markdown
 import math
 import msgpack
-import netifaces
-import netaddr
 import os
 import pkg_resources
-from pkg_resources import DistributionNotFound, VersionConflict
+from pkg_resources import DistributionNotFound
 import random
 import re
-import socket
 import string
-from struct import pack as struct_pack, unpack as struct_unpack
 import sys
-from time import strftime, localtime
 import zlib
 
 from twisted.internet import reactor
@@ -323,57 +317,6 @@ def instance_properties(obj, startswith_filter=None, endwith_filter=None):
     return pr
 
 
-def translate_int_value(value, fromMin, fromMax, toMin, toMax):
-    """
-    Used to translate one scale to another. For example, a light can have 255 steps, but
-    we want to display this in percent to a human. This function would return 50:
-    .. code-block:: python
-
-       human_status = translate_int_value(127.5, 0, 255, 0, 100)
-
-    From: https://stackoverflow.com/questions/1969240/mapping-a-range-of-values-to-another
-    :param value: The value to translate
-    :param fromMin: The 'from' range, starting position.
-    :param fromMax: The 'from' range, ending position.
-    :param toMin: The 'to' range, starting position.
-    :param toMax: The 'to' range, ending position.
-    :return:
-    """
-    # Figure out how 'wide' each range is
-    leftSpan = fromMax - fromMin
-    rightSpan = toMax - toMin
-
-    # Convert the left range into a 0-1 range (float)
-    valueScaled = float(value - fromMin) / float(leftSpan)
-
-    # Convert the 0-1 range into a value in the right range.
-    return int(round(toMin + (valueScaled * rightSpan)))
-
-
-def convert_temp(i_temp):
-    """
-    Convert a temperature from celsius to fahrenheit and back. Just input a number followed by C or F.
-
-    Example: 32F  returns a tuple of (0,C)
-
-    Useful when you're too lazy to to use unit_convert below.
-
-    :param i_temp: A temperature to convert
-    :type i_temp: str
-    :return: A tuple containing the value and new unit type
-    :rtype: tuple
-    """
-    degree = float(i_temp[:-1])
-    i_convention = i_temp[-1]
-
-    if i_convention.upper() == "C":
-        return unit_convert('c_f', degree)
-    elif i_convention.upper() == "F":
-        return unit_convert('f_c', degree)
-    else:
-        raise YomboWarning("Invalid temperature requested.")
-
-
 def pattern_search(look_for, items):
     """
     Allows searching thru a list of items (a dict or list). For example, a list of:
@@ -381,7 +324,7 @@ def pattern_search(look_for, items):
     ['yombo.status.hello', 'yombo.status.bye', 'visitor.livingroom.hello']
 
     You can search
-    using #'s for whilecards consuming any number of spaces between or +'s as a wildcard for only
+    using #'s for wildcards consuming any number of spaces between or +'s as a wildcard for only
     on work.  For example, a search of "#.hello" would result in:
 
     ['yombo.status.hello', 'visitor.livingroom.hello']
@@ -407,54 +350,6 @@ def pattern_search(look_for, items):
             if result is not None:
                 out_list.append(item)
     return out_list
-
-
-def status_to_string(status):
-    if status == 0:
-        return 'Disabled'
-    elif status == 1:
-        return 'Enabled'
-    elif status == 2:
-        return 'Deleted'
-    else:
-        return 'Unknown'
-
-
-def public_to_string(pubic_value):
-    pubic_value = int(pubic_value)
-    if pubic_value == 0:
-        return 'Private'
-    elif pubic_value == 1:
-        return 'Public Pending'
-    elif pubic_value == 2:
-        return 'Public'
-    else:
-        return 'Unknown'
-
-
-def epoch_to_string(the_time, format_string=None, milliseconds=None):
-    if the_time is None:
-        return "None"
-    if isinstance(the_time, str):
-        try:
-            the_time = int(the_time)
-        except:
-            try:
-                the_time = float(the_time)
-            except:
-                return the_time
-
-    if milliseconds is True:
-        format_string = '%b %d %Y %H:%M:%S.%%s %Z'
-        return strftime(format_string, localtime(the_time)) % str(the_time-int(the_time))[2:5]
-    else:
-        format_string = '%b %d %Y %H:%M:%S %Z'
-        return strftime(format_string, localtime(the_time))
-
-
-def convert_to_seconds(s):
-    seconds_per_unit = {"s": 1, "m": 60, "h": 3600, "d": 86400, "w": 604800}
-    return int(s[:-1]) * seconds_per_unit[s[-1]]
 
 
 def split(the_string, delimiter=','):
@@ -981,195 +876,11 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operati
             best_ratio,
             sorted_list[:10])
 
-#
-# def get_command(commandSearch):
-#     """
-#     Returns a pointer to a command.
-#
-#     .. note::
-#
-#        This shouldn't be used by modules, instead, use the pre-defined pointer
-#        *self._Commands*, see: :py:func:`get_commands`.
-#
-#     :param commandSearch: Search for a given command, by cmdUUID or label. cmdUUID is preferred.
-#     :type commandSearch: string - Command UUID or Command Label.
-#     :return: The pointer to a single command.
-#     :rtype: object
-#     """
-#     return get_command('yombo.gateway.lib.commands')._search(commandSearch)
-
 
 def get_method_definition_level(meth):
     for cls in inspect.getmro(meth.__self__.__class__):
         if meth.__name__ in cls.__dict__: return str(cls)
     return None
-
-
-@memoize_ttl(3600)
-def get_local_network_info(ethernet_name = None):
-    """
-    Collects various information about the local network.
-    From: http://stackoverflow.com/questions/3755863/trying-to-use-my-subnet-address-in-python-code
-    :return:
-    """
-    ifaces = netifaces.interfaces()
-    # => ['lo', 'eth0', 'eth1']
-
-    if ethernet_name is not None:
-        myiface = ethernet_name
-    else:
-        gws = netifaces.gateways()
-        myiface = gws['default'][netifaces.AF_INET][1]
-
-    gws = netifaces.gateways()
-    gateway_v4 = list(gws['default'].values())[0][0]
-
-    addrs = netifaces.ifaddresses(myiface)
-    # {2: [{'addr': '192.168.1.150',
-    #             'broadcast': '192.168.1.255',
-    #             'netmask': '255.255.255.0'}],
-    #   10: [{'addr': 'fe80::21a:4bff:fe54:a246%eth0',
-    #                'netmask': 'ffff:ffff:ffff:ffff::'}],
-    #   17: [{'addr': '00:1a:4b:54:a2:46', 'broadcast': 'ff:ff:ff:ff:ff:ff'}]}
-
-    # Get ipv4 stuff
-    ipinfo = addrs[socket.AF_INET][0]
-    address_v4 = ipinfo['addr']
-    netmask_v4 = ipinfo['netmask']
-    # Create ip object and get
-    cidr_v4 = netaddr.IPNetwork('%s/%s' % (address_v4, netmask_v4))
-    # => IPNetwork('192.168.1.150/24')
-    network_v4 = cidr_v4.network
-
-    ipinfo = addrs[socket.AF_INET6][0]
-    address_v6 = ipinfo['addr'].split('%')[0]
-    netmask_v6 = ipinfo['netmask']
-    # Create ip object and get
-    # cidr_v6 = netaddr.IPNetwork('%s/%s' % (address_v6, netmask_v6))
-    # => IPNetwork('192.168.1.150/24')
-    # network_v6 = cidr_v6.network
-
-
-    # => IPAddress('192.168.1.0')
-    return {'ipv4':
-                {'address': str(address_v4), 'netmask': str(netmask_v4), 'cidr': str(cidr_v4),
-                 'network': str(network_v4), 'gateway': str(gateway_v4)},
-            'ipv6':
-                {'address': str(address_v6), 'netmask': str(netmask_v6), 'gateway': str("")},
-            }
-
-
-@memoize_ttl(600)
-def ip_addres_in_local_network(ip_address):
-    local_network = get_local_network_info()
-    try:
-        if ip_address_in_network(ip_address, local_network['ipv4']['cidr']):
-            return True
-    except:
-        pass
-    try:
-        if ip_address_in_network(ip_address, local_network['ipv6']['cidr']):
-            return True
-    except:
-        pass
-    return False
-
-
-@memoize_ttl(600)
-def ip_address_in_network(ip_address, subnetwork):
-    """
-    from: https://diego.assencio.com/?index=85e407d6c771ba2bc5f02b17714241e2
-
-    Returns True if the given IP address belongs to the
-    subnetwork expressed in CIDR notation, otherwise False.
-    Both parameters are strings.
-
-    Both IPv4 addresses/subnetworks (e.g. "192.168.1.1"
-    and "192.168.1.0/24") and IPv6 addresses/subnetworks (e.g.
-    "2a02:a448:ddb0::" and "2a02:a448:ddb0::/44") are accepted.
-    """
-    (ip_integer, version1) = ip_to_integer(ip_address)
-    (ip_lower, ip_upper, version2) = subnetwork_to_ip_range(subnetwork)
-
-    if version1 != version2:
-        raise ValueError("incompatible IP versions")
-
-    return (ip_lower <= ip_integer <= ip_upper)
-
-
-def ip_to_integer(ip_address):
-    """
-    from: https://diego.assencio.com/?index=85e407d6c771ba2bc5f02b17714241e2
-
-    Converts an IP address expressed as a string to its
-    representation as an integer value and returns a tuple
-    (ip_integer, version), with version being the IP version
-    (either 4 or 6).
-
-    Both IPv4 addresses (e.g. "192.168.1.1") and IPv6 addresses
-    (e.g. "2a02:a448:ddb0::") are accepted.
-    """
-
-    # try parsing the IP address first as IPv4, then as IPv6
-    for version in (socket.AF_INET, socket.AF_INET6):
-
-        try:
-            ip_hex = socket.inet_pton(version, ip_address)
-            ip_integer = int(binascii.hexlify(ip_hex), 16)
-
-            return (ip_integer, 4 if version == socket.AF_INET else 6)
-        except:
-            pass
-
-    raise ValueError("invalid IP address")
-
-
-def subnetwork_to_ip_range(subnetwork):
-    """
-    from: https://diego.assencio.com/?index=85e407d6c771ba2bc5f02b17714241e2
-
-    Returns a tuple (ip_lower, ip_upper, version) containing the
-    integer values of the lower and upper IP addresses respectively
-    in a subnetwork expressed in CIDR notation (as a string), with
-    version being the subnetwork IP version (either 4 or 6).
-
-    Both IPv4 subnetworks (e.g. "192.168.1.0/24") and IPv6
-    subnetworks (e.g. "2a02:a448:ddb0::/44") are accepted.
-    """
-
-    try:
-        fragments = subnetwork.split('/')
-        network_prefix = fragments[0]
-        netmask_len = int(fragments[1])
-
-        # try parsing the subnetwork first as IPv4, then as IPv6
-        for version in (socket.AF_INET, socket.AF_INET6):
-
-            ip_len = 32 if version == socket.AF_INET else 128
-
-            try:
-                suffix_mask = (1 << (ip_len - netmask_len)) - 1
-                netmask = ((1 << ip_len) - 1) - suffix_mask
-                ip_hex = socket.inet_pton(version, network_prefix)
-                ip_lower = int(binascii.hexlify(ip_hex), 16) & netmask
-                ip_upper = ip_lower + suffix_mask
-
-                return (ip_lower,
-                        ip_upper,
-                        4 if version == socket.AF_INET else 6)
-            except:
-                pass
-    except:
-        pass
-
-    raise ValueError("invalid subnetwork")
-
-def ip_address_to_int(address):
-    return struct_unpack("!I", socket.inet_aton(address))[0]
-
-
-def int_to_ip_address(address):
-    return socket.inet_ntoa(struct_pack("!I", address))
 
 
 def random_string(**kwargs):
@@ -1212,9 +923,10 @@ def random_string(**kwargs):
         lst = [random_string.randomStuff.choice(letters) for n in range(length)]
         return "".join(lst)
 
+
 def random_int(middle, percent, **kwargs):
     """
-    Generate random integer based a middle number and percent range.
+    Generate random integer based on a middle number and percent range.
 
     **Usage**:
 
@@ -1246,7 +958,7 @@ def excerpt(value, length=None):
     return value
 
 
-def make_link(link, link_text, target = None):
+def make_link(link, link_text, target=None):
     if link == '' or link is None or link.lower() == "None":
         return "None"
     if target is None:
@@ -1284,6 +996,7 @@ def display_hide_none(value, allow_string=None, default=None):
 
 
 def human_alpabet():
+    """ A subset of the alphabet, but with 1 (one), l (ele)...etc, removed."""
     return "ABCDEFGHJKLMNPQRTSUVWXYZabcdefghkmnopqrstuvwxyz23456789"
 
 
@@ -1343,6 +1056,7 @@ def generate_uuid(**kwargs):
     tempit = uuid + subtype + maintype
     return tempit
 
+
 @inlineCallbacks
 def global_invoke_all(hook, **kwargs):
     """
@@ -1357,6 +1071,7 @@ def global_invoke_all(hook, **kwargs):
     modules_results = yield get_component('yombo.gateway.lib.modules').module_invoke_all(hook, True, **kwargs)
     return dict_merge(modules_results, lib_results)
 
+
 @inlineCallbacks
 def global_invoke_libraries(hook, **kwargs):
     """
@@ -1369,6 +1084,7 @@ def global_invoke_libraries(hook, **kwargs):
     """
     lib_results = yield get_component('yombo.gateway.lib.loader').library_invoke_all(hook, True, **kwargs)
     return lib_results
+
 
 @inlineCallbacks
 def global_invoke_modules(hook, **kwargs):
@@ -1383,6 +1099,7 @@ def global_invoke_modules(hook, **kwargs):
     modules_results = yield get_component('yombo.gateway.lib.modules').module_invoke_all(hook, True, **kwargs)
     return modules_results
 
+
 @memoize_ttl(3600)
 def get_public_gw_id():
     configs = get_component('yombo.gateway.lib.configuration')
@@ -1391,6 +1108,7 @@ def get_public_gw_id():
         return gwid
     except:
         return "unknown"
+
 
 def get_component(name):
     """
@@ -1648,58 +1366,8 @@ def hashid_decode(input_value, min_length=2, salt='', alphabet='ABCDEFGHJKMNPQRS
     hashid = Hashids(salt, min_length, alphabet)
     return hashid.decode(input_value)
 
-# basic conversions
-
-unit_converters = {
-    'km_mi': lambda x: x*0.62137119,  # miles
-    'mi_km': lambda x: x*1.6093,  # kilometers
-    'm_ft': lambda x: x*3.28084,  # feet
-    'ft_m': lambda x: x*0.3048,  # meters
-    'cm_in': lambda x: x*0.39370079,  # inches
-    'in_cm': lambda x: x*2.54,  # inches
-    'oz_g': lambda x: x*28.34952,  # grams
-    'g_oz': lambda x: x*0.03527396195,  # ounces
-    'kg_lb': lambda x: x*2.20462262185,  # pounds
-    'lb_kg': lambda x: x*0.45359237,  # pounds
-    'f_c': lambda x: float((x - 32) * (5.0/9.0)),  # celsius
-    'f_f': lambda x: x,
-    'c_f': lambda x: float((x * (9.0/5.0)) + 32),  # fahrenheit
-    'c_c': lambda x: x,
-    'btu_kwh': lambda x: x*0.00029307107017,  # kilowatt-hour
-    'btu_btu': lambda x: x,
-    'kwh_btu': lambda x: x*3412.14163312794,  # btu
-    'kwh_kwg': lambda x: x,
-}
 
 
-def unit_convert(unit_type, unit_size):
-    """
-    Converst various types of lenghts, masses, and temperatures. The format of the list below is: (from)_(to)
-    For example, "g_oz" converts from grams to ounces.
-
-    Usage: yombo.utils.unit_convert('km_mi', 10)  # returns 10 km in miles.
-
-    Valid unit_types:
-    'km_mi' - kilometers to miles
-    'mi_km' - miles to kilometers
-    'm_ft' - meters to feet
-    'ft_m' - feet to meters
-    'cm_in' - centimeter to inches
-    'in_cm' - inches to centimeters
-    'oz_g' - ounces to grames
-    'g_oz' - grames to ounces
-    'kg_lb' - kilograms to pounds
-    'lb_kg' - pounts to kilograms
-    'f_c' - fahrenheit to celsius
-    'c_f' - celsius to fahrenheit
-    'btu_kwh' - btu's to kilowatt-hours
-    'kwh_btu' - kilowatt-hours to btu's
-
-    :param unit_type: string - unit types to convert from_to
-    :param unit_size: int or float - value to convert
-    :return: float - converted unit
-    """
-    return unit_converters[unit_type](unit_size)
 
 
 @memoize_

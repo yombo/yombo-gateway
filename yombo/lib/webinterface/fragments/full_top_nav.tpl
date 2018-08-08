@@ -41,7 +41,7 @@
 											<i class="fa fa-exclamation-triangle fa-fw" style="color:rgba(185,12,24,0.81);"></i>
 											{% endif %}
 											{{ notice.title }}
-											<span class="pull-right text-muted small">{{ notice.created|epoch_to_pretty_date }}</span>
+											<span class="pull-right text-muted small">{{ notice.created|epoch_get_age }}</span>
 										</div>
 									</a>
 								</li>

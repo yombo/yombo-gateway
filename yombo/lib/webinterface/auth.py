@@ -9,7 +9,7 @@ from ratelimit import RateLimitException
 
 from twisted.internet.defer import inlineCallbacks
 
-from yombo.core.exceptions import YomboWarning, YomboNoAccess
+from yombo.core.exceptions import YomboWarning, YomboNoAccess, YomboInvalidValidation
 from yombo.utils import ip_addres_in_local_network, bytes_to_unicode, sha256_compact
 from yombo.lib.webinterface.routes.api_v1.__init__ import return_error, args_to_dict
 
@@ -109,7 +109,29 @@ def run_first(create_session=None, *args, **kwargs):
                 if session.check_valid():
                     request.auth_id = session.auth_id
 
-            results = yield call(f, webinterface, request, session, *a, **kw)
+            try:
+                results = yield call(f, webinterface, request, session, *a, **kw)
+                return results
+            except YomboInvalidValidation as e:
+                return return_not_valid_input(webinterface, request, **kwargs)
+            except YomboNoAccess as e:
+                return return_no_access(webinterface, request, "No access", **kwargs)
+            except Exception as e:  # catch anything here...so can display details.
+                logger.error("---------------==(Traceback)==--------------------------")
+                logger.error("Function: {f}", f=f)
+                logger.error("Request: {request}", request=request)
+                logger.error("{trace}", trace=traceback.format_exc())
+                logger.error("--------------------------------------------------------")
+                content_type = request.getHeader('content-type')
+                if isinstance(content_type, str):
+                    content_type = content_type.lower()
+                else:
+                    content_type = ''
+                if 'json' in content_type:
+                    return return_error(request, 'Server Error', 500, traceback.format_exc())
+                page = webinterface.get_template(request, webinterface.wi_dir + '/pages/misc/traceback.html')
+                return page.render(traceback=traceback.format_exc())
+
             return results
         return wrapped_f
     return deco
@@ -202,12 +224,14 @@ def require_auth(roles=None, login_redirect=None, access_platform=None, access_i
             #         return page.render(alerts=webinterface.get_alerts())
 
             if access_platform is not None and access_item is not None and access_action is not None:
-                if session.has_access(access_platform, access_item, access_action) is False:
+                if session.has_access(access_platform, access_item, access_action, raise_error=False) is False:
                     return return_no_access(webinterface, request, "No access", **kwargs)
                     pass
             try:
                 results = yield call(f, webinterface, request, session, *a, **kw)
                 return results
+            except YomboInvalidValidation as e:
+                return return_not_valid_input(webinterface, request, **kwargs)
             except YomboNoAccess as e:
                 return return_no_access(webinterface, request, "No access", **kwargs)
             except Exception as e:  # catch anything here...so can display details.
@@ -225,7 +249,6 @@ def require_auth(roles=None, login_redirect=None, access_platform=None, access_i
                     return return_error(request, 'Server Error', 500, traceback.format_exc())
                 page = webinterface.get_template(request, webinterface.wi_dir + '/pages/misc/traceback.html')
                 return page.render(traceback=traceback.format_exc())
-
         return wrapped_f
     return deco
 
@@ -285,7 +308,31 @@ def require_auth_pin(roles=None, login_redirect=None, create_session=None, *args
                             return results
                 elif session.session_type == "apiauth":  # If we have an API session, we are good if it's valid.
                     if session.check_valid() is False:
-                        return return_need_pin(webinterface, request, **kwargs)
+
+                        try:
+                            results = yield call(f, webinterface, request, session, *a, **kw)
+                            return results
+                        except YomboInvalidValidation as e:
+                            return return_not_valid_input(webinterface, request, **kwargs)
+                        except YomboNoAccess as e:
+                            return return_no_access(webinterface, request, "No access", **kwargs)
+                        except Exception as e:  # catch anything here...so can display details.
+                            logger.error("---------------==(Traceback)==--------------------------")
+                            logger.error("Function: {f}", f=f)
+                            logger.error("Request: {request}", request=request)
+                            logger.error("{trace}", trace=traceback.format_exc())
+                            logger.error("--------------------------------------------------------")
+                            content_type = request.getHeader('content-type')
+                            if isinstance(content_type, str):
+                                content_type = content_type.lower()
+                            else:
+                                content_type = ''
+                            if 'json' in content_type:
+                                return return_error(request, 'Server Error', 500, traceback.format_exc())
+                            page = webinterface.get_template(request,
+                                                             webinterface.wi_dir + '/pages/misc/traceback.html')
+                            return page.render(traceback=traceback.format_exc())
+
                     results = yield call(f, webinterface, request, session, *a, **kw)
                     return results
                 else:
@@ -294,7 +341,30 @@ def require_auth_pin(roles=None, login_redirect=None, create_session=None, *args
             else:
                 if session is not None and session.check_valid():
                     request.auth_id = session.auth_id
-                results = yield call(f, webinterface, request, session, *a, **kw)
+
+                try:
+                    results = yield call(f, webinterface, request, session, *a, **kw)
+                    return results
+                except YomboInvalidValidation as e:
+                    return return_not_valid_input(webinterface, request, **kwargs)
+                except YomboNoAccess as e:
+                    return return_no_access(webinterface, request, "No access", **kwargs)
+                except Exception as e:  # catch anything here...so can display details.
+                    logger.error("---------------==(Traceback)==--------------------------")
+                    logger.error("Function: {f}", f=f)
+                    logger.error("Request: {request}", request=request)
+                    logger.error("{trace}", trace=traceback.format_exc())
+                    logger.error("--------------------------------------------------------")
+                    content_type = request.getHeader('content-type')
+                    if isinstance(content_type, str):
+                        content_type = content_type.lower()
+                    else:
+                        content_type = ''
+                    if 'json' in content_type:
+                        return return_error(request, 'Server Error', 500, traceback.format_exc())
+                    page = webinterface.get_template(request, webinterface.wi_dir + '/pages/misc/traceback.html')
+                    return page.render(traceback=traceback.format_exc())
+
                 return results
         return wrapped_f
     return deco
@@ -357,6 +427,22 @@ def return_need_pin(webinterface, request, **kwargs):
         webinterface.display_pin_console()
     page = webinterface.get_template(request, webinterface.wi_dir + '/pages/misc/login_pin.html')
     return page.render(alerts=webinterface.get_alerts())
+
+
+def return_not_valid_input(webinterface, request, **kwargs):
+    content_type = request.getHeader('content-type')
+    if isinstance(content_type, str):
+        content_type = content_type.lower()
+    else:
+        content_type = ''
+    if ('api' in kwargs and kwargs['api'] is True) or 'json' in content_type:
+        return return_error(request, 'Forbidden - No access to protected resource', 400)
+    page = webinterface.get_template(request, webinterface.wi_dir + '/pages/errors/400.html')
+    return page.render(
+        alerts=webinterface.get_alerts(),
+        title="Invalid request",
+        message="The request being made is invalid.",
+    )
 
 
 def return_no_access(webinterface, request, error, **kwargs):

@@ -149,7 +149,7 @@
                             <label style="margin-top: 15px; margin-bottom: 0px">Description: </label><br>
                             {{ device.description }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Status: </label><br>
-                            {{ device.enabled_status|status_to_string }}<br>
+                            {{ _(device.enabled_status|status_to_string) }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Pin Required // Pin Code: </label><br>
                             {{ device.pin_required|yes_no }} // {{ device.pin_code }} <br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Device Type: </label><br>
@@ -262,7 +262,7 @@
                                 </thead>
                                 <tbody>{% for history in device.status_history %}
                                      <tr>
-                                        <td> {{ history.set_at|epoch_to_human }}</td>
+                                        <td> {{ history.set_at|epoch_to_string }}</td>
                                         <td> User: {{ history.requested_by.user_id }}<br> Component: {{ history.requested_by.component }}</td>
                                         <td> {{ history.reported_by }}</td>
                                         <td> {{ history.human_status }}</td>

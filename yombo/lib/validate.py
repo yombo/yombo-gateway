@@ -8,15 +8,15 @@
 
 
 Validates various items. In many causes, it tries to coerce the correct value type and return that. If the item
-is valid, it returns the item. If the item is invalid, and error will be raised.
+is valid, it returns the item. If the item is invalid, and YomboInvalidValidation.
 
-This file is comprised of various code samples scattered around the internet. Many of functions below are
-a derivative from: home assistant's helper file: config_validation.py
+For most items, this just wraps the yombo.utils.validators and changes the exception from MultipleInvalid to
+YomboInvalidValidation.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.14.0
 
-:copyright: Copyright 2017 by Yombo.
+:copyright: Copyright 2017-2018 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/validate.html>`_
 """
@@ -24,21 +24,22 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
     import json
-import msgpack
 from datetime import timedelta, datetime as datetime_sys
-import os
+import msgpack
 import re
 from socket import _GLOBAL_DEFAULT_TIMEOUT
-from unicodedata import normalize
 from typing import Any, Union, TypeVar, Callable, Sequence, Dict
+from unicodedata import normalize
 import voluptuous as vol
 
 # Import Yombo libraries
-from yombo.core.exceptions import Invalid
+from yombo.core.exceptions import Invalid, YomboInvalidValidation
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.constants import \
     TEMP_FAHRENHEIT, TEMP_CELSIUS, MISC_UNIT_SYSTEM_METRIC, MISC_UNIT_SYSTEM_IMPERIAL, WEEKDAYS
+import yombo.utils.datetime as dt
+import yombo.utils.validators as val
 
 logger = get_logger('library.validate')
 
@@ -71,101 +72,111 @@ class Validate(YomboLibrary):
     def _init_(self, **kwargs):
         pass
 
-    # Adapted from:
-    # https://github.com/alecthomas/voluptuous/issues/115#issuecomment-144464666
-    def has_at_least_one_key(self, *keys: str) -> Callable:
-        """Validate that at least one key exists."""
-        def validate(obj: Dict) -> Dict:
-            """Test keys exist in dict."""
-            if not isinstance(obj, dict):
-                raise Invalid('expected dictionary')
-
-            for k in obj.keys():
-                if k in keys:
-                    return obj
-            raise Invalid('must contain one of {}.'.format(', '.join(keys)))
-
-        return validate
-
-    def is_device(self, value):
-        """Validate that value is a real device."""
+    #####################################################
+    # Basic types
+    def boolean(self, value: Any) -> bool:
+        """Validate and coerce a boolean value."""
         try:
-            os.stat(value)
-            return str(value)
-        except OSError:
-            raise Invalid('No device at {} found'.format(value))
+            return val.boolean(value)
+        except vol.MultipleInvalid as e:
+            raise YomboInvalidValidation(str(e))
 
-    def is_file(self, value: Any) -> str:
-        """Validate that the value is an existing file."""
-        if value is None:
-            raise Invalid('None is not file')
-        file_in = os.path.expanduser(str(value))
-
-        if not os.path.isfile(file_in):
-            raise Invalid('not a file')
-        if not os.access(file_in, os.R_OK):
-            raise Invalid('file not readable')
-        return file_in
-
-    def is_id_string(self, string, min=4, max=100):
-        s = vol.Schema(vol.All(
-            str,
-            vol.Length(min=min, max=max),
-            vol.Match(r"^[a-zA-Z_0-9. ]+$")
-        ))
-        return s(string)
+    def string(self, value: Any) -> str:
+        """Coerce value to string, except for None."""
+        try:
+            return val.string(value)
+        except vol.MultipleInvalid as e:
+            raise YomboInvalidValidation(str(e))
 
     def ensure_list(self, value: Union[T, Sequence[T]]) -> Sequence[T]:
         """Wrap value in list if it is not one."""
-        if value is None:
-            return []
-        return value if isinstance(value, list) else [value]
+        try:
+            return val.ensure_list(value)
+        except vol.MultipleInvalid as e:
+            raise YomboInvalidValidation(str(e))
 
-    time_period_dict = vol.All(
-        dict, vol.Schema({
-            'days': vol.Coerce(int),
-            'hours': vol.Coerce(int),
-            'minutes': vol.Coerce(int),
-            'seconds': vol.Coerce(int),
-            'milliseconds': vol.Coerce(int),
-        }),
-        has_at_least_one_key('days', 'hours', 'minutes',
-                             'seconds', 'milliseconds'),
-        lambda value: timedelta(**value))
+    def basic_string(self, string, min=1, max=255):
+        """ A short string with alphanumberic, spaces, and periods. """
+        try:
+            return val.ensure_list(string)
+        except vol.MultipleInvalid as e:
+            raise YomboInvalidValidation(str(e))
+
+    def basic_word(self, string, min=1, max=45):
+        """ A single word. """
+        try:
+            return val.ensure_list(string)
+        except vol.MultipleInvalid as e:
+            raise YomboInvalidValidation(str(e))
+
+    # Adapted from:
+    # https://github.com/alecthomas/voluptuous/issues/115#issuecomment-144464666
+    def has_at_least_one_key(*keys: str) -> Callable:
+        """Validate that at least one key exists."""
+        try:
+            return val.has_at_least_one_key(keys)
+        except vol.MultipleInvalid as e:
+            raise YomboInvalidValidation(str(e))
+
+    def has_at_least_one_key_value(*items: list) -> Callable:
+        """Validate that at least one (key, value) pair exists."""
+        try:
+            return val.time_zone(items)
+        except vol.MultipleInvalid as e:
+            raise YomboInvalidValidation(str(e))
+
+    #####################################################
+    # OS / File system items
+    def is_device(value):
+        """ Validate that value is a real device. """
+        try:
+            return val.is_device(value)
+        except vol.MultipleInvalid as e:
+            raise YomboInvalidValidation(str(e))
+
+    def is_dir(value: Any) -> str:
+        """Validate that the value is an existing dir."""
+        try:
+            return val.is_dir(value)
+        except vol.MultipleInvalid as e:
+            raise YomboInvalidValidation(str(e))
+
+    def is_file(value: Any) -> str:
+        """Validate that the value is an existing file."""
+        try:
+            return val.is_file(value)
+        except vol.MultipleInvalid as e:
+            raise YomboInvalidValidation(str(e))
+
+    #####################################################
+    # Time related items
+    def time_zone(self, value):
+        """Validate timezone."""
+        try:
+            return val.time_zone(value)
+        except vol.MultipleInvalid as e:
+            raise YomboInvalidValidation(str(e))
+
+    def time(self, value):
+        """Validate timezone."""
+        try:
+            return val.time(value)
+        except vol.MultipleInvalid as e:
+            raise YomboInvalidValidation(str(e))
+
+    def date(self, value):
+        """Validate timezone."""
+        try:
+            return val.date(value)
+        except vol.MultipleInvalid as e:
+            raise YomboInvalidValidation(str(e))
 
     def time_period_str(self, value: str) -> timedelta:
         """Validate and transform time offset."""
-        if isinstance(value, int):
-            raise Invalid('Make sure you wrap time values in quotes')
-        elif not isinstance(value, str):
-            raise Invalid(TIME_PERIOD_ERROR.format(value))
-
-        negative_offset = False
-        if value.startswith('-'):
-            negative_offset = True
-            value = value[1:]
-        elif value.startswith('+'):
-            value = value[1:]
-
         try:
-            parsed = [int(x) for x in value.split(':')]
-        except ValueError:
-            raise Invalid(TIME_PERIOD_ERROR.format(value))
-
-        if len(parsed) == 2:
-            hour, minute = parsed
-            second = 0
-        elif len(parsed) == 3:
-            hour, minute, second = parsed
-        else:
-            raise Invalid(TIME_PERIOD_ERROR.format(value))
-
-        offset = timedelta(hours=hour, minutes=minute, seconds=second)
-
-        if negative_offset:
-            offset *= -1
-
-        return offset
+            return val.time_period_str(value)
+        except vol.MultipleInvalid as e:
+            raise YomboInvalidValidation(str(e))
 
     def time_period_seconds(self, value: Union[int, str]) -> timedelta:
         """Validate and transform seconds to a time offset."""
@@ -174,8 +185,32 @@ class Validate(YomboLibrary):
         except (ValueError, TypeError):
             raise Invalid('Expected seconds, got {}'.format(value))
 
-    time_period = vol.Any(time_period_str, time_period_seconds, timedelta,
-                          time_period_dict)
+
+    #####################################################
+    # Yombo items
+    def id_string(self, string, min=4, max=100):
+        """ Ensure value is a string, with at least 4 characters and max of 100."""
+        try:
+            return val.id_string(string, min, max)
+        except vol.MultipleInvalid as e:
+            raise YomboInvalidValidation(str(e))
+
+    #####################################################
+    # Misc
+    def template(value):
+        """Validate a jinja2 template."""
+        try:
+            return val.template(value)
+        except vol.MultipleInvalid as e:
+            raise YomboInvalidValidation(str(e))
+
+
+    def url(self, url_in, protocols=None):
+        try:
+            return val.url(url_in, protocols)
+        except vol.MultipleInvalid as e:
+            raise YomboInvalidValidation(str(e))
+
 
     def match_all(self, value):
         """Validate that matches all values."""
@@ -232,7 +267,7 @@ class Validate(YomboLibrary):
     def time(self, value):
         """Validate time."""
         try:
-            return self._Times.time_from_string(value)[0]
+            return dt.time_from_string(value)[0]
         except Exception:
             raise Invalid('Invalid time specified: {}'.format(value))
 
@@ -242,13 +277,13 @@ class Validate(YomboLibrary):
             return value
 
         try:
-            return self._Times.time_from_string(value)[0]
+            return dt.time_from_string(value)[0]
         except Exception:
             raise Invalid('Invalid datetime specified: {}'.format(value))
 
     def time_zone(self, value):
         """Validate timezone."""
-        if self._Times.get_time_zone(value) is not None:
+        if dt.get_time_zone(value) is not None:
             return value
         raise Invalid(
             'Invalid time zone passed in. Valid options can be found here: '

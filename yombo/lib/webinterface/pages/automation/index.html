@@ -43,7 +43,7 @@
                                              <a href="/automation/{{ automation_id }}/details">{{ automation.label }}</a><br>
                                          </td>
                                          <td data-priority="4">{{ automation.description() }}</td>
-                                         <td>{{ automation.effective_status()|status_to_string }}</td>
+                                         <td>{{ _(automation.effective_status()|status_to_string) }}</td>
                                          <td>
                                             {% if automation.effective_status() == 0 -%}
                                              <a href="/automation/{{ automation_id }}/edit">Edit</a>

@@ -62,7 +62,7 @@
                                                  <a href="/scenes/{{ scene_id }}/details">{{ scene.label }}</a><br>
                                              </td>
                                              <td data-priority="4">{{ scene.machine_label }}</td>
-                                             <td>{{ scene.effective_status()|status_to_string }}</td>
+                                             <td>{{ _(scene.effective_status()|status_to_string) }}</td>
                                              <td>
                                                 {% if scene.effective_status() == 0 -%}
                                                  <a href="/scenes/{{ scene_id }}/edit">Edit</a>

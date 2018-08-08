@@ -9,7 +9,8 @@ from twisted.internet import defer
 
 from yombo.lib.webinterface.auth import require_auth
 # from yombo.lib.webinterface.routes.api_v1.__init__ import return_good, return_not_found, return_error, return_unauthorized
-from yombo.utils import epoch_to_string, bytes_to_unicode, unicode_to_bytes, random_string
+from yombo.utils import unicode_to_bytes, random_string
+from yombo.utils.converters import epoch_to_string
 
 HOOK_NAME_TO_PATH = {
     '_device_status_': {

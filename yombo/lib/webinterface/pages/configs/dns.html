@@ -41,7 +41,7 @@
                             <li>{{_('ui::misc::current_fqdn', 'Current FQDN')}}: {{ dns_configs.fqdn }}</li>
                             <li>{{_('ui::misc::current_sub_domain', 'Current Sub-domain')}}: {{ dns_configs.dns_name }}</li>
                             <li>{{_('ui::misc::current_top_level_domain', 'Current Domain')}}: {{ dns_configs.dns_domain }}</li>
-                            <li>{{_('ui::misc::allowed_next_change', 'Allowed next change')}}: {{ dns_configs.allow_change_at|epoch_to_human }}</li>
+                            <li>{{_('ui::misc::allowed_next_change', 'Allowed next change')}}: {{ dns_configs.allow_change_at|epoch_to_string }}</li>
                         </ul>
                     </p>
 

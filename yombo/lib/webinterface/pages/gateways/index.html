@@ -32,7 +32,7 @@
                                              <td><a href="/gateways/{{ gateway_id }}/details">{{ gateway.label }}</a></td>
                                              <td>{{ gateway.description }}</td>
                                              <td>{{ gateway.com_status|capitalize }}</td>
-                                             <td>{{ gateway.last_scene|epoch_to_human }}</td>
+                                             <td>{{ gateway.last_scene|epoch_to_string }}</td>
                                              <td>{{ gateway.last_communications|length }}</td>
                                          </tr>{% endfor %}
                                     </tbody>

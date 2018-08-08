@@ -17,6 +17,7 @@ from twisted.internet.task import LoopingCall
 from yombo.core.log import get_logger
 from yombo.core.module import YomboModule
 from yombo.utils import sleep
+import yombo.utils.datetime as dt
 
 logger = get_logger("module.test")
 
@@ -130,11 +131,11 @@ class ModuleUnitTest(YomboModule):
 
     def test_times(self):
         cur_time = int(time.time())
-        print("one hour ago get_time: %s" % self._Times.time_from_string("-1 hour")[0])
-        print("1h 3m -3s get_time: %s" % self._Times.time_from_string("1h 3m -3s")[0])
-        print("tomorrow 10pm get_time: %s" % self._Times.time_from_string("tomorrow 10pm")[0])
-        print("1 hour ago get_time): %s" % self._Times.time_from_string("1 hour ago")[0])
-        print("10:20:30: %s" % self._Times.time_from_string("10:20:30")[0])
+        print("one hour ago get_time: %s" % dt.time_from_string("-1 hour")[0])
+        print("1h 3m -3s get_time: %s" % dt.time_from_string("1h 3m -3s")[0])
+        print("tomorrow 10pm get_time: %s" % dt.time_from_string("tomorrow 10pm")[0])
+        print("1 hour ago get_time): %s" % dt.time_from_string("1 hour ago")[0])
+        print("10:20:30: %s" % dt.time_from_string("10:20:30")[0])
 
 
     @inlineCallbacks

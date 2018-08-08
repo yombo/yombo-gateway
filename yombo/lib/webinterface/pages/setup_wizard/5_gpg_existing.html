@@ -7,9 +7,9 @@
                             <label style="margin-top: 0px; margin-bottom: 0px">Length (Bits): </label>
                             {{ key.length }}<br>
                             <label style="margin-top: 5px; margin-bottom: 0px">Created: </label>
-                            {{ key.created|epoch_to_human }}<br>
+                            {{ key.created|epoch_to_string }}<br>
                             <label style="margin-top: 5px; margin-bottom: 0px">Expires: </label>
-                            {{ key.expires|epoch_to_human }}<br>
+                            {{ key.expires|epoch_to_string }}<br>
                             <label style="margin-top: 5px; margin-bottom: 0px">Fingerprint: </label>
                             {{ key.fingerprint }}<br>
                         </div>

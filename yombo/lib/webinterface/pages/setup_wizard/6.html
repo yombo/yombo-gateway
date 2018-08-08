@@ -60,7 +60,7 @@
                         <li>{{_('ui::misc::current_fqdn', 'Current FQDN')}}: {{ dns_fqdn }} </li>
                         <li>{{_('ui::misc::current_sub_domain', 'Current Sub-domain')}}: {{ dns_name }}</li>
                         <li>{{_('ui::misc::current_top_level_domain', 'Current Domain')}}: {{ dns_domain }}</li>
-                        <li>{{_('ui::misc::allowed_next_change', 'Allowed next change')}}: {{ allow_change|epoch_to_human }}</li>
+                        <li>{{_('ui::misc::allowed_next_change', 'Allowed next change')}}: {{ allow_change|epoch_to_string }}</li>
                     </ul>
                     {% if dns_name == "" or dns_name == None-%}
                     <a class="btn btn-md btn-warning" href="/setup_wizard/7">Skip Dynamic DNS - HTTP will not be available</a>
