@@ -10,7 +10,8 @@ from ratelimit import RateLimitException
 from twisted.internet.defer import inlineCallbacks
 
 from yombo.core.exceptions import YomboWarning, YomboNoAccess, YomboInvalidValidation
-from yombo.utils import ip_addres_in_local_network, bytes_to_unicode, sha256_compact
+from yombo.utils import bytes_to_unicode, sha256_compact
+from yombo.utils.networking import get_local_network_info
 from yombo.lib.webinterface.routes.api_v1.__init__ import return_error, args_to_dict
 
 from yombo.core.log import get_logger

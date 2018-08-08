@@ -8,7 +8,7 @@ from yombo.constants.status_extra import STATUS_EXTRA_BRIGHTNESS, STATUS_EXTRA_R
 
 from yombo.lib.devices._device import Device
 import yombo.utils.color as color_util
-from yombo.utils import translate_int_value
+from yombo.utils.converters import translate_int_value
 
 
 class Light(Device):

@@ -84,7 +84,7 @@ from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning, InvalidArgumentError
-from yombo.utils import get_local_network_info
+from yombo.utils.networking import get_local_network_info
 from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
 import yombo.core.settings as settings
