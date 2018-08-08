@@ -11,14 +11,13 @@ Navigating the framework
 
 The gateway framework is split into a few directories:
 
+ * :ref:`framework_ext` - 3rd party extensions.
+ * :ref:`framework_constants` - Used to keep various attributes consistent across the Yombo Gateway framework.
  * :ref:`framework_core` - Basic functions used by various libraries.
  * :ref:`framework_lib` - Libraries provide all the services and tools to manage the system, including sending
    :doc:`commands <../lib/commands>` to :doc:`devices <../lib/devices/devices>`.
- * :ref:`framework_constants` - Keep various attributes consistent across the Yombo Gateway framework.
  * :ref:`framework_modules` - Extend the features of the Yombo gateway and are located in the modules folder.
- * Usr - User data. Log files, database, cache, ssl keys, etc.
  * :ref:`framework_utils` - Various utilities for getting things done.
- * :ref:`framework_ext` - 3rd party extensions.
 
 .. _framework_core:
 

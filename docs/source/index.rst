@@ -4,7 +4,9 @@
 Yombo Automation Python Reference
 =================================
 
-Release v0.19.0 (`Quick Start <https://yombo.net/docs/gateway/quick_start>`_)
+
+
+Release |release| (`Quick Start <https://yombo.net/docs/gateway/quick_start>`_)
 
 Python API Documentation
 ========================

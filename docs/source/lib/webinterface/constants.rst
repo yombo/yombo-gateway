@@ -8,13 +8,9 @@
 Web Interface::Constants (yombo.lib.webinterface.constants)
 =================================================================
 
-**See the `Web Interface developer docs <https://yombo.net/docs/libraries/web_interface`_ for more
-details.**
+.. note::
 
-.. automodule:: yombo.lib.webinterface.constants
-   :members:
-   :special-members:
-   :private-members:
-   :undoc-members:
+  The web interface constants are not able to be displayed here. See the
+  `Web Interface constants @ github <https://github.com/yombo/yombo-gateway/blob/master/yombo/lib/webinterface/constants.py>`_
 
 Last updated: |today|

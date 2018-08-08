@@ -11,7 +11,7 @@ from twisted.internet.defer import inlineCallbacks
 
 from yombo.core.exceptions import YomboWarning, YomboNoAccess, YomboInvalidValidation
 from yombo.utils import bytes_to_unicode, sha256_compact
-from yombo.utils.networking import get_local_network_info
+from yombo.utils.networking import ip_addres_in_local_network
 from yombo.lib.webinterface.routes.api_v1.__init__ import return_error, args_to_dict
 
 from yombo.core.log import get_logger
@@ -19,7 +19,15 @@ logger = get_logger('library.webinterface.auth')
 
 
 def get_session(roles=None, *args, **kwargs):
+    """
+    Decorator that attempts to get the user's session. Returns none if user doesn't have
+    a session.
 
+    :param roles:
+    :param args:
+    :param kwargs:
+    :return:
+    """
     def call(f, *args, **kwargs):
         return f(*args, **kwargs)
 
@@ -34,7 +42,11 @@ def get_session(roles=None, *args, **kwargs):
 
 def update_request(webinterface, request):
     """
-    Does some basic conversions for us.
+    Modifies the request to add 'received_cookies in unicode. Also, adds a 'args'
+    attribute that contains the incoming arguments, but in unicode. Also adds '_' to the
+    templates, but it for the current user's language.
+
+    Finally, it adds cache-control and expires items to ensure the content isnt' cached.
 
     :param request: 
     :return: 
@@ -47,6 +59,15 @@ def update_request(webinterface, request):
 
 
 def check_idempotence(webinterface, request, session):
+    """
+    Check if idempotence is in the request and if that key has already been processed for the given user.
+    If the key has already been used, will return a 409 code, otherwise, lets the request continue.
+
+    :param webinterface:
+    :param request:
+    :param session:
+    :return:
+    """
     idempotence = request.getHeader('x-idempotence')
     if idempotence is None:
         arguments = args_to_dict(request.args)
@@ -63,6 +84,15 @@ def check_idempotence(webinterface, request, session):
 
 
 def run_first(create_session=None, *args, **kwargs):
+    """
+    Decorator that attempts to get the user's session and appends the webinterface reference
+    and session reference to the function call.
+
+    :param create_session: If true, will create a new session. Used during login.
+    :param args:
+    :param kwargs:
+    :return:
+    """
     def call(f, *args, **kwargs):
         return f(*args, **kwargs)
 
@@ -140,6 +170,18 @@ def run_first(create_session=None, *args, **kwargs):
 
 def require_auth(roles=None, login_redirect=None, access_platform=None, access_item=None, access_action=None,
                  *args, **kwargs):
+    """
+    Decorator that gets the user's session. If user isn't logged in, will redirect to the user login page.
+
+    :param roles:
+    :param login_redirect:
+    :param access_platform:
+    :param access_item:
+    :param access_action:
+    :param args:
+    :param kwargs:
+    :return:
+    """
     def call(f, *args, **kwargs):
         return f(*args, **kwargs)
 
@@ -149,7 +191,6 @@ def require_auth(roles=None, login_redirect=None, access_platform=None, access_i
         def wrapped_f(webinterface, request, *a, **kw):
             update_request(webinterface, request)
             request.auth_id = None
-            # print(request)
 
             host = request.getHeader('host')
             if host is None:
@@ -203,26 +244,6 @@ def require_auth(roles=None, login_redirect=None, access_platform=None, access_i
                                              **kwargs)
             session.touch()
             request.auth_id = session.auth_id
-            # if session.session_type == "websession":
-            #     print("auth type websession")
-            #     try:
-            #         print("pre check_if_gw_info_needed")
-            #         yield webinterface._Startup.check_has_valid_gw_auth(session=session['yomboapi_session'])
-            #         print("post check_if_gw_info_needed")
-            #     except YomboRestart:
-            #         print("YomboRestart check_if_gw_info_needed")
-            #         webinterface._Notifications.add({'title': 'Restarting',
-            #                                          'message': 'The gateway has downloaded an update that requires a restart. Please wait.',
-            #                                          'source': 'System',
-            #                                          'persist': False,
-            #                                          'priority': 'high',
-            #                                          'always_show': True,
-            #                                          'always_show_allow_clear': False,
-            #                                          'id': 'system_rebooting',
-            #                                          'local': True,
-            #                                          })
-            #         page = webinterface.get_template(request, webinterface.wi_dir + '/pages/restart.html')
-            #         return page.render(alerts=webinterface.get_alerts())
 
             if access_platform is not None and access_item is not None and access_action is not None:
                 if session.has_access(access_platform, access_item, access_action, raise_error=False) is False:
@@ -255,6 +276,17 @@ def require_auth(roles=None, login_redirect=None, access_platform=None, access_i
 
 
 def require_auth_pin(roles=None, login_redirect=None, create_session=None, *args, **kwargs):
+    """
+    Decorator that gets the user's session. If the user isn't logged in, will redirect to the pin code display
+    page if needed.
+
+    :param roles:
+    :param login_redirect:
+    :param create_session:
+    :param args:
+    :param kwargs:
+    :return:
+    """
     def call(f, *args, **kwargs):
         return f(*args, **kwargs)
 
@@ -401,6 +433,16 @@ def setup_login_redirect(webinterface, request, session, login_redirect):
 
 
 def return_need_login(webinterface, request, session, api_message=None, **kwargs):
+    """
+    Returns login page if a normal user, or a json 401 error if an API request.
+
+    :param webinterface:
+    :param request:
+    :param session:
+    :param api_message:
+    :param kwargs:
+    :return:
+    """
     if check_needs_web_pin(webinterface, request, session):
         return return_need_pin(webinterface, request, **kwargs)
     else:
@@ -416,6 +458,14 @@ def return_need_login(webinterface, request, session, api_message=None, **kwargs
 
 
 def return_need_pin(webinterface, request, **kwargs):
+    """
+    Returns pin page if a normal user, or a json 401 error if an API request.
+
+    :param webinterface:
+    :param request:
+    :param kwargs:
+    :return:
+    """
     content_type = request.getHeader('content-type')
     if isinstance(content_type, str):
         content_type = content_type.lower()
@@ -431,6 +481,17 @@ def return_need_pin(webinterface, request, **kwargs):
 
 
 def return_not_valid_input(webinterface, request, **kwargs):
+    """
+    The system caught a YomboInvalidValidation exception and redirected here. Typically when a user
+    submits bogus arguments.
+
+    Returns a 400 error page to users and a json 400 message to API request.
+
+    :param webinterface:
+    :param request:
+    :param kwargs:
+    :return:
+    """
     content_type = request.getHeader('content-type')
     if isinstance(content_type, str):
         content_type = content_type.lower()
@@ -447,6 +508,15 @@ def return_not_valid_input(webinterface, request, **kwargs):
 
 
 def return_no_access(webinterface, request, error, **kwargs):
+    """
+    Returns the 403 page to user.
+
+    :param webinterface:
+    :param request:
+    :param error:
+    :param kwargs:
+    :return:
+    """
     content_type = request.getHeader('content-type')
     if isinstance(content_type, str):
         content_type = content_type.lower()
@@ -482,4 +552,4 @@ def check_needs_web_pin(webinterface, request, session):
     if ip_addres_in_local_network(client_ip):
         return False
 
-    return True  # catch all...just in case.
+    return True

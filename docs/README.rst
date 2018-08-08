@@ -5,9 +5,22 @@ Yombo Documentation
 This directory generates the content found at https://yg2.in/docs and is
 generated from the comments within the source code.
 
-The primary purpose of this documentation to document the various
-API's within the Yombo Gateway framework. This allows users to
-develop better (advanced) automation rules, or implement a protocol
-that can extend the Yombo Gateway capabilities.
+This documentation is aimed at developers for code reference and lookup, it's
+not intended for end user.  End user documentation is found at:
+https://yombo.net/docs
 
-Tutorials and getting started guides are found at: https://yg2.in/dev
+More development documentation can be found at: https://yg2.in/dev
+
+Building the docs
+=================
+
+The documentation is build using sphinx. To get started, open a command prompt
+and change to this directory (the docs subdirectory) and install the requirements:
+
+pip3 install -r requirements.txt
+
+After installation, to build the documentation:
+
+make html
+
+The docuementation will be created in the build/html subdirectory of the docs directory.
