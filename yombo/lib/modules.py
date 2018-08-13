@@ -25,6 +25,7 @@ except ImportError:
     from hashlib import sha224
 from functools import partial, reduce
 import os.path
+import pkg_resources
 from pyclbr import readmodule
 from subprocess import check_output, CalledProcessError
 from time import time
@@ -39,9 +40,8 @@ from yombo.core.exceptions import YomboHookStopProcessing, YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 import yombo.core.settings as settings
-from yombo.utils import search_instance, do_search_instance, dict_merge, read_file, bytes_to_unicode,\
-    get_python_package_info, global_invoke_all
-from yombo.utils.decorators import memoize_ttl
+from yombo.utils import (search_instance, do_search_instance, dict_merge, read_file, bytes_to_unicode,
+    get_python_package_info, global_invoke_all)
 
 from yombo.utils.maxdict import MaxDict
 import collections
@@ -222,11 +222,6 @@ class Modules(YomboLibrary):
         }
 
     @inlineCallbacks
-    def import_modules(self):
-        yield self.build_raw_module_list()  # Create a list of modules, includes localmodules.ini
-        yield self.do_import_modules()  # Just call "import moduleName"
-
-    @inlineCallbacks
     def init_modules(self):
         yield self._Loader.library_invoke_all("_modules_pre_init_", called_by=self)
         logger.debug("starting modules::init....")
@@ -311,6 +306,17 @@ class Modules(YomboLibrary):
             except YomboWarning:
                 pass
         yield self._Loader.library_invoke_all("_modules_unloaded_", called_by=self)
+
+    @inlineCallbacks
+    def prepare_modules(self):
+        """
+        Called by the Loader library. This simply called the build raw modules list and build requirements
+        functions.
+
+        :return:
+        """
+        yield self.build_raw_module_list()  # Create a list of modules, includes localmodules.ini
+        yield self.build_requirements()  # Collect all the requirements files...
 
     @inlineCallbacks
     def build_raw_module_list(self):
@@ -483,24 +489,21 @@ class Modules(YomboLibrary):
         logger.debug("Building raw module list done.")
 
     @inlineCallbacks
-    def do_import_modules(self):
-        def install_pip_module(module_name):
-            try:
-                out = check_output(['pip3', 'install', module_name])
-                t = 0, out
-            except CalledProcessError as e:
-                t = e.returncode, e.message
-            return t
+    def build_requirements(self):
+        """
+        Look thru each module and inspect it's requirements.txt file. Append/update any lines from
+        these into the Loader requirements dict.
 
+        :return:
+        """
         for module_id, module in self._rawModulesList.items():
-            pathName = "yombo.modules.%s" % module['machine_label']
-            reqs_file = 'yombo/modules/%s/requirements.txt' % module['machine_label'].lower()
-            if os.path.isfile(reqs_file):
+            requirements_file = 'yombo/modules/%s/requirements.txt' % module['machine_label'].lower()
+            if os.path.isfile(requirements_file):
                 try:
-                    filesize = os.path.getsize(reqs_file)
+                    filesize = os.path.getsize(requirements_file)
                     if filesize == 0:
                         continue
-                    input = yield read_file(reqs_file)
+                    input = yield read_file(requirements_file)
                 except Exception as e:
                     logger.warn("Unable to process requirements file for module '{module}', reason: {e}",
                                 module=module['machine_label'], e=e)
@@ -509,21 +512,10 @@ class Modules(YomboLibrary):
                     for line in requirements:
                         if line is None or line == '':
                             continue
-                        pkg_info = get_python_package_info(line)
-                        if pkg_info is None:
-                            logger.info("Attempting to install missing requirement: {line}", line=line)
-                            try:
-                                # This is not async. Which, isn't the best way, but system isn't really even
-                                # started anyways.
-                                pip_results = yield threads.deferToThread(install_pip_module, line)
-                                if pip_results[0] != 0:
-                                    logger.warn("Unable to install python package '%s'" % line)
-                                    logger.warn("Reason: {reason}", reason=pip_results[1])
-                            except Exception as e:
-                                logger.info("Unable to install python package '{line}', reason: {e}",
-                                            line=line, e=e)
-                            else:
-                                pkg_info = get_python_package_info(line)
+                        try:
+                            pkg_info = yield get_python_package_info(line)
+                        except YomboWarning:
+                            pass
 
                         if line not in self._Loader.requirements:
                             if pkg_info is None:
@@ -532,6 +524,7 @@ class Modules(YomboLibrary):
                                     'version': 'Invalid python module',
                                     'path': 'Invalid module',
                                     'used_by': [module['machine_label']],
+                                    'line': line,
                                 }
                             else:
                                 self._Loader.requirements[line] = {
@@ -539,17 +532,24 @@ class Modules(YomboLibrary):
                                     'version': pkg_info._version,
                                     'path': pkg_info.location,
                                     'used_by': [module['machine_label']],
+                                    'line': line,
                                 }
                         else:
                             self._Loader.requirements[line]['used_by'].append(module['machine_label'])
 
+
+    def import_modules(self):
+
+        for module_id, module in self._rawModulesList.items():
+            module_path_name = "yombo.modules.%s" % module['machine_label']
+
             try:
-                module_instance, module_name = self._Loader.import_component(pathName, module['machine_label'], 'module', module['id'])
+                module_instance, module_name = self._Loader.import_component(module_path_name, module['machine_label'], 'module', module['id'])
             except ImportError as e:
                 continue
             except:
                 logger.error("--------==(Error: Loading Module)==--------")
-                logger.error("----Name: {pathName}", pathName=pathName)
+                logger.error("----Name: {module_path_name}", module_path_name=module_path_name)
                 logger.error("---------------==(Traceback)==--------------------------")
                 logger.error("{trace}", trace=traceback.format_exc())
                 logger.error("--------------------------------------------------------")
@@ -594,7 +594,7 @@ class Modules(YomboLibrary):
             possible_module_files = ['_devices', '_input_types']
             for possible_file_name in possible_module_files:
                 try:
-                    file_path = pathName.lower() + "." + possible_file_name
+                    file_path = module_path_name.lower() + "." + possible_file_name
                     possible_file = __import__(file_path, globals(), locals(), [], 0)
                     module_tail = reduce(lambda p1, p2: getattr(p1, p2),
                                          [possible_file, ] + file_path.split('.')[1:])
