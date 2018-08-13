@@ -77,8 +77,6 @@ class Times(YomboLibrary, object):
         library.
         :type loader: Instance of Loader
         """
-        self.UTC = self.DEFAULT_TIME_ZONE = pytz.utc  # type: datetime.tzinfo
-
         if PatchEnvironment:
             self.runned_for_tests()
 
@@ -411,31 +409,7 @@ class Times(YomboLibrary, object):
             self._States.set('next.moonset', int(round(val)), 'epoch')
             self.__moonSet = val
 
-    def _load_(self, **kwargs):
-        """
-        Nothing to do.
-        """
-        pass
-
-    def _start_(self, **kwargs):
-        """
-        Nothing to do.
-        """
-        pass
-
-    def _unload_(self, **kwargs):
-        """
-        Nothing to do.
-        """
-        pass
-
-    def _stop_(self, **kwargs):
-        """
-        Nothing to do.
-        """
-        pass
-
-    ### Functions dealing with celestial objects
+    # Functions dealing with celestial objects
 
     def twilight_times(self):
         """
