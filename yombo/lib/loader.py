@@ -42,13 +42,16 @@ Stops components in the following phases. Modules first, then libraries.
 # Import python libraries
 import asyncio
 from collections import OrderedDict, Callable
+import pkg_resources
 import os.path
 from re import search as ReSearch
+from subprocess import check_output, CalledProcessError
+from time import time
 import traceback
 
 # Import twisted libraries
+from twisted.internet import reactor, threads
 from twisted.internet.defer import inlineCallbacks, maybeDeferred, Deferred
-from twisted.internet import reactor
 from twisted.web import client
 from functools import reduce
 client._HTTP11ClientFactory.noisy = False
@@ -210,6 +213,8 @@ class Loader(YomboLibrary, object):
         self._run_phase = "system_init"
         self.unittest = testing
         self._moduleLibrary = None
+        self.event_loop = None
+        self.force_python_module_upgrade = False
         YomboLibrary.__init__(self)
 
         self.requirements = {}  # Track which python modules are required
@@ -232,6 +237,14 @@ class Loader(YomboLibrary, object):
         self.run_phase = "shutdown"
         self.sigint = True
 
+    def update_pip_module(self, module_name):
+        try:
+            out = check_output(['pip3', 'install', '-u', module_name])
+            t = 0, out
+        except CalledProcessError as e:
+            t = e.returncode, e.message
+        return t
+
     @inlineCallbacks
     def start(self):  #on startup, load libraried, then modules
         """
@@ -240,34 +253,50 @@ class Loader(YomboLibrary, object):
         This function is called when the gateway is to startup. In turn,
         this function will load all the components and modules of the gateway.
         """
-        logger.info("Importing libraries, this can take a few moments.")
-
+        logger.debug("Reading Yombo requirements.txt file")
         if os.path.isfile('requirements.txt'):
             try:
                 input = yield yombo.utils.read_file('requirements.txt')
             except Exception as e:
-                logger.warn("Unable to process requirements file for module '{module}', reason: {e}",
-                            module=module['machine_label'], e=e)
+                logger.warn("Unable to process requirements file for loader library, reason: {e}", e=e)
             else:
                 requirements = yombo.utils.bytes_to_unicode(input.splitlines())
                 for line in requirements:
                     line = line.strip()
                     if len(line) == 0 or line.startswith('#'):
                         continue
-                    pkg_info = yombo.utils.get_python_package_info(line)
+                    logger.debug("Processing requirement: {requirement}", requirement=line)
+                    try:
+                        pkg_info = yield yombo.utils.get_python_package_info(line)
+                    except YomboWarning as e:
+                        raise YomboCritical(e.message)
+                    logger.debug("Have requirement details...")
                     if pkg_info is not None:
                         self.requirements[line] = {
                             'name': pkg_info.project_name,
                             'version': pkg_info._version,
                             'path': pkg_info.location,
                             'used_by': ['Yombo framework'],
+                            'package': line,
+                        }
+                    else:
+                        self.requirements[line] = {
+                            'name': line,
+                            'version': 'Invalid python module',
+                            'path': 'Invalid module',
+                            'used_by': ['Yombo framework'],
+                            'package': line,
                         }
 
+
         # Get a reference to the asyncio event loop.
+        logger.debug("Starting UVLoop")
         yield yombo.utils.sleep(0.01)  # kick the asyncio event loop
         self.event_loop = asyncio.get_event_loop()
 
         yield self.import_libraries()  # import and init all libraries
+        logger.info("Importing libraries, this can take a few moments.")
+        self._Configs = self.loadedLibraries['configuration']
 
         if self.sigint:
             return
@@ -276,7 +305,20 @@ class Loader(YomboLibrary, object):
         self.run_phase = "modules_import"
         self.operating_mode = self.operating_mode  # so we can update the State!
         if self.operating_mode == 'run':
-            yield self._moduleLibrary.import_modules()
+            yield self._moduleLibrary.prepare_modules()
+
+            last_requirements_update = self._Configs.get('core', 'lastrequirementsudpate', 0, False)
+            if self.force_python_module_upgrade or last_requirements_update < int(time()) - 86400:
+                for requirement_line, details in self.requirements.items():
+                    logger.info("Upgrading python package: {line}", line=requirement_line)
+                    try:
+                        yield yombo.utils.install_python_package(last_requirements_update)
+                    except YomboWarning as e:
+                        pass
+                self._Configs.set('core', 'lastrequirementsudpate', int(time()))
+
+            self._moduleLibrary.import_modules()
+
         for name, config in HARD_LOAD.items():
             if self.sigint:
                 return
