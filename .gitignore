@@ -29,6 +29,7 @@ localmodules.ini*
 automation.txt*
 *.freeze
 *test.db
+requirements_compiled.txt
 
 # Building / Documentation #
 ############################
