@@ -17,6 +17,8 @@ from time import time, localtime, strftime
 # Import Yombo libraries
 from yombo.utils import is_string_bool
 
+yombo_ini = {}
+arguments = {}
 
 def init(incoming_arguments):
     global arguments
@@ -75,18 +77,18 @@ def read_yombo_ini():
             yombo_ini[section] = {}
             for option in config_parser.options(section):
                 value = config_parser.get(section, option)
-                try:
-                    value = is_string_bool(value)
-                except:
+                if value == "None":
+                    value = None
+                else:
                     try:
-                        value = int(value)
+                        value = is_string_bool(value)
                     except:
                         try:
-                            value = float(value)
+                            value = int(value)
                         except:
-                            if value == "None":
-                                value = None
-                            else:
+                            try:
+                                value = float(value)
+                            except:
                                 value = str(value)
                 yombo_ini[section][option] = value
     except IOError:
