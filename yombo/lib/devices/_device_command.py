@@ -372,6 +372,7 @@ class Device_Command(object):
         self.set_finished(finished_at=finished_at, status='delay_expired', message=message)
 
     def set_status(self, status, message=None, log_at=None, gateway_id=None):
+        logger.debug("device ({label}) has new status: {status}", label=self.device.full_label, status=status)
         if gateway_id is None:
             gateway_id = self.local_gateway_id
         self._dirty = True

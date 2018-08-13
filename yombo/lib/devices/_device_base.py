@@ -106,6 +106,8 @@ class Device_Base(Device_Attributes):
         :return: The request id.
         :rtype: str
         """
+        logger.debug("device ({label}), comand starting...", label=self.full_label)
+
         if self.enabled_status != 1:
             raise YomboWarning("Device cannot be used, it's not enabled.")
 
@@ -559,6 +561,7 @@ class Device_Base(Device_Attributes):
         :param kwargs:
         :return:
         """
+        logger.debug("device ({label}), set_status_process kwargs: {kwargs}", label=self.full_label, kwargs=kwargs)
         if len(self.status_history) == 0:
             previous_extra = {}
         else:
