@@ -71,7 +71,7 @@ from twisted.internet.task import LoopingCall
 from yombo.core.exceptions import YomboWarning, YomboHookStopProcessing
 from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
-from yombo.utils import global_invoke_all, pattern_search, is_true_false, random_string, random_int
+from yombo.utils import global_invoke_all, pattern_search, is_true_false, random_string, random_int, memory_usage
 from yombo.utils.datatypes import coerce_value
 from yombo.utils.converters import epoch_to_string
 
@@ -207,16 +207,15 @@ class States(YomboLibrary, object):
             return []
         return list(self.__States[gateway_id].values())
 
+    @inlineCallbacks
     def _init_(self, **kwargs):
         self.library_phase = 1
         self.gateway_id = self._Configs.get('core', 'gwid', 'local', False)
         self.__States = {self.gateway_id: {}}
         self.db_save_states_data = deque()
         self.db_save_states_loop = LoopingCall(self.db_save_states)
-        self.db_save_states_loop.start(random_int(30, .10), False)  # clean the database every 6 hours.
-        self.init_deferred = Deferred()
-        self.load_states()
-        return self.init_deferred
+        self.db_save_states_loop.start(random_int(30, .10), False)
+        yield self.load_states()
 
     def _load_(self, **kwargs):
         self.library_phase = 2
@@ -236,11 +235,8 @@ class States(YomboLibrary, object):
 
     def _started_(self, **kwargs):
         self.library_phase = 4
-
-    def _stop_(self, **kwargs):
-        if hasattr(self, 'load_deferred'):
-            if self.init_deferred is not None and self.init_deferred.called is False:
-                self.init_deferred.callback(1)  # if we don't check for this, we can't stop!
+        self.memory_usage_checker_loop = LoopingCall(self.memory_usage_checker)
+        self.memory_usage_checker_loop.start(random_int(600, .10))
 
     @inlineCallbacks
     def _unload_(self, **kwargs):
@@ -262,7 +258,6 @@ class States(YomboLibrary, object):
                     'created_at': state['created_at'],
                     'updated_at': state['updated_at'],
                 }
-        self.init_deferred.callback(10)
 
     def clean_states_table(self):
         """
@@ -271,6 +266,11 @@ class States(YomboLibrary, object):
         :return:
         """
         self._LocalDB.clean_states_table()
+
+    @inlineCallbacks
+    def memory_usage_checker(self):
+        usage = yield memory_usage()
+        self.set('yombo.memory_usage', usage)
 
     # def __repr__(self):
     #     states = {}
