@@ -63,8 +63,10 @@ function error {
 function need_sudo {
   if (( EUID != 0 ))
   then
+    echo ""
     echo "Error: ybo-config must be run as root (with sudo) for this request."
-    echo "Hint: Run the same same command again with 'sudo' in front."
+    echo "Hint: Run the same same command again with 'sudo' in front:"
+    echo "sudo ybo-config [args]"
     exit 1
   fi
   return 0
@@ -320,7 +322,6 @@ function do_update {
 
 function update {
   need_sudo
-  info "hello asdf"
   if [ "$ACCEPT" == "true" ]; then
     do_update
     echo "Log file deleted: $SHARELOG"

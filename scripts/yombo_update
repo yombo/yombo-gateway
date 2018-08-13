@@ -19,14 +19,18 @@ if [ "$(id -u)" -ne 0 ]; then
   exit
 fi
 
+#YOMBO_SCRIPT_DIR="$( cd "$(dirname "$0")" ; pwd -P )"
+
+
 TEMPSCRIPTPATH=$(readlink -f `which ybo`)
 rc=$?
 if [[ $rc != 0 ]]; then
- SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
+ SCRIPT_PATH="$( cd "$(dirname "$0")" ; pwd -P )"
 else
- SCRIPTPATH=$(dirname "$TEMPSCRIPTPATH")
+ YOMBO_SCRIPT_DIR=$(dirname "$TEMPSCRIPTPATH")"/scripts"
 fi
-cd "$SCRIPTPATH"
+YOMBO_ROOT_DIR="$(dirname $YOMBO_SCRIPT_DIR)"
+cd "$YOMBO_SCRIPT_DIR"
 
 usage()
 {
@@ -43,7 +47,6 @@ EOF
 
 ARC=$(uname -m)
 while true; do
-#  echo "Command: $1"
   case "$1" in
     "6")
       ARC="x86_64"
@@ -99,7 +102,7 @@ if [ "$ARC" == "none" ]; then
 fi
 
 
-if [ "$ARC" != "x86_64" ]; then
+if [ "$ARC" == "x86_64" ]; then
   OPTIMIZE="yes"
   echo "Advanced compiler optimization enabled for your architecture."
 else
@@ -107,4 +110,7 @@ else
   echo "This hardware architecture doesn't support advanced compiler optimizations."
 fi
 
-$SCRIPTPATH/scripts/update_debian $OPTIMIZE
+
+$YOMBO_SCRIPT_DIR/update_debian
+
+sudo runuser -l $SUDO_USER -c "bash -i $YOMBO_SCRIPT_DIR/update_debian_user $OPTIMIZE"
