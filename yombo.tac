@@ -7,7 +7,6 @@
 :license: LICENSE for details.
 """
 import asyncio
-from distutils.dir_util import copy_tree
 import os
 import select
 import shlex
@@ -25,21 +24,21 @@ except ImportError:
 
 try:
     import yombo.core.settings as settings
-    # import yombo.constants as yombo_constants
 except ImportError:
     sys.path.append(os.path.join(os.getcwd(), ""))
     import yombo.core.settings as settings
-    # import yombo.constants as yombo_constants
 
 stdoutbefore = getattr(sys.stdout, "encoding", None)
 stderrbefore = getattr(sys.stderr, "encoding", None)
 
 
 def show_help():
+    """Display the help menu when calling the tac file directly (a no-no)."""
     print("This file shouldn't be called directly by users. Please use either:")
     print("1) ybo - If installed by Yombo install scripts")
     print("2) %s/yombo.sh" % os.path.dirname(os.path.abspath(__file__)))
     print("\n")
+
 
 def get_arguments():
     """
@@ -108,8 +107,7 @@ def start():
         print("Error starting Yombo: %s" % e)
         exit()
 
-    working_dir = arguments['working_dir']
-    app_dir = arguments['app_dir']
+    working_dir = arguments['working_dir']  # Typically the user's directory: ~/.yombo
     #ensure that usr data directory exists
     if not os.path.exists('%s/gpg' % working_dir):
         os.makedirs('%s/gpg' % working_dir)
