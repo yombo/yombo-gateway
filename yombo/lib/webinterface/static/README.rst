@@ -9,7 +9,7 @@ web interface is complete.
 
 dist
 -------------
-Compiled fonts, css, and js files. This directory ships empty and is build when the gateway starts. This allows other
+Compiled fonts, css, and js files. This directory ships empty and is built when the gateway starts. This allows other
 libraries and modules to extend the web interface.
 
 build
