@@ -250,7 +250,6 @@ def route_devices(webapp):
         @require_auth()
         @inlineCallbacks
         def page_devices_details(webinterface, request, session, device_id):
-            print("asaaaa 1: %s" % device_id)
             session.has_access('device', device_id, 'view')
 
             try:
