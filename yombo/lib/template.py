@@ -31,8 +31,9 @@ from twisted.internet.defer import inlineCallbacks
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
-from yombo.utils import (forgiving_float, forgiving_round, multiply, logarithm, fail_when_undefined, strptime,
+from yombo.utils import (forgiving_float, forgiving_round, multiply, logarithm, fail_when_undefined,
                          is_yes_no, excerpt, make_link, format_markdown, display_hide_none)
+from yombo.utils.datetime import strptime
 
 import yombo.utils.datetime as dt
 import yombo.utils.converters as converters
