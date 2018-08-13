@@ -23,7 +23,9 @@ from datetime import datetime
 from difflib import SequenceMatcher
 from docutils.core import publish_parts
 from hashlib import sha256
+import importlib
 import inspect
+import jinja2
 import markdown
 import math
 import msgpack
@@ -33,10 +35,12 @@ from pkg_resources import DistributionNotFound
 import random
 import re
 import string
+from subprocess import check_output, CalledProcessError
 import sys
+import textwrap
 import zlib
 
-from twisted.internet import reactor
+from twisted.internet import reactor, threads
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.task import deferLater
 from twisted.internet.defer import Deferred
@@ -49,13 +53,16 @@ from yombo.ext.hashids import Hashids
 from yombo.core.exceptions import YomboWarning
 from yombo.utils.decorators import deprecated, memoize_ttl, memoize_
 import yombo.ext.base62 as base62
+logger = None
 
-
-def memory_usage():
-    return int(re.search(r'^VmRSS:\s+(\d+) kb$',
-        open('/proc/self/status','r').read(),
-        flags=re.IGNORECASE|re.MULTILINE).group(1))
-
+def set_util_logger(the_logger):
+    """
+    Called by core.gwservice::start() to setup the utils logger.
+    :param logger:
+    :return:
+    """
+    global logger
+    logger = the_logger
 
 def json_human(data):
     return json.dumps(data, indent=4, sort_keys=True)
@@ -65,7 +72,8 @@ def sha256_compact(input):
     return base62.encodebytes(sha256(unicode_to_bytes(input)).digest())
 
 
-def get_python_package_info(package_name):
+@inlineCallbacks
+def get_python_package_info(package_name, install_on_error=True):
     """
     Checks if a given python package name is installed. If so, returns it's info, otherwise returns None.
 
@@ -73,9 +81,46 @@ def get_python_package_info(package_name):
     :return:
     """
     try:
-        return pkg_resources.require([package_name])[0]
+        results = pkg_resources.require([package_name])[0]
+        return results
+    except DistributionNotFound as e:
+        if install_on_error is False:
+            return None
+    except pkg_resources.VersionConflict as e:
+        logger.warn("Python package is out of date. Will try to update. Have version: {dist}, but need: {req}",
+               dist=e.dist, req=e.req)
+
+    yield install_python_package(package_name)
+    importlib.reload(pkg_resources)
+    try:
+        pkg_info = pkg_resources.require([package_name])[0]
+        logger.warn("Python package updated: {name} = {version}", name=pkg_info.project_name, version=pkg_info.version)
+        return pkg_info
     except DistributionNotFound as e:
         return None
+    except pkg_resources.VersionConflict as e:
+        logger.warn("Unable to upgrade python package: {package}", package=package_name)
+
+@inlineCallbacks
+def install_python_package(package_name):
+    def update_pip_module(module_name):
+        try:
+            logger.info("About to install/upgrade python package: %s" % module_name)
+            out = check_output(['pip3', 'install', '-U', module_name])
+            t = 0, out
+        except CalledProcessError as e:
+            t = e.returncode, e.message
+        return t
+
+    try:
+        pip_results = yield threads.deferToThread(update_pip_module, package_name)
+        if pip_results[0] != 0:
+            raise Exception(pip_results[1])
+    except Exception as e:
+        logger.error("Unable to install/upgrade python package '{package_name}', reason: {e}",
+                    package_name=package_name, e=e)
+        logger.error("Try to manually isntall/update required packages: pip3 install -U -r requirements.txt")
+        raise YomboWarning("Unable to install/upgrade python package.")
 
 # def get_mdns(hostname):
 #     import dns.resolver
@@ -127,6 +172,12 @@ def save_file(filename, content, mode=None):
             setNonBlocking(fd)
             writeToFD(fd, content)
     writeFile(filename, unicode_to_bytes(content), mode)
+
+
+@inlineCallbacks
+def memory_usage():
+    usage = yield read_file('/proc/self/status', convert_to_unicode=True)
+    return int(re.search(r'^VmRSS:\s+(\d+) kb$', usage, flags=re.IGNORECASE|re.MULTILINE).group(1))
 
 
 def get_nested_dict(data_dict, map_list):
@@ -323,9 +374,8 @@ def pattern_search(look_for, items):
 
     ['yombo.status.hello', 'yombo.status.bye', 'visitor.livingroom.hello']
 
-    You can search
-    using #'s for wildcards consuming any number of spaces between or +'s as a wildcard for only
-    on work.  For example, a search of "#.hello" would result in:
+    You can search using #'s for wildcards consuming ay number of spaces between or +'s
+    as a wildcard for only on work.  For example, a search of "#.hello" would result in:
 
     ['yombo.status.hello', 'visitor.livingroom.hello']
 
@@ -648,59 +698,6 @@ def dict_filter(input_dict, key_list):
     return dict((key, input_dict[key]) for key in key_list if key in input_dict)
 
 
-def fopen(*args, **kwargs):
-    """
-    A help function that wraps around python open() function. Makes handling files a across platforms easier.
-
-    Modules that are looking to keep files open for reading, such as file monitoring, should use the the
-    :py:mod:`yombo.utils.filereader` class.
-    """
-    # For windows, always use binary mode.
-    if kwargs.pop('binary', True):
-        if is_windows():
-            if len(args) > 1:
-                args = list(args)
-                if 'b' not in args[1]:
-                    args[1] += 'b'
-            elif kwargs.get('mode', None):
-                if 'b' not in kwargs['mode']:
-                    kwargs['mode'] += 'b'
-            else:
-                # the default is to read
-                kwargs['mode'] = 'rb'
-
-    fhandle = open(*args, **kwargs)
-    if is_fcntl_available():
-        # modify the file descriptor on systems with fcntl
-        # unix and unix-like systems only
-        try:
-            FD_CLOEXEC = fcntl.FD_CLOEXEC   # pylint: disable=C0103
-        except AttributeError:
-            FD_CLOEXEC = 1                  # pylint: disable=C0103
-        old_flags = fcntl.fcntl(fhandle.fileno(), fcntl.F_GETFD)
-        fcntl.fcntl(fhandle.fileno(), fcntl.F_SETFD, old_flags | FD_CLOEXEC)
-    return fhandle
-
-
-def save_file(filename, content, mode=None):
-    """
-    A quick function to save data to a file. Defaults to overwrite, us mode 'a' to append.
-
-    Don't use this for saving large files.
-
-    :param filename: Full path to save to.
-    :param content: Content to save.
-    :param mode: File open mode, default to 'w'.
-    :return:
-    """
-    if mode is None:
-        mode = 'w'
-    content = bytes_to_unicode(content)
-    f = fopen(filename, mode)
-    f.write(content)
-    f.close()
-
-
 def file_last_modified(path_to_file):
     return os.path.getmtime(path_to_file)
 
@@ -953,8 +950,7 @@ def excerpt(value, length=None):
         length = 25
 
     if isinstance(value, str):
-        if len(value) > length:
-            return "%s..." % value[:length]
+        return textwrap.shorten(value, length)
     return value
 
 
@@ -995,66 +991,9 @@ def display_hide_none(value, allow_string=None, default=None):
     return value
 
 
-def human_alpabet():
+def human_alphabet():
     """ A subset of the alphabet, but with 1 (one), l (ele)...etc, removed."""
     return "ABCDEFGHJKLMNPQRTSUVWXYZabcdefghkmnopqrstuvwxyz23456789"
-
-
-def generate_uuid(**kwargs):
-    """
-    Create a 30 character UUID, where only 26 of the characters are random.
-    The remaining 4 characters are used by developers to track where a
-    UUID originated from.
-
-    **All arguments are kwargs.**
-
-    **Usage**:
-
-    .. code-block:: python
-
-       from yombo.utils import generate_uuid
-       newUUID = generate_uuid(maintype='G', subtype='a2A')
-
-    :param maintype: A single alphanumeric (0-9, a-z, A-Z) to note the uuid main type.
-    :type maintype: char
-    :param maintype: Up to 3 characters (0-9, a-z, A-Z) to note the uuid sub type.
-    :type subtype: string
-    :return: A random string, with source identifiers at the end, 30 bytes in length.
-    :rtype: string
-    """
-    uuid = random_string(length=26)
-    maintype= kwargs.get('maintype', 'z')
-    subtype= kwargs.get('subtype', 'zzz')
-
-    okPattern = re.compile(r'([0-9a-zA-Z]+)')
-
-    m = re.search(okPattern, maintype)
-    if m:
-        pass
-    else:
-        maintype = "z"
-        subtype = "zzz"
-
-    m = re.search(okPattern, subtype)
-    if m:
-        pass
-    else:
-        subtype = "zzz"
-
-    if len(maintype) != 1:
-        type = "z";
-
-    if len(subtype) == 1:
-        subtype = "zz" + subtype
-    elif len(subtype) == 2:
-        subtype = "z" + subtype
-    elif len(subtype) == 3:
-        pass
-    else:
-        subtype = "zzz"
-
-    tempit = uuid + subtype + maintype
-    return tempit
 
 
 @inlineCallbacks
@@ -1279,18 +1218,6 @@ def logarithm(value, base=math.e):
     except (ValueError, TypeError):
         return value  # return input if value cannot be processed.
 
-def strptime(string, fmt):
-    """
-    Primarily used for templates as a filter. Parse a time string to datetime.
-    :param string:
-    :param fmt:
-    :return:
-    """
-    try:
-        return datetime.strptime(string, fmt)
-    except (ValueError, AttributeError):
-        return string  # return input if value cannot be processed.
-
 
 def fail_when_undefined(value):
     """Filter to force a failure when the value is undefined."""
@@ -1301,7 +1228,7 @@ def fail_when_undefined(value):
 
 def test_bit(int_type, offset):
     """
-    Tests wether a specific bit is on or off for a given int.
+    Tests whether a specific bit is on or off for a given int.
 
     :param int_type: The given int to interrogate.
     :type int_type: int
@@ -1367,9 +1294,6 @@ def hashid_decode(input_value, min_length=2, salt='', alphabet='ABCDEFGHJKMNPQRS
     return hashid.decode(input_value)
 
 
-
-
-
 @memoize_
 def is_freebsd():
     """
@@ -1400,16 +1324,3 @@ def is_sunos():
     Returns if the host is sunos or not
     """
     return sys.platform.startswith('sunos')
-
-
-@memoize_
-def is_fcntl_available(check_sunos=False):
-    """
-    Simple function to check if the `fcntl` module is available or not.
-
-    If `check_sunos` is passed as `True` an additional check to see if host is
-    SunOS is also made.
-    """
-    if check_sunos and is_sunos():
-        return False
-    return HAS_FCNTL

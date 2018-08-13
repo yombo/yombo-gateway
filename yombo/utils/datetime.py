@@ -250,9 +250,9 @@ def as_utc(value: dt.datetime) -> dt.datetime:
     if value.tzinfo == UTC:
         return value
     elif value.tzinfo is None:
-        dattim = DEFAULT_TIME_ZONE.localize(value)
+        value = DEFAULT_TIME_ZONE.localize(value)
 
-    return dattim.astimezone(UTC)
+    return value.astimezone(UTC)
 
 
 def as_timestamp(dt_value):
@@ -460,3 +460,17 @@ def parse_time(time_str):
     except ValueError:
         # ValueError if value cannot be converted to an int or not in range
         return None
+
+
+def strptime(string, fmt):
+    """
+    Primarily used for templates as a filter. Parse a time string to datetime.
+
+    :param string:
+    :param fmt:
+    :return:
+    """
+    try:
+        return datetime.strptime(string, fmt)
+    except (ValueError, AttributeError):
+        return string  # return input if value cannot be processed.
