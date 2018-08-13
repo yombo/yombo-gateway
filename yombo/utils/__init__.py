@@ -83,9 +83,11 @@ def get_python_package_info(package_name, install_on_error=True):
     try:
         results = pkg_resources.require([package_name])[0]
         return results
-    except DistributionNotFound as e:
+    except pkg_resources.DistributionNotFound as e:
         if install_on_error is False:
+            logger.warn("Python package was not found, and won't be installed: {package_name}", package_name=package_name)
             return None
+
     except pkg_resources.VersionConflict as e:
         logger.warn("Python package is out of date. Will try to update. Have version: {dist}, but need: {req}",
                dist=e.dist, req=e.req)
@@ -96,7 +98,7 @@ def get_python_package_info(package_name, install_on_error=True):
         pkg_info = pkg_resources.require([package_name])[0]
         logger.warn("Python package updated: {name} = {version}", name=pkg_info.project_name, version=pkg_info.version)
         return pkg_info
-    except DistributionNotFound as e:
+    except pkg_resources.DistributionNotFound as e:
         return None
     except pkg_resources.VersionConflict as e:
         logger.warn("Unable to upgrade python package: {package}", package=package_name)
