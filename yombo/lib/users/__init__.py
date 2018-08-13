@@ -53,7 +53,7 @@ class Users(YomboLibrary):
         """
         Attempts to find the user requested.
 
-            >>> system_cpus = self._Users['mitch@example.com']
+            >>> user_mitch = self._Users['mitch@example.com']
 
         :raises YomboWarning: Raised when request is malformed.
         :raises KeyError: Raised when request is not found.
@@ -131,6 +131,7 @@ class Users(YomboLibrary):
         self.users: dict = {}
         self.owner_id = self._Configs.get('core', 'owner_id', None, False)
         self.owner_user = None
+        self.platforms = []  # list of possible/known access platforms
 
         self.load_roles()
 

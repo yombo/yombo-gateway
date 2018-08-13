@@ -112,6 +112,9 @@ class Role(object):
 
         if permission['id'] not in self.permissions[access]:
             self.permissions[access][permission['id']] = permission
+        platform = permission['platform']
+        if platform not in self._Parent.platforms:
+            self._Parent.platforms.append(platform)
         self.save()
 
     def delete_rule(self, permission_id):
