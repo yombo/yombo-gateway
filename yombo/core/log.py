@@ -16,20 +16,20 @@ Handles logging functions.
 :view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/core/module.html>`_
 """
 # Import python libraries
-import configparser
 from zope.interface import provider
 import io
 import os
 import gzip
+from copy import copy
 
 # Import twisted libraries
 from twisted.logger import globalLogPublisher, FilteringLogObserver, InvalidLogLevelError, \
     Logger, LogLevel, LogLevelFilterPredicate, ILogObserver, formatEvent, formatTime, \
     textFileLogObserver, jsonFileLogObserver
-from twisted.internet.task import LoopingCall
 from twisted.internet import reactor
 
 import yombo.core.settings as settings
+
 
 def static_var(varname, value):
     """
@@ -69,23 +69,28 @@ logLevels = (
 )
 
 bcolor = {'debug':'\033[94m',
-        'info':'\033[92m',
-        'warn':'\033[93m',
-        'error':'\033[91m',
-        'default':'\033[33m',
-        }
+          'info':'\033[92m',
+          'warn':'\033[93m',
+          'error':'\033[91m',
+          'default':'\033[33m',
+         }
+
 
 @provider(ILogObserver)
 def simpleObserver(event):
     print(event)
     print((formatEvent(event)))
 
-logFormat = lambda event: "{0} [{1}]: {2}".format(formatTime(event["log_time"]), event["log_level"].name.upper(),
-                                                   formatEvent(event))
+
+log_format = lambda event: "{0} [{1}]: {2}".format(formatTime(event["log_time"]),
+                                                  event["log_level"].name.upper(),
+                                                  formatEvent(event))
+
 
 @provider(ILogObserver)
 def consoleLogObserver(event):
     print("[{0}{1}\033[39m-{2}]: {3}".format(bcolor[event["log_level"].name.lower()], event["log_level"].name.upper(), event["log_namespace"], formatEvent(event)))
+
 
 @static_var('rotate_loop', None)
 def get_logger(logname='yombolog', **kwargs):
@@ -117,7 +122,6 @@ def get_logger(logname='yombolog', **kwargs):
     if logname in loggers:
         return loggers[logname]
 
-    loglevel = None
     source = kwargs.get('source', logname)
 
     # Determine the logging level
@@ -125,20 +129,28 @@ def get_logger(logname='yombolog', **kwargs):
         import yombo.core.settings as settings
         if 'logging' in settings.yombo_ini:
             log_levels = settings.yombo_ini['logging']
+            print("log_levels: %s" % log_levels)
 
-    logFilter = LogLevelFilterPredicate()
+    log_filter = LogLevelFilterPredicate()
+    log_name_search = copy(logname)
     try:
-        if logname in log_levels:
-          iniLogLevel = log_levels[logname].lower()
-          logFilter.setLogLevelForNamespace(logname, LogLevel.levelWithName(iniLogLevel))
+        ini_log_level = 'info'
+        while len(log_name_search) > 0:
+            if log_name_search in log_levels:
+                ini_log_level = log_levels[log_name_search].lower()
+                break
+            # This crazy line removes the last element in the string.
+            log_name_search = ".".join(log_name_search.rsplit('.')[:-1])
+        log_filter.setLogLevelForNamespace(logname, LogLevel.levelWithName(ini_log_level))
+
     except InvalidLogLevelError:
-        logFilter.setLogLevelForNamespace(logname, LogLevel.info)
+        log_filter.setLogLevelForNamespace(logname, LogLevel.info)
         # Yell at the user if they specified an invalid log level
         loggers[logname].warn("yombo.ini file contained invalid log level {invalidLevel}, level has been set to INFO instead.",
                            invalidLevel=log_levels[logname].lower())
 
     # Set up logging
-    consoleFilterObserver = FilteringLogObserver(consoleLogObserver, (logFilter,))
+    consoleFilterObserver = FilteringLogObserver(consoleLogObserver, (log_filter,))
 
     logger = Logger(namespace=logname, source=source, observer=consoleFilterObserver)
     loggers[logname] = logger
@@ -163,9 +175,11 @@ def get_logger(logname='yombolog', **kwargs):
 
     return loggers[logname]
 
+
 def rotate_logs():
     reactor.callInThread(do_rotate_logs, 'usr/log/yombo.json', 'json')
     reactor.callInThread(do_rotate_logs, 'usr/log/yombo.text', 'text')
+
 
 def do_rotate_logs(basefile, type):
     global observers
