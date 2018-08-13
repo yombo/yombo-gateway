@@ -71,6 +71,10 @@
     <div class="col-lg-6">
         <div class="panel panel-default">
             <div class="panel-heading">
+                {% if role.source == 'user' %}
+                <a href="/roles/{{role.role_id}}/add_permission/allow" class="btn btn-md btn-primary pull-right">
+                    Add Permission</a>
+                {% endif %}
                 <h4>Allow Permissions</h4>
             </div>
             <!-- /.panel-heading -->
@@ -104,6 +108,10 @@
     <div class="col-lg-6">
         <div class="panel panel-default">
             <div class="panel-heading">
+                {% if role.source == 'user' %}
+                <a href="/roles/{{role.role_id}}/add_permission/deny" class="btn btn-md btn-primary pull-right">
+                    Add Permission</a>
+                {% endif %}
                 <h4>Deny Permissions</h4>
             </div>
             <!-- /.panel-heading -->

@@ -88,18 +88,25 @@
                                 </td>
                                 <td>
                                     {%- if role.permissions['allow']|length > 0 %}
-                                    <strong>Allow</strong>
-                                    <ul>
-                                    {% for permission in role.permissions['allow'] %}
-                                        <li>{{permission[0]}} <i class="fas fa-arrow-right"></i> {{permission[1]}}</li>
-                                    {% endfor %}
+                                    <ul style="padding-left: 15px">
+                                        <li><strong>Allow</strong></li>
+                                    {% for permission_id, permission in role.permissions['allow'].items() %}
+                                    <ul style="padding-left: 15px">
+                                        <li>Platform: {{permission['platform']}}</li>
+                                        <li>Item: {{permission['item']}}</li>
+                                        <li style="padding-bottom: 20px">Action: {{permission['action']}}</li>
                                     </ul>
+                                    {% endfor %}
                                     {% endif %}
                                     {%- if role.permissions['deny']|length > 0 %}
                                     <strong>Deny</strong>
-                                    <ul>
-                                    {% for permission in role.permissions['deny'] %}
-                                        <li>{{permission[0]}} <i class="fas fa-arrow-right"></i> {{permission[1]}}</li>
+                                    <ul style="padding-left: 15px">
+                                    {% for permission_id, permission in role.permissions['allow'].items() %}
+                                    <ul style="padding-left: 15px">
+                                        <li>Platform: {{permission['platform']}}</li>
+                                        <li>Item: {{permission['item']}}</li>
+                                        <li style="padding-bottom: 20px">Action: {{permission['action']}}</li>
+                                    </ul>
                                     {% endfor %}
                                     </ul>
                                     {% endif %}
