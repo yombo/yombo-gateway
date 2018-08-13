@@ -315,7 +315,7 @@ class WebInterface(YomboLibrary):
         self.module_config_links = {}
 
         self.auth_pin = self._Configs.get2('webinterface', 'auth_pin',
-              yombo.utils.random_string(length=4, letters=yombo.utils.human_alpabet()).lower())
+              yombo.utils.random_string(length=4, letters=yombo.utils.human_alphabet()).lower())
         self.auth_pin_totp = self._Configs.get2('webinterface', 'auth_pin_totp', yombo.utils.random_string(length=16))
         self.auth_pin_type = self._Configs.get2('webinterface', 'auth_pin_type', 'pin')
         self.auth_pin_required = self._Configs.get2('webinterface', 'auth_pin_required', True)
