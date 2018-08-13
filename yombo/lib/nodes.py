@@ -50,7 +50,10 @@ class Nodes(YomboLibrary):
 
     def __contains__(self, node_requested):
         """
-        .. note:: The node must be enabled in order to be found using this method.
+
+        .. note::
+
+          The node must be enabled in order to be found using this method.
 
         Checks to if a provided node ID or machine_label exists.
 
@@ -75,7 +78,9 @@ class Nodes(YomboLibrary):
 
     def __getitem__(self, node_requested):
         """
-        .. note:: The node must be enabled to be found using this method.
+        .. note::
+
+          The node must be enabled to be found using this method.
 
         Attempts to find the device requested using a couple of methods.
 
@@ -324,8 +329,8 @@ class Nodes(YomboLibrary):
 
         .. note::
 
-        Modules shouldn't use this function. Use the built in reference to
-        find devices:
+          Modules shouldn't use this function. Use the built in reference to
+          find devices:
 
             >>> self._Nodes['13ase45']
 
