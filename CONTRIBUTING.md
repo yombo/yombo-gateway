@@ -1,18 +1,21 @@
 # Contributing to Yombo
 
 Everybody is invited and welcome to contribute to Yombo. There is a lot to do...if
-you are not a developer perhaps you would like to help with the documentation on
-[yombo.net](https://yombo.net/)? If you are a developer and have devices in your home
-which aren't working with Yobmo yet, why not spent a couple of hours and
-help to integrate them?
+you don't know Python and you would like to help, you can contribute 
+[translations](https://yombo.net/docs/translations) if you know any other
+languages. If you know Python or want to learn it, you can contribute in one of these areas:
 
-The process is straight-forward.
+* [Integrate new protocols](https://yombo.net/docs/contributing#modules) - Create a new module to
+add support for new device protocols.
+* [Contribute to core](https://yombo.net/docs/contributing#core) - Add core features, fix bugs,
+or update [developer documentation](https://yombo.net/docs/gateway/html/current/index.html).
 
- - Read [How to get faster PR reviews](https://yombo.net/docs/contributing/pull_requests)
- - Fork the Yombo [git repository](https://github.com/yombo/yombo-gateway).
- - Bug a bug, implement new feature, update documentation, etc.
- - Ensure tests work.
- - Create a Pull Request against the [**develop**](https://github.com/yombo/yombo-gateway/tree/develop) branch of Yombo.
+* Fork the Yombo [git repository](https://github.com/yombo/yombo-gateway).
+* Kill a bug, implement new feature, update documentation, etc.
+* Ensure tests work.
+* Read [How to get faster pull-request reviews](https://yombo.net/docs/developer/pull_requests)
+* Create a Pull Request against the [**develop**](https://github.com/yombo/yombo-gateway/tree/develop)
+branch of Yombo.
 
-Still interested? Then you should take a peek at the [developer documentation](https://yombo.net/docs/contributing)
-to get more details.
+Still interested? Then you should take a peek at the
+[developer documentation](https://yombo.net/docs/developer) to get more details.
