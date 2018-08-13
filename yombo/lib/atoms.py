@@ -489,7 +489,8 @@ class Atoms(YomboLibrary):
         atoms['pid'] = os.getpid()
         (atoms['kernel'], atoms['system.name'], atoms['kernel.release'], version,
          atoms['cpu.arch'], _) = platform.uname()
-
+        atoms['python.version'] = platform.python_version()
+        atoms['python.build'] = platform.python_build()[0]
         atoms['cpu.count'] = 0
         atoms['mem.total'] = 0
         atoms['mem.sizing'] = 'medium'

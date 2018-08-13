@@ -4,13 +4,13 @@
 {% block content %}
 <div class="row">
     <div class="col-lg-12">
-        <h1 class="page-header">System Information</h1>
     </div>
     <!-- /.col-lg-12 -->
 </div>
 <!-- /.row -->
 <div class="row">
     <div class="col-lg-12">
+        <h1 class="page-header">System Information</h1>
         <div class="dataTable_wrapper">
             <table width="100%" class="table table-striped table-bordered table-hover" id="statusinfo">
                 <thead>
@@ -20,7 +20,19 @@
                 </thead>
                 <tbody>
                      <tr>
-                         <td> Version </td><td> {{ _local_gateway.version }} </td>
+                         <td> Yombo Gateway Version </td><td> {{ _local_gateway.version }} </td>
+                     </tr>
+                     <tr>
+                         <td> Python Version </td><td> {{ _atoms['python.version'] }} </td>
+                     </tr>
+                     <tr>
+                         <td> Python Build Date </td><td> {{ _atoms['python.build'] }} </td>
+                     </tr>
+                     <tr>
+                         <td> Yombo install path </td><td> {{ _atoms['app_dir'] }} </td>
+                     </tr>
+                     <tr>
+                         <td> Yombo user storage path </td><td> {{ _atoms['working_dir'] }} </td>
                      </tr>
                 </tbody>
             </table>
@@ -31,7 +43,8 @@
 </div>
 <div class="row">
     <div class="col-lg-12">
-        <h3>Notification targets</h3>
+        <br>
+        <h1 class="page-header">Notification targets</h1>
         <div class="dataTable_wrapper">
             <table width="100%" class="table table-striped table-bordered table-hover" id="notiftargets">
                 <thead>
@@ -47,6 +60,7 @@
                          {% for line in data %}
                              {{line.description}} ({{line.component}})
                          {% endfor %}
+                         </td>
                      </tr>
                  {% endfor %}
                 </tbody>
@@ -59,7 +73,10 @@
 
 <div class="row">
     <div class="col-lg-12">
-        <h3>Currently required python modules</h3>
+        <br>
+        <h1>Python modules</h1>
+        This python modules were installed through various requirements.txt files within the Yombo gateway.
+        <hr>
         <div class="dataTable_wrapper">
             <table width="100%" class="table table-striped table-bordered table-hover" id="requirements">
                 <thead>

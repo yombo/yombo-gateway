@@ -5,6 +5,7 @@ import os
 import time
 
 # Import twisted libraries
+from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks
 from twisted.web.static import File
 
@@ -23,8 +24,10 @@ def route_system(webapp):
         @require_auth()
         def page_system_index(webinterface, request, session):
             session.has_access('system_options', '*', 'status', raise_error=True)
+            delayed_calls = reactor.getDelayedCalls()
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/system/index.html')
             return page.render(alerts=webinterface.get_alerts(),
+                               delayed_calls=delayed_calls,
                                )
 
         @webapp.route('/backup')
