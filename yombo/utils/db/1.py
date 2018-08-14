@@ -38,9 +38,6 @@ def new_db_file(Registry, **kwargs):
     yield create_table_statistics(Registry)
     yield create_table_tasks(Registry)
     yield create_table_users(Registry)
-    # yield create_table_user_roles(Registry)
-    # yield create_table_roles(Registry)
-    yield create_table_access_control_list(Registry)
     yield create_table_webinterface_api_auth(Registry)
     yield create_table_webinterface_sessions(Registry)
     yield create_table_webinterface_logs(Registry)
@@ -198,7 +195,9 @@ def create_table_device_commands(Registry, **kwargs):
         `command_status_received` INT NOT NULL DEFAULT 0,
         `history`           TEXT NOT NULL,
         `status`            TEXT NOT NULL,
-        `requested_by`      TEXT,
+        `user_id`           TEXT NOT NULL,
+        `user_type`         TEXT NOT NULL,
+        `requesting_source` TEXT NOT NULL,
         `idempotence`       TEXT,
         `uploaded`          INTEGER NOT NULL DEFAULT 0,
         `uploadable`        INTEGER NOT NULL DEFAULT 0 /* For security, only items marked as 1 can be sent externally */
@@ -225,8 +224,10 @@ def create_table_device_status(Registry, **kwargs):
         `human_message`        TEXT NOT NULL,
         `machine_status`       TEXT NOT NULL,
         `machine_status_extra` TEXT,
-        `requested_by`         TEXT NOT NULL,
-        `reported_by`          TEXT NOT NULL,
+        `user_id`              TEXT NOT NULL,
+        `user_type`            TEXT NOT NULL,
+        `requesting_source`     TEXT NOT NULL,
+        `reporting_source`     TEXT NOT NULL,
         `request_id`           TEXT,
         `uploaded`             INTEGER NOT NULL DEFAULT 0,
         `uploadable`           INTEGER NOT NULL DEFAULT 0 /* For security, only items marked as 1 can be sent externally */
@@ -611,66 +612,6 @@ def create_table_users(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('users', 'id', unique=True))
     yield Registry.DBPOOL.runQuery(create_index('users', 'email'))
-
-
-# @inlineCallbacks
-# def create_table_roles(Registry, **kwargs):
-#     """  """
-#     table = """CREATE TABLE `roles` (
-#         `id`            INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-#         `machine_label` TEXT NOT NULL,
-#         `label`         TEXT NOT NULL,
-#         `description`   TEXT,
-#         `permissions`   TEXT,
-#         `updated_at`    INTEGER NOT NULL,
-#         `created_at`    INTEGER NOT NULL
-#         );"""
-#     yield Registry.DBPOOL.runQuery(table)
-#     yield Registry.DBPOOL.runQuery(create_index('roles', 'id', unique=True))
-#     yield Registry.DBPOOL.runQuery(create_index('roles', 'machine_label', unique=True))
-#
-#
-# @inlineCallbacks
-# def create_table_user_roles(Registry, **kwargs):
-#     """ Not stores in normal Yombo cloud. """
-#     table = """CREATE TABLE `user_roles` (
-#         `id`            INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-#         `email`         TEXT NOT NULL,
-#         `devices`       TEXT NOT NULL,     -- msgpack list of devices
-#         `roles`         TEXT NOT NULL,     -- msgpack list of roles
-#         `updated_at`    INTEGER NOT NULL,
-#         `created_at`    INTEGER NOT NULL
-#         );"""
-#     yield Registry.DBPOOL.runQuery(table)
-#     yield Registry.DBPOOL.runQuery(create_index('user_roles', 'id', unique=True))
-#     yield Registry.DBPOOL.runQuery(create_index('user_roles', 'email', unique=True))
-
-
-@inlineCallbacks
-def create_table_access_control_list(Registry, **kwargs):
-    """  """
-    table = """CREATE TABLE `access_control_list` (
-        `id`            TEXT NOT NULL,
-        `user_id`       TEXT NOT NULL,
-        `role_id`       TEXT NOT NULL,
-        `access_type`   TEXT NOT NULL,
-        `resource`      TEXT NOT NULL,
-        `description`   TEXT,
-        `updated_at`    INTEGER NOT NULL,
-        `created_at`    INTEGER NOT NULL,
-    CONSTRAINT fk_acl_user
-        FOREIGN KEY (user_id)
-        REFERENCES users(id)
-        ON DELETE CASCADE,
-    CONSTRAINT fk_acl_role
-        FOREIGN KEY (role_id)
-        REFERENCES users(id)
-        ON DELETE CASCADE
-        );"""
-    yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('access_control_list', 'id', unique=True))
-    yield Registry.DBPOOL.runQuery(create_index('access_control_list', 'user_id', unique=True))
-    yield Registry.DBPOOL.runQuery(create_index('access_control_list', 'role_id', unique=True))
 
 
 @inlineCallbacks

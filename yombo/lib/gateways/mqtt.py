@@ -129,11 +129,8 @@ class Gateway_Coms(object):
             try:
                 device.command(
                     cmd=command,
-                    requested_by={
-                        'user_id': None,
-                        'component': 'yombo.gateway.lib.gateways.mqtt',
-                        'gateway': self.gateway_id()
-                    },
+                    user_id='TO_BE_IMPLETMENTED:MQTT',
+                    user_type='TO_BE_IMPLETMENTED:MQTT',
                     pin=pin_code,
                     delay=delay,
                     max_delay=max_delay,

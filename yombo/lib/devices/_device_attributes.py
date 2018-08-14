@@ -196,12 +196,8 @@ class Device_Attributes(object):
         there is no current status which basically says the status is unknown.
         """
         if len(self.status_history) == 0:
-            requested_by = {
-                'user_id': 'Unknown',
-                'component': 'Unknown',
-            }
             return Device_Status(self._Parent, self, {
-                'device_id': self.device_id,
+                'command': None,
                 'set_at': time(),
                 'energy_usage': 0,
                 'energy_type': self.energy_type,
@@ -210,8 +206,9 @@ class Device_Attributes(object):
                 'machine_status': None,
                 'machine_status_extra': {},
                 'gateway_id': self.gateway_id,
-                'requested_by': requested_by,
-                'reported_by': None,
+                'user_id': 'unknown',
+                'user_type': 'unknown',
+                'reporting_source': 'unknown',
                 'request_id': None,
                 'uploaded': 0,
                 'uploadable': 1,

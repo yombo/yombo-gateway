@@ -80,11 +80,8 @@ def route_api_v1_device(webapp):
             try:
                 request_id = device.command(
                     cmd=command_id,
-                    requested_by={
-                        'user_id': session.user_id,
-                        'component': 'yombo.gateway.lib.webinterface.routes.api_v1.devices.device_command',
-                        'gateway': webinterface.gateway_id()
-                    },
+                    user_id=session.auth_id,
+                    user_type=session.session_type,
                     pin=pin_code,
                     delay=delay,
                     max_delay=max_delay,
@@ -94,8 +91,10 @@ def route_api_v1_device(webapp):
                     idempotence=request.idempotence,
                 )
             except KeyError as e:
-                return return_not_found(request, 'Error with command: %s' % e)
+                print("error with apiv1_device_command_get_post keyerror: %s" % e)
+                return return_not_found(request, 'Error with command, it is not found: %s' % e)
             except YomboWarning as e:
+                print("error with apiv1_device_command_get_post warning: %s" % e)
                 return return_error(request, 'Error with command: %s' % e)
 
             DC = webinterface._Devices.device_commands[request_id]

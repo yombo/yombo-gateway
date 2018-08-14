@@ -610,11 +610,6 @@ class LocalDB(YomboLibrary):
             else:
                 record['machine_status_extra'] = data_unpickle(machine_status_extra)
 
-            requested_by = record['requested_by']
-            if requested_by is None:
-                record['requested_by'] = None
-            else:
-                record['requested_by'] = data_unpickle(requested_by)
             data.append(record)
         return data
 
@@ -645,7 +640,6 @@ class LocalDB(YomboLibrary):
             record['source'] = "database"
             record['inputs'] = data_unpickle(record['inputs'])
             record['history'] = data_unpickle(record['history'])
-            record['requested_by'] = data_unpickle(record['requested_by'])
             data.append(record)
         return data
 

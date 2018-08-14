@@ -675,6 +675,7 @@ class MQTT(YomboLibrary):
     def test_mqtt_in(self, topic, payload, qos, retain):
         print("i got this: %s / %s" % (topic, payload))
 
+
 class MQTTClient(object):
     """
     A helper class for MQTT. This class is returned back to the any module that request a new MQTT client connection.

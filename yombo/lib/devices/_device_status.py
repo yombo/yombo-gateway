@@ -81,8 +81,10 @@ class Device_Status(object):
         self.human_message = None
         self.machine_status = None
         self.machine_status_extra = None
-        self.requested_by = None
-        self.reported_by = None
+        self.user_id = None
+        self.user_type = None
+        self.requesting_source = None
+        self.reporting_source = None
         self.request_id = None
         self.uploaded = None
         self.uploadable = None
@@ -148,10 +150,14 @@ class Device_Status(object):
             self.machine_status = device["machine_status"]
         if 'machine_status_extra' in device:
             self.machine_status_extra = device["machine_status_extra"]
-        if 'requested_by' in device:
-            self.requested_by = device["requested_by"]
-        if 'reported_by' in device:
-            self.reported_by = device["reported_by"]
+        if 'user_id' in device:
+            self.user_id = device["user_id"]
+        if 'user_type' in device:
+            self.user_type = device["user_type"]
+        if 'requesting_source' in device:
+            self.requesting_source = device["requesting_source"]
+        if 'reporting_source' in device:
+            self.reporting_source = device["reporting_source"]
         if 'request_id' in device:
             self.request_id = device["request_id"]
         if 'uploaded' in device:
@@ -182,14 +188,16 @@ class Device_Status(object):
             'human_message': self.human_message,
             'machine_status': self.machine_status,
             'machine_status_extra': self.machine_status_extra,
-            'requested_by': self.requested_by,
-            'reported_by': self.reported_by,
+            'user_id': self.user_id,
+            'user_type': self.user_type,
+            'requesting_source': self.requesting_source,
+            'reporting_source': self.reporting_source,
             'request_id': self.request_id,
             'uploaded': self.uploaded,
             'uploadable': self.uploadable,
+            'fake_data': self.fake_data,
         })
         if full is True:
-            results['fake_data'] = self.fake_data
             results['dirty'] = self._dirty
             results['in_db'] = self._in_db
             results['source'] = self.source
@@ -198,26 +206,17 @@ class Device_Status(object):
     def save_to_db(self, forced=None):
         # print("device status: save_to_db,,, in db: %s, dirty: %s, machine_status: %s" % (self._in_db, self._dirty, self.machine_status))
 
-        if self.fake_data is True:
-            self._dirty = False
-            return
-
-        if self.machine_status is None:
-            self._dirty = False
-            return
-
-        if self.device.gateway_id != self._Parent.gateway_id:
+        if self.fake_data is True or self.machine_status is None or self.device.gateway_id != self._Parent.gateway_id:
             self._dirty = False
             return
 
         # print("status: %s, dirty: %s" % (self.status_id, self._dirty))
         if self._dirty or forced is True:
             data = self.asdict()
-            # if self.inputs is None:
-            #     data['inputs'] = None
-            # else:
+            if 'fake_data' in data:
+                del data['fake_data']
+
             data['machine_status_extra'] = data_pickle(self.machine_status_extra)
-            data['requested_by'] = data_pickle(self.requested_by)
 
             if self._in_db is True:
                 # print("device status update, save to database... %s" % self.asdict(True))

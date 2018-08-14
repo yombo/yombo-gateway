@@ -593,8 +593,7 @@ class Devices(YomboLibrary):
                 commands.update(device.delayed_commands())
             return commands
 
-    def command(self, device, cmd, pin=None, request_id=None, not_before=None, delay=None, max_delay=None,
-                requested_by=None, inputs=None, **kwargs):
+    def command(self, device, cmd, **kwargs):
         """
         Tells the device to a command. This in turn calls the hook _device_command_ so modules can process the command
         if they are supposed to.
@@ -631,8 +630,7 @@ class Devices(YomboLibrary):
         :return: The request id.
         :rtype: str
         """
-        return self.get(device).command(cmd, pin, request_id, not_before, delay, max_delay, requested_by=requested_by,
-                                        inputs=inputs, **kwargs)
+        return self.get(device).command(cmd, **kwargs)
 
     def mqtt_incoming(self, topic, payload, qos, retain):
         """
@@ -689,12 +687,7 @@ class Devices(YomboLibrary):
 
         elif parts[3] == 'cmd':
             try:
-                requested_by = {
-                    'user_id': 'Unknown',
-                    'component': 'yombo.gateway.lib.devices.mqtt_incoming',
-                    'gateway': 'Unknown'
-                }
-                device.command(cmd=parts[4], reported_by='yombo.gateway.lib.devices.mqtt_incoming')
+                device.command(cmd=parts[4])
             except Exception as e:
                 logger.warn("Device received invalid command request for command: %s  Reason: %s" % (parts[4], e))
 

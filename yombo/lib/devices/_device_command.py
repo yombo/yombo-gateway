@@ -131,7 +131,9 @@ class Device_Command(object):
             'canceled': [],
             'done': [],
         }
-        self.requested_by = data['requested_by']
+        self.user_id = data['user_id']
+        self.user_type = data['user_type']
+        self.requesting_source = data['requesting_source']
         self._status = data.get('status', 'new')
 
         self.command_status_received = is_true_false(data.get('command_status_received', False))  # if a status has been reported against this request
@@ -410,7 +412,6 @@ class Device_Command(object):
             # else:
             data['history'] = data_pickle(self.history)
             data['inputs'] = data_pickle(self.inputs)
-            data['requested_by'] = data_pickle(self.requested_by)
 
             if self._in_db is True:
                 self._Parent._LocalDB.add_bulk_queue('device_commands', 'update', data, 'request_id')
@@ -441,7 +442,9 @@ class Device_Command(object):
             "command_status_received": self.command_status_received,
             "history": self.history,
             "status": self.status,
-            "requested_by": self.requested_by,
+            "user_id": self.user_id,
+            "user_type": self.user_type,
+            "requesting_source": self.requesting_source,
             "idempotence": self.idempotence,
         })
 

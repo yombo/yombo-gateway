@@ -65,10 +65,12 @@
             </div>
             <!-- /.panel-heading -->
             <div class="panel-body">
-                {% for key, value in device_command.requested_by.items() %}
-                    <label style="margin-top: 15px; margin-bottom: 0px">{{ key }}:</label><br>
-                    {{ value }}<br>
-                {% endfor %}
+                <label style="margin-top: 0px; margin-bottom: 0px">User Id: </label><br>
+                {{ device_command.user_id }}<br>
+                <label style="margin-top: 15px; margin-bottom: 0px">User Type: </label><br>
+                {{ device_command.user_type }}<br>
+                <label style="margin-top: 15px; margin-bottom: 0px">Requesting Source: </label><br>
+                {{ device_command.requesting_source }}<br>
             </div>
         </div>
         <!-- /.panel-body -->
