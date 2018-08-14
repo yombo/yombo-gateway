@@ -46,7 +46,7 @@ Developing Modules
 
 Documentation for developing modules can be found at: https://yg2.in/dev
 
-A quick start guide to developing modules can be found her:
+A quick start guide to developing modules can be found here:
 https://yg2.in/dev1
 
 ===============================
@@ -54,7 +54,7 @@ Getting Help / Other Resources
 ===============================
 
 For issue (tickets), feature requests, and roadmaps, visit
-`Yombo Projects <https://projects.yombo.net/>`_ page.
+`Yombo github projects <https://github.com/yombo/yombo-gateway/projects>`_ page.
 
 ==============
 Privacy Policy
