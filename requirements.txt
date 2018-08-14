@@ -14,7 +14,7 @@ markdown==2.6.11
 msgpack-python==0.5.6
 netaddr==0.7.19
 netifaces==0.10.7
-numpy==1.14.*
+numpy==1.15.*
 parsedatetime==2.4
 passlib==1.7.*
 pika==0.12.0
