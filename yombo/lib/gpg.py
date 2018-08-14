@@ -208,6 +208,8 @@ class GPG(YomboLibrary):
             logger.warn("Unable to send GPG - no valid local key exists.")
             return
 
+        # print("elf.mykey_last_sent_yombo(): %s" % type(self.mykey_last_sent_yombo()))
+        # print("elf.mykey_last_sent_yombo(): %s" % self.mykey_last_sent_yombo())
         if self.mykey_last_sent_yombo() is None:
             self.send_my_gpg_key_to_yombo()
         elif self.mykey_last_sent_yombo() < int(time()) - (60*60*24*30):
