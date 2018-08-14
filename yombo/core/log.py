@@ -129,7 +129,6 @@ def get_logger(logname='yombolog', **kwargs):
         import yombo.core.settings as settings
         if 'logging' in settings.yombo_ini:
             log_levels = settings.yombo_ini['logging']
-            print("log_levels: %s" % log_levels)
 
     log_filter = LogLevelFilterPredicate()
     log_name_search = copy(logname)

@@ -55,6 +55,7 @@ from yombo.utils.decorators import deprecated, memoize_ttl, memoize_
 import yombo.ext.base62 as base62
 logger = None
 
+
 def set_util_logger(the_logger):
     """
     Called by core.gwservice::start() to setup the utils logger.
@@ -63,6 +64,7 @@ def set_util_logger(the_logger):
     """
     global logger
     logger = the_logger
+
 
 def json_human(data):
     return json.dumps(data, indent=4, sort_keys=True)
