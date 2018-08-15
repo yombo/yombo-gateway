@@ -81,7 +81,7 @@ def route_api_v1_device(webapp):
                 request_id = device.command(
                     cmd=command_id,
                     user_id=session.auth_id,
-                    user_type=session.session_type,
+                    user_type=session.auth_type,
                     pin=pin_code,
                     delay=delay,
                     max_delay=max_delay,

@@ -794,6 +794,7 @@ class Statistics(YomboLibrary):
 
         try:
             if len(to_save) > 0:
+                logger.warn("Stats save data: {to_save}", to_save=to_save)
                 yield self._LocalDB.save_statistic_bulk(to_save)
             to_save = []
         except Exception as error:

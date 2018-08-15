@@ -8,10 +8,10 @@
 <div class="row">
     <div class="col-lg-12">
         <h1 class="page-header">
-            <a class="success" href="/apiauth/index" aria-label="Delete"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
-            API Auth Key Information<br>
-            <a class="btn btn-md btn-primary" href="/apiauth/{{apiauth.auth_id}}/edit">Edit API Auth</a>
-            <a class="btn btn-md btn-danger" href="/apiauth/{{apiauth.auth_id}}/delete">Delete API Auth</a>
+            <a class="success" href="/authkey/index" aria-label="Delete"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
+            Auth Key Information<br>
+            <a class="btn btn-md btn-primary" href="/authkey/{{authkey.auth_id}}/edit">Edit Auth Key</a>
+            <a class="btn btn-md btn-danger" href="/authkey/{{authkey.auth_id}}/remove">Remove Auth Key</a>
         </h1>
         <p></p>
 
@@ -34,22 +34,22 @@
                     <div class="panel panel-default">
                         <div class="panel-heading">
                             <h3>Details</h3>
-                            <label>API Auth Key: &nbsp; {{apiauth.auth_id}}</label>
+                            <label>Auth Key: &nbsp; {{authkey.auth_id}}</label>
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
                             <label style="margin-top: 0px; margin-bottom: 0px">Label: </label><br>
-                            {{ apiauth.label }}<br>
+                            {{ authkey.label }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Description: </label><br>
-                            {{ apiauth.description }}<br>
+                            {{ authkey.description }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Is Valid: </label><br>
-                            {{ apiauth.is_valid }}<br>
+                            {{ authkey.is_valid }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Last Access: </label><br>
-                            {{ apiauth.last_access|epoch_to_string }}<br>
+                            {{ authkey.last_access|epoch_to_string }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Updated: </label><br>
-                            {{ apiauth.updated_at|epoch_to_string }}<br>
+                            {{ authkey.updated_at|epoch_to_string }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Created: </label><br>
-                            {{ apiauth.created_at|epoch_to_string }}<br>
+                            {{ authkey.created_at|epoch_to_string }}<br>
                         </div>
                     </div>
                 </div>
@@ -60,7 +60,7 @@
                 <div class="panel panel-default">
                     <div class="panel-heading">
                         <h4>Roles</h4>
-                        This API Auth token has the following roles.
+                        This Auth Key token has the following roles.
                     </div>
                     <!-- /.panel-heading -->
                     <div class="panel-body">
@@ -69,7 +69,7 @@
                         <label> Add a role: </label><br>
                         <select name="role_label" id="role_label" class="selectpicker" data-size="10"
                                 data-live-search="true"  title="Select role to add.">
-                        {% for role in _users.get_roles() if role.label not in apiauth.roles %}
+                        {% for role in _users.get_roles() if role.label not in authkey.roles %}
                           <option value="{{role.machine_label}}" data-subtext="{{role.description|truncate(70)}}">{{role.label}}</option>
                         {% endfor %}
                         </select>
@@ -83,15 +83,15 @@
                         </form>
                         </div>
                         <div class="col-md-7">
-                        {%- if apiauth.roles|length == 0 %}
-                        <strong>API Auth key has not been assigned any roles.</strong>
+                        {%- if authkey.roles|length == 0 %}
+                        <strong>Auth Key has not been assigned any roles.</strong>
                         {% else %}
                         <ul style="padding-left: 10px">
-                        {% for machine_label in apiauth.roles %}
+                        {% for machine_label in authkey.roles %}
                             {% set role = _users.get_role(machine_label) %}
                             <li>
                                 <a href="/roles/{{role.role_id}}/details">{{ role.label }}</a>
-                                <a href="/apiauth/{{apiauth.label}}/unattach_role/{{role.role_id}}" class="btn btn-danger btn-xs" role="button">Remove</a>
+                                <a href="/authkey/{{authkey.label}}/unattach_role/{{role.role_id}}" class="btn btn-danger btn-xs" role="button">Remove</a>
                             </li>
                             <ul style="padding-left: 15px">
                                 <li  style="padding-bottom: 5px">{{ role.description}}</li>
@@ -109,7 +109,7 @@
                     </div>
                     <!-- /.panel-heading -->
                     <div class="panel-body">
-                        {% for platform, items in apiauth.item_permissions.items() %}
+                        {% for platform, items in authkey.item_permissions.items() %}
                         {{ platform }}
                         <div class="panel panel-default">
                             <div class="panel-heading">
@@ -136,9 +136,9 @@
                     <!-- /.panel-heading -->
                     <div class="panel-body">
                         <label style="margin-top: 0px; margin-bottom: 0px">Is Dirty: </label><br>
-                        {{ apiauth.is_dirty }}<br>
+                        {{ authkey.is_dirty }}<br>
                         <label style="margin-top: 15px; margin-bottom: 0px">In Db: </label><br>
-                        {{ apiauth.in_db }}<br>
+                        {{ authkey.in_db }}<br>
                     </div>
                 </div>
             </div>

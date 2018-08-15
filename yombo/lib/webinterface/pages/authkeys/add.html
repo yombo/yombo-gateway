@@ -3,12 +3,12 @@
 {% import "lib/webinterface/fragments/macros.tpl" as macros%}
 
 {% block content %}
-            <form method="post" id="apiauthedit">
+            <form method="post" id="authkeyedit">
             <div class="row">
                 <div class="col-lg-12">
                     <h1 class="page-header">
-                        <a class="success" href="/apiauth/index" aria-label="Delete"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
-                        Add API Auth Key
+                        <a class="success" href="/authkeys/index" aria-label="Delete"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
+                        Add Auth Key
                     </h1>
                     <hr>
                     <p></p>
@@ -21,19 +21,19 @@
                 <div class="col-lg-12">
                     <div class="panel panel-default">
                         <div class="panel-heading">
-                            <label>New API Auth key details</label>
+                            <label>New Auth Key details</label>
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
                             <label style="margin-top: 0px; margin-bottom: 0px">Label: </label>
                             <a href="#" data-toggle="modal" data-target="#label"><i class="fa fa-question fa-lg"></i></a>
                             {{ macros.modal("label", 'Label', "
-                            <p>A simple short label to quickly identify this API Auth key.
+                            <p>A simple short label to quickly identify this Auth Key.
                             </p>
                             ") }}
                             <br>
                             <div class="input-group">
-                                <input type="text" tabindex="1" class="form-control" name="label" id="label" size="15" placeholder="Fan Script" value="{{ apiauth.label|hide_none }}" autofocus required>
+                                <input type="text" tabindex="1" class="form-control" name="label" id="label" size="15" placeholder="Fan Script" value="{{ authkey.label|hide_none }}" autofocus required>
                             </div>
 
                             <label style="margin-top: 0px; margin-bottom: 0px">Description: </label>
@@ -44,7 +44,7 @@
                             ") }}
                             <br>
                             <div class="input-group">
-                                <input type="text" tabindex="2" class="form-control" name="description" id="description" size="30" placeholder="" value="{{ apiauth.description|hide_none }}" autofocus required>
+                                <input type="text" tabindex="2" class="form-control" name="description" id="description" size="30" placeholder="" value="{{ authkey.description|hide_none }}" autofocus required>
                             </div>
 
                         </div>

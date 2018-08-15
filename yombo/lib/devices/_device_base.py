@@ -21,7 +21,6 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
 except ImportError:
     import json
 from collections import OrderedDict
-from datetime import datetime
 import inspect
 import sys
 from time import time
@@ -35,11 +34,13 @@ from yombo.constants.commands import (COMMAND_COMPONENT_CALLED_BY, COMMAND_COMPO
     COMMAND_COMPONENT_COMMAND_ID, COMMAND_COMPONENT_DEVICE, COMMAND_COMPONENT_DEVICE_COMMAND,
     COMMAND_COMPONENT_DEVICE_ID, COMMAND_COMPONENT_INPUTS, COMMAND_COMPONENT_PIN, COMMAND_COMPONENT_REQUEST_ID,
     COMMAND_COMPONENT_SOURCE, COMMAND_COMPONENT_SOURCE_GATEWAY_ID, COMMAND_COMPONENT_USER_ID,
-    COMMAND_COMPONENT_USER_TYPE)
-from yombo.core.exceptions import YomboPinCodeError, YomboWarning
+    COMMAND_COMPONENT_USER_TYPE, COMMAND_COMPONENT_REQUESTING_SOURCE, COMMAND_COMPONENT_REPORTING_SOURCE,
+    COMMAND_COMPONENT_ENERGY_TYPE, COMMAND_COMPONENT_ENERGY_USAGE, COMMAND_COMPONENT_HUMAN_MESSAGE,
+    COMMAND_COMPONENT_HUMAN_STATUS)
+from yombo.core.exceptions import YomboPinCodeError, YomboWarning, YomboNoAccess
 from yombo.core.log import get_logger
-from yombo.utils import random_string, global_invoke_all, do_search_instance, dict_merge, dict_diff
 from yombo.lib.commands import Command  # used only to determine class type
+from yombo.utils import random_string, global_invoke_all, do_search_instance, dict_merge, dict_diff
 
 # Import local items
 from ._device_attributes import Device_Attributes
@@ -98,7 +99,7 @@ class Device_Base(Device_Attributes):
         :type max_delay: int or float
         :param user_id: The user id or api auth id to check permissions.
         :type user_id: str
-        :param user_type: Either "user" or "api_auth"
+        :param user_type: Either "user" or "authkey"
         :type user_type: str
         :param inputs: A list of dictionaries containing the 'input_type_id' and any supplied 'value'.
         :type inputs: dict
@@ -112,7 +113,6 @@ class Device_Base(Device_Attributes):
         :rtype: str
         """
         logger.debug("device ({label}), comand starting...", label=self.full_label)
-
         if self.enabled_status != 1:
             raise YomboWarning("Device cannot be used, it's not enabled.")
 
@@ -146,28 +146,31 @@ class Device_Base(Device_Attributes):
 
         # logger.debug("device::command kwargs: {kwargs}", kwargs=kwargs)
         # logger.debug("device::command requested_by: {requested_by}", requested_by=requested_by)
-        if user_id is None:  # soon, this will cause an error!
-            user_id = "system"
-        if user_type is None:  # soon, this will cause an error!
-            user_type = "system"
+
+        # This will raise YomboNoAccess exception if user doesn't have access.
+        has_access, user_id, user_type = self._Parent._Users.check_user_has_access(
+            user_id, user_type, 'device', self.device_id, 'control')
+
         device_command['user_id'] = user_id
         device_command['user_type'] = user_type
 
-        frm = inspect.stack()[1]
-        mod = inspect.getmodule(frm[0])
-        callingframe = sys._getframe(1)
-        if 'self' in callingframe.f_locals:
-            device_command['requesting_source'] = "%s:%s.%s.%s" % \
-                                                  (self.gateway_id,
-                                                   mod.__name__,
-                                                   callingframe.f_locals['self'].__class__.__name__,
-                                                   callingframe.f_code.co_name)
+        if COMMAND_COMPONENT_REQUESTING_SOURCE in kwargs:
+            device_command[COMMAND_COMPONENT_REQUESTING_SOURCE] = kwargs[COMMAND_COMPONENT_REQUESTING_SOURCE]
         else:
-            device_command['requesting_source'] = "%s:%s.%s" % \
-                                                  (self.gateway_id,
-                                                   mod.__name__,
-                                                   callingframe.f_code.co_name)
-
+            frm = inspect.stack()[1]
+            mod = inspect.getmodule(frm[0])
+            callingframe = sys._getframe(1)
+            if 'self' in callingframe.f_locals:
+                device_command[COMMAND_COMPONENT_REQUESTING_SOURCE] = "%s:%s.%s.%s" % \
+                                                      (self.gateway_id,
+                                                       mod.__name__,
+                                                       callingframe.f_locals['self'].__class__.__name__,
+                                                       callingframe.f_code.co_name)
+            else:
+                device_command[COMMAND_COMPONENT_REQUESTING_SOURCE] = "%s:%s.%s" % \
+                                                      (self.gateway_id,
+                                                       mod.__name__,
+                                                       callingframe.f_code.co_name)
 
         if str(command.command_id) not in self.available_commands():
             logger.warn("Requested command: {command_id}, but only have: {ihave}",
@@ -259,6 +262,9 @@ class Device_Base(Device_Attributes):
             device_command['callbacks'] = callbacks
 
         self.device_commands.appendleft(request_id)
+
+#        print("command source: %s" % device_command[COMMAND_COMPONENT_REQUESTING_SOURCE])
+#        print("command user_id: %s - %s" % (user_id, user_type))
 
         self._Parent.add_device_command_by_object(Device_Command(device_command, self._Parent))
 
@@ -593,9 +599,9 @@ class Device_Base(Device_Attributes):
             previous_extra = {}
 
         # filter out previous invalid status extra values.
-        for extra_key in list(previous_extra.keys()):
-            if extra_key not in self.MACHINE_STATUS_EXTRA_FIELDS:
-                del previous_extra[extra_key]
+        # for extra_key in list(previous_extra.keys()):
+        #     if extra_key not in self.MACHINE_STATUS_EXTRA_FIELDS:
+        #         del previous_extra[extra_key]
 
         new_extra = kwargs.get('machine_status_extra', {})
 
@@ -603,14 +609,17 @@ class Device_Base(Device_Attributes):
         for extra_key in list(new_extra.keys()):
             if extra_key not in self.MACHINE_STATUS_EXTRA_FIELDS:
                 logger.warn(
-                    "In future version, the 'status_extra' key '%s' will be removed. Or update device class"
-                    " 'self.MACHINE_STATUS_EXTRA_FIELDS' to include this attribute." % extra_key)
-                # del new_extra[extra_key]
+                    "For device '%s', the machine status extra field '%s' was removed on status update. This field"
+                    "is not apart of the approved machine status extra fields. Device type: %s" %
+                    (self.full_label, extra_key, self.device_type.label))
+                del new_extra[extra_key]
 
-        for key, value in new_extra.items():
-            previous_extra[key] = value
+        for key, value in previous_extra.items():
+            if key in new_extra:
+                continue
+            new_extra[key] = value
 
-        kwargs['machine_status_extra'] = previous_extra
+        kwargs['machine_status_extra'] = new_extra
         return kwargs
 
     def generate_human_status(self, machine_status, machine_status_extra):
@@ -635,19 +644,19 @@ class Device_Base(Device_Attributes):
             raise ImportError("Must supply status arguments...")
 
         self.status_delayed = dict_merge(self.status_delayed, kwargs)
-        if 'reporting_source' not in self.status_delayed:
+        if COMMAND_COMPONENT_REPORTING_SOURCE not in self.status_delayed:
             frm = inspect.stack()[1]
             mod = inspect.getmodule(frm[0])
             callingframe = sys._getframe(1)
 
             if 'self' in callingframe.f_locals:
-                self.status_delayed['reporting_source'] = "%s:%s.%s.%s" % \
+                self.status_delayed[COMMAND_COMPONENT_REPORTING_SOURCE] = "%s:%s.%s.%s" % \
                                                           (self.gateway_id,
                                                            mod.__name__,
                                                            callingframe.f_locals['self'].__class__.__name__,
                                                            callingframe.f_code.co_name)
             else:
-                self.status_delayed['reporting_source'] = "%s:%s.%s" % \
+                self.status_delayed[COMMAND_COMPONENT_REPORTING_SOURCE] = "%s:%s.%s" % \
                                                           (self.gateway_id,
                                                            mod.__name__,
                                                            callingframe.f_code.co_name)
@@ -658,6 +667,12 @@ class Device_Base(Device_Attributes):
         self.status_delayed_calllater = reactor.callLater(delay, self.do_set_status_delayed)
 
     def do_set_status_delayed(self):
+        """
+        Sends the actual delayed status to set_status(). This was called using a callLater function
+        from set_status_delayed().
+
+        :return:
+        """
         if 'machine_status' not in self.status_delayed:
             self.status_delayed['machine_status'] = self.machine_status
         self.set_status(**self.status_delayed)
@@ -682,33 +697,19 @@ class Device_Base(Device_Attributes):
             - silent *(any)* - If defined, will not broadcast a status update message; atypical.
 
         """
-        #
-        # frm = inspect.stack()[1]
-        # mod = inspect.getmodule(frm[0])
-        # callingframe = sys._getframe(1)
-        #
-        # print('set status called by frm: %s' % frm[0])
-        # print(frm)
-        # print('set status called by mod: %s' % mod.__name__)
-        # kwargs['reported_by'] = "%s.%s" % (mod.__name__, callingframe.f_locals['self'].__class__.__name__)
-        #
-        # print('My caller is the %r function in a %r class' % (
-        #     callingframe.f_code.co_name,
-        #     callingframe.f_locals['self'].__class__.__name__))
-
         self.status_delayed = dict_merge(self.status_delayed, kwargs)
-        if 'reporting_source' not in self.status_delayed:
+        if COMMAND_COMPONENT_REPORTING_SOURCE not in self.status_delayed:
             frm = inspect.stack()[1]
             mod = inspect.getmodule(frm[0])
             callingframe = sys._getframe(1)
             if 'self' in callingframe.f_locals:
-                self.status_delayed['reporting_source'] = "%s:%s.%s.%s" % \
+                self.status_delayed[COMMAND_COMPONENT_REPORTING_SOURCE] = "%s:%s.%s.%s" % \
                                                           (self.gateway_id,
                                                            mod.__name__,
                                                            callingframe.f_locals['self'].__class__.__name__,
                                                            callingframe.f_code.co_name)
             else:
-                self.status_delayed['reporting_source'] = "%s:%s.%s" % \
+                self.status_delayed[COMMAND_COMPONENT_REPORTING_SOURCE] = "%s:%s.%s" % \
                                                           (self.gateway_id,
                                                            mod.__name__,
                                                            callingframe.f_code.co_name)
@@ -718,7 +719,6 @@ class Device_Base(Device_Attributes):
         self.status_delayed = {}
 
         if 'silent' not in kwargs_delayed and status_id is not None:
-            print("kwargs_delayed before send_status: %s" % kwargs_delayed)
             self.send_status(**kwargs_delayed)
 
         if self.status_delayed_calllater is not None and self.status_delayed_calllater.active():
@@ -738,6 +738,7 @@ class Device_Base(Device_Attributes):
         kwargs['machine_status_extra'] = machine_status_extra
 
         # print("status: %s == %s" % (machine_status, self.machine_status))
+        # print("machine_status_extra: %s == %s" % (machine_status_extra, self.machine_status_extra))
         if machine_status == self.machine_status:
             added, removed, modified, same = dict_diff(machine_status_extra, self.machine_status_extra)
             if len(added) == 0 and len(removed) == 0 and len(modified) == 0:
@@ -745,49 +746,46 @@ class Device_Base(Device_Attributes):
                             label=self.full_label)
                 return kwargs, None
 
-        kwargs['human_status'] = kwargs.get('human_status', self.generate_human_status(machine_status, machine_status_extra))
-        kwargs['human_message'] = kwargs.get('human_message', self.generate_human_message(machine_status, machine_status_extra))
+        kwargs[COMMAND_COMPONENT_HUMAN_STATUS] = kwargs.get(COMMAND_COMPONENT_HUMAN_STATUS, self.generate_human_status(machine_status, machine_status_extra))
+        kwargs[COMMAND_COMPONENT_HUMAN_MESSAGE] = kwargs.get(COMMAND_COMPONENT_HUMAN_MESSAGE, self.generate_human_message(machine_status, machine_status_extra))
         uploaded = kwargs.get('uploaded', 0)
         uploadable = kwargs.get('uploadable', 1)
         set_at = kwargs.get('set_at', time())
         if 'gateway_id' not in kwargs:
             kwargs['gateway_id'] = self.gateway_id
 
-        # logger.info("setting final machine_status_extra:  called...h: {machine_status_extra}",
-        #             machine_status_extra=machine_status_extra)
-
         request_id = None
         user_id = "unknown"
         user_type = "unknown"
-        if "request_id" in kwargs and kwargs['request_id'] in self._Parent.device_commands:
+        if COMMAND_COMPONENT_REQUEST_ID in kwargs and kwargs[COMMAND_COMPONENT_REQUEST_ID] in self._Parent.device_commands:
             request_id = kwargs['request_id']
             user_id = self._Parent.device_commands[request_id].user_id
             user_type = self._Parent.device_commands[request_id].user_type
-            print("set status, has a valid request id..user_id: %s, user_type: %s" % (user_id, user_type))
-            kwargs['requesting_source'] = self._Parent.device_commands[request_id].requesting_source
-            kwargs['command'] = self._Parent.device_commands[request_id].command
+            kwargs[COMMAND_COMPONENT_REQUESTING_SOURCE] = self._Parent.device_commands[request_id].requesting_source
+            kwargs[COMMAND_COMPONENT_COMMAND] = self._Parent.device_commands[request_id].command
         else:
-            print("set status has no valid request id...:  %s" % 'request_id' in kwargs)
-            kwargs['requesting_source'] = "%s:yombo.unknown" % self.gateway_id
-        kwargs['request_id'] = request_id
+            kwargs[COMMAND_COMPONENT_REQUESTING_SOURCE] = None
+            kwargs[COMMAND_COMPONENT_COMMAND] = None
 
-        if kwargs['command'] is None:
-            if 'command' in kwargs:
+        kwargs[COMMAND_COMPONENT_REQUEST_ID] = request_id
+
+        if kwargs[COMMAND_COMPONENT_COMMAND] is None:
+            if COMMAND_COMPONENT_COMMAND in kwargs:
                 try:
-                    kwargs['command'] = self._Parent._Commands[kwargs['command']]
+                    kwargs[COMMAND_COMPONENT_COMMAND] = self._Parent._Commands[kwargs[COMMAND_COMPONENT_COMMAND]]
                 except KeyError:
-                    kwargs['command'] = None
+                    kwargs[COMMAND_COMPONENT_COMMAND] = None
             else:
-                kwargs['command'] = self.command_from_status(machine_status, machine_status_extra)
+                kwargs[COMMAND_COMPONENT_COMMAND] = self.command_from_status(machine_status, machine_status_extra)
 
-        kwargs['user_id'] = user_id
-        kwargs['user_type'] = user_type
+        kwargs[COMMAND_COMPONENT_USER_ID] = user_id
+        kwargs[COMMAND_COMPONENT_USER_TYPE] = user_type
 
-        kwargs['energy_usage'], kwargs['energy_type'] = \
-            self.energy_calc(command=kwargs['command'],
-                             machine_status=machine_status,
-                             machine_status_extra=machine_status_extra,
-                             )
+        kwargs[COMMAND_COMPONENT_ENERGY_USAGE], kwargs[COMMAND_COMPONENT_ENERGY_TYPE] = \
+        energy_usage, energy_type = self.energy_calc(command=kwargs['command'],
+                                                     machine_status=machine_status,
+                                                     machine_status_extra=machine_status_extra,
+                                                     )
 
         if self.statistic_type not in (None, "", "None", "none"):
             if self.statistic_type.lower() == "datapoint" or self.statistic_type.lower() == "average":
@@ -804,18 +802,18 @@ class Device_Base(Device_Attributes):
         new_status = Device_Status(self._Parent, self, {
             'command': kwargs['command'],
             'set_at': set_at,
-            'energy_usage': kwargs['energy_usage'],
-            'energy_type': kwargs['energy_type'],
-            'human_status': kwargs['human_status'],
-            'human_message': kwargs['human_message'],
+            'energy_usage': kwargs[COMMAND_COMPONENT_ENERGY_USAGE],
+            'energy_type': kwargs[COMMAND_COMPONENT_ENERGY_USAGE],
+            'human_status': kwargs[COMMAND_COMPONENT_HUMAN_STATUS],
+            'human_message': kwargs[COMMAND_COMPONENT_HUMAN_MESSAGE],
             'machine_status': machine_status,
             'machine_status_extra': machine_status_extra,
             'gateway_id': kwargs['gateway_id'],
-            'user_id': kwargs['user_id'],
-            'user_type': kwargs['user_type'],
-            'reporting_source': kwargs['reporting_source'],
-            'requesting_source': kwargs['requesting_source'],
-            'request_id': kwargs['request_id'],
+            'user_id': kwargs[COMMAND_COMPONENT_USER_ID],
+            'user_type': kwargs[COMMAND_COMPONENT_USER_TYPE],
+            'reporting_source': kwargs[COMMAND_COMPONENT_REPORTING_SOURCE],
+            'requesting_source': kwargs[COMMAND_COMPONENT_REQUESTING_SOURCE],
+            'request_id': kwargs[COMMAND_COMPONENT_REQUEST_ID],
             'uploaded': uploaded,
             'uploadable': uploadable,
             }

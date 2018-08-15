@@ -14,13 +14,15 @@ from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
 from yombo.constants import (DEVICE_ACTIONS, AUTOMATION_ACTIONS, SCENE_ACTIONS, ITEMIZED_PERMISSION_PLATFORMS,
-                             PERMISSION_PLATFORMS)
+                             PERMISSION_PLATFORMS, AUTH_TYPE_AUTHKEY, AUTH_TYPE_WEBSESSION)
 from yombo.core.exceptions import YomboWarning, YomboNoAccess
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
+from yombo.lib.authkeys import Auth as AuthKeyAuth
+from yombo.lib.websessions import Auth as WebSessionAuth
 from yombo.lib.users.role import Role
 from yombo.lib.users.user import User
-from yombo.lib.users.constants import SYSTEM_ROLES
+from yombo.constants.users import *
 from yombo.utils import global_invoke_all, data_unpickle
 
 logger = get_logger('library.users')
@@ -261,15 +263,15 @@ class Users(YomboLibrary):
         :param requested_role:
         :return:
         """
-        role_apiauths = []
+        role_authkeys = []
         role = self.get_role(requested_role)
 
         role_machine_label = role.machine_label
-        for auth_id, auth_key in self._APIAuth.items():
+        for auth_id, auth_key in self._AuthKeys.items():
             auth_key_roles = auth_key.roles
             if role_machine_label in auth_key_roles:
-                role_apiauths.append(auth_key)
-        return role_apiauths
+                role_authkeys.append(auth_key)
+        return role_authkeys
 
     def list_roles_by_user(self):
         """
@@ -373,6 +375,61 @@ class Users(YomboLibrary):
             return self._Scenes.scenes
         return {}
 
+    def check_auth_has_access(self, auth, platform, item, action, raise_error=None):
+        """
+        Lookup the user from an authkey or websession and pass item_permissions and roles to has_access
+
+        :param auth: Either a websession or authkey
+        :return:
+        """
+        return self.has_access(auth.item_permissions, auth.roles, platform, item, action, raise_error)
+
+    def check_user_has_access(self, user_id, user_type, platform, item, action, raise_error=None):
+        """
+        Collects the user information and passes it to has_access().
+
+        :param user_id:
+        :param user_type:
+        :return:
+        """
+        if user_type == 'system':
+            return True, user_id, 'system'
+
+        if isinstance(user_id, AuthKeyAuth) or isinstance(user_id, WebSessionAuth):
+            results = self.has_access(user_id.item_permissions, user_id.roles, platform, item, action, raise_error)
+            return results, user_id.user_id, user_id.auth_type
+        elif isinstance(user_type, AuthKeyAuth) or isinstance(user_type, WebSessionAuth):
+            results = self.has_access(user_type.item_permissions, user_type.roles, platform, item, action, raise_error)
+            return results, user_type.user_id, user_type.auth_type
+        elif user_id is None:  # soon, this will cause an error!
+            logger.warn("Check user has access received NoneType for *user_id*. Future versions will not accept this.")
+            return True, 'system', 'system'
+        elif isinstance(user_id, str) is False:
+            raise YomboWarning("Unknown input type for user_id")
+
+        if user_type is None:  # soon, this will cause an error!
+            logger.warn("Check user has access received NoneType for *user_type*. Future versions will not accept this.")
+            return True, 'system', 'system'
+        elif isinstance(user_type, str) is False:
+            raise YomboWarning("Unknown input type for user_type")
+
+        if user_type not in ('user', 'system', AUTH_TYPE_AUTHKEY, AUTH_TYPE_WEBSESSION):
+            raise YomboWarning("user_type (%s) must be one of: system, user, %s, or %s" %
+                               (user_type, AUTH_TYPE_AUTHKEY, AUTH_TYPE_WEBSESSION))
+
+        if user_type == AUTH_TYPE_AUTHKEY:
+            auth = self._AuthKeys[user_id]
+            item_permissions = auth.item_permissions
+            roles = auth.roles
+        elif user_type in (AUTH_TYPE_WEBSESSION, 'user'):
+            user = self._Users[user_id]
+            item_permissions = user.item_permissions
+            roles = user.roles
+        else:
+            raise YomboWarning("check_user_has_access must be of type user, authkey or websession.")
+
+        return self.has_access(item_permissions, roles, platform, item, action, raise_error), user_id, user_type
+
     def has_access(self, item_permissions, roles, platform, item, action, raise_error=None):
         """
         Usually called by either the user instance, websession instance, or auth key instance. Checks if the provided
@@ -411,12 +468,13 @@ class Users(YomboLibrary):
         platform_item, platform_item_key, platform_actions = self.get_platform_item(platform, item)
 
         if platform_item is not None:
-            if platform_item_key in item_permissions[platform]:
-                item_actions = item_permissions[platform][platform_item_key]
-                if "deny_%s" % action in item_actions:
-                    return return_access(False)
-                if "allow_%s" % action in item_actions:
-                    return True
+            if platform in item_permissions:
+                if platform_item_key in item_permissions[platform]:
+                    item_actions = item_permissions[platform][platform_item_key]
+                    if "deny_%s" % action in item_actions:
+                        return return_access(False)
+                    if "allow_%s" % action in item_actions:
+                        return True
 
         for a_role in self.get_roles(roles):
             results = a_role.has_access(platform, item, action)

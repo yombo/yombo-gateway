@@ -11,7 +11,7 @@ from collections import namedtuple
 
 # Import twisted libraries
 from twisted.internet import reactor
-from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.internet.defer import inlineCallbacks
 from twisted.internet.task import LoopingCall
 
 from yombo.core.log import get_logger
@@ -268,7 +268,7 @@ class ModuleUnitTest(YomboModule):
     def queue_worker2(self, arguments):
         yield sleep(5)
         self.assertIsEqual(arguments, 'letsdoit', "queue_worker() arguments should be the same.")
-        returnValue("someresults")
+        return "someresults"
 
     def queue_results(self, results, args):
         self.assertIsEqual(args, "someargs", "queue_results(), args should match.")

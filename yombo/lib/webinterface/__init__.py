@@ -75,7 +75,7 @@ from yombo.lib.webinterface.routes.devtools.config_modules import route_devtools
 from yombo.lib.webinterface.routes.devtools.config_variables import route_devtools_config_variables
 from yombo.lib.webinterface.routes.devtools.debug import route_devtools_debug
 
-from yombo.lib.webinterface.routes.apiauth import route_apiauth
+from yombo.lib.webinterface.routes.authkeys import route_authkeys
 from yombo.lib.webinterface.routes.atoms import route_atoms
 from yombo.lib.webinterface.routes.automation import route_automation
 from yombo.lib.webinterface.routes.automation.device import route_automation_device
@@ -262,7 +262,7 @@ class WebInterface(YomboLibrary):
         route_devtools_debug(self.webapp)
 
         # Load web server routes
-        route_apiauth(self.webapp)
+        route_authkeys(self.webapp)
         route_atoms(self.webapp)
         route_automation(self.webapp)
         route_automation_device(self.webapp)
@@ -338,7 +338,7 @@ class WebInterface(YomboLibrary):
         self.webapp.templates.globals['_local_gateway'] = self._Gateways.get_local()
         self.webapp.templates.globals['_amqp'] = self._AMQP
         self.webapp.templates.globals['_amqpyombo'] = self._AMQPYombo
-        self.webapp.templates.globals['_apiauth'] = self._APIAuth
+        self.webapp.templates.globals['_authkeys'] = self._AuthKeys
         self.webapp.templates.globals['_atoms'] = self._Atoms
         self.webapp.templates.globals['_automation'] = self._Automation
         self.webapp.templates.globals['_commands'] = self._Commands

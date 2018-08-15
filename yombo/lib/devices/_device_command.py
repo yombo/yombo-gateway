@@ -14,7 +14,6 @@ The device class is responsible for managing a single device.
 :license: LICENSE for details.
 """
 # Import python libraries
-from collections import OrderedDict
 from time import time
 
 # Import twisted libraries
@@ -422,7 +421,7 @@ class Device_Command(object):
             self._in_db = True
 
     def asdict(self):
-        return OrderedDict({
+        return {
             "request_id": self.request_id,
             "persistent_request_id": self.persistent_request_id,
             "source_gateway_id": self.source_gateway_id,
@@ -446,7 +445,7 @@ class Device_Command(object):
             "user_type": self.user_type,
             "requesting_source": self.requesting_source,
             "idempotence": self.idempotence,
-        })
+        }
 
     def __repr__(self):
         return "Device command for '%s': %s" % (self.device.label, self.command.label)

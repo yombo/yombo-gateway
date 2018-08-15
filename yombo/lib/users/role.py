@@ -164,7 +164,7 @@ class Role(object):
                     logger.debug("has_access: deny matched, returning false...")
                     return False
 
-        logger.info("has_access: permissions allow: %s" % self.permissions['allow'])
+        logger.info("has_access: permissions allow: {allow}", allow=self.permissions['allow'])
         for permission_id, permission in self.permissions['allow'].items():
             matched, wildcard = self.check_permission_match(req_platform, req_item, req_action, permission)
             if matched is None:

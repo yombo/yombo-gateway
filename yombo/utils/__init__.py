@@ -116,6 +116,7 @@ def install_python_package(package_name):
             t = e.returncode, e.message
         return t
 
+    print("install_python_package: package_name: %s" % package_name)
     try:
         pip_results = yield threads.deferToThread(update_pip_module, package_name)
         if pip_results[0] != 0:

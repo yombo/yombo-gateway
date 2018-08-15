@@ -116,7 +116,7 @@ URL_API_LOG_OUT = '/api/log_out'
 URL_API_TEMPLATE = '/api/template'
 
 PERMISSION_PLATFORMS = ('atom', 'automation', 'device', 'gateway', 'location', 'location', 'module',
-                        'notification', 'panel', 'scene', 'state', 'statistic', 'location', 'user', 'apiauth',
+                        'notification', 'panel', 'scene', 'state', 'statistic', 'location', 'user', 'authkey',
                         'gateway', 'system_options', 'user')
 ITEMIZED_PERMISSION_PLATFORMS = ('device', 'automation', 'scene')
 AUTOMATION_ACTIONS = ('allow_view', 'allow_edit', 'allow_enable', 'allow_disable',
@@ -147,3 +147,7 @@ CONTENT_TYPE_TEXT_PLAIN = 'text/plain'
 RESTART_EXIT_CODE = 127
 QUIT_ERROR_EXIT_CODE = 1
 QUIT_EXIT_CODE = 0
+
+# Session types
+AUTH_TYPE_AUTHKEY = 'authkey'
+AUTH_TYPE_WEBSESSION = 'websession'

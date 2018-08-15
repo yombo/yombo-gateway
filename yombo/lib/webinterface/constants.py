@@ -151,11 +151,11 @@ NAV_SIDE_MENU = [
     },
     {
         'label1': 'System Settings',
-        'label2': 'API Auth',
+        'label2': 'Auth Keys',
         'priority1': 3500,
         'priority2': 1000,
         'icon': 'fa fa-cog fa-fw',
-        'url': '/apiauth/index',
+        'url': '/authkeys/index',
         'tooltip': '',
         'opmode': 'run',
         'cluster': 'any',

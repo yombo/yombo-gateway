@@ -304,8 +304,11 @@ class Devices(YomboLibrary):
         """
         self.processing_commands = True
         for command, request in self.startup_queue.items():
-            self.command(request['device_id'], request['command_id'], not_before=request['not_before'],
-                    max_delay=request['max_delay'], **request['kwargs'])
+            self.command(request['device_id'],
+                         request['command_id'],
+                         not_before=request['not_before'],
+                         max_delay=request['max_delay'],
+                         **request['kwargs'])
         self.startup_queue.clear()
 
     @inlineCallbacks
@@ -630,6 +633,21 @@ class Devices(YomboLibrary):
         :return: The request id.
         :rtype: str
         """
+        frm = inspect.stack()[1]
+        mod = inspect.getmodule(frm[0])
+        callingframe = sys._getframe(1)
+        if 'self' in callingframe.f_locals:
+            kwargs['requesting_source'] = "%s:%s.%s.%s" % \
+                                          (self.gateway_id,
+                                           mod.__name__,
+                                           callingframe.f_locals['self'].__class__.__name__,
+                                           callingframe.f_code.co_name)
+        else:
+            kwargs['requesting_source'] = "%s:%s.%s" % \
+                                          (self.gateway_id,
+                                           mod.__name__,
+                                           callingframe.f_code.co_name)
+
         return self.get(device).command(cmd, **kwargs)
 
     def mqtt_incoming(self, topic, payload, qos, retain):

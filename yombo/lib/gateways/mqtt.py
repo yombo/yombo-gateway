@@ -288,9 +288,8 @@ class Gateway_Coms(object):
 
         def do_device_command(parent, device_command):
             device = parent._Parent._Devices.get(device_command['device_id'])
-            print("do_device_command")
             if device.gateway_id != parent.gateway_id() and parent._Parent.is_master() is not True:  # if we are not a master, we don't care!
-                print("do_device_command..skipping due to not local gateway and not a master: %s" % parent._Parent.is_master())
+                # print("do_device_command..skipping due to not local gateway and not a master: %s" % parent._Parent.is_master())
                 # print("dropping device command..  dest gw: %s" % device_command['gateway_id'])
                 # print("dropping device command..  self.gateway_id: %s" % self.gateway_id)
                 return False

@@ -4,33 +4,33 @@
 {% block content %}
             <div class="row">
                 <div class="col-lg-12">
-                    <h1 class="page-header"><a class="success" href="/apiauth/index" aria-label="Delete">
-  <i class="fa fa-arrow-left" aria-hidden="true"></i></a> Confirm API Auth key rotation</h1>
+                    <h1 class="page-header"><a class="success" href="/authkeys/index" aria-label="Delete">
+  <i class="fa fa-arrow-left" aria-hidden="true"></i></a> Confirm API Auth key Removal</h1>
                     <p></p>
                 </div>
                 <!-- /.col-lg-12 -->
             </div>
             <!-- /.row -->
-            <form method="post" id="apiauthrotate">
+            <form method="post" id="authkeyremove">
 
             <div class="row">
                 <div class="col-lg-12">
                     <div class="panel panel-default">
                         <div class="panel-heading">
-                            <label>Confirm rotating API auth key: <em>{{ apiauth.label }}</em></label>
+                            <label>Confirm removing api auth key: <em>{{ authkey.label }}</em></label>
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
-                            <p>Rotating an API auth key will cause programs, scripts, other items that use this key
-                                to stop working until the new is in place.
+                            <p>Removing an API auth key will cause programs, scripts, other items that use this key
+                                to stop working.
                             </p>
-                                Type "rotate" to confirm.<br>
+                                Type "delete" to confirm.<br>
                                 <div class="input-group">
                                     <input tabindex="1" type="text" class="form-control" name="confirm" id="confirm" size="10" placeholder="" value="" required>
                                 </div>
                             <br>
-                            <a class="btn btn-md btn-success" href="/apiauth/{{apiauth.api_auth_id}}/details">Cancel (Do not rotate)</a>
-                            <button type="submit" class="btn btn-danger">Rotate API Auth</button>
+                            <a class="btn btn-md btn-success" href="/authkeys/{{authkey.auth_id}}/details">Cancel (Do not remove)</a>
+                            <button type="submit" class="btn btn-danger">Remove API Auth</button>
                         </div>
                     </div>
                     <!-- /.panel-body -->

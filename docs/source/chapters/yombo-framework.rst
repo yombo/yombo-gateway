@@ -51,7 +51,7 @@ IoT devices, etc.
    ../lib/amqp.rst
    ../lib/amqpyombo.rst
    ../lib/amqpyombo_handlers/amqpyombo_handlers.rst
-   ../lib/apiauth.rst
+   ../lib/authkey.rst
    ../lib/atoms.rst
    ../lib/automation.rst
    ../lib/commands.rst

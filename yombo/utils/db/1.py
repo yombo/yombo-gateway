@@ -38,7 +38,7 @@ def new_db_file(Registry, **kwargs):
     yield create_table_statistics(Registry)
     yield create_table_tasks(Registry)
     yield create_table_users(Registry)
-    yield create_table_webinterface_api_auth(Registry)
+    yield create_table_auth_key(Registry)
     yield create_table_webinterface_sessions(Registry)
     yield create_table_webinterface_logs(Registry)
     yield create_table_variable_groups(Registry)
@@ -226,7 +226,7 @@ def create_table_device_status(Registry, **kwargs):
         `machine_status_extra` TEXT,
         `user_id`              TEXT NOT NULL,
         `user_type`            TEXT NOT NULL,
-        `requesting_source`     TEXT NOT NULL,
+        `requesting_source`    TEXT,
         `reporting_source`     TEXT NOT NULL,
         `request_id`           TEXT,
         `uploaded`             INTEGER NOT NULL DEFAULT 0,
@@ -615,10 +615,10 @@ def create_table_users(Registry, **kwargs):
 
 
 @inlineCallbacks
-def create_table_webinterface_api_auth(Registry, **kwargs):
+def create_table_auth_key(Registry, **kwargs):
     """  """
-    # Nearly the same as webinterface_sessions, but for api keys
-    table = """CREATE TABLE `webinterface_api_auth` (
+    # Nearly the same as webinterface_sessions, but for auth keys
+    table = """CREATE TABLE `auth_key` (
         `id`           TEXT NOT NULL, /* moduleUUID */
         `label`        TEXT NOT NULL,
         `description`  TEXT NOT NULL,
@@ -630,8 +630,8 @@ def create_table_webinterface_api_auth(Registry, **kwargs):
         `updated_at`   INTEGER NOT NULL,
         PRIMARY KEY(id));"""
     yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('webinterface_api_auth', 'created_at'))
-    yield Registry.DBPOOL.runQuery(create_index('webinterface_api_auth', 'updated_at'))
+    yield Registry.DBPOOL.runQuery(create_index('auth_key', 'created_at'))
+    yield Registry.DBPOOL.runQuery(create_index('auth_key', 'updated_at'))
 
 
 @inlineCallbacks

@@ -67,6 +67,7 @@ from yombo.ext.mqtt.error import ProfileValueError
 from twisted.internet.defer import maybeDeferred
 
 # Import Yombo libraries
+from yombo.constants import AUTH_TYPE_AUTHKEY, AUTH_TYPE_WEBSESSION
 from yombo.core.exceptions import YomboWarning, YomboCritical
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
@@ -512,6 +513,7 @@ class MQTT(YomboLibrary):
                         'username': username_parts[1],
                     }
                 else:
+                    logger.warn("MQTT username has invalid characters: {user}", user=username)
                     raise YomboWarning("MQTT username has invalid characters")
                 return user
 
@@ -534,16 +536,16 @@ class MQTT(YomboLibrary):
                         if password in (gateway.mqtt_auth, gateway.mqtt_auth_prev, gateway.mqtt_auth_next):
                             response_code = 200
 
-                elif user['type'] == 'websession':
+                elif user['type'] == AUTH_TYPE_WEBSESSION:
                     try:
                         session = yield self._WebSessions.get_session_by_id(user['username'])
                         response_code = 200
                     except YomboWarning:
                         pass
 
-                elif user['type'] == 'apiauth':
+                elif user['type'] == AUTH_TYPE_AUTHKEY:
                     try:
-                        session = self._APIAuth.get_session_by_id(user['username'])
+                        session = self._AuthKeys.get_session_by_id(user['username'])
                         response_code = 200
                     except YomboWarning:
                         pass

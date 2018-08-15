@@ -61,6 +61,7 @@ class Device_Status(object):
             return self.command.command_id
 
     def __init__(self, _Parent, device, data, source=None, test_device=None):
+        logger.debug("Creating new Device_Status... {data}", data=data)
         self._FullName = 'yombo.gateway.lib.Devices.DeviceStatus'
         self._Name = 'Devices.DeviceStatus'
         self._Parent = _Parent

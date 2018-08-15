@@ -9,12 +9,13 @@ from ratelimit import RateLimitException
 
 from twisted.internet.defer import inlineCallbacks
 
+from yombo.constants import AUTH_TYPE_AUTHKEY, AUTH_TYPE_WEBSESSION
 from yombo.core.exceptions import YomboWarning, YomboNoAccess, YomboInvalidValidation
+from yombo.core.log import get_logger
+from yombo.lib.webinterface.routes.api_v1.__init__ import return_error, args_to_dict
 from yombo.utils import bytes_to_unicode, sha256_compact
 from yombo.utils.networking import ip_addres_in_local_network
-from yombo.lib.webinterface.routes.api_v1.__init__ import return_error, args_to_dict
 
-from yombo.core.log import get_logger
 logger = get_logger('library.webinterface.auth')
 
 
@@ -120,7 +121,7 @@ def run_first(create_session=None, *args, **kwargs):
                 webinterface.misc_wi_data['breadcrumb'] = request.breadcrumb
 
             try:
-                session = webinterface._APIAuth.get_session_from_request(request)
+                session = webinterface._AuthKeys.get_session_from_request(request)
                 session.touch()
             except YomboWarning as e:
                 try:
@@ -210,7 +211,7 @@ def require_auth(roles=None, login_redirect=None, access_platform=None, access_i
 
             if 'api' in kwargs and kwargs['api'] is True:
                 try:
-                    session = webinterface._APIAuth.get_session_from_request(request)
+                    session = webinterface._AuthKeys.get_session_from_request(request)
                     session.touch()
                 except YomboWarning as e:
                     logger.debug("API key not found, trying web session (cookie).")
@@ -231,11 +232,11 @@ def require_auth(roles=None, login_redirect=None, access_platform=None, access_i
                     logger.debug("Request: {request}", request=request)
                     return return_need_login(webinterface, request, None, **kwargs)
 
-            if session.session_type == "websession":  # if we have a session, then inspect to see if it's valid.
+            if session.auth_type == AUTH_TYPE_WEBSESSION:  # if we have a session, then inspect to see if it's valid.
                 if session.check_valid() is False:
                     return return_need_login(webinterface, request, session, **kwargs)
 
-            elif session.session_type == "apiauth":  # If we have an API session, we are good if it's valid.
+            elif session.auth_type == AUTH_TYPE_AUTHKEY:  # If we have an API session, we are good if it's valid.
                 if session.check_valid() is False:
                     return return_need_login(webinterface,
                                              request,
@@ -254,9 +255,9 @@ def require_auth(roles=None, login_redirect=None, access_platform=None, access_i
                 return results
             except YomboInvalidValidation as e:
                 return return_not_valid_input(webinterface, request, **kwargs)
-            except YomboNoAccess as e:
+            except YomboNoAccess:
                 return return_no_access(webinterface, request, "No access", **kwargs)
-            except Exception as e:  # catch anything here...so can display details.
+            except (Exception, KeyError):  # catch anything here...so can display details.
                 logger.error("---------------==(Traceback)==--------------------------")
                 logger.error("Function: {f}", f=f)
                 logger.error("Request: {request}", request=request)
@@ -332,14 +333,14 @@ def require_auth_pin(roles=None, login_redirect=None, create_session=None, *args
                 if session is None:
                     return return_need_pin(webinterface, request, **kwargs)
 
-                if session.session_type == 'websession':  # if we have a websession, then inspect to see if it's valid.
+                if session.auth_type == AUTH_TYPE_WEBSESSION:  # if we have a websession, then inspect to see if it's valid.
                     if 'auth_pin' in session:
                         if session['auth_pin'] is True:
                             session.touch()
                             request.auth_id = session.auth_id
                             results = yield call(f, webinterface, request, session, *a, **kw)
                             return results
-                elif session.session_type == "apiauth":  # If we have an API session, we are good if it's valid.
+                elif session.auth_type == AUTH_TYPE_AUTHKEY:  # If we have an API session, we are good if it's valid.
                     if session.check_valid() is False:
 
                         try:

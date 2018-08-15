@@ -658,8 +658,8 @@ class Modules(YomboLibrary):
             module._event_loop = self._Loader.event_loop
             module._AMQP = self._Loader.loadedLibraries['amqp']
             module._AMQPYombo = self._Loader.loadedLibraries['amqpyombo']
-            module._APIAuth = self._Loader.loadedLibraries['apiauth']
             module._Atoms = self._Loader.loadedLibraries['atoms']
+            module._AuthKeys = self._Loader.loadedLibraries['authkeys']
             module._Automation = self._Loader.loadedLibraries['automation']
             module._Commands = self._Loader.loadedLibraries['commands']
             module._Configs = self._Loader.loadedLibraries['configuration']

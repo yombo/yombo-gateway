@@ -27,6 +27,7 @@ from twisted.internet.defer import inlineCallbacks, Deferred
 from twisted.internet import reactor
 
 # Import Yombo libraries
+from yombo.constants import AUTH_TYPE_WEBSESSION
 from yombo.core.library import YomboLibrary
 from yombo.utils.dictobject import DictObject
 from yombo.core.exceptions import YomboWarning
@@ -52,7 +53,7 @@ class WebSessions(YomboLibrary):
         if key in self.active_sessions:
             return self.active_sessions[key]
         else:
-            raise KeyError("Cannot find api auth key: %s" % key)
+            raise KeyError("Cannot find websession key: %s" % key)
 
     def __len__(self):
         return len(self.active_sessions)
@@ -436,7 +437,7 @@ class Auth(object):
         else:
             self.in_db = False
 
-        self.session_type = "websession"
+        self.auth_type = AUTH_TYPE_WEBSESSION
 
         self._auth_id = None
         self.user = None

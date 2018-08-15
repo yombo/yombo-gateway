@@ -1,6 +1,29 @@
 """
-Constants for users.
+Constants for users library.
 """
+
+AUTH_PLATFORM_ATOM = 'atom'
+AUTH_PLATFORM_AUTHKEY = 'authkey'
+AUTH_PLATFORM_AUTOMATION = 'automation'
+AUTH_PLATFORM_DEVICE = 'device'
+AUTH_PLATFORM_GATEWAY = 'gateway'
+AUTH_PLATFORM_LOCATION = 'location'
+
+AUTH_PLATFORM_MODULE = 'module'
+AUTH_PLATFORM_NOTIFICATIONS = 'notifications'
+AUTH_PLATFORM_PANEL = 'panel'
+AUTH_PLATFORM_SCENE = 'scene'
+AUTH_PLATFORM_STATE = 'state'
+AUTH_PLATFORM_STATISTIC = 'statistic'
+AUTH_PLATFORM_SYSTEM_SETTING = 'system_setting'
+AUTH_PLATFORM_SYSTEM_OPTIONS = 'system_options'
+AUTH_PLATFORM_USER = 'user'
+
+AUTH_PLATFORMS = (AUTH_PLATFORM_ATOM, AUTH_PLATFORM_AUTHKEY, AUTH_PLATFORM_AUTOMATION, AUTH_PLATFORM_DEVICE,
+                  AUTH_PLATFORM_GATEWAY, AUTH_PLATFORM_MODULE, AUTH_PLATFORM_PANEL, AUTH_PLATFORM_SCENE,
+                  AUTH_PLATFORM_STATE, AUTH_PLATFORM_STATISTIC, AUTH_PLATFORM_USER, AUTH_PLATFORM_SYSTEM_SETTING,
+                  AUTH_PLATFORM_SYSTEM_OPTIONS)
+
 SYSTEM_ROLES = {
     'admin': {
         'label': 'Administrators',
@@ -24,79 +47,79 @@ SYSTEM_ROLES = {
         'description': 'Given to most users so they can control all devices. Specific devices can be blocked at the device level. This role also grants views to states, atoms, and other low level items.',
         'permissions': [
             {
-                'platform': 'atom',
+                'platform': AUTH_PLATFORM_ATOM,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
             },
             {
-                'platform': 'automation',
+                'platform': AUTH_PLATFORM_AUTOMATION,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
             },
             {
-                'platform': 'device',
+                'platform': AUTH_PLATFORM_DEVICE,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
             },
             {
-                'platform': 'device',
+                'platform': AUTH_PLATFORM_DEVICE,
                 'item': '*',
                 'action': 'control',
                 'access': 'allow',
             },
             {
-                'platform': 'gateway',
+                'platform': AUTH_PLATFORM_GATEWAY,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
             },
             {
-                'platform': 'location',
+                'platform': AUTH_PLATFORM_LOCATION,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
             },
             {
-                'platform': 'module',
+                'platform': AUTH_PLATFORM_MODULE,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
             },
             {
-                'platform': 'notifications',
+                'platform': AUTH_PLATFORM_NOTIFICATIONS,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
             },
             {
-                'platform': 'panel',
+                'platform': AUTH_PLATFORM_PANEL,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
             },
             {
-                'platform': 'scene',
+                'platform': AUTH_PLATFORM_SCENE,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
             },
             {
-                'platform': 'state',
+                'platform': AUTH_PLATFORM_STATE,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
             },
             {
-                'platform': 'statistic',
+                'platform': AUTH_PLATFORM_STATISTIC,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
             },
             {
-                'platform': 'user',
+                'platform': AUTH_PLATFORM_USER,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -115,72 +138,72 @@ SYSTEM_ROLES = {
             }
         ]
     },
-    'apiauth_view': {
-        'label': 'API Auth - View',
-        'description': 'View configured API Auth keys.',
+    'authkey_view': {
+        'label': 'Auth Key - View',
+        'description': 'View configured Auth Keys.',
         'permissions': [
             {
-                'platform': 'apiauth',
+                'platform': AUTH_PLATFORM_AUTHKEY,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
         ]
     },
-    'apiauth_edit': {
-        'label': 'API Auth - Edit',
-        'description': 'Edit configured API Auth keys.',
+    'authkey_edit': {
+        'label': 'Auth Key - Edit',
+        'description': 'Edit configured Auth Keys.',
         'permissions': [
             {
-                'platform': 'apiauth',
+                'platform': AUTH_PLATFORM_AUTHKEY,
                 'item': '*',
                 'action': 'edit',
                 'access': 'allow',
             },
             {
-                'platform': 'apiauth',
+                'platform': AUTH_PLATFORM_AUTHKEY,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
         ]
     },
-    'apiauth_add': {
-        'label': 'API Auth - Add',
-        'description': 'Add new API Auth keys.',
+    'authkey_add': {
+        'label': 'Auth Key - Add',
+        'description': 'Add new Auth Keys.',
         'permissions': [
             {
-                'platform': 'apiauth',
+                'platform': AUTH_PLATFORM_AUTHKEY,
                 'item': '*',
                 'action': 'add',
                 'access': 'allow',
             }
         ]
     },
-    'apiauth_delete': {
-        'label': 'API Auth - Delete',
-        'description': 'Delete API Auth keys.',
+    'authkey_delete': {
+        'label': 'Auth Key - Delete',
+        'description': 'Delete Auth Keys.',
         'permissions': [
             {
-                'platform': 'apiauth',
+                'platform': AUTH_PLATFORM_AUTHKEY,
                 'item': '*',
                 'action': 'delete',
                 'access': 'allow',
             },
             {
-                'platform': 'apiauth',
+                'platform': AUTH_PLATFORM_AUTHKEY,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
         ]
     },
-    'apiauth_admin': {
-        'label': 'API Auth - Administrator',
-        'description': 'Full access to API Auth keys.',
+    'authkey_admin': {
+        'label': 'Auth Key - Administrator',
+        'description': 'Full access to Auth Keys.',
         'permissions': [
             {
-                'platform': 'apiauth',
+                'platform': AUTH_PLATFORM_AUTHKEY,
                 'item': '*',
                 'action': '*',
                 'access': 'allow',
@@ -192,7 +215,7 @@ SYSTEM_ROLES = {
         'description': 'View system defined atoms.',
         'permissions': [
             {
-                'platform': 'atom',
+                'platform': AUTH_PLATFORM_ATOM,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -204,7 +227,7 @@ SYSTEM_ROLES = {
         'description': 'View configured automation rules.',
         'permissions': [
             {
-                'platform': 'automation',
+                'platform': AUTH_PLATFORM_AUTOMATION,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -216,13 +239,13 @@ SYSTEM_ROLES = {
         'description': 'Edit configured automation rules.',
         'permissions': [
             {
-                'platform': 'automation',
+                'platform': AUTH_PLATFORM_AUTOMATION,
                 'item': '*',
                 'action': 'edit',
                 'access': 'allow',
             },
             {
-                'platform': 'automation',
+                'platform': AUTH_PLATFORM_AUTOMATION,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -234,7 +257,7 @@ SYSTEM_ROLES = {
         'description': 'Add new automation rules.',
         'permissions': [
             {
-                'platform': 'automation',
+                'platform': AUTH_PLATFORM_AUTOMATION,
                 'item': '*',
                 'action': 'add',
                 'access': 'allow',
@@ -246,13 +269,13 @@ SYSTEM_ROLES = {
         'description': 'Delete configured automation rules.',
         'permissions': [
             {
-                'platform': 'automation',
+                'platform': AUTH_PLATFORM_AUTOMATION,
                 'item': '*',
                 'action': 'delete',
                 'access': 'allow',
             },
             {
-                'platform': 'automation',
+                'platform': AUTH_PLATFORM_AUTOMATION,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -264,13 +287,13 @@ SYSTEM_ROLES = {
         'description': 'Start configured automation rules.',
         'permissions': [
             {
-                'platform': 'automation',
+                'platform': AUTH_PLATFORM_AUTOMATION,
                 'item': '*',
                 'action': 'start',
                 'access': 'allow',
             },
             {
-                'platform': 'automation',
+                'platform': AUTH_PLATFORM_AUTOMATION,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -282,13 +305,13 @@ SYSTEM_ROLES = {
         'description': 'Stop configured automation rules.',
         'permissions': [
             {
-                'platform': 'automation',
+                'platform': AUTH_PLATFORM_AUTOMATION,
                 'item': '*',
                 'action': 'stop',
                 'access': 'allow',
             },
             {
-                'platform': 'automation',
+                'platform': AUTH_PLATFORM_AUTOMATION,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -300,13 +323,13 @@ SYSTEM_ROLES = {
         'description': 'Enable configured automation rules.',
         'permissions': [
             {
-                'platform': 'automation',
+                'platform': AUTH_PLATFORM_AUTOMATION,
                 'item': '*',
                 'action': 'enable',
                 'access': 'allow',
             },
             {
-                'platform': 'automation',
+                'platform': AUTH_PLATFORM_AUTOMATION,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -318,13 +341,13 @@ SYSTEM_ROLES = {
         'description': 'Start configured automation rules.',
         'permissions': [
             {
-                'platform': 'automation',
+                'platform': AUTH_PLATFORM_AUTOMATION,
                 'item': '*',
                 'action': 'disable',
                 'access': 'allow',
             },
             {
-                'platform': 'automation',
+                'platform': AUTH_PLATFORM_AUTOMATION,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -336,7 +359,7 @@ SYSTEM_ROLES = {
         'description': 'Full control over automation rules.',
         'permissions': [
             {
-                'platform': 'automation',
+                'platform': AUTH_PLATFORM_AUTOMATION,
                 'item': '*',
                 'action': '*',
                 'access': 'allow',
@@ -348,7 +371,7 @@ SYSTEM_ROLES = {
         'description': 'Able to view devices.',
         'permissions': [
             {
-                'platform': 'device',
+                'platform': AUTH_PLATFORM_DEVICE,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -360,13 +383,13 @@ SYSTEM_ROLES = {
         'description': 'Able to edit devices.',
         'permissions': [
             {
-                'platform': 'device',
+                'platform': AUTH_PLATFORM_DEVICE,
                 'item': '*',
                 'action': 'edit',
                 'access': 'allow',
             },
             {
-                'platform': 'device',
+                'platform': AUTH_PLATFORM_DEVICE,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -378,13 +401,13 @@ SYSTEM_ROLES = {
         'description': 'Able to delete devices.',
         'permissions': [
             {
-                'platform': 'device',
+                'platform': AUTH_PLATFORM_DEVICE,
                 'item': '*',
                 'action': 'delete',
                 'access': 'allow',
             },
             {
-                'platform': 'device',
+                'platform': AUTH_PLATFORM_DEVICE,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -396,7 +419,7 @@ SYSTEM_ROLES = {
         'description': 'Able to add new devices.',
         'permissions': [
             {
-                'platform': 'device',
+                'platform': AUTH_PLATFORM_DEVICE,
                 'item': '*',
                 'action': 'add',
                 'access': 'allow',
@@ -408,13 +431,13 @@ SYSTEM_ROLES = {
         'description': 'Able to control devices.',
         'permissions': [
             {
-                'platform': 'device',
+                'platform': AUTH_PLATFORM_DEVICE,
                 'item': '*',
                 'action': 'control',
                 'access': 'allow',
             },
             {
-                'platform': 'device',
+                'platform': AUTH_PLATFORM_DEVICE,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -426,13 +449,13 @@ SYSTEM_ROLES = {
         'description': 'Able to enable devices.',
         'permissions': [
             {
-                'platform': 'device',
+                'platform': AUTH_PLATFORM_DEVICE,
                 'item': '*',
                 'action': 'enable',
                 'access': 'allow',
             },
             {
-                'platform': 'device',
+                'platform': AUTH_PLATFORM_DEVICE,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -444,13 +467,13 @@ SYSTEM_ROLES = {
         'description': 'Able to disable devices.',
         'permissions': [
             {
-                'platform': 'device',
+                'platform': AUTH_PLATFORM_DEVICE,
                 'item': '*',
                 'action': 'disable',
                 'access': 'allow',
             },
             {
-                'platform': 'device',
+                'platform': AUTH_PLATFORM_DEVICE,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -462,7 +485,7 @@ SYSTEM_ROLES = {
         'description': 'Full access to devices. This includes edit, add, delete, view, and control.',
         'permissions': [
             {
-                'platform': 'device',
+                'platform': AUTH_PLATFORM_DEVICE,
                 'item': '*',
                 'action': '*',
                 'access': 'allow',
@@ -486,7 +509,7 @@ SYSTEM_ROLES = {
         'description': 'View configured gateways within the cluster.',
         'permissions': [
             {
-                'platform': 'gateway',
+                'platform': AUTH_PLATFORM_GATEWAY,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -498,7 +521,7 @@ SYSTEM_ROLES = {
         'description': 'View configured locations.',
         'permissions': [
             {
-                'platform': 'location',
+                'platform': AUTH_PLATFORM_LOCATION,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -510,13 +533,13 @@ SYSTEM_ROLES = {
         'description': 'Edit configured locations.',
         'permissions': [
             {
-                'platform': 'location',
+                'platform': AUTH_PLATFORM_LOCATION,
                 'item': '*',
                 'action': 'edit',
                 'access': 'allow',
             },
             {
-                'platform': 'location',
+                'platform': AUTH_PLATFORM_LOCATION,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -528,13 +551,13 @@ SYSTEM_ROLES = {
         'description': 'Add new locations.',
         'permissions': [
             {
-                'platform': 'location',
+                'platform': AUTH_PLATFORM_LOCATION,
                 'item': '*',
                 'action': 'add',
                 'access': 'allow',
             },
             {
-                'platform': 'location',
+                'platform': AUTH_PLATFORM_LOCATION,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -546,13 +569,13 @@ SYSTEM_ROLES = {
         'description': 'Delete configured locations.',
         'permissions': [
             {
-                'platform': 'location',
+                'platform': AUTH_PLATFORM_LOCATION,
                 'item': '*',
                 'action': 'delete',
                 'access': 'allow',
             },
             {
-                'platform': 'location',
+                'platform': AUTH_PLATFORM_LOCATION,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -564,7 +587,7 @@ SYSTEM_ROLES = {
         'description': 'Full access to the location administration.',
         'permissions': [
             {
-                'platform': 'location',
+                'platform': AUTH_PLATFORM_LOCATION,
                 'item': '*',
                 'action': '*',
                 'access': 'allow',
@@ -576,7 +599,7 @@ SYSTEM_ROLES = {
         'description': 'View configured modules.',
         'permissions': [
             {
-                'platform': 'module',
+                'platform': AUTH_PLATFORM_MODULE,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -588,13 +611,13 @@ SYSTEM_ROLES = {
         'description': 'Edit configured modules.',
         'permissions': [
             {
-                'platform': 'module',
+                'platform': AUTH_PLATFORM_MODULE,
                 'item': '*',
                 'action': 'edit',
                 'access': 'allow',
             },
             {
-                'platform': 'module',
+                'platform': AUTH_PLATFORM_MODULE,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -606,13 +629,13 @@ SYSTEM_ROLES = {
         'description': 'Add new modules.',
         'permissions': [
             {
-                'platform': 'module',
+                'platform': AUTH_PLATFORM_MODULE,
                 'item': '*',
                 'action': 'add',
                 'access': 'allow',
             },
             {
-                'platform': 'module',
+                'platform': AUTH_PLATFORM_MODULE,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -624,13 +647,13 @@ SYSTEM_ROLES = {
         'description': 'Delete configured modules.',
         'permissions': [
             {
-                'platform': 'module',
+                'platform': AUTH_PLATFORM_MODULE,
                 'item': '*',
                 'action': 'delete',
                 'access': 'allow',
             },
             {
-                'platform': 'module',
+                'platform': AUTH_PLATFORM_MODULE,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -642,13 +665,13 @@ SYSTEM_ROLES = {
         'description': 'Enable configured modules.',
         'permissions': [
             {
-                'platform': 'module',
+                'platform': AUTH_PLATFORM_MODULE,
                 'item': '*',
                 'action': 'enable',
                 'access': 'allow',
             },
             {
-                'platform': 'module',
+                'platform': AUTH_PLATFORM_MODULE,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -660,13 +683,13 @@ SYSTEM_ROLES = {
         'description': 'Disable configured modules.',
         'permissions': [
             {
-                'platform': 'module',
+                'platform': AUTH_PLATFORM_MODULE,
                 'item': '*',
                 'action': 'disable',
                 'access': 'allow',
             },
             {
-                'platform': 'module',
+                'platform': AUTH_PLATFORM_MODULE,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -678,7 +701,7 @@ SYSTEM_ROLES = {
         'description': 'Full control over modules.',
         'permissions': [
             {
-                'platform': 'module',
+                'platform': AUTH_PLATFORM_MODULE,
                 'item': '*',
                 'action': '*',
                 'access': 'allow',
@@ -690,7 +713,7 @@ SYSTEM_ROLES = {
         'description': 'View notifications.',
         'permissions': [
             {
-                'platform': 'notification',
+                'platform': AUTH_PLATFORM_NOTIFICATIONS,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -702,13 +725,13 @@ SYSTEM_ROLES = {
         'description': 'Delete notifications.',
         'permissions': [
             {
-                'platform': 'notification',
+                'platform': AUTH_PLATFORM_NOTIFICATIONS,
                 'item': '*',
                 'action': 'delete',
                 'access': 'allow',
             },
             {
-                'platform': 'notification',
+                'platform': AUTH_PLATFORM_NOTIFICATIONS,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -720,7 +743,7 @@ SYSTEM_ROLES = {
         'description': 'View panel.',
         'permissions': [
             {
-                'platform': 'panel',
+                'platform': AUTH_PLATFORM_PANEL,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -732,7 +755,7 @@ SYSTEM_ROLES = {
         'description': 'View configured scenes.',
         'permissions': [
             {
-                'platform': 'scene',
+                'platform': AUTH_PLATFORM_SCENE,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -744,13 +767,13 @@ SYSTEM_ROLES = {
         'description': 'Edit configured scenes.',
         'permissions': [
             {
-                'platform': 'scene',
+                'platform': AUTH_PLATFORM_SCENE,
                 'item': '*',
                 'action': 'edit',
                 'access': 'allow',
             },
             {
-                'platform': 'scene',
+                'platform': AUTH_PLATFORM_SCENE,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -762,7 +785,7 @@ SYSTEM_ROLES = {
         'description': 'Add new scenes.',
         'permissions': [
             {
-                'platform': 'scene',
+                'platform': AUTH_PLATFORM_SCENE,
                 'item': '*',
                 'action': 'add',
                 'access': 'allow',
@@ -774,13 +797,13 @@ SYSTEM_ROLES = {
         'description': 'Delete configured scenes.',
         'permissions': [
             {
-                'platform': 'scene',
+                'platform': AUTH_PLATFORM_SCENE,
                 'item': '*',
                 'action': 'delete',
                 'access': 'allow',
             },
             {
-                'platform': 'scene',
+                'platform': AUTH_PLATFORM_SCENE,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -792,13 +815,13 @@ SYSTEM_ROLES = {
         'description': 'Start configured scenes.',
         'permissions': [
             {
-                'platform': 'scene',
+                'platform': AUTH_PLATFORM_SCENE,
                 'item': '*',
                 'action': 'start',
                 'access': 'allow',
             },
             {
-                'platform': 'scene',
+                'platform': AUTH_PLATFORM_SCENE,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -810,13 +833,13 @@ SYSTEM_ROLES = {
         'description': 'Stop configured scenes.',
         'permissions': [
             {
-                'platform': 'scene',
+                'platform': AUTH_PLATFORM_SCENE,
                 'item': '*',
                 'action': 'stop',
                 'access': 'allow',
             },
             {
-                'platform': 'scene',
+                'platform': AUTH_PLATFORM_SCENE,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -828,13 +851,13 @@ SYSTEM_ROLES = {
         'description': 'Enable configured scenes.',
         'permissions': [
             {
-                'platform': 'scene',
+                'platform': AUTH_PLATFORM_SCENE,
                 'item': '*',
                 'action': 'enable',
                 'access': 'allow',
             },
             {
-                'platform': 'scene',
+                'platform': AUTH_PLATFORM_SCENE,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -846,13 +869,13 @@ SYSTEM_ROLES = {
         'description': 'Disable configured scenes.',
         'permissions': [
             {
-                'platform': 'scene',
+                'platform': AUTH_PLATFORM_SCENE,
                 'item': '*',
                 'action': 'disable',
                 'access': 'allow',
             },
             {
-                'platform': 'scene',
+                'platform': AUTH_PLATFORM_SCENE,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -864,7 +887,7 @@ SYSTEM_ROLES = {
         'description': 'Full control over modules.',
         'permissions': [
             {
-                'platform': 'scene',
+                'platform': AUTH_PLATFORM_SCENE,
                 'item': '*',
                 'action': '*',
                 'access': 'allow',
@@ -876,7 +899,7 @@ SYSTEM_ROLES = {
         'description': 'View system states.',
         'permissions': [
             {
-                'platform': 'state',
+                'platform': AUTH_PLATFORM_STATE,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -888,7 +911,7 @@ SYSTEM_ROLES = {
         'description': 'View statistics.',
         'permissions': [
             {
-                'platform': 'statistic',
+                'platform': AUTH_PLATFORM_STATISTIC,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -900,7 +923,7 @@ SYSTEM_ROLES = {
         'description': 'Allow user to backup the system.',
         'permissions': [
             {
-                'platform': 'system_options',
+                'platform': AUTH_PLATFORM_SYSTEM_OPTIONS,
                 'item': '*',
                 'action': 'backup',
                 'access': 'allow',
@@ -912,7 +935,7 @@ SYSTEM_ROLES = {
         'description': 'Allow user to shutdown or restart the gateway software.',
         'permissions': [
             {
-                'platform': 'system_options',
+                'platform': AUTH_PLATFORM_SYSTEM_OPTIONS,
                 'item': '*',
                 'action': 'control',
                 'access': 'allow',
@@ -924,7 +947,7 @@ SYSTEM_ROLES = {
         'description': 'View various system status pages.',
         'permissions': [
             {
-                'platform': 'system_options',
+                'platform': AUTH_PLATFORM_SYSTEM_OPTIONS,
                 'item': '*',
                 'action': 'status',
                 'access': 'allow',
@@ -936,7 +959,7 @@ SYSTEM_ROLES = {
         'description': 'Allow to connection to the system event stream. This permits live access to nearly any system even change.',
         'permissions': [
             {
-                'platform': 'system_options',
+                'platform': AUTH_PLATFORM_SYSTEM_OPTIONS,
                 'item': '*',
                 'action': 'stream',
                 'access': 'allow',
@@ -948,7 +971,7 @@ SYSTEM_ROLES = {
         'description': 'Allows connections to the MQTT broker.',
         'permissions': [
             {
-                'platform': 'system_options',
+                'platform': AUTH_PLATFORM_SYSTEM_OPTIONS,
                 'item': '*',
                 'action': 'mqtt',
                 'access': 'allow',
@@ -960,7 +983,7 @@ SYSTEM_ROLES = {
         'description': 'View any system settings. Use caution, it can review various details about the installation.',
         'permissions': [
             {
-                'platform': 'system_setting',
+                'platform': AUTH_PLATFORM_SYSTEM_SETTING,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -972,7 +995,7 @@ SYSTEM_ROLES = {
         'description': 'Edit any system settings. Use caution, people can break things easily.',
         'permissions': [
             {
-                'platform': 'system_setting',
+                'platform': AUTH_PLATFORM_SYSTEM_SETTING,
                 'item': '*',
                 'action': 'edit',
                 'access': 'allow',
@@ -984,7 +1007,7 @@ SYSTEM_ROLES = {
         'description': 'View configured users.',
         'permissions': [
             {
-                'platform': 'user',
+                'platform': AUTH_PLATFORM_USER,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -996,7 +1019,7 @@ SYSTEM_ROLES = {
         'description': 'Edit configured users.',
         'permissions': [
             {
-                'platform': 'user',
+                'platform': AUTH_PLATFORM_USER,
                 'item': '*',
                 'action': 'edit',
                 'access': 'allow',
@@ -1008,7 +1031,7 @@ SYSTEM_ROLES = {
         'description': 'Add new users.',
         'permissions': [
             {
-                'platform': 'user',
+                'platform': AUTH_PLATFORM_USER,
                 'item': '*',
                 'action': 'add',
                 'access': 'allow',
@@ -1020,7 +1043,7 @@ SYSTEM_ROLES = {
         'description': 'Delete configured users.',
         'permissions': [
             {
-                'platform': 'user',
+                'platform': AUTH_PLATFORM_USER,
                 'item': '*',
                 'action': 'delete',
                 'access': 'allow',
@@ -1032,7 +1055,7 @@ SYSTEM_ROLES = {
         'description': 'Full access to the user administration.',
         'permissions': [
             {
-                'platform': 'user',
+                'platform': AUTH_PLATFORM_USER,
                 'item': '*',
                 'action': '*',
                 'access': 'allow',

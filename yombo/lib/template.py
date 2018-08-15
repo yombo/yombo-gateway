@@ -70,7 +70,7 @@ class Template(YomboLibrary, object):
         self.environment.globals['local_gateway'] = self._Gateways.get_local()
         self.environment.globals['amqp'] = self._AMQP
         self.environment.globals['amqpyombo'] = self._AMQPYombo
-        self.environment.globals['apiauth'] = self._APIAuth
+        self.environment.globals['authkeys'] = self._AuthKeys
         self.environment.globals['atoms'] = self._Atoms
         self.environment.globals['automation'] = self._Automation
         self.environment.globals['commands'] = self._Commands

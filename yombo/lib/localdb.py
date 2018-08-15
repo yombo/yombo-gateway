@@ -223,8 +223,8 @@ class VariableGroupFieldDataView(DBObject):
 #     BELONGSTO = ['devices', 'modules']
 
 
-class ApiAuth(DBObject):
-    TABLENAME = 'webinterface_api_auth'
+class AuthKeys(DBObject):
+    TABLENAME = 'auth_keys'
 
 
 class Sessions(DBObject):
@@ -1061,12 +1061,12 @@ class LocalDB(YomboLibrary):
         return items
 
     #########################
-    ###  API AUTH       #####
+    ###  Auth Key       #####
     #########################
     @inlineCallbacks
-    def get_api_auth(self, auth_id=None):
+    def get_auth_key(self, auth_id=None):
         if auth_id is None:
-            records = yield ApiAuth.all()
+            records = yield AuthKeys.all()
             if len(records) == 0:
                 return []
             output = []
@@ -1086,9 +1086,9 @@ class LocalDB(YomboLibrary):
                 })
             return output
         else:
-            record = yield ApiAuth.find(auth_id, where=['is_valid = 1'])
+            record = yield AuthKeys.find(auth_id, where=['is_valid = 1'])
             if record is None:
-                raise YomboWarning("No API Keys found.")
+                raise YomboWarning("No Auth Keys found.")
             record.auth_data = data_unpickle(record.auth_data)
             record.roles = data_unpickle(record.roles)
             return {
@@ -1104,44 +1104,44 @@ class LocalDB(YomboLibrary):
             }
 
     @inlineCallbacks
-    def save_api_auth(self, api_auth):
+    def save_auth_key(self, auth_key):
         args = {
-            'id': api_auth.auth_id,
-            'label': api_auth.label,
-            'description': api_auth.description,
-            'is_valid': coerce_value(api_auth.is_valid, 'int'),
-            'auth_data': data_pickle(api_auth.auth_data),
-            'roles': data_pickle(api_auth.roles),
-            'created_at': api_auth.created_at,
-            'last_access': api_auth.last_access,
-            'updated_at': api_auth.updated_at,
+            'id': auth_key.auth_id,
+            'label': auth_key.label,
+            'description': auth_key.description,
+            'is_valid': coerce_value(auth_key.is_valid, 'int'),
+            'auth_data': data_pickle(auth_key.auth_data),
+            'roles': data_pickle(auth_key.roles),
+            'created_at': auth_key.created_at,
+            'last_access': auth_key.last_access,
+            'updated_at': auth_key.updated_at,
         }
-        print("save_api_auth: %s" % args)
-        yield self.dbconfig.insert('webinterface_api_auth', args, None, 'OR IGNORE')
+        # print("save_auth_key: %s" % args)
+        yield self.dbconfig.insert('auth_keys', args, None, 'OR IGNORE')
 
     @inlineCallbacks
-    def update_api_auth(self, api_auth):
+    def update_auth_key(self, auth_key):
         args = {
-            'label': api_auth.label,
-            'description': api_auth.description,
-            'auth_data': data_pickle(api_auth.auth_data),
-            'roles': data_pickle(api_auth.roles),
-            'is_valid': coerce_value(api_auth.is_valid, 'bool'),
-            'last_access': api_auth.last_access,
-            'updated_at': api_auth.updated_at,
+            'label': auth_key.label,
+            'description': auth_key.description,
+            'auth_data': data_pickle(auth_key.auth_data),
+            'roles': data_pickle(auth_key.roles),
+            'is_valid': coerce_value(auth_key.is_valid, 'bool'),
+            'last_access': auth_key.last_access,
+            'updated_at': auth_key.updated_at,
             }
-        yield self.dbconfig.update('webinterface_api_auth', args, where=['id = ?', api_auth.auth_id])
+        yield self.dbconfig.update('auth_keys', args, where=['id = ?', auth_key.auth_id])
 
     @inlineCallbacks
-    def rotate_api_auth(self, old_id, new_id):
+    def rotate_auth_key(self, old_id, new_id):
         args = {
             'id': new_id,
             }
-        yield self.dbconfig.update('webinterface_api_auth', args, where=['id = ?', old_id])
+        yield self.dbconfig.update('auth_keys', args, where=['id = ?', old_id])
 
     @inlineCallbacks
-    def delete_api_auth(self, auth_id):
-        yield self.dbconfig.delete('webinterface_api_auth', where=['id = ?', auth_id])
+    def delete_auth_key(self, auth_id):
+        yield self.dbconfig.delete('auth_keys', where=['id = ?', auth_id])
 
     #########################
     ###  Web  Sessions    ###
@@ -2127,6 +2127,7 @@ ORDER BY id desc"""
         :param vals:
         :return:
         """
+        # print("insert many: %s : %s" % (table, vals))
         yield self.dbconfig.insertMany(table, vals)
 
     @inlineCallbacks
