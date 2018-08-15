@@ -154,6 +154,9 @@ class Yombo_Site(Site):
         if any(url_path.endswith(ext) for ext in ignored_extensions):
             return
 
+        if request.getClientIP() == "127.0.0.1" and url_path.startswith('/api/v1/mqtt/auth/'):
+            return
+
         od = OrderedDict({
             'request_at': time(),
             'request_protocol': request.clientproto.decode().strip(),
