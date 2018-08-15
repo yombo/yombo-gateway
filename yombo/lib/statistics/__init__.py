@@ -720,7 +720,8 @@ class Statistics(YomboLibrary):
                     if 'restored_db_id' in current_bucket and current_bucket['restored_db_id'] is not False:
                         yield self._LocalDB.save_statistic(current_bucket, int(bucket_time < (current_bucket_time['time'])))
                     else:
-                        od = OrderedDict()
+                        # od = OrderedDict()
+                        od = {}
                         od['bucket_time'] = current_bucket['time']
                         od['bucket_size'] = current_bucket_time['size']
                         od['bucket_lifetime'] = current_bucket['lifetime']
@@ -732,8 +733,8 @@ class Statistics(YomboLibrary):
                         od['finished'] = int(bucket_time < (current_bucket_time['time']))
                         to_save.append(od)
 
-                # if bucket_time < (current_bucket_time['time']):
-                #     del self._counters[bucket_time][bucket_name]
+                if bucket_time < (current_bucket_time['time']):
+                    del self._counters[bucket_time][bucket_name]
             if len(self._counters[bucket_time]) == 0:
                 del self._counters[bucket_time]
 
@@ -755,7 +756,8 @@ class Statistics(YomboLibrary):
                             yield self._LocalDB.save_statistic(current_bucket,
                                                                     int(bucket_time < (current_bucket_time['time'])))
                         else:
-                            od = OrderedDict()
+                            # od = OrderedDict()
+                            od = {}
                             od['bucket_time'] = current_bucket['time']
                             od['bucket_size'] = current_bucket_time['size']
                             od['bucket_lifetime'] = current_bucket['lifetime']
@@ -776,7 +778,8 @@ class Statistics(YomboLibrary):
         for bucket_time in list(self._datapoints.keys()):
             for bucket_name in list(self._datapoints[bucket_time].keys()):
                 current_bucket = self._datapoints[bucket_time][bucket_name]
-                od = OrderedDict()
+                # od = OrderedDict()
+                od = {}
                 od['bucket_time'] = current_bucket['time']
                 od['bucket_size'] = 0
                 od['bucket_lifetime'] = current_bucket['lifetime']
