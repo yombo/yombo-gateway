@@ -17,10 +17,10 @@
 
    </div>
 
-============================
-AuthKeys (yombo.lib.authkey)
-============================
-.. automodule:: yombo.lib.authkey
+==============================
+AuthKeys (yombo.lib.authkeys)
+==============================
+.. automodule:: yombo.lib.authkeys
 
 AuthKeys Class
 ================

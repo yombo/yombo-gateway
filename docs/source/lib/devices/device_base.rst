@@ -1,13 +1,13 @@
-.. index:: devices_base_device
+.. index:: devices_device_base
 
-.. _devices_base_device:
+.. _devices_device_base:
 
-.. currentmodule:: yombo.lib.devices._base_device
+.. currentmodule:: yombo.lib.devices._device_base
 
 =================================================================
-Devices::Base Device (yombo.lib.devices._base_device)
+Devices::Device Base (yombo.lib.devices._device_base)
 =================================================================
-.. automodule:: yombo.lib.devices._base_device
+.. automodule:: yombo.lib.devices._device_base
    :members:
    :special-members:
    :private-members:

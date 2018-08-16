@@ -7,6 +7,7 @@ Various function decorators.
 :license: LICENSE for details.
 """
 # Import python libraries
+from cachetools import TTLCache
 from functools import wraps
 import inspect
 from time import time
@@ -84,7 +85,10 @@ class cached(object):
                                random_string())
 
         self.kwd_mark = object()  # sentinel for separating args from kwargs
-        self.cache = cache_library.new(cachename, ttl, maxsize, tags)
+        if cache_library is None:  # this is mostly here for debugging.
+            self.cache = TTLCache(maxsize, ttl)
+        else:
+            self.cache = cache_library.new(cachename, ttl, maxsize, tags)
 
     def __call__(self, f):
         def wrapped_f(*args, **kwargs):

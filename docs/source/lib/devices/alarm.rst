@@ -1,13 +1,13 @@
-.. index:: devices_appliance
+.. index:: devices_alarm
 
-.. _devices_appliance:
+.. _devices_alarm:
 
-.. currentmodule:: yombo.lib.devices.appliance
+.. currentmodule:: yombo.lib.devices.alarm
 
 =================================================================
-Devices::Appliance (yombo.lib.devices.appliance)
+Devices::Alarm (yombo.lib.devices.alarm)
 =================================================================
-.. automodule:: yombo.lib.devices.appliance
+.. automodule:: yombo.lib.devices.alarm
    :members:
    :special-members:
    :private-members:

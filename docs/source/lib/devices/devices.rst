@@ -28,17 +28,20 @@ Helper files and classes
 .. toctree::
    :maxdepth: 1
 
-   base_device.rst
+   __init__.rst
    device.rst
+   device_attributes.rst
+   device_base.rst
    device_command.rst
    device_status.rst
-   activity_trigger.rst
-   appliance.rst
+   alarm.rst
    camera.rst
    climate.rst
+   cover.rst
    fan.rst
    light.rst
    lock.rst
+   mediaplayer.rst
    scene.rst
    sensor.rst
    switch.rst

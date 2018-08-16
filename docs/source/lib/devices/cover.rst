@@ -1,13 +1,13 @@
-.. index:: devices_activity_trigger
+.. index:: devices_cover
 
-.. _devices_activity_trigger:
+.. _devices_fan:
 
-.. currentmodule:: yombo.lib.devices.activity_trigger
+.. currentmodule:: yombo.lib.devices.cover
 
 =================================================================
-Devices::Activity Trigger (yombo.lib.devices.activity_trigger)
+Devices::Fan (yombo.lib.devices.cover)
 =================================================================
-.. automodule:: yombo.lib.devices.activity_trigger
+.. automodule:: yombo.lib.devices.cover
    :members:
    :special-members:
    :private-members:

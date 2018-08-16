@@ -54,6 +54,7 @@ IoT devices, etc.
    ../lib/authkey.rst
    ../lib/atoms.rst
    ../lib/automation.rst
+   ../lib/cache.rst
    ../lib/commands.rst
    ../lib/configuration.rst
    ../lib/crontab.rst
