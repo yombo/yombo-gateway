@@ -8,14 +8,6 @@
    :description: Handles auth key headers for the webinterface.
    :keywords: web interface, api auth, auth key, sessions
 
-.. raw:: html
-   :file: _header_start.html
-
-.. include:: _header_middle.html
-
-.. raw:: html
-
-   </div>
 
 ==============================
 AuthKeys (yombo.lib.authkeys)

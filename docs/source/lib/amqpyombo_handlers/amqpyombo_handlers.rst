@@ -9,9 +9,6 @@
    :description: Handles interactions with Yombo AMQP servers. These handlers are used by the library to process requests and responses to and from the Yombo AMQP servers.
    :keywords: amqp, handlers
 
-.. raw:: html
-   :file: ../_header_start.html
-
 ============================================
 AMQP Handlers (yombo.lib.amqpyomb_handlers)
 ============================================

@@ -9,15 +9,6 @@
      for the developer.
    :keywords: auto, discovery, devices, yombo
 
-.. raw:: html
-   :file: _header_start.html
-
-.. include:: _header_middle.html
-
-.. raw:: html
-
-   </div>
-
 ====================================
 Discovery (yombo.lib.discovery)
 ====================================

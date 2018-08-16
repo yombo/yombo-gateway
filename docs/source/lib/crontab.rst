@@ -8,15 +8,6 @@
    :description: Schedule various actions to happen based on time of day. Works much like a Linux cron tab.
    :keywords: crontab, schedule, python api
 
-.. raw:: html
-   :file: _header_start.html
-
-.. include:: _header_middle.html
-
-.. raw:: html
-
-   </div>
-
 .. rubric:: Classes in this module
 
 .. autosummary::

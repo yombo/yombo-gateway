@@ -8,15 +8,6 @@
    :description: Schedule various actions to happen based on time of day. Works much like a Linux cron tab.
    :keywords: device types, python api
 
-.. raw:: html
-   :file: _header_start.html
-
-.. include:: _header_middle.html
-
-.. raw:: html
-
-   </div>
-
 ====================================
 Device Types (yombo.lib.devicetypes)
 ====================================

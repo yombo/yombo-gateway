@@ -8,15 +8,6 @@
    :description: Atoms provide non-changing information about the environment the gateway is running in as well as about the Yombo Gateway software.
    :keywords: atoms, static, python api
 
-.. raw:: html
-   :file: _header_start.html
-
-.. include:: _header_middle.html
-
-.. raw:: html
-
-   </div>
-
 ===========================
 Atoms (yombo.lib.atoms)
 ===========================

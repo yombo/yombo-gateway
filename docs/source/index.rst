@@ -45,18 +45,21 @@ Useful links
 * `End user documentation <https://yombo.net/docs>`_
 * `Building your first module - a complete guide <https://yombo.net/docs/developing_modules/building_your_first_module>`_
 
+Yombo PyDoc Links
+-----------------
+
+* :ref:`Full index <genindex>`
+* :ref:`Search page <search>`
 
 Table of Contents
 =================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :numbered:
    :includehidden:
 
-   chapters/useful-links.rst
    chapters/yombo-framework.rst
-   chapters/developing-yombo-modules.rst
    chapters/license.rst
 
 Contributing to Developer Documentation
@@ -70,14 +73,6 @@ updated from the source code.
 
 .. rubric:: Index and search
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
 
-.. rubric:: License Information
-
-:Homepage: https://yombo.net/
-:Copyright: 2013-2018 Yombo
-:License: For the open source license, see the `LICENSE <https://github.com/yombo/yombo-gateway/blob/master/LICENSE>`_ file
 
 Last updated: |today|
