@@ -9,6 +9,7 @@ Manages users within the gateway. All users are loaded on startup.
 :copyright: Copyright 2018 by Yombo.
 :license: LICENSE for details.
 """
+# from cachetools import cached
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks
 
@@ -24,6 +25,7 @@ from yombo.lib.users.role import Role
 from yombo.lib.users.user import User
 from yombo.constants.users import *
 from yombo.utils import global_invoke_all, data_unpickle
+from yombo.utils.decorators import cached
 
 logger = get_logger('library.users')
 
@@ -134,8 +136,8 @@ class Users(YomboLibrary):
         self.owner_id = self._Configs.get('core', 'owner_id', None, False)
         self.owner_user = None
         self.platforms = []  # list of possible/known access platforms
-
         self.load_roles()
+        # self.cache1 = self._Cache.new('lib.users.has_access')
 
     @inlineCallbacks
     def _start_(self, **kwargs):
@@ -430,6 +432,7 @@ class Users(YomboLibrary):
 
         return self.has_access(item_permissions, roles, platform, item, action, raise_error), user_id, user_type
 
+    @cached()
     def has_access(self, item_permissions, roles, platform, item, action, raise_error=None):
         """
         Usually called by either the user instance, websession instance, or auth key instance. Checks if the provided
@@ -437,6 +440,7 @@ class Users(YomboLibrary):
 
         :return: Boolean
         """
+        print("user:has_access starting....")
         def return_access(value):
             if value is True:
                 return True

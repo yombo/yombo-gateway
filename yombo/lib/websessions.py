@@ -33,7 +33,7 @@ from yombo.utils.dictobject import DictObject
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
 from yombo.utils import random_string, random_int, sleep
-from yombo.utils.decorators import memoize_ttl
+from yombo.utils.decorators import cached
 
 logger = get_logger("library.websessions")
 
@@ -211,7 +211,6 @@ class WebSessions(YomboLibrary):
         else:
             return host
 
-    # @memoize_ttl(30)  # memoize for 5 seconds
     @inlineCallbacks
     def load(self, request):
         """
@@ -527,7 +526,6 @@ class Auth(object):
         self.last_access = int(time())
         self.is_dirty += 1
 
-    @memoize_ttl(30)
     def has_access(self, platform, item, action, raise_error=None):
         """
         Check if api auth has access  to a resource / access_type combination.

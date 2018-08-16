@@ -58,7 +58,6 @@ class Variables(YomboLibrary):
 
         self.gateway_id = self._Configs.get('core', 'gwid', 'local', False)
 
-    # @memoize_ttl(15)
     @inlineCallbacks
     def get_variable_data(self, data_relation_type=None, data_relation_id=None, **kwargs):
         """
@@ -80,7 +79,6 @@ class Variables(YomboLibrary):
         results = yield self._LocalDB.get_variable_data(**kwargs)
         return results
 
-    # @memoize_ttl(60)
     @inlineCallbacks
     def get_variable_fields(self, group_id=None, **kwargs):
         """
@@ -97,7 +95,6 @@ class Variables(YomboLibrary):
         results = yield self._LocalDB.get_variable_fields(**kwargs)
         return results
 
-    # @memoize_ttl(60)
     @inlineCallbacks
     def get_variable_fields_encrypted(self):
         """
@@ -109,7 +106,6 @@ class Variables(YomboLibrary):
         results = yield self._LocalDB.get_variable_fields_encrypted()
         return results
 
-    # @memoize_ttl(60)
     @inlineCallbacks
     def get_variable_groups(self, group_relation_type=None, group_relation_id=None, **kwargs):
         """
@@ -131,7 +127,6 @@ class Variables(YomboLibrary):
         results = yield self._LocalDB.get_variable_groups(**kwargs)
         return results
 
-    # @memoize_ttl(30)
     @inlineCallbacks
     def get_variable_fields_data(self, **kwargs):
         """
@@ -156,7 +151,6 @@ class Variables(YomboLibrary):
         """
         return partial(self.get_variable_fields_data, **kwargs)
 
-    # @memoize_ttl(10)
     @inlineCallbacks
     def get_variable_groups_fields(self, group_relation_type=None, group_relation_id=None, variable_data=None):
         """
@@ -182,7 +176,6 @@ class Variables(YomboLibrary):
                             groups[group['id']][field['id']] = variable_data[group['id']][field['id']]
         return groups
 
-    # @memoize_ttl(10)
     @inlineCallbacks
     def get_variable_groups_fields_data(self, **kwargs):
         """
@@ -198,7 +191,6 @@ class Variables(YomboLibrary):
         # print("variables library: get_variable_groups_fields_data: groups: %s" % groups)
         return groups
 
-    # @memoize_ttl(10)
     def merge_variable_fields_data_data(self, fields, new_data_items):
         """
         Merge the results from get_variable_fields_data and a dictiionary of data times, usually
@@ -226,7 +218,6 @@ class Variables(YomboLibrary):
             for data_id, data in field['data'].items():
                 field['values'].append(data['value'])
 
-    # @memoize_ttl(10)
     @inlineCallbacks
     def merge_variable_groups_fields_data_data(self, groups, new_data_items, relation_type = None):
         """

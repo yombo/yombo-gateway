@@ -24,8 +24,9 @@ from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import search_instance, do_search_instance, global_invoke_all
-from yombo.utils.decorators import memoize_ttl
 from yombo.utils.fuzzysearch import FuzzySearch
+from yombo.utils.decorators import cached
+
 logger = get_logger('library.commands')
 
 class Commands(YomboLibrary):
@@ -272,7 +273,7 @@ class Commands(YomboLibrary):
         # if test_command:
         #     return self.commands[command_id]
 
-    @memoize_ttl(5)
+    @cached(30)
     def get(self, command_requested, limiter=None, status=None, command_list=None):
         """
         Looks for commands by it's id, label, and machine_label.

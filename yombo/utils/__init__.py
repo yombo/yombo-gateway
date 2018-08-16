@@ -19,7 +19,6 @@ except ImportError:
     import json
 
 import base64
-from datetime import datetime
 from difflib import SequenceMatcher
 from docutils.core import publish_parts
 from hashlib import sha256
@@ -31,7 +30,6 @@ import math
 import msgpack
 import os
 import pkg_resources
-from pkg_resources import DistributionNotFound
 import random
 import re
 import string
@@ -51,9 +49,10 @@ from yombo.ext.hashids import Hashids
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
-from yombo.utils.decorators import deprecated, memoize_ttl, memoize_
+from yombo.utils.decorators import deprecated, cached, memoize_
 import yombo.ext.base62 as base62
-logger = None
+
+logger = None  # This is set by the set_util_logger function.
 
 
 def set_util_logger(the_logger):
@@ -82,6 +81,12 @@ def get_python_package_info(package_name, install_on_error=True):
     :param package_name:
     :return:
     """
+    conditions = ('==', '<=', '>=')
+    if "=" in package_name:
+        if any(s in package_name for s in conditions) is False:
+            logger.warn("Invalid python requirement line: {package_name}", package_name=package_name)
+            return False
+
     try:
         results = pkg_resources.require([package_name])[0]
         return results
@@ -89,7 +94,6 @@ def get_python_package_info(package_name, install_on_error=True):
         if install_on_error is False:
             logger.warn("Python package was not found, and won't be installed: {package_name}", package_name=package_name)
             return None
-
     except pkg_resources.VersionConflict as e:
         logger.warn("Python package is out of date. Will try to update. Have version: {dist}, but need: {req}",
                dist=e.dist, req=e.req)
@@ -104,6 +108,7 @@ def get_python_package_info(package_name, install_on_error=True):
         return None
     except pkg_resources.VersionConflict as e:
         logger.warn("Unable to upgrade python package: {package}", package=package_name)
+    return False
 
 @inlineCallbacks
 def install_python_package(package_name):
@@ -1044,7 +1049,6 @@ def global_invoke_modules(hook, **kwargs):
     return modules_results
 
 
-@memoize_ttl(3600)
 def get_public_gw_id():
     configs = get_component('yombo.gateway.lib.configuration')
     try:

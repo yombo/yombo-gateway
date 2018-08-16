@@ -1020,7 +1020,6 @@ class Modules(YomboLibrary):
 
         return module._module_devices_cached
 
-    # @memoize_ttl(5)
     @inlineCallbacks
     def module_device_types(self, module_id):
         module_device_types = yield self._LocalDB.get_module_device_types(module_id)

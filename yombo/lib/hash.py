@@ -26,7 +26,6 @@ from twisted.internet import reactor, threads
 
 
 # Import Yombo libraries
-# from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 

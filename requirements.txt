@@ -1,5 +1,6 @@
 argon2_cffi==18.1.0
 asyncio==3.4.3
+cachetools==2.1.0
 certifi==2018.8.13
 cython==0.28.*
 decorator==4.3.0

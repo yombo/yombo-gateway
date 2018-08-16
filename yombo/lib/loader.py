@@ -66,6 +66,7 @@ import yombo.utils
 logger = get_logger('library.loader')
 
 HARD_LOAD = OrderedDict()
+HARD_LOAD["Cache"] = {'operating_mode': 'all'}
 HARD_LOAD["Validate"] = {'operating_mode': 'all'}
 HARD_LOAD["Template"] = {'operating_mode': 'all'}
 HARD_LOAD["Queue"] = {'operating_mode': 'all'}
@@ -143,7 +144,7 @@ HARD_UNLOAD["SQLDict"] = {'operating_mode': 'all'}
 HARD_UNLOAD["AMQP"] = {'operating_mode': 'run'}
 HARD_UNLOAD["Modules"] = {'operating_mode': 'all'}
 HARD_LOAD["Variables"] = {'operating_mode': 'all'}
-# HARD_UNLOAD["DownloadModules"] = {'operating_mode': 'run'}
+HARD_UNLOAD["DownloadModules"] = {'operating_mode': 'run'}
 HARD_UNLOAD["LocalDB"] = {'operating_mode': 'all'}
 HARD_UNLOAD["Queue"] = {'operating_mode': 'all'}
 
@@ -268,6 +269,8 @@ class Loader(YomboLibrary, object):
                     logger.debug("Processing requirement: {requirement}", requirement=line)
                     try:
                         pkg_info = yield yombo.utils.get_python_package_info(line)
+                        if pkg_info is False:
+                            continue
                     except YomboWarning as e:
                         raise YomboCritical(e.message)
                     logger.debug("Have requirement details...")
@@ -287,7 +290,6 @@ class Loader(YomboLibrary, object):
                             'used_by': ['Yombo framework'],
                             'package': line,
                         }
-
 
         # Get a reference to the asyncio event loop.
         logger.debug("Starting UVLoop")
@@ -462,6 +464,16 @@ class Loader(YomboLibrary, object):
             self.import_component(pathName, name, 'library')
             HARD_LOAD[name]['__init__'] = True
 
+            component = name.lower()
+            library = self.loadedLibraries[component]
+            if hasattr(library, '_pre_init_') and isinstance(library._pre_init_, Callable) \
+                    and yombo.utils.get_method_definition_level(library._pre_init_) != 'yombo.core.module.YomboModule':
+                d = Deferred()
+                d.addCallback(lambda ignored: self._log_loader('debug', name, 'library', 'init', 'About to call _pre_init_.'))
+                d.addCallback(lambda ignored: maybeDeferred(library._pre_init_))
+                d.callback(1)
+                yield d
+
         logger.debug("Calling init functions of libraries.")
         self._run_phase = "libraries_init"
         for name, config in HARD_LOAD.items():
@@ -477,6 +489,7 @@ class Loader(YomboLibrary, object):
             library._Atoms = self.loadedLibraries['atoms']
             library._AuthKeys = self.loadedLibraries['authkeys']
             library._Automation = self.loadedLibraries['automation']
+            library._Cache = self.loadedLibraries['cache']
             library._Commands = self.loadedLibraries['commands']
             library._Configs = self.loadedLibraries['configuration']
             library._CronTab = self.loadedLibraries['crontab']

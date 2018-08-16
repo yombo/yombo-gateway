@@ -7,9 +7,9 @@ import netaddr
 import socket
 from struct import pack as struct_pack, unpack as struct_unpack
 
-from yombo.utils.decorators import memoize_ttl
+from yombo.utils.decorators import cached
 
-@memoize_ttl(3600)
+@cached(600)
 def get_local_network_info(ethernet_name = None):
     """
     Collects various information about the local network.
@@ -53,7 +53,6 @@ def get_local_network_info(ethernet_name = None):
     # => IPNetwork('192.168.1.150/24')
     # network_v6 = cidr_v6.network
 
-
     # => IPAddress('192.168.1.0')
     return {'ipv4':
                 {'address': str(address_v4), 'netmask': str(netmask_v4), 'cidr': str(cidr_v4),
@@ -63,7 +62,7 @@ def get_local_network_info(ethernet_name = None):
             }
 
 
-@memoize_ttl(600)
+@cached(600)
 def ip_addres_in_local_network(ip_address):
     local_network = get_local_network_info()
     try:
@@ -79,7 +78,7 @@ def ip_addres_in_local_network(ip_address):
     return False
 
 
-@memoize_ttl(600)
+@cached(600)
 def ip_address_in_network(ip_address, subnetwork):
     """
     from: https://diego.assencio.com/?index=85e407d6c771ba2bc5f02b17714241e2

@@ -22,6 +22,17 @@ def route_devtools_debug(webapp):
             return page.render(alerts=webinterface.get_alerts(),
                                )
 
+        @webapp.route('/cache')
+        @require_auth()
+        def page_devtools_debug_cache(webinterface, request, session):
+            session.has_access('debug', '*', 'cache')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/devtools/debug/cache/index.html')
+            root_breadcrumb(webinterface, request)
+            webinterface.add_breadcrumb(request, "/devtools/debug/cache", "Cache")
+            return page.render(alerts=webinterface.get_alerts(),
+                               caches=webinterface._Cache.caches,
+                               )
+
         @webapp.route('/commands')
         @require_auth()
         def page_devtools_debug_commands(webinterface, request, session):

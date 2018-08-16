@@ -25,7 +25,6 @@ import inspect
 from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
-#from yombo.utils.decorators import memoize_ttl
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger

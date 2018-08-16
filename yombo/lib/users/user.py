@@ -13,7 +13,7 @@ from yombo.constants import ITEMIZED_PERMISSION_PLATFORMS
 from yombo.core.exceptions import YomboWarning
 from yombo.lib.users.role import Role
 from yombo.utils import data_pickle, data_unpickle
-from yombo.utils.decorators import memoize_ttl
+from yombo.utils.decorators import cached
 
 class User(object):
     """
@@ -192,7 +192,7 @@ class User(object):
             except KeyError as e:
                 pass
 
-    @memoize_ttl(60)
+    @cached(180)
     def has_access(self, platform, item, action, raise_error=None):
         """
         Check if user has access  to a resource / access_type combination.

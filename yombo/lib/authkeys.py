@@ -1,4 +1,8 @@
 """
+.. note::
+
+  For more information see: `Hash @ Module Development <https://yombo.net/docs/libraries/cache>`_
+
 Handles auth key items for the webinterface. Auth keys can be used in place of a username/password
 for scripts.
 
@@ -23,7 +27,7 @@ from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
 from yombo.utils import random_string, random_int, bytes_to_unicode
 from yombo.utils.datatypes import coerce_value
-from yombo.utils.decorators import memoize_ttl
+from yombo.utils.decorators import cached
 
 logger = get_logger("library.authkey")
 
@@ -452,7 +456,7 @@ class Auth(object):
         self.last_access = int(time())
         self.is_dirty += 1
 
-    @memoize_ttl(30)
+    @cached(30)
     def has_access(self, platform, item, action, raise_error=None):
         """
         Check if auth key has access  to a resource / access_type combination.

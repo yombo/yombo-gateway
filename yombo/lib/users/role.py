@@ -14,6 +14,7 @@ Resounce syntax:
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
 from yombo.utils import sha256_compact, data_pickle, data_unpickle
+from yombo.utils.decorators import cached
 
 logger = get_logger('library.users.role')
 
@@ -133,6 +134,7 @@ class Role(object):
             return
         self.save()
 
+    @cached(300, tags=('roles', 'users'))
     def has_access(self, req_platform, req_item, req_action):
         """
         Checks if the role has any permissions matching the requested path and requested action.  Returns

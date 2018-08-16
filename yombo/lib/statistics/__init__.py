@@ -106,7 +106,7 @@ from twisted.internet import reactor
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.utils import percentile, global_invoke_all, pattern_search, random_int
-from yombo.utils.decorators import memoize_ttl
+from yombo.utils.decorators import cached
 from yombo.core.log import get_logger
 
 from yombo.lib.statistics.buckets_manager import BucketsManager
@@ -298,7 +298,7 @@ class Statistics(YomboLibrary):
             raise YomboWarning("Bucket lifetimes must have 'lifetime' defined.")
         self.bucket_lifetimes[bucket_name] = values
 
-    @memoize_ttl(1)
+    @cached(1)
     def _get_bucket_time(self, type, bucket_size=None, bucket_name=None):
         """
         Internal function to get time for a given bucket type.
@@ -331,7 +331,7 @@ class Statistics(YomboLibrary):
                 'time': int(int((time() / bucket_size)) * bucket_size),
                 'lifetime': bucket_lifetime}
 
-    @memoize_ttl(0)  # use the version that support kwargs....
+    @cached(1)  # use the version that support kwargs....
     def _validate_name(self, bucket_name):
         """
         Validates the bucket_name being submitted is valid. No point in sending badly bucket_named
@@ -720,17 +720,17 @@ class Statistics(YomboLibrary):
                     if 'restored_db_id' in current_bucket and current_bucket['restored_db_id'] is not False:
                         yield self._LocalDB.save_statistic(current_bucket, int(bucket_time < (current_bucket_time['time'])))
                     else:
-                        # od = OrderedDict()
-                        od = {}
-                        od['bucket_time'] = current_bucket['time']
-                        od['bucket_size'] = current_bucket_time['size']
-                        od['bucket_lifetime'] = current_bucket['lifetime']
-                        od['bucket_type'] = current_bucket['type']
-                        od['bucket_name'] = current_bucket['name']
-                        od['bucket_value'] = current_bucket['value']
-                        od['updated_at'] = int(time())
-                        od['anon'] = current_bucket['anon']
-                        od['finished'] = int(bucket_time < (current_bucket_time['time']))
+                        od = {
+                            'bucket_time': current_bucket['time'],
+                            'bucket_size': current_bucket_time['size'],
+                            'bucket_lifetime': current_bucket['lifetime'],
+                            'bucket_type': current_bucket['type'],
+                            'bucket_name': current_bucket['name'],
+                            'bucket_value': current_bucket['value'],
+                            'updated_at': int(time()),
+                            'anon': current_bucket['anon'],
+                            'finished': int(bucket_time < (current_bucket_time['time'])),
+                        }
                         to_save.append(od)
 
                 if bucket_time < (current_bucket_time['time']):
@@ -756,18 +756,18 @@ class Statistics(YomboLibrary):
                             yield self._LocalDB.save_statistic(current_bucket,
                                                                     int(bucket_time < (current_bucket_time['time'])))
                         else:
-                            # od = OrderedDict()
-                            od = {}
-                            od['bucket_time'] = current_bucket['time']
-                            od['bucket_size'] = current_bucket_time['size']
-                            od['bucket_lifetime'] = current_bucket['lifetime']
-                            od['bucket_type'] = current_bucket['type']
-                            od['bucket_name'] = current_bucket['name']
-                            od['bucket_value'] = current_bucket['value']
-                            od['bucket_average_data'] = json.dumps(current_bucket['average_data'], separators=(',',':'))
-                            od['updated_at'] = int(time())
-                            od['anon'] = current_bucket['anon']
-                            od['finished'] = int(bucket_time < (current_bucket_time['time']))
+                            od = {
+                                'bucket_time': current_bucket['time'],
+                                'bucket_size': current_bucket_time['size'],
+                                'bucket_lifetime': current_bucket['lifetime'],
+                                'bucket_type': current_bucket['type'],
+                                'bucket_name': current_bucket['name'],
+                                'bucket_value': current_bucket['value'],
+                                'bucket_average_data': json.dumps(current_bucket['average_data'], separators=(',',':')),
+                                'updated_at': int(time()),
+                                'anon': current_bucket['anon'],
+                                'finished': int(bucket_time < (current_bucket_time['time'])),
+                            }
                             to_save.append(od)
 
                 if bucket_time < (current_bucket_time['time']):
@@ -778,17 +778,17 @@ class Statistics(YomboLibrary):
         for bucket_time in list(self._datapoints.keys()):
             for bucket_name in list(self._datapoints[bucket_time].keys()):
                 current_bucket = self._datapoints[bucket_time][bucket_name]
-                # od = OrderedDict()
-                od = {}
-                od['bucket_time'] = current_bucket['time']
-                od['bucket_size'] = 0
-                od['bucket_lifetime'] = current_bucket['lifetime']
-                od['bucket_type'] = current_bucket['type']
-                od['bucket_name'] = current_bucket['name']
-                od['bucket_value'] = current_bucket['value']
-                od['updated_at'] = int(time())
-                od['anon'] = current_bucket['anon']
-                od['finished'] = 1
+                od = {
+                    'bucket_time': current_bucket['time'],
+                    'bucket_size': 0,
+                    'bucket_lifetime': current_bucket['lifetime'],
+                    'bucket_type': current_bucket['type'],
+                    'bucket_name': current_bucket['name'],
+                    'bucket_value': current_bucket['value'],
+                    'updated_at': int(time()),
+                    'anon': current_bucket['anon'],
+                    'finished': 1,
+                }
                 to_save.append(od)
 
                 del self._datapoints[bucket_time][bucket_name]
