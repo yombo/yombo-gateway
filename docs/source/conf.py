@@ -11,7 +11,6 @@ import sys, os
 # This is here to cython modules will display their content properly.
 #import pyximport; pyximport.install()
 sys.path.append(os.path.abspath(os.path.join(os.getcwd(), '../..')))
-print(os.getcwd())
 
 import yombo.constants
 

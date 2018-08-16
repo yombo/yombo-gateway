@@ -8,21 +8,13 @@
 Devices (yombo.lib.devices)
 ====================================
 
-Devices are controllable items (lamps, fans, thermostats) as well as virtual or types of items.
+Devices are controllable items (lamps, fans, thermostats) as well as virtual types of items.
 
-**See the `devices developer docs <https://yombo.net/docs/libraries/devices`_ for more
-details.**
+See the `devices developer docs <https://yombo.net/docs/libraries/devices>`_
+for more details.
 
 
-Devices Library
-====================
-
-.. toctree::
-   :maxdepth: 1
-
-   __init__.rst
-
-Helper files and classes
+Devices Library Components
 ==========================
 
 .. toctree::
@@ -34,6 +26,13 @@ Helper files and classes
    device_base.rst
    device_command.rst
    device_status.rst
+
+Device Types
+==========================
+
+.. toctree::
+   :maxdepth: 1
+
    alarm.rst
    camera.rst
    climate.rst
