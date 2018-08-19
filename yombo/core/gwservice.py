@@ -1,5 +1,5 @@
-#This file was created by Yombo for use with Yombo Python Gateway automation
-#software.  Details can be found at https://yombo.net
+# This file was created by Yombo for use with Yombo Python Gateway automation
+# software.  Details can be found at https://yombo.net
 """
 
 .. note::
@@ -12,7 +12,7 @@ library to get everything started.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2012-2017 by Yombo.
+:copyright: Copyright 2012-2018 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/core/module.html>`_
 """
@@ -26,7 +26,8 @@ from twisted.internet.defer import inlineCallbacks
 # Import Yombo libraries
 from yombo.lib.loader import setup_loader
 from yombo.core.log import get_logger
-from yombo.utils import set_util_logger
+from yombo.utils import set_twisted_logger as utils_logger
+from yombo.utils.decorators.deprecation import set_twisted_logger as utils_decorators_logger
 
 logger = get_logger('core.gwservice')
 
@@ -44,7 +45,8 @@ class GWService(Service):
         """
         # Threads are used for multiple items within the Yombo Gateway. They are used to prevent
         # blocking code. We need at least 40 threads to make things run smoothly.
-        set_util_logger(get_logger('utils'))
+        utils_logger(get_logger('utils'))
+        utils_decorators_logger(get_logger('utils'))
 
         thread_count = multiprocessing.cpu_count() * 10
         if thread_count < 50:

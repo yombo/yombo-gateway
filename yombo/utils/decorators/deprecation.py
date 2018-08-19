@@ -1,5 +1,7 @@
 # This file is from https://github.com/briancurtin/deprecation and was
 # not written. This has been modified for Yombo by Mitch Schwenk.
+# This has been modified to display a logger.warn() as well add
+# some location hints of where it's called and where the function is defined.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain

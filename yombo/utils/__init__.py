@@ -52,10 +52,10 @@ from yombo.core.exceptions import YomboWarning
 from yombo.utils.decorators import cached, memoize_
 import yombo.ext.base62 as base62
 
-logger = None  # This is set by the set_util_logger function.
+logger = None  # This is set by the set_twisted_logger function.
 
 
-def set_util_logger(the_logger):
+def set_twisted_logger(the_logger):
     """
     Called by core.gwservice::start() to setup the utils logger.
     :param logger:
