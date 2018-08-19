@@ -15,7 +15,7 @@ CONFIG_ITEMS = {
             # 'deleted': "delete_device",
         },
         'purgeable': False,
-        'map': {
+        'map': {  # api name : database field name
             'id': 'id',
             'category_type': 'category_type',
             'machine_label': 'machine_label',
@@ -39,10 +39,10 @@ CONFIG_ITEMS = {
             # 'deleted': "delete_device",
         },
         'purgeable': False,
-        'map': {
+        'map': {  # api name : database field name
             'id': 'id',
             'is_master': 'is_master',
-            'master_gateway': 'master_gateway',
+            'master_gateway': 'master_gateway_id',
             'machine_label': 'machine_label',
             'label': 'label',
             'description': 'description',
@@ -82,7 +82,7 @@ CONFIG_ITEMS = {
         'functions': {
         },
         'purgeable': False,
-        'map': {
+        'map': {  # api name : database field name
         }
     },
 
@@ -97,7 +97,7 @@ CONFIG_ITEMS = {
             # 'deleted': "delete_device",
         },
         'purgeable': False,
-        'map': {
+        'map': {  # api name : database field name
             'id': 'id',
             'machine_label': 'machine_label',
             'voice_cmd': 'voice_cmd',
@@ -108,7 +108,6 @@ CONFIG_ITEMS = {
             'updated_at': 'updated_at',
             'status': 'status',
             'public': 'public',
-            # '': '',
         }
     },
 
@@ -122,7 +121,7 @@ CONFIG_ITEMS = {
             # 'deleted': "delete_device",
         },
         'purgeable': True,
-        'map': {
+        'map': {  # api name : database field name
             'id': 'id',
             'gateway_id': 'gateway_id',
             'area_id': 'area_id',
@@ -167,7 +166,7 @@ CONFIG_ITEMS = {
             # 'deleted': "delete_device",
         },
         'purgeable': False,
-        'map': {
+        'map': {  # api name : database field name
             'id': 'id',
             'category_id': 'category_id',
             'device_type_id': 'device_type_id',
@@ -198,7 +197,7 @@ CONFIG_ITEMS = {
             # 'deleted': "delete_device",
         },
         'purgeable': False,
-        'map': {
+        'map': {  # api name : database field name
             'id': 'id',
             'machine_label': 'machine_label',
             'label': 'label',
@@ -220,7 +219,7 @@ CONFIG_ITEMS = {
             # 'deleted': "delete_device",
         },
         'purgeable': False,
-        'map': {
+        'map': {  # api name : database field name
             'id': 'id',
             'category_id': 'category_id',
             'platform': 'platform',
@@ -245,7 +244,7 @@ CONFIG_ITEMS = {
             # 'deleted': "delete_device",
         },
         'purgeable': False,
-        'map': {
+        'map': {  # api name : database field name
             'id': 'id',
             'device_type_id': 'device_type_id',
             'command_id': 'command_id',
@@ -263,7 +262,7 @@ CONFIG_ITEMS = {
             # 'deleted': "delete_device",
         },
         'purgeable': False,
-        'map': {
+        'map': {  # api name : database field name
             'id': 'id',
             'category_id': 'category_id',
             'machine_label': 'machine_label',
@@ -288,7 +287,7 @@ CONFIG_ITEMS = {
             # 'deleted': "enable_command",
         },
         'purgeable': True,
-        'map': {
+        'map': {  # api name : database field name
             'module_id': 'id',
             'gateway_id': 'gateway_id',
             'machine_label': 'machine_label',
@@ -327,7 +326,7 @@ CONFIG_ITEMS = {
         'functions': {
         },
         'purgeable': True,
-        'map': {
+        'map': {  # api name : database field name
             'user_id': 'id',
             'email': 'email',
             'name': 'name',
@@ -348,7 +347,7 @@ CONFIG_ITEMS = {
             # 'deleted': "delete_device",
         },
         'purgeable': False,
-        'map': {
+        'map': {  # api name : database field name
             'id': 'id',
             'module_id': 'module_id',
             'device_type_id': 'device_type_id',
@@ -366,7 +365,7 @@ CONFIG_ITEMS = {
             # 'deleted': "delete_device",
         },
         'purgeable': True,
-        'map': {
+        'map': {  # api name : database field name
             'id': 'id',
             'parent_id': 'parent_id',
             'node_id': 'node_id',
@@ -392,7 +391,7 @@ CONFIG_ITEMS = {
         'functions': {
         },
         'purgeable': False,
-        'map': {
+        'map': {  # api name : database field name
             'id': 'id',
             'relation_id': 'group_relation_id',
             'relation_type': 'group_relation_type',
@@ -413,7 +412,7 @@ CONFIG_ITEMS = {
         'functions': {
         },
         'purgeable': False,
-        'map': {
+        'map': {  # api name : database field name
             'id': 'id',
             'group_id': 'group_id',
             'field_machine_label': 'field_machine_label',
@@ -441,7 +440,7 @@ CONFIG_ITEMS = {
         'functions': {
         },
         'purgeable': True,
-        'map': {
+        'map': {  # api name : database field name
             'id': 'id',
             'gateway_id': 'gateway_id',
             'field_id': 'field_id',
