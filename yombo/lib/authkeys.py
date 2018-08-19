@@ -344,6 +344,7 @@ class Auth(object):
         self.label = ""
         self.description = ""
         self.auth_id = record['auth_id']
+        self.session_id = record['auth_id']
         self.last_access = 1
         self.created_at = int(time())
         self.updated_at = int(time())
