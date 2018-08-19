@@ -63,6 +63,7 @@ IoT devices, etc.
    ../lib/downloadmodules.rst
    ../lib/discovery.rst
    ../lib/gateways.rst
+   ../lib/gateway_communications.rst
    ../lib/gpg.rst
    ../lib/inputtypes/inputtypes.rst
    ../lib/hash.rst

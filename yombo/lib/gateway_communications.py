@@ -2,9 +2,15 @@
 # software.  Details can be found at https://yombo.net
 """
 
+.. warning::
+
+   This library is not intended to be accessed by module developers or end users. These functions, variables,
+   and classes were not intended to be accessed directly by modules. These are documented here for completeness.
+
 .. note::
 
-  For more information see: `Gateways @ Module Development <https://yombo.net/docs/libraries/gateways>`_
+  For more information see:
+  `Gateway Communications @ Module Development <https://yombo.net/docs/libraries/gateway_communications>`_
 
 Handles inter-gateway communications. Broadcasts information about this gateway on startup. It will
 also broadcast a message for all other gateways to send their updated status information.

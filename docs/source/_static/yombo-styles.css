@@ -40,3 +40,15 @@
     /*padding-top: .15em;*/
     /*border-top: dashed #bfabd2;*/
 /*}*/
+
+.alert-warning {
+    background-color: #fcf8e3;
+    border-color: #fbeed5;
+    color: #76563a;
+}
+
+.alert-info {
+    background-color: #d9edf7;
+    border-color: #bce8f1;
+    color: #2a5b79;
+}

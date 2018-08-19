@@ -12,8 +12,8 @@ or 3rd party sources such as Amazon Alexa, Google Home, etc etc.
 
 .. warning::
 
-   This library is not intended to be accessed by developers or users. These functions, variables,
-   and classes **should not** be accessed directly by modules. These are documented here for completeness.
+   This library is not intended to be accessed by module developers or end users. These functions, variables,
+   and classes were not intended to be accessed directly by modules. These are documented here for completeness.
 
 .. note::
 
