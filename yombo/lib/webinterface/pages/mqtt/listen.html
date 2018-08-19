@@ -1,0 +1,129 @@
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+{% block head_css %}{% include 'lib/webinterface/fragments/datatables_css.tpl' %}
+<script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="row">
+            <div class="col-lg-8">
+                <h1 class="page-header"></a>MQTT Listener<br> </h1>
+                <p>
+                    Shows real-time MQTT data from the Yombo Gateway MQTT broker.
+                </p>
+            </div>
+            <div class="col-lg-4">
+                <h4><div class="pull-right" style="vertical-align: bottom; display: inline-block;"><span id='status'>Connecting</span></div></h4>
+            </div>
+        </div>
+    </div>
+
+    <!-- /.col-lg-12 -->
+</div>
+<div class="row">
+    <div class="col-lg-12">
+        <table width="100%" class="table table-striped table-bordered table-hover" id="mqttlog">
+            <thead>
+                <tr>
+                    <th>Time & Topic</th>
+                    <th>Content</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block body_bottom_js %}
+<!-- MQTT Websocket -->
+<script type="text/javascript" src="/static/js/mqttws31.min.js"></script>
+<script type="text/javascript">
+    var host = window.location.hostname;
+    var port = {{_gatewaycoms.client_default_ws_port}};
+    var topic = '#';
+    var useTLS = true;
+    var cleansession = true;
+    var reconnectTimeout = 2000;
+
+    function MQTTconnect() {
+        if (typeof path == "undefined") {
+            path = '/mqtt';
+        }
+
+        mqtt = new Paho.Client(
+                host,
+                Number(port),
+                path,
+                "wi_panel_{{_local_gateway.gateway_id}}_" + parseInt(Math.floor(Math.random() * 99999999) + 10000000)
+        );
+        // var client = new Paho.MQTT.Client(location.hostname, Number(location.port), "clientId");
+
+        var options = {
+                timeout: 3,
+                useSSL: useTLS,
+                cleanSession: cleansession,
+                onSuccess: onConnect,
+                userName : "{{session.auth_type}}_{{session.session_id}}s",
+                password : "none",
+                onFailure: function (message) {
+                    console.log(JSON.stringify(message, null, 2));
+                    var n = message.errorMessage.search("Connection Refused: ");
+                    var humanMessage = "";
+                    if (n > 0) {
+                        humanMessage = `${message.errorMessage.substring(n)}`;
+                    } else {
+                        humanMessage = `Connection failed: ${message.errorMessage}`;
+                        setTimeout(MQTTconnect, reconnectTimeout);
+                    }
+                    $('#status').html(humanMessage);
+                }
+            };
+
+            mqtt.onConnectionLost = onConnectionLost;
+            mqtt.onMessageArrived = onMessageArrived;
+            mqtt.connect(options);
+    };
+
+    function onConnect() {
+        $('#status').html('Connected');
+        mqtt.subscribe(topic, {qos: 0});
+        $('#topic').html(topic);
+    };
+
+    function onConnectionLost(response) {
+        setTimeout(MQTTconnect, reconnectTimeout);
+        $('#status').html("Connection lost: " + response.errorMessage + ". Reconnecting...");
+    };
+
+    function onMessageArrived(message) {
+        var topic = message.destinationName;
+        var payloadString = message.payloadString;
+        var payload = JSON.parse(payloadString)
+        var payloadPretty = PR.prettyPrintOne(JSON.stringify(payload, null, 2), 'js');
+        var cur_time = new Date().toLocaleString()
+        $("#mqttlog tbody").prepend(`<tr><td>${cur_time}<br><br>${topic}</td><td><pre>${payloadPretty}</pre></td></tr>`);
+
+        // Only limit 150 rows. Don't kill the browser incase window is left open.
+        var rowCount = $('#mqttlog tbody tr').length;
+        console.log("Row count: " + rowCount);
+        var howManyToDelete = rowCount - 150;
+        if (howManyToDelete > 0) {
+            $("#mqttlog tr").slice(howManyToDelete * -1).remove();
+        }
+        // Sort by column 1 and then re-draw
+    };
+
+    $('.pull-down').each(function() {
+      var $this = $(this);
+      $this.css('margin-top', $this.parent().height() - $this.height());
+    });
+
+    $(document).ready(function() {
+        MQTTconnect();
+    });
+</script>
+{% endblock %}
