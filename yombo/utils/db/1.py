@@ -281,7 +281,7 @@ def create_table_gateways(Registry, **kwargs):
     table = """CREATE TABLE `gateways` (
             `id`                    TEXT NOT NULL,
             `is_master`             BOOLEAN,
-            `master_gateway`        TEXT,
+            `master_gateway_id`     TEXT,
             `machine_label`         TEXT NOT NULL,
             `label`                 TEXT NOT NULL,
             `description`           TEXT,

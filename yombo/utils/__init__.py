@@ -49,7 +49,7 @@ from yombo.ext.hashids import Hashids
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
-from yombo.utils.decorators import deprecated, cached, memoize_
+from yombo.utils.decorators import cached, memoize_
 import yombo.ext.base62 as base62
 
 logger = None  # This is set by the set_util_logger function.
@@ -992,7 +992,7 @@ def display_hide_none(value, allow_string=None, default=None):
         if default is not None:
             return default
         else:
-            return default
+            return ""
     if isinstance(value, str):
         if allow_string is True:
             return value

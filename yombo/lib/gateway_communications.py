@@ -36,7 +36,7 @@ from yombo.utils import bytes_to_unicode, random_int, data_pickle, data_unpickle
 logger = get_logger('library.gateways.mqtt')
 
 
-class Gateway_Coms(object):
+class Gateway_Commmunications(object):
     def __init__(self, parent):
         self._Parent = parent  # reference to the gateway library
         self.gateway_id = self._Parent.gateway_id
@@ -45,7 +45,7 @@ class Gateway_Coms(object):
 
     @inlineCallbacks
     def mqtt_incoming(self, topic, raw_message, qos, retain):
-        # ybo_gw_req/src_gwid/dest_gwid|all/lib/devices/get - payload is blank - get all device information
+        # ybo_req/src_gwid/dest_gwid|all/lib/devices/get - payload is blank - get all device information
         try:
             message = data_unpickle(raw_message, 'json')
             message['time_received'] = time()

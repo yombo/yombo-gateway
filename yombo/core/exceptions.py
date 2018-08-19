@@ -1,8 +1,7 @@
 # This file was created by Yombo for use with Yombo Python Gateway automation
 # software.  Details can be found at https://yombo.net
 """
-Create various exceptions to be used throughout the Yombo
-gateway.
+Create various exceptions to be used throughout the Yombo gateway.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
@@ -73,7 +72,8 @@ class YomboWarning(YomboException):
 
 class YomboInvalidValidation(YomboException):
     """
-    Extends *Exception* - Invalid item.
+    Occurs when asked to validate something and it fails. Primary use cases are: 1) validating user inputs to
+    the web interface, or 2) validating variable types within the framework or modules.
     """
 
     def __init__(self, message, errorno=119, name="unknown", component="validate"):
@@ -92,31 +92,17 @@ class YomboInvalidValidation(YomboException):
         YomboException.__init__(self, message, errorno, name, component)
 
 
-class Invalid(YomboException):
+class YomboInvalidArgument(ValueError):
     """
-    Extends *Exception* - Invalid item.
+    Raised when an argument to a function is invalid.
     """
-
-    def __init__(self, message, errorno=119, name="unknown", component="validate"):
-        """
-        Setup the YomboWarning and then pass everying to YomboException
-
-        :param message: The error message to log/display.
-        :type message: string
-        :param errorno: The error number to log/display.
-        :type errorno: int
-        :param name: Name of the library, component, or module rasing the exception.
-        :type name: string
-        :param component: What type of ojbect is calling: component, library, or module
-        :type component: string
-        """
-        YomboException.__init__(self, message, errorno, name, component)
+    pass
 
 
-class YomboWarningCredentails(YomboException):
+class YomboAPICredentials(YomboException):
     """
-    Extends *Exception* - A non-fatal warning gateway exception that is used when api credentials are needed.
-    Used in web interface, usually.
+    Extends *YomboException* - A non-fatal warning gateway exception that is used when the YomboAPI library
+    ran into an authentication issue and cannot process the request.
     """
 
     def __init__(self, message, errorno=101, name="unknown", component="component"):
@@ -137,7 +123,8 @@ class YomboWarningCredentails(YomboException):
 
 class YomboAutomationWarning(YomboWarning):
     """
-    Extends *Exception* - A non-fatal warning gateway exception that is used for items needing user attention.
+    Extends *Exception* - A non-fatal warning when an automation rule into a problem. Typically, the user needs
+    to adjust their automation rule.
     """
     def __init__(self, message, errorno=101, name="unknown", component="component"):
         """
@@ -268,20 +255,6 @@ class YomboNoAccess(YomboWarning):
         self.action = action
 
 
-class YomboImproperlyConfigured(YomboWarning):
-    """
-    Extends :class:`YomboWarning` - A missing configuration or improperly configured option.
-    """
-    pass
-
-
-class YomboSuspiciousOperation(YomboWarning):
-    """
-    Extends :class:`YomboWarning` - Service detected something suspicious and stopped that activity.
-    """
-    pass
-
-
 class YomboModuleWarning(YomboWarning):
     """
     Extends :class:`YomboWarning` - Same as calling YomboWarning, but sets component type to "module".
@@ -296,40 +269,6 @@ class YomboModuleWarning(YomboWarning):
         :type module_obj: Module
         """
         YomboWarning.__init__(self, message, errorno, module_obj._Name, "module")
-
-
-class YomboModuleCritical(YomboCritical):
-    """
-    Extends :class:`YomboCritical` - Same as calling YomboCritical, but sets the component type to
-    "module" - **this forces the gateway to quit**.
-    """
-    def __init__(self, message, errorno, module_obj):
-        """
-        :param message: The error message to log/display.
-        :type message: string
-        :param errorno: The error number to log/display.
-        :type errorno: int
-        :param module_obj: Name of the library, component, or module rasing the exception.
-        :type module_obj: string
-        """
-        YomboCritical.__init__(self, message, errorno, module_obj._Name, "module")
-
-
-class YomboLibraryWarning(YomboWarning):
-    """
-    Extends :class:`YomboWarning` - Same as calling YomboWarning, but sets component type to "library".
-    """
-    def __init__(self, message, errorno, module_obj):
-        YomboWarning.__init__(self, message, errorno, module_obj._Name, "library")
-
-
-class YomboLibraryCritical(YomboCritical):
-    """
-    Extends :class:`YomboCritical` - Same as calling YomboCritical, but sets the component type to
-    "library" - **this forces the gateway to quit**.
-    """
-    def __init__(self, message, errorno, module_obj):
-        YomboCritical.__init__(self, message, errorno, module_obj._Name, "library")
 
 
 class YomboFileError(YomboWarning):
@@ -392,21 +331,7 @@ class YomboPinCodeError(Exception):
 
 class YomboCronTabError(Exception):
     """
-    If crontab class has an error.
-    """
-    pass
-
-
-class InvalidArgumentError(ValueError):
-    """
-    Used when an argument is invalid. We don't use ValueError as that is for built-in functions.
-    """
-    pass
-
-
-class YomboInputValidationError(Exception):
-    """
-    If a value input doesn't match the allowed input type id.
+    Exceptions related to crontab errors.
     """
     pass
 
