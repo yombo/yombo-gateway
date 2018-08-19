@@ -43,7 +43,6 @@ class AmqpConfigHandler(YomboLibrary):
     Handles interactions with Yombo servers through the AMQP library.
     """
 
-
     def __init__(self, amqpyombo):
         """
         Loads various variables and calls :py:meth:connect() when it's ready.
@@ -701,7 +700,6 @@ class AmqpConfigHandler(YomboLibrary):
             # self.parent._Notifications.add(
             #     {'title': 'Configs Downloaded', 'message': 'Downloaded system configurations from Yombo server.',
             #      'timeout': 300, 'source': 'Yombo Gateway System'})
-
 
     def _show_pending_configs(self):
         waitingTime = time() - self._full_download_start_at

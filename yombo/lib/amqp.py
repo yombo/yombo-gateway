@@ -251,6 +251,7 @@ class AMQP(YomboLibrary):
 
         self.client_connections[client_id] = AMQPClient(self, client_id, hostname, port, virtual_host, username,
                 password, use_ssl, connected_callback, disconnected_callback, error_callback, keepalive, prefetch_count,
+
                 critical)
         return self.client_connections[client_id]
 

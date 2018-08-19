@@ -11,7 +11,7 @@ Handles logging functions.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2012-2015 by Yombo.
+:copyright: Copyright 2012-2018 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/core/module.html>`_
 """
@@ -23,12 +23,10 @@ import gzip
 from copy import copy
 
 # Import twisted libraries
-from twisted.logger import globalLogPublisher, FilteringLogObserver, InvalidLogLevelError, \
-    Logger, LogLevel, LogLevelFilterPredicate, ILogObserver, formatEvent, formatTime, \
-    textFileLogObserver, jsonFileLogObserver
+from twisted.logger import (globalLogPublisher, FilteringLogObserver, InvalidLogLevelError,
+    Logger, LogLevel, LogLevelFilterPredicate, ILogObserver, formatEvent, formatTime,
+    textFileLogObserver, jsonFileLogObserver)
 from twisted.internet import reactor
-
-import yombo.core.settings as settings
 
 
 def static_var(varname, value):

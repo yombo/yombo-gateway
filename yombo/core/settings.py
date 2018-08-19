@@ -1,3 +1,5 @@
+# This file was created by Yombo for use with Yombo Python Gateway automation
+# software.  Details can be found at https://yombo.net
 """
 Responsible for collecting arguments called to Yombo Gateway and gettings settings from
 yombo.ini and it's matching meta data.
@@ -21,6 +23,16 @@ yombo_ini = {}
 arguments = {}
 
 def init(incoming_arguments):
+    """
+    Called by yombo.tac to handle command line arguments (as stdin, not actual
+    command line arguments). This also reads the yombo.ini file which act act
+    a bootstrap configs library until the real configs library is started.
+
+    The configs library will call read_yombo_ini() to read the actual contents.
+
+    :param incoming_arguments:
+    :return:
+    """
     global arguments
     arguments = incoming_arguments
     # Now we load the basic yombo.ini file. This is here so we don't have to load and
@@ -110,7 +122,6 @@ def restore_backup_yombi_ini(arguments):
     :param arguments:
     :return:
     """
-    print("################  RESTORING yombo_ini !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1")
     working_dir = arguments['working_dir']
     yombo_ini_path = "%s/yombo.ini" % working_dir
     backup_yombo_ini_path = "%s/bak/yombo_ini/" % working_dir
@@ -119,11 +130,12 @@ def restore_backup_yombi_ini(arguments):
                    for fn in os.listdir(backup_yombo_ini_path)]
     dated_files.sort()
     dated_files.reverse()
+    print("# Attempting to restore yombo.ini file from backup.")
     if len(dated_files) > 0:
         for i in range(0, len(dated_files)):
             the_restore_file = "%s/%s" % (backup_yombo_ini_path, dated_files[i][1])
             if os.path.getsize(the_restore_file) > 100:
                 copyfile(the_restore_file, yombo_ini_path)
-                print("yombo.ini file restored from previous backup.")
+                print("# - yombo.ini file restored from previous backup: %s" % the_restore_file)
                 return True
     return False
