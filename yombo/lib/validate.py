@@ -8,10 +8,10 @@
 
 
 Validates various items. In many causes, it tries to coerce the correct value type and return that. If the item
-is valid, it returns the item. If the item is invalid, and YomboYomboInvalidValidationValidation.
+is valid, it returns the item. If the item is invalid, and YomboInvalidValidation.
 
 For most items, this just wraps the yombo.utils.validators and changes the exception from MultipleYomboInvalidValidation to
-YomboYomboInvalidValidationValidation.
+YomboInvalidValidation.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.14.0
@@ -33,7 +33,7 @@ from unicodedata import normalize
 import voluptuous as vol
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboInvalidValidation, YomboYomboInvalidValidationValidation
+from yombo.core.exceptions import YomboInvalidValidation, YomboInvalidValidation
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.constants import \
@@ -79,35 +79,35 @@ class Validate(YomboLibrary):
         try:
             return val.boolean(value)
         except vol.MultipleYomboInvalidValidation as e:
-            raise YomboYomboInvalidValidationValidation(str(e))
+            raise YomboInvalidValidation(str(e))
 
     def string(self, value: Any) -> str:
         """Coerce value to string, except for None."""
         try:
             return val.string(value)
         except vol.MultipleYomboInvalidValidation as e:
-            raise YomboYomboInvalidValidationValidation(str(e))
+            raise YomboInvalidValidation(str(e))
 
     def ensure_list(self, value: Union[T, Sequence[T]]) -> Sequence[T]:
         """Wrap value in list if it is not one."""
         try:
             return val.ensure_list(value)
         except vol.MultipleYomboInvalidValidation as e:
-            raise YomboYomboInvalidValidationValidation(str(e))
+            raise YomboInvalidValidation(str(e))
 
     def basic_string(self, string, min=1, max=255):
         """ A short string with alphanumberic, spaces, and periods. """
         try:
             return val.ensure_list(string)
         except vol.MultipleYomboInvalidValidation as e:
-            raise YomboYomboInvalidValidationValidation(str(e))
+            raise YomboInvalidValidation(str(e))
 
     def basic_word(self, string, min=1, max=45):
         """ A single word. """
         try:
             return val.ensure_list(string)
         except vol.MultipleYomboInvalidValidation as e:
-            raise YomboYomboInvalidValidationValidation(str(e))
+            raise YomboInvalidValidation(str(e))
 
     # Adapted from:
     # https://github.com/alecthomas/voluptuous/issues/115#issuecomment-144464666
@@ -116,14 +116,14 @@ class Validate(YomboLibrary):
         try:
             return val.has_at_least_one_key(keys)
         except vol.MultipleYomboInvalidValidation as e:
-            raise YomboYomboInvalidValidationValidation(str(e))
+            raise YomboInvalidValidation(str(e))
 
     def has_at_least_one_key_value(*items: list) -> Callable:
         """Validate that at least one (key, value) pair exists."""
         try:
             return val.time_zone(items)
         except vol.MultipleYomboInvalidValidation as e:
-            raise YomboYomboInvalidValidationValidation(str(e))
+            raise YomboInvalidValidation(str(e))
 
     #####################################################
     # OS / File system items
@@ -132,21 +132,21 @@ class Validate(YomboLibrary):
         try:
             return val.is_device(value)
         except vol.MultipleYomboInvalidValidation as e:
-            raise YomboYomboInvalidValidationValidation(str(e))
+            raise YomboInvalidValidation(str(e))
 
     def is_dir(value: Any) -> str:
         """Validate that the value is an existing dir."""
         try:
             return val.is_dir(value)
         except vol.MultipleYomboInvalidValidation as e:
-            raise YomboYomboInvalidValidationValidation(str(e))
+            raise YomboInvalidValidation(str(e))
 
     def is_file(value: Any) -> str:
         """Validate that the value is an existing file."""
         try:
             return val.is_file(value)
         except vol.MultipleYomboInvalidValidation as e:
-            raise YomboYomboInvalidValidationValidation(str(e))
+            raise YomboInvalidValidation(str(e))
 
     #####################################################
     # Time related items
@@ -155,28 +155,28 @@ class Validate(YomboLibrary):
         try:
             return val.time_zone(value)
         except vol.MultipleYomboInvalidValidation as e:
-            raise YomboYomboInvalidValidationValidation(str(e))
+            raise YomboInvalidValidation(str(e))
 
     def time(self, value):
         """Validate timezone."""
         try:
             return val.time(value)
         except vol.MultipleYomboInvalidValidation as e:
-            raise YomboYomboInvalidValidationValidation(str(e))
+            raise YomboInvalidValidation(str(e))
 
     def date(self, value):
         """Validate timezone."""
         try:
             return val.date(value)
         except vol.MultipleYomboInvalidValidation as e:
-            raise YomboYomboInvalidValidationValidation(str(e))
+            raise YomboInvalidValidation(str(e))
 
     def time_period_str(self, value: str) -> timedelta:
         """Validate and transform time offset."""
         try:
             return val.time_period_str(value)
         except vol.MultipleYomboInvalidValidation as e:
-            raise YomboYomboInvalidValidationValidation(str(e))
+            raise YomboInvalidValidation(str(e))
 
     def time_period_seconds(self, value: Union[int, str]) -> timedelta:
         """Validate and transform seconds to a time offset."""
@@ -193,7 +193,7 @@ class Validate(YomboLibrary):
         try:
             return val.id_string(string, min, max)
         except vol.MultipleYomboInvalidValidation as e:
-            raise YomboYomboInvalidValidationValidation(str(e))
+            raise YomboInvalidValidation(str(e))
 
     #####################################################
     # Misc
@@ -202,14 +202,14 @@ class Validate(YomboLibrary):
         try:
             return val.template(value)
         except vol.MultipleYomboInvalidValidation as e:
-            raise YomboYomboInvalidValidationValidation(str(e))
+            raise YomboInvalidValidation(str(e))
 
 
     def url(self, url_in, protocols=None):
         try:
             return val.url(url_in, protocols)
         except vol.MultipleYomboInvalidValidation as e:
-            raise YomboYomboInvalidValidationValidation(str(e))
+            raise YomboInvalidValidation(str(e))
 
 
     def match_all(self, value):
