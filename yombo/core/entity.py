@@ -22,3 +22,4 @@ class Entity(object):
 
     def __init__(self):
         self._Entity_type = None
+        super().__init__()
