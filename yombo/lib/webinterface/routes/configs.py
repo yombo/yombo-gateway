@@ -45,12 +45,12 @@ def route_configs(webapp):
                 webinterface.add_alert("Invalid Gateway Label.")
 
             try:
-                submitted_master_gateway = request.args.get('master_gateway')[0]
+                submitted_master_gateway_id = request.args.get('master_gateway_id')[0]
             except:
                 valid_submit = False
                 webinterface.add_alert("Master gateway not selected.")
             try:
-                gateway = webinterface._Gateways[submitted_master_gateway]
+                gateway = webinterface._Gateways[submitted_master_gateway_id]
             except:
                 valid_submit = False
                 webinterface.add_alert("Invalid master gateway selection, selection doesn't exist.")
@@ -65,14 +65,14 @@ def route_configs(webapp):
 
             if valid_submit:
                 try:
-                    if submitted_master_gateway == webinterface.gateway_id():
+                    if submitted_master_gateway_id == webinterface.gateway_id():
                         is_master = True
                     else:
                         is_master = False
                     data = {
                         'label': submitted_core_label,
                         'description': submitted_core_description,
-                        'master_gateway': submitted_master_gateway,
+                        'master_gateway': submitted_master_gateway_id,  # must be master_gateway to API
                         'is_master': is_master,
                     }
                     # print("data: %s" % data)
@@ -82,10 +82,10 @@ def route_configs(webapp):
                                                                    session=session['yomboapi_session'])
                     # print("api results: %s" % results)
 
-                    previous_master_gateway = webinterface._Configs.get('core', 'master_gateway', None, False)
-                    if previous_master_gateway != submitted_master_gateway:
+                    previous_master_gateway_id = webinterface._Configs.get('core', 'master_gateway_id', None, False)
+                    if previous_master_gateway_id != submitted_master_gateway_id:
                         webinterface._Configs.set('core', 'is_master', is_master)
-                        webinterface._Configs.set('core', 'master_gateway', submitted_master_gateway)
+                        webinterface._Configs.set('core', 'master_gateway_id', submitted_master_gateway_id)
                         webinterface._Notifications.add({'title': 'Restart Required',
                                                          'message': 'A critical configuration change has occured and requires a restart: The master gateway has been changed.',
                                                          'source': 'Web Interface',
@@ -363,6 +363,6 @@ def route_configs(webapp):
             session.has_access('system_setting', '*', 'view')
 
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/configs/gpg_generate_key_status.html')
-            return page.render(atoms=webinterface._Libraries['atoms'].get_atoms(),
+            return page.render(atoms=webinterface._Libraries['atoms'].get_copy(),
                                getattr=getattr,
                                type=type)
