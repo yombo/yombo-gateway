@@ -83,7 +83,7 @@ from random import randint
 from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboWarning, InvalidArgumentError
+from yombo.core.exceptions import YomboWarning, YomboInvalidArgument
 from yombo.utils.networking import get_local_network_info
 from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
@@ -381,6 +381,12 @@ class Configuration(YomboLibrary):
         self._Configs.get('misc', 'length_display',  'imperial')  # will we ever get to metric?
         self.cfg_loaded = True
 
+        # We define commonly used items here, so a single pointer to the function be use re-used
+        self.gateway_id = self._Configs.get2('core', 'gwid', 'local', False)
+        self.is_master = self._Configs.get2('core', 'is_master', True, False)
+        self.master_gateway_id = self._Configs.get2('core', 'master_gateway_id', None, False)
+
+
     # def _load_(self, **kwargs):
 
     def _started_(self, **kwargs):
@@ -626,7 +632,7 @@ class Configuration(YomboLibrary):
 
         .. versionadded:: 0.13.0
 
-        :raises InvalidArgumentError: When an argument is invalid or illegal.
+        :raises YomboInvalidArgument: When an argument is invalid or illegal.
         :raises KeyError: When the requested section and option are not found.
         :param section: The configuration section to use.
         :type section: string
@@ -665,7 +671,7 @@ class Configuration(YomboLibrary):
 
            gatewayUUID = self._Config.get("core", "gwuuid", "Default Value")
 
-        :raises InvalidArgumentError: When an argument is invalid or illegal.
+        :raises YomboInvalidArgument: When an argument is invalid or illegal.
         :raises KeyError: When the requested section and option are not found.
         :param section: The configuration section to use.
         :type section: string
@@ -684,10 +690,10 @@ class Configuration(YomboLibrary):
 
         if len(section) > self.MAX_SECTION_LENGTH:
             self._Statistics.increment("lib.configuration.set.invalid_length", bucket_size=15, anon=True)
-            raise InvalidArgumentError("section cannot be more than %d chars" % self.MAX_OPTION_LENGTH)
+            raise YomboInvalidArgument("section cannot be more than %d chars" % self.MAX_OPTION_LENGTH)
         if len(option) > self.MAX_OPTION_LENGTH:
             self._Statistics.increment("lib.configuration.set.invalid_length", bucket_size=15, anon=True)
-            raise InvalidArgumentError("option cannot be more than %d chars" % self.MAX_OPTION_LENGTH)
+            raise YomboInvalidArgument("option cannot be more than %d chars" % self.MAX_OPTION_LENGTH)
 
         if ignore_case is not False:
             section = section.lower()
@@ -751,7 +757,7 @@ class Configuration(YomboLibrary):
            gatewayUUID = self._Config.set("section_name"
            , "myoption", "New Value")
 
-        :raises InvalidArgumentError: When an argument is invalid or illegal.
+        :raises YomboInvalidArgument: When an argument is invalid or illegal.
         :raises KeyError: When the requested section and option are not found.
         :param section: The configuration section to use.
         :type section: string
@@ -762,20 +768,20 @@ class Configuration(YomboLibrary):
         """
         if len(section) > self.MAX_SECTION_LENGTH:
             self._Statistics.increment("lib.configuration.set.invalid_length", bucket_size=15, anon=True)
-            raise InvalidArgumentError("section cannot be more than %d chars" % self.MAX_OPTION_LENGTH)
+            raise YomboInvalidArgument("section cannot be more than %d chars" % self.MAX_OPTION_LENGTH)
         if len(option) > self.MAX_OPTION_LENGTH:
             self._Statistics.increment("lib.configuration.set.invalid_length", bucket_size=15, anon=True)
-            raise InvalidArgumentError("option cannot be more than %d chars" % self.MAX_OPTION_LENGTH)
+            raise YomboInvalidArgument("option cannot be more than %d chars" % self.MAX_OPTION_LENGTH)
 
         # Can't set value!
         if section == 'yombo':
             self._Statistics.increment("lib.configuration.set.no_setting_yombo", bucket_size=15, anon=True)
-            raise InvalidArgumentError("Not allowed to set value")
+            raise YomboInvalidArgument("Not allowed to set value")
 
         if isinstance(value, str):
             if len(value) > self.MAX_VALUE_LENGTH:
                 self._Statistics.increment("lib.configuration.set.value_too_long", bucket_size=15, anon=True)
-                raise InvalidArgumentError("value cannot be more than %d chars" %
+                raise YomboInvalidArgument("value cannot be more than %d chars" %
                     self.MAX_VALUE)
 
         if ignore_case is not True:

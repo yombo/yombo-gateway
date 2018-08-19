@@ -36,6 +36,7 @@ try:
 except ImportError:
     HAS_PSUTIL = False
 
+from collections import OrderedDict
 import os
 import platform
 import re
@@ -249,6 +250,19 @@ class Atoms(YomboLibrary):
             return []
         return list(self.atoms[gateway_id].values())
 
+    def sorted(self, gateway_id):
+        """
+        Returns an OrderedDict of the atoms sorted by name.
+
+        :param gateway_id: The gateway to get the atoms for, default is the local gateway.
+        :type gateway_id: str
+        :return: All atoms, sorted by atom name.
+        :rtype: OrderedDict
+        """
+        if gateway_id is None:
+            gateway_id = self.gateway_id
+        return OrderedDict(sorted(self.atoms[gateway_id]))
+
     def _init_(self, **kwargs):
         """
         Sets up the atom library and files basic atoms values about the system.
@@ -273,8 +287,6 @@ class Atoms(YomboLibrary):
         self._loaded = True
         self.library_state = 2
         self.set('running_since', time())
-        self.set('is_master', self._Configs.get('core', 'is_master', True, False))
-        self.set('master_gateway', self._Configs.get('core', 'master_gateway', None, False))
         self._loaded = True
 
     def _start_(self, **kwargs):
@@ -308,7 +320,7 @@ class Atoms(YomboLibrary):
         else:
             raise KeyError("Cannot get state time: %s not found" % key)
 
-    def get_atoms(self, gateway_id=None):
+    def get_copy(self, gateway_id=None):
         """
         Shouldn't really be used. Just returns a _copy_ of all the atoms.
 

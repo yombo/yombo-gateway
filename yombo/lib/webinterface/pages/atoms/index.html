@@ -46,7 +46,7 @@
                                                     <tr><th>Name</th><th>Value</th><th>Last Updated</th><th>Description</th></tr>
                                                 </tr>
                                             </thead>
-                                            <tbody>{% for atom_name, atom in _atoms.get_atoms(_local_gateway.gateway_id).items() %}
+                                            <tbody>{% for atom_name, atom in _atoms.get_copy(_local_gateway.gateway_id).items() %}
                                                  <tr>
                                                      <td><a href="/atoms/{{ atom.gateway_id }}/{{ atom_name }}/details">{{ atom_name }}</a></td>
                                                      <td>{{ atom['value_human'] }}</td>

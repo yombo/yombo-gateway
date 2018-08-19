@@ -15,7 +15,7 @@ The device status class manages a single status entry for a device.
 :license: LICENSE for details.
 """
 # Import python libraries
-from collections import OrderedDict
+#from collections import OrderedDict
 from time import time
 
 # Import twisted libraries
@@ -178,7 +178,7 @@ class Device_Status(object):
         Returns this item as a dictionary.
         :return:
         """
-        results = OrderedDict({
+        results = {
             'status_id': self.status_id,
             'device_id': self.device_id,
             'command_id': self.command_id,
@@ -197,7 +197,7 @@ class Device_Status(object):
             'uploaded': self.uploaded,
             'uploadable': self.uploadable,
             'fake_data': self.fake_data,
-        })
+        }
         if full is True:
             results['dirty'] = self._dirty
             results['in_db'] = self._in_db

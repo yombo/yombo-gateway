@@ -67,7 +67,7 @@ class Template(YomboLibrary, object):
         self.environment.globals['utcnow'] = dt.utcnow
 
         # self.environment.globals['yombo'] = self
-        self.environment.globals['local_gateway'] = self._Gateways.get_local()
+        self.environment.globals['local_gateway'] = self._Gateways.local
         self.environment.globals['amqp'] = self._AMQP
         self.environment.globals['amqpyombo'] = self._AMQPYombo
         self.environment.globals['authkeys'] = self._AuthKeys

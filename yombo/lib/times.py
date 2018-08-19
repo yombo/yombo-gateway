@@ -47,7 +47,7 @@ import pytz
 from twisted.internet import reactor
 
 # Import Yombo libraries
-from yombo.core.exceptions import InvalidArgumentError, YomboHookStopProcessing
+from yombo.core.exceptions import YomboInvalidArgument, YomboHookStopProcessing
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import is_one_zero, global_invoke_all
@@ -431,7 +431,7 @@ class Times(YomboLibrary, object):
 
             saturn_visible = self._Times.item_visible(item='Saturn') # Is Saturn above the horizon? (True/False)
 
-        :raises InvalidArgumentError: Raised if an argument is invalid or illegal.
+        :raises YomboInvalidArgument: Raised if an argument is invalid or illegal.
         :raises AttributeError: Raised if PhPhem doesn't have the requested item.
         :param item: The device UUID or device label to search for.
         :type item: string
@@ -439,7 +439,7 @@ class Times(YomboLibrary, object):
         :rtype: dict
         """
         if 'item' not in kwargs:
-            raise InvalidArgumentError("Missing 'item' argument.")
+            raise YomboInvalidArgument("Missing 'item' argument.")
         item = kwargs['item']
 
         try:
@@ -472,7 +472,7 @@ class Times(YomboLibrary, object):
 
             mars_rise = self._Times.item_rise(dayOffset=1, item='Saturn') # the NEXT (1) rising of Mars.
 
-        :raises InvalidArgumentError: Raised if an argument is invalid or illegal.
+        :raises YomboInvalidArgument: Raised if an argument is invalid or illegal.
         :raises AttributeError: Raised if PhPhem doesn't have the requested item.
         :param dayOffset: Default=0. How many days in future to find when item rises. 0 = Today, 1=Tomorrow, etc, -1=Yesterday
         :type dayOffset: int
@@ -482,7 +482,7 @@ class Times(YomboLibrary, object):
         :rtype: dict
         """
         if 'item' not in kwargs:
-            raise InvalidArgumentError("Missing 'item' argument.")
+            raise YomboInvalidArgument("Missing 'item' argument.")
         item = kwargs['item']
         dayOffset = 0
         if 'dayOffset' in kwargs:
@@ -506,7 +506,7 @@ class Times(YomboLibrary, object):
 
             pluto_set = self._Times.item_set(dayOffset=0, item='Pluto') # the NEXT (0) setting of Pluto.
 
-        :raises InvalidArgumentError: Raised if an argument is invalid or illegal.
+        :raises YomboInvalidArgument: Raised if an argument is invalid or illegal.
         :raises AttributeError: Raised if PhPhem doesn't have the requested item.
         :param dayOffset: Default=0. How many days in future to find when item sets. 0 = Today, 1=Tomorrow, etc, -1=Yesterday
         :type dayOffset: int
@@ -516,7 +516,7 @@ class Times(YomboLibrary, object):
         :rtype: dict
         """
         if 'item' not in kwargs:
-            raise InvalidArgumentError("Missing 'item' argument.")
+            raise YomboInvalidArgument("Missing 'item' argument.")
         item = kwargs['item']
         dayOffset = 0
         if 'dayOffset' in kwargs:

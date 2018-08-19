@@ -86,7 +86,7 @@ class WebSessions(YomboLibrary):
 
     def _init_(self, **kwargs):
         self.gateway_id = self._Configs.get('core', 'gwid', 'local', False)
-        cookie_id = hashlib.sha224( str(self._Gateways.get_master_gateway_id()).encode('utf-8') ).hexdigest()
+        cookie_id = hashlib.sha224( str(self._Gateways.master_id).encode('utf-8') ).hexdigest()
 
         self.config = DictObject({
             'cookie_session_name': 'yombo_' + cookie_id,

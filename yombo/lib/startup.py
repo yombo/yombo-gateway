@@ -69,8 +69,8 @@ class Startup(YomboLibrary):
 
         is_master = self._Configs.get("core", "is_master", True)
         if is_master is False:
-            master_gateway = self._Configs.get("core", "master_gateway", None, False)
-            if master_gateway is None or master_gateway == "":
+            master_gateway_id = self._Configs.get("core", "master_gateway_id", None, False)
+            if master_gateway_id is None or master_gateway_id == "":
                 items_needed.append("Gateway is marked as slave, but no master gateway set.")
 
         if len(items_needed) > 0:

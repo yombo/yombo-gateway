@@ -449,22 +449,22 @@ def route_setup_wizard(webapp):
 
         def page_setup_wizard_4_show_form(webinterface, request, session):
             if 'setup_wizard_gateway_is_master' in session and\
-                            'setup_wizard_gateway_master_gateway' in session:
+                            'setup_wizard_gateway_master_gateway_id' in session:
                 is_master = session['setup_wizard_gateway_is_master']
-                master_gateway = session['setup_wizard_gateway_master_gateway']
+                master_gateway_id = session['setup_wizard_gateway_master_gateway_id']
             else:
                 available_gateways = session.get('available_gateways')
                 if session['setup_wizard_gateway_id'] in available_gateways:
                     gw = available_gateways[session['setup_wizard_gateway_id']]
                     is_master = gw['is_master']
-                    master_gateway = gw['master_gateway']
+                    master_gateway_id = gw['master_gateway']  # api just has master_gateway
                 else:
                     is_master = 1
-                    master_gateway = None
+                    master_gateway_id = None
 
             security_items = {
                 'is_master': is_master,
-                'master_gateway': master_gateway,
+                'master_gateway_id': master_gateway_id,
                 'status': session.get('setup_wizard_security_status', '1'),
                 'gps_status': session.get('setup_wizard_security_gps_status', '1'),
                 'send_private_stats': session.get('setup_wizard_security_send_private_stats', '1'),
@@ -505,17 +505,17 @@ def route_setup_wizard(webapp):
 
             valid_submit = True
             try:
-                submitted_gateway_master_gateway = request.args.get('master-gateway')[0]
-                if submitted_gateway_master_gateway == 'local':
+                submitted_gateway_master_gateway_id = request.args.get('master-gateway-id')[0]
+                if submitted_gateway_master_gateway_id == 'local':
                     submitted_gateway_is_master = 1
-                    submitted_gateway_master_gateway = None
+                    submitted_gateway_master_gateway_id = None
                 else:
                     submitted_gateway_is_master = 0
             except:
                 valid_submit = False
                 webinterface.add_alert("Invalid Master Gateway.")
 
-            # print("b13: %s - %s" % (submitted_gateway_is_master, submitted_gateway_master_gateway))
+            # print("b13: %s - %s" % (submitted_gateway_is_master, submitted_gateway_master_gateway_id))
             # print("valid: %s" % valid_submit)
             try:
                 submitted_security_status = request.args.get('security-status')[0]
@@ -560,7 +560,7 @@ def route_setup_wizard(webapp):
                 return webinterface.redirect(request, '/setup_wizard/4')
 
             session['setup_wizard_gateway_is_master'] = submitted_gateway_is_master
-            session['setup_wizard_gateway_master_gateway'] = submitted_gateway_master_gateway
+            session['setup_wizard_gateway_master_gateway_id'] = submitted_gateway_master_gateway_id
             session['setup_wizard_security_status'] = submitted_security_status
             session['setup_wizard_security_gps_status'] = submitted_security_gps_status
             session['setup_wizard_security_send_private_stats'] = submitted_security_send_private_stats
@@ -714,7 +714,7 @@ def route_setup_wizard(webapp):
             webinterface._Configs.set('core', 'description', session['setup_wizard_gateway_description'])
             webinterface._Configs.set('core', 'gwhash', results['data']['hash'])
             webinterface._Configs.set('core', 'is_master', is_true_false(session['setup_wizard_gateway_is_master']))
-            webinterface._Configs.set('core', 'master_gateway', session['setup_wizard_gateway_master_gateway'])
+            webinterface._Configs.set('core', 'master_gateway_id', session['setup_wizard_gateway_master_gateway_id'])
             webinterface._Configs.set('security', 'amqpsenddevicestatus', session['setup_wizard_security_status'])
             webinterface._Configs.set('security', 'amqpsendgpsstatus', session['setup_wizard_security_gps_status'])
             webinterface._Configs.set('security', 'amqpsendprivatestats', session['setup_wizard_security_send_private_stats'])

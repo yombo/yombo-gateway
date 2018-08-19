@@ -42,14 +42,12 @@ Implements MQTT. It does 2 things:
 import base64
 from collections import deque, Callable, OrderedDict
 from datetime import datetime
-import hashlib
-import random
-import string
-from subprocess import call
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
     import json
+import socket
+import ssl
 
 # Import twisted libraries
 from twisted.internet.ssl import ClientContextFactory
@@ -91,53 +89,30 @@ class MQTT(YomboLibrary):
         :return:
         """
         self.client_connections = {}
-        self.gateway_id = self._Configs.get('core', 'gwid', 'local', False)
         self.mosquitto_enabled = self._Configs.get('mqtt', 'mosquitto_enabled', False)
         self.mosquitto_config_file = "/etc/mosquitto/yombo/yombo.conf"
         self.client_enabled = self._Configs.get('mqtt', 'client_enabled', True)
         self.server_enabled = self._Configs.get('mqtt', 'server_enabled', True)
         self.server_max_connections = self._Configs.get('mqtt', 'server_max_connections', 1000)
         self.server_timeout_disconnect_delay = self._Configs.get('mqtt', 'server_timeout_disconnect_delay', 2)
-        self.is_master = self._Configs.get('core', 'is_master', True, False)
-        if self.is_master is True:
-            self.master_gateway = self.gateway_id
-        else:
-            self.master_gateway = self._Configs.get('core', 'master_gateway', "", False)
+        self.gateway_id = self._Configs.gateway_id
+        self.is_master = self._Configs.is_master
+        self.master_gateway_id = self._Configs.master_gateway_id
 
         self.mqtt_server = None
-        self.mqtt_available_ports = None
         self.mqtt_local_client = None
 
-        if self.is_master:
-            self.server_listen_ip = self._Configs.get('mqtt', 'server_listen_ip', '*')
+        local_gateway = self._Gateways.master
+        master_gateway = self._Gateways.master
+        if self.is_master():
             self.server_listen_port = self._Configs.get('mqtt', 'server_listen_port', 1883)
             self.server_listen_port_ss_ssl = self._Configs.get('mqtt', 'server_listen_port_ss_ssl', 1884)
-            self.server_listen_port_le_ssl = self._Configs.get('mqtt', 'server_listen_port_le_ssl', 1885)
+            self.server_listen_port_le_ssl = self._Configs.get('mqtt', 'server_listen_port_le_ssl', 8883)
             self.server_listen_port_websockets = self._Configs.get('mqtt', 'server_listen_port_websockets', 8081)
             self.server_listen_port_websockets_ss_ssl = self._Configs.get('mqtt', 'server_listen_port_websockets_ss_ssl', 8444)
             self.server_listen_port_websockets_le_ssl = self._Configs.get('mqtt', 'server_listen_port_websockets_le_ssl', 8445)
             self.server_allow_anonymous = self._Configs.get('mqtt', 'server_allow_anonymous', False)
-
-            self.client_remote_internal_host = self._Gateways[self.master_gateway].internal_ipv4
-            self.client_remote_external_host = self._Gateways[self.master_gateway].external_ipv4
-            self.client_remote_internal_mqtt = self._Gateways[self.master_gateway].internal_mqtt
-            self.client_remote_external_mqtt = self._Gateways[self.master_gateway].external_mqtt
-            self.client_remote_internal_mqtt_le = self._Gateways[self.master_gateway].internal_mqtt_le
-            self.client_remote_external_mqtt_le = self._Gateways[self.master_gateway].external_mqtt_le
-            self.client_remote_internal_mqtt_ss = self._Gateways[self.master_gateway].internal_mqtt_ss
-            self.client_remote_external_mqtt_ss = self._Gateways[self.master_gateway].external_mqtt_ss
-            self.client_remote_internal_ws = self._Gateways[self.master_gateway].internal_mqtt_ws
-            self.client_remote_external_ws = self._Gateways[self.master_gateway].external_mqtt_ws
-            self.client_remote_internal_ws_ss = self._Gateways[self.master_gateway].internal_mqtt_ws_ss
-            self.client_remote_external_ws_ss = self._Gateways[self.master_gateway].external_mqtt_ws_ss
-            self.client_remote_internal_ws_le = self._Gateways[self.master_gateway].internal_mqtt_ws_le
-            self.client_remote_external_ws_le = self._Gateways[self.master_gateway].external_mqtt_ws_le
-            self.client_remote_username = 'yombogw_' + self.gateway_id
-            self.client_remote_password1 = self._Gateways[self.gateway_id].mqtt_auth
-            self.client_remote_password2 = self._Gateways[self.gateway_id].mqtt_auth_next
-
         else:
-            self.server_listen_ip = None
             self.server_listen_port = 0
             self.server_listen_port_ss_ssl = 0
             self.server_listen_port_le_ssl = 0
@@ -146,28 +121,6 @@ class MQTT(YomboLibrary):
             self.server_listen_port_websockets_le_ssl = 0
             self.server_allow_anonymous = None
 
-            self.client_remote_internal_host = self._Gateways[self.master_gateway].internal_ipv4
-            self.client_remote_external_host = self._Gateways[self.master_gateway].external_ipv4
-            self.client_remote_internal_mqtt = self._Gateways[self.master_gateway].internal_mqtt
-            self.client_remote_external_mqtt = self._Gateways[self.master_gateway].external_mqtt
-            self.client_remote_internal_mqtt_le = self._Gateways[self.master_gateway].internal_mqtt_le
-            self.client_remote_external_mqtt_le = self._Gateways[self.master_gateway].external_mqtt_le
-            self.client_remote_internal_mqtt_ss = self._Gateways[self.master_gateway].internal_mqtt_ss
-            self.client_remote_external_mqtt_ss = self._Gateways[self.master_gateway].external_mqtt_ss
-            self.client_remote_internal_ws = self._Gateways[self.master_gateway].internal_mqtt_ws
-            self.client_remote_external_ws = self._Gateways[self.master_gateway].external_mqtt_ws
-            self.client_remote_internal_ws_ss = self._Gateways[self.master_gateway].internal_mqtt_ws_ss
-            self.client_remote_external_ws_ss = self._Gateways[self.master_gateway].external_mqtt_ws_ss
-            self.client_remote_internal_ws_le = self._Gateways[self.master_gateway].internal_mqtt_ws_le
-            self.client_remote_external_ws_le = self._Gateways[self.master_gateway].external_mqtt_ws_le
-            self.client_remote_username = 'yombogw_' + self.gateway_id
-            self.client_remote_password1 = self._Gateways[self.gateway_id].mqtt_auth
-            self.client_remote_password2 = self._Gateways[self.gateway_id].mqtt_auth_next
-
-
-        self.client_default_host = self._Gateways.master_mqtt_host
-        self.client_default_ssl = self._Gateways.master_mqtt_ssl
-        self.client_default_port = self._Gateways.master_mqtt_port
 
         self.mosquitto_running = None
 
@@ -177,7 +130,7 @@ class MQTT(YomboLibrary):
             logger.info("Embedded MQTT Disabled.")
             return
 
-        if self.is_master is not True:
+        if self.is_master() is not True:
             logger.info("Not managing MQTT broker, we are not the master!")
             if self.mosquitto_enabled is True:
                 logger.info("Disabling mosquitto MQTT broker.")
@@ -203,7 +156,13 @@ class MQTT(YomboLibrary):
             '',
         ]
         if self.server_listen_port > 0:
-            mosquitto_config.append("port %s" % self.server_listen_port)
+            mosquitto_config.extend([
+                '#',
+                '# Insecure listen MQTT port',
+                '#',
+                "port %s" % self.server_listen_port,
+                ''
+            ])
 
         if self.server_listen_port_ss_ssl > 0:
             mosquitto_config.extend([
@@ -277,12 +236,6 @@ class MQTT(YomboLibrary):
         if ssl_lib_webinterface['self_signed'] is False:
             self.server_listen_port_websockets_le_ssl = self.server_listen_port_websockets_ss_ssl
 
-        self.mqtt_available_ports = {
-            'ws': self.server_listen_port_websockets,
-            'wss': self.server_listen_port_websockets_le_ssl,
-            'wss-ss': self.server_listen_port_websockets_ss_ssl,
-        }
-
         mosquitto_config_filepointer = open(self.mosquitto_config_file, 'w')
         print("# File automatically generated by Yombo Gateway. Edits will be lost.", file=mosquitto_config_filepointer)
         print("# Created  %s" % f"{datetime.now():%Y-%m-%d %H%M%S}", file=mosquitto_config_filepointer)
@@ -323,15 +276,6 @@ class MQTT(YomboLibrary):
             if self.mosquitto_running is False:
                 logger.error("MQTT failed to start!")
                 raise YomboCritical("MQTT failed to start, shutting down.")
-
-    def _start_(self, **kwargs):
-        """
-        Just connect with a local client. Can later be used to send messages as needed.
-        :return:
-        """
-        if self._States['loader.operating_mode'] == 'run':
-            self.mqtt_local_client = self.new(client_id='Yombo-%s-mqtt' % self.gateway_id)  # System connection to send messages.
-            # self.test()  # todo: move to unit tests..  Todo: Create unit tests.. :-)
 
     @inlineCallbacks
     def _unload_(self, **kwargs):
@@ -466,7 +410,8 @@ class MQTT(YomboLibrary):
             def page_system_mqtt_listen(webinterface, request, session):
                 session.has_access('system_options', '*', 'mqtt')
                 page = webinterface.webapp.templates.get_template(webinterface.wi_dir + '/pages/mqtt/listen.html')
-                return page.render(alerts=webinterface.get_alerts())
+                return page.render(alerts=webinterface.get_alerts(),
+                                   session=session)
 
             @webapp.route("/system/mqtt-log")
             @require_auth()
@@ -474,8 +419,8 @@ class MQTT(YomboLibrary):
                 session.has_access('system_options', '*', 'mqtt')
                 page = webinterface.webapp.templates.get_template(webinterface.wi_dir + '/pages/mqtt/log.html')
                 return page.render(alerts=webinterface.get_alerts(),
-                                   log_outgoing=self._Gateways.coms.log_outgoing,
-                                   log_incoming=self._Gateways.coms.log_incoming,
+                                   log_outgoing=self._GatewayComs.log_outgoing,
+                                   log_incoming=self._GatewayComs.log_incoming,
                                    )
 
             @webapp.route("/system/mqtt-publish")
@@ -489,6 +434,7 @@ class MQTT(YomboLibrary):
             @run_first()
             @inlineCallbacks
             def api_v1_mqtt(webinterface, request, session):
+                # print("/api/v1/mqtt: %s" % request)
                 session.has_access('system_options', '*', 'mqtt')
                 topic = request.args.get('topic')[0]  # please do some validation!!
                 message = request.args.get('message')[0]  # please do some validation!!
@@ -496,10 +442,10 @@ class MQTT(YomboLibrary):
 
                 try:
                     yield self.mqtt_local_client.publish(topic, message, qos)
-                    results = {'status':200, 'message': 'MQTT message sent successfully.'}
+                    results = {'status': 200, 'message': 'MQTT message sent successfully.'}
                     return json.dumps(results)
                 except Exception as e:
-                    results = {'status':500, 'message': 'MQTT message count not be sent.'}
+                    results = {'status': 500, 'message': 'MQTT message count not be sent.'}
                     return json.dumps(results)
 
             def split_username(username):
@@ -521,6 +467,7 @@ class MQTT(YomboLibrary):
             @run_first()
             @inlineCallbacks
             def api_v1_mqtt_auth_user(webinterface, request, session):
+                # print("/api/v1/mqtt/auth/user: %s" % request)
                 request.setHeader('Content-Type', CONTENT_TYPE_TEXT_PLAIN)
                 response_code = 403
 
@@ -555,6 +502,7 @@ class MQTT(YomboLibrary):
             @webapp.route("/api/v1/mqtt/auth/superuser", methods=['POST'])
             @run_first()
             def api_v1_mqtt_auth_superuser(webinterface, request, session):
+                # print("/api/v1/mqtt/auth/superuser: %s" % request)
                 response_code = 403
                 logger.debug("mqtt superuser: {args}", args=request.args)
                 username = webinterface.request_get_default(request, 'username', "")
@@ -570,6 +518,7 @@ class MQTT(YomboLibrary):
             @webapp.route("/api/v1/mqtt/auth/acl", methods=['POST'])
             @run_first()
             def api_v1_mqtt_auth_acl(webinterface, request, session):
+                # print("/api/v1/mqtt/auth/acl: %s" % request)
                 response_code = 403
                 logger.debug("mqtt acl: {args}", args=request.args)
 
@@ -615,30 +564,31 @@ class MQTT(YomboLibrary):
             return
 
         if client_id is None:
-            client_id = "Yombo-%s-unknown-%s" % (self.gateway_id, random_string(length=10))
+            client_id = "Yombo-%s-unknown-%s" % (self.gateway_id(), random_string(length=10))
         if client_id in self.client_connections:
             logger.warn("client_id must be unique. Got: %s" % client_id)
             raise YomboWarning ("client_id must be unique. Got: %s" % client_id, 'MQTT::new', 'mqtt')
 
         if server_hostname is None:
-            if self.client_default_host is None:
+            if self._GatewayComs.client_default_host is None:
                 logger.warn("Cannot create MQTT client, no default host defined.")
                 return
-            server_hostname = self.client_default_host
+            server_hostname = self._GatewayComs.client_default_host
 
         if ssl is None:
-            ssl = self.client_default_ssl
+            ssl = self._GatewayComs.client_default_mqtt_port_internal_ssl
 
         if server_port is None:
-            server_port = self.client_default_port
+#            server_port = self._GatewayComs.client_default_ws_port_internal
+            server_port = self._GatewayComs.client_default_mqtt_port_internal
 
         if username is None:
-            username = self.client_remote_username
+            username = self._GatewayComs.client_default_username
 
         if password is None:
-            password = self.client_remote_password1
+            password = self._GatewayComs.client_default_password1
         if password2 is None:
-            password2 = self.client_remote_password2
+            password2 = self._GatewayComs.client_default_password2
 
         if mqtt_incoming_callback is not None:
             if isinstance(mqtt_incoming_callback, Callable) is False:
@@ -653,29 +603,6 @@ class MQTT(YomboLibrary):
             password, password2, ssl, mqtt_incoming_callback, mqtt_connected_callback, mqtt_connection_lost_callback,
             will_topic, will_message, will_qos, will_retain, clean_start, version, keepalive)
         return self.client_connections[client_id]
-
-    def test(self):
-#        self.local_mqtt_client_id = random_string(length=10)
-
-        self.mqtt_test_connection = self.new(self.server_listen_ip,
-            self.server_listen_port, 'yombo', self.default_client_mqtt_password1, False,
-            self.test_mqtt_in, self.test_on_connect )
-
-        self.mqtt_test_connection.subscribe("yombo/#")
-
-        self.sendDataLoop = LoopingCall(self.test_send_data)
-        self.sendDataLoop.start(5, True)
-
-    def test_on_connect(self):
-        print("in on connect in library...")
-        self.test_send_data()
-
-    def test_send_data(self):
-        print("mqtt sending test package")
-        self.mqtt_test_connection.publish("yombo/devices/asdf/asdf", 'open')
-
-    def test_mqtt_in(self, topic, payload, qos, retain):
-        print("i got this: %s / %s" % (topic, payload))
 
 
 class MQTTClient(object):

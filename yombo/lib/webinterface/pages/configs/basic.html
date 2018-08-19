@@ -103,17 +103,17 @@
 					</div>
 				</div>
 				<div class="form-group">
-					<label for="master_gateway" data-toggle="tooltip" title="Select the master gateway.">Select master gateway</label>
+					<label for="master_gateway_id" data-toggle="tooltip" title="Select the master gateway.">Select master gateway</label>
 					<a href="#" data-toggle="modal" data-target="#gwmaster"><i class="fa fa-question fa-lg"></i></a>
 					<div class="input-group">
-						<select name="master_gateway" id="master_gateway" required
+						<select name="master_gateway_id" id="master_gateway_id" required
 								class="form-control selectpicker show-tick" title="Select...">
 							{%- if _gateways.is_master() == true -%}
 							<option value="{{_local_gateway.gateway_id}}" style="background: #e6f7ff; color: #000;" data-subtext="Currently a master gateway" selected>{{_local_gateway.label}}</option>
 							<option data-divider="true"></option>
 							{%- endif -%}
 							{% for id, gateway in _gateways.gateways.items() if gateway.gateway_id != _local_gateway.gateway_id or _gateways.is_master() == false -%}
-							<option value="{{ id }}"{% if _gateways.master_gateway() == id %} selected{% endif %}>{{ gateway.label }}
+							<option value="{{ id }}"{% if _gateways.master_id == id %} selected{% endif %}>{{ gateway.label }}
 							{% if id == _local_gateway.gateway_id %} (This gateway){%endif%}</option>
 							{%- endfor %}
 						</select>

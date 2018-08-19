@@ -668,6 +668,7 @@ class Modules(YomboLibrary):
             module._DeviceTypes = self._Loader.loadedLibraries['devicetypes']  # All device types.
             module._Discovery = self._Loader.loadedLibraries['discovery']
             module._Gateways = self._Loader.loadedLibraries['gateways']
+            module._GatewayComs = self._Loader.loadedLibraries['gateways_communications']
             module._GPG = self._Loader.loadedLibraries['gpg']
             module._InputTypes = self._Loader.loadedLibraries['inputtypes']  # Input Types
             module._Hash = self._Loader.loadedLibraries['hash']  # Input Types

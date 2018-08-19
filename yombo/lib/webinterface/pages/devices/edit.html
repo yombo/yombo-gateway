@@ -150,9 +150,9 @@
                             <br>
                             <div class="input-group">
                                 <select class="selectpicker show-tick form-control" tabindex="10" name="statistic_type" id="statistic_type">
-                                    <option value="none"{% if device.energy_type == "none" %} selected{% endif %}>None</option>
-                                    <option value="datapoint"{% if device.energy_type == "datapoint" %} selected{% endif %}>Single Data Point</option>
-                                    <option value="average"{% if device.energy_type == "average" %} selected{% endif %}>Average</option>
+                                    <option value="none"{% if device.statistic_type == "none" %} selected{% endif %}>None</option>
+                                    <option value="datapoint"{% if device.statistic_type == "datapoint" %} selected{% endif %}>Single Data Point</option>
+                                    <option value="average"{% if device.statistic_type == "average" %} selected{% endif %}>Average</option>
                                 </select>
                             </div>
                             <div id="div_statistics">
@@ -213,7 +213,7 @@
                                 ") }}
                                 <br>
                                 <div class="input-group">
-                                <input type="text" tabindex="13" class="form-control" name="statistic_bucket_size" id="statistic_label" size="30" placeholder="1, 5, 30, 60, 300..." value="{{ device.statistic_bucket_size|hide_none }}">
+                                <input type="text" tabindex="13" class="form-control" name="statistic_bucket_size" id="statistic_bucket_size" size="30" placeholder="1, 5, 30, 60, 300..." value="{{ device.statistic_bucket_size|hide_none }}">
                                 </div>
                             </div>
                         </div>
@@ -424,6 +424,14 @@
             console.log("update stat label finiushed: " + new_string)
         }
 
+       $('#statistic_label').blur(function()
+            {
+            if(!$.trim(this.value).length) { // zero-length string AFTER a trim
+               $('#statistic_label').val($('#statistic_label').attr("placeholder"));
+            }
+        });
+
+
         $(document).ready(function(){
             update_stat_label();
             $('#machine_label').change(function() {
@@ -435,6 +443,9 @@
             $('#area_id').change(function() {
                 update_stat_label();
             });
+            if(!$.trim(this.value).length) { // zero-length string AFTER a trim
+               $('#statistic_label').val($('#statistic_label').attr("placeholder"));
+            }
 
         $("#statistic_type").change(function() {
             var input_value = this.value;

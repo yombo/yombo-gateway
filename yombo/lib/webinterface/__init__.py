@@ -206,8 +206,10 @@ class WebInterface(YomboLibrary):
     def _init_(self, **kwargs):
         self.web_interface_fully_started = False
         self.enabled = self._Configs.get('webinterface', 'enabled', True)
-        self.is_master = self._Configs.get2("core", "is_master")
-        self.master_gateway = self._Configs.get2("core", "master_gateway")
+
+        self.gateway_id = self._Configs.gateway_id
+        self.is_master = self._Configs.is_master
+        self.master_gateway_id = self._Configs.master_gateway_id
         self.enabled = self._Configs.get('core', 'enabled', True)
         if not self.enabled:
             return
@@ -215,7 +217,6 @@ class WebInterface(YomboLibrary):
         self.translators = {}
         self.idempotence = yield self._SQLDict.get('yombo.lib.webinterface', 'idempotence')  # tracks if a request was already made
 
-        self.gateway_id = self._Configs.get2('core', 'gwid', 'local', False)
         self.working_dir = self._Atoms.get('working_dir')
         self.app_dir = self._Atoms.get('app_dir')
         self.wi_dir = '/lib/webinterface'
@@ -338,7 +339,7 @@ class WebInterface(YomboLibrary):
         self.misc_wi_data['breadcrumb'] = []
 
         self.webapp.templates.globals['yombo'] = self
-        self.webapp.templates.globals['_local_gateway'] = self._Gateways.get_local()
+        self.webapp.templates.globals['_local_gateway'] = self._Gateways.local
         self.webapp.templates.globals['_amqp'] = self._AMQP
         self.webapp.templates.globals['_amqpyombo'] = self._AMQPYombo
         self.webapp.templates.globals['_authkeys'] = self._AuthKeys
@@ -349,6 +350,7 @@ class WebInterface(YomboLibrary):
         self.webapp.templates.globals['_crontab'] = self._CronTab
         self.webapp.templates.globals['_devices'] = self._Devices
         self.webapp.templates.globals['_devicetypes'] = self._DeviceTypes
+        self.webapp.templates.globals['_gatewaycoms'] = self._GatewayComs
         self.webapp.templates.globals['_gateways'] = self._Gateways
         self.webapp.templates.globals['_gpg'] = self._GPG
         self.webapp.templates.globals['_inputtypes'] = self._InputTypes

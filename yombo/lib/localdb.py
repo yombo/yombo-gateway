@@ -538,7 +538,7 @@ class LocalDB(YomboLibrary):
         device.voice_cmd_order = data['voice_cmd_order']
         device.statistic_label = data['statistic_label']
         device.statistic_lifetime = data['statistic_lifetime']
-        device.status = data['status']
+        device.status = data['enabled_status']
         device.energy_tracker_device = data['energy_tracker_device']
         device.energy_tracker_source = data['energy_tracker_source']
         device.energy_map = data['energy_map']

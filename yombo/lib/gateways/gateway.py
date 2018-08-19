@@ -54,7 +54,7 @@ class Gateway:
 
         # below are configure in update_attributes()
         self.is_master = None
-        self.master_gateway = None
+        self.master_gateway_id = None
         self.label = None
         self.description = None
         self.mqtt_auth = None
@@ -107,8 +107,8 @@ class Gateway:
             self.gateway_id = gateway['gateway_id']
         if 'is_master' in gateway:
             self.is_master = gateway['is_master']
-        if 'master_gateway' in gateway:
-            self.master_gateway = gateway['master_gateway']
+        if 'master_gateway_id' in gateway:
+            self.master_gateway_id = gateway['master_gateway_id']
         if 'label' in gateway:
             self.label = gateway['label']
         if 'description' in gateway:
@@ -179,7 +179,7 @@ class Gateway:
             'gateway_id': str(self.gateway_id),
             'fqdn': str(self.fqdn),
             'is_master': self.is_master,
-            'master_gateway': str(self.master_gateway),
+            'master_gateway_id': str(self.master_gateway_id),
             'machine_label': str(self.machine_label),
             'label': str(self.label),
             'description': str(self.description),
@@ -216,7 +216,7 @@ class Gateway:
             'gateway_id': str(self.gateway_id),
             'fqdn': str(self.fqdn),
             'is_master': self.is_master,
-            'master_gateway': str(self.master_gateway),
+            'master_gateway_id': str(self.master_gateway_id),
             'machine_label': str(self.machine_label),
             'label': str(self.label),
             'description': str(self.description),

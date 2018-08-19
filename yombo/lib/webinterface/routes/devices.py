@@ -544,8 +544,7 @@ def route_devices(webapp):
                 webinterface.home_breadcrumb(request)
                 webinterface.add_breadcrumb(request, "/devices/index", "Devices")
                 webinterface.add_breadcrumb(request, "/devices/%s/details" % device_id,
-                                            webinterface._Locations.get_device_label(device['area_id'],
-                                                                                           device['label']))
+                                            webinterface._Locations.area_label(device['area_id'], device['label']))
                 webinterface.add_breadcrumb(request, "/devices/%s/edit" % device_id, "Edit")
                 page = yield page_devices_edit_form(
                     webinterface,

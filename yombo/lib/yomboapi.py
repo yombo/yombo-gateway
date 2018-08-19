@@ -35,7 +35,7 @@ from twisted.internet import reactor
 # Import Yombo libraries
 from yombo.constants import VERSION
 from yombo.ext.expiringdict import ExpiringDict
-from yombo.core.exceptions import YomboWarning, YomboWarningCredentails, YomboRestart
+from yombo.core.exceptions import YomboWarning, YomboAPICredentials, YomboRestart
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import bytes_to_unicode, unicode_to_bytes
@@ -268,7 +268,7 @@ class YomboAPI(YomboLibrary):
         if session is None:
             if self.api_auth is None:
                 if self.valid_api_auth is False:
-                    raise YomboWarningCredentails("Yombo API::request has no valid API credentials.")
+                    raise YomboAPICredentials("Yombo API::request has no valid API credentials.")
             session = "%s:%s" % (self.gateway_id(), self.api_auth)
             session_type = 'Gateway'
         elif session is False:

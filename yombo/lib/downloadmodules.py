@@ -87,7 +87,7 @@ class DownloadModules(YomboLibrary):
         Gets the library setup and preconfigures some items.  Sets up the
         semaphore for queing downloads.
         """
-        self.download_list_deferred = None
+        # self.download_list_deferred = None
         self._LocalDBLibrary = self._Libraries['localdb']
 
         self._getVersion = []
@@ -96,6 +96,7 @@ class DownloadModules(YomboLibrary):
         self.allDownloads = []   # to start deferreds
         self.mysemaphore = defer.DeferredSemaphore(self.maxDownloadConcurrent)  #used to queue deferreds
 
+    @defer.inlineCallbacks
     def _load_(self, **kwargs):
         """
         Prepare the cloudfront download location, and :func:`checkModules`
@@ -111,11 +112,13 @@ class DownloadModules(YomboLibrary):
         else:
             self.cloudfront = "https://gwdl.yombo.net/"
             
-        return self.download_modules()
-
-    def _stop_(self, **kwargs):
-        if self.download_list_deferred is not None and self.download_list_deferred.called is False:
-            self.download_list_deferred.callback(1)  # if we don't check for this, we can't stop!
+        yield self.download_modules()
+    #
+    # def _stop_(self, **kwargs):
+    #     if self.download_list_deferred is not None and len(self.download_list_deferred.called) > 0:
+    #         for defer in self.download_list_deferred:
+    #             if defer.called is False:
+    #                 self.download_list_deferred.callback(1)  # if we don't check for this, we can't stop!
 
     @defer.inlineCallbacks
     def download_modules(self):
@@ -171,9 +174,9 @@ class DownloadModules(YomboLibrary):
                 d.addCallback(self.update_database, data)
                 d.addErrback(self.update_database_failed, data)
 
-        self.download_list_deferred = yield defer.DeferredList(self.allDownloads)
-        return self.download_list_deferred
-    
+        yield defer.DeferredList(self.allDownloads)
+        #self.download_list_deferred = yield defer.DeferredList(self.allDownloads)
+
     def download_cleanup(self, something):
         """
         When the downloads are completed, come here for any house cleaning.

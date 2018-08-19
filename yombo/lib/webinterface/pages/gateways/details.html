@@ -39,8 +39,8 @@
                                 <label style="margin-top: 15px; margin-bottom: 0px">Master Gateway: </label><br>
                                 {%if gateway.is_master == True %}
                                 None
-                                {%elif gateway.master_gateway != ""%}
-                                {{ _gateways[gateway.master_gateway].label }}
+                                {%elif gateway.master_gateway_id != ""%}
+                                {{ _gateways.master.label }}
                                 {%else%}
                                 Error with master gateway selection
                                 {%endif%}

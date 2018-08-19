@@ -42,7 +42,6 @@ Stops components in the following phases. Modules first, then libraries.
 # Import python libraries
 import asyncio
 from collections import OrderedDict, Callable
-import pkg_resources
 import os.path
 from re import search as ReSearch
 from subprocess import check_output, CalledProcessError
@@ -50,7 +49,7 @@ from time import time
 import traceback
 
 # Import twisted libraries
-from twisted.internet import reactor, threads
+from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks, maybeDeferred, Deferred
 from twisted.web import client
 from functools import reduce
@@ -98,6 +97,7 @@ HARD_LOAD["Modules"] = {'operating_mode': 'all'}
 HARD_LOAD["Devices"] = {'operating_mode': 'all'}
 HARD_LOAD["AMQPYombo"] = {'operating_mode': 'run'}
 HARD_LOAD["Gateways"] = {'operating_mode': 'all'}
+HARD_LOAD["Gateway_Communications"] = {'operating_mode': 'all'}
 HARD_LOAD["Nodes"] = {'operating_mode': 'all'}
 HARD_LOAD["MQTT"] = {'operating_mode': 'run'}
 HARD_LOAD["SSLCerts"] = {'operating_mode': 'all'}
@@ -112,6 +112,7 @@ HARD_LOAD["Users"] = {'operating_mode': 'all'}
 HARD_UNLOAD = OrderedDict()
 HARD_UNLOAD["Users"] = {'operating_mode': 'all'}
 HARD_UNLOAD["Gateways"] = {'operating_mode': 'all'}
+HARD_UNLOAD["Gateway_Communications"] = {'operating_mode': 'all'}
 HARD_UNLOAD["SSLCerts"] = {'operating_mode': 'all'}
 HARD_UNLOAD["Scenes"] = {'operating_mode': 'all'}
 HARD_UNLOAD["Automation"] = {'operating_mode': 'all'}
@@ -501,6 +502,7 @@ class Loader(YomboLibrary, object):
             library._Locations = self.loadedLibraries['locations']
             library._DeviceTypes = self.loadedLibraries['devicetypes']
             library._Gateways = self.loadedLibraries['gateways']
+            library._GatewayComs = self.loadedLibraries['gateways_communications']
             library._GPG = self.loadedLibraries['gpg']
             library._InputTypes = self.loadedLibraries['inputtypes']
             library._Libraries = self.loadedLibraries
@@ -728,7 +730,6 @@ class Loader(YomboLibrary, object):
             if componentType == 'library':
                 if componentName.lower() == 'modules':
                     self._moduleLibrary = moduleinst
-
                 self.loadedComponents["yombo.gateway.lib." + str(componentName.lower())] = moduleinst
                 self.loadedLibraries[str(componentName.lower())] = moduleinst
                 # this is mostly for manhole module, but maybe useful elsewhere?

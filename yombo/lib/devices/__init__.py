@@ -207,6 +207,20 @@ class Devices(YomboLibrary):
         """
         return list(self.devices.values())
 
+    def sorted(self, key=None):
+        """
+        Returns an OrderedDict, sorted by 'key'. The key can be any attribute within the device object, such as
+        label, area_label, etc.
+
+        :param key: Attribute contained in a device to sort by, default: area_label
+        :type key: str
+        :return: All devices, sorted by key.
+        :rtype: OrderedDict
+        """
+        if key is None:
+            key = 'area_label'
+        return OrderedDict(sorted(iter(self.devices.items()), key=lambda i: getattr(i[1], key)))
+
     def _init_(self, **kwargs):
         """
         Sets up basic attributes.
@@ -220,7 +234,7 @@ class Devices(YomboLibrary):
 
         self.gateway_id = self._Configs.get("core", "gwid", "local", False)
         self.is_master = self._Configs.get("core", "is_master", "local", False)
-        self.master_gateway = self._Configs.get("core", "master_gateway", "local", False)
+        self.master_gateway_id = self._Configs.get2("core", "master_gateway_id", "local", False)
 
         # used to store delayed queue for restarts. It'll be a bare, dehydrated version.
         # store the above, but after hydration.
@@ -234,21 +248,10 @@ class Devices(YomboLibrary):
 
         self.mqtt = None
 
-    def _load_(self, **kwargs):
-        """
-        Loads the devices from the database and loads device commands.
-
-        :param kwargs:
-        :return:
-        """
-        # yield self._load_devices_from_database()
-        # yield self._load_device_commands()
-        pass
-
     @inlineCallbacks
     def _start_(self, **kwags):
         """
-        Sets up the MQTT listener for IoT interactions.
+        Loads the devices from the database and loads device commands.
 
         :param kwags:
         :return:
@@ -351,19 +354,6 @@ class Devices(YomboLibrary):
                                       )
                 except YomboHookStopProcessing as e:
                     pass
-
-    def sorted(self, key=None):
-        """
-        Returns an OrderedDict, sorted by key.  If key is not set, then default is 'area_label'.
-
-        :param key: Attribute contained in a device to sort by.
-        :type key: str
-        :return: All devices, sorted by key.
-        :rtype: OrderedDict
-        """
-        if key is None:
-            key = 'area_label'
-        return OrderedDict(sorted(iter(self.devices.items()), key=lambda i: getattr(i[1], key)))
 
     def import_device(self, device, source=None, test_device=None):  # load or re-load if there was an update.
         """
