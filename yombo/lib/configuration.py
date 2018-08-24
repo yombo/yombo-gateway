@@ -384,7 +384,7 @@ class Configuration(YomboLibrary):
         # We define commonly used items here, so a single pointer to the function be use re-used
         self.gateway_id = self._Configs.get2('core', 'gwid', 'local', False)
         self.is_master = self._Configs.get2('core', 'is_master', True, False)
-        self.master_gateway_id = self._Configs.get2('core', 'master_gateway_id', None, False)
+        self.master_gateway_id = self._Configs.get2('core', 'master_gateway_id', 'local', False)
 
 
     # def _load_(self, **kwargs):
