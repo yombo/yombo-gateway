@@ -52,6 +52,14 @@ class Gateways(YomboLibrary):
         return
 
     @property
+    def master_id(self):
+        return self.master_gateway_id()
+
+    @master_id.setter
+    def master_id(self, val):
+        return
+
+    @property
     def master(self):
         return self.gateways[self.master_gateway_id()]
 
@@ -59,13 +67,6 @@ class Gateways(YomboLibrary):
     def master(self, val):
         return
 
-    @property
-    def master_id(self):
-        return self.master_gateway_id()
-
-    @master_id.setter
-    def master_id(self, val):
-        return
 
     def __contains__(self, gateway_requested):
         """
