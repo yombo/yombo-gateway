@@ -9,10 +9,6 @@ A database API to SQLite3.
    by modules. These are documented here for completeness. Use (or create) a
    :ref:`utils <utils>` function to get what is needed.
 
-   If additional information is needed to/from the database, open a feature
-   request at `<https://projects.yombo.net/>` under the Gateway Project.
-
-
 .. note::
 
   For more information see: `LocalDB @ Module Development <https://yombo.net/docs/libraries/localdb>`_
