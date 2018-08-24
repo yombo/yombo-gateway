@@ -24,36 +24,50 @@
     </div>
 </div>
 
-    <div class="row">
-        <div class="col-lg-12">
-            <h1 class="page-header">Basic Systems Configurations</h1>
-        </div>
-        <!-- /.col-lg-12 -->
+<div class="row">
+    <div class="col-lg-12">
+        <h1 class="page-header">Dynamic DNS Settings</h1>
+        <p>
+            You can easily and quickly access your system anywhere using Yombo's dynamic DNS system. Choose
+            from several domains for your DNS.
+        </p>
     </div>
-    <!-- /.row -->
-    <form  action="/configs/dns" method="POST" role="form" id="myForm">
-        <div class="row">
-            <div class="panel panel-default">
-                <div class="panel-heading">
-                    <h4>DNS Settings</h4>
-                    <p>
-                        <ul>
-                            <li>{{_('ui::misc::current_fqdn', 'Current FQDN')}}: {{ dns_configs.fqdn }}</li>
-                            <li>{{_('ui::misc::current_sub_domain', 'Current Sub-domain')}}: {{ dns_configs.dns_name }}</li>
-                            <li>{{_('ui::misc::current_top_level_domain', 'Current Domain')}}: {{ dns_configs.dns_domain }}</li>
-                            <li>{{_('ui::misc::allowed_next_change', 'Allowed next change')}}: {{ dns_configs.allow_change_at|epoch_to_string }}</li>
-                        </ul>
-                    </p>
-
-                </div>
+    <!-- /.col-lg-12 -->
+</div>
+<!-- /.row -->
+<form  action="/configs/dns" method="POST" role="form" id="myForm">
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h4>Current DNS Settings</h4>
+                <p>
+                    <ul>
+                        <li>{{_('ui::misc::current_fqdn', 'Current FQDN')}}: {{ dns_configs.fqdn }}</li>
+                        <li>{{_('ui::misc::current_sub_domain', 'Current Sub-domain')}}: {{ dns_configs.dns_name }}</li>
+                        <li>{{_('ui::misc::current_top_level_domain', 'Current Domain')}}: {{ dns_configs.dns_domain }}</li>
+                        <li>{{_('ui::misc::allowed_next_change', 'Allowed next change')}}: {{ dns_configs.allow_change_at|epoch_to_string }}</li>
+                    </ul>
+                </p>
+                <p><strong>DNS can only be changed once every 30 days.</strong>
+                    <a href="#" data-toggle="modal" data-target="#30days"><i class="fa fa-question"></i></a>
+                        {{ macros.modal("30days", 'Domain Prefix', '
+                            <p>
+                                You must wait 30 days between changing the domain. This is to prevent
+                                abuse of the domain name system.
+                            </p>
+                            ') }}
+            </div>
             <div class="panel-body">
                 <div class="form-group">
-                    <p><strong>DNS can only be changed once every 30 days.</strong></p>
+                    <h4>Set new Dynamic DNS</h4>
                     <label for="dnsname">Domain Prefix</label>
-                    <a href="#" data-toggle="modal" data-target="#dns_name"><i class="fa fa-question fa-lg"></i></a>
+                    <a href="#" data-toggle="modal" data-target="#dns_name"><i class="fa fa-question"></i></a>
                         {{ macros.modal("dns_name", 'Domain Prefix', '
-                        The first part of the complete domain name is settable. To change this, update the
-                        preferred value and click on Search.
+                        The domain prefix is the first portion of the dynamic DNS. For example, enter \'garage\' and
+                    \'Search\'. A list of possible DNS fully qualified domain names (FQDN) will be displayed
+                    for you to select from.
+
                         <div class="bs-callout bs-callout-danger" id="callout-images-ie-rounded-corners">
                             <h4>30 day wait</h4>
                             <p>
@@ -63,7 +77,7 @@
                     <div class="input-group">
                         <input type="hidden" name="dns_domain_id" />
                         <input type="text" name="dns_name" id="dnsname" autofocus="autofocus" value="{{ dns_configs.dns_name }}">
-                        <a class="btn btn-success" id="fire" href="#">Search</a>
+                        &nbsp;<a class="btn btn-success" id="fire" href="#">Search</a>
 
                         <table id="myTableId" class="table table-nonfluid table-striped table-hover table-sm">
                           <thead class="thead-default">
@@ -79,7 +93,7 @@
                 </div>
             </div>
         </div>
-        <!-- /.row -->
+    </div>
     </form>
     <div class="modal fade" id="dns_check_error_modal" role="dialog">
         <div class="modal-dialog modal-sm">
@@ -97,6 +111,7 @@
             </div>
         </div>
     </div>
+</div>
 {% endblock %}
 
 {% block body_bottom %}
