@@ -38,7 +38,7 @@ def new_db_file(Registry, **kwargs):
     yield create_table_statistics(Registry)
     yield create_table_tasks(Registry)
     yield create_table_users(Registry)
-    yield create_table_auth_key(Registry)
+    yield create_table_auth_keys(Registry)
     yield create_table_webinterface_sessions(Registry)
     yield create_table_webinterface_logs(Registry)
     yield create_table_variable_groups(Registry)
@@ -615,10 +615,10 @@ def create_table_users(Registry, **kwargs):
 
 
 @inlineCallbacks
-def create_table_auth_key(Registry, **kwargs):
+def create_table_auth_keys(Registry, **kwargs):
     """  """
     # Nearly the same as webinterface_sessions, but for auth keys
-    table = """CREATE TABLE `auth_key` (
+    table = """CREATE TABLE `auth_keys` (
         `id`           TEXT NOT NULL, /* moduleUUID */
         `label`        TEXT NOT NULL,
         `description`  TEXT NOT NULL,
@@ -630,8 +630,8 @@ def create_table_auth_key(Registry, **kwargs):
         `updated_at`   INTEGER NOT NULL,
         PRIMARY KEY(id));"""
     yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('auth_key', 'created_at'))
-    yield Registry.DBPOOL.runQuery(create_index('auth_key', 'updated_at'))
+    yield Registry.DBPOOL.runQuery(create_index('auth_keys', 'created_at'))
+    yield Registry.DBPOOL.runQuery(create_index('auth_keys', 'updated_at'))
 
 
 @inlineCallbacks
