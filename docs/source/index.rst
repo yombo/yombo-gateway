@@ -4,13 +4,20 @@
 Yombo Automation Python Reference
 =================================
 
-Release |release| (`GOTO: User Quick Start Guide <https://yombo.net/docs/gateway/quick_start>`_)
+Release |release|
+(`Release notes <https://yombo.net/release_notes/gateway/2018_8_19/version_0.21.0>`_)
+
+End User Docuementation
+=======================
+This site is for those who wish to tinker with writing logic to manage their automation system.
+If you are just getting started, visit the
+`User Quick Start Guide <https://yombo.net/docs/gateway/quick_start>`_.
 
 Python API Documentation
 ========================
 
-This site is for those who wish to tinker with writing logic to manage their automation system. For code samples
-and getting started guides, visit the `Yombo Development Documentation <https://yombo.net/docs/developing_modules>`_
+For code samples and getting started guides, visit the
+`Yombo Development Documentation <https://yombo.net/docs/developing_modules>`_
 
 Overview
 ========
@@ -70,9 +77,6 @@ the `source code itself <https://github.com/yombo/yombo-gateway>`_.
 
 Making changes is easy: simply find the section of the code and update the code comment. This website is periodically
 updated from the source code.
-
-.. rubric:: Index and search
-
 
 
 Last updated: |today|
