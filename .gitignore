@@ -23,6 +23,7 @@ test.py
 
 # Yombo Stuff #
 ###############
+Future
 yombo.ini*
 builddocs.sh*
 localmodules.ini*
