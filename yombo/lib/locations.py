@@ -168,16 +168,16 @@ class Locations(YomboLibrary):
             self._States.set('detected_location.use_metric', location_info['use_metric'], 'bool')
 
             data = {
-                'latitude': float(self._Configs.get('location', 'latitude', None, False)),
-                'longitude': float(self._Configs.get('location', 'longitude', None, False)),
-                'elevation': int(self._Configs.get('location', 'elevation', None, False)),
-                'city': str(self._Configs.get('location', 'city', None, False)),
-                'country_code': str(self._Configs.get('location', 'country_code', None, False)),
-                'country_name': str(self._Configs.get('location', 'country_name', None, False)),
-                'region_code': str(self._Configs.get('location', 'region_code', None, False)),
-                'region_name': str(self._Configs.get('location', 'region_name', None, False)),
-                'time_zone': str(self._Configs.get('location', 'time_zone', None, False)),
-                'zip_code': str(self._Configs.get('location', 'zip_code', None, False)),
+                'latitude': float(self._Configs.get('location', 'latitude', location_info['latitude'], False)),
+                'longitude': float(self._Configs.get('location', 'longitude', location_info['longitude'], False)),
+                'elevation': int(self._Configs.get('location', 'elevation', location_info['elevation'], False)),
+                'city': str(self._Configs.get('location', 'city', location_info['city'], False)),
+                'country_code': str(self._Configs.get('location', 'country_code',  location_info['country_code'], False)),
+                'country_name': str(self._Configs.get('location', 'country_name', location_info['country_name'], False)),
+                'region_code': str(self._Configs.get('location', 'region_code', location_info['region_code'], False)),
+                'region_name': str(self._Configs.get('location', 'region_name', location_info['region_name'], False)),
+                'time_zone': str(self._Configs.get('location', 'time_zone', location_info['time_zone'], False)),
+                'zip_code': str(self._Configs.get('location', 'zip_code', location_info['zip_code'], False)),
             }
             for label, value in data.items():
                 if value in (None, '', 'None'):
