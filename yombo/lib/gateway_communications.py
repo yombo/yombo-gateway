@@ -77,7 +77,7 @@ class Gateway_Communications(YomboLibrary):
         self.client_default_password1 = local_gateway.mqtt_auth
         self.client_default_password2 = local_gateway.mqtt_auth_next
 
-        if self._States['loader.operating_mode'] != 'run':
+        if self._Loader.operating_mode == 'run':
             logger.warn("Gateway communications disabled when not in run mode.")
 
             return
@@ -258,7 +258,7 @@ class Gateway_Communications(YomboLibrary):
             logger.warn("Cannot find an open MQTT port to the master gateway.")
 
     def _start_(self, **kwargs):
-        if self._States['loader.operating_mode'] != 'run':
+        if self._Loader.operating_mode == 'run':
             return
         self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming,
                                    client_id='Yombo-gateways-%s' % self.gateway_id())
@@ -278,7 +278,7 @@ class Gateway_Communications(YomboLibrary):
         self.mqtt.subscribe("yombo/#")
 
     def _started_(self, **kwargs):
-        if self._States['loader.operating_mode'] != 'run':
+        if self._Loader.operating_mode == 'run':
             return
         self.publish_data('gw', "all", "lib/gateway/online", "")
         reactor.callLater(3, self.send_all_info, set_ok_to_publish_updates=True)
@@ -296,7 +296,7 @@ class Gateway_Communications(YomboLibrary):
         """
         Cleans up any pending deferreds.
         """
-        if self._States['loader.operating_mode'] != 'run':
+        if self._Loader.operating_mode == 'run':
             return
         if hasattr(self, 'mqtt'):
             if self.mqtt is not None:
