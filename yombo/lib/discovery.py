@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `Discovery @ Module Development <https://yombo.net/docs/libraries/discovery>`_
+  * For library documentation, see: `Discovery @ Library Documentation <https://yombo.net/docs/libraries/discovery>`_
 
 Tracks all auto-discovered devices in one location.
 

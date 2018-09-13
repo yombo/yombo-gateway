@@ -3,7 +3,7 @@
 """
 .. note::
 
-  For more information see: `Commands @ command Development <https://yombo.net/docs/libraries/commands>`_
+  * For library documentation, see: `Commands @ Library Documentation <https://yombo.net/docs/libraries/commands>`_
 
 This library maintains a list of all available commands. The commands (plural) is a wrapper class and contains all
 the individual command classes.
@@ -12,7 +12,7 @@ The command (singular) class represents one command.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2012-2017 by Yombo.
+:copyright: Copyright 2012-2018 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/commands.html>`_
 """

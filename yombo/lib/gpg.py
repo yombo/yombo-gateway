@@ -4,8 +4,7 @@
 
 .. note::
 
-  For more information see: `GPG @ Module Development <https://yombo.net/docs/libraries/gpg>`_
-
+  * For library documentation, see: `GPG @ Library Documentation <https://yombo.net/docs/libraries/gpg>`_
 
 This library handles encrypting and decrypting content. This library allows data at rest to be encrypted, which
 means any passwords or sensitive data will be encrypted before it is saved to disk. This library doesn't

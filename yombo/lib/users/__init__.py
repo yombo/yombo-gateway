@@ -3,6 +3,12 @@
 """
 Manages users within the gateway. All users are loaded on startup.
 
+.. note::
+
+  * End user documentation: `User permissions @ User Documentation <https://yombo.net/docs/gateway/web_interface/user_permissions>`_
+  * End user documentation: `Roles @ User Documentation <https://yombo.net/docs/gateway/web_interface/roles>`_
+  * For library documentation, see: `Users @ Library Documentation <https://yombo.net/docs/libraries/users>`_
+
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.20.0
 

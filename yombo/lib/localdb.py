@@ -11,12 +11,11 @@ A database API to SQLite3.
 
 .. note::
 
-  For more information see: `LocalDB @ Module Development <https://yombo.net/docs/libraries/localdb>`_
-
+  * For library documentation, see: `LocalDB @ Library Documentation <https://yombo.net/docs/libraries/localdb>`_
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2012-2016 by Yombo.
+:copyright: Copyright 2012-2018 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/localdb.html>`_
 """

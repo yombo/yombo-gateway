@@ -4,8 +4,8 @@
 
 .. note::
 
-  For more information see: `Notifications @ Module Development <https://yombo.net/docs/libraries/notifications>`_
-
+  * End user documentation: `Notifications @ User Documentation <https://yombo.net/docs/gateway/web_interface/notifications>`_
+  * For library documentation, see: `Notifications @ Library Documentation <https://yombo.net/docs/libraries/notifications>`_
 
 Responsible for receiving and distributing notifications. Typically, they are system messages that need
 attention by the user, this includes alerts for devices, or system settings that need updating.
@@ -21,7 +21,7 @@ Priority levels:
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.12.0
 
-:copyright: Copyright 2016-2017 by Yombo.
+:copyright: Copyright 2016-2018 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/notifications.html>`_
 """

@@ -1,4 +1,8 @@
 """
+.. note::
+
+  * For library documentation, see: `Hashids @ Library Documentation <https://yombo.net/docs/libraries/hashids>`_
+
 Manages hashids.  Decodes and encodes.
 
 To encode or decode using the primary hashid:

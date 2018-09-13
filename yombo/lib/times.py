@@ -4,8 +4,7 @@
 
 .. note::
 
-  For more information see: `Times @ Module Development <https://yombo.net/docs/libraries/times>`_
-
+  * For library documentation, see: `Times @ Library Documentation <https://yombo.net/docs/libraries/times>`_
 
 Sets up various times and events for: dusk, dawn, sunrise, sunset. Also send event messages when a status change
 changes.  It also configures many State items such as times_light, times_dark, times_dawn, times_dusk
@@ -30,7 +29,7 @@ above or below the horizon (saturn, moon, sun, etc), and then they will transiti
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
 
-:copyright: Copyright 2012-2016 by Yombo.
+:copyright: Copyright 2012-2018 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/times.html>`_
 """

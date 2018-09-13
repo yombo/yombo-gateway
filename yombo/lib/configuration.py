@@ -3,8 +3,8 @@
 """
 .. note::
 
-  For more information see:
-  `Configuration @ Module Development <https://yombo.net/docs/libraries/configuration>`_
+  * End user documentation: `Configuration @ User Documentation <https://yombo.net/docs/gateway/web_interface/basic_settings>`_
+  * For library documentation, see: `Cache @ Library Documentation <https://yombo.net/docs/libraries/configuration>`_
 
 Handles loading, storing, updating, and saving gateway configuration items.
 
@@ -51,7 +51,7 @@ can simply implement the hook: _configuration_set_:
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2012-2017 by Yombo.
+:copyright: Copyright 2012-2018 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/configuration.html>`_
 """

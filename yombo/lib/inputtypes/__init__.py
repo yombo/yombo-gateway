@@ -1,10 +1,9 @@
 # This file was created by Yombo for use with Yombo Python Gateway automation
 # software.  Details can be found at https://yombo.net
 """
-
 .. note::
 
-  For more information see: `Input Type @ Module Development <https://yombo.net/docs/libraries/input_types>`_
+  * For library documentation, see: `Input Types @ Library Documentation <https://yombo.net/docs/libraries/input_types>`_
 
 This library maintains a list of all available input types. The input types (plural) is a wrapper class and contains all
 the individual input type classes.

@@ -4,14 +4,14 @@
 
 .. note::
 
-  For more information see: `Web Interface @ Module Development <https://yombo.net/docs/libraries/web_interface>`_
+  * End user documentation: `Web Interface @ User Documentation <https://yombo.net/docs/gateway/web_interface>`_
+  * For library documentation, see: `Web Interface @ Library Documentation <https://yombo.net/docs/libraries/web_interface>`_
 
-
-Provides web interface for configuration of the Yombo system.
+Provides web interface to easily configure and manage the gateway devices and modules.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2016-2017 by Yombo.
+:copyright: Copyright 2016-2018 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/webinterface.html>`_
 """

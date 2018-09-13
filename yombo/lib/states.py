@@ -4,7 +4,8 @@
 
 .. note::
 
-  For end-user documentation, see: `States @ Module Development <https://yombo.net/docs/libraries/states>`_
+  * End user documentation: `States @ User Documentation <https://yombo.net/docs/gateway/web_interface/states>`_
+  * For developer documentation, see: `States @ Module Development <https://yombo.net/docs/libraries/states>`_
 
 .. seealso::
 
@@ -49,7 +50,7 @@ Example states: times_dark, weather_raining, alarm_armed, yombo_service_connecti
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2016 by Yombo.
+:copyright: Copyright 2016-2018 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/states.html>`_
 """

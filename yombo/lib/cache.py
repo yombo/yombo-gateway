@@ -4,8 +4,7 @@
 
 .. note::
 
-  For more information see: `Hash @ Module Development <https://yombo.net/docs/libraries/cache>`_
-
+  * For library documentation, see: `Cache @ Library Documentation <https://yombo.net/docs/libraries/cache>`_
 
 Consolidates all the caching features into here so that they can be monitored and flushed.
 

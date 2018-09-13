@@ -1,11 +1,9 @@
 # This file was created by Yombo for use with Yombo Python gateway automation
 # software.  Details can be found at https://yombo.net
 """
-
 .. note::
 
-  For more information see: `Hash @ Module Development <https://yombo.net/docs/libraries/hash>`_
-
+  * For library documentation, see: `Hash @ Library Documentation <https://yombo.net/docs/libraries/hash>`_
 
 Responsible for creating and checking password hashes.
 

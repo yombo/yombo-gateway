@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `YomboAPI @ Module Development <https://yombo.net/docs/libraries/yomboapi>`_
+  * For library documentation, see: `YomboAPI @ Library Documentation <https://yombo.net/docs/libraries/yomboapi>`_
 
 
 Manages interactions with api.yombo.net
@@ -12,7 +12,7 @@ Manages interactions with api.yombo.net
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.11.0
 
-:copyright: Copyright 2016 by Yombo.
+:copyright: Copyright 2016-2018 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/yomboapi.html>`_
 """

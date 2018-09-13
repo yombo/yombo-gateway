@@ -1,6 +1,10 @@
 # This file was created by Yombo for use with Yombo Python Gateway automation
 # software.  Details can be found at https://yombo.net
 """
+.. note::
+
+  * For library documentation, see: `AMQPYombo @ Library Documentation <https://yombo.net/docs/libraries/amqpyombo>`_
+
 This library is responsible for handling configuration and control messages with the Yombo servers. It requests
 configurations and directs them to the configuration handler. It also directs any control messages to the control
 handler.
@@ -15,17 +19,13 @@ or 3rd party sources such as Amazon Alexa, Google Home, etc etc.
    This library is not intended to be accessed by module developers or end users. These functions, variables,
    and classes were not intended to be accessed directly by modules. These are documented here for completeness.
 
-.. note::
-
-  For developer documentation, see: `AMQPYombo @ Module Development <https://yombo.net/docs/libraries/amqpyombo>`_
-
 .. todo:: The gateway needs to check for a non-responsive server or if it doesn't get a response in a timely manor.
    Perhaps disconnect and reconnect to another server? -Mitch
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.12.0
 
-:copyright: Copyright 2015-2017 by Yombo.
+:copyright: Copyright 2015-2018 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/amqpyombo.html>`_
 """

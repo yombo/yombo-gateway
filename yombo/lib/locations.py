@@ -4,15 +4,14 @@
 
 .. note::
 
-  For more information see: `Locations @ Module Development <https://yombo.net/docs/libraries/locations>`_
-
+  * For library documentation, see: `Locations @ Library Documentation <https://yombo.net/docs/libraries/locations>`_
 
 Stores location and area information in memory.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.14.0
 
-:copyright: Copyright 2017 by Yombo.
+:copyright: Copyright 2017-2018 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/locations.html>`_
 """

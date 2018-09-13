@@ -1,10 +1,10 @@
 # This file was created by Yombo for use with Yombo Python Gateway automation
 # software.  Details can be found at https://yombo.net
 """
-
 .. note::
 
-  For more information see: `Gateways @ Module Development <https://yombo.net/docs/libraries/gateways>`_
+  * End user documentation: `Gateways @ User Documentation <https://yombo.net/docs/gateway/web_interface/gateways>`_
+  * For library documentation, see: `Gateways @ Library Documentation <https://yombo.net/docs/libraries/gateways>`_
 
 Tracks gateway details for the local gateway and any member gateways within the current cluster.
 

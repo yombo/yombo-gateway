@@ -3,7 +3,7 @@
 """
 .. note::
 
-  For more information see: `MQTT @ Module Development <https://yombo.net/docs/libraries/mqtt>`_
+  * For library documentation, see: `MQTT @ Library Documentation <https://yombo.net/docs/libraries/mqtt>`_
 
 Implements MQTT. It does 2 things:
 
@@ -33,7 +33,7 @@ Implements MQTT. It does 2 things:
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.11.0
 
-:copyright: Copyright 2016 by Yombo.
+:copyright: Copyright 2016-2018 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/mqtt.html>`_
 """

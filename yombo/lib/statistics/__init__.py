@@ -4,7 +4,8 @@
 
 .. note::
 
-  For more information see: `Statistics @ Module Development <https://yombo.net/docs/libraries/statistics>`_
+  * For developer documentation, see: `Statistics @ Module Development <https://yombo.net/docs/libraries/statistics>`_
+  * For library documentation, see: `Statistics @ Library Documentation <https://yombo.net/docs/libraries/loader>`_
 
 
 Statistics allow the gateway to trace various data points. This can be used to track how much time of a day the

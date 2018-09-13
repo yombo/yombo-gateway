@@ -1,4 +1,8 @@
 """
+.. note::
+
+  * For library documentation, see: `Web Sessions @ Library Documentation <https://yombo.net/docs/libraries/web_sessions>`_
+
 Handles session information for the webinterface.
 
 Currently, all sessions are loaded into memory.  Yes, not a good practice. Will tackle lazy loading later. Kept running
@@ -11,7 +15,7 @@ Components and inspiration from web.py: https://github.com/webpy/webpy
 web.py is in the public domain; it can be used for whatever purpose with absolutely no restrictions.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-:copyright: Copyright 2016 by Yombo.
+:copyright: Copyright 2016-2018 by Yombo.
 :license: LICENSE for details.
 """
 # Import python libraries

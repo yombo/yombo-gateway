@@ -1,10 +1,10 @@
 # This file was created by Yombo for use with Yombo Python Gateway automation
 # software.  Details can be found at https://yombo.net
 """
-
 .. note::
 
-  For development guides see: `Devices @ Module Development <https://yombo.net/docs/libraries/devices>`_
+  * End user documentation: `Devices @ User Documentation <https://yombo.net/docs/gateway/web_interface/devices>`_
+  * For library documentation, see: `Devices @ Library Documentation <https://yombo.net/docs/libraries/devices>`_
 
 The devices library is primarily responsible for:
 
@@ -591,7 +591,7 @@ class Devices(YomboLibrary):
         Tells the device to a command. This in turn calls the hook _device_command_ so modules can process the command
         if they are supposed to.
 
-        If a pin is required, "pin" must be included as one of the arguments. All **kwargs are sent with the
+        If a pin is required, "pin" must be included as one of the arguments. All kwargs are sent with the
         hook call.
 
             - cmd doesn't exist
@@ -716,9 +716,9 @@ class Devices(YomboLibrary):
         Returns a dictionary of devices the current user/auth id has access to. Returns a dict and list of access
         permissions.
 
-        :param field: A string referencing an attribute of a device.
-        :type field: string
-        :return:f
+        :param session: A string referencing an attribute of a device.
+        :type session: string
+        :return:
         """
         permissions, item_permissions = self._Users.get_access(session.item_permissions, session.roles, 'device')
         # print("user_available_devices... %s" % item_permissions['device'])

@@ -9,8 +9,7 @@
 
 .. note::
 
-  For more information see:
-  `Gateway Communications @ Module Development <https://yombo.net/docs/libraries/gateway_communications>`_
+  * For library documentation, see: `Gateway Communications @ Library Documentation <https://yombo.net/docs/libraries/gateway_communications>`_
 
 Handles inter-gateway communications. Broadcasts information about this gateway on startup. It will
 also broadcast a message for all other gateways to send their updated status information.

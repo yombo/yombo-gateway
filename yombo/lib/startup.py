@@ -12,12 +12,12 @@ mode.
 
 .. note::
 
-  For more information see: `Startup @ Module Development <https://yombo.net/docs/libraries/startup>`_
+  * For library documentation, see: `Startup @ Library Documentation <https://yombo.net/docs/libraries/startup>`_
 
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2012-2017 by Yombo.
+:copyright: Copyright 2012-2018 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/startup.html>`_
 """

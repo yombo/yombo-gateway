@@ -3,8 +3,8 @@
 """
 .. note::
 
-  For more information see:
-  `Automation @ Module Development <https://yombo.net/docs/libraries/automation>`_
+  * End user documentation: `Automation Rules @ User Documentation <https://yombo.net/docs/gateway/web_interface/automation_rules>`_
+  * For library documentation, see: `Automation @ Library Documentation <https://yombo.net/docs/libraries/automation>`_
 
 The automation library provides users an easy method to setup simple automation rules that can respond to events.
 The automation rules can be setup using a simple web interface. Advanced templating is also possible using the

@@ -1,4 +1,8 @@
 """
+.. note::
+
+  * For library documentation, see: `Template @ Library Documentation <https://yombo.net/docs/libraries/template>`_
+
 Allows templates to be used in various places within Yombo. For example,
 they can be used as condition statements for scenes, automation rules, etc.
 

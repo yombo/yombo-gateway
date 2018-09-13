@@ -85,6 +85,7 @@ IoT devices, etc.
    ../lib/statistics/statistics.rst
    ../lib/tasks.rst
    ../lib/times.rst
+   ../lib/users/users.rst
    ../lib/validate.rst
    ../lib/variables.rst
    ../lib/voicecmds.rst

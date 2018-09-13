@@ -4,11 +4,12 @@
 
 .. note::
 
-  For developer documentation, see: `Atoms @ Module Development <https://yombo.net/docs/libraries/atoms>`_
+  * End user documentation: `Atoms @ User Documentation <https://yombo.net/docs/gateway/web_interface/atoms>`_
+  * For library documentation, see: `Atoms @ Library Documentation <https://yombo.net/docs/libraries/atoms>`_
 
 .. seealso::
 
-   The :doc:`States library </lib/states>` is used to store states that change.
+   The :doc:`States library </lib/states>` is used to store items whose data changes.
 
 Atoms provide non-changing information about the environment the gateway is running in as well as about the
 Yombo Gateway software. Atoms are generally immutable, however, if the system state changes and is detected, the
@@ -25,7 +26,7 @@ For dynamically changing data, use :py:mod:`States <yombo.lib.states>`.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2016-2017 by Yombo.
+:copyright: Copyright 2016-2018 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/atoms.html>`_
 """

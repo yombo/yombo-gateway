@@ -8,11 +8,9 @@ Responsible for downloading and installing any modules as requested by the confi
    This library is not intended to be accessed by developers or users. These functions, variables,
     and classes **should not** be accessed directly by modules. These are documented here for completeness.
 
-
 .. note::
 
-  For more information see: `Download Modules @ Module Development <https://yombo.net/docs/libraries/download_modules>`_
-
+  * For library documentation, see: `Download Modules @ Library Documentation <https://yombo.net/docs/libraries/download_modules>`_
 
 It compares the 'modules' table for columns prod_version and dev_version table
 against 'gitmodules' table.  If the version are the same, then nothing

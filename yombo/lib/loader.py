@@ -1,11 +1,9 @@
 # This file was created by Yombo for use with Yombo Python Gateway automation
 # software.  Details can be found at https://yombo.net
 """
-
 .. note::
 
-  For more information see: `Loader @ Module Development <https://yombo.net/docs/libraries/loader>`_
-
+  * For library documentation, see: `Loader @ Library Documentation <https://yombo.net/docs/libraries/loader>`_
 
 Responsible for importing, starting, and stopping all libraries and modules.
 
@@ -35,7 +33,7 @@ Stops components in the following phases. Modules first, then libraries.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2012-2016 by Yombo.
+:copyright: Copyright 2012-2018 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/loader.html>`_
 """

@@ -1,4 +1,9 @@
 """
+.. note::
+
+  * End user documentation: `Scenes @ User Documentation <https://yombo.net/docs/gateway/web_interface/scenes>`_
+  * For library documentation, see: `Scenes @ Library Documentation <https://yombo.net/docs/libraries/scenes>`_
+
 Allows users to create scenes. The devices can be local devices or a device
 on another gateway that is apart of the cluster.
 

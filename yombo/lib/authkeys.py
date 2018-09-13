@@ -1,14 +1,15 @@
 """
 .. note::
 
-  For more information see: `Hash @ Module Development <https://yombo.net/docs/libraries/cache>`_
+  * End user documentation: `Auth Keys @ User Documentation <https://yombo.net/docs/gateway/web_interface/auth_keys>`_
+  * For library documentation, see: `Auth Keys @ Library Documentation <https://yombo.net/docs/libraries/auth_keys>`_
 
 Handles auth key items for the webinterface. Auth keys can be used in place of a username/password
 for scripts.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2017 by Yombo.
+:copyright: Copyright 2017-2018 by Yombo.
 :license: LICENSE for details.
 """
 # Import python libraries
