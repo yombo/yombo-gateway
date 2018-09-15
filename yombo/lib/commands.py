@@ -243,16 +243,16 @@ class Commands(YomboLibrary):
                 yield global_invoke_all('_command_loaded_',
                                         called_by=self,
                                         command_id=command_id,
-                                        command=command,
+                                        command=self.commands[command_id],
                                         )
             except Exception as e:
                 pass
-        elif command_id not in self.commands:
+        elif command_id in self.commands:
             try:
                 yield global_invoke_all('_command_before_update_',
                                         called_by=self,
                                         command_id=command_id,
-                                        command=command,
+                                        command=self.commands[command_id],
                                         )
             except Exception as e:
                 pass
@@ -262,7 +262,7 @@ class Commands(YomboLibrary):
                 yield global_invoke_all('_command_updated_',
                                         called_by=self,
                                         command_id=command_id,
-                                        command=command,
+                                        command=self.commands[command_id],
                                         )
             except Exception as e:
                 pass
