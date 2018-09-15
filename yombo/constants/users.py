@@ -445,7 +445,7 @@ SYSTEM_ROLES = {
         ]
     },
     'devices_enable': {
-        'label': 'Devices - Control',
+        'label': 'Devices - Enable',
         'description': 'Able to enable devices.',
         'permissions': [
             {
