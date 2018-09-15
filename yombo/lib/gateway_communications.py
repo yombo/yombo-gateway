@@ -679,7 +679,7 @@ class Gateway_Communications(YomboLibrary):
             try:
                 if component_name == 'atoms':
                     for name, value in message['payload'].items():
-                        self._Atoms.set_from_gateway_communications(name, value)
+                        self._Atoms.set_from_gateway_communications(name, value, self)
                 elif component_name == 'device_command':
                     self.incoming_data_device_command(source_mqtt_id, message)
                 elif component_name == 'device_command_status':
@@ -690,7 +690,7 @@ class Gateway_Communications(YomboLibrary):
                     self.incoming_data_notification(source_mqtt_id, message)
                 elif component_name == 'states':
                     for name, value in message['payload'].items():
-                        self._States.set_from_gateway_communications(name, value)
+                        self._States.set_from_gateway_communications(name, value, self)
                 elif component_name == 'gateway':
                     if opt1 == 'online':
                         self._Gateways.gateways[source_mqtt_id].com_status = 'online'
