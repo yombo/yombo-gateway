@@ -209,13 +209,13 @@ class ModuleUnitTest(YomboModule):
         :return:
         """
         #basic checks
-        self._States.set("module.unittest1", "letsdoit")
+        self._States.set("module.unittest1", "letsdoit", value_type='string', source=self)
         isLight_dynamic = self._States.get2("module.unittest1")
         self.assertIsEqual("letsdoit", self._States['module.unittest1'], "Get states as dictionary")
         self.assertIsEqual("letsdoit", self._States.get('module.unittest1'), "Get states as function")
         self.assertIsEqual("letsdoit", isLight_dynamic(), "Get states as with dynamic get2")
 
-        self._States.set("module.unittest1", "letsdoit2")
+        self._States.set("module.unittest1", "letsdoit2", value_type='string', source=self)
         self.assertIsEqual("letsdoit2", self._States['module.unittest1'], "Get states as dictionary")
         self.assertIsEqual("letsdoit2", self._States.get('module.unittest1'), "Get states as dictionary and function")
         self.assertIsEqual("letsdoit2", isLight_dynamic(), "Get states as dictionary and function")

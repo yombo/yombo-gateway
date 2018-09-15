@@ -420,7 +420,7 @@ class States(YomboLibrary, object):
 
         :param key: Name of state to set.
         :param value: Value to set state to. Can be string, list, or dictionary.
-        :param value_type: If set, allows a human filter to be applied for display.
+        :param value_type: If set, allows a human filter to be applied for proper display.
         :param callback: If this a living state, provide a callback to be called to get value. Value will be used
           to set the initial value.
         :param arguments: kwarg (arguments) to send to callback.

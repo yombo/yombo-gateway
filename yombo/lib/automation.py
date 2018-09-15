@@ -813,7 +813,7 @@ class Automation(YomboLibrary):
                         pass
 
             elif action_type == "state":
-                self._States.set(action['name'], action['value'])
+                self._States.set(action['name'], action['value'], source=self)
 
             elif action_type == "template":
                 try:

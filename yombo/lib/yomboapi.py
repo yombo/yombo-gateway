@@ -53,7 +53,7 @@ class YomboAPI(YomboLibrary):
 
     @valid_api_auth.setter
     def valid_api_auth(self, val):
-        return self._States.set('yomboapi.valid_api_key', val)
+        return self._States.set('yomboapi.valid_api_key', val, value_type='bool', source=self)
 
     @property
     def api_auth(self):

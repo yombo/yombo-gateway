@@ -146,7 +146,7 @@ class Times(YomboLibrary, object):
 
     @is_moon_visible.setter
     def is_moon_visible(self, val):
-        self._States.set('is.moonvisible', val, 'bool')
+        self._States.set('is.moonvisible', val, value_type='bool', source=self)
         self.__is_moon_visible = val
         self._Statistics.datapoint("lib.times.is_moonvisible", is_one_zero(val))
 
@@ -156,7 +156,7 @@ class Times(YomboLibrary, object):
 
     @is_sun_visible.setter
     def is_sun_visible(self, val):
-        self._States.set('is.sunvisible', val, 'bool')
+        self._States.set('is.sunvisible', val, value_type='bool', source=self)
         self.__is_sun_visible = val
         # print("is sun visable: %s" % val)
         self._Statistics.datapoint("lib.times.is_sunvisible", is_one_zero(val))
@@ -167,7 +167,7 @@ class Times(YomboLibrary, object):
 
     @is_twilight.setter
     def is_twilight(self, val):
-        self._States.set('is.twilight', val, 'bool')
+        self._States.set('is.twilight', val, value_type='bool', source=self)
         self.__is_twilight = val
         self._Statistics.datapoint("lib.times.is_twilight", is_one_zero(val))
 
@@ -177,7 +177,7 @@ class Times(YomboLibrary, object):
 
     @is_twilight.setter
     def is_twilight(self, val):
-        self._States.set('is.twilight', val, 'bool')
+        self._States.set('is.twilight', val, value_type='bool', source=self)
         self.__is_twilight = val
         self._Statistics.datapoint("lib.times.is_twilight", is_one_zero(val))
 
@@ -187,7 +187,7 @@ class Times(YomboLibrary, object):
 
     @is_light.setter
     def is_light(self, val):
-        self._States.set('is.light', val, 'bool')
+        self._States.set('is.light', val, value_type='bool', source=self)
         self.__is_light = val
         self._Statistics.datapoint("lib.times.is_light", is_one_zero(val))
 
@@ -197,7 +197,7 @@ class Times(YomboLibrary, object):
 
     @is_dark.setter
     def is_dark(self, val):
-        self._States.set('is.dark', val, 'bool')
+        self._States.set('is.dark', val, value_type='bool', source=self)
         self.__is_dark = val
         self._Statistics.datapoint("lib.times.is_dark", is_one_zero(val))
 
@@ -207,7 +207,7 @@ class Times(YomboLibrary, object):
 
     @is_day.setter
     def is_day(self, val):
-        self._States.set('is.day', val, 'bool')
+        self._States.set('is.day', val, value_type='bool', source=self)
         self.__is_day = val
         self._Statistics.datapoint("lib.times.is_day", is_one_zero(val))
 
@@ -217,7 +217,7 @@ class Times(YomboLibrary, object):
 
     @is_night.setter
     def is_night(self, val):
-        self._States.set('is.night', val, 'bool')
+        self._States.set('is.night', val, value_type='bool', source=self)
         self.__is_night = val
         self._Statistics.datapoint("lib.times.is_night", is_one_zero(val))
 
@@ -227,7 +227,7 @@ class Times(YomboLibrary, object):
 
     @is_dawn.setter
     def is_dawn(self, val):
-        self._States.set('is.dawn', val, 'bool')
+        self._States.set('is.dawn', val, value_type='bool', source=self)
         self.__is_dawn = val
         self._Statistics.datapoint("lib.times.is_dawn", is_one_zero(val))
 
@@ -237,7 +237,7 @@ class Times(YomboLibrary, object):
 
     @is_dusk.setter
     def is_dusk(self, val):
-        self._States.set('is.dusk', val, 'bool')
+        self._States.set('is.dusk', val, value_type='bool', source=self)
         self.__is_dusk = val
         self._Statistics.datapoint("lib.times.is_dusk", is_one_zero(val))
 
@@ -247,7 +247,7 @@ class Times(YomboLibrary, object):
 
     @is_weekend.setter
     def is_weekend(self, val):
-        self._States.set('is.weekend', val, 'bool')
+        self._States.set('is.weekend', val, value_type='bool', source=self)
         self.__is_weekend = val
 
     @property
@@ -256,7 +256,7 @@ class Times(YomboLibrary, object):
 
     @is_weekday.setter
     def is_weekday(self, val):
-        self._States.set('is.weekday', val, 'bool')
+        self._States.set('is.weekday', val, value_type='bool', source=self)
         self.__is_weekday = val
 
     @property
@@ -265,7 +265,7 @@ class Times(YomboLibrary, object):
 
     @day_of_week.setter
     def day_of_week(self, val):
-        self._States.set('day_of_week', val, 'string')
+        self._States.set('day_of_week', val, value_type='string', source=self)
         self.__day_of_week = val
 
     @property
@@ -276,11 +276,11 @@ class Times(YomboLibrary, object):
     def next_day(self, val):
         if '__next_day' in locals():
             if val != self.__next_day:
-                self._States.set('next.day', int(round(val)), 'epoch')
+                self._States.set('next.day', int(round(val)), value_type='epoch', source=self)
                 self.__next_day = val
         else:
             self.__next_day = val
-            self._States.set('next.day', int(round(val)), 'epoch')
+            self._States.set('next.day', int(round(val)), value_type='epoch', source=self)
 
     @property
     def next_night(self):
@@ -290,11 +290,11 @@ class Times(YomboLibrary, object):
     def next_night(self, val):
         if '__next_night' in locals():
             if val != self.__next_night:
-                self._States.set('next.night', int(round(val)), 'epoch')
+                self._States.set('next.night', int(round(val)), value_type='epoch', source=self)
                 self.__next_night = val
         else:
             self.__next_night = val
-            self._States.set('next.night', int(round(val)), 'epoch')
+            self._States.set('next.night', int(round(val)), value_type='epoch', source=self)
 
     @property
     def next_light(self):
@@ -304,11 +304,11 @@ class Times(YomboLibrary, object):
     def next_light(self, val):
         if '__next_light' in locals():
             if val != self.__next_light:
-                self._States.set('next.light', int(round(val)), 'epoch')
+                self._States.set('next.light', int(round(val)), value_type='epoch', source=self)
                 self.__next_light = val
         else:
             self.__next_light = val
-            self._States.set('next.light', int(round(val)), 'epoch')
+            self._States.set('next.light', int(round(val)), value_type='epoch', source=self)
 
     @property
     def next_dark(self):
@@ -318,11 +318,11 @@ class Times(YomboLibrary, object):
     def next_dark(self, val):
         if '__next_dark' in locals():
             if val != self.__next_dark:
-                self._States.set('next.dark', int(round(val)), 'epoch')
+                self._States.set('next.dark', int(round(val)), value_type='epoch', source=self)
                 self.__next_dark = val
         else:
             self.__next_dark = val
-            self._States.set('next.dark', int(round(val)), 'epoch')
+            self._States.set('next.dark', int(round(val)), value_type='epoch', source=self)
 
     @property
     def next_wilight_start(self):
@@ -332,11 +332,11 @@ class Times(YomboLibrary, object):
     def next_wilight_start(self, val):
         if '__next_wilight_start' in locals():
             if val != self.__next_wilight_start:
-                self._States.set('next.twilightstart', int(round(val)), 'epoch')
+                self._States.set('next.twilightstart', int(round(val)), value_type='epoch', source=self)
                 self.__next_wilight_start = val
         else:
             self.__next_wilight_start = val
-            self._States.set('next.twilightstart', int(round(val)), 'epoch')
+            self._States.set('next.twilightstart', int(round(val)), value_type='epoch', source=self)
 
     @property
     def next_twilight_end(self):
@@ -346,11 +346,11 @@ class Times(YomboLibrary, object):
     def next_twilight_end(self, val):
         if '__next_twilight_end' in locals():
             if val != self.__next_twilight_end:
-                self._States.set('next.twilightend', int(round(val)), 'epoch')
+                self._States.set('next.twilightend', int(round(val)), value_type='epoch', source=self)
                 self.__next_twilight_end = val
         else:
             self.__next_twilight_end = val
-            self._States.set('next.twilightend', int(round(val)), 'epoch')
+            self._States.set('next.twilightend', int(round(val)), value_type='epoch', source=self)
 
     @property
     def next_sunrise(self):
@@ -360,11 +360,11 @@ class Times(YomboLibrary, object):
     def next_sunrise(self, val):
         if '__next_sunrise' in locals():
             if val != self.__next_sunrise:
-                self._States.set('next.sunrise', int(round(val)), 'epoch')
+                self._States.set('next.sunrise', int(round(val)), value_type='epoch', source=self)
                 self.__next_sunrise = val
         else:
             self.__next_sunrise = val
-            self._States.set('next.sunrise', int(round(val)), 'epoch')
+            self._States.set('next.sunrise', int(round(val)), value_type='epoch', source=self)
 
     @property
     def next_sunset(self, val):
@@ -374,10 +374,10 @@ class Times(YomboLibrary, object):
     def next_sunset(self, val):
         if '__next_sunset' in locals():
             if val != self.__next_sunset:
-                self._States.set('next.sunset', int(round(val)), 'epoch')
+                self._States.set('next.sunset', int(round(val)), value_type='epoch', source=self)
                 self.__next_sunset = val
         else:
-            self._States.set('next.sunset', int(round(val)), 'epoch')
+            self._States.set('next.sunset', int(round(val)), value_type='epoch', source=self)
             self.__next_sunset = val
 
     @property
@@ -388,10 +388,10 @@ class Times(YomboLibrary, object):
     def next_moonrise(self, val):
         if '__moonRise' in locals():
             if val != self.__moonRise:
-                self._States.set('next.moonrise', int(round(val)), 'epoch')
+                self._States.set('next.moonrise', int(round(val)), value_type='epoch', source=self)
                 self.__moonRise = val
         else:
-            self._States.set('next.moonrise', int(round(val)), 'epoch')
+            self._States.set('next.moonrise', int(round(val)), value_type='epoch', source=self)
             self.__moonRise = val
 
     @property
@@ -402,10 +402,10 @@ class Times(YomboLibrary, object):
     def next_moonset(self, val):
         if '__moonSet' in locals():
             if val != self.__moonSet:
-                self._States.set('next.moonset', int(round(val)), 'epoch')
+                self._States.set('next.moonset', int(round(val)), value_type='epoch', source=self)
                 self.__moonSet = val
         else:
-            self._States.set('next.moonset', int(round(val)), 'epoch')
+            self._States.set('next.moonset', int(round(val)), value_type='epoch', source=self)
             self.__moonSet = val
 
     # Functions dealing with celestial objects

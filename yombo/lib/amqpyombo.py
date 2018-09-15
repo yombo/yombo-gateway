@@ -70,11 +70,11 @@ class AMQPYombo(YomboLibrary):
     """
     @property
     def connected(self):
-        return self._States.get('amqp.amqpyombo.state', None)
+        return self._States.get('amqp.amqpyombo.state')
 
     @connected.setter
     def connected(self, val):
-        return self._States.set('amqp.amqpyombo.state', val)
+        return self._States.set('amqp.amqpyombo.state', val, value_type='bool', source=self)
 
     def __str__(self):
         """

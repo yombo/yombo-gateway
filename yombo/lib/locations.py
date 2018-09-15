@@ -151,20 +151,34 @@ class Locations(YomboLibrary):
 
         location_info = self._Configs.location_info
         if location_info['ip'] is not None:
-            self._States.set('detected_location.source', location_info['source'], 'string')
-            self._States.set('detected_location.ip', location_info['ip'], 'string')
-            self._States.set('detected_location.country_code', location_info['country_code'], 'string')
-            self._States.set('detected_location.country_name', location_info['country_name'], 'string')
-            self._States.set('detected_location.region_code', location_info['region_code'], 'string')
-            self._States.set('detected_location.region_name', location_info['region_name'], 'string')
-            self._States.set('detected_location.city', location_info['city'], 'string')
-            self._States.set('detected_location.zip_code', location_info['zip_code'], 'string')
-            self._States.set('detected_location.time_zone', location_info['time_zone'], 'string')
-            self._States.set('detected_location.latitude', location_info['latitude'], 'float')
-            self._States.set('detected_location.longitude', location_info['longitude'], 'float')
-            self._States.set('detected_location.elevation', location_info['elevation'], 'int')
-            self._States.set('detected_location.isp', location_info['isp'], 'string')
-            self._States.set('detected_location.use_metric', location_info['use_metric'], 'bool')
+            self._States.set('detected_location.source', location_info['source'],
+                             value_type='string', source=self)
+            self._States.set('detected_location.ip', location_info['ip'],
+                             value_type='string', source=self)
+            self._States.set('detected_location.country_code', location_info['country_code'],
+                             value_type='string', source=self)
+            self._States.set('detected_location.country_name', location_info['country_name'],
+                             value_type='string', source=self)
+            self._States.set('detected_location.region_code', location_info['region_code'],
+                             value_type='string', source=self)
+            self._States.set('detected_location.region_name', location_info['region_name'],
+                             value_type='string', source=self)
+            self._States.set('detected_location.city', location_info['city'],
+                             value_type='string', source=self)
+            self._States.set('detected_location.zip_code', location_info['zip_code'],
+                             value_type='string', source=self)
+            self._States.set('detected_location.time_zone', location_info['time_zone'],
+                             value_type='string', source=self)
+            self._States.set('detected_location.latitude', location_info['latitude'],
+                             value_type='float', source=self)
+            self._States.set('detected_location.longitude', location_info['longitude'],
+                             value_type='float', source=self)
+            self._States.set('detected_location.elevation', location_info['elevation'],
+                             value_type='int', source=self)
+            self._States.set('detected_location.isp', location_info['isp'],
+                             value_type='string', source=self)
+            self._States.set('detected_location.use_metric', location_info['use_metric'],
+                             value_type='bool', source=self)
 
             data = {
                 'latitude': float(self._Configs.get('location', 'latitude', location_info['latitude'], False)),
@@ -188,20 +202,20 @@ class Locations(YomboLibrary):
                                           location_info['country_code'])
                 self._Configs.set('location', 'searchbox', searchbox)
         else:
-            self._States.set('detected_location.source', None)
-            self._States.set('detected_location.ip', None)
-            self._States.set('detected_location.country_code', None)
-            self._States.set('detected_location.country_name', None)
-            self._States.set('detected_location.region_code', None)
-            self._States.set('detected_location.region_name', None)
-            self._States.set('detected_location.city', None)
-            self._States.set('detected_location.zip_code', None)
-            self._States.set('detected_location.time_zone', None)
-            self._States.set('detected_location.latitude', None)
-            self._States.set('detected_location.longitude', None)
-            self._States.set('detected_location.isp', None)
-            self._States.set('detected_location.elevation', 800, 'int')
-            self._States.set('detected_location.use_metric', True, 'bool')
+            self._States.set('detected_location.source', None, source=self)
+            self._States.set('detected_location.ip', None, source=self)
+            self._States.set('detected_location.country_code', None, source=self)
+            self._States.set('detected_location.country_name', None, source=self)
+            self._States.set('detected_location.region_code', None, source=self)
+            self._States.set('detected_location.region_name', None, source=self)
+            self._States.set('detected_location.city', None, source=self)
+            self._States.set('detected_location.zip_code', None, source=self)
+            self._States.set('detected_location.time_zone', None, source=self)
+            self._States.set('detected_location.latitude', None, source=self)
+            self._States.set('detected_location.longitude', None, source=self)
+            self._States.set('detected_location.isp', None, source=self)
+            self._States.set('detected_location.elevation', 800, value_type='int', source=self)
+            self._States.set('detected_location.use_metric', True, value_type='bool', source=self)
 
     @inlineCallbacks
     def _load_locations_from_database(self):
