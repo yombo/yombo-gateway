@@ -441,12 +441,7 @@ class States(YomboLibrary, object):
         if gateway_id not in self.states:
             self.states[gateway_id] = {}
 
-        source_label = None
-        if source is not None:
-            source_type = get_yombo_instance_type(source)
-            if source_type is False:
-                source = None
-            source_label = source._FullName
+        source_type, source_label = get_yombo_instance_type(source)
 
         try:
             yield global_invoke_all('_states_preset_',
@@ -576,12 +571,7 @@ class States(YomboLibrary, object):
             return
         if gateway_id not in self.states:
             self.states[gateway_id] = {}
-        source_label = None
-        if source is not None:
-            source_type = yombo.utils.get_yombo_instance_type(source)
-            if source_type is False:
-                source = None
-            source_label = source._FullName
+        source_type, source_label = get_yombo_instance_type(source)
 
         self.states[data['gateway_id']][key] = {
             'gateway_id': data['gateway_id'],

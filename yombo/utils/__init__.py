@@ -63,14 +63,11 @@ def get_yombo_instance_type(value):
     :param value: An instance of some sort. Returns False if it's not a Yombo instance.
     :return:
     """
-    value_type = None
     if isinstance(value, YomboLibrary):
-        value_type = 'library'
+        return 'library', value._FullName
     elif isinstance(value, YomboModule):
-        value_type = 'module'
-    else:
-        return False
-    return value_type
+        return 'module', value._FullName
+    return None, None
 
 def set_twisted_logger(the_logger):
     """

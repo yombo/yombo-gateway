@@ -408,12 +408,7 @@ class Atoms(YomboLibrary):
         if gateway_id not in self.atoms:
             self.atoms[gateway_id] = {}
 
-        source_label = None
-        if source is not None:
-            source_type = yombo.utils.get_yombo_instance_type(source)
-            if source_type is False:
-                source = None
-            source_label = source._FullName
+        source_type, source_label = yombo.utils.get_yombo_instance_type(source)
 
         search_chars = ['#', '+']
         if any(s in key for s in search_chars):
@@ -473,12 +468,7 @@ class Atoms(YomboLibrary):
             return
         if gateway_id not in self.atoms:
             self.atoms[gateway_id] = {}
-        source_label = None
-        if source is not None:
-            source_type = yombo.utils.get_yombo_instance_type(source)
-            if source_type is False:
-                source = None
-            source_label = source._FullName
+        source_type, source_label = yombo.utils.get_yombo_instance_type(source)
         self.atoms[data['gateway_id']][key] = {
             'gateway_id': data['gateway_id'],
             'value': data['value'],
