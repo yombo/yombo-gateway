@@ -14,7 +14,7 @@ yombo.ini and it's matching meta data.
 import configparser
 import os
 from shutil import copy2 as copyfile
-from time import time, localtime, strftime
+from time import localtime, strftime
 
 # Import Yombo libraries
 from yombo.utils import is_string_bool
