@@ -271,11 +271,11 @@ class MQTT(YomboLibrary):
         yield self.check_mqtt_broker_running()
         if self.mosquitto_running is False:
             yield self.start_mqtt_broker()
-            logger.info("Sleeping for 2 seconds while MQTT broker starts up.")
-            yield sleep(2)
+            logger.info("Sleeping for 3 seconds while MQTT broker starts up.")
+            yield sleep(3)
             if self.mosquitto_running is False:
-                logger.error("MQTT failed to start!")
-                raise YomboCritical("MQTT failed to start, shutting down.")
+                logger.error("Cannot connect to MQTT broker.")
+                raise YomboCritical("MQTT failed to connect and/or start, shutting down.")
 
     @inlineCallbacks
     def _unload_(self, **kwargs):
