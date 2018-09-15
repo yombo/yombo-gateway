@@ -626,8 +626,10 @@ class Configuration(YomboLibrary):
         .. code-block:: python
 
            gw_label = self._Config.get2("core", "label", "Default Value")
-           logger.info("The Gateway Label is: {label}", label=gw_label)
-           # set a new label.  Don't really ever do this.
+
+           logger.info("The Gateway Label is: {label}", label=gw_label())
+
+           # To set a new value, this shortcut would work too:
            gw_label(set="New label")
 
         .. versionadded:: 0.13.0
