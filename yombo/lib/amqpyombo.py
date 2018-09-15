@@ -122,7 +122,6 @@ class AMQPYombo(YomboLibrary):
 
     @inlineCallbacks
     def _load_(self, **kwargs):
-        # print("################# about to process_amqpyombo_options")
         results = yield global_invoke_all('_amqpyombo_options_', called_by=self)
         for component_name, data in results.items():
             if 'connected' in data:
