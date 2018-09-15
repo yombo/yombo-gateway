@@ -195,7 +195,7 @@ class Users(YomboLibrary):
         user_roles = self._Configs.get('rbac_roles', '*', {}, False)
         for role_id, role_data_raw in user_roles.items():
             role_data = data_unpickle(role_data_raw, encoder='msgpack_base64')
-            self.roles[machine_label] = self.add_role(role_data, source="user")
+            self.roles[role_data['label']] = self.add_role(role_data, source="user")
 
     @inlineCallbacks
     def load_users(self):
