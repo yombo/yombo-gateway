@@ -281,13 +281,13 @@ class Atoms(YomboLibrary):
 
         self.triggers = {}
         # self._Automation = self._Libraries['automation']
-        self.set('working_dir', settings.arguments['working_dir'])
-        self.set('app_dir', settings.arguments['app_dir'] )
+        self.set('working_dir', settings.arguments['working_dir'], source=self)
+        self.set('app_dir', settings.arguments['app_dir'], source=self)
 
     def _load_(self, **kwargs):
         self._loaded = True
         self.library_state = 2
-        self.set('running_since', time())
+        self.set('running_since', time(), source=self)
         self._loaded = True
 
     def _start_(self, **kwargs):
@@ -390,6 +390,14 @@ class Atoms(YomboLibrary):
         :type key: string
         :param value: Value to set the atom to.
         :type value: mixed
+        :param value_type: Data type to help with display formatting. Should be: str, dict, list, int, float, epoch
+        :type value_type: string
+        :param gateway_id: Gateway ID this atom belongs to, defaults to local gateway.
+        :type gateway_id: string
+        :param human_value: What to display to mere mortals.
+        :type human_value: mixed
+        :param source: Reference to the library or module settings this atom.
+        :type source: object
         :return: Value of atom
         :rtype: mixed
         """
@@ -399,6 +407,13 @@ class Atoms(YomboLibrary):
 
         if gateway_id not in self.atoms:
             self.atoms[gateway_id] = {}
+
+        source_label = None
+        if source is not None:
+            source_type = yombo.utils.get_yombo_instance_type(source)
+            if source_type is False:
+                source = None
+            source_label = source._FullName
 
         search_chars = ['#', '+']
         if any(s in key for s in search_chars):
@@ -422,6 +437,7 @@ class Atoms(YomboLibrary):
             }
             self._Statistics.increment("lib.atoms.set.new", bucket_size=60, anon=True)
 
+        self.atoms[gateway_id][key]['source'] = source_label
 
         self.atoms[gateway_id][key]['value'] = value
         if is_new is True or value_type is not None:
@@ -437,13 +453,15 @@ class Atoms(YomboLibrary):
                                             called_by=self,
                                             key=key,
                                             value=value,
+                                            value_type=value_type,
                                             value_full=self.atoms[gateway_id][key],
                                             gateway_id=gateway_id,
                                             source=source,
+                                            source_label=source_label,
                                             )
 
     @inlineCallbacks
-    def set_from_gateway_communications(self, key, data):
+    def set_from_gateway_communications(self, key, data, source):
         """
         Used by the gateway coms (mqtt) system to set atom values.
         :param key:
@@ -455,11 +473,18 @@ class Atoms(YomboLibrary):
             return
         if gateway_id not in self.atoms:
             self.atoms[gateway_id] = {}
+        source_label = None
+        if source is not None:
+            source_type = yombo.utils.get_yombo_instance_type(source)
+            if source_type is False:
+                source = None
+            source_label = source._FullName
         self.atoms[data['gateway_id']][key] = {
             'gateway_id': data['gateway_id'],
             'value': data['value'],
             'value_human': data['value_human'],
             'value_type': data['value_type'],
+            'source': source_label,
             'created_at': data['created_at'],
             'updated_at': data['updated_at'],
         }
@@ -468,9 +493,11 @@ class Atoms(YomboLibrary):
                                             called_by=self,
                                             key=key,
                                             value=data['value'],
+                                            value_type=data['value_type'],
                                             value_full=self.atoms[gateway_id][key],
                                             gateway_id=gateway_id,
-                                            source='gateway_coms',
+                                            source=source,
+                                            source_label=source_label,
                                             )
 
     def convert_to_human(self, value, value_type):
@@ -560,5 +587,5 @@ class Atoms(YomboLibrary):
             atoms['os'] = atoms['kernel']
 
         for name, value in atoms.items():
-            self.set(name, value)
+            self.set(name, value, source=self)
         return atoms

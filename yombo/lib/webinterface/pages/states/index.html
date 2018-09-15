@@ -69,7 +69,7 @@
                                     <tr><th>Name</th><th>Value</th><th>Last Updated</th><th>Description</th></tr>
                                     </tr>
                                 </thead>
-                                <tbody>{% for gateway_id, gateway_states in _states._States__States.items() if gateway_id == 'cluster' %}
+                                <tbody>{% for gateway_id, gateway_states in _states.states.items() if gateway_id == 'cluster' %}
                                         {% for state_name, state in gateway_states.items()%}
                                      <tr>
                                          <td><a href="/states/{{state.gateway_id}}/{{ state_name }}/details">{{ state_name }}</a></td>
@@ -90,7 +90,7 @@
                                     <tr><th>Gateway</th><th>Name</th><th>Value</th><th>Last Updated</th><th>Description</th></tr>
                                     </tr>
                                 </thead>
-                                <tbody>{% for gateway_id, gateway_states in _states._States__States.items()
+                                <tbody>{% for gateway_id, gateway_states in _states.states.items()
                                            if gateway_id != _local_gateway.gateway_id and gateway_id != 'cluster'%}
                                         {% for state_name, state in gateway_states.items()%}
                                      <tr>

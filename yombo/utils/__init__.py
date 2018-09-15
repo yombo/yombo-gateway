@@ -48,12 +48,29 @@ from twisted.internet.fdesc import readFromFD, writeToFD, setNonBlocking
 from yombo.ext.hashids import Hashids
 
 # Import Yombo libraries
+from yombo.core.library import YomboLibrary
+from yombo.core.module import YomboModule
 from yombo.core.exceptions import YomboWarning
 from yombo.utils.decorators import cached, memoize_
 import yombo.ext.base62 as base62
 
 logger = None  # This is set by the set_twisted_logger function.
 
+def get_yombo_instance_type(value):
+    """
+    Determine what type of Yombo instance is being since, it's it name.
+
+    :param value: An instance of some sort. Returns False if it's not a Yombo instance.
+    :return:
+    """
+    value_type = None
+    if isinstance(value, YomboLibrary):
+        value_type = 'library'
+    elif isinstance(value, YomboModule):
+        value_type = 'module'
+    else:
+        return False
+    return value_type
 
 def set_twisted_logger(the_logger):
     """
