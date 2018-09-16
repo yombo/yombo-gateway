@@ -395,7 +395,8 @@ class YomboAPI(YomboLibrary):
             else:
                 html_message = phrase
 
-            raise YomboWarning(message, code, 'decode_results', 'Yomboapi', html_message=html_message)
+            print("raising with details.....")
+            raise YomboWarning(message, code, 'decode_results', 'Yomboapi', html_message=html_message, details=content)
         results = {
             'status': 'ok',
             'content': content,
@@ -407,7 +408,7 @@ class YomboAPI(YomboLibrary):
 
         if content_type == "string":
             logger.warn("Error content: {content}", content=content)
-            raise YomboWarning('Unknown api error', content['code'], html_message='Unknown api error')
+            raise YomboWarning('Unknown api error', content['code'], html_message='Unknown api error', details=content)
         else:
             if 'response' in content:
                 if 'locator' in content['response']:
