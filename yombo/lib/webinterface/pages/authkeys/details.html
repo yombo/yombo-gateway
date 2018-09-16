@@ -8,10 +8,10 @@
 <div class="row">
     <div class="col-lg-12">
         <h1 class="page-header">
-            <a class="success" href="/authkey/index" aria-label="Delete"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
+            <a class="success" href="/authkeys/index" aria-label="Delete"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
             Auth Key Information<br>
-            <a class="btn btn-md btn-primary" href="/authkey/{{authkey.auth_id}}/edit">Edit Auth Key</a>
-            <a class="btn btn-md btn-danger" href="/authkey/{{authkey.auth_id}}/remove">Remove Auth Key</a>
+            <a class="btn btn-md btn-primary" href="/authkeys/{{authkey.auth_id}}/edit">Edit Auth Key</a>
+            <a class="btn btn-md btn-danger" href="/authkeys/{{authkey.auth_id}}/remove">Remove Auth Key</a>
         </h1>
         <p></p>
 
@@ -91,7 +91,7 @@
                             {% set role = _users.get_role(machine_label) %}
                             <li>
                                 <a href="/roles/{{role.role_id}}/details">{{ role.label }}</a>
-                                <a href="/authkey/{{authkey.label}}/unattach_role/{{role.role_id}}" class="btn btn-danger btn-xs" role="button">Remove</a>
+                                <a href="/authkeys/{{authkey.label}}/unattach_role/{{role.role_id}}" class="btn btn-danger btn-xs" role="button">Remove</a>
                             </li>
                             <ul style="padding-left: 15px">
                                 <li  style="padding-bottom: 5px">{{ role.description}}</li>
