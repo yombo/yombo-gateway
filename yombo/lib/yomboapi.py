@@ -100,7 +100,7 @@ class YomboAPI(YomboLibrary):
 
         :return:
         """
-        logger.info("About to validate api auth: %s" % self.api_auth)
+        logger.debug("About to validate api auth: %s" % self.api_auth)
 
         if self.api_auth is not None:
             results = yield self.do_check_api_auth_valid()
@@ -395,7 +395,6 @@ class YomboAPI(YomboLibrary):
             else:
                 html_message = phrase
 
-            print("raising with details.....")
             raise YomboWarning(message, code, 'decode_results', 'Yomboapi', html_message=html_message, details=content)
         results = {
             'status': 'ok',
