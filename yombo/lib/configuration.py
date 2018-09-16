@@ -282,7 +282,7 @@ class Configuration(YomboLibrary):
                     value = yield self._GPG.decrypt(value)
                 except:
                     pass
-                self.set(section, option, value)
+                self.set(section, option, value, ignore_case=True)
 
         logger.debug("done parsing yombo.ini. Now about to parse yombo.ini.info.")
         try:
