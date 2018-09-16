@@ -25,7 +25,7 @@ def route_api_v1_automation(webapp):
 
             try:
                 rule_id = request.args.get('rule_id')[0]
-                rule_id = webinterface._Validate.is_id_string(rule_id)
+                rule_id = webinterface._Validate.id_string(rule_id)
             except Exception:
                 return local_error("The 'rule_id' is required.")
             try:
