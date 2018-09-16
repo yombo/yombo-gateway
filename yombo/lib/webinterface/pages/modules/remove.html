@@ -11,7 +11,7 @@
                 <!-- /.col-lg-12 -->
             </div>
             <!-- /.row -->
-            <form method="post" id="devcedelete">
+            <form method="post" id="deviceremove">
 
             <div class="row">
                 <div class="col-lg-12">
@@ -33,7 +33,7 @@
                                     <input type="text" class="form-control" name="confirm" id="confirm" size="10" placeholder="remove" value="" required>
                                 </div>
                             <br>
-                            <a class="btn btn-md btn-success" href="/modules/details/{{module.module_id}}">Cancel (Do not remove)</a>
+                            <a class="btn btn-md btn-success" href="/modules/{{module.module_id}}/details">Cancel (Do not remove)</a>
                             <button type="submit" class="btn btn-danger">Remove Module</button>
                         </div>
                     </div>
@@ -42,22 +42,4 @@
             </div>
             </form>
             <!-- /.row -->
-{% endblock %}
-
-{% block body_bottom %}
-    <!-- Make the tables pretty -->
-    <script>
-$('.deviceCmd').click(function (event){
-     event.preventDefault();
-     $.ajax({
-        url: $(this).attr('href'),
-        dataType: 'json',
-        success: function(resp){
-            $("#cmdresult").html(resp.message);
-            $("#cmdresultmodal").modal('show');
-            setTimeout(function() {$('#cmdresultmodal').modal('hide');}, 2000);        }
-     })
-     return false; //for good measure
-});
-    </script>
 {% endblock %}
