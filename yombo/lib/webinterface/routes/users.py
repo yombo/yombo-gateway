@@ -236,7 +236,7 @@ def route_users(webapp):
 
         @webapp.route('/<string:user_id>/remove', methods=['GET'])
         @require_auth()
-        def page_modules_remove_get(webinterface, request, session, user_id):
+        def page_users_remove_get(webinterface, request, session, user_id):
             session.has_access('user', user_id, 'delete', raise_error=True)
             try:
                 user = webinterface._Users.get(user_id)
@@ -255,7 +255,7 @@ def route_users(webapp):
         @webapp.route('/<string:user_id>/remove', methods=['POST'])
         @require_auth()
         @inlineCallbacks
-        def page_modules_remove_post(webinterface, request, session, user_id):
+        def page_users_remove_post(webinterface, request, session, user_id):
             session.has_access('user', user_id, 'delete', raise_error=True)
             try:
                 user = webinterface._Users.get(user_id)

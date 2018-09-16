@@ -260,8 +260,8 @@ class Users(YomboLibrary):
             role_data['machine_label'] = machine_label
             self.roles[machine_label] = self.add_role(role_data, source="system")
 
-        user_roles = self._Configs.get('rbac_roles', '*', {}, False)
-        for role_id, role_data_raw in user_roles.items():
+        rbac_roles = self._Configs.get('rbac_roles', '*', {}, False, ignore_case=None)
+        for role_id, role_data_raw in rbac_roles.items():
             role_data = data_unpickle(role_data_raw, encoder='msgpack_base64')
             self.roles[role_data['label']] = self.add_role(role_data, source="user")
 
@@ -272,7 +272,7 @@ class Users(YomboLibrary):
         for user in db_users:
             self.users[user.email] = User(self, user.__dict__)
 
-    def add_role(self, data, source=None):
+    def add_role(self, data, source=None, no_save=None):
         """
         Add a new possible role to the system.
 
@@ -291,12 +291,16 @@ class Users(YomboLibrary):
             data['description'] = machine_label
         if 'permissions' not in data:
             data['permissions'] = []
+        if 'saved_permissions' not in data:
+            data['saved_permissions'] = None
         self.roles[machine_label] = Role(self,
                                          machine_label=machine_label,
                                          label=data['label'],
                                          description=data['description'],
                                          source=source,
-                                         permissions=data['permissions'])
+                                         permissions=data['permissions'],
+                                         saved_permissions=data['saved_permissions'],
+                                         )
         return self.roles[machine_label]
 
     def add_permission_to_role(self, machine_label, permission):
@@ -514,7 +518,6 @@ class Users(YomboLibrary):
 
         :return: Boolean
         """
-        print("user:has_access starting....")
         def return_access(value):
             if value is True:
                 return True
