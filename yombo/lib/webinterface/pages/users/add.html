@@ -33,18 +33,18 @@
                     <a href="#" data-toggle="modal" data-target="#userid">
                         <i class="fa fa-question fa-lg"></i></a>
                     {{ macros.modal("userid", 'User ID / Email', '
-                    <p>The user must already be registered on My.Yombo.net. Enter their user id or
+                    <p>The user must already be registered on https://My.Yombo.net. Enter their user id or
                     email address to search for the user.</p>') }}
                     <br>
                     <div class="input-group">
                         <input tabindex="1" type="text" class="form-control" name="user_requested" id="user_requested"
-                               size="40" placeholder="'scene_name', 'scenename'" value="{{ last_search }}"
+                               size="40" placeholder="'email address', 'user id'" value="{{ last_search }}"
                                autofocus required>
                     </div>
                 </div>
 
                 <a class="btn btn-md btn-danger" href="/users/index">Cancel</a>
-                <button type="submit" class="btn btn-success">Search for user</button>
+                <button type="submit" class="btn btn-success">Add user</button>
             </div>
         </div>
         <!-- /.panel-body -->

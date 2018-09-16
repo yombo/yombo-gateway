@@ -139,6 +139,7 @@ class Users(YomboLibrary):
     def _init_(self, **kwargs):
         self.roles: dict = {}
         self.users: dict = {}
+        self.gateway_id = self._Configs.get('core', 'gwid', 'local', False)
         self.owner_id = self._Configs.get('core', 'owner_id', None, False)
         self.owner_user = None
         self.platforms = []  # list of possible/known access platforms
@@ -175,16 +176,83 @@ class Users(YomboLibrary):
             self.owner_user = self.get(self.owner_id)
             self.owner_user.attach_role('admin')
 
-    def add_user(self, new_user):
+    @inlineCallbacks
+    def api_search_user(self, requested_user, session=None):
         """
-        Primarily called by the users.py web interface routes to add a new user.
+        Search for user using the Yombo API. Must supply a user_id or user email address. If found returns
+        a dictionary with the keys of: 'id', 'name', and 'email'.
 
-        :param new_user:
-        :param roles:
+        :param requested_user: The email address to search for.
+        :param session: Session to use, if available.
         :return:
         """
-        self.users[new_user['email']] = User(self, new_user)
-        # self.users[new_user['email']].sync_user_to_db()
+        try:
+            search_results = yield self._YomboAPI.request('GET',
+                                                          '/v1/user/%s' % requested_user,
+                                                          None,
+                                                          session)
+        except YomboWarning as e:
+            raise YomboWarning("User not found: %s" % requested_user)
+        return search_results['data']
+
+    @inlineCallbacks
+    def add_user(self, requested_user_id, session=None):
+        """
+        Adds a new user to the system using the user's id. The user id  can be found using
+        :py:meth:`api_search_user() <api_search_user>`.
+
+        This function will make a call the the Yombo API to add the user, if successful, adds
+        the user to memory as well. The database isn't updated, it will be updated on next reboot
+        when it pulls configs from the servers.
+
+        :param requested_user:
+        :return:
+        """
+        data = {
+            'user_id': requested_user_id,
+        }
+        try:
+            add_results = yield self._YomboAPI.request('POST',
+                                                       '/v1/gateway/%s/user' % self.gateway_id,
+                                                       data,
+                                                       session)
+        except YomboWarning as e:
+            raise YomboWarning("Could not add user to gateway: %s" % e.message[0],
+                               html_message="Could not add user to gateway: %s" % e.html_message,
+                               details=e.details)
+
+        add_results['data']['id'] = add_results['data']['user_id']
+        self.users[add_results['data']['email']] = User(self, add_results['data'])
+        # self.users[add_results['data']['email']].sync_user_to_db()
+
+    @inlineCallbacks
+    def remove_user(self, requested_user_id, session=None):
+        """
+        Adds a new user to the system using the user's id. The user id  can be found using
+        :py:meth:`api_search_user() <api_search_user>`.
+
+        This function will make a call the the Yombo API to add the user, if successful, adds
+        the user to memory as well. The database isn't updated, it will be updated on next reboot
+        when it pulls configs from the servers.
+
+        :param requested_user:
+        :return:
+        """
+        data = {
+            'user_id': requested_user_id,
+        }
+        try:
+            add_results = yield self._YomboAPI.request('DELETE',
+                                                       '/v1/gateway/%s/user/%s' % (self.gateway_id, requested_user_id),
+                                                       session=session)
+        except YomboWarning as e:
+            raise YomboWarning("Could not remove user from gateway: %s" % e.message[0],
+                               html_message="Could not remove user from gateway: %s" % e.html_message,
+                               details=e.details)
+
+        user = self.get(requested_user_id)
+        if user.email in self.users:
+            del self.users[user.email]
 
     def load_roles(self):
         self.roles.clear()
