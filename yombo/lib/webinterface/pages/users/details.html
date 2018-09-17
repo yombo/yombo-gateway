@@ -54,7 +54,13 @@
                 <label> Add a role: </label><br>
                 <select name="role_label" id="role_label" class="selectpicker" data-size="10"
                         data-live-search="true"  title="Select role to add.">
-                {% for role in _users.get_roles() if role.label not in user.roles %}
+                 <option disabled style="color: #203684; background: #c7d4ff";>User defined roles</option>
+                {% for role in _users.get_roles() if role.label not in user.roles and role.source != "system" %}
+                  <option value="{{role.machine_label}}" data-subtext="{{role.description|truncate(70)}}">{{role.label}}</option>
+                {% endfor %}
+                 <option data-divider="true">adf</option>
+                 <option disabled style="color: #203684; background: #c7d4ff";">System defined roles</option>
+                {% for role in _users.get_roles() if role.label not in user.roles and role.source == "system" %}
                   <option value="{{role.machine_label}}" data-subtext="{{role.description|truncate(70)}}">{{role.label}}</option>
                 {% endfor %}
                 </select>
