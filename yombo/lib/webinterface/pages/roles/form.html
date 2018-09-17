@@ -35,7 +35,7 @@
                     <br>
                     <div class="input-group">
                         <input tabindex="1" type="text" class="form-control" name="machine_label" id="machine_label"
-                               size="40" placeholder="'scene_name', 'scenename'" value="{{ role.machine_label }}" autofocus required>
+                               size="40" placeholder="'role_name', 'rolename'" value="{{ role.machine_label }}" autofocus required>
                     </div>
                 </div>
 
@@ -51,7 +51,7 @@
                     <br>
                     <div class="input-group">
                         <input tabindex="2" type="text" class="form-control" name="label" id="label" size="40"
-                               placeholder="Scene Label" value="{{ role.label }}" required>
+                               placeholder="Role Label" value="{{ role.label }}" required>
                     </div>
                 </div>
 
@@ -71,7 +71,7 @@
                     </div>
                 </div>
 
-                <a class="btn btn-md btn-danger" href="/roles/{{role.scene_id}}/details">Cancel</a>
+                <a class="btn btn-md btn-danger" href="/roles/index">Cancel</a>
                 <button type="submit" class="btn btn-success">Save Role</button>
             </div>
         </div>
