@@ -63,6 +63,7 @@ import yombo.utils
 logger = get_logger('library.loader')
 
 HARD_LOAD = OrderedDict()
+HARD_LOAD["Events"] = {'operating_mode': 'all'}
 HARD_LOAD["Cache"] = {'operating_mode': 'all'}
 HARD_LOAD["Validate"] = {'operating_mode': 'all'}
 HARD_LOAD["Template"] = {'operating_mode': 'all'}
@@ -144,8 +145,9 @@ HARD_UNLOAD["AMQP"] = {'operating_mode': 'run'}
 HARD_UNLOAD["Modules"] = {'operating_mode': 'all'}
 HARD_LOAD["Variables"] = {'operating_mode': 'all'}
 HARD_UNLOAD["DownloadModules"] = {'operating_mode': 'run'}
-HARD_UNLOAD["LocalDB"] = {'operating_mode': 'all'}
 HARD_UNLOAD["Queue"] = {'operating_mode': 'all'}
+HARD_UNLOAD["Events"] = {'operating_mode': 'all'}
+HARD_UNLOAD["LocalDB"] = {'operating_mode': 'all'}
 
 RUN_PHASE = {
     'system_init': 0,
@@ -492,6 +494,7 @@ class Loader(YomboLibrary, object):
             library._Commands = self.loadedLibraries['commands']
             library._Configs = self.loadedLibraries['configuration']
             library._CronTab = self.loadedLibraries['crontab']
+            library._Events = self.loadedLibraries['events']
             library._Devices = self.loadedLibraries['devices']
             library._DeviceTypes = self.loadedLibraries['devicetypes']
             library._Discovery = self.loadedLibraries['discovery']

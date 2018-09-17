@@ -66,9 +66,12 @@ class CommandDeviceTypes(DBObject):
     TABLENAME = 'command_device_types'
 
 
-class Config(DBObject):
-    #    TABLENAME='devsadf'
-    pass
+class Events(DBObject):
+    TABLENAME = 'events'
+
+
+class EventTypes(DBObject):
+    TABLENAME = 'event_types'
 
 
 class Device(DBObject):
@@ -80,8 +83,6 @@ class Device(DBObject):
                'association_foreign_key': 'device_type_id'}]
     TABLENAME = 'devices'
 
-
-# pass
 
 class DeviceCommandInput(DBObject):
     TABLENAME = 'device_command_inputs'
@@ -236,13 +237,14 @@ class ModuleRoutingView(DBObject):
     TABLENAME = 'module_routing_view'
 
 
-# Registry.register(Config)
 Registry.SCHEMAS['PRAGMA_table_info'] = ['cid', 'name', 'type', 'notnull', 'dft_value', 'pk']
 Registry.register(Device, DeviceStatus, VariableData, DeviceType, Command)
 Registry.register(Modules, ModuleInstalled, ModuleDeviceTypes)
 Registry.register(VariableGroups, VariableData)
 Registry.register(Category)
 Registry.register(DeviceTypeCommand)
+Registry.register(Events)
+Registry.register(EventTypes)
 
 TEMP_MODULE_CLASSES = inspect.getmembers(sys.modules[__name__])
 MODULE_CLASSES = {}
@@ -491,6 +493,27 @@ class LocalDB(YomboLibrary):
         else:
             return []
 
+
+    #########################
+    ###    Events       #####
+    #########################
+    @inlineCallbacks
+    def get_events(self, always_load=None):
+        if always_load is None:
+            always_load = False
+
+        if always_load == True:
+            records = yield self.dbconfig.select('commands', where=['always_load = ?', 1])
+            return records
+        elif always_load is False:
+            records = yield self.dbconfig.select('commands', where=['always_load = ? OR always_load = ?', 1, 0])
+            return records
+        else:
+            return []
+
+    @inlineCallbacks
+    def save_events_bulk(self, events):
+        yield self.dbconfig.insertMany('events', events)
 
     #########################
     ###    Devices      #####
