@@ -458,7 +458,7 @@ class Auth(object):
         self.last_access = int(time())
         self.is_dirty += 1
 
-    @cached(30)
+    @cached(30, tags=('user', 'auth'))
     def has_access(self, platform, item, action, raise_error=None):
         """
         Check if auth key has access  to a resource / access_type combination.
@@ -469,7 +469,8 @@ class Auth(object):
         :param raise_error:
         :return:
         """
-        return self._Parent._Users.has_access(self.item_permissions, self.roles, platform, item, action, raise_error)
+        return self._Parent._Users.has_access(self.item_permissions, self.roles, platform, item, action, raise_error,
+                                              self.auth_id, self.auth_type)
 
     def check_valid(self):
         if self.is_valid is False:

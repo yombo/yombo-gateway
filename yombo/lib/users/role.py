@@ -186,6 +186,9 @@ class Role(object):
         :param req_action:
         :return: bool
         """
+        logger.info("has_access: req_platform: {req_platform}, req_item: {req_item}, req_action: {req_action}",
+                    req_platform=req_platform, req_item=req_item, req_action=req_action)
+
         req_platform = req_platform.lower()
         req_action = req_action.lower()
         possible_deny = None
@@ -201,13 +204,13 @@ class Role(object):
 
             if matched is True:
                 if wildcard is True:
-                    logger.debug("has_access: deny WILDCARD matched, returning false...")
+                    logger.info("has_access: deny WILDCARD matched, returning false...")
                     possible_deny = True
                 else:
-                    logger.debug("has_access: deny matched, returning false...")
+                    logger.info("has_access: deny matched, returning false...")
                     return False
 
-        logger.debug("has_access: permissions allow: {allow}", allow=self.permissions['allow'])
+        logger.info("has_access: permissions allow: {allow}", allow=self.permissions['allow'])
         for permission_id, permission in self.permissions['allow'].items():
             matched, wildcard = self.check_permission_match(req_platform, req_item, req_action, permission)
             if matched is None:

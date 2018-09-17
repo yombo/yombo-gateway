@@ -18,8 +18,8 @@ Provides web interface to easily configure and manage the gateway devices and mo
 # Import python libraries
 from collections import OrderedDict
 from copy import deepcopy
-import jinja2
 from hashlib import sha256
+import jinja2
 from klein import Klein
 from OpenSSL import crypto
 from operator import itemgetter
@@ -148,6 +148,12 @@ class Yombo_Site(Site):
         return r[1:-1]
 
     def log(self, request):
+        """
+        This is magically called by the Twisted framework unicorn: twisted.web.http:Request.finish()
+
+        :param request:
+        :return:
+        """
         ignored_extensions = ('.js', '.css', '.jpg', '.jpeg', '.gif', '.ico', '.woff2', '.map')
         url_path = request.path.decode().strip()
 
@@ -157,7 +163,7 @@ class Yombo_Site(Site):
         if request.getClientIP() == "127.0.0.1" and url_path.startswith('/api/v1/mqtt/auth/'):
             return
 
-        od = OrderedDict({
+        self.log_queue.append(OrderedDict({
             'request_at': time(),
             'request_protocol': request.clientproto.decode().strip(),
             'referrer': self._escape(request.getHeader(b"referer") or b"-").strip(),
@@ -167,13 +173,14 @@ class Yombo_Site(Site):
             'method': request.method.decode().strip(),
             'path': url_path,
             'secure': request.isSecure(),
+            'user_id': request.auth_id,
+            'user_type': request.auth_type,
             'response_code': request.code,
             'response_size': request.sentLength,
             'uploadable': 1,
             'uploaded': 0,
-        })
-
-        self.log_queue.append(od)
+            })
+        )
 
     def save_log_queue(self):
         if len(self.log_queue) > 0:

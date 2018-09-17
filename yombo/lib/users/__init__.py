@@ -462,7 +462,8 @@ class Users(YomboLibrary):
         :param auth: Either a websession or authkey
         :return:
         """
-        return self.has_access(auth.item_permissions, auth.roles, platform, item, action, raise_error)
+        return self.has_access(auth.item_permissions, auth.roles, platform, item, action, raise_error,
+                               auth.auth_id, auth.auth_type)
 
     def check_user_has_access(self, user_id, user_type, platform, item, action, raise_error=None):
         """
@@ -477,10 +478,10 @@ class Users(YomboLibrary):
 
         if isinstance(user_id, AuthKeyAuth) or isinstance(user_id, WebSessionAuth):
             results = self.has_access(user_id.item_permissions, user_id.roles, platform, item, action, raise_error)
-            return results, user_id.user_id, user_id.auth_type
+            return results, user_id.auth_id, user_id.auth_type
         elif isinstance(user_type, AuthKeyAuth) or isinstance(user_type, WebSessionAuth):
             results = self.has_access(user_type.item_permissions, user_type.roles, platform, item, action, raise_error)
-            return results, user_type.user_id, user_type.auth_type
+            return results, user_type.auth_id, user_type.auth_type
         elif user_id is None:  # soon, this will cause an error!
             logger.warn("Check user has access received NoneType for *user_id*. Future versions will not accept this.")
             return True, 'system', 'system'
@@ -508,10 +509,12 @@ class Users(YomboLibrary):
         else:
             raise YomboWarning("check_user_has_access must be of type user, authkey or websession.")
 
-        return self.has_access(item_permissions, roles, platform, item, action, raise_error), user_id, user_type
+        return self.has_access(item_permissions, roles, platform, item, action, raise_error,
+                               user_id, user_type), user_id, user_type
 
-    @cached()
-    def has_access(self, item_permissions, roles, platform, item, action, raise_error=None):
+    @cached(tags=('user', 'auth'))
+    def has_access(self, item_permissions, roles, platform, item, action, raise_error=None,
+                   user_id=None, user_type=None):
         """
         Usually called by either the user instance, websession instance, or auth key instance. Checks if the provided
         list (strings) of roles will allow or deny the path/action combo.
@@ -520,9 +523,13 @@ class Users(YomboLibrary):
         """
         def return_access(value):
             if value is True:
+                self._Events.new('auth', 'accepted', 'lib.users:has_access', [platform, item, action],
+                                 user_id=user_id, user_type=user_type)
                 return True
 
             if value is False:
+                self._Events.new('auth', 'denied', 'lib.users:has_access', [platform, item, action],
+                                 user_id=user_id, user_type=user_type)
                 if raise_error is not True:
                     return False
             raise YomboNoAccess(item_permissions=item_permissions,
@@ -543,7 +550,7 @@ class Users(YomboLibrary):
 
         # Admins have full access.
         if 'admin' in roles:
-            return True
+            return return_access(True)
 
         # Check if a specific item has a special access listed
         platform_item, platform_item_key, platform_actions = self.get_platform_item(platform, item)
@@ -555,7 +562,7 @@ class Users(YomboLibrary):
                     if "deny_%s" % action in item_actions:
                         return return_access(False)
                     if "allow_%s" % action in item_actions:
-                        return True
+                        return return_access(True)
 
         for a_role in self.get_roles(roles):
             results = a_role.has_access(platform, item, action)
