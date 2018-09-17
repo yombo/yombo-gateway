@@ -86,13 +86,9 @@
     <script type="text/javascript" src="/static/js/jquery.serializejson.min.js"></script>
     <script>
         $("#locationedit").submit(function(event) {
-//            event.preventDefault();
-
             var rawData = $('#locationedit').serializeJSON();
             var formData = JSON.stringify(rawData);
-            console.log(formData);
             $('#json_output').val(formData)
-//            console.log(formData);
         });
     </script>
 

@@ -530,13 +530,9 @@
         })(jQuery);
 
         $("#deviceedit").submit(function(event) {
-//            event.preventDefault();
-
             var rawData = $('#deviceedit').serializeJSON();
             var formData = JSON.stringify(rawData);
-            console.log(formData);
             $('#json_output').val(formData)
-//            console.log(formData);
         });
 
 

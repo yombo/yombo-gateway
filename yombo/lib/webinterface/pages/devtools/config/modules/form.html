@@ -310,11 +310,8 @@
         })(jQuery);
 
         $("#moduleedit").submit(function(event) {
-//            event.preventDefault();
-
             var rawData = $('#moduleedit').serializeFormJSON();
             var formData = JSON.stringify(rawData);
-            console.log(formData);
         });
 
 

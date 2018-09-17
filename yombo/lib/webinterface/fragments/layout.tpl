@@ -208,7 +208,6 @@
 {%- endif %}
 
     $('.confirm-logout').on('click', function(e) {
-        console.log("asdfasdf")
         e.preventDefault();
         var id = $(this).data('id');
         $('#logoutModal').data('id', id).modal('show');
