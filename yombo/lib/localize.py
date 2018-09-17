@@ -16,10 +16,9 @@ Localization and translation for Yombo Gateway.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/localize.html>`_
 """
 # Import python libraries
-from time import time
 from os import path, listdir, makedirs, environ
 import inspect
-import sys, gettext
+import gettext
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:

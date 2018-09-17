@@ -15,7 +15,6 @@ Manages users within the gateway. All users are loaded on startup.
 :copyright: Copyright 2018 by Yombo.
 :license: LICENSE for details.
 """
-# from cachetools import cached
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks
 

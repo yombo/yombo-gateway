@@ -26,14 +26,12 @@ except ImportError:
     from hashlib import sha224
 from functools import partial, reduce
 import os.path
-import pkg_resources
 from pyclbr import readmodule
-from subprocess import check_output, CalledProcessError
 from time import time
 import traceback
 
 # Import twisted libraries
-from twisted.internet import reactor, threads
+from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks, maybeDeferred, Deferred, DeferredList
 
 # Import Yombo libraries

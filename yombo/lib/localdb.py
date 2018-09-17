@@ -22,7 +22,6 @@ A database API to SQLite3.
 # Import python libraries
 from collections import OrderedDict
 from sqlite3 import IntegrityError
-import decimal
 import inspect
 from os import chmod
 import sys
@@ -43,7 +42,7 @@ from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 import yombo.core.settings as settings
-from yombo.utils import clean_dict, instance_properties, data_pickle, data_unpickle, bytes_to_unicode
+from yombo.utils import clean_dict, instance_properties, data_pickle, data_unpickle
 from yombo.utils.datatypes import coerce_value
 
 logger = get_logger('library.localdb')

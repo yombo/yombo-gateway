@@ -38,16 +38,12 @@ Implements MQTT. It does 2 things:
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/mqtt.html>`_
 """
 # Import python libraries
-
-import base64
 from collections import deque, Callable, OrderedDict
 from datetime import datetime
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
     import json
-import socket
-import ssl
 
 # Import twisted libraries
 from twisted.internet.ssl import ClientContextFactory
@@ -70,7 +66,7 @@ from yombo.core.exceptions import YomboWarning, YomboCritical
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.lib.webinterface.auth import require_auth, run_first
-from yombo.utils import random_string, unicode_to_bytes, bytes_to_unicode, sleep
+from yombo.utils import random_string, sleep
 from yombo.constants import CONTENT_TYPE_TEXT_PLAIN
 
 logger = get_logger('library.mqtt')
@@ -120,7 +116,6 @@ class MQTT(YomboLibrary):
             self.server_listen_port_websockets_ss_ssl = 0
             self.server_listen_port_websockets_le_ssl = 0
             self.server_allow_anonymous = None
-
 
         self.mosquitto_running = None
 
@@ -363,7 +358,7 @@ class MQTT(YomboLibrary):
                             'label1': 'System',
                             'label2': 'MQTT Listen',
                             'priority1': 6000,  # Even with a value, 'Tools' is already defined and will be ignored.
-                            'priority2': 10000,
+                            'priority2': 20000,
                             'icon': 'fa fa-wrench fa-fw',
                             'url': '/system/mqtt-listen',
                             'tooltip': '',
@@ -373,7 +368,7 @@ class MQTT(YomboLibrary):
                             'label1': 'System',
                             'label2': 'MQTT Log',
                             'priority1': 6000,  # Even with a value, 'Tools' is already defined and will be ignored.
-                            'priority2': 10010,
+                            'priority2': 20100,
                             'icon': 'fa fa-wrench fa-fw',
                             'url': '/system/mqtt-log',
                             'tooltip': '',
@@ -383,7 +378,7 @@ class MQTT(YomboLibrary):
                             'label1': 'System',
                             'label2': 'MQTT Publish',
                             'priority1': 6000,  # Even with a value, 'Tools' is already defined and will be ignored.
-                            'priority2': 10020,
+                            'priority2': 20200,
                             'icon': 'fa fa-wrench fa-fw',
                             'url': '/system/mqtt-publish',
                             'tooltip': '',
