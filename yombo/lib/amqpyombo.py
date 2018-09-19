@@ -395,6 +395,8 @@ class AMQPYombo(YomboLibrary):
                             received_message_meta=None, sent_message_meta=None,
                             subscription_callback=None, **kwargs):
 
+        logger.debug("Received incoming message: {headers}", body=headers)
+        logger.debug("Received incoming message: {body}", body=body)
         ## Valiate that we have the required headers
         if 'message_type' not in headers:
             raise YomboWarning("Discarding request message, header 'message_type' is missing.")
@@ -673,7 +675,6 @@ class AMQPYombo(YomboLibrary):
             if 'correlation_id' not in kwargs['properties']:
                 kwargs['properties']['correlation_id'] = random_string()
 
-        kwargs['yomboprotocol'] = True
         self.amqp.publish(**kwargs)
 
     def process_system(self, msg, properties):
