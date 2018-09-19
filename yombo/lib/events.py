@@ -31,7 +31,7 @@ from yombo.constants.events import SYSTEM_EVENT_TYPES
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import data_pickle
+from yombo.utils import data_pickle, generate_source_string
 
 logger = get_logger('library.events')
 
@@ -58,17 +58,9 @@ class Events(YomboLibrary):
         """
         self.event_queue = []  # Save events in bulk.
         self.event_types = deepcopy(SYSTEM_EVENT_TYPES)
-
-    def _load_(self, **kwargs):
-        """
-        Now we can actually start saving the events to the database.
-
-        :param kwargs:
-        :return:
-        """
-        self.save_event_queue_loop = LoopingCall(self.save_event_queue)
-        self.save_event_queue_loop.start(21)
         self.db_save_event_queue = self._LocalDB.save_events_bulk
+        self.save_event_queue_loop = LoopingCall(self.save_event_queue)
+        self.save_event_queue_loop.start(21, False)
 
     @inlineCallbacks
     def _stop(self):
@@ -79,13 +71,15 @@ class Events(YomboLibrary):
         """
         yield self.save_event_queue()
 
-    def new(self, event_type, event_subtype, source, attributes, priority=None, user_id=None, user_type=None,
+    def new(self, event_type, event_subtype, attributes, priority=None, user_id=None, user_type=None,
             created_at=None):
 
         if created_at is None:
             created_at = time()
         if priority is None:
             priority = 'normal'
+
+        source_label = generate_source_string()  # get the module/class/function name of caller
 
         if event_type not in self.event_types:
             raise YomboWarning("Invalid event type: %s" % event_type)
@@ -96,7 +90,7 @@ class Events(YomboLibrary):
             'event_type': event_type,
             'event_subtype': event_subtype,
             'priority': priority,
-            'source': source,
+            'source': source_label,
             'user_id': user_id,
             'user_type': user_type,
             'attributes': data_pickle(attributes, encoder="msgpack"),
@@ -128,5 +122,4 @@ class Events(YomboLibrary):
         if len(self.event_queue) > 0:
             queue = self.event_queue
             self.event_queue = []
-            print("events queue: %s" % queue)
             yield self.db_save_event_queue(queue)
