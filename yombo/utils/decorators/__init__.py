@@ -55,7 +55,7 @@ class cached(object):
             else:
                 return fib(num-1) + fib(num-2)
     """
-    def __init__(self, ttl=120, maxsize=1024, cachename=None, tags=()):
+    def __init__(self, ttl=120, maxsize=1024, cachename=None, tags=(), cache_type=None):
         """
         Setup the cache.
 
@@ -63,10 +63,14 @@ class cached(object):
         :param maxsize:
         :param cachename:
         :param tags:
+        :param cache_type: Type of cache, default is TTL.
         """
         def random_string():  # because we can't import from utils...
             return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(20))
         global cache_library
+
+        if cache_type is None:
+            cache_type = 'ttl'
 
         if cachename is None:
             frm = inspect.stack()[1]
@@ -86,10 +90,15 @@ class cached(object):
                                random_string())
 
         self.kwd_mark = object()  # sentinel for separating args from kwargs
-        if cache_library is None:  # this is mostly here for debugging.
+        if cache_library is None:  # this is here for debugging.
             self.cache = TTLCache(maxsize, ttl)
         else:
-            self.cache = cache_library.new(cachename, ttl, maxsize, tags)
+            if cache_type == 'ttl':
+                self.cache = cache_library.ttl(ttl=ttl, tags=tags, name=cachename, maxsize=maxsize)
+            elif cache_type == 'lru':
+                self.cache = cache_library.lru(tags=tags, name=cachename, maxsize=maxsize)
+            elif cache_type == 'lfu':
+                self.cache = cache_library.lfu(tags=tags, name=cachename, maxsize=maxsize)
 
     def __call__(self, f):
         def wrapped_f(*args, **kwargs):
