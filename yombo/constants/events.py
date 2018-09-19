@@ -20,4 +20,29 @@ SYSTEM_EVENT_TYPES = {
             ),
         },
     },
+    'amqp': {
+        'new': {
+            'description': "New AMQP client created, but not connected yet.",
+            'attributes': (
+                'client_id',
+                'host',
+                'port',
+                'username',
+                'ssl',
+            ),
+        },
+        'connected': {
+            'description': "AMQP connection made.",
+            'attributes': (
+                'client_id',
+            ),
+        },
+        'disconnected': {
+            'description': "AMQP disconnected.",
+            'attributes': (
+                'client_id',
+                'reason',
+            ),
+        },
+    },
 }
