@@ -116,7 +116,7 @@ class Configuration(YomboLibrary):
             },
             'api_auth': {
                 'encrypt': True
-            }
+            },
         },
         'webinterface': {
             'cookie_session': {
@@ -186,19 +186,6 @@ class Configuration(YomboLibrary):
         """
         raise Exception("Not allowed.")
 
-    def __iter__(self):
-        """ iter configurations. """
-        return self.__yombocommands.__iter__()
-
-    def __len__(self):
-        """
-        Returns an int of the number of configurations defined.
-
-        :return: The number of configurations defined.
-        :rtype: int
-        """
-        return len(self.__yombocommands)
-
     def __str__(self):
         """
         Returns the name of the library.
@@ -206,36 +193,6 @@ class Configuration(YomboLibrary):
         :rtype: string
         """
         return "Yombo configuration library"
-
-    def keys(self):
-        """
-        Returns the keys of the configurations that are defined.
-
-        :return: A list of configurations defined. 
-        :rtype: list
-        """
-        return list(self.__yombocommands.keys())
-
-    def items(self):
-        """
-        Gets a list of tuples representing the configurations defined.
-
-        :return: A list of tuples.
-        :rtype: list
-        """
-        return list(self.__yombocommands.items())
-
-    def iteritems(self):
-        return iter(self.__yombocommands.items())
-
-    def iterkeys(self):
-        return iter(self.__yombocommands.keys())
-
-    def itervalues(self):
-        return iter(self.__yombocommands.values())
-
-    def values(self):
-        return list(self.__yombocommands.values())
 
     @inlineCallbacks
     def _init_(self, **kwargs):
