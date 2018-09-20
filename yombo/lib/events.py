@@ -63,7 +63,7 @@ class Events(YomboLibrary):
         self.save_event_queue_loop.start(21, False)
 
     @inlineCallbacks
-    def _stop(self):
+    def _unload_(self, **kwargs):
         """
         Save remaining events on gateways shutdown.
 
