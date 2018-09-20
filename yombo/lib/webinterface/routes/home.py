@@ -105,10 +105,12 @@ def route_home(webapp):
 
                 request.received_cookies[webinterface._WebSessions.config.cookie_session_name] = session.session_id
                 try:
-                    webinterface._Startup.check_has_valid_gw_auth(login['session'])
+                    webinterface._YomboAPI.check_if_new_gateway_credentials_needed(login['session'])
                 except YomboRestart:
                     page = webinterface.get_template(request, webinterface.wi_dir + '/pages/restart.html')
                     return page.render(alerts=webinterface.get_alerts())
+                except YomboWarning:
+                    print("Got an error, will handle it later....")
                 return login_redirect(webinterface, request, session)
             else:
                 webinterface.add_alert(results['msg'], 'warning')
