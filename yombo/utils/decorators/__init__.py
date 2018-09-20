@@ -65,29 +65,17 @@ class cached(object):
         :param tags:
         :param cache_type: Type of cache, default is TTL.
         """
-        def random_string():  # because we can't import from utils...
-            return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(20))
+        from yombo.utils import generate_source_string, random_string
+
+        # def random_string():  # because we can't import from utils...
+        #     return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(20))
         global cache_library
 
         if cache_type is None:
             cache_type = 'ttl'
 
         if cachename is None:
-            frm = inspect.stack()[1]
-            mod = inspect.getmodule(frm[0])
-            callingframe = sys._getframe(1)
-
-            if 'self' in callingframe.f_locals:
-                cachename = "%s.%s.%s.%s" % \
-                              (mod.__name__,
-                               callingframe.f_locals['self'].__class__.__name__,
-                               callingframe.f_code.co_name,
-                               random_string())
-            else:
-                cachename = "%s.%s.%s" % \
-                              (mod.__name__,
-                               callingframe.f_code.co_name,
-                               random_string())
+            cachename = "%s R:%s" % (generate_source_string(), random_string(length=10))
 
         self.kwd_mark = object()  # sentinel for separating args from kwargs
         if cache_library is None:  # this is here for debugging.

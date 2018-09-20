@@ -76,7 +76,7 @@ from twisted.internet.task import LoopingCall
 from yombo.core.exceptions import YomboWarning, YomboHookStopProcessing
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import global_invoke_all, search_instance, do_search_instance, random_int
+from yombo.utils import global_invoke_all, search_instance, do_search_instance, random_int, generate_source_string
 
 from ._device import Device
 from ._device_command import Device_Command
@@ -623,21 +623,7 @@ class Devices(YomboLibrary):
         :return: The request id.
         :rtype: str
         """
-        frm = inspect.stack()[1]
-        mod = inspect.getmodule(frm[0])
-        callingframe = sys._getframe(1)
-        if 'self' in callingframe.f_locals:
-            kwargs['requesting_source'] = "%s:%s.%s.%s" % \
-                                          (self.gateway_id,
-                                           mod.__name__,
-                                           callingframe.f_locals['self'].__class__.__name__,
-                                           callingframe.f_code.co_name)
-        else:
-            kwargs['requesting_source'] = "%s:%s.%s" % \
-                                          (self.gateway_id,
-                                           mod.__name__,
-                                           callingframe.f_code.co_name)
-
+        kwargs['requesting_source'] = generate_source_string()
         return self.get(device).command(cmd, **kwargs)
 
     def mqtt_incoming(self, topic, payload, qos, retain):
