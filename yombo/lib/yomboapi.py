@@ -34,7 +34,7 @@ from twisted.internet import reactor
 
 # Import Yombo libraries
 from yombo.constants import VERSION
-from yombo.ext.expiringdict import ExpiringDict
+# from yombo.ext.expiringdict import ExpiringDict
 from yombo.core.exceptions import YomboWarning, YomboAPICredentials, YomboRestart
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
@@ -57,11 +57,10 @@ class YomboAPI(YomboLibrary):
 
     @property
     def api_auth(self):
-        return self._api_auth
+        return self._api_auth()
 
     @api_auth.setter
     def api_auth(self, val):
-        self._api_auth = val
         self._Configs.set('core', 'api_auth', val)
 
     def __str__(self):
@@ -70,10 +69,10 @@ class YomboAPI(YomboLibrary):
         :return: Name of the library
         :rtype: string
         """
-        return "Yombo Yombo API library"
+        return "Yombo API library"
 
     def _init_(self, **kwargs):
-        self.session_validation_cache = ExpiringDict()
+        self.session_validation_cache = self._Cache.lru(maxsize=64, tags=('sessions', 'api'))
         self.custom_agent = Agent(reactor, connectTimeout=20)
         self.contentType = self._Configs.get('yomboapi', 'contenttype', CONTENT_TYPE_JSON, False)  # TODO: Msgpack later
         self.base_url = self._Configs.get('yomboapi', 'baseurl', "https://api.yombo.net/api", False)
@@ -81,61 +80,99 @@ class YomboAPI(YomboLibrary):
         self.gateway_id = self._Configs.get2('core', 'gwid', 'local', False)
         self.gateway_hash = self._Configs.get2('core', 'gwhash', None, False)
 
-        self.api_key = self._Configs.get('yomboapi', 'api_key', 'gd9mDxJlLdEwhKwxwyPfFksTEnRE5k', False)
-        self._api_auth = self._Configs.get('core', 'api_auth', None, False)  # to be encrypted with gpg later
+        self.api_key = self._Configs.get('yomboapi', 'api_key', '4Pz5CwKQCsexQaeUvhJnWAFO6TRa9SafnpAQfAApqy9fsdHTLXZ762yCZOct', False)
+        self._api_auth = self._Configs.get2('core', 'api_auth', None, False)  # to be encrypted with gpg later
         self.valid_api_auth = False
 
     def clear_session_cache(self, session=None):
         if session is None:
-            self.session_validation_cache.clear()
+            self._Cache.clear(self.session_validation_cache)
         else:
             hashed = sha224(session)
             if hashed in self.session_validation_cache:
-                del self.session_validation_cache[hashed]  # None works too...
+                del self.session_validation_cache[hashed]
 
     @inlineCallbacks
-    def check_api_auth_valid(self):
+    def check_gateway_auth_valid(self):
         """
-        Validates that the system has a valid api auth key. Returns true/false.
+        Validate that the current gateway id / hash is valid. It's basically checking to see
+        the current username/password for the gateway is valid.
+
+        Returns True/False.
 
         :return:
         """
         logger.debug("About to validate api auth: %s" % self.api_auth)
 
         if self.api_auth is not None:
-            results = yield self.do_check_api_auth_valid()
-            logger.debug("Do Validate Session results: {results}", results=results)
-        else:
-            results = False
+            gateway_id = self.gateway_id()
+            gateway_hash = self.gateway_hash()
+            try:
+                results = yield self.request("POST", "/v1/gateway/%s/check_hash" % gateway_id,
+                                             {
+                                                'gw_hash': gateway_hash,
+                                             }
+                                             )
 
-        self.valid_api_auth = results
-        return results
-
-    @inlineCallbacks
-    def do_check_api_auth_valid(self, session=None):
-        gateway_id = self.gateway_id()
-        gateway_hash = self.gateway_hash()
-        try:
-            results = yield self.request("POST", "/v1/gateway/%s/check_api_auth" % gateway_id,
-                                         {'gw_hash': gateway_hash,
-                                          'api_auth': self.api_auth},
-                                         session=session)
-
-        except Exception as e:
-            logger.debug("do_validate_api_auth API Error: {error}", error=e)
-            return False
-
-        data = results['data']
-        if data['gw_hash'] is False or data['api_auth'] is False:
-            return False
-        else:
-            return True
+            except Exception as e:
+                logger.debug("check_gateway_auth_valid API Error: {error}", error=e)
+                return False
+            else:
+                data = results['data']
+                if data['gw_hash'] is False or data['api_auth'] is False:
+                    return False
+                else:
+                    return True
+        return False
 
     @inlineCallbacks
-    def get_api_auth_keys(self, session=None, session_type=None):
+    def check_if_new_gateway_credentials_needed(self, session):
+        if self.valid_api_auth is False:
+            yield self.get_new_gateway_credentials(session)
+
+    @inlineCallbacks
+    def check_gateway_api_auth_valid(self, session=None):
+        """
+        check_gateway_auth_valid above, but checks that the session is valid for this gateway.
+
+        Returns True/False.
+
+        :return:
+        """
+        logger.debug("About to validate api auth: %s" % self.api_auth)
+
+        if self.api_auth is not None:
+            gateway_id = self.gateway_id()
+            gateway_hash = self.gateway_hash()
+            try:
+                results = yield self.request("POST", "/v1/gateway/%s/check_api_auth" % gateway_id,
+                                             {
+                                                'gw_hash': gateway_hash,
+                                                'api_auth': self.api_auth
+                                             },
+                                             session=session,
+                                             )
+
+            except Exception as e:
+                logger.debug("check_gateway_api_auth_valid API Error: {error}", error=e)
+                self.valid_api_auth = False
+            else:
+                data = results['data']
+                if data['gw_hash'] is False or data['api_auth'] is False:
+                    self.valid_api_auth = False
+                else:
+                    self.valid_api_auth = True
+        else:
+            self.valid_api_auth = False
+
+        logger.debug("Do Validate Session results: {results}", results=self.valid_api_auth)
+        return self.valid_api_auth
+
+    @inlineCallbacks
+    def get_new_gateway_credentials(self, session=None, session_type=None):
         """
         Get new auth information for the current gateway. This includes the gateway's uuid, gateway hash, and
-        api_auth tokens.
+        api_auth token.
 
         If session is provided, it will use that information to collect the new tokens.
 
@@ -151,13 +188,13 @@ class YomboAPI(YomboLibrary):
             return False
         data = results['data']
         logger.info("Gateway new hash results: {data}", data=data)
-        logger.debug("System now has a valid auth token.")
+        logger.info("System now has a valid auth token.")
         self.api_auth = data['api_auth']
         self._Configs.set('core', 'api_auth', data['api_auth'])
         self._Configs.set('core', 'gwhash', data['hash'])
         self._Configs.set('core', 'gwuuid', data['uuid'])
         self.valid_api_auth = True
-        results = yield self.check_api_auth_valid()
+        results = yield self.check_gateway_api_auth_valid()
         if results:
             yield self._Configs.save(force_save=True)
             raise YomboRestart("Mandatory gateway restart happening now.")
@@ -165,15 +202,12 @@ class YomboAPI(YomboLibrary):
             raise YomboWarning("Unable to get new gateway authentication information.")
 
     @inlineCallbacks
-    def do_validate_login_key(self, login_key):
+    def validate_login_key(self, login_key):
         try:
             results = yield self.request("POST", "/v1/user/login_key/validate", {'login_key': login_key})
         except Exception as e:
-            logger.debug("do_validate_login_key API Errror: {error}", error=e)
+            logger.debug("validate_login_key API Errror: {error}", error=e)
             return False
-
-        # logger.debug("Login key results: REsults from API: {results}", results=results['content'])
-        # waiting on final API.yombo.com to complete this.  If we get something, we are good for now.
 
         if (results['content']['code'] != 200):
             return False
@@ -181,16 +215,13 @@ class YomboAPI(YomboLibrary):
             return results['data']
 
     @inlineCallbacks
-    def do_validate_session(self, session):
+    def validate_session(self, session):
         try:
             results = yield self.request("POST", "/v1/user/session/validate", {'session': session})
             # results = yield self.request("GET", "/v1/user/session/validate", None, session=session)
         except Exception as e:
             logger.debug("$$$1 API Errror: {error}", error=e)
             return False
-
-        # logger.debug("do_validate_session full results: {results}", results=results['content'])
-        # waiting on final API.yombo.com to complete this.  If we get something, we are good for now.
 
         if (results['content']['code'] != 200):
             return False
