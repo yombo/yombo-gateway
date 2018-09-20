@@ -79,6 +79,7 @@ from yombo.utils.converters import epoch_to_string
 
 logger = get_logger("library.states")
 
+
 class States(YomboLibrary, object):
     """
     Provides a base API to store common states among libraries and modules.
@@ -524,7 +525,7 @@ class States(YomboLibrary, object):
                                 )
 
         if gateway_id == self.gateway_id or gateway_id == 'cluster':
-            self.db_save_states_data.append([key, deepcopy( self.states[gateway_id][key]) ])
+            self.db_save_states_data.append([key, deepcopy( self.states[gateway_id][key])])
 
     @inlineCallbacks
     def db_save_states(self):

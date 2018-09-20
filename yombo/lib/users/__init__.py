@@ -522,12 +522,12 @@ class Users(YomboLibrary):
         """
         def return_access(value):
             if value is True:
-                self._Events.new('auth', 'accepted', 'lib.users:has_access', [platform, item, action],
+                self._Events.new('auth', 'accepted', (platform, item, action),
                                  user_id=user_id, user_type=user_type)
                 return True
 
             if value is False:
-                self._Events.new('auth', 'denied', 'lib.users:has_access', [platform, item, action],
+                self._Events.new('auth', 'denied', 'lib.users:has_access', (platform, item, action),
                                  user_id=user_id, user_type=user_type)
                 if raise_error is not True:
                     return False

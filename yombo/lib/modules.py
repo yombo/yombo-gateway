@@ -536,8 +536,13 @@ class Modules(YomboLibrary):
                         else:
                             self._Loader.requirements[line]['used_by'].append(module['machine_label'])
 
-
     def import_modules(self):
+        """
+        This imports the modules into memory (using import_component) and then sets some base module
+        attributes.
+
+        :return:
+        """
 
         for module_id, module in self._rawModulesList.items():
             module_path_name = "yombo.modules.%s" % module['machine_label']
@@ -599,7 +604,6 @@ class Modules(YomboLibrary):
                                          [possible_file, ] + file_path.split('.')[1:])
                     classes = readmodule(file_path)
                     for name, file_class_name in classes.items():
-
                         klass = getattr(module_tail, name)
                         if possible_file_name == '_devices':
                             self._DeviceTypes.platforms[name.lower()] = klass
@@ -621,10 +625,7 @@ class Modules(YomboLibrary):
         """
         Calls the _init_ functions of modules.
         """
-        module_init_deferred = []
-
         for module_id, module in self.modules.items():
-
             logger.debug("Starting module_init_invoke for module: {module}", module=module)
             module._module_variables = partial(
                 self.module_variables,
@@ -873,7 +874,6 @@ class Modules(YomboLibrary):
 
     @inlineCallbacks
     def load_module_data(self):
-
         self.startDefer.callback(10)
 
     def add_imported_module(self, module_id, module_label, module_instance):

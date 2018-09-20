@@ -224,7 +224,6 @@ class Loader(YomboLibrary, object):
         self.loadedComponents = FuzzySearch({self._FullName.lower(): self}, .95)
         self.loadedLibraries = FuzzySearch({self._Name.lower(): self}, .95)
         self.libraryNames = {}
-        self._moduleLibrary = None
         self._invoke_list_cache = {}  # Store a list of hooks that exist or not. A cache.
         self._operating_mode = None  # One of: first_run, config, run
         self.sigint = False  # will be set to true if SIGINT is received
@@ -455,7 +454,7 @@ class Loader(YomboLibrary, object):
         """
         Import then "init" all libraries. Call "loadLibraries" when done.
         """
-        logger.debug("Importing server libraries.")
+        logger.debug("Importing gateway libraries.")
         self._run_phase = "libraries_import"
         for name, config in HARD_LOAD.items():
             if self.sigint:
@@ -530,6 +529,7 @@ class Loader(YomboLibrary, object):
             library._Variables = self.loadedLibraries['variables']
             library._Validate = self.loadedLibraries['validate']
             library._WebSessions = self.loadedLibraries['websessions']
+
             if self.check_operating_mode(config['operating_mode']) is False:
                 continue
             HARD_LOAD[name]['_init_'] = 'Starting'
@@ -856,19 +856,23 @@ class Loader(YomboLibrary, object):
 
 _loader = None
 
+
 def setup_loader(testing=False):
     global _loader
     if not _loader:
         _loader = Loader(testing)
     return _loader
 
+
 def get_loader():
     global _loader
     return _loader
 
+
 def get_the_loaded_components():
     global _loader
     return _loader.get_all_loaded_components()
+
 
 def stop_loader():
     global _loader
