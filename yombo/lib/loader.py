@@ -66,6 +66,7 @@ HARD_LOAD = OrderedDict()
 HARD_LOAD["Events"] = {'operating_mode': 'all'}
 HARD_LOAD["Cache"] = {'operating_mode': 'all'}
 HARD_LOAD["Validate"] = {'operating_mode': 'all'}
+HARD_LOAD["Requests"] = {'operating_mode': 'all'}
 HARD_LOAD["Template"] = {'operating_mode': 'all'}
 HARD_LOAD["Queue"] = {'operating_mode': 'all'}
 HARD_LOAD["Notifications"] = {'operating_mode': 'all'}
@@ -515,6 +516,7 @@ class Loader(YomboLibrary, object):
             library._Nodes = self.loadedLibraries['nodes']
             library._Notifications = self.loadedLibraries['notifications']
             library._Queue = self.loadedLibraries['queue']
+            library._Requests = self.loadedLibraries['requests']
             library._Scenes = self.loadedLibraries['scenes']
             library._SQLDict = self.loadedLibraries['sqldict']
             library._SSLCerts = self.loadedLibraries['sslcerts']
