@@ -330,7 +330,7 @@ class LocalDB(YomboLibrary):
         self.save_bulk_queue_loop.start(17, False)
 
     @inlineCallbacks
-    def _stop_(self, **kwargs):
+    def _unload_(self, **kwargs):
         yield self.save_bulk_queue()
         if self.save_bulk_queue_loop is not None and self.save_bulk_queue_loop.running:
             self.save_bulk_queue_loop.stop()
