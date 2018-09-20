@@ -71,7 +71,7 @@ class Hash(YomboLibrary):
         results = yield threads.deferToThread(self.argon2_find_cost_calculator)
         self.argon2_rounds = results[0]
         self.argon2_memory = results[1]
-        self.argon2_duration = results[0]
+        self.argon2_duration = results[2]
         self._Configs.set('hash', 'argon2_rounds', results[0])
         self._Configs.set('hash', 'argon2_memory', results[1])
         self._Configs.set('hash', 'argon2_duration', results[2])
@@ -79,7 +79,7 @@ class Hash(YomboLibrary):
         results = yield threads.deferToThread(self.argon2_find_cost_calculator, max_time=MAX_DURATION/2)
         self.argon2_rounds_fast = results[0]
         self.argon2_memory_fast = results[1]
-        self.argon2_duration_fast = results[0]
+        self.argon2_duration_fast = results[2]
         self._Configs.set('hash', 'argon2_rounds_fast', results[0])
         self._Configs.set('hash', 'argon2_memory_fast', results[1])
         self._Configs.set('hash', 'argon2_duration_fast', results[2])
@@ -164,8 +164,8 @@ class Hash(YomboLibrary):
                 rounds_best = rounds
                 memory_best = memory_step
                 duration_best = duration
-            if rounds == rounds_min + round(memory_step * 0.4):
-                break
+            # if rounds == rounds_min + round(memory_step * 0.4):
+            #     break
         return([rounds_best, memory_best, duration_best])
         # print("Best = rounds=%s, memory=%s, time=%.3f" % (rounds_best, memory_best, duration_best))
 
