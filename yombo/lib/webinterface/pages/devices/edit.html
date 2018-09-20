@@ -3,546 +3,545 @@
 {% block head_css %}{% include 'lib/webinterface/fragments/select_css.tpl' %}{% endblock %}
 
 {% block content %}
-            <div class="row">
-                <div class="col-lg-12">
-                    <h1 class="page-header"><a class="success" href="/devices/index" aria-label="Delete">
-  <i class="fa fa-arrow-left" aria-hidden="true"></i>
-</a> Edit Device Information</h1>
-                    <p></p>
-                </div>
-                <!-- /.col-lg-12 -->
+<div class="row">
+    <div class="col-lg-12">
+        <h1 class="page-header"><a class="success" href="/devices/index" aria-label="Delete">
+            <i class="fa fa-arrow-left" aria-hidden="true"></i></a> Edit Device Information
+        </h1>
+        <p></p>
+    </div>
+    <!-- /.col-lg-12 -->
+</div>
+{% if device.enabled_status == 0 %}
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel panel-default panel-red">
+            <div class="panel-heading">
+                <label>Device Disabled</label>
             </div>
- {% if device.enabled_status == 0 %}
-            <div class="row">
-                <div class="col-lg-12">
-                    <div class="panel panel-default panel-red">
-                        <div class="panel-heading">
-                            <label>Device Disabled</label>
-                        </div>
-                        <!-- /.panel-heading -->
-                        <div class="panel-body">
-                            <label style="margin-top: 0px; margin-bottom: 0px">This device has been disabled and is not accessible to the
-                            system for automation purposes.</label>
-                        </div>
-                    </div>
-                </div>
-                <!-- /.col-lg-12 -->
+            <!-- /.panel-heading -->
+            <div class="panel-body">
+                <label style="margin-top: 0px; margin-bottom: 0px">This device has been disabled and is not accessible to the
+                system for automation purposes.</label>
             </div>
- {% elif device.enabled_status == 2  %}
-            <div class="row">
-                <div class="col-lg-12">
-                    <div class="panel panel-default panel-red">
-                        <div class="panel-heading">
-                            <label>Device Deleted</label>
-                        </div>
-                        <!-- /.panel-heading -->
-                        <div class="panel-body">
-                            <label style="margin-top: 0px; margin-bottom: 0px">This device has been deleted and is not accessible to the
-                            system for automation purposes.</label>
-                        </div>
-                    </div>
-                </div>
-                <!-- /.col-lg-12 -->
+        </div>
+    </div>
+    <!-- /.col-lg-12 -->
+</div>
+{% elif device.enabled_status == 2  %}
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel panel-default panel-red">
+            <div class="panel-heading">
+                <label>Device Deleted</label>
             </div>
- {% endif %}
-            <!-- /.row -->
-            <form method="post" id="deviceedit">
-            <div class="row">
-                <div class="col-lg-5 col-md-6">
-                    <div class="panel panel-default">
-                        <div class="panel-heading">
-                            <label>Basic Information</label>
-                        </div>
-                        <!-- /.panel-heading -->
-                        <div class="panel-body">
-                            <label style="margin-top: 0px; margin-bottom: 0px">Label: </label><br>
-                            <div class="input-group">
-                                <input type="text" tabindex="1" class="form-control" name="label" id="label" size="15" placeholder="'Bedroom light', 'Living room fan'" value="{{ device.label }}" autofocus required>
-                            </div>
-                            <label style="margin-top: 20px; margin-bottom: 0px">Machine Label: </label>
-                            <a href="#" data-toggle="modal" data-target="#modalMachinelabel"><i class="fa fa-question fa-lg"></i></a>
-                            {{ macros.modal("modalMachinelabel", 'Machine Label', "
-                            <p>This label is used to uniquely identify this device across all locations and areas. For example,
-                                if you have two houses (lucky you), each having two dens, you want want to label this device
-                                something like 'vacation_house_den_light', while the 'Label' would simply be 'Light'.
-                            </p>
-                            <p>
-                                The machine label is used within rules and custom automation modules lookup the device by name,
-                                rather than it's ID.
-                            </p>
-                            ") }}
-                            <div class="input-group">
-                                <input type="text" tabindex="2" class="form-control" name="machine_label" id="machine_label" size="15" placeholder="'Bedroom light', 'Living room fan'" value="{{ device.machine_label }}" autofocus required>
-                            </div>
-                            <label style="margin-top: 20px; margin-bottom: 0px">Device Type: </label><br>
-                            <div class="input-group">
-                                <select class="selectpicker show-tick form-control" tabindex="3" required name="device_type_id" id="device_type_id">
-                                {% for device_type_id, device_type in yombo._DeviceTypes.device_types.items() %}
-                                    <option value="{{device_type_id}}" {% if device.device_type_id == device_type_id %} selected{% endif %} data-subtext="{{device_type_id}}">{{device_type.label}}</option>
-                                {% endfor %}
-                                </select>
-                            </div>
-                            <label style="margin-top: 20px; margin-bottom: 0px">Gateway: </label><br>
-                            <div class="input-group">
-                                <select class="selectpicker show-tick form-control" tabindex="3" required name="gateway_id" id="gateway_id">
-                                {% for gateway_id, gateway in _gateways.items() %}
-                                    <option value="{{gateway_id}}" {% if device.gateway_id == gateway_id %} selected{% endif %} data-subtext="{{gateway.gateway_id}}">{{gateway.label}}</option>
-                                {% endfor %}
-                                </select>
-                            </div>
-                            <label style="margin-top: 20px; margin-bottom: 0px">Location: </label><br>
-                            <div class="input-group">
-                                <select class="selectpicker show-tick form-control" tabindex="3" required name="location_id" id="location_id">
-                                {% for location_id, location in _locations.items() if location.location_type == 'location' %}
-                                    <option value="{{location_id}}" {% if device.location_id == location_id %} selected{% endif %} data-subtext="{{location.description|hide_none}}">{{location.label}}</option>
-                                {% endfor %}
-                                </select>
-                            </div>
-                            <label style="margin-top: 20px; margin-bottom: 0px">Area: </label><br>
-                            <div class="input-group">
-                                <select class="selectpicker show-tick form-control" tabindex="4" required name="area_id" id="area_id">
-                                {% for location_id, location in _locations.items() if location.location_type == 'area' %}
-                                    <option value="{{location_id}}" {% if device.area_id == location_id %} selected{% endif %} data-subtext="{{location.description|hide_none}}">{{location.label}}</option>
-                                {% endfor %}
-                                </select>
-                            </div>
-                            <label style="margin-top: 20px; margin-bottom: 0px">Description: </label><br>
-                            <div class="input-group">
-                                <input type="text" tabindex="5" class="form-control" name="description" id="description" size="30" placeholder="Description of device." value="{{ device.description|hide_none }}">
-                            </div>
-                            <label style="margin-top: 20px; margin-bottom: 0px">Status: </label>
-                            <a href="#" data-toggle="modal" data-target="#modalstatus"><i class="fa fa-question fa-lg"></i></a>
-                            {{ macros.modal("modalstatus", 'Device enabled / disabled/ deleted', '
-                            You can enable or disable the device as needed. When disabled, the device cannot receive commands
-                            or send status updates. When deleted, the device will eventually be purged from the Yombo system.') }}
-                            <br>
-                            <div class="input-group">
-                                <select class="selectpicker show-tick form-control" tabindex="6" name="status" id="status" placeholder="Mark device as enabled, disabled, or deleted.">
-                                    <option value="enabled"{% if device.enabled_status == 1 %} selected{% endif %} data-subtext="Works normally">Enabled</option>
-                                    <option value="disabled"{% if device.enabled_status == 0 %} selected{% endif %} data-subtext="Device unusable">Disabled</option>
-                                    <option value="deleted"{% if device.enabled_status == 2 %} selected{% endif %} data-subtext="Queue for deletion">Deleted</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="panel panel-default">
-                        <div class="panel-heading">
-                            <label>Statistics Information</label>
-                        </div>
-                        <!-- /.panel-heading -->
-                        <div class="panel-body">
-                            <label style="margin-top: 0px; margin-bottom: 0px">Statistics Type: </label>
-                            <a href="#" data-toggle="modal" data-target="#modalstatisticstype"><i class="fa fa-question fa-lg"></i></a>
-                            {{ macros.modal("modalstatisticstype", 'Statistics Type', "
-                            <p>There are two primary statistics:</p>
-                            <ul>
-                                <li>Data Point - A single data point such as if the window is closed or open, light on, 50% or off.</li>
-                                <li>Average - Can average data points together. This is the best way to store temperature data or
-                                other inputs that tend to flucuate a alot. This also helps keeps your database file from getting
-                                to big.</li>
-                                <ul>
-                                    <li>When using the average method, you also need to set the 'bucket size', or how long
-                                        the data should be averaged together. For example, a bucket size of '60' will average data
-                                        together for 60 seconds.  See 'bucket size' for details.</li>
-                                </ul>
-                            </ul>
-                            ") }}
-                            <br>
-                            <div class="input-group">
-                                <select class="selectpicker show-tick form-control" tabindex="10" name="statistic_type" id="statistic_type">
-                                    <option value="none"{% if device.statistic_type == "none" %} selected{% endif %}>None</option>
-                                    <option value="datapoint"{% if device.statistic_type == "datapoint" %} selected{% endif %}>Single Data Point</option>
-                                    <option value="average"{% if device.statistic_type == "average" %} selected{% endif %}>Average</option>
-                                </select>
-                            </div>
-                            <div id="div_statistics">
-                                <label style="margin-top: 20px; margin-bottom: 0px">Statistic Label: </label>
-                                <a href="#" data-toggle="modal" data-target="#modalStatisticlabel"><i class="fa fa-question fa-lg"></i></a>
-                                {{ macros.modal("modalStatisticlabel", 'Statistic Label', "
-                                <p>The default statistic label uses the 'location + area + machine_name' for the device if no
-                                value is set.</p>
-                                <p>This label is used to track the device history over time. Using a label allows the device to be replaced with
-                                a new device, but still maintain it's history. For example,
-                                if you have an insteon lamp module controlling your living table lamp and later decide to replace with zwave, you would give
-                                the device name the same statistic label.</p>
-                                <p>The statistic label is free form.</p>
-                                <p>You will want to name the location from least specific to most specific using a dotted notation, such as
-                                'myhouse.downstairs.livingroom.tabel_lamp'.  If you didn't have two stories, just omit 'downstairs'.</p>
-                                <p>Some more examples:</p>
-                                <ul>
-                                    <li>workbench_light</li>
-                                    <li>ceiling_fan</li>
-                                    <li>fan</li>
-                                    <li>hvac</li>
-                                    <li>landscape_lights</li>
-                                    <li>landscape_sprinklers</li>
-                                    <li>landscape_sprinklers</li>
-                                    <li>music</li>
-                                </ul>
-                                <p>After some statistics are generated, you can show energy/water/noise for any given area. For example,
-                                you show all water used 'outside.*' or 'outside.front' for a given time period. Or electricity used
-                                with search terms like 'myhouse.upstairs.* or 'myhouse.*.bedroom'.</p>
-                                <p> <strong>Note:</strong> All statistic labels are preceeded with 'devices.' to help with tracking
-                                    various other system statistics. Additionally, another statistic with 'energy.' will be used
-                                    to track enery usage for this device.</p>
-                                ") }}
-                                <br>
-                                <div class="input-group">
-                                    <input type="text" tabindex="11" class="form-control" name="statistic_label" id="statistic_label" size="30" placeholder="Statistic label" value="{{ device.statistic_label|hide_none }}">
-                                </div>
-                                <label style="margin-top: 20px; margin-bottom: 0px">Statistic Lifetime: </label>
-                                <a href="#" data-toggle="modal" data-target="#modalStatisticLifetime"><i class="fa fa-question fa-lg"></i></a>
-                                {{ macros.modal("modalStatisticLifetime", 'Statistic Lifetime', "
-                                <p>How long (in days) the statistic or status information should stay in the local database. Keeping
-                                    statistics locally for long periods of time can be cause the local database to become rather large.
-                                    We recommend keeping this to under a year, and using the Yombo Online Statistics tools to track
-                                    historical data.</p>
-                                ") }}
-                                <br>
-                                <div class="input-group">
-                                    <input type="text" tabindex="12" class="form-control" name="statistic_lifetime" id="statistic_lifetime" size="30" placeholder="0, 180, 365..." value="{{ device.statistic_lifetime|hide_none }}">
-                                </div>
-                            </div>
-                            <div id="div_statistic_bucket_size">
-                                <label style="margin-top: 15px; margin-bottom: 0px">Statistic Bucket Size: </label>
-                                <a href="#" data-toggle="modal" data-target="#modalstatisticsbucketsize"><i class="fa fa-question fa-lg"></i></a>
-                                {{ macros.modal("modalstatisticsbucketsize", 'Bucket Size', "
-                                <p>When averaging data points together, the system divides time into 'buckets' For example, if 60 seconds is
-                                    set as the bucket set, all data points within a 60 second will be grouped together.</p>
-                                </p>
-                                ") }}
-                                <br>
-                                <div class="input-group">
-                                <input type="text" tabindex="13" class="form-control" name="statistic_bucket_size" id="statistic_bucket_size" size="30" placeholder="1, 5, 30, 60, 300..." value="{{ device.statistic_bucket_size|hide_none }}">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- /.panel-body -->
+            <!-- /.panel-heading -->
+            <div class="panel-body">
+                <label style="margin-top: 0px; margin-bottom: 0px">This device has been deleted and is not accessible to the
+                system for automation purposes.</label>
+            </div>
+        </div>
+    </div>
+    <!-- /.col-lg-12 -->
+</div>
+{% endif %}
+<!-- /.row -->
+<form method="post" id="deviceedit">
+<div class="row">
+    <div class="col-lg-5 col-md-6">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <label>Basic Information</label>
+            </div>
+            <!-- /.panel-heading -->
+            <div class="panel-body">
+                <label style="margin-top: 0px; margin-bottom: 0px">Label: </label><br>
+                <div class="input-group">
+                    <input type="text" tabindex="1" class="form-control" name="label" id="label" size="15" placeholder="'Bedroom light', 'Living room fan'" value="{{ device.label }}" autofocus required>
                 </div>
-                <!-- /.col-lg-6 -->
-                <div class="col-lg-7 col-md-6">
-                    <div class="panel panel-default">
-                        <div class="panel-heading">
-                            <label>Security Information</label>
-                        </div>
-                        <!-- /.panel-heading -->
-                        <div class="panel-body">
-                            <label style="margin-top: 0px; margin-bottom: 0px">Pin Required: </label>
-                            <a href="#" data-toggle="modal" data-target="#modalpinrequired"><i class="fa fa-question fa-lg"></i></a>
-                            {{ macros.modal("modalpinrequired", 'Pin required', '
-                            If a pin is required, the user must enter a device pin to send a command. This is useful for devices that are alarm systems.
-                            ') }}
-                            <br>
-                            <div class="input-group">
-                                <select class="selectpicker show-tick form-control" tabindex="20" name="pin_required" id="pin_required" placeholder="Is a pin required to change status?">
-                                    <option value="enabled"{% if device.pin_required|yes_no == "Yes" %} selected{% endif %} data-subtext="Contro REQUIRES a pin.">Enabled</option>
-                                    <option value="disabled"{% if device.pin_required|yes_no == "No" %} selected{% endif %} data-subtext="Control requires no pin.">Disabled</option>
-                                </select>
-                            </div>
-                            <label style="margin-top: 20px; margin-bottom: 0px">Pin Code: </label>
-                            <a href="#" data-toggle="modal" data-target="#modalpincode"><i class="fa fa-question fa-lg"></i></a>
-                            {{ macros.modal("modalpincode", 'Pin Code', '
-                            If a pin is required, this is the value that must be entered. Use any alpha-numeric value you wish.
-                            ') }}
-                            <br>
-                            <div class="input-group">
-                                <input type="text" tabindex="21" class="form-control" name="pin_code" id="pin_code" size="15" value="{{ device.pin_code|hide_none }}">
-                            </div>
-                            <label style="margin-top: 20px; margin-bottom: 0px">Pin Timeout: </label>
-                            <a href="#" data-toggle="modal" data-target="#modalpintimeout"><i class="fa fa-question fa-lg"></i></a>
-                            {{ macros.modal("modalpintimeout", 'Pin Timeout', "
-                            Time pin code is remembered. Once you've entered a pin, you will be authorized to perform another function on the device unless
-                            the timeout has elapsed.
-                            ") }}
-                            <br>
-                            <div class="input-group">
-                                <input type="text" tabindex="22" class="form-control" name="pin_timeout" id="pin_timeout" size="4" value="{{ device.pin_timeout|hide_none }}">
-                            </div>
-                        </div>
+                <label style="margin-top: 20px; margin-bottom: 0px">Machine Label: </label>
+                <a href="#" data-toggle="modal" data-target="#modalMachinelabel"><i class="fa fa-question fa-lg"></i></a>
+                {{ macros.modal("modalMachinelabel", 'Machine Label', "
+                <p>This label is used to uniquely identify this device across all locations and areas. For example,
+                    if you have two houses (lucky you), each having two dens, you want want to label this device
+                    something like 'vacation_house_den_light', while the 'Label' would simply be 'Light'.
+                </p>
+                <p>
+                    The machine label is used within rules and custom automation modules lookup the device by name,
+                    rather than it's ID.
+                </p>
+                ") }}
+                <div class="input-group">
+                    <input type="text" tabindex="2" class="form-control" name="machine_label" id="machine_label" size="15" placeholder="'Bedroom light', 'Living room fan'" value="{{ device.machine_label }}" autofocus required>
+                </div>
+                <label style="margin-top: 20px; margin-bottom: 0px">Device Type: </label><br>
+                <div class="input-group">
+                    <select class="selectpicker show-tick form-control" tabindex="3" required name="device_type_id" id="device_type_id">
+                    {% for device_type_id, device_type in yombo._DeviceTypes.device_types.items() %}
+                        <option value="{{device_type_id}}" {% if device.device_type_id == device_type_id %} selected{% endif %} data-subtext="{{device_type_id}}">{{device_type.label}}</option>
+                    {% endfor %}
+                    </select>
+                </div>
+                <label style="margin-top: 20px; margin-bottom: 0px">Gateway: </label><br>
+                <div class="input-group">
+                    <select class="selectpicker show-tick form-control" tabindex="3" required name="gateway_id" id="gateway_id">
+                    {% for gateway_id, gateway in _gateways.items() %}
+                        <option value="{{gateway_id}}" {% if device.gateway_id == gateway_id %} selected{% endif %} data-subtext="{{gateway.gateway_id}}">{{gateway.label}}</option>
+                    {% endfor %}
+                    </select>
+                </div>
+                <label style="margin-top: 20px; margin-bottom: 0px">Location: </label><br>
+                <div class="input-group">
+                    <select class="selectpicker show-tick form-control" tabindex="3" required name="location_id" id="location_id">
+                    {% for location_id, location in _locations.items() if location.location_type == 'location' %}
+                        <option value="{{location_id}}" {% if device.location_id == location_id %} selected{% endif %} data-subtext="{{location.description|hide_none}}">{{location.label}}</option>
+                    {% endfor %}
+                    </select>
+                </div>
+                <label style="margin-top: 20px; margin-bottom: 0px">Area: </label><br>
+                <div class="input-group">
+                    <select class="selectpicker show-tick form-control" tabindex="4" required name="area_id" id="area_id">
+                    {% for location_id, location in _locations.items() if location.location_type == 'area' %}
+                        <option value="{{location_id}}" {% if device.area_id == location_id %} selected{% endif %} data-subtext="{{location.description|hide_none}}">{{location.label}}</option>
+                    {% endfor %}
+                    </select>
+                </div>
+                <label style="margin-top: 20px; margin-bottom: 0px">Description: </label><br>
+                <div class="input-group">
+                    <input type="text" tabindex="5" class="form-control" name="description" id="description" size="30" placeholder="Description of device." value="{{ device.description|hide_none }}">
+                </div>
+                <label style="margin-top: 20px; margin-bottom: 0px">Status: </label>
+                <a href="#" data-toggle="modal" data-target="#modalstatus"><i class="fa fa-question fa-lg"></i></a>
+                {{ macros.modal("modalstatus", 'Device enabled / disabled/ deleted', '
+                You can enable or disable the device as needed. When disabled, the device cannot receive commands
+                or send status updates. When deleted, the device will eventually be purged from the Yombo system.') }}
+                <br>
+                <div class="input-group">
+                    <select class="selectpicker show-tick form-control" tabindex="6" name="status" id="status" placeholder="Mark device as enabled, disabled, or deleted.">
+                        <option value="enabled"{% if device.enabled_status == 1 %} selected{% endif %} data-subtext="Works normally">Enabled</option>
+                        <option value="disabled"{% if device.enabled_status == 0 %} selected{% endif %} data-subtext="Device unusable">Disabled</option>
+                        <option value="deleted"{% if device.enabled_status == 2 %} selected{% endif %} data-subtext="Queue for deletion">Deleted</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <label>Statistics Information</label>
+            </div>
+            <!-- /.panel-heading -->
+            <div class="panel-body">
+                <label style="margin-top: 0px; margin-bottom: 0px">Statistics Type: </label>
+                <a href="#" data-toggle="modal" data-target="#modalstatisticstype"><i class="fa fa-question fa-lg"></i></a>
+                {{ macros.modal("modalstatisticstype", 'Statistics Type', "
+                <p>There are two primary statistics:</p>
+                <ul>
+                    <li>Data Point - A single data point such as if the window is closed or open, light on, 50% or off.</li>
+                    <li>Average - Can average data points together. This is the best way to store temperature data or
+                    other inputs that tend to flucuate a alot. This also helps keeps your database file from getting
+                    to big.</li>
+                    <ul>
+                        <li>When using the average method, you also need to set the 'bucket size', or how long
+                            the data should be averaged together. For example, a bucket size of '60' will average data
+                            together for 60 seconds.  See 'bucket size' for details.</li>
+                    </ul>
+                </ul>
+                ") }}
+                <br>
+                <div class="input-group">
+                    <select class="selectpicker show-tick form-control" tabindex="10" name="statistic_type" id="statistic_type">
+                        <option value="none"{% if device.statistic_type == "none" %} selected{% endif %}>None</option>
+                        <option value="datapoint"{% if device.statistic_type == "datapoint" %} selected{% endif %}>Single Data Point</option>
+                        <option value="average"{% if device.statistic_type == "average" %} selected{% endif %}>Average</option>
+                    </select>
+                </div>
+                <div id="div_statistics">
+                    <label style="margin-top: 20px; margin-bottom: 0px">Statistic Label: </label>
+                    <a href="#" data-toggle="modal" data-target="#modalStatisticlabel"><i class="fa fa-question fa-lg"></i></a>
+                    {{ macros.modal("modalStatisticlabel", 'Statistic Label', "
+                    <p>The default statistic label uses the 'location + area + machine_name' for the device if no
+                    value is set.</p>
+                    <p>This label is used to track the device history over time. Using a label allows the device to be replaced with
+                    a new device, but still maintain it's history. For example,
+                    if you have an insteon lamp module controlling your living table lamp and later decide to replace with zwave, you would give
+                    the device name the same statistic label.</p>
+                    <p>The statistic label is free form.</p>
+                    <p>You will want to name the location from least specific to most specific using a dotted notation, such as
+                    'myhouse.downstairs.livingroom.tabel_lamp'.  If you didn't have two stories, just omit 'downstairs'.</p>
+                    <p>Some more examples:</p>
+                    <ul>
+                        <li>workbench_light</li>
+                        <li>ceiling_fan</li>
+                        <li>fan</li>
+                        <li>hvac</li>
+                        <li>landscape_lights</li>
+                        <li>landscape_sprinklers</li>
+                        <li>landscape_sprinklers</li>
+                        <li>music</li>
+                    </ul>
+                    <p>After some statistics are generated, you can show energy/water/noise for any given area. For example,
+                    you show all water used 'outside.*' or 'outside.front' for a given time period. Or electricity used
+                    with search terms like 'myhouse.upstairs.* or 'myhouse.*.bedroom'.</p>
+                    <p> <strong>Note:</strong> All statistic labels are preceeded with 'devices.' to help with tracking
+                        various other system statistics. Additionally, another statistic with 'energy.' will be used
+                        to track enery usage for this device.</p>
+                    ") }}
+                    <br>
+                    <div class="input-group">
+                        <input type="text" tabindex="11" class="form-control" name="statistic_label" id="statistic_label" size="30" placeholder="Statistic label" value="{{ device.statistic_label|hide_none }}">
                     </div>
+                    <label style="margin-top: 20px; margin-bottom: 0px">Statistic Lifetime: </label>
+                    <a href="#" data-toggle="modal" data-target="#modalStatisticLifetime"><i class="fa fa-question fa-lg"></i></a>
+                    {{ macros.modal("modalStatisticLifetime", 'Statistic Lifetime', "
+                    <p>How long (in days) the statistic or status information should stay in the local database. Keeping
+                        statistics locally for long periods of time can be cause the local database to become rather large.
+                        We recommend keeping this to under a year, and using the Yombo Online Statistics tools to track
+                        historical data.</p>
+                    ") }}
+                    <br>
+                    <div class="input-group">
+                        <input type="text" tabindex="12" class="form-control" name="statistic_lifetime" id="statistic_lifetime" size="30" placeholder="0, 180, 365..." value="{{ device.statistic_lifetime|hide_none }}">
+                    </div>
+                </div>
+                <div id="div_statistic_bucket_size">
+                    <label style="margin-top: 15px; margin-bottom: 0px">Statistic Bucket Size: </label>
+                    <a href="#" data-toggle="modal" data-target="#modalstatisticsbucketsize"><i class="fa fa-question fa-lg"></i></a>
+                    {{ macros.modal("modalstatisticsbucketsize", 'Bucket Size', "
+                    <p>When averaging data points together, the system divides time into 'buckets' For example, if 60 seconds is
+                        set as the bucket set, all data points within a 60 second will be grouped together.</p>
+                    </p>
+                    ") }}
+                    <br>
+                    <div class="input-group">
+                    <input type="text" tabindex="13" class="form-control" name="statistic_bucket_size" id="statistic_bucket_size" size="30" placeholder="1, 5, 30, 60, 300..." value="{{ device.statistic_bucket_size|hide_none }}">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- /.panel-body -->
+    </div>
+    <!-- /.col-lg-6 -->
+    <div class="col-lg-7 col-md-6">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <label>Security Information</label>
+            </div>
+            <!-- /.panel-heading -->
+            <div class="panel-body">
+                <label style="margin-top: 0px; margin-bottom: 0px">Pin Required: </label>
+                <a href="#" data-toggle="modal" data-target="#modalpinrequired"><i class="fa fa-question fa-lg"></i></a>
+                {{ macros.modal("modalpinrequired", 'Pin required', '
+                If a pin is required, the user must enter a device pin to send a command. This is useful for devices that are alarm systems.
+                ') }}
+                <br>
+                <div class="input-group">
+                    <select class="selectpicker show-tick form-control" tabindex="20" name="pin_required" id="pin_required" placeholder="Is a pin required to change status?">
+                        <option value="enabled"{% if device.pin_required|yes_no == "Yes" %} selected{% endif %} data-subtext="Contro REQUIRES a pin.">Enabled</option>
+                        <option value="disabled"{% if device.pin_required|yes_no == "No" %} selected{% endif %} data-subtext="Control requires no pin.">Disabled</option>
+                    </select>
+                </div>
+                <label style="margin-top: 20px; margin-bottom: 0px">Pin Code: </label>
+                <a href="#" data-toggle="modal" data-target="#modalpincode"><i class="fa fa-question fa-lg"></i></a>
+                {{ macros.modal("modalpincode", 'Pin Code', '
+                If a pin is required, this is the value that must be entered. Use any alpha-numeric value you wish.
+                ') }}
+                <br>
+                <div class="input-group">
+                    <input type="text" tabindex="21" class="form-control" name="pin_code" id="pin_code" size="15" value="{{ device.pin_code|hide_none }}">
+                </div>
+                <label style="margin-top: 20px; margin-bottom: 0px">Pin Timeout: </label>
+                <a href="#" data-toggle="modal" data-target="#modalpintimeout"><i class="fa fa-question fa-lg"></i></a>
+                {{ macros.modal("modalpintimeout", 'Pin Timeout', "
+                Time pin code is remembered. Once you've entered a pin, you will be authorized to perform another function on the device unless
+                the timeout has elapsed.
+                ") }}
+                <br>
+                <div class="input-group">
+                    <input type="text" tabindex="22" class="form-control" name="pin_timeout" id="pin_timeout" size="4" value="{{ device.pin_timeout|hide_none }}">
+                </div>
+            </div>
+        </div>
 
-                    <div class="panel panel-default">
-                        <div class="panel-heading">
-                            <label>Energy Information</label>
-                        </div>
-                        <!-- /.panel-heading -->
-                        <div class="panel-body">
-                            <label style="margin-top: 15px; margin-bottom: 0px">Energy Type: </label>
-                            <a href="#" data-toggle="modal" data-target="#modalenergytype"><i class="fa fa-question fa-lg"></i></a>
-                            {{ macros.modal("modalenergytype", 'Energy Type', "
-                            <p>Allows you to track energy various types of energy or consumables consumed or produced by by this device.</p>
-                            ") }}
-                            <br>
-                            <div class="input-group">
-                                <select tabindex="30" class="form-control" name="energy_type" id="energy_type" placeholder="Energy Type.">
-                                    <option value="none"{% if device.energy_type == "none" %} selected{% endif %}>None</option>
-                                    <option value="electric"{% if device.energy_type == "electric" %} selected{% endif %}>Electric</option>
-                                    <option value="gas"{% if device.energy_type == "gas" %} selected{% endif %}>Gas</option>
-                                    <option value="water"{% if device.energy_type == "water" %} selected{% endif %}>Water</option>
-                                    <option value="noise"{% if device.energy_type == "noise" %} selected{% endif %}>Noise</option>
-                                </select>
-                            </div>
-
-                            <div id="div_energy_type">
-                                <label style="margin-top: 15px; margin-bottom: 0px">Energy Info Source Type: </label>
-                                <a href="#" data-toggle="modal" data-target="#modalenergysource"><i class="fa fa-question fa-lg"></i></a>
-                                {{ macros.modal("modalenergytype", 'Energy Information Source', "
-                                <p>Energy information can be collected from various sources. Some modules that manage a device will
-                                override this setting, as is the case for many thermostats.
-                                <ul>
-                                <li>Calculated - Use the energy map below to calculate usage. Most commong for basic devices.</li>
-                                <li>Device - Allows a device to specified. It's machine status value will be used as the energy value.</li>
-                                <li>State - A state's value will be used as the energy value.</li>
-                                </ul>
-                                </p>
-                                ") }}
-                                <br>
-                                <div class="input-group">
-                                    <select tabindex="31" class="form-control" name="energy_tracker_source" id="energy_tracker_source" placeholder="">
-                                        <option value="calculated"{% if device.energy_type == "calculated" %} selected{% endif %}>Calculated</option>
-                                        <option value="device"{% if device.energy_type == "device" %} selected{% endif %}>Device</option>
-                                        <option value="state"{% if device.energy_type == "device" %} selected{% endif %}>State</option>
-                                    </select>
-                                </div>
-                                <div id="div_energy_tracker_device">
-                                    <label style="margin-top: 15px; margin-bottom: 0px">Energy Source Device: </label>
-                                    <a href="#" data-toggle="modal" data-target="#modalenergysourcedevice"><i class="fa fa-question fa-lg"></i></a>
-                                    {{ macros.modal("modalenergysourcedevice", 'Energy Data from Device', "
-                                    <p>When 'Engery Info Source Type' is marked as 'Device', the following device will be used as the
-                                        value for the Energy information. For example, a device could be an energy monitor that
-                                        reports energy used or created.
-                                    </p>
-                                    ") }}
-                                    <br>
-                                    <div class="input-group">
-                                    {{macros.form_select_device(_devices, 'energy_tracker_device', 'energy_tracker_device', device.energy_tracker_device)}}
-                                    </div>
-                                </div>
-                                <div id="div_energy_tracker_state">
-                                    <label style="margin-top: 15px; margin-bottom: 0px">Energy Source State: </label>
-                                    <a href="#" data-toggle="modal" data-target="#modalenergysourcestate"><i class="fa fa-question fa-lg"></i></a>
-                                    {{ macros.modal("modalenergysourcedevice", 'Energy Data from Device', "
-                                    <p>When 'Engery Info Source Type' is marked as 'State', the following state will be used as the
-                                        value for the Energy information.
-                                    </p>
-                                    ") }}
-                                    <br>
-                                    <div class="input-group">
-                                    {{macros.form_select_state(states, 'energy_tracker_device', 'energy_tracker_device', device.energy_tracker_device)}}
-                                    </div>
-                                </div>
-                                <div id="div_energy_map">
-                                    <label id="energy_map_label" style="margin-top: 15px;">Energy Map Information <a href="#" data-toggle="modal" data-target="#modalenergymap"><i class="fa fa-question fa-lg"></i></a></label>
-                                    {{ macros.modal("modalenergymap", 'Energy Map', "
-                                    <p>Allows you to specify ranges of energy consumption or generation for any particular device, including
-                                    water usage. With an energy 'map', Yombo Gateway can calculate the energy usage (or generation) for a
-                                    particular device. For example, if a lamp module is on 25%, it will calculate how much energy is being
-                                    consumed at 25% power.</p>
-                                    <p>Typically, you will have 0% and 100%. For 0%, you might put 1 or 2 watts as most insteon,
-                                    zwave, x10 devices consume some power all the time, regardless of the state. For 100%, you would put in
-                                    the bulb usage power plus the 0% rate. So, for a 40 watt bulb, you would enter 41 or 42.</p>
-                                    <h3>Advanced use</h3>
-                                    <p>The 'map' feature allows you to be very precise. For example, if your device consumes more power at lower
-                                    set states (for exaple, at 25% on, it consumes relatively more power than at 40%). You can then specify that from
-                                    0% to %50, the device can consume up 200 watts, but from 51% to 100%, it can consume up to 300 watts. In this
-                                    example, a device at 25% power would consume 100 watts, but at 75%, it would consume 250watts.</p>
-                                    ") }}
-                                    <br>
-                                    <div class="input-group">
-                                        <table width="100%" class="table table-striped table-bordered table-hover" id="energymap">
-                                            <thead>
-                                                <tr>
-                                                    <th>Percent</th><th>Value</th><th>Actions</th>
-                                                </tr>
-                                            </thead>
-                                        <tbody>
-                                        {% if device.energy_map is not none -%}
-                                            {% for start_value, energy_usage in device.energy_map.items() %}
-                                             <tr>
-                                                <td><input type="text" class="form-control" name="start_percent" id="start_percent" value="{{ start_value*100}}"></td>
-                                                <td><input type="text" class="form-control" name="energy_usage" id="energy_usage" value="{{ energy_usage }}"></td>
-                                                <td><a href="#">Delete</a></td>
-                                             </tr>{% endfor %}
-                                        {% endif %}
-                                             <tr>
-                                                <td><input type="text" class="form-control" name="start_percent" id="start_percent" value=""></td>
-                                                <td><input type="text" class="form-control" name="energy_usage" id="energy_usage" value=""></td>
-                                                <td><a class="deleterow" href="#">Delete</a></td>
-                                             </tr>
-                                        </tbody>
-                                        </table>
-                                        <a id="add_row" class="btn btn-md btn-primary pull-left">Add Row</a><p></p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!-- /.col-lg-12 -->
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <label>Energy Information</label>
             </div>
-            <!-- /.row -->
-            <div class="row">
-                <div class="col-lg-12">
-                    <div class="panel panel-default">
-                        <div class="panel-heading">
-                            <label>Device Variables <a href="#" data-toggle="modal" data-target="#modalvariables"><i class="fa fa-question fa-lg"></i></a></label>
-                        {{ macros.modal("modalvariables", 'Device Variables', "
-                        <p>
-                            The device variables are used to set configuration options for for a device. These settings are
-                            specific to each device type.
+            <!-- /.panel-heading -->
+            <div class="panel-body">
+                <label style="margin-top: 15px; margin-bottom: 0px">Energy Type: </label>
+                <a href="#" data-toggle="modal" data-target="#modalenergytype"><i class="fa fa-question fa-lg"></i></a>
+                {{ macros.modal("modalenergytype", 'Energy Type', "
+                <p>Allows you to track energy various types of energy or consumables consumed or produced by by this device.</p>
+                ") }}
+                <br>
+                <div class="input-group">
+                    <select tabindex="30" class="form-control" name="energy_type" id="energy_type" placeholder="Energy Type.">
+                        <option value="none"{% if device.energy_type == "none" %} selected{% endif %}>None</option>
+                        <option value="electric"{% if device.energy_type == "electric" %} selected{% endif %}>Electric</option>
+                        <option value="gas"{% if device.energy_type == "gas" %} selected{% endif %}>Gas</option>
+                        <option value="water"{% if device.energy_type == "water" %} selected{% endif %}>Water</option>
+                        <option value="noise"{% if device.energy_type == "noise" %} selected{% endif %}>Noise</option>
+                    </select>
+                </div>
+
+                <div id="div_energy_type">
+                    <label style="margin-top: 15px; margin-bottom: 0px">Energy Info Source Type: </label>
+                    <a href="#" data-toggle="modal" data-target="#modalenergysource"><i class="fa fa-question fa-lg"></i></a>
+                    {{ macros.modal("modalenergytype", 'Energy Information Source', "
+                    <p>Energy information can be collected from various sources. Some modules that manage a device will
+                    override this setting, as is the case for many thermostats.
+                    <ul>
+                    <li>Calculated - Use the energy map below to calculate usage. Most commong for basic devices.</li>
+                    <li>Device - Allows a device to specified. It's machine status value will be used as the energy value.</li>
+                    <li>State - A state's value will be used as the energy value.</li>
+                    </ul>
+                    </p>
+                    ") }}
+                    <br>
+                    <div class="input-group">
+                        <select tabindex="31" class="form-control" name="energy_tracker_source" id="energy_tracker_source" placeholder="">
+                            <option value="calculated"{% if device.energy_type == "calculated" %} selected{% endif %}>Calculated</option>
+                            <option value="device"{% if device.energy_type == "device" %} selected{% endif %}>Device</option>
+                            <option value="state"{% if device.energy_type == "device" %} selected{% endif %}>State</option>
+                        </select>
+                    </div>
+                    <div id="div_energy_tracker_device">
+                        <label style="margin-top: 15px; margin-bottom: 0px">Energy Source Device: </label>
+                        <a href="#" data-toggle="modal" data-target="#modalenergysourcedevice"><i class="fa fa-question fa-lg"></i></a>
+                        {{ macros.modal("modalenergysourcedevice", 'Energy Data from Device', "
+                        <p>When 'Engery Info Source Type' is marked as 'Device', the following device will be used as the
+                            value for the Energy information. For example, a device could be an energy monitor that
+                            reports energy used or created.
                         </p>
                         ") }}
                         <br>
+                        <div class="input-group">
+                        {{macros.form_select_device(_devices, 'energy_tracker_device', 'energy_tracker_device', device.energy_tracker_device)}}
                         </div>
-                        <div class="panel-body">
-{{macros.edit_item_variables(_devices, device, _inputtypes, device_variables)}}
+                    </div>
+                    <div id="div_energy_tracker_state">
+                        <label style="margin-top: 15px; margin-bottom: 0px">Energy Source State: </label>
+                        <a href="#" data-toggle="modal" data-target="#modalenergysourcestate"><i class="fa fa-question fa-lg"></i></a>
+                        {{ macros.modal("modalenergysourcedevice", 'Energy Data from Device', "
+                        <p>When 'Engery Info Source Type' is marked as 'State', the following state will be used as the
+                            value for the Energy information.
+                        </p>
+                        ") }}
+                        <br>
+                        <div class="input-group">
+                        {{macros.form_select_state(states, 'energy_tracker_device', 'energy_tracker_device', device.energy_tracker_device)}}
+                        </div>
+                    </div>
+                    <div id="div_energy_map">
+                        <label id="energy_map_label" style="margin-top: 15px;">Energy Map Information <a href="#" data-toggle="modal" data-target="#modalenergymap"><i class="fa fa-question fa-lg"></i></a></label>
+                        {{ macros.modal("modalenergymap", 'Energy Map', "
+                        <p>Allows you to specify ranges of energy consumption or generation for any particular device, including
+                        water usage. With an energy 'map', Yombo Gateway can calculate the energy usage (or generation) for a
+                        particular device. For example, if a lamp module is on 25%, it will calculate how much energy is being
+                        consumed at 25% power.</p>
+                        <p>Typically, you will have 0% and 100%. For 0%, you might put 1 or 2 watts as most insteon,
+                        zwave, x10 devices consume some power all the time, regardless of the state. For 100%, you would put in
+                        the bulb usage power plus the 0% rate. So, for a 40 watt bulb, you would enter 41 or 42.</p>
+                        <h3>Advanced use</h3>
+                        <p>The 'map' feature allows you to be very precise. For example, if your device consumes more power at lower
+                        set states (for exaple, at 25% on, it consumes relatively more power than at 40%). You can then specify that from
+                        0% to %50, the device can consume up 200 watts, but from 51% to 100%, it can consume up to 300 watts. In this
+                        example, a device at 25% power would consume 100 watts, but at 75%, it would consume 250watts.</p>
+                        ") }}
+                        <br>
+                        <div class="input-group">
+                            <table width="100%" class="table table-striped table-bordered table-hover" id="energymap">
+                                <thead>
+                                    <tr>
+                                        <th>Percent</th><th>Value</th><th>Actions</th>
+                                    </tr>
+                                </thead>
+                            <tbody>
+                            {% if device.energy_map is not none -%}
+                                {% for start_value, energy_usage in device.energy_map.items() %}
+                                 <tr>
+                                    <td><input type="text" class="form-control" name="start_percent" id="start_percent" value="{{ start_value*100}}"></td>
+                                    <td><input type="text" class="form-control" name="energy_usage" id="energy_usage" value="{{ energy_usage }}"></td>
+                                    <td><a href="#">Delete</a></td>
+                                 </tr>{% endfor %}
+                            {% endif %}
+                                 <tr>
+                                    <td><input type="text" class="form-control" name="start_percent" id="start_percent" value=""></td>
+                                    <td><input type="text" class="form-control" name="energy_usage" id="energy_usage" value=""></td>
+                                    <td><a class="deleterow" href="#">Delete</a></td>
+                                 </tr>
+                            </tbody>
+                            </table>
+                            <a id="add_row" class="btn btn-md btn-primary pull-left">Add Row</a><p></p>
                         </div>
                     </div>
                 </div>
             </div>
-            <!-- /.row -->
-            <input type="hidden" name="json_output" id="json_output" value="">
-            <button type="submit" class="btn btn-primary btn-lg btn-block">Submit Device Information</button>
-            <br>&nbsp;<br>&nbsp;
-            </form>
+        </div>
+    </div>
+    <!-- /.col-lg-12 -->
+</div>
+<!-- /.row -->
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <label>Device Variables <a href="#" data-toggle="modal" data-target="#modalvariables"><i class="fa fa-question fa-lg"></i></a></label>
+            {{ macros.modal("modalvariables", 'Device Variables', "
+            <p>
+                The device variables are used to set configuration options for for a device. These settings are
+                specific to each device type.
+            </p>
+            ") }}
+            <br>
+            </div>
+            <div class="panel-body">
+{{macros.edit_item_variables(_devices, device, _inputtypes, device_variables)}}
+            </div>
+        </div>
+    </div>
+</div>
+<!-- /.row -->
+<input type="hidden" name="json_output" id="json_output" value="">
+<button type="submit" class="btn btn-primary btn-lg btn-block">Submit Device Information</button>
+<br>&nbsp;<br>&nbsp;
+</form>
 {% endblock %}
 
 {% block body_bottom %}
 {% include 'lib/webinterface/fragments/select_js.tpl' %}
 
-    <script type="text/javascript" src="/static/js/jquery.serializejson.min.js"></script>
-    <script>
-       function update_stat_label() {
-            console.log("update stat label called")
-            var new_string = "";
-            new_string += $("#location_id option:selected").text().toLowerCase();
-            new_string += "." + $("#area_id option:selected").text().toLowerCase();
-            new_string += "." + $("#machine_label").val().toLowerCase();
-            new_string=new_string.replace(" ","_");
-            $('#statistic_label').attr("placeholder", new_string);
-            console.log("update stat label finiushed: " + new_string)
+<script type="text/javascript" src="/static/js/jquery.serializejson.min.js"></script>
+<script>
+   function update_stat_label() {
+        console.log("update stat label called")
+        var new_string = "";
+        new_string += $("#location_id option:selected").text().toLowerCase();
+        new_string += "." + $("#area_id option:selected").text().toLowerCase();
+        new_string += "." + $("#machine_label").val().toLowerCase();
+        new_string=new_string.replace(" ","_");
+        $('#statistic_label').attr("placeholder", new_string);
+        console.log("update stat label finiushed: " + new_string)
+    }
+
+   $('#statistic_label').blur(function()
+        {
+        if(!$.trim(this.value).length) { // zero-length string AFTER a trim
+           $('#statistic_label').val($('#statistic_label').attr("placeholder"));
+        }
+    });
+
+
+    $(document).ready(function(){
+        update_stat_label();
+        $('#machine_label').change(function() {
+            update_stat_label();
+        });
+        $('#location_id').change(function() {
+            update_stat_label();
+        });
+        $('#area_id').change(function() {
+            update_stat_label();
+        });
+        if(!$.trim(this.value).length) { // zero-length string AFTER a trim
+           $('#statistic_label').val($('#statistic_label').attr("placeholder"));
         }
 
-       $('#statistic_label').blur(function()
-            {
-            if(!$.trim(this.value).length) { // zero-length string AFTER a trim
-               $('#statistic_label').val($('#statistic_label').attr("placeholder"));
-            }
-        });
+    $("#statistic_type").change(function() {
+        var input_value = this.value;
+        console.log(input_value);
+        if (input_value == 'datapoint') {
+            $('#div_statistics').slideDown();
+            $('#div_statistic_bucket_size').slideUp();
+        } else if (input_value == 'average') {
+            $('#div_statistics').slideDown();
+            $('#div_statistic_bucket_size').slideDown();
+        } else if (input_value == 'none') {
+            $('#div_statistics').slideUp();
+            $('#div_statistic_bucket_size').slideUp();
+        }
+        }).change(); //to trigger on load
 
+    $("#energy_type").change(function() {
+        var input_value = this.value;
+        if (input_value == 'none') {
+            $('#div_energy_type').slideUp();
+        } else {
+            $('#div_energy_type').slideDown();
+        }
+        }).change(); //to trigger on load
 
-        $(document).ready(function(){
-            update_stat_label();
-            $('#machine_label').change(function() {
-                update_stat_label();
-            });
-            $('#location_id').change(function() {
-                update_stat_label();
-            });
-            $('#area_id').change(function() {
-                update_stat_label();
-            });
-            if(!$.trim(this.value).length) { // zero-length string AFTER a trim
-               $('#statistic_label').val($('#statistic_label').attr("placeholder"));
-            }
+    $("#energy_tracker_source").change(function() {
+        var input_value = this.value;
+        console.log(input_value);
+        if (input_value == 'device') {
+            $("#energy_map_label").text("input_value");
+            $('#div_energy_tracker_device').slideDown();
+        } else {
+            $('#div_energy_tracker_device').slideUp();
+        }
 
-        $("#statistic_type").change(function() {
-            var input_value = this.value;
-            console.log(input_value);
-            if (input_value == 'datapoint') {
-                $('#div_statistics').slideDown();
-                $('#div_statistic_bucket_size').slideUp();
-            } else if (input_value == 'average') {
-                $('#div_statistics').slideDown();
-                $('#div_statistic_bucket_size').slideDown();
-            } else if (input_value == 'none') {
-                $('#div_statistics').slideUp();
-                $('#div_statistic_bucket_size').slideUp();
-            }
-            }).change(); //to trigger on load
+        if (input_value == 'state') {
+            $("#energy_map_label").text("input_value");
+            $('#div_energy_tracker_state').slideDown();
+        } else {
+            $('#div_energy_tracker_state').slideUp();
+        }
 
-        $("#energy_type").change(function() {
-            var input_value = this.value;
-            if (input_value == 'none') {
-                $('#div_energy_type').slideUp();
-            } else {
-                $('#div_energy_type').slideDown();
-            }
-            }).change(); //to trigger on load
+        if (input_value == 'calculated') {
+            $('#div_energy_map').slideDown();
+        } else {
+            $('#div_energy_map').slideUp();
+        }
+        $('#energy_tracker_device').selectpicker('refresh');
+        $('#div_energy_tracker_state').selectpicker('refresh');
+        $('#energy_tracker_device').selectpicker('refresh');
+        }).change(); //to trigger on load
 
-        $("#energy_tracker_source").change(function() {
-            var input_value = this.value;
-            console.log(input_value);
-            if (input_value == 'device') {
-                $("#energy_map_label").text("input_value");
-                $('#div_energy_tracker_device').slideDown();
-            } else {
-                $('#div_energy_tracker_device').slideUp();
-            }
+    var i=1;
+    $("#add_row").click(function(){
+        $('#energymap tr:last').after('<tr>\
+                                        <td><input type="text" class="form-control" name="start_percent" id="start_percent" value=""></td>\
+                                        <td><input type="text" class="form-control" name="energy_usage" id="energy_usage" value=""></td>\
+                                        <td><a href="#">Delete</a></td>\
+                                     </tr>');
+        i++;
+    });
+    $(".deleterow").click(function(event) {
+        var href = $(this).attr('href');
+        $(this).closest("tr").remove(); // remove row
+        return false; // prevents default behavior
+    });
 
-            if (input_value == 'state') {
-                $("#energy_map_label").text("input_value");
-                $('#div_energy_tracker_state').slideDown();
-            } else {
-                $('#div_energy_tracker_state').slideUp();
-            }
-
-            if (input_value == 'calculated') {
-                $('#div_energy_map').slideDown();
-            } else {
-                $('#div_energy_map').slideUp();
-            }
-            $('#energy_tracker_device').selectpicker('refresh');
-            $('#div_energy_tracker_state').selectpicker('refresh');
-            $('#energy_tracker_device').selectpicker('refresh');
-            }).change(); //to trigger on load
-
-        var i=1;
-        $("#add_row").click(function(){
-            $('#energymap tr:last').after('<tr>\
-                                            <td><input type="text" class="form-control" name="start_percent" id="start_percent" value=""></td>\
-                                            <td><input type="text" class="form-control" name="energy_usage" id="energy_usage" value=""></td>\
-                                            <td><a href="#">Delete</a></td>\
-                                         </tr>');
-            i++;
-        });
-        $(".deleterow").click(function(event) {
-            var href = $(this).attr('href');
-            $(this).closest("tr").remove(); // remove row
-            return false; // prevents default behavior
-        });
-
-        (function($) {
-            $.extend({
-                toDictionary: function(query) {
-                    var parms = {};
-                    var items = query.split("&"); // split
-                    for (var i = 0; i < items.length; i++) {
-                        var values = items[i].split("=");
-                        var key = decodeURIComponent(values.shift());
-                        var value = values.join("=")
-                        parms[key] = decodeURIComponent(value);
-                    }
-                    return (parms);
+    (function($) {
+        $.extend({
+            toDictionary: function(query) {
+                var parms = {};
+                var items = query.split("&"); // split
+                for (var i = 0; i < items.length; i++) {
+                    var values = items[i].split("=");
+                    var key = decodeURIComponent(values.shift());
+                    var value = values.join("=")
+                    parms[key] = decodeURIComponent(value);
                 }
-            })
-        })(jQuery);
+                return (parms);
+            }
+        })
+    })(jQuery);
 
-        $("#deviceedit").submit(function(event) {
-            var rawData = $('#deviceedit').serializeJSON();
-            var formData = JSON.stringify(rawData);
-            $('#json_output').val(formData)
-        });
-
-
+    $("#deviceedit").submit(function(event) {
+        var rawData = $('#deviceedit').serializeJSON();
+        var formData = JSON.stringify(rawData);
+        $('#json_output').val(formData)
     });
 
-    $('.ls-modal').on('click', function(e){
-      e.preventDefault();
-      $('#myModal').modal('show').find('.modal-body').load($(this).attr('href'));
-    });
+});
+
+$('.ls-modal').on('click', function(e){
+  e.preventDefault();
+  $('#myModal').modal('show').find('.modal-body').load($(this).attr('href'));
+});
 
 
-    </script>
+</script>
 {% endblock %}
