@@ -294,6 +294,17 @@ NAV_SIDE_MENU = [
         'opmode': 'run',
         'cluster': 'any',
     },
+    {
+        'label1': 'System',
+        'label2': 'Developer Tools',
+        'priority1': 6000,
+        'priority2': 7500,
+        'icon': 'fa fa-code fa-fw',
+        'url': '/devtools/config/index',
+        'tooltip': '',
+        'opmode': 'run',
+        'cluster': 'any',
+    },
 ]
 
 DEFAULT_NODE = [
