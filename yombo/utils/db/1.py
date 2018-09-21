@@ -328,6 +328,7 @@ def create_table_events(Registry, **kwargs):
         `attr7`         TEXT,
         `attr8`         TEXT,
         `attr9`         TEXT,
+        `attr10`        TEXT,
         `attr11`        TEXT,
         `attr12`        TEXT,
         `attr13`        TEXT,
@@ -338,30 +339,16 @@ def create_table_events(Registry, **kwargs):
         `attr18`        TEXT,
         `attr19`        TEXT,
         `attr20`        TEXT,
-        `message`       TEXT, /* Human message....may be removed in future. */
         `meta`          TEXT, /* Any extra meta data. MSGPACK format */
         `created_at`    INTEGER NOT NULL);"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS event_type_idx ON events (event_type, event_subtype)")
-
-
-# @inlineCallbacks
-# def create_table_event_types(Registry, **kwargs):
-#     """  """
-#     # To be completed
-#     table = """CREATE TABLE `event_types` (
-#         `id`            INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-#         `event_type`    TEXT NOT NULL, /* audit, system, user, etc */
-#         `event_subtype` TEXT NOT NULL, /* allow/deny */
-#         `description`   TEXT NOT NULL,
-#         `attr1`         TEXT,
-#         `attr2`         TEXT,
-#         `attr3`         TEXT,
-#         `attr4`         TEXT,
-#         `attr5`         TEXT,
-#         `attr6`         TEXT,
-#         `created_at`    INTEGER NOT NULL);"""
-#     yield Registry.DBPOOL.runQuery(table)
+    yield Registry.DBPOOL.runQuery(create_index('events', 'created_at'))
+    yield Registry.DBPOOL.runQuery(create_index('events', 'attr1'))
+    yield Registry.DBPOOL.runQuery(create_index('events', 'attr2'))
+    yield Registry.DBPOOL.runQuery(create_index('events', 'attr3'))
+    yield Registry.DBPOOL.runQuery(create_index('events', 'attr4'))
+    yield Registry.DBPOOL.runQuery(create_index('events', 'attr5')) # Only do these, majority only have this many items.
 
 
 @inlineCallbacks

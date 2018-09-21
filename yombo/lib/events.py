@@ -56,7 +56,7 @@ class Events(YomboLibrary):
         :param kwargs:
         :return:
         """
-        self.event_queue = []  # Save events in bulk.
+        self.event_queue = {}  # Save events in bulk.
         self.event_types = deepcopy(SYSTEM_EVENT_TYPES)
         self.db_save_event_queue = self._LocalDB.save_events_bulk
         self.save_event_queue_loop = LoopingCall(self.save_event_queue)
@@ -86,17 +86,21 @@ class Events(YomboLibrary):
         if event_subtype not in self.event_types[event_type]:
             raise YomboWarning("Invalid event sub-type: %s" % event_subtype)
 
-        self.event_queue.append(OrderedDict({
+        event = OrderedDict({
             'event_type': event_type,
             'event_subtype': event_subtype,
             'priority': priority,
             'source': source_label,
             'user_id': user_id,
             'user_type': user_type,
-            'attributes': data_pickle(attributes, encoder="msgpack"),
             'created_at': created_at,
             })
-        )
+        event.update( OrderedDict({"attr%s" % (v + 1): k for v, k in enumerate(attributes)}) )
+        length = str(len(event))
+        if length not in self.event_queue:
+            self.event_queue[length] = []
+
+        self.event_queue[length].append(event)
 
     def new_type(self, event_type, event_subtype, description, attributes):
         """
@@ -119,7 +123,10 @@ class Events(YomboLibrary):
 
     @inlineCallbacks
     def save_event_queue(self):
-        if len(self.event_queue) > 0:
-            queue = self.event_queue
-            self.event_queue = []
-            yield self.db_save_event_queue(queue)
+        if len(self.event_queue) == 0:
+            return
+
+        event_queue = deepcopy(self.event_queue)
+        self.event_queue = {}
+        for key, data in event_queue.items():
+            yield self.db_save_event_queue(data)
