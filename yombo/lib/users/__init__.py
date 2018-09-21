@@ -521,7 +521,7 @@ class Users(YomboLibrary):
         :return: Boolean
         """
         def return_access(value):
-            save_user_id = format_user_id_logging(user_id)
+            save_user_id = format_user_id_logging(user_id, user_type)
             if value is True:
                 self._Events.new('auth', 'accepted', (platform, item, action),
                                  user_id=save_user_id, user_type=user_type)
