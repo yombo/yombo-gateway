@@ -57,6 +57,22 @@ import yombo.ext.base62 as base62
 logger = None  # This is set by the set_twisted_logger function.
 
 
+def format_user_id_logging(self, auth_id, auth_type):
+    """
+    Creates a log friendly version of the user_id so as not to reveal too much information.
+
+    :param self:
+    :param auth_id: The user's id. Usually email address or auth key.
+    :param auth_type: Type of auth, such as websession or user.
+    :return:
+    """
+    if auth_type == "websession":
+        user_id_parts = auth_id.split("@")
+        user_id = user_id_parts[0] + "@" + user_id_parts[1][0:4] + "..."
+    else:
+        user_id = auth_id[0:-8][0:10]
+
+
 def generate_source_string(gateway_id=None, offset=None):
     """
     Gets the python file, class, and method that was called. For example, if this was

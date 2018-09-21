@@ -29,7 +29,7 @@ from yombo.lib.websessions import Auth as WebSessionAuth
 from yombo.lib.users.role import Role
 from yombo.lib.users.user import User
 from yombo.constants.users import *
-from yombo.utils import global_invoke_all, data_unpickle
+from yombo.utils import global_invoke_all, data_unpickle, format_user_id_logging
 from yombo.utils.decorators import cached
 
 logger = get_logger('library.users')
@@ -521,14 +521,15 @@ class Users(YomboLibrary):
         :return: Boolean
         """
         def return_access(value):
+            save_user_id = format_user_id_logging(user_id)
             if value is True:
                 self._Events.new('auth', 'accepted', (platform, item, action),
-                                 user_id=user_id, user_type=user_type)
+                                 user_id=save_user_id, user_type=user_type)
                 return True
 
             if value is False:
-                self._Events.new('auth', 'denied', 'lib.users:has_access', (platform, item, action),
-                                 user_id=user_id, user_type=user_type)
+                self._Events.new('auth', 'denied', (platform, item, action),
+                                 user_id=save_user_id, user_type=user_type)
                 if raise_error is not True:
                     return False
             raise YomboNoAccess(item_permissions=item_permissions,
