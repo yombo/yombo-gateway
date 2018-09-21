@@ -72,7 +72,7 @@ class InteractionBase(object):
         return txn.execute(query, *args, **kwargs)
 
 
-    def select(self, tablename, id=None, where=None, group=None, limit=None, orderby=None, select=None):
+    def select(self, tablename, id=None, where=None, group=None, limit=None, orderby=None, select=None, debug=None):
         """
         Select rows from a table.
 
@@ -120,10 +120,13 @@ class InteractionBase(object):
         if orderby is not None:
             q += " ORDER BY " + orderby
 
-        if isinstance(limit, tuple):
+        if isinstance(limit, tuple) or isinstance(limit, list):
             q += " LIMIT %s OFFSET %s" % (limit[0], limit[1])
         elif limit is not None:
             q += " LIMIT " + str(limit)
+        if debug is True:
+            print("q: %s" % q)
+            print("args: %s" % args)
 
         return self.runInteraction(self._doselect, q, args, tablename, one, cacheTableStructure)
 
