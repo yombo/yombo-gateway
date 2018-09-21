@@ -43,7 +43,11 @@
             "pageLength": 25,
             searchDelay: 500,
             "columns": [
-                { "data": "created_at" },
+                { "data": "created_at", "render": function(data){
+                    var d = new Date(0);
+                    d.setUTCSeconds(data);
+                    return d.toLocaleString();
+                } },
                 { "data": "priority" },
                 { "data": "source" },
                 { "data": "user" },
