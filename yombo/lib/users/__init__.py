@@ -543,9 +543,9 @@ class Users(YomboLibrary):
         platform = platform.lower()
         action = action.lower()
 
-        logger.info("has_access: platform: {platform}, item: {item}, action: {action}",
+        logger.debug("has_access: platform: {platform}, item: {item}, action: {action}",
                      platform=platform, item=item, action=action)
-        logger.info("has_access: has roles: {roles}", roles=roles)
+        logger.debug("has_access: has roles: {roles}", roles=roles)
 
         # Admins have full access.
         if 'admin' in roles:
@@ -565,7 +565,7 @@ class Users(YomboLibrary):
 
         for a_role in self.get_roles(roles):
             results = a_role.has_access(platform, item, action)
-            logger.info("has_access: results for role.has_access: %s" % results)
+            logger.debug("has_access: results for role.has_access: %s" % results)
             return return_access(results)
         return return_access(False)
 
