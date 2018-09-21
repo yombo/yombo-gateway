@@ -55,6 +55,7 @@ from yombo.lib.webinterface.routes.api_v1.automation import route_api_v1_automat
 from yombo.lib.webinterface.routes.api_v1.command import route_api_v1_command
 from yombo.lib.webinterface.routes.api_v1.device import route_api_v1_device
 from yombo.lib.webinterface.routes.api_v1.device_command import route_api_v1_device_command
+from yombo.lib.webinterface.routes.api_v1.events import route_api_v1_events
 from yombo.lib.webinterface.routes.api_v1.gateway import route_api_v1_gateway
 from yombo.lib.webinterface.routes.api_v1.module import route_api_v1_module
 from yombo.lib.webinterface.routes.api_v1.notification import route_api_v1_notification
@@ -64,6 +65,7 @@ from yombo.lib.webinterface.routes.api_v1.stream import broadcast as route_api_v
 from yombo.lib.webinterface.routes.api_v1.stream import route_api_v1_stream
 from yombo.lib.webinterface.routes.api_v1.statistics import route_api_v1_statistics
 from yombo.lib.webinterface.routes.api_v1.system import route_api_v1_system
+from yombo.lib.webinterface.routes.api_v1.webinterface_logs import route_api_v1_webinterface_logs
 
 from yombo.lib.webinterface.routes.devtools.config import route_devtools_config
 from yombo.lib.webinterface.routes.devtools.config_commands import route_devtools_config_commands
@@ -86,6 +88,7 @@ from yombo.lib.webinterface.routes.automation.template import route_automation_t
 from yombo.lib.webinterface.routes.configs import route_configs
 from yombo.lib.webinterface.routes.devices import route_devices
 from yombo.lib.webinterface.routes.discovery import route_discovery
+from yombo.lib.webinterface.routes.events import route_events
 from yombo.lib.webinterface.routes.locations import route_locations
 from yombo.lib.webinterface.routes.gateways import route_gateways
 from yombo.lib.webinterface.routes.home import route_home
@@ -105,7 +108,7 @@ from yombo.lib.webinterface.routes.states import route_states
 from yombo.lib.webinterface.routes.system import route_system
 from yombo.lib.webinterface.routes.users import route_users
 from yombo.lib.webinterface.routes.voicecmds import route_voicecmds
-from yombo.lib.webinterface.routes.setup_wizard import route_setup_wizard
+from yombo.lib.webinterface.routes.webinterface_logs import route_webinterface_logs
 from yombo.lib.webinterface.constants import NAV_SIDE_MENU, DEFAULT_NODE, NOTIFICATION_PRIORITY_MAP_CSS
 
 logger = get_logger("library.webinterface")
@@ -260,6 +263,8 @@ class WebInterface(YomboLibrary):
         route_api_v1_stream(self.webapp, self)
         route_api_v1_system(self.webapp)
         route_api_v1_scene(self.webapp)
+        route_api_v1_events(self.webapp)
+        route_api_v1_webinterface_logs(self.webapp)
 
         # Load devtool routes
         route_devtools_config(self.webapp)
@@ -284,6 +289,7 @@ class WebInterface(YomboLibrary):
         route_configs(self.webapp)
         route_devices(self.webapp)
         route_discovery(self.webapp)
+        route_events(self.webapp)
         route_locations(self.webapp)
         route_devtools_config(self.webapp)
         route_gateways(self.webapp)
@@ -299,13 +305,14 @@ class WebInterface(YomboLibrary):
         route_scenes_state(self.webapp)
         route_scenes_template(self.webapp)
         if self.operating_mode != 'run':
+            from yombo.lib.webinterface.routes.setup_wizard import route_setup_wizard
             route_setup_wizard(self.webapp)
         route_statistics(self.webapp)
         route_states(self.webapp)
         route_system(self.webapp)
         route_users(self.webapp)
         route_voicecmds(self.webapp)
-
+        route_webinterface_logs(self.webapp)
         if self.is_master():
             route_panel(self.webapp)
 

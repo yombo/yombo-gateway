@@ -289,7 +289,7 @@ NAV_SIDE_MENU = [
         'priority1': 6000,
         'priority2': 7000,
         'icon': 'fa fa-hdd fa-fw',
-        'url': '/weblogs/index',
+        'url': '/webinterface_logs/index',
         'tooltip': '',
         'opmode': 'run',
         'cluster': 'any',
