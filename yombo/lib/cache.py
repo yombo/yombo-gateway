@@ -21,7 +21,7 @@ from cachetools import TTLCache, LFUCache, LRUCache
 # Import Yombo libraries
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import generate_source_string
+from yombo.utils import generate_source_string, random_string
 from yombo.utils.decorators import setup_cache
 
 logger = get_logger('library.cache')
@@ -70,6 +70,8 @@ class Cache(YomboLibrary):
         elif tags is None:
             tags = ()
 
+        if name is None:
+            name = generate_source_string() + random_string(length=10)
         if name not in self.caches:
             self.caches[name] = {
                 'cache': LFUCache(maxsize),
@@ -96,6 +98,9 @@ class Cache(YomboLibrary):
         elif tags is None:
             tags = ()
 
+        if name is None:
+            name = generate_source_string() + random_string(length=10)
+
         if name not in self.caches:
             self.caches[name] = {
                 'cache': LRUCache(maxsize),
@@ -121,6 +126,9 @@ class Cache(YomboLibrary):
             tags = (tags,)
         elif tags is None:
             tags = ()
+
+        if name is None:
+            name = generate_source_string() + random_string(length=10)
 
         if name not in self.caches:
             self.caches[name] = {
