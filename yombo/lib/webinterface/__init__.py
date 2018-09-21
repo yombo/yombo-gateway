@@ -166,6 +166,12 @@ class Yombo_Site(Site):
         if request.getClientIP() == "127.0.0.1" and url_path.startswith('/api/v1/mqtt/auth/'):
             return
 
+        if request.auth_type == "websession":
+            u = request.auth_id.split("@")
+            user_id = u[0] + "@" + u[1][0:4] + "..."
+        else:
+            user_id = request.auth_id[0:-8][0:10]
+
         self.log_queue.append(OrderedDict({
             'request_at': time(),
             'request_protocol': request.clientproto.decode().strip(),
@@ -176,7 +182,7 @@ class Yombo_Site(Site):
             'method': request.method.decode().strip(),
             'path': url_path,
             'secure': request.isSecure(),
-            'user_id': request.auth_id,
+            'user_id': user_id,
             'user_type': request.auth_type,
             'response_code': request.code,
             'response_size': request.sentLength,
