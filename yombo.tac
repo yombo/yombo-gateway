@@ -115,6 +115,8 @@ def start():
         os.makedirs('%s/bak' % working_dir)
     if not os.path.exists('%s/bak/yombo_ini' % working_dir):
         os.makedirs('%s/bak/yombo_ini' % working_dir)
+    if not os.path.exists('%s/bak/db' % working_dir):
+        os.makedirs('%s/bak/db' % working_dir)
     if not os.path.exists('%s/etc' % working_dir):
         os.makedirs('%s/etc' % working_dir)
     if not os.path.exists('%s/etc/gpg' % working_dir):

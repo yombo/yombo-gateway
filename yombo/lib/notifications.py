@@ -206,13 +206,7 @@ class Notifications(YomboLibrary):
         Called by looping call to periodically purge expired notifications.
         :return:
         """
-        cur_time = time()
-        for id in list(self.notifications.keys()):
-            if self.notifications[id].expire_at == "Never":
-                continue
-            if cur_time > self.notifications[id].expire_at:
-                del self.notifications[id]
-        self._LocalDB.delete_expired_notifications()
+        self._LocalDB.cleanup_database('notifications')
 
     @inlineCallbacks
     def load_notifications(self):

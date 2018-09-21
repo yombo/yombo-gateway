@@ -10,6 +10,7 @@ SYSTEM_EVENT_TYPES = {
                 'item',
                 'action',
             ),
+            'expires': 90,  # save events for 90 days
         },
         'accepted': {
             'description': "Authentication request allowed",
@@ -18,6 +19,7 @@ SYSTEM_EVENT_TYPES = {
                 'item',
                 'action',
             ),
+            'expires': 90,  # save events for 90 days
         },
     },
     'amqp': {
@@ -30,12 +32,14 @@ SYSTEM_EVENT_TYPES = {
                 'username',
                 'ssl',
             ),
+            'expires': 90,  # save events for 90 days
         },
         'connected': {
             'description': "AMQP connection made.",
             'attributes': (
                 'client_id',
             ),
+            'expires': 90,  # save events for 90 days
         },
         'disconnected': {
             'description': "AMQP disconnected.",
@@ -43,6 +47,26 @@ SYSTEM_EVENT_TYPES = {
                 'client_id',
                 'reason',
             ),
+            'expires': 90,  # save events for 90 days
+        },
+    },
+    'localdb': {
+        'cleaning': {
+            'description': "Tracks database cleaning events.",
+            'attributes': (
+                'action',
+                'section',
+            ),
+            'expires': 90,  # save events for 90 days
+        },
+        'connected': {
+            'description': "SQLite connection details.",
+            'attributes': (
+                'connect_time',
+                'start_schema_version',
+                'last_schema_version',
+            ),
+            'expires': 90,  # save events for 90 days
         },
     },
 }

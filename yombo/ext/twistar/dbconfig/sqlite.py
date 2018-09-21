@@ -28,7 +28,7 @@ class SQLiteDBConfig(InteractionBase):
 
     def pragma(self, pragma_string):
         """
-        Truncate the given tablename.
+        Run a pragma string.
 
         @return: A C{Deferred}.
         """
@@ -42,4 +42,13 @@ class SQLiteDBConfig(InteractionBase):
         @return: A C{Deferred}.
         """
         q = "DELETE FROM %s" % tablename
+        return self.executeOperation(q, [])
+
+    def vaccum(self):
+        """
+        Defrag and free database space up.
+
+        @return: A C{Deferred}.
+        """
+        q = "VACUUM"
         return self.executeOperation(q, [])

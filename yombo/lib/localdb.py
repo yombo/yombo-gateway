@@ -23,27 +23,30 @@ A database API to SQLite3.
 from collections import OrderedDict
 from sqlite3 import IntegrityError
 import inspect
-from os import chmod
+from os import chmod, listdir, remove, rename
+from os.path import isfile, join
 import re
 import sys
 from time import time
 
 # Import 3rd-party libs
+from yombo.ext.twistar.dbobject import DBObject
 from yombo.ext.twistar.registry import Registry
 from yombo.ext.twistar.utils import dictToWhere
-from yombo.ext.twistar.dbobject import DBObject
 
 # Import twisted libraries
 from twisted.enterprise import adbapi
+from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.task import LoopingCall
+from twisted.internet.utils import getProcessOutput
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 import yombo.core.settings as settings
-from yombo.utils import clean_dict, instance_properties, data_pickle, data_unpickle
+from yombo.utils import clean_dict, instance_properties, data_pickle, data_unpickle, sleep
 from yombo.utils.datatypes import coerce_value
 
 logger = get_logger('library.localdb')
@@ -278,10 +281,15 @@ class LocalDB(YomboLibrary):
         self.db_bulk_queue = {}
         self.db_bulk_queue_id_cols = {}
         self.save_bulk_queue_loop = None
-        def show_connected(connection):
-            connection.execute("PRAGMA foreign_keys = ON")
+        self.cleanup_database_loop = None
+        self.cleanup_database_running = False
         self.db_model = {}  # store generated database model here.
         # Connect to the DB
+
+        def show_connected(connection):
+            connection.execute("PRAGMA foreign_keys = ON")
+
+        connect_time = time()
         Registry.DBPOOL = adbapi.ConnectionPool('sqlite3',
                                                 "%s/etc/yombo.db" % self.working_dir,
                                                 check_same_thread=False,
@@ -293,26 +301,30 @@ class LocalDB(YomboLibrary):
         try:
             results = yield Schema_Version.find(where=['table_name = ?', 'core'])
             self.schema_version = results[0].version
+            start_schema_version = self.schema_version
             self.database_file_is_new = False
         except Exception as e:
-            logger.debug("Problem with database: %s" % e)
+            logger.info("Problem with database: %s" % e)
+            yield sleep(1000)
             logger.info("Creating new database file.")
+            start_schema_version = 0
             self.database_file_is_new = True
 
         self.current_db_meta_file = __import__("yombo.utils.db." + str(LATEST_SCHEMA_VERSION), globals(), locals(),
                                    [str(LATEST_SCHEMA_VERSION)], 0)
         if self.database_file_is_new is False:
             # if existing, we will upgrade the database.
-            start_schema_version = self.schema_version
-            for z in range(self.schema_version + 1, LATEST_SCHEMA_VERSION + 1):
-                imported_file = __import__("yombo.utils.db." + str(z), globals(), locals(), ['upgrade'], 0)
+            current_schema_version = start_schema_version
+            for current_schema_version in range(self.schema_version + 1, LATEST_SCHEMA_VERSION + 1):
+                imported_file = __import__("yombo.utils.db." + str(current_schema_version), globals(), locals(), ['upgrade'], 0)
                 results = yield imported_file.upgrade(Registry)
 
                 self.dbconfig.update("schema_version",
-                                     {'version': z},
+                                     {'version': current_schema_version},
                                      where=['table_name = ?', 'core'])
                 # results = yield Schema_Version.all()
         else:
+            current_schema_version = LATEST_SCHEMA_VERSION
             # if new, we will just install the latest meta in the lastest version file.
             results = yield self.current_db_meta_file.new_db_file(Registry)
 
@@ -321,19 +333,23 @@ class LocalDB(YomboLibrary):
                                  where=['table_name = ?', 'core'])
             # results = yield Schema_Version.all()
 
+        self._Events.new('localdb', 'connected', (connect_time, start_schema_version, current_schema_version))
+
         chmod("%s/etc/yombo.db" % self.working_dir, 0o600)
 
         yield self._load_db_model()
 
-        # used to cache datatables lookups
+        # used to cache datatables lookups for the webinterface viewers
         self.event_counts = self._Cache.ttl(ttl=15, tags='events')
         self.webinterface_counts = self._Cache.ttl(ttl=15, tags='webinterface_logs')
 
-
-    def _load_(self, **kwargs):
+    def _start_(self, **kwargs):
         self.gateway_id = self._Configs.get('core', 'gwid', 'local', False)
         self.save_bulk_queue_loop = LoopingCall(self.save_bulk_queue)
         self.save_bulk_queue_loop.start(17, False)
+        self.cleanup_database_loop = LoopingCall(self.cleanup_database)
+        self.cleanup_database_loop.start(86309, False)  # about once a day
+        reactor.callLater(600, self.cleanup_database)  # Give the system some time to settle down.
 
     @inlineCallbacks
     def _unload_(self, **kwargs):
@@ -476,10 +492,102 @@ class LocalDB(YomboLibrary):
                             logger.warn("Error trying to delete_many in bulk save: {e}", e=e)
 
     @inlineCallbacks
-    def make_backup(self, filename=None):
-        if filename is None:
-            filename = 'imarealbigtest.db'
-        yield self.dbconfig.executeOperation(".backup %s" % filename)
+    def make_backup(self):
+        db_file = self._Atoms.get('working_dir') + "/etc/yombo.db"
+        db_backup_path = self._Atoms.get('working_dir') + "/bak/db/"
+
+        db_backup_files = [f for f in listdir(db_backup_path) if isfile(join(db_backup_path, f))]
+        for i in range(1, 10):
+            current_backup_file_name = "yombo.db.%s" % i
+            if current_backup_file_name in db_backup_files:
+                if i == 10:
+                    remove(db_backup_path + current_backup_file_name)
+                else:
+                    next_backup_file_name = "yombo.db.%s" % str(i+1)
+                    rename(db_backup_path + current_backup_file_name, db_backup_path + next_backup_file_name)
+
+        yield getProcessOutput("sqlite3", [db_file, ".backup %syombo.db.1" % db_backup_path])
+
+    @inlineCallbacks
+    def cleanup_database(self, section=None):
+        """
+        Cleans out old data and optimizes the database.
+        :return:
+        """
+        if self.cleanup_database_running is True:
+            logger.info("Cleanup database already running.")
+        self.cleanup_database_running = True
+
+        if section is None:
+            section = 'all'
+
+        # Delete old device commands
+        if section in ('device_commands', 'all'):
+            yield sleep(5)
+            cur_time = time()
+            for request_id in list(self._Devices.device_commands.keys()):
+                device_command = self._Devices.device_commands[request_id]
+                if device_command.finished_at is not None:
+                    if device_command.finished_at > cur_time - (60 * 60 * 24):  # keep 45 minutes worth.
+                        found_dc = False
+                        for device_id, device in self._Devices.devices.items():
+                            if request_id in device.device_commands:
+                                found_dc = True
+                                break
+                        if found_dc is False:
+                            yield device_command.save_to_db()
+                            del self._Devices.device_commands[request_id]
+            yield self.dbconfig.delete('device_commands', where=['created_at < ?', time() - (86400 * 120)])
+
+        # Lets delete any device status after 90 days. Long term data should be in the statistics.
+        if section in ('device_status', 'all'):
+            yield sleep(5)
+            yield self.dbconfig.delete('device_status', where=['set_at < ?', time() - (86400 * 90)])
+
+        # Cleanup events.
+        if section in ('events', 'all'):
+            yield sleep(5)
+            for event_type, event_data in self._Events.event_types.items():
+                for event_subtype, even_subdata in event_data.items():
+                    yield sleep(1)  # There's no race
+                    results = yield self.dbconfig.delete(
+                        'events',
+                        where=[
+                             'event_type = ? AND event_subtype = ? AND created_at < ?',
+                             event_type, event_subtype, time() - (86400 * even_subdata['expires'])])
+                    return results
+
+        # Clean notifications
+        if section in ('notifications', 'all'):
+            yield sleep(1)
+            cur_time = time()
+            for id in list(self._Notifications.notifications.keys()):
+                if self._Notifications.notifications[id].expire_at == "Never":
+                    continue
+                if cur_time > self._Notifications.notifications[id].expire_at:
+                    del self._Notifications.notifications[id]
+            yield self.dbconfig.delete('notifications', where=['expire_at < ?', time()])
+
+        if section in ('states', 'all'):
+            yield sleep(5)
+            sql = "DELETE FROM states WHERE created_at < %s" % str(int(time()) - 86400 * 180)
+            yield Registry.DBPOOL.runQuery(sql)
+            yield sleep(5)
+            sql = """DELETE FROM states WHERE id IN
+                  (SELECT id
+                   FROM states AS s
+                   WHERE s.name = states.name
+                   ORDER BY created_at DESC
+                   LIMIT -1 OFFSET 100)"""
+            yield Registry.DBPOOL.runQuery(sql)
+
+        if section == 'all':
+            yield sleep(5)
+            self.make_backup()
+            yield sleep(10)
+            yield self.dbconfig.vaccum()
+
+        self.cleanup_database_running = False
 
     #########################
     ###    Commands     #####
@@ -502,19 +610,6 @@ class LocalDB(YomboLibrary):
     #########################
     ###    Events       #####
     #########################
-    # @inlineCallbacks
-    # def get_events(self, always_load=None):
-    #     if always_load is None:
-    #         always_load = False
-    #
-    #     if always_load == True:
-    #         records = yield self.dbconfig.select('events', where=['always_load = ?', 1])
-    #         return records
-    #     elif always_load is False:
-    #         records = yield self.dbconfig.select('commands', where=['always_load = ? OR always_load = ?', 1, 0])
-    #         return records
-    #     else:
-    #         return []
 
     @inlineCallbacks
     def save_events_bulk(self, events):
@@ -602,7 +697,6 @@ class LocalDB(YomboLibrary):
                 self.event_counts[cache_name_filtered] = filtered_count
 
             return records, total_count, filtered_count
-
 
     #########################
     ###    Devices      #####
@@ -719,21 +813,6 @@ class LocalDB(YomboLibrary):
 
             data.append(record)
         return data
-
-    @inlineCallbacks
-    def cleanup_device_status(self, days=None):
-        """
-        Remove old device status updates.  Long term info goes into statistics.
-
-        :param days: Number of days to keep.
-        :param kwargs:
-        :return:
-        """
-        if days is None:
-            days = 60
-
-        results = yield self.dbconfig.delete('device_status', where=['set_at < ?', time()-(60*60*24*days)])
-        return results
 
     @inlineCallbacks
     def get_device_commands(self, where, **kwargs):
@@ -1104,14 +1183,9 @@ class LocalDB(YomboLibrary):
     @inlineCallbacks
     def delete_notification(self, id):
         try:
-            records = yield self.dbconfig.delete('notifications', where=['id < ?', id])
+            records = yield self.dbconfig.delete('notifications', where=['id = ?', id])
         except Exception as e:
             pass
-
-    @inlineCallbacks
-    def delete_expired_notifications(self):
-        records = yield self.dbconfig.delete('notifications', where=['expire_at < ?', time()])
-        return records
 
     @inlineCallbacks
     def add_notification(self, notice, **kwargs):
@@ -1449,25 +1523,6 @@ GROUP BY name""" % (extra_where, str(int(time()) - 60 * 60 * 24 * 60))
     def save_state_bulk(self, states):
         results = yield self.dbconfig.insertMany('states', states)
         return results
-
-    @inlineCallbacks
-    def clean_states_table(self, name=None):
-        """
-        Remove records over 60 days, only keep the last 100 records for a given state. So save history for longer
-        term, use the statistics library.
-
-        :param name:
-        :return:
-        """
-        sql = "DELETE FROM states WHERE created_at < %s" % str(int(time()) - 60 * 60 * 24 * 60)
-        yield Registry.DBPOOL.runQuery(sql)
-        sql = """DELETE FROM states WHERE id IN
-              (SELECT id
-               FROM states AS s
-               WHERE s.name = states.name
-               ORDER BY created_at DESC
-               LIMIT -1 OFFSET 100)"""
-        yield Registry.DBPOOL.runQuery(sql)
 
     #################
     ### SQLDict #####

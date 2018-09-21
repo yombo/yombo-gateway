@@ -70,13 +70,12 @@ from collections import OrderedDict
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, maybeDeferred, Deferred
-from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning, YomboHookStopProcessing
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import global_invoke_all, search_instance, do_search_instance, random_int, generate_source_string
+from yombo.utils import global_invoke_all, search_instance, do_search_instance, generate_source_string
 
 from ._device import Device
 from ._device_command import Device_Command
@@ -269,9 +268,6 @@ class Devices(YomboLibrary):
 
         :return: 
         """
-        self.clean_device_commands_loop = LoopingCall(self.clean_device_commands)
-        self.clean_device_commands_loop.start(random_int(3600, .15))
-
         if self._States['loader.operating_mode'] == 'run':
             self.mqtt.subscribe("yombo/devices/+/get")
             self.mqtt.subscribe("yombo/devices/+/cmd")
@@ -503,29 +499,6 @@ class Devices(YomboLibrary):
 
             self.device_commands[device_command['request_id']] = Device_Command(device_command, self, start=False)
         return None
-
-    @inlineCallbacks
-    def clean_device_commands(self):
-        """
-        Remove old device command requests.
-        :return: 
-        """
-        cur_time = time()
-        for request_id in list(self.device_commands.keys()):
-            device_command = self.device_commands[request_id]
-            if device_command.finished_at is not None:
-                if device_command.finished_at > cur_time - (60*60*24):  # keep 45 minutes worth.
-                    found_dc = False
-                    for device_id, device in self.devices.items():
-                        if request_id in device.device_commands:
-                            found_dc = True
-                            break
-                    if found_dc is False:
-                        yield device_command.save_to_db()
-                        del self.device_commands[request_id]
-
-        # Lets delete any device status after 60 days. Long term data should be in the statistics.
-        self._LocalDB.cleanup_device_status(days=60)
 
     def add_device_command_by_object(self, device_command):
         """

@@ -31,7 +31,7 @@ from yombo.constants.events import SYSTEM_EVENT_TYPES
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import data_pickle, generate_source_string
+from yombo.utils import generate_source_string
 
 logger = get_logger('library.events')
 
@@ -58,9 +58,8 @@ class Events(YomboLibrary):
         """
         self.event_queue = {}  # Save events in bulk.
         self.event_types = deepcopy(SYSTEM_EVENT_TYPES)
-        self.db_save_event_queue = self._LocalDB.save_events_bulk
         self.save_event_queue_loop = LoopingCall(self.save_event_queue)
-        self.save_event_queue_loop.start(21, False)
+        self.save_event_queue_loop.start(47, False)
 
     @inlineCallbacks
     def _unload_(self, **kwargs):
@@ -123,10 +122,14 @@ class Events(YomboLibrary):
 
     @inlineCallbacks
     def save_event_queue(self):
+        """
+        Bulk save events into the database.
+        :return:
+        """
         if len(self.event_queue) == 0:
             return
 
         event_queue = deepcopy(self.event_queue)
         self.event_queue = {}
         for key, data in event_queue.items():
-            yield self.db_save_event_queue(data)
+            yield self._LocalDB.save_events_bulk(data)

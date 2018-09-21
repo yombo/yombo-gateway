@@ -225,9 +225,6 @@ class States(YomboLibrary, object):
 
     def _start_(self, **kwargs):
         self.module_phase = 3
-        self.clean_states_loop = LoopingCall(self.clean_states_table)
-        self.clean_states_loop.start(random_int(60*60*6, .10))  # clean the database every 6 hours.
-
         if self._States['loader.operating_mode'] == 'run':
             self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming, client_id='Yombo-states-%s' %
                                                                                             self.gateway_id)
@@ -261,14 +258,6 @@ class States(YomboLibrary, object):
                     'created_at': state['created_at'],
                     'updated_at': state['updated_at'],
                 }
-
-    def clean_states_table(self):
-        """
-        Periodically called to remove old records.
-
-        :return:
-        """
-        self._LocalDB.clean_states_table()
 
     @inlineCallbacks
     def memory_usage_checker(self):
