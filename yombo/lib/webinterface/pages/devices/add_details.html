@@ -477,13 +477,9 @@
             })(jQuery);
 
             $("#devicenew").submit(function(event) {
-    //            event.preventDefault();
-
                 var rawData = $('#devicenew').serializeJSON();
                 var formData = JSON.stringify(rawData);
-                console.log(formData);
                 $('#json_output').val(formData)
-    //            console.log(formData);
             });
 
     });  // end document ready

@@ -1,11 +1,9 @@
 # This file was created by Yombo for use with Yombo Python Gateway automation
 # software.  Details can be found at https://yombo.net
 """
-
 .. note::
 
-  For more information see: `SSLCerts @ Module Development <https://yombo.net/docs/libraries/sslcerts>`_
-
+  * For library documentation, see: `SSLCerts @ Library Documentation <https://yombo.net/docs/libraries/sslcerts>`_
 
 This library is responsible for managing SSL/TLS certs. It utilizes openssl to
 generate keys and signing requests. It then forwards any signing requests (CSRs)

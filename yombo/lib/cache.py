@@ -4,8 +4,7 @@
 
 .. note::
 
-  For more information see: `Hash @ Module Development <https://yombo.net/docs/libraries/cache>`_
-
+  * For library documentation, see: `Cache @ Library Documentation <https://yombo.net/docs/libraries/cache>`_
 
 Consolidates all the caching features into here so that they can be monitored and flushed.
 
@@ -17,11 +16,12 @@ Consolidates all the caching features into here so that they can be monitored an
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/cache.html>`_
 """
 from threading import RLock
-from cachetools import TTLCache
+from cachetools import TTLCache, LFUCache, LRUCache
 
 # Import Yombo libraries
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
+from yombo.utils import generate_source_string, random_string
 from yombo.utils.decorators import setup_cache
 
 logger = get_logger('library.cache')
@@ -50,13 +50,19 @@ class Cache(YomboLibrary):
         self.caches = {}
         self.lock = RLock()
 
-    def new(self, name, ttl=120, maxsize=1024, tags=None):
+    def lfu(self, tags=None, name=None, maxsize=512):
         """
-        Get a new cache. Naming standard is:
-        lib/module.modulename.cachename
+        Create a new LFU (Least Frequently Used) based cache. This counts how often
+        the cache items are used, and when the maxsize is reached, it will discard
+        the least freqently used item. Use this with caution, new items tend to be
+        pushed off faster and older but less freqently used items. See LRU cache.
 
+        Default is a maxsize of 512 entires.
+
+        :param ttl: seconds cache should be good for.
+        :param tags: Associate tags with this cache for purging.
         :param name: Name of the cache.
-        :param ttl: seconds cache shouuld be good for.
+        :param maxsize: Max number of entries.
         :return:
         """
         if isinstance(tags, str):
@@ -64,16 +70,104 @@ class Cache(YomboLibrary):
         elif tags is None:
             tags = ()
 
+        if name is None:
+            name = generate_source_string() + random_string(length=10)
+        if name not in self.caches:
+            self.caches[name] = {
+                'cache': LFUCache(maxsize),
+                'tags': tags,
+                'type': 'lfu',
+            }
+        return self.caches[name]
+
+    def lru(self, tags=None, name=None, maxsize=512):
+        """
+        Create a new LRU (least recently used) based cache. This cache discards the
+        least recently used items to make space if needed.
+
+        Default is a maxsize of 512 entires.
+
+        :param ttl: seconds cache should be good for.
+        :param tags: Associate tags with this cache for purging.
+        :param name: Name of the cache.
+        :param maxsize: Max number of entries.
+        :return:
+        """
+        if isinstance(tags, str):
+            tags = (tags,)
+        elif tags is None:
+            tags = ()
+
+        if name is None:
+            name = generate_source_string() + random_string(length=10)
+
+        if name not in self.caches:
+            self.caches[name] = {
+                'cache': LRUCache(maxsize),
+                'tags': tags,
+                'type': 'lru',
+            }
+        return self.caches[name]
+
+    def ttl(self, ttl=120, tags=None, name=None, maxsize=512):
+        """
+        Create a new TTL based cache. Items in this cache will timeout after a certain period
+        of time.
+
+        Default is 120 seconds timeout with a maxsize of 512 entires.
+
+        :param ttl: seconds cache should be good for.
+        :param tags: Associate tags with this cache for purging.
+        :param name: Name of the cache.
+        :param maxsize: Max number of entries.
+        :return:
+        """
+        if isinstance(tags, str):
+            tags = (tags,)
+        elif tags is None:
+            tags = ()
+
+        if name is None:
+            name = generate_source_string() + random_string(length=10)
+
         if name not in self.caches:
             self.caches[name] = {
                 'cache': TTLCache(maxsize, ttl),
                 'tags': tags,
+                'type': 'ttl',
             }
         return self.caches[name]
 
-    def flush(self, cachename):
+    def flush(self, tags=None):
         """
-        Flush a specific cache.
+        Flush all caches with the specified tag/tags.
+
+        :param tags: string, list, or tuple of tags to flush.
+        :return:
+        """
+        if isinstance(tags, str):
+            tags = (tags,)
+        elif isinstance(tags, list) is False and isinstance(tags, tuple) is False:
+            return
+
+        for name, cache in self.caches.items():
+            if any(x in cache['tags'] for x in tags):
+                with self.lock:
+                    cache['cache'].clear()
+
+    def clear(self, cache_item):
+        """
+        Flush a specific cache. The cache_item must be a cache object.
+
+        :param cachename:
+        :return:
+        """
+        with self.lock:
+            cache_item.clear()
+
+    def flush_item(self, cachename):
+        """
+        Flush a specific cache. cachename must be the name of the cache, not the actual cache object.
 
         :param cachename:
         :return:
@@ -95,10 +189,5 @@ class Cache(YomboLibrary):
             tags = None
 
         for name, cache in self.caches.items():
-            if tags is None:  # If no tags we sent, toss the cache.
-                with self.lock:
-                    cache['cache'].clear()
-            else:
-                if any(x in cache['tags'] for x in tags):
-                    with self.lock:
-                        cache['cache'].clear()
+            with self.lock:
+                cache['cache'].clear()

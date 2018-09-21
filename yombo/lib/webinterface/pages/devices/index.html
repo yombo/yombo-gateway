@@ -59,17 +59,17 @@
                   <ul id="myTab" class="nav nav-tabs nav-tabs-responsive" role="tablist">
                     <li role="presentation" class="active bg-success">
                       <a href="#enabled" id="enabled-tab" role="tab" data-toggle="tab" aria-controls="home" aria-expanded="true">
-                        <span class="text-success">Local Devices</span>
+                        <span class="text-success" id="localDevicesEnabledTabLabel">Local Devices</span>
                       </a>
                     </li>
                     <li role="presentation" class="next bg-success">
                       <a href="#othergw" id="othergw-tab" role="tab" data-toggle="tab" aria-controls="home" aria-expanded="true">
-                        <span class="text-success">Other Gateways</span>
+                        <span class="text-success" id="localDevicesOtherGWTabLabel">Other Gateways</span>
                       </a>
                     </li>
                     <li role="presentation" class="next bg-warning">
                       <a href="#disabled" role="tab" id="disabled-tab" data-toggle="tab" aria-controls="profile">
-                        <span class="text-warning">Disabled</span>
+                        <span class="text-warning" id="localDevicesDisabledTabLabel">Disabled</span>
                       </a>
                     </li>
                   </ul>
@@ -201,7 +201,7 @@
     <!-- Make the tables pretty -->
     <script>
     $(document).ready(function() {
-        $('#devices-enabled').DataTable({
+        var devicesEnabledTable = $('#devices-enabled').DataTable({
                 responsive: true,
                 paging: true,
                 iDisplayLength: 50,
@@ -210,24 +210,12 @@
                     ]
 //                lengthMenu: [ 1, 2, 50, 75, 100 ],
 //                dom: '<f<t>ip>'
-
 //                dom: 'il<"top"f>rt<"bottom"fl>p<"clear">'
         });
+        $("#localDevicesEnabledTabLabel").text("Local Devices (" + devicesEnabledTable.page.info().recordsTotal +")");
 
-        $('#devices-othergw').DataTable({
-                responsive: true,
-                paging: true,
-                iDisplayLength: 50,
-                order: [[ 0, "desc"], [0, "desc"]],
-                "aoColumnDefs": [
-                      { "bSearchable": false, "aTargets": [ 4 ] }
-                    ]
-//                lengthMenu: [ 1, 2, 50, 75, 100 ],
-//                dom: '<f<t>ip>'
 
-//                dom: 'il<"top"f>rt<"bottom"fl>p<"clear">'
-        });
-        $('#devices-disabled').DataTable({
+        var devicesOtherGWTable = $('#devices-othergw').DataTable({
                 responsive: true,
                 paging: true,
                 iDisplayLength: 50,
@@ -235,31 +223,23 @@
                 "aoColumnDefs": [
                       { "bSearchable": false, "aTargets": [ 4 ] }
                     ]
-//                lengthMenu: [ 1, 2, 50, 75, 100 ],
-//                dom: '<f<t>ip>'
-
-//                dom: 'il<"top"f>rt<"bottom"fl>p<"clear">'
         });
+        $("#localDevicesOtherGWTabLabel").text("Other Gateways (" + devicesOtherGWTable.page.info().recordsTotal +")");
 
-        $('#devices-deleted').DataTable({
+        var devicesDisabledTable = $('#devices-disabled').DataTable({
                 responsive: true,
                 paging: true,
                 iDisplayLength: 50,
+                order: [[ 0, "desc"], [0, "desc"]],
                 "aoColumnDefs": [
                       { "bSearchable": false, "aTargets": [ 4 ] }
                     ]
-//                lengthMenu: [ 1, 2, 50, 75, 100 ],
-//                dom: '<f<t>ip>'
-
-//                dom: 'il<"top"f>rt<"bottom"fl>p<"clear">'
         });
+        $("#localDevicesDisabledTabLabel").text("Disabled Devices (" + devicesDisabledTable.page.info().recordsTotal +")");
+
         var disabled_table = $('#devices-disabled').DataTable();
         if (disabled_table.rows( ).count() == 0){
              $('#tab-device-disbled').css('display','none');
-        }
-        var deleted_table = $('#devices-deleted').DataTable();
-        if (deleted_table.rows( ).count() == 0){
-             $('#tab-device-deleted').css('display','none');
         }
 
     });

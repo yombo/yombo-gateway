@@ -13,14 +13,6 @@ fi
 
 OPTIMIZE=$1
 
-if [ "$OPTIMIZE" == "" ]; then
-  echo "This script shouldn't be called directly. Use yombo_update script."
-fi
-
-if [ "$OPTIMIZE" == 'yes' ]; then
-  # This can't be used on raspberry pi
-  CFLAGS='-O2'
-fi
 YOMBO_SCRIPT_DIR="$( cd "$(dirname "$0")" ; pwd -P )"
 YOMBO_ROOT_DIR="$(dirname $YOMBO_SCRIPT_DIR)"
 
@@ -31,13 +23,10 @@ cd "$YOMBO_ROOT_DIR"
 pip3 install --upgrade pip
 pip2 install --upgrade pip
 pip3 install netifaces
-
-pyenv install 3.6.6 -s
+PYTHON_CONFIGURE_OPTS="--enable-optimizations" MAKE_OPTS="-j4" pyenv install 3.6.6 -s
 pyenv local 3.6.6
 
-pip3 list --outdated --format=freeze | grep -v '^\-e' | cut -d = -f 1 | xargs -n1 pip3 install -U
-
 git pull
-pip3 install -r requirements.txt
+pip3 install --upgrade -r requirements.txt
 
 

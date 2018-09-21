@@ -1,10 +1,10 @@
 # This file was created by Yombo for use with Yombo Python Gateway automation
 # software.  Details can be found at https://yombo.net
 """
-
 .. note::
 
-  For development guides see: `Devices @ Module Development <https://yombo.net/docs/libraries/devices>`_
+  * End user documentation: `Devices @ User Documentation <https://yombo.net/docs/gateway/web_interface/devices>`_
+  * For library documentation, see: `Devices @ Library Documentation <https://yombo.net/docs/libraries/devices>`_
 
 The devices library is primarily responsible for:
 
@@ -76,7 +76,7 @@ from twisted.internet.task import LoopingCall
 from yombo.core.exceptions import YomboWarning, YomboHookStopProcessing
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import global_invoke_all, search_instance, do_search_instance, random_int
+from yombo.utils import global_invoke_all, search_instance, do_search_instance, random_int, generate_source_string
 
 from ._device import Device
 from ._device_command import Device_Command
@@ -591,7 +591,7 @@ class Devices(YomboLibrary):
         Tells the device to a command. This in turn calls the hook _device_command_ so modules can process the command
         if they are supposed to.
 
-        If a pin is required, "pin" must be included as one of the arguments. All **kwargs are sent with the
+        If a pin is required, "pin" must be included as one of the arguments. All kwargs are sent with the
         hook call.
 
             - cmd doesn't exist
@@ -623,21 +623,7 @@ class Devices(YomboLibrary):
         :return: The request id.
         :rtype: str
         """
-        frm = inspect.stack()[1]
-        mod = inspect.getmodule(frm[0])
-        callingframe = sys._getframe(1)
-        if 'self' in callingframe.f_locals:
-            kwargs['requesting_source'] = "%s:%s.%s.%s" % \
-                                          (self.gateway_id,
-                                           mod.__name__,
-                                           callingframe.f_locals['self'].__class__.__name__,
-                                           callingframe.f_code.co_name)
-        else:
-            kwargs['requesting_source'] = "%s:%s.%s" % \
-                                          (self.gateway_id,
-                                           mod.__name__,
-                                           callingframe.f_code.co_name)
-
+        kwargs['requesting_source'] = generate_source_string()
         return self.get(device).command(cmd, **kwargs)
 
     def mqtt_incoming(self, topic, payload, qos, retain):
@@ -716,9 +702,9 @@ class Devices(YomboLibrary):
         Returns a dictionary of devices the current user/auth id has access to. Returns a dict and list of access
         permissions.
 
-        :param field: A string referencing an attribute of a device.
-        :type field: string
-        :return:f
+        :param session: A string referencing an attribute of a device.
+        :type session: string
+        :return:
         """
         permissions, item_permissions = self._Users.get_access(session.item_permissions, session.roles, 'device')
         # print("user_available_devices... %s" % item_permissions['device'])

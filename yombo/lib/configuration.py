@@ -3,8 +3,8 @@
 """
 .. note::
 
-  For more information see:
-  `Configuration @ Module Development <https://yombo.net/docs/libraries/configuration>`_
+  * End user documentation: `Configuration @ User Documentation <https://yombo.net/docs/gateway/web_interface/basic_settings>`_
+  * For library documentation, see: `Cache @ Library Documentation <https://yombo.net/docs/libraries/configuration>`_
 
 Handles loading, storing, updating, and saving gateway configuration items.
 
@@ -51,7 +51,7 @@ can simply implement the hook: _configuration_set_:
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2012-2017 by Yombo.
+:copyright: Copyright 2012-2018 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/configuration.html>`_
 """
@@ -88,7 +88,7 @@ from yombo.utils.networking import get_local_network_info
 from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
 import yombo.core.settings as settings
-from yombo.utils import dict_merge, global_invoke_all, is_string_bool, save_file, data_pickle, data_unpickle
+from yombo.utils import dict_merge, global_invoke_all, save_file, data_pickle, data_unpickle
 from yombo.utils.location import detect_location_info
 
 logger = get_logger('library.configuration')
@@ -116,7 +116,7 @@ class Configuration(YomboLibrary):
             },
             'api_auth': {
                 'encrypt': True
-            }
+            },
         },
         'webinterface': {
             'cookie_session': {
@@ -186,19 +186,6 @@ class Configuration(YomboLibrary):
         """
         raise Exception("Not allowed.")
 
-    def __iter__(self):
-        """ iter configurations. """
-        return self.__yombocommands.__iter__()
-
-    def __len__(self):
-        """
-        Returns an int of the number of configurations defined.
-
-        :return: The number of configurations defined.
-        :rtype: int
-        """
-        return len(self.__yombocommands)
-
     def __str__(self):
         """
         Returns the name of the library.
@@ -206,36 +193,6 @@ class Configuration(YomboLibrary):
         :rtype: string
         """
         return "Yombo configuration library"
-
-    def keys(self):
-        """
-        Returns the keys of the configurations that are defined.
-
-        :return: A list of configurations defined. 
-        :rtype: list
-        """
-        return list(self.__yombocommands.keys())
-
-    def items(self):
-        """
-        Gets a list of tuples representing the configurations defined.
-
-        :return: A list of tuples.
-        :rtype: list
-        """
-        return list(self.__yombocommands.items())
-
-    def iteritems(self):
-        return iter(self.__yombocommands.items())
-
-    def iterkeys(self):
-        return iter(self.__yombocommands.keys())
-
-    def itervalues(self):
-        return iter(self.__yombocommands.values())
-
-    def values(self):
-        return list(self.__yombocommands.values())
 
     @inlineCallbacks
     def _init_(self, **kwargs):
@@ -282,7 +239,7 @@ class Configuration(YomboLibrary):
                     value = yield self._GPG.decrypt(value)
                 except:
                     pass
-                self.set(section, option, value)
+                self.set(section, option, value, ignore_case=True)
 
         logger.debug("done parsing yombo.ini. Now about to parse yombo.ini.info.")
         try:
@@ -626,8 +583,10 @@ class Configuration(YomboLibrary):
         .. code-block:: python
 
            gw_label = self._Config.get2("core", "label", "Default Value")
-           logger.info("The Gateway Label is: {label}", label=gw_label)
-           # set a new label.  Don't really ever do this.
+
+           logger.info("The Gateway Label is: {label}", label=gw_label())
+
+           # To set a new value, this shortcut would work too:
            gw_label(set="New label")
 
         .. versionadded:: 0.13.0

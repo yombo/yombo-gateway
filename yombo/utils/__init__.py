@@ -48,11 +48,70 @@ from twisted.internet.fdesc import readFromFD, writeToFD, setNonBlocking
 from yombo.ext.hashids import Hashids
 
 # Import Yombo libraries
+from yombo.core.library import YomboLibrary
+from yombo.core.module import YomboModule
 from yombo.core.exceptions import YomboWarning
 from yombo.utils.decorators import cached, memoize_
 import yombo.ext.base62 as base62
 
 logger = None  # This is set by the set_twisted_logger function.
+
+
+def generate_source_string(gateway_id=None, offset=None):
+    """
+    Gets the python file, class, and method that was called. For example, if this was
+    called from yombo.lib.amqp within the class "AMQP" in the function new, the results
+    would look like: "F:yombo.lib.amqp C:AMQP Md:new"
+
+    If this wasn't called from within a class, it would look like:
+    "F:yombo.core.soemthing M:washere"
+
+    If gateway_id is supplied, it will now look like:
+    "G:zbc1230 F:yombo.lib.amqp C:AMQP M:new"
+
+    The offset is used to determine how far back in the call stack it should look. For example,
+    if this function was called within yombo.lib.module.somemodule and want to get the method
+    that directly called it, use offset '1'.  If the previous caller is desired, use 2, etc.
+
+    :param gateway_id:
+    :param offset:
+    :return:
+    """
+    if offset is None:
+        offset = 1
+
+    offset = offset + 1
+    callingframe = sys._getframe(offset)
+    mod = inspect.getmodule(callingframe)
+    if 'self' in callingframe.f_locals:
+        results = "F:%s C:%s M:%s" % \
+                                  (mod.__name__,
+                                   callingframe.f_locals['self'].__class__.__name__,
+                                   callingframe.f_code.co_name)
+    else:
+        results = "F:%s M:%s" % \
+                                  (mod.__name__,
+                                   callingframe.f_code.co_name)
+
+    if gateway_id is not None:
+        return "G:%s %s" % (gateway_id, results)
+    return results
+
+
+def get_yombo_instance_type(value):
+    """
+    Determine what type of Yombo instance is being since, it's it name.
+
+    :param value: An instance of some sort. Returns False if it's not a Yombo instance.
+    :return:
+    """
+    if isinstance(value, YomboLibrary):
+        return 'library', value._FullName
+    elif isinstance(value, YomboModule):
+        return 'module', value._FullName
+    elif isinstance(value, str):
+        return 'unknwon', value
+    return None, None
 
 
 def set_twisted_logger(the_logger):

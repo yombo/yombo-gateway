@@ -169,11 +169,8 @@
         })(jQuery);
 
         $("#automationedit").submit(function(event) {
-//            event.preventDefault();
-
             var rawData = $('#automationedit').serializeFormJSON();
             var formData = JSON.stringify(rawData);
-            console.log(formData);
         });
 
 

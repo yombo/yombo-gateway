@@ -42,10 +42,10 @@ def route_authkeys(webapp):
     :param webapp: the Klein web server instance
     :return:
     """
-    with webapp.subroute("/authkey") as webapp:
+    with webapp.subroute("/authkeys") as webapp:
         def root_breadcrumb(webinterface, request):
             webinterface.add_breadcrumb(request, "/?", "Home")
-            webinterface.add_breadcrumb(request, "/authkeys/index", "Auth Key")
+            webinterface.add_breadcrumb(request, "/authkeys/index", "Auth Keys")
 
         @webapp.route('/')
         @require_auth()
@@ -68,7 +68,7 @@ def route_authkeys(webapp):
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/authkeys/index.html')
             root_breadcrumb(webinterface, request)
             return page.render(alerts=webinterface.get_alerts(),
-                               authkeys=webinterface._AuthKeys.active_auth_key,
+                               authkeys=webinterface._AuthKeys.active_auth_keys,
                                )
 
         @webapp.route('/<string:authkey_id>/details', methods=['GET'])

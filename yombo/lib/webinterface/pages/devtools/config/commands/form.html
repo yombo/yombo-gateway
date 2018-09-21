@@ -202,11 +202,8 @@
         })(jQuery);
 
         $("#commandedit").submit(function(event) {
-//            event.preventDefault();
-
             var rawData = $('#commandedit').serializeFormJSON();
             var formData = JSON.stringify(rawData);
-            console.log(formData);
         });
 
 

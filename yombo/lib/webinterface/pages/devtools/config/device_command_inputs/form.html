@@ -213,11 +213,8 @@
         })(jQuery);
 
         $("#devicetypeedit").submit(function(event) {
-//            event.preventDefault();
-
             var rawData = $('#devicetypeedit').serializeFormJSON();
             var formData = JSON.stringify(rawData);
-            console.log(formData);
         });
 
 

@@ -1,6 +1,10 @@
 # This file was created by Yombo for use with Yombo Python Gateway automation
 # software.  Details can be found at https://yombo.net
 """
+.. note::
+
+  * For library documentation, see: `AMQPYombo @ Library Documentation <https://yombo.net/docs/libraries/amqpyombo>`_
+
 This library is responsible for handling configuration and control messages with the Yombo servers. It requests
 configurations and directs them to the configuration handler. It also directs any control messages to the control
 handler.
@@ -15,17 +19,13 @@ or 3rd party sources such as Amazon Alexa, Google Home, etc etc.
    This library is not intended to be accessed by module developers or end users. These functions, variables,
    and classes were not intended to be accessed directly by modules. These are documented here for completeness.
 
-.. note::
-
-  For developer documentation, see: `AMQPYombo @ Module Development <https://yombo.net/docs/libraries/amqpyombo>`_
-
 .. todo:: The gateway needs to check for a non-responsive server or if it doesn't get a response in a timely manor.
    Perhaps disconnect and reconnect to another server? -Mitch
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.12.0
 
-:copyright: Copyright 2015-2017 by Yombo.
+:copyright: Copyright 2015-2018 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/amqpyombo.html>`_
 """
@@ -70,11 +70,11 @@ class AMQPYombo(YomboLibrary):
     """
     @property
     def connected(self):
-        return self._States.get('amqp.amqpyombo.state', None)
+        return self._States.get('amqp.amqpyombo.state')
 
     @connected.setter
     def connected(self, val):
-        return self._States.set('amqp.amqpyombo.state', val)
+        return self._States.set('amqp.amqpyombo.state', val, value_type='bool', source=self)
 
     def __str__(self):
         """
@@ -91,7 +91,7 @@ class AMQPYombo(YomboLibrary):
         :return:
         """
         self.user_id = "gw_" + self._Configs.get('core', 'gwid', 'local', False)
-        self.login_gwuuid = self.user_id + "_" + self._Configs.get("core", "gwuuid")
+        self.amqp_loginid = self.user_id + "_" + self._Configs.get("core", "gwuuid")
         self.request_configs = False
         self.controlHandler = AmqpControlHandler(self)
         self.configHandler = AmqpConfigHandler(self)
@@ -122,7 +122,6 @@ class AMQPYombo(YomboLibrary):
 
     @inlineCallbacks
     def _load_(self, **kwargs):
-        # print("################# about to process_amqpyombo_options")
         results = yield global_invoke_all('_amqpyombo_options_', called_by=self)
         for component_name, data in results.items():
             if 'connected' in data:
@@ -140,7 +139,6 @@ class AMQPYombo(YomboLibrary):
         Called by the Yombo system when it's time to shutdown. This in turn calls the disconnect.
         :return:
         """
-
         if self.init_deferred is not None and self.init_deferred.called is False:
             self.init_deferred.callback(1)  # if we don't check for this, we can't stop!
 
@@ -184,7 +182,7 @@ class AMQPYombo(YomboLibrary):
             self.amqp = yield self._AMQP.new(hostname=amqp_host,
                                              port=amqp_port,
                                              virtual_host='yombo',
-                                             username=self.login_gwuuid,
+                                             username=self.amqp_loginid,
                                              password=self._Configs.get("core", "gwhash"),
                                              client_id='amqpyombo',
                                              prefetch_count=PREFETCH_COUNT,
@@ -331,8 +329,6 @@ class AMQPYombo(YomboLibrary):
         :param queue:
         :return:
         """
-        # print("amqp_incoming_parse............")
-
         if not hasattr(properties, 'user_id') or properties.user_id is None:
             self._Statistics.increment("lib.amqpyombo.received.discarded.nouserid", bucket_size=15, anon=True)
             raise YomboWarning("user_id missing.")
@@ -399,17 +395,8 @@ class AMQPYombo(YomboLibrary):
                             received_message_meta=None, sent_message_meta=None,
                             subscription_callback=None, **kwargs):
 
-        # arguments = {
-        #     'body': body,
-        #     'properties': properties,
-        #     'headers': headers,
-        #     'deliver': deliver,
-        #     'correlation_info': correlation_info,
-        #     'received_message_meta': received_message_meta,
-        #     'sent_message_meta': sent_message_meta,
-        # }
-        # print("amqp_incoming................: %s" % arguments)
-
+        logger.debug("Received incoming message: {headers}", body=headers)
+        logger.debug("Received incoming message: {body}", body=body)
         ## Valiate that we have the required headers
         if 'message_type' not in headers:
             raise YomboWarning("Discarding request message, header 'message_type' is missing.")
@@ -458,7 +445,6 @@ class AMQPYombo(YomboLibrary):
                         received_message_meta=received_message_meta,
                         sent_message_meta=sent_message_meta,
                         )
-                    # d.callback(1)
                     yield sent
 
     def generate_message_response(self, exchange_name=None, source=None, destination=None,
@@ -476,7 +462,6 @@ class AMQPYombo(YomboLibrary):
         if message_type is None:
             message_type = "response"
 
-        reply_to = None
         if 'correlation_id' in previous_headers and previous_headers['correlation_id'] is not None and \
             previous_headers['correlation_id'][0:2] != "xx_":
             reply_to = previous_headers['correlation_id']
@@ -485,18 +470,18 @@ class AMQPYombo(YomboLibrary):
             headers['reply_to'] = reply_to
 
         response_msg = self.generate_message(exchange_name=exchange_name,
-                                            source=source,
-                                            destination=destination,
-                                            message_type=message_type,
-                                            data_type=data_type,
-                                            body=body,
-                                            routing_key=routing_key,
-                                            callback=callback,
-                                            correlation_id=correlation_id,
-                                            headers=headers,
-                                            route=route,
-                                            gateway_routing=gateway_routing,
-                                            )
+                                             source=source,
+                                             destination=destination,
+                                             message_type=message_type,
+                                             data_type=data_type,
+                                             body=body,
+                                             routing_key=routing_key,
+                                             callback=callback,
+                                             correlation_id=correlation_id,
+                                             headers=headers,
+                                             route=route,
+                                             gateway_routing=gateway_routing,
+                                             )
         if response_type is not None:
             response_msg['body']['headers']['response_type'] = response_type
 
@@ -583,8 +568,6 @@ class AMQPYombo(YomboLibrary):
         if self._Loader.operating_mode != 'run':
             return {}
 
-        # print("body: %s" % exchange_name)
-        # print("body: %s" % body)
         if routing_key is None:
             routing_key = '*'
 
@@ -631,7 +614,6 @@ class AMQPYombo(YomboLibrary):
                 "content_encoding": None,
                 "headers": {
                     "yombo_msg_protocol_verion": PROTOCOL_VERSION,
-                    "route": "yombo.gw.amqpyombo:" + self.user_id,
                     "body_signature": "",
                 },
             },
@@ -674,8 +656,6 @@ class AMQPYombo(YomboLibrary):
             message['properties']['content_encoding'] = "zlib"
         else:
             message['properties']['content_encoding'] = 'text'
-        # request_msg['meta']['content_encoding'] = request_msg['properties']['content_encoding']
-        # request_msg['meta']['payload_size'] = len(request_msg['body'])
         message['meta']['finalized_for_sending'] = True
         return message
 
@@ -692,12 +672,9 @@ class AMQPYombo(YomboLibrary):
         if kwargs['meta']['finalized_for_sending'] is False:
             kwargs = self.finalize_message(kwargs)
         if "callback" in kwargs:
-            # callback = kwargs['callback']
-            # del kwargs['callback']
             if 'correlation_id' not in kwargs['properties']:
                 kwargs['properties']['correlation_id'] = random_string()
 
-        kwargs['yomboprotocol'] = True
         self.amqp.publish(**kwargs)
 
     def process_system(self, msg, properties):

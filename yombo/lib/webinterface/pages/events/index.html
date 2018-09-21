@@ -1,0 +1,134 @@
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+{% block head_css %}
+{%- include 'lib/webinterface/fragments/datatables_css.tpl' %}
+{% include 'lib/webinterface/fragments/select_css.tpl' %}
+{%- endblock %}
+
+{%- block content %}
+<div class="row">
+    <div class="col-lg-12">
+        <h1 class="page-header">{{_("ui::label::events", 'Events')}}</h1>
+        <p></p>
+    </div>
+    <!-- /.col-lg-12 -->
+</div>
+<!-- /.row -->
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                Select event type and sub-type to view events.
+            </div>
+            <!-- /.panel-heading -->
+            <div class="panel-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        Type:
+                        <select class="selectpicker show-tick form-control" tabindex="3" required
+                                title="Choose an event..."
+                                name="event_type" id="event_type">
+                        {% for event_type, data in event_types.items() %}
+                            <option value="{{event_type}}">{{event_type}}</option>
+                        {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-8">
+                        Sub-Type:
+                        <select class="selectpicker show-tick form-control" tabindex="3" required
+                                title="Select event type first..."
+                                name="event_subtype" id="event_subtype">
+                            <option value="None" data-subtext="No event type selected">Select event type</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- /.panel-body -->
+    </div>
+    <!-- /.col-lg-6 -->
+</div>
+<!-- /.row -->
+<span id="event-display-area">
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel panel-default">
+            <!-- /.panel-heading -->
+            <div class="panel-body">
+                Select an event type and sub event type to get started.
+            </div>
+        </div>
+        <!-- /.panel-body -->
+    </div>
+    <!-- /.col-lg-6 -->
+</div>
+<!-- /.row -->
+</span>
+
+{% endblock %}
+
+{% block body_bottom_js %}
+{% include 'lib/webinterface/fragments/datatables_js.tpl' %}
+{% include 'lib/webinterface/fragments/select_js.tpl' %}
+{% endblock %}
+{% block body_bottom %}
+<script type="text/javascript">
+
+    var eventTypes = {
+    {%- for event_type, event_data in event_types.items() %}
+        "{{ event_type }}": {
+            {%- for event_subtype in event_data|dictsort %}
+            {% set subdata = event_types[event_type][event_subtype[0]] %}
+            "{{event_subtype[0]}}": {
+                    "description": "{{subdata.description}}",
+                    "attributes": [{%- for attribute in subdata['attributes'] %}"{{attribute}}", {%endfor%}],
+            },
+            {%- endfor %}
+        },
+    {%- endfor %}
+    };
+
+    $("select#event_type").on('change',function(){
+       var selectedEventType = $('#event_type option:selected').attr('value');
+       // alert("type: " + selectedEventType + " :" + $('#event_subtype option:selected').attr('value'));
+       updateEventSubType(selectedEventType);
+    });
+
+    var updateEventSubType = function(selectedEventType) {
+        var listItems= "";
+        for (var event_subtype in eventTypes[selectedEventType]){
+            listItems += "<option value='" + event_subtype + "'  data-subtext='" + eventTypes[selectedEventType][event_subtype]['description'] +"'>";
+            listItems +=event_subtype + "</option>\n";
+        }
+        $("select#event_subtype").html(listItems);
+        $('select#event_subtype').selectpicker('refresh');
+    };
+
+    $("select#event_subtype").on('change',function(){
+       console.log("sub type changed...")
+       formLoadBottom();
+    });
+
+    function formLoadBottom() {
+       if ($('#event_subtype option:selected').attr('value') == "") {
+           alert("NONE sub event");
+           return;
+       }
+
+        console.log("im called. Val: " + $('#event_subtype option:selected').attr('value'));
+        $.ajax({
+            url: '/events/index_bottom/' + $('#event_type option:selected').attr('value') + '/' + $('#event_subtype option:selected').attr('value'),
+            type: 'GET',
+        })
+        .done(function(data) {
+            // console.log("formLoadBottom: done: data:"+ data);
+            $('#event-display-area').html(data);
+        })
+        .fail(function() {
+            console.log("error");
+        })
+        .always(function() {
+            console.log("complete on load call");
+        });
+    }
+</script>
+{% endblock %}

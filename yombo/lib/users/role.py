@@ -10,7 +10,7 @@ Resounce syntax:
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.20.0
 """
-
+from copy import deepcopy
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
 from yombo.utils import sha256_compact, data_pickle, data_unpickle
@@ -86,11 +86,35 @@ class Role(object):
         self.save()
 
     def permission_id(self, permission):
-        return sha256_compact("%s:%s:%s:%s" %
-                              (permission['platform'],
-                               permission['item'],
-                               permission['action'],
-                               permission['access']))
+        # return "%s:%s" % (permission['access'],
+        #                   sha256_compact("%s:%s:%s" %
+        #                       (
+        #                           permission['platform'],
+        #                           permission['item'],
+        #                           permission['action']
+        #                       )
+        #                     )
+        #                   )
+
+        return sha256_compact("%s:%s:%s:%s" % (
+                                              permission['platform'],
+                                              permission['item'],
+                                              permission['action'],
+                                              permission['access'],
+                                              )
+                             )
+
+    def add_rules(self, permissions):
+        """
+        Same as add_rule, but accepts a list of dictionary permissions, and then passes them to add_rule.
+
+        :param permissions:
+        :return:
+        """
+        for access in ('allow', 'deny'):
+            if len(permissions[access]) > 0:
+                for permission in permissions[access]:
+                    self.add_rule(permission)
 
     def add_rule(self, permission):
         """
@@ -101,8 +125,7 @@ class Role(object):
         if all(name in permission for name in ('platform', 'item', 'action', 'access')) is False:
             raise YomboWarning("Permission is missing a key.")
 
-        permission['access'] = permission['access'].lower()
-        access = permission['access']
+        access = permission['access'] = permission['access'].lower()
 
         if access not in ('allow', 'deny'):
             raise YomboWarning('access must be one of: allow, deny')
@@ -110,9 +133,27 @@ class Role(object):
         permission['id'] = self.permission_id(permission)
         permission['platform'] = permission['platform'].lower()
         permission['action'] = permission['action'].lower()
+        permission['item']
+
+        if access == 'deny':  # if access in allow, delete it
+            check_perm = deepcopy(permission)
+            check_perm['access'] = 'allow'
+            permission_id = self.permission_id(check_perm)
+            if permission_id in self.permissions['allow']:
+                del self.permissions['allow'][permission_id]
+
+        elif access == 'allow':  # if access in deny, we can't add allow.
+            check_perm = deepcopy(permission)
+            check_perm['access'] = 'deny'
+            permission_id = self.permission_id(check_perm)
+            if permission_id in self.permissions['deny']:
+                return
 
         if permission['id'] not in self.permissions[access]:
+            # print("adding rule: %s" % permission)
             self.permissions[access][permission['id']] = permission
+        # print("permissions after: %s" % self.permissions)
+
         platform = permission['platform']
         if platform not in self._Parent.platforms:
             self._Parent.platforms.append(platform)
@@ -145,6 +186,9 @@ class Role(object):
         :param req_action:
         :return: bool
         """
+        logger.debug("has_access: req_platform: {req_platform}, req_item: {req_item}, req_action: {req_action}",
+                    req_platform=req_platform, req_item=req_item, req_action=req_action)
+
         req_platform = req_platform.lower()
         req_action = req_action.lower()
         possible_deny = None
@@ -166,11 +210,11 @@ class Role(object):
                     logger.debug("has_access: deny matched, returning false...")
                     return False
 
-        logger.info("has_access: permissions allow: {allow}", allow=self.permissions['allow'])
+        logger.debug("has_access: permissions allow: {allow}", allow=self.permissions['allow'])
         for permission_id, permission in self.permissions['allow'].items():
             matched, wildcard = self.check_permission_match(req_platform, req_item, req_action, permission)
             if matched is None:
-                logger.info("has_access: allow, not matched.")
+                logger.debug("has_access: allow, not matched.")
                 continue
 
             if matched is True:
@@ -183,9 +227,9 @@ class Role(object):
                     return True
 
         if possible_deny is True:
-            logger.info("has_access: possible deny, return false.")
+            logger.debug("has_access: possible deny, return false.")
             return False
-        logger.info("has_access: default, returning none.")
+        logger.debug("has_access: default, returning none.")
         return None
 
     def check_permission_match(self, req_platform, req_item, req_action, permission):
@@ -220,7 +264,7 @@ class Role(object):
         if permission['item'] == req_item:
             return True, False
 
-        logger.info("check_permission_match: Default, false false")
+        logger.debug("check_permission_match: Default, false false")
         return False, False
 
     def save(self):
@@ -230,13 +274,15 @@ class Role(object):
         """
         if self.source != "user":
             return
-
+        # print("Starting role permission save... %s" % self.label)
+        # print("Saving: %s %s" % (self.label, self.permissions))
         tosave = {
             'label': self.label,
             'machine_label': self.machine_label,
             'description': self.description,
             'saved_permissions': self.permissions
         }
+        # print("writing config for role_id: %s" % self.role_id)
         self._Parent._Configs.set('rbac_roles', self.role_id,
                                   data_pickle(tosave, encoder="msgpack_base64", local=True),
                                   ignore_case=True)

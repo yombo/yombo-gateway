@@ -61,15 +61,15 @@
                         <tbody>{% for auth_id, authkey in authkeys.items() %}
                              <tr>
                                 <td>
-                                    <a href="/authkey/{{ authkey.label }}/details">{{ authkey.label }}</a>
+                                    <a href="/authkeys/{{ authkey.label }}/details">{{ authkey.label }}</a>
                                 </td>
                                 <td>{{ authkey.description }}</td>
                                 <td>{{ authkey.is_valid }}</td>
                                 <td>{{ authkey.auth_id|truncate(10) }}...</td>
                                 <td>
-                                 <a href="/authkey/{{ authkey.label }}/rotate">Rotate</a>
-                                 <a href="/authkey/{{ authkey.label }}/edit">Edit</a>
-                                 <a class="alert-danger" href="/authkey/{{ authkey.label }}/remove">Remove</a>
+                                 <a href="/authkeys/{{ authkey.label }}/rotate">Rotate</a>
+                                 <a href="/authkeys/{{ authkey.label }}/edit">Edit</a>
+                                 <a class="alert-danger" href="/authkeys/{{ authkey.label }}/remove">Remove</a>
                                 </td>
                              </tr>{% endfor %}
                         </tbody>

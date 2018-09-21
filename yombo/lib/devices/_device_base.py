@@ -40,7 +40,8 @@ from yombo.constants.commands import (COMMAND_COMPONENT_CALLED_BY, COMMAND_COMPO
 from yombo.core.exceptions import YomboPinCodeError, YomboWarning, YomboNoAccess
 from yombo.core.log import get_logger
 from yombo.lib.commands import Command  # used only to determine class type
-from yombo.utils import random_string, global_invoke_all, do_search_instance, dict_merge, dict_diff
+from yombo.utils import (random_string, global_invoke_all, do_search_instance, dict_merge, dict_diff,
+    generate_source_string)
 
 # Import local items
 from ._device_attributes import Device_Attributes
@@ -157,20 +158,7 @@ class Device_Base(Device_Attributes):
         if COMMAND_COMPONENT_REQUESTING_SOURCE in kwargs:
             device_command[COMMAND_COMPONENT_REQUESTING_SOURCE] = kwargs[COMMAND_COMPONENT_REQUESTING_SOURCE]
         else:
-            frm = inspect.stack()[1]
-            mod = inspect.getmodule(frm[0])
-            callingframe = sys._getframe(1)
-            if 'self' in callingframe.f_locals:
-                device_command[COMMAND_COMPONENT_REQUESTING_SOURCE] = "%s:%s.%s.%s" % \
-                                                      (self.gateway_id,
-                                                       mod.__name__,
-                                                       callingframe.f_locals['self'].__class__.__name__,
-                                                       callingframe.f_code.co_name)
-            else:
-                device_command[COMMAND_COMPONENT_REQUESTING_SOURCE] = "%s:%s.%s" % \
-                                                      (self.gateway_id,
-                                                       mod.__name__,
-                                                       callingframe.f_code.co_name)
+            device_command[COMMAND_COMPONENT_REQUESTING_SOURCE] = generate_source_string(gateway_id=self.gateway_id)
 
         if str(command.command_id) not in self.available_commands():
             logger.warn("Requested command: {command_id}, but only have: {ihave}",
@@ -645,21 +633,7 @@ class Device_Base(Device_Attributes):
 
         self.status_delayed = dict_merge(self.status_delayed, kwargs)
         if COMMAND_COMPONENT_REPORTING_SOURCE not in self.status_delayed:
-            frm = inspect.stack()[1]
-            mod = inspect.getmodule(frm[0])
-            callingframe = sys._getframe(1)
-
-            if 'self' in callingframe.f_locals:
-                self.status_delayed[COMMAND_COMPONENT_REPORTING_SOURCE] = "%s:%s.%s.%s" % \
-                                                          (self.gateway_id,
-                                                           mod.__name__,
-                                                           callingframe.f_locals['self'].__class__.__name__,
-                                                           callingframe.f_code.co_name)
-            else:
-                self.status_delayed[COMMAND_COMPONENT_REPORTING_SOURCE] = "%s:%s.%s" % \
-                                                          (self.gateway_id,
-                                                           mod.__name__,
-                                                           callingframe.f_code.co_name)
+            self.status_delayed[COMMAND_COMPONENT_REPORTING_SOURCE] = generate_source_string(gateway_id=self.gateway_id)
 
         if self.status_delayed_calllater is not None and self.status_delayed_calllater.active():
             self.status_delayed_calllater.cancel()
@@ -699,20 +673,7 @@ class Device_Base(Device_Attributes):
         """
         self.status_delayed = dict_merge(self.status_delayed, kwargs)
         if COMMAND_COMPONENT_REPORTING_SOURCE not in self.status_delayed:
-            frm = inspect.stack()[1]
-            mod = inspect.getmodule(frm[0])
-            callingframe = sys._getframe(1)
-            if 'self' in callingframe.f_locals:
-                self.status_delayed[COMMAND_COMPONENT_REPORTING_SOURCE] = "%s:%s.%s.%s" % \
-                                                          (self.gateway_id,
-                                                           mod.__name__,
-                                                           callingframe.f_locals['self'].__class__.__name__,
-                                                           callingframe.f_code.co_name)
-            else:
-                self.status_delayed[COMMAND_COMPONENT_REPORTING_SOURCE] = "%s:%s.%s" % \
-                                                          (self.gateway_id,
-                                                           mod.__name__,
-                                                           callingframe.f_code.co_name)
+            self.status_delayed[COMMAND_COMPONENT_REPORTING_SOURCE] = generate_source_string(gateway_id=self.gateway_id)
 
         kwargs_delayed = self.set_status_process(**self.status_delayed)
         kwargs_delayed, status_id = self._set_status(**kwargs_delayed)

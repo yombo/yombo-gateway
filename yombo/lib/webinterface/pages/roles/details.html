@@ -1,4 +1,8 @@
 {% extends "lib/webinterface/fragments/layout.tpl" %}
+{% import "lib/webinterface/fragments/item_display.tpl" as ID%}
+{% block head_css %}
+{% include 'lib/webinterface/fragments/select_css.tpl' %}
+{% endblock %}
 
 {% block content %}
 <div class="row">
@@ -66,15 +70,27 @@
     </div>
 </div>
 <!-- /.row -->
-
+<div class="modal" id="delete_permission_modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="ModalLabel-delete_permission_modal">Confirm deletion</h4>
+            </div>
+            <div class="modal-body">
+                  Confirm permission deletion...
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+                <a id="delete_permission_link" class="btn btn-info  btn-danger" href="">Delete it...</a>
+            </div>
+        </div>
+    </div>
+</div>
 <div class="row">
     <div class="col-lg-6">
         <div class="panel panel-default">
             <div class="panel-heading">
-                {% if role.source == 'user' %}
-                <a href="/roles/{{role.role_id}}/add_permission/allow" class="btn btn-md btn-primary pull-right">
-                    Add Permission</a>
-                {% endif %}
                 <h4>Allow Permissions</h4>
             </div>
             <!-- /.panel-heading -->
@@ -84,8 +100,13 @@
                 {% else %}
                 {% for permission_id, permission in role.permissions['allow'].items() %}
                 <ul style="padding-left: 15px">
+                    <a href="#delete_permission_modal" data-toggle="modal"
+                       data-role-id="{{ role.role_id }}"
+                       data-permission-id="{{ permission_id }}"
+                       class="pull-right"
+                       > <i class="fa fa-trash fa-2x pull-right" style="color:Tomato"></i> </a>
                     <li><strong>Platform: </strong>{{permission['platform']}}</li>
-                    <li><strong>Item: </strong>{{permission['item']}}</li>
+                    <li><strong>Item: </strong>{{ ID.item_label(permission['platform'], permission['item']) }}</li>
                     <li><strong>Actions: </strong>{{permission['action']}}</li>
                 </ul>
                     {%- if not loop.last %}
@@ -93,14 +114,7 @@
                     {%- endif %}
                 {%- endfor %}
                 {% endif %}
-                {%- if role.permissions['deny']|length > 0 %}
-                <strong>Deny</strong>
-                <ul>
-                {% for permission in role.permissions['deny'] %}
-                    <li>{{permission[1]}} <i class="fas fa-arrow-right"></i> {{permission[0]}}</li>
-                {% endfor %}
-                </ul>
-                {% endif %}
+
             </div>
         </div>
         <!-- /.panel-body -->
@@ -108,10 +122,6 @@
     <div class="col-lg-6">
         <div class="panel panel-default">
             <div class="panel-heading">
-                {% if role.source == 'user' %}
-                <a href="/roles/{{role.role_id}}/add_permission/deny" class="btn btn-md btn-primary pull-right">
-                    Add Permission</a>
-                {% endif %}
                 <h4>Deny Permissions</h4>
             </div>
             <!-- /.panel-heading -->
@@ -121,8 +131,13 @@
                 {% else %}
                 {% for permission_id, permission in role.permissions['deny'].items() %}
                 <ul style="padding-left: 15px">
+                    <a href="#delete_permission_modal" data-toggle="modal"
+                       data-role-id="{{ role.role_id }}"
+                       data-permission-id="{{ permission_id }}"
+                       class="pull-right"
+                       > <i class="fa fa-trash fa-2x pull-right" style="color:Tomato"></i> </a>
                     <li><strong>Platform: </strong>{{permission['platform']}}</li>
-                    <li><strong>Item: </strong>{{permission['item']}}</li>
+                    <li><strong>Item: </strong>{{ ID.item_label(permission['platform'], permission['item']) }}</li>
                     <li><strong>Actions: </strong>{{permission['action']}}</li>
                 </ul>
                     {%- if not loop.last %}
@@ -130,18 +145,243 @@
                     {%- endif %}
                 {%- endfor %}
                 {% endif %}
-                {%- if role.permissions['deny']|length > 0 %}
-                <strong>Deny</strong>
-                <ul>
-                {% for permission in role.permissions['deny'] %}
-                    <li>{{permission[1]}} <i class="fas fa-arrow-right"></i> {{permission[0]}}</li>
-                {% endfor %}
-                </ul>
-                {% endif %}
             </div>
         </div>
     </div>
 </div>
+{% if role.source == 'user' %}
+<div class="row">
+    <div class="col-md-6">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h4>Automation rules</h4>
+                Add automation roles.
+            </div>
+            <!-- /.panel-heading -->
+            <div class="panel-body">
+                <form action="/roles/{{role.role_id}}/add_item_permission" method="post" id="addautomationrule">
+                <input type="hidden" id="platform_automation" name="platform" value="automation">
+                <label> Add an automation rule: </label><br>
+                <select name="item" id="automation_id" class="selectpicker" data-size="10" data-live-search="true"  title="Select automation rule to add.">
+                  <option value="*" data-subtext="All automation rules" style="color: #203684; background: #e3f0ff";>All</option>
+                {%- for automation_id, automation in _automation.sorted().items()
+                    if automation.enabled() == true%}
+                  <option value="{{automation.rule_id}}" data-subtext="{{automation.data['config']['description']|hide_none(default='No automation rule description')|truncate(70)}}">{{automation.label}}</option>
+                {%- endfor %}
+                </select>
+                    <br>
+                    <h4> Automation rule permissions: </h4>
+                    <table style="width: 100%;">
+                        <tr style="vertical-align:text-top">
+                            <td>
+                                <input type="checkbox" id="allow_view" name="allow_view" value="allow_view">Allow view<br>
+                                <input type="checkbox" id="allow_edit" name="allow_edit" value="allow_edit">Allow edit<br>
+                                <input type="checkbox" id="allow_enable" name="allow_enable" value="allow_enable">Allow enable<br>
+                                <input type="checkbox" id="allow_disable" name="allow_disable" value="allow_disable">Allow disable<br>
+                            </td>
+                            <td>
+                                <input type="checkbox" id="deny_view" name="deny_view" value="deny_view">Deny view<br>
+                                <input type="checkbox" id="deny_edit" name="deny_edit" value="deny_edit">Deny edit<br>
+                                <input type="checkbox" id="deny_enable" name="deny_enable" value="deny_enable">Deny enable<br>
+                                <input type="checkbox" id="deny_disable" name="deny_disable" value="deny_disable">Deny disable<br>
+                            </td>
+                        </tr>
+                    </table>
+                    <button type="submit" id="submit_automation" class="btn btn-success" style="margin-top: 15px; margin-bottom: 10px">Add automation rule</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h4>Devices</h4>
+                Add access to devices.
+            </div>
+            <!-- /.panel-heading -->
+            <div class="panel-body">
+                <form action="/roles/{{role.role_id}}/add_item_permission" method="post" id="adddevice">
+                <input type="hidden" id="platform_device" name="platform" value="device">
+                <label> Add a device: </label><br>
+                <select name="item" id="device_id" class="selectpicker" data-size="10" data-live-search="true"  title="Select device to add.">
+                  <option value="*" data-subtext="All devices" style="color: #203684; background: #e3f0ff">All</option>
+                {%- for device_id, device in _devices.sorted().items()
+                    if device.enabled_status == 1%}
+                  <option value="{{device.device_id}}" data-subtext="{{device.description|hide_none(default='No device description')|truncate(70)}}">{{device.full_label}}</option>
+                {%- endfor %}
+                </select>
+                    <br>
+                    <h4> Device permissions: </h4>
+                    <table style="width: 100%;">
+                        <tr style="vertical-align:text-top">
+                            <td>
+                                <input type="checkbox" id="allow_view" name="allow_view" value="allow_view">Allow view<br>
+                                <input type="checkbox" id="allow_control" name="allow_control" value="allow_control">Allow control<br>
+                                <input type="checkbox" id="allow_edit" name="allow_edit" value="allow_edit">Allow edit<br>
+                                <input type="checkbox" id="allow_enable" name="allow_enable" value="allow_enable">Allow enable<br>
+                                <input type="checkbox" id="allow_disable" name="allow_disable" value="allow_disable">Allow disable<br>
+                            </td>
+                            <td>
+                                <input type="checkbox" id="deny_view" name="deny_view" value="deny_view">Deny view<br>
+                                <input type="checkbox" id="deny_control" name="deny_control" value="deny_control">Deny control<br>
+                                <input type="checkbox" id="deny_edit" name="deny_edit" value="deny_edit">Deny edit<br>
+                                <input type="checkbox" id="deny_enable" name="deny_enable" value="deny_enable">Deny enable<br>
+                                <input type="checkbox" id="deny_disable" name="deny_disable" value="deny_disable">Deny disable<br>
+                            </td>
+                        </tr>
+                    </table>
+                    <button type="submit" id="submit_device" class="btn btn-success" style="margin-top: 15px; margin-bottom: 10px">Add device</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-6">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h4>Scenes</h4>
+                Add access to certain scenes.
+            </div>
+            <!-- /.panel-heading -->
+            <div class="panel-body">
+                <form action="/roles/{{role.role_id}}/add_item_permission" method="post" id="addscene">
+                <input type="hidden" id="platform_scene" name="platform" value="scene">
+                <label> Add a scene: </label><br>
+                <select name="item" id="scene_id" class="selectpicker" data-size="10" data-live-search="true"  title="Select scene to add.">
+                  <option value="*" data-subtext="All scenes" style="color: #203684; background: #e3f0ff">All</option>
+                {%- for scene_id, scene in _scenes.get().items()
+                    if scene.enabled() == true%}
+                  <option value="{{scene.scene_id}}" data-subtext="{{scene.data['config']['description']|hide_none(default='No scene description')|truncate(70)}}">{{scene.label}}</option>
+                {%- endfor %}
+                </select>
+                    <br>
+                    <h4> Scene permissions: </h4>
+                    <table style="width: 100%;">
+                        <tr style="vertical-align:text-top">
+                            <td>
+                                <input type="checkbox" id="allow_view" name="allow_view" value="allow_view">Allow view<br>
+                                <input type="checkbox" id="allow_edit" name="allow_edit" value="allow_edit">Allow edit<br>
+                                <input type="checkbox" id="allow_start" name="allow_start" value="allow_enable">Allow start<br>
+                                <input type="checkbox" id="allow_stop" name="allow_stop" value="allow_disable">Allow stop<br>
+                                <input type="checkbox" id="allow_enable" name="allow_enable" value="allow_enable">Allow enable<br>
+                                <input type="checkbox" id="allow_disable" name="allow_disable" value="allow_disable">Allow disable<br>
+                            </td>
+                            <td>
+                                <input type="checkbox" id="deny_view" name="deny_view" value="deny_view">Deny view<br>
+                                <input type="checkbox" id="deny_edit" name="deny_edit" value="deny_edit">Deny edit<br>
+                                <input type="checkbox" id="deny_start" name="deny_start" value="allow_enable">Deny start<br>
+                                <input type="checkbox" id="deny_stop" name="deny_stop" value="allow_disable">Deny stop<br>
+                                <input type="checkbox" id="deny_enable" name="deny_enable" value="deny_enable">Deny enable<br>
+                                <input type="checkbox" id="deny_disable" name="deny_disable" value="deny_disable">Deny disable<br>
+                            </td>
+                        </tr>
+                    </table>
+                    <button type="submit" id="submit_scene" class="btn btn-success" style="margin-top: 15px; margin-bottom: 10px">Add scene</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h4>Manual Entry</h4>
+                <em>Advanced use cases</em> - Use caution when manually adding entries, they are not validated.
+            </div>
+            <!-- /.panel-heading -->
+            <div class="panel-body">
+                <form action="/roles/{{role.role_id}}/add_item_permission" method="post" id="addscene">
+                <input type="hidden" id="add_type_manual" name="add_type" value="manual">
+
+                <label> Platform: </label><br>
+                <input type="text" id="platform_manual" name="platform" value="" placeholder="scene, device..."><br>
+
+                <label> Access: </label><br>
+                <select name="access" id="access_manual" class="selectpicker" data-size="10" title="Select access...">
+                  <option value="allow">Allow</option>
+                  <option value="deny">Deny</option>
+                </select><br>
+
+                <label> Item: </label><br>
+                <input type="text" id="item_manual" name="item" value="" placeholder="scene_id, device_id, etc"><br>
+
+                <label> Item: </label><br>
+                <input type="text" id="action_manual" name="action" value="" placeholder="view, edit, delete, control, admin"><br>
+
+                <button type="submit" id="submit_manual" class="btn btn-success" style="margin-top: 15px; margin-bottom: 10px">Add manual permission</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- /.row -->
 {% endblock %}
 
+{% block body_bottom_js %}
+{% include 'lib/webinterface/fragments/select_js.tpl' %}
+{% endblock %}
+
+{% block body_bottom %}
+<script>
+    $('#delete_permission_modal').on('show.bs.modal', function(e) {
+        var roleId = $(e.relatedTarget).data('role-id');
+        var permissionId = $(e.relatedTarget).data('permission-id');
+        // alert("/roles" + roleId + "/remove_item_permission/" + permissionId);
+        $("#delete_permission_link").attr("href", "/roles/" + roleId + "/remove_item_permission/" + permissionId);
+// /<string:role_id>/remove_item_permission/<string:permission_id>
+        // $(e.currentTarget).find('input[name="bookId"]').val(bookId);
+    });
+
+    function enableAutomationSubmitBtn(){
+        document.getElementById("submit_automation").disabled = false;
+    }
+    $('#submit_automation').prop('disabled', true);
+
+    $('#automation_id').on('change',function(){
+      enableAutomationSubmitBtn();
+    });
+
+    function enableDeviceSubmitBtn(){
+        document.getElementById("submit_device").disabled = false;
+    }
+    $('#submit_device').prop('disabled', true);
+
+    $('#device_id').on('change',function(){
+      enableDeviceSubmitBtn();
+    });
+
+    function enableSceneSubmitBtn(){
+        document.getElementById("submit_scene").disabled = false;
+    }
+    $('#submit_scene').prop('disabled', true);
+
+    $('#scene_id').on('change',function(){
+      enableSceneSubmitBtn();
+    });
+
+    function enableRoleSubmitBtn(){
+        document.getElementById("submit_role").disabled = false;
+    }
+    $('#submit_role').prop('disabled', true);
+
+    var rolesList = {
+    {%- for role in _users.get_roles() %}
+        "{{ role.machine_label }}": {
+        "machine_label": "{{ role.machine_label}}",
+        "label": "{{ role.label}}",
+        "description": "{{ role.description}}",
+       },
+    {% endfor %}
+    };
+
+    $('#role_label').on('change',function(){
+      $("#new_role_machine_label").text(rolesList[$(this).val()]['machine_label']);
+      $("#new_role_label").text(rolesList[$(this).val()]['label']);
+      $("#new_role_description").text(rolesList[$(this).val()]['description']);
+      enableRoleSubmitBtn();
+    });
+
+</script>
+{% endblock %}

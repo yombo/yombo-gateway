@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `Queues @ command Development <https://yombo.net/docs/libraries/queues>`_
+  * For library documentation, see: `Queues @ Library Documentation <https://yombo.net/docs/libraries/queues>`_
 
 This library implements a modified version of a queue developed by Terry Jones
 ( http://blogs.fluidinfo.com/terry/2011/06/27/a-resizable-dispatch-queue-for-twisted/ ).
@@ -12,7 +12,7 @@ This library implements a modified version of a queue developed by Terry Jones
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.13.0
 
-:copyright: Copyright 2016-2017 by Yombo.
+:copyright: Copyright 2016-2018 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/queue.html>`_
 """

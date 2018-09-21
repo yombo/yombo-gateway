@@ -52,7 +52,7 @@ def route_automation(webapp):
         @webapp.route('/<string:rule_id>/details', methods=['GET'])
         @require_auth()
         def page_automation_details_get(webinterface, request, session, rule_id):
-            rule_id = webinterface._Validate.is_id_string(rule_id)
+            rule_id = webinterface._Validate.id_string(rule_id)
             session.has_access('automation', rule_id, 'view', raise_error=True)
             try:
                 rule = webinterface._Automation[rule_id]
@@ -72,7 +72,7 @@ def route_automation(webapp):
         @webapp.route('/<string:rule_id>/stop', methods=['GET'])
         @require_auth()
         def page_automation_stop_rule_get(webinterface, request, session, rule_id):
-            rule_id = webinterface._Validate.is_id_string(rule_id)
+            rule_id = webinterface._Validate.id_string(rule_id)
             session.has_access('automation', rule_id, 'stop', raise_error=True)
             try:
                 rule = webinterface._Automation.get(rule_id)

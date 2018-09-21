@@ -17,7 +17,7 @@ The constant values are not fully documented here, see the
 :view-source: `View Source Code <https://github.com/yombo/yombo-gateway/tree/master/yombo/constants>`_
 """
 MAJOR_VERSION = 0
-MINOR_VERSION = 21
+MINOR_VERSION = 22
 PATCH_VERSION = 0
 __short_version__ = '{}.{}'.format(MAJOR_VERSION, MINOR_VERSION)
 __version__ = '{}.{}'.format(__short_version__, PATCH_VERSION)

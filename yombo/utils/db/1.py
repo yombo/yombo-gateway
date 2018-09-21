@@ -5,7 +5,7 @@ Details:
 Setups the initial database schema.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-:copyright: Copyright 2012-2016 by Yombo.
+:copyright: Copyright 2012-2018 by Yombo.
 :license: LICENSE for details.
 """
 # Import twisted libraries
@@ -13,9 +13,13 @@ from twisted.internet.defer import inlineCallbacks
 
 from yombo.utils.db import create_index
 
+
 @inlineCallbacks
 def new_db_file(Registry, **kwargs):
     yield create_table_schema_version(Registry)
+    yield create_table_auth_keys(Registry)
+    yield create_table_events(Registry)
+    # yield create_table_event_types(Registry)
     yield create_table_categories(Registry)
     yield create_table_commands(Registry)
     yield create_table_devices(Registry)
@@ -38,7 +42,6 @@ def new_db_file(Registry, **kwargs):
     yield create_table_statistics(Registry)
     yield create_table_tasks(Registry)
     yield create_table_users(Registry)
-    yield create_table_auth_keys(Registry)
     yield create_table_webinterface_sessions(Registry)
     yield create_table_webinterface_logs(Registry)
     yield create_table_variable_groups(Registry)
@@ -56,18 +59,40 @@ def new_db_file(Registry, **kwargs):
     yield create_trigger_delete_variablegroups_variable_fields(Registry)
     yield create_trigger_delete_variablefields_variable_data(Registry)
 
+
 @inlineCallbacks
 def upgrade(Registry, **kwargs):
     yield new_db_file(Registry)
 
+
 def downgrade(Registry, **kwargs):
     pass
+
 
 @inlineCallbacks
 def create_table_schema_version(Registry, **kwargs):
     """ Handles version tracking for the database schema """
     yield Registry.DBPOOL.runQuery('CREATE TABLE schema_version(table_name TEXT NOT NULL, version INTEGER NOT NULL, PRIMARY KEY(table_name))')
     yield Registry.DBPOOL.runQuery('INSERT INTO schema_version(table_name, version) VALUES ("core", 1)')
+
+@inlineCallbacks
+def create_table_auth_keys(Registry, **kwargs):
+    """ Nearly the same as webinterface_sessions, but for auth keys """
+    table = """CREATE TABLE `auth_keys` (
+        `id`           TEXT NOT NULL, /* moduleUUID */
+        `label`        TEXT NOT NULL,
+        `description`  TEXT NOT NULL,
+        `is_valid`     INTEGER NOT NULL,
+        `roles`        TEXT,
+        `auth_data`    TEXT NOT NULL,
+        `created_at`   INTEGER NOT NULL,
+        `last_access`  INTEGER NOT NULL,
+        `updated_at`   INTEGER NOT NULL,
+        PRIMARY KEY(id));"""
+    yield Registry.DBPOOL.runQuery(table)
+    yield Registry.DBPOOL.runQuery(create_index('auth_keys', 'created_at'))
+    yield Registry.DBPOOL.runQuery(create_index('auth_keys', 'updated_at'))
+
 
 @inlineCallbacks
 def create_table_categories(Registry, **kwargs):
@@ -86,6 +111,7 @@ def create_table_categories(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('categories', 'id', unique=True))
     # yield Registry.DBPOOL.runQuery("CREATE UNIQUE INDEX IF NOT EXISTS categoires_type_machine_label_IDX ON categories (machine_label, category_type)")
+
 
 @inlineCallbacks
 def create_table_commands(Registry, **kwargs):
@@ -106,6 +132,7 @@ def create_table_commands(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(create_index('commands', 'id', unique=True))
     yield Registry.DBPOOL.runQuery(create_index('commands', 'machine_label', unique=True))
     yield Registry.DBPOOL.runQuery(create_index('commands', 'voice_cmd'))
+
 
 @inlineCallbacks
 def create_table_devices(Registry, **kwargs):
@@ -148,6 +175,7 @@ def create_table_devices(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(create_index('devices', 'device_type_id'))
     yield Registry.DBPOOL.runQuery(create_index('devices', 'gateway_id'))
 
+
 @inlineCallbacks
 def create_table_device_command_inputs(Registry, **kwargs):
     """ All possible inputs for a given device type/command/input. """
@@ -171,6 +199,7 @@ def create_table_device_command_inputs(Registry, **kwargs):
         UNIQUE (device_type_id, command_id, input_type_id) ON CONFLICT IGNORE);"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('device_command_inputs', 'device_type_id'))
+
 
 @inlineCallbacks
 def create_table_device_commands(Registry, **kwargs):
@@ -205,9 +234,9 @@ def create_table_device_commands(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('device_commands', 'request_id', unique=True))
     # yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS device_command_id_nottimes_idx ON device_command (device_id, not_before_at, not_after_at)")
-    # yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS device_command_id_nottimes_idx ON device_command (device_id, not_before_at, not_after_at)")
     yield Registry.DBPOOL.runQuery(create_index('device_commands', 'finished_at'))
     # yield Registry.DBPOOL.runQuery(create_index('device_status', 'status'))
+
 
 @inlineCallbacks
 def create_table_device_status(Registry, **kwargs):
@@ -237,6 +266,7 @@ def create_table_device_status(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(create_index('device_status', 'device_id'))
     yield Registry.DBPOOL.runQuery(create_index('device_status', 'uploaded'))
 
+
 @inlineCallbacks
 def create_table_device_types(Registry, **kwargs):
     """ Device types defines the features of a device. For example, all X10 appliances or Insteon Lamps. """
@@ -261,6 +291,7 @@ def create_table_device_types(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(create_index('device_types', 'id', unique=True))
     yield Registry.DBPOOL.runQuery(create_index('device_types', 'machine_label', unique=True))
 
+
 @inlineCallbacks
 def create_table_device_type_commands(Registry, **kwargs):
     """ All possible commands for a given device type. For examples, appliances are on and off. """
@@ -274,6 +305,51 @@ def create_table_device_type_commands(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(create_index('device_type_commands', 'device_type_id'))
     # yield Registry.DBPOOL.runQuery(create_index('command_device_types', 'command_id'))
     #    yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS command_device_types_command_id_device_type_id_IDX ON command_device_types (command_id, device_type_id)")
+
+
+@inlineCallbacks
+def create_table_events(Registry, **kwargs):
+    """  """
+    # To be completed
+    table = """CREATE TABLE `events` (
+        `id`            INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        `event_type`    TEXT NOT NULL, /* audit, system, user, etc */
+        `event_subtype` TEXT NOT NULL, /* allow/deny */
+        `priority`      TEXT NOT NULL, /* debug, low, normal, high, urgent */
+        `source`        TEXT NOT NULL, /* where this message was created lib.states::method() */
+        `user_id`       TEXT,
+        `user_type`     TEXT,
+        `attr1`         TEXT,
+        `attr2`         TEXT,
+        `attr3`         TEXT,
+        `attr4`         TEXT,
+        `attr5`         TEXT,
+        `attr6`         TEXT,
+        `attr7`         TEXT,
+        `attr8`         TEXT,
+        `attr9`         TEXT,
+        `attr10`        TEXT,
+        `attr11`        TEXT,
+        `attr12`        TEXT,
+        `attr13`        TEXT,
+        `attr14`        TEXT,
+        `attr15`        TEXT,
+        `attr16`        TEXT,
+        `attr17`        TEXT,
+        `attr18`        TEXT,
+        `attr19`        TEXT,
+        `attr20`        TEXT,
+        `meta`          TEXT, /* Any extra meta data. MSGPACK format */
+        `created_at`    INTEGER NOT NULL);"""
+    yield Registry.DBPOOL.runQuery(table)
+    yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS event_type_idx ON events (event_type, event_subtype)")
+    yield Registry.DBPOOL.runQuery(create_index('events', 'created_at'))
+    yield Registry.DBPOOL.runQuery(create_index('events', 'attr1'))
+    yield Registry.DBPOOL.runQuery(create_index('events', 'attr2'))
+    yield Registry.DBPOOL.runQuery(create_index('events', 'attr3'))
+    yield Registry.DBPOOL.runQuery(create_index('events', 'attr4'))
+    yield Registry.DBPOOL.runQuery(create_index('events', 'attr5')) # Only do these, majority only have this many items.
+
 
 @inlineCallbacks
 def create_table_gateways(Registry, **kwargs):
@@ -317,6 +393,7 @@ def create_table_gateways(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('gateways', 'id', unique=True))
 
+
 @inlineCallbacks
 def create_table_gpg_keys(Registry, **kwargs):
     """ Used for quick access to GPG keys instead of key ring. """
@@ -345,6 +422,7 @@ def create_table_gpg_keys(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(create_index('gpg_keys', 'keyid'))
     # yield Registry.DBPOOL.runQuery(create_index('gpg_keys', 'fingerprint'))
 
+
 @inlineCallbacks
 def create_table_input_types(Registry, **kwargs):
     """ Input types defines input filters and how input validation is handled. """
@@ -365,6 +443,7 @@ def create_table_input_types(Registry, **kwargs):
         PRIMARY KEY(id) ON CONFLICT IGNORE);"""
     yield Registry.DBPOOL.runQuery(table)
 
+
 @inlineCallbacks
 def create_table_locations(Registry, **kwargs):
     """ All locations configured for an account. """
@@ -382,38 +461,10 @@ def create_table_locations(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery("CREATE UNIQUE INDEX IF NOT EXISTS locations_machinelabel_idx ON locations (location_type, machine_label)")
     yield Registry.DBPOOL.runQuery("CREATE UNIQUE INDEX IF NOT EXISTS locations_label_idx ON locations (location_type, label)")
 
-# @inlineCallbacks
-# def create_table_logs(Registry, **kwargs):
-#     """  """
-#     # To be completed
-#     table = """CREATE TABLE `logs` (
-#         `id`           INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-#         `type`         TEXT NOT NULL, /* system, user, etc */
-#         `priority`     TEXT NOT NULL, /* debug, low, normal, high, urgent */
-#         `source`       TEXT NOT NULL, /* where this message was created_at */
-#         `message`      TEXT, /* Message data */
-#         `meta`         TEXT, /* Any extra meta data. JSON format */
-#         `created_at`   INTEGER NOT NULL);"""
-#     yield Registry.DBPOOL.runQuery(table)
-
-# @inlineCallbacks
-# def create_table_meta(Registry, **kwargs):
-#     """  """
-#     # Defines the config table for the local gateway.
-#     table = """CREATE TABLE `meta` (
-#         `id`           INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-#         `meta_key`  TEXT NOT NULL,
-#         `meta_value`   TEXT NOT NULL,
-#         `created_at`    INTEGER NOT NULL,
-#         `updated_at`   INTEGER NOT NULL);"""
-#     #    yield Registry.DBPOOL.runQuery(table)
-#     #    yield Registry.DBPOOL.runQuery(create_index('meta', 'meta_key'))
-#     #    yield Registry.DBPOOL.runQuery("CREATE UNIQUE INDEX IF NOT EXISTS configs_config_key_config_key_IDX ON configs (config_path, config_key)")
 
 @inlineCallbacks
 def create_table_modules(Registry, **kwargs):
-    """  """
-    # Stores module information
+    """ Stores module information """
     table = """CREATE TABLE `modules` (
         `id`                 TEXT NOT NULL, /* moduleUUID */
         `gateway_id`         TEXT NOT NULL,
@@ -444,10 +495,10 @@ def create_table_modules(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('modules', 'machine_label'))
 
+
 @inlineCallbacks
 def create_table_module_device_types(Registry, **kwargs):
-    """  """
-    # All possible device types for a module
+    """ All possible device types for a module """
     table = """CREATE TABLE `module_device_types` (
         `id`             TEXT NOT NULL,
         `module_id`      TEXT NOT NULL,
@@ -459,10 +510,10 @@ def create_table_module_device_types(Registry, **kwargs):
     # yield Registry.DBPOOL.runQuery(create_index('command_device_types', 'command_id'))
     #    yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS command_device_types_command_id_device_type_id_IDX ON command_device_types (command_id, device_type_id)")
 
+
 @inlineCallbacks
 def create_table_module_installed(Registry, **kwargs):
-    """  """
-    # Tracks what versions of a module is installed, when it was installed, and last checked for new version.
+    """ Tracks what versions of a module is installed, when it was installed, and last checked for new version. """
     table = """CREATE TABLE `module_installed` (
         `id`                INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
         `module_id`         TEXT NOT NULL, /* module.id */
@@ -472,10 +523,10 @@ def create_table_module_installed(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('module_installed', 'module_id'))
 
+
 @inlineCallbacks
 def create_table_nodes(Registry, **kwargs):
-    """  """
-    #  Defines the statistics data table. Stores node items.
+    """ Defines the statistics data table. Stores node items. """
     table = """CREATE TABLE `nodes` (
         `id`                TEXT NOT NULL,
         `parent_id`         TEXT,
@@ -498,8 +549,7 @@ def create_table_nodes(Registry, **kwargs):
 
 @inlineCallbacks
 def create_table_notifications(Registry, **kwargs):
-    """  """
-    #  Defines the statistics data table. Stores statistics.
+    """ Defines the statistics data table. Stores statistics. """
     table = """CREATE TABLE `notifications` (
         `id`                      TEXT NOT NULL,
         `gateway_id`              TEXT NOT NULL,
@@ -524,8 +574,7 @@ def create_table_notifications(Registry, **kwargs):
 
 @inlineCallbacks
 def create_table_sqldict(Registry, **kwargs):
-    """  """
-    # Defines the SQL Dict table. Used by the :class:`SQLDict` class to maintain persistent dictionaries.
+    """ Defines the SQL Dict table. Used by the :class:`SQLDict` class to maintain persistent dictionaries. """
     table = """CREATE TABLE `sqldict` (
         `id`         INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
         `component`  TEXT NOT NULL,
@@ -540,8 +589,7 @@ def create_table_sqldict(Registry, **kwargs):
 
 @inlineCallbacks
 def create_table_states(Registry, **kwargs):
-    """  """
-    # Defines the tables used to store state information.
+    """ Defines the tables used to store state information. """
     table = """CREATE TABLE `states` (
         `id`          INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
         `gateway_id` TEXT NOT NULL,
@@ -558,8 +606,7 @@ def create_table_states(Registry, **kwargs):
 
 @inlineCallbacks
 def create_table_statistics(Registry, **kwargs):
-    """  """
-    #  Defines the statistics data table. Stores statistics.
+    """ Defines the statistics data table. Stores statistics. """
     table = """CREATE TABLE `statistics` (
         `id`                  INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
         `bucket_time`         DECIMAL(13,3) NOT NULL,
@@ -581,8 +628,7 @@ def create_table_statistics(Registry, **kwargs):
 
 @inlineCallbacks
 def create_table_tasks(Registry, **kwargs):
-    """  """
-    # Used by the tasks library to start various tasks.
+    """ Used by the tasks library to start various tasks. """
     table = """CREATE TABLE `tasks` (
         `id`             INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
         `run_section`    INTEGER NOT NULL,
@@ -615,29 +661,8 @@ def create_table_users(Registry, **kwargs):
 
 
 @inlineCallbacks
-def create_table_auth_keys(Registry, **kwargs):
-    """  """
-    # Nearly the same as webinterface_sessions, but for auth keys
-    table = """CREATE TABLE `auth_keys` (
-        `id`           TEXT NOT NULL, /* moduleUUID */
-        `label`        TEXT NOT NULL,
-        `description`  TEXT NOT NULL,
-        `is_valid`     INTEGER NOT NULL,
-        `roles`        TEXT,
-        `auth_data`    TEXT NOT NULL,
-        `created_at`   INTEGER NOT NULL,
-        `last_access`  INTEGER NOT NULL,
-        `updated_at`   INTEGER NOT NULL,
-        PRIMARY KEY(id));"""
-    yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('auth_keys', 'created_at'))
-    yield Registry.DBPOOL.runQuery(create_index('auth_keys', 'updated_at'))
-
-
-@inlineCallbacks
 def create_table_webinterface_sessions(Registry, **kwargs):
-    """  """
-    # Defines the web interface session store. Used by the :class:`WebInterface` class to maintain session information
+    """ Defines the web interface session store. Used by the :class:`WebInterface` class to maintain session information """
     table = """CREATE TABLE `webinterface_sessions` (
         `id`           TEXT NOT NULL, /* moduleUUID */
         `is_valid`     INTEGER NOT NULL,
@@ -654,8 +679,7 @@ def create_table_webinterface_sessions(Registry, **kwargs):
 
 @inlineCallbacks
 def create_table_webinterface_logs(Registry, **kwargs):
-    """  """
-    # Used by the tasks library to start various tasks.
+    """ Used by the tasks library to start various tasks. """
     table = """CREATE TABLE `webinterface_logs` (
         `id`                INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
         `request_at`        INTEGER,
@@ -667,18 +691,19 @@ def create_table_webinterface_logs(Registry, **kwargs):
         `method`            TEXT NOT NULL,
         `path`              TEXT NOT NULL,
         `secure`            BOOL NOT NULL,
+        `user_id`           TEXT,
+        `user_type`         TEXT,
         `response_code`     INTEGER NOT NULL,
         `response_size`     INTEGER NOT NULL,
-        `uploadable`        INTEGER DEFAULT 1,
-        `uploaded`          INTEGER DEFAULT 0
+        `uploadable`        BOOL DEFAULT 1,
+        `uploaded`          BOOL DEFAULT 0
         );"""
     yield Registry.DBPOOL.runQuery(table)
 
 
 @inlineCallbacks
 def create_table_variable_groups(Registry, **kwargs):
-    """  """
-    # The following three tables and following views manages the variables set for devices and modules.
+    """ The following three tables and following views manages the variables set for devices and modules. """
     table = """CREATE TABLE `variable_groups` (
         `id`                  TEXT NOT NULL, /* group_id */
         `group_relation_id`   TEXT NOT NULL,
@@ -696,7 +721,7 @@ def create_table_variable_groups(Registry, **kwargs):
 
 @inlineCallbacks
 def create_table_variable_fields(Registry, **kwargs):
-    """  """
+    """ Store variable fields. These define that actual variables. """
     table = """CREATE TABLE `variable_fields` (
         `id`                  TEXT NOT NULL, /* field_id */
         `group_id`            TEXT NOT NULL,
@@ -722,7 +747,7 @@ def create_table_variable_fields(Registry, **kwargs):
 
 @inlineCallbacks
 def create_table_variable_data(Registry, **kwargs):
-    """  """
+    """ Stores the variable data. The format is defined in variable_fields (above). """
     table = """CREATE TABLE `variable_data` (
         `id`            TEXT NOT NULL,  /* field_id */
         `gateway_id`    TEXT DEFAULT 0,

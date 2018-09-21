@@ -211,21 +211,3 @@ def do_rotate_logs(basefile, type):
 
             globalLogPublisher.removeObserver(textFileLogObserver())
             globalLogPublisher.addObserver(textFileLogObserver(io.open(basefile, "a")))
-
-
-def reset_log_levels():
-    """
-    Used to reset the logs to their proper levels after
-    configurations are downloaded. Also called when
-    recieved a config update.
-    """
-    #TODO: Test this!
-    from yombo.core.helpers import getConfigValue
-    global loggers
-    global logLevels
-
-    for key, aLog in loggers:
-        newLevel = getConfigValue('logging', key, 10)
-        aLog.setLevel(newlevel)
-
-

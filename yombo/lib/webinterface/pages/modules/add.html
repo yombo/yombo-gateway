@@ -96,13 +96,9 @@
     <script type="text/javascript" src="/static/js/jquery.serializejson.min.js"></script>
     <script>
         $("#moduleedit").submit(function(event) {
-//            event.preventDefault();
-
             var rawData = $('#moduleedit').serializeJSON();
             var formData = JSON.stringify(rawData);
-            console.log(formData);
             $('#json_output').val(formData)
-//            console.log(formData);
         });
     </script>
 

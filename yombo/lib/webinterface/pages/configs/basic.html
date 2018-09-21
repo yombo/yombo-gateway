@@ -112,7 +112,10 @@
 							<option value="{{_local_gateway.gateway_id}}" style="background: #e6f7ff; color: #000;" data-subtext="Currently a master gateway" selected>{{_local_gateway.label}}</option>
 							<option data-divider="true"></option>
 							{%- endif -%}
-							{% for id, gateway in _gateways.gateways.items() if gateway.gateway_id != _local_gateway.gateway_id or _gateways.is_master() == false -%}
+							{% for id, gateway in _gateways.gateways.items()
+							  if (gateway.gateway_id != _local_gateway.gateway_id or
+							  _gateways.is_master() == false) and
+							  id != 'cluster' -%}
 							<option value="{{ id }}"{% if _gateways.master_id == id %} selected{% endif %}>{{ gateway.label }}
 							{% if id == _local_gateway.gateway_id %} (This gateway){%endif%}</option>
 							{%- endfor %}
@@ -378,8 +381,9 @@
 <div class="row">
 	<div class="col-lg-12">
 	<button type="submit" class="btn btn-primary col-xs-12 btn-lg" disabled>Save Settings</button>
-	</div>
 	<p>&nbsp;</p>
+	<p>&nbsp;</p>
+	</div>
 </div>
 <!-- /.row -->
 <img id="img-buffer" src="/static/img/logo-100px.png" hidden>

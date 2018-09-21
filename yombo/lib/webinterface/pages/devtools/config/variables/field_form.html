@@ -300,11 +300,8 @@
         })(jQuery);
 
         $("#groupedit").submit(function(event) {
-//            event.preventDefault();
-
             var rawData = $('#groupedit').serializeFormJSON();
             var formData = JSON.stringify(rawData);
-            console.log(formData);
         });
 
     });

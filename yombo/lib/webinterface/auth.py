@@ -55,8 +55,12 @@ def update_request(webinterface, request):
     request.received_cookies = bytes_to_unicode(request.received_cookies)
     request.args = bytes_to_unicode(request.args)
     webinterface.webapp.templates.globals['_'] = webinterface.i18n(request)
-    request.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
-    request.setHeader('Expires', '0')
+    request.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')  # don't cache!
+    request.setHeader('Expires', '-1')  # don't cache!
+    request.setHeader('X-Frame-Options', 'SAMEORIGIN')  # Prevent nesting frames
+    request.setHeader('X-Content-Type-Options', 'nosniff');  # We'll do our best to be accurate!
+    request.auth_id = None
+    request.auth_type = None
 
 
 def check_idempotence(webinterface, request, session):
@@ -75,7 +79,7 @@ def check_idempotence(webinterface, request, session):
         idempotence = arguments.get('_idempotence', None)
     request.idempotence = idempotence
     if idempotence is not None:
-        idempotence = sha256_compact("%s:%s" % (session.user_id, idempotence))
+        idempotence = sha256_compact("%s:%s" % (session.auth_id, idempotence))
         if idempotence in webinterface.idempotence:
             return return_error(request, 'idempotence error', 409,
                                 "This idempotence key has already be processed.")
@@ -140,6 +144,7 @@ def run_first(create_session=None, *args, **kwargs):
             if session is not None:
                 if session.check_valid():
                     request.auth_id = session.auth_id
+                    request.auth_type = session.auth_type
 
             try:
                 results = yield call(f, webinterface, request, session, *a, **kw)
@@ -191,7 +196,6 @@ def require_auth(roles=None, login_redirect=None, access_platform=None, access_i
         @inlineCallbacks
         def wrapped_f(webinterface, request, *a, **kw):
             update_request(webinterface, request)
-            request.auth_id = None
 
             host = request.getHeader('host')
             if host is None:
@@ -245,6 +249,7 @@ def require_auth(roles=None, login_redirect=None, access_platform=None, access_i
                                              **kwargs)
             session.touch()
             request.auth_id = session.auth_id
+            request.auth_type = session.auth_type
 
             if access_platform is not None and access_item is not None and access_action is not None:
                 if session.has_access(access_platform, access_item, access_action, raise_error=False) is False:
@@ -296,7 +301,6 @@ def require_auth_pin(roles=None, login_redirect=None, create_session=None, *args
         @inlineCallbacks
         def wrapped_f(webinterface, request, *a, **kw):
             update_request(webinterface, request)
-            request.auth_id = None
 
             host = request.getHeader('host')
             if host is None:
@@ -338,6 +342,7 @@ def require_auth_pin(roles=None, login_redirect=None, create_session=None, *args
                         if session['auth_pin'] is True:
                             session.touch()
                             request.auth_id = session.auth_id
+                            request.auth_type = session.auth_type
                             results = yield call(f, webinterface, request, session, *a, **kw)
                             return results
                 elif session.auth_type == AUTH_TYPE_AUTHKEY:  # If we have an API session, we are good if it's valid.
@@ -375,6 +380,7 @@ def require_auth_pin(roles=None, login_redirect=None, create_session=None, *args
             else:
                 if session is not None and session.check_valid():
                     request.auth_id = session.auth_id
+                    request.auth_type = session.auth_type
 
                 try:
                     results = yield call(f, webinterface, request, session, *a, **kw)

@@ -13,7 +13,7 @@ Scenes (yombo.lib.scenes)
 ===========================
 .. automodule:: yombo.lib.scenes
 
-Atoms Class
+Scenes Class
 ==============
 .. autoclass:: Scenes
    :members:

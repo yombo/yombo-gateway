@@ -5,7 +5,8 @@
 
 .. note::
 
-  For more information see: `Modules @ Module Features <https://yombo.net/docs/libraries/modules>`_
+  * End user documentation: `Modules @ User Documentation <https://yombo.net/docs/gateway/web_interface/modules>`_
+  * For library documentation, see: `Modules @ Library Documentation <https://yombo.net/docs/libraries/modules>`_
 
 Manages all modules within the system. Provides a single reference to perform module lookup functions, etc.
 
@@ -13,7 +14,7 @@ Also calls module hooks as requested by other libraries and modules.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2012-2017 by Yombo.
+:copyright: Copyright 2012-2018 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/modules.html>`_
 """
@@ -25,14 +26,12 @@ except ImportError:
     from hashlib import sha224
 from functools import partial, reduce
 import os.path
-import pkg_resources
 from pyclbr import readmodule
-from subprocess import check_output, CalledProcessError
 from time import time
 import traceback
 
 # Import twisted libraries
-from twisted.internet import reactor, threads
+from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks, maybeDeferred, Deferred, DeferredList
 
 # Import Yombo libraries
@@ -537,8 +536,13 @@ class Modules(YomboLibrary):
                         else:
                             self._Loader.requirements[line]['used_by'].append(module['machine_label'])
 
-
     def import_modules(self):
+        """
+        This imports the modules into memory (using import_component) and then sets some base module
+        attributes.
+
+        :return:
+        """
 
         for module_id, module in self._rawModulesList.items():
             module_path_name = "yombo.modules.%s" % module['machine_label']
@@ -600,7 +604,6 @@ class Modules(YomboLibrary):
                                          [possible_file, ] + file_path.split('.')[1:])
                     classes = readmodule(file_path)
                     for name, file_class_name in classes.items():
-
                         klass = getattr(module_tail, name)
                         if possible_file_name == '_devices':
                             self._DeviceTypes.platforms[name.lower()] = klass
@@ -622,10 +625,7 @@ class Modules(YomboLibrary):
         """
         Calls the _init_ functions of modules.
         """
-        module_init_deferred = []
-
         for module_id, module in self.modules.items():
-
             logger.debug("Starting module_init_invoke for module: {module}", module=module)
             module._module_variables = partial(
                 self.module_variables,
@@ -682,6 +682,7 @@ class Modules(YomboLibrary):
             module._Nodes = self._Loader.loadedLibraries['nodes']
             module._Notifications = self._Loader.loadedLibraries['notifications']
             module._Queue = self._Loader.loadedLibraries['queue']
+            module._Requests = self._Loader.loadedLibraries['requests']
             module._Scenes = self._Loader.loadedLibraries['scenes']
             module._SQLDict = self._Loader.loadedLibraries['sqldict']
             module._SSLCerts = self._Loader.loadedLibraries['sslcerts']
@@ -874,7 +875,6 @@ class Modules(YomboLibrary):
 
     @inlineCallbacks
     def load_module_data(self):
-
         self.startDefer.callback(10)
 
     def add_imported_module(self, module_id, module_label, module_instance):

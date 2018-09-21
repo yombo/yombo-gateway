@@ -4,8 +4,7 @@
 
 .. note::
 
-  For more information see: `Validate @ Module Development <https://yombo.net/docs/libraries/validate>`_
-
+  * For library documentation, see: `Validate @ Library Documentation <https://yombo.net/docs/libraries/validate>`_
 
 Validates various items. In many causes, it tries to coerce the correct value type and return that. If the item
 is valid, it returns the item. If the item is invalid, and YomboInvalidValidation.

@@ -4,8 +4,7 @@
 
 .. note::
 
-  For more information see: `Nodes @ Module Development <https://yombo.net/docs/libraries/nodes>`_
-
+  * For library documentation, see: `Nodes @ Library Documentation <https://yombo.net/docs/libraries/nodes>`_
 
 Nodes store generic information and are used to store information that doesn't need specific database needs.
 
@@ -18,7 +17,7 @@ for local data.
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.13.0
 
-:copyright: Copyright 2017 by Yombo.
+:copyright: Copyright 2017-2018 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/nodes.html>`_
 """

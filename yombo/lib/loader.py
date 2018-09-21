@@ -1,11 +1,9 @@
 # This file was created by Yombo for use with Yombo Python Gateway automation
 # software.  Details can be found at https://yombo.net
 """
-
 .. note::
 
-  For more information see: `Loader @ Module Development <https://yombo.net/docs/libraries/loader>`_
-
+  * For library documentation, see: `Loader @ Library Documentation <https://yombo.net/docs/libraries/loader>`_
 
 Responsible for importing, starting, and stopping all libraries and modules.
 
@@ -35,7 +33,7 @@ Stops components in the following phases. Modules first, then libraries.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2012-2016 by Yombo.
+:copyright: Copyright 2012-2018 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/loader.html>`_
 """
@@ -65,8 +63,10 @@ import yombo.utils
 logger = get_logger('library.loader')
 
 HARD_LOAD = OrderedDict()
+HARD_LOAD["Events"] = {'operating_mode': 'all'}
 HARD_LOAD["Cache"] = {'operating_mode': 'all'}
 HARD_LOAD["Validate"] = {'operating_mode': 'all'}
+HARD_LOAD["Requests"] = {'operating_mode': 'all'}
 HARD_LOAD["Template"] = {'operating_mode': 'all'}
 HARD_LOAD["Queue"] = {'operating_mode': 'all'}
 HARD_LOAD["Notifications"] = {'operating_mode': 'all'}
@@ -146,8 +146,9 @@ HARD_UNLOAD["AMQP"] = {'operating_mode': 'run'}
 HARD_UNLOAD["Modules"] = {'operating_mode': 'all'}
 HARD_LOAD["Variables"] = {'operating_mode': 'all'}
 HARD_UNLOAD["DownloadModules"] = {'operating_mode': 'run'}
-HARD_UNLOAD["LocalDB"] = {'operating_mode': 'all'}
 HARD_UNLOAD["Queue"] = {'operating_mode': 'all'}
+HARD_UNLOAD["Events"] = {'operating_mode': 'all'}
+HARD_UNLOAD["LocalDB"] = {'operating_mode': 'all'}
 
 RUN_PHASE = {
     'system_init': 0,
@@ -224,7 +225,6 @@ class Loader(YomboLibrary, object):
         self.loadedComponents = FuzzySearch({self._FullName.lower(): self}, .95)
         self.loadedLibraries = FuzzySearch({self._Name.lower(): self}, .95)
         self.libraryNames = {}
-        self._moduleLibrary = None
         self._invoke_list_cache = {}  # Store a list of hooks that exist or not. A cache.
         self._operating_mode = None  # One of: first_run, config, run
         self.sigint = False  # will be set to true if SIGINT is received
@@ -455,7 +455,7 @@ class Loader(YomboLibrary, object):
         """
         Import then "init" all libraries. Call "loadLibraries" when done.
         """
-        logger.debug("Importing server libraries.")
+        logger.debug("Importing gateway libraries.")
         self._run_phase = "libraries_import"
         for name, config in HARD_LOAD.items():
             if self.sigint:
@@ -494,6 +494,7 @@ class Loader(YomboLibrary, object):
             library._Commands = self.loadedLibraries['commands']
             library._Configs = self.loadedLibraries['configuration']
             library._CronTab = self.loadedLibraries['crontab']
+            library._Events = self.loadedLibraries['events']
             library._Devices = self.loadedLibraries['devices']
             library._DeviceTypes = self.loadedLibraries['devicetypes']
             library._Discovery = self.loadedLibraries['discovery']
@@ -515,6 +516,7 @@ class Loader(YomboLibrary, object):
             library._Nodes = self.loadedLibraries['nodes']
             library._Notifications = self.loadedLibraries['notifications']
             library._Queue = self.loadedLibraries['queue']
+            library._Requests = self.loadedLibraries['requests']
             library._Scenes = self.loadedLibraries['scenes']
             library._SQLDict = self.loadedLibraries['sqldict']
             library._SSLCerts = self.loadedLibraries['sslcerts']
@@ -529,6 +531,7 @@ class Loader(YomboLibrary, object):
             library._Variables = self.loadedLibraries['variables']
             library._Validate = self.loadedLibraries['validate']
             library._WebSessions = self.loadedLibraries['websessions']
+
             if self.check_operating_mode(config['operating_mode']) is False:
                 continue
             HARD_LOAD[name]['_init_'] = 'Starting'
@@ -855,19 +858,23 @@ class Loader(YomboLibrary, object):
 
 _loader = None
 
+
 def setup_loader(testing=False):
     global _loader
     if not _loader:
         _loader = Loader(testing)
     return _loader
 
+
 def get_loader():
     global _loader
     return _loader
 
+
 def get_the_loaded_components():
     global _loader
     return _loader.get_all_loaded_components()
+
 
 def stop_loader():
     global _loader

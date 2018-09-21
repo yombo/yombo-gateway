@@ -35,7 +35,7 @@ class User(object):
         self.item_permissions: dict = {}  # {'device': {'machine_label': ['allow_edit', 'allow_add', ...]} }
         self.roles: list = []
 
-        rbac_raw = self._Parent._Configs.get('rbac_user_roles', self.user_id, None, False)
+        rbac_raw = self._Parent._Configs.get('rbac_user_roles', self.user_id, None, False, ignore_case=None)
         if rbac_raw is None:
             rbac = {}
         else:

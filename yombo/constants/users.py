@@ -6,6 +6,7 @@ AUTH_PLATFORM_ATOM = 'atom'
 AUTH_PLATFORM_AUTHKEY = 'authkey'
 AUTH_PLATFORM_AUTOMATION = 'automation'
 AUTH_PLATFORM_DEVICE = 'device'
+AUTH_PLATFORM_EVENTS = 'events'
 AUTH_PLATFORM_GATEWAY = 'gateway'
 AUTH_PLATFORM_LOCATION = 'location'
 
@@ -18,11 +19,12 @@ AUTH_PLATFORM_STATISTIC = 'statistic'
 AUTH_PLATFORM_SYSTEM_SETTING = 'system_setting'
 AUTH_PLATFORM_SYSTEM_OPTIONS = 'system_options'
 AUTH_PLATFORM_USER = 'user'
+AUTH_PLATFORM_WEBLOGS = 'weblogs'
 
 AUTH_PLATFORMS = (AUTH_PLATFORM_ATOM, AUTH_PLATFORM_AUTHKEY, AUTH_PLATFORM_AUTOMATION, AUTH_PLATFORM_DEVICE,
-                  AUTH_PLATFORM_GATEWAY, AUTH_PLATFORM_MODULE, AUTH_PLATFORM_PANEL, AUTH_PLATFORM_SCENE,
-                  AUTH_PLATFORM_STATE, AUTH_PLATFORM_STATISTIC, AUTH_PLATFORM_USER, AUTH_PLATFORM_SYSTEM_SETTING,
-                  AUTH_PLATFORM_SYSTEM_OPTIONS)
+                  AUTH_PLATFORM_EVENTS, AUTH_PLATFORM_GATEWAY, AUTH_PLATFORM_MODULE, AUTH_PLATFORM_PANEL,
+                  AUTH_PLATFORM_SCENE, AUTH_PLATFORM_STATE, AUTH_PLATFORM_STATISTIC, AUTH_PLATFORM_USER,
+                  AUTH_PLATFORM_SYSTEM_SETTING, AUTH_PLATFORM_SYSTEM_OPTIONS, AUTH_PLATFORM_WEBLOGS)
 
 SYSTEM_ROLES = {
     'admin': {
@@ -445,7 +447,7 @@ SYSTEM_ROLES = {
         ]
     },
     'devices_enable': {
-        'label': 'Devices - Control',
+        'label': 'Devices - Enable',
         'description': 'Able to enable devices.',
         'permissions': [
             {
@@ -498,6 +500,18 @@ SYSTEM_ROLES = {
         'permissions': [
             {
                 'platform': 'device_command',
+                'item': '*',
+                'action': 'view',
+                'access': 'allow',
+            }
+        ]
+    },
+    'events_view': {
+        'label': 'Events - View',
+        'description': 'View system event log.',
+        'permissions': [
+            {
+                'platform': AUTH_PLATFORM_EVENTS,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -1058,6 +1072,18 @@ SYSTEM_ROLES = {
                 'platform': AUTH_PLATFORM_USER,
                 'item': '*',
                 'action': '*',
+                'access': 'allow',
+            }
+        ]
+    },
+    'weblogs_view': {
+        'label': 'WebLogs - View',
+        'description': 'View web interface logs.',
+        'permissions': [
+            {
+                'platform': AUTH_PLATFORM_WEBLOGS,
+                'item': '*',
+                'action': 'view',
                 'access': 'allow',
             }
         ]

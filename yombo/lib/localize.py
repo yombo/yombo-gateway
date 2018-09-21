@@ -4,23 +4,21 @@
 
 .. note::
 
-  For more information see: `Internationalization @ Module Development <https://yombo.net/docs/libraries/localize>`_
+  * For library documentation, see: `Internationalization @ Library Documentation <https://yombo.net/docs/libraries/localize>`_
 
 Localization and translation for Yombo Gateway.
-
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.12.0
 
-:copyright: Copyright 2016-2017 by Yombo.
+:copyright: Copyright 2016-2018 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/localize.html>`_
 """
 # Import python libraries
-from time import time
 from os import path, listdir, makedirs, environ
 import inspect
-import sys, gettext
+import gettext
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:

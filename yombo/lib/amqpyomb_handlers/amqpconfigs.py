@@ -372,6 +372,13 @@ class AmqpConfigHandler(YomboLibrary):
             records = yield self._LocalDB.select(current_table, ", ".join(select_fields))
             for record in records:
                 self.db_existing_data[current_table][record['id']] = record
+            if config_item == 'gateway_modules':
+                module_select_fields = ['id', 'module_id', 'installed_version', 'install_at', 'last_check']
+                records = yield self._LocalDB.select('module_installed', ", ".join(module_select_fields))
+                self.db_existing_data['module_installed'] = {}
+                for record in records:
+                    self.db_existing_data['module_installed'][record['id']] = record
+
         # self.db_existing_data = {}  # used to keep track of items to add, update, or delete
         # self.db_delete_ids = {}  # [table][row_id]
         # self.db_insert_data = {}  # [table][row_id] = orderedDicts
@@ -395,8 +402,14 @@ class AmqpConfigHandler(YomboLibrary):
                 if 'status' in filtered_data:
                     if filtered_data['status'] == 2:  # delete any nested items...
                         if config_item == 'gateway_modules':
+                            # print("config_item: %s" % config_item)
+                            # print("current_table: %s" % current_table)
+                            # print("self.db_existing_data: %s" % self.db_existing_data)
+                            # print("filtered data: %s" % filtered_data)
                             self.item_purged(config_item, filtered_data['id'])
-                            if filtered_data['id'] in filtered_data['modules']:
+
+                            if filtered_data['id'] in self.db_existing_data['modules']:
+                            # if filtered_data['id'] in filtered_data['modules']:
                                 self.db_delete_ids['modules'].append(filtered_data['id'])
                                 self.db_completed_ids['modules'].append(filtered_data['id'])
                             if filtered_data['id'] in self.db_existing_data['module_installed']:

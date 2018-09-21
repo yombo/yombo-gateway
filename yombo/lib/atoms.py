@@ -4,11 +4,12 @@
 
 .. note::
 
-  For developer documentation, see: `Atoms @ Module Development <https://yombo.net/docs/libraries/atoms>`_
+  * End user documentation: `Atoms @ User Documentation <https://yombo.net/docs/gateway/web_interface/atoms>`_
+  * For library documentation, see: `Atoms @ Library Documentation <https://yombo.net/docs/libraries/atoms>`_
 
 .. seealso::
 
-   The :doc:`States library </lib/states>` is used to store states that change.
+   The :doc:`States library </lib/states>` is used to store items whose data changes.
 
 Atoms provide non-changing information about the environment the gateway is running in as well as about the
 Yombo Gateway software. Atoms are generally immutable, however, if the system state changes and is detected, the
@@ -25,7 +26,7 @@ For dynamically changing data, use :py:mod:`States <yombo.lib.states>`.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2016-2017 by Yombo.
+:copyright: Copyright 2016-2018 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/atoms.html>`_
 """
@@ -280,13 +281,13 @@ class Atoms(YomboLibrary):
 
         self.triggers = {}
         # self._Automation = self._Libraries['automation']
-        self.set('working_dir', settings.arguments['working_dir'])
-        self.set('app_dir', settings.arguments['app_dir'] )
+        self.set('working_dir', settings.arguments['working_dir'], source=self)
+        self.set('app_dir', settings.arguments['app_dir'], source=self)
 
     def _load_(self, **kwargs):
         self._loaded = True
         self.library_state = 2
-        self.set('running_since', time())
+        self.set('running_since', time(), source=self)
         self._loaded = True
 
     def _start_(self, **kwargs):
@@ -389,6 +390,14 @@ class Atoms(YomboLibrary):
         :type key: string
         :param value: Value to set the atom to.
         :type value: mixed
+        :param value_type: Data type to help with display formatting. Should be: str, dict, list, int, float, epoch
+        :type value_type: string
+        :param gateway_id: Gateway ID this atom belongs to, defaults to local gateway.
+        :type gateway_id: string
+        :param human_value: What to display to mere mortals.
+        :type human_value: mixed
+        :param source: Reference to the library or module settings this atom.
+        :type source: object
         :return: Value of atom
         :rtype: mixed
         """
@@ -398,6 +407,8 @@ class Atoms(YomboLibrary):
 
         if gateway_id not in self.atoms:
             self.atoms[gateway_id] = {}
+
+        source_type, source_label = yombo.utils.get_yombo_instance_type(source)
 
         search_chars = ['#', '+']
         if any(s in key for s in search_chars):
@@ -421,6 +432,7 @@ class Atoms(YomboLibrary):
             }
             self._Statistics.increment("lib.atoms.set.new", bucket_size=60, anon=True)
 
+        self.atoms[gateway_id][key]['source'] = source_label
 
         self.atoms[gateway_id][key]['value'] = value
         if is_new is True or value_type is not None:
@@ -436,13 +448,15 @@ class Atoms(YomboLibrary):
                                             called_by=self,
                                             key=key,
                                             value=value,
+                                            value_type=value_type,
                                             value_full=self.atoms[gateway_id][key],
                                             gateway_id=gateway_id,
                                             source=source,
+                                            source_label=source_label,
                                             )
 
     @inlineCallbacks
-    def set_from_gateway_communications(self, key, data):
+    def set_from_gateway_communications(self, key, data, source):
         """
         Used by the gateway coms (mqtt) system to set atom values.
         :param key:
@@ -454,11 +468,13 @@ class Atoms(YomboLibrary):
             return
         if gateway_id not in self.atoms:
             self.atoms[gateway_id] = {}
+        source_type, source_label = yombo.utils.get_yombo_instance_type(source)
         self.atoms[data['gateway_id']][key] = {
             'gateway_id': data['gateway_id'],
             'value': data['value'],
             'value_human': data['value_human'],
             'value_type': data['value_type'],
+            'source': source_label,
             'created_at': data['created_at'],
             'updated_at': data['updated_at'],
         }
@@ -467,9 +483,11 @@ class Atoms(YomboLibrary):
                                             called_by=self,
                                             key=key,
                                             value=data['value'],
+                                            value_type=data['value_type'],
                                             value_full=self.atoms[gateway_id][key],
                                             gateway_id=gateway_id,
-                                            source='gateway_coms',
+                                            source=source,
+                                            source_label=source_label,
                                             )
 
     def convert_to_human(self, value, value_type):
@@ -559,5 +577,5 @@ class Atoms(YomboLibrary):
             atoms['os'] = atoms['kernel']
 
         for name, value in atoms.items():
-            self.set(name, value)
+            self.set(name, value, source=self)
         return atoms

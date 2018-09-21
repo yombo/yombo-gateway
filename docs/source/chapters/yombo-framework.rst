@@ -62,6 +62,7 @@ IoT devices, etc.
    ../lib/devicetypes.rst
    ../lib/downloadmodules.rst
    ../lib/discovery.rst
+   ../lib/events.rst
    ../lib/gateways.rst
    ../lib/gateway_communications.rst
    ../lib/gpg.rst
@@ -77,7 +78,8 @@ IoT devices, etc.
    ../lib/nodes.rst
    ../lib/notifications.rst
    ../lib/queue.rst
-   ../lib/scenes.rst
+   ../lib/queue.rst
+   ../lib/requests.rst
    ../lib/sqldict.rst
    ../lib/sslcerts/sslcerts.rst
    ../lib/startup.rst
@@ -85,6 +87,7 @@ IoT devices, etc.
    ../lib/statistics/statistics.rst
    ../lib/tasks.rst
    ../lib/times.rst
+   ../lib/users/users.rst
    ../lib/validate.rst
    ../lib/variables.rst
    ../lib/voicecmds.rst

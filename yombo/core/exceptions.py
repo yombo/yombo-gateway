@@ -54,7 +54,7 @@ class YomboWarning(YomboException):
     """
     Extends *Exception* - A non-fatal warning gateway exception that is used for items needing user attention.
     """
-    def __init__(self, message, errorno=101, name="unknown", component="component", html_message=None):
+    def __init__(self, message, errorno=101, name="unknown", component="component", html_message=None, details=None):
         """
         Setup the YomboWarning and then pass everying to YomboException
         
@@ -68,6 +68,7 @@ class YomboWarning(YomboException):
         :type component: string
         """
         YomboException.__init__(self, message, errorno, name, component, html_message)
+        self.details = details
 
 
 class YomboInvalidValidation(YomboException):

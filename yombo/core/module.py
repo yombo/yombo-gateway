@@ -103,8 +103,6 @@ documentation.
 
 # Import Yombo libraries
 from yombo.core.entity import Entity
-from yombo.core.log import get_logger
-logger = get_logger('core.module')
 
 
 class YomboModule(Entity):

@@ -11,21 +11,20 @@ A database API to SQLite3.
 
 .. note::
 
-  For more information see: `LocalDB @ Module Development <https://yombo.net/docs/libraries/localdb>`_
-
+  * For library documentation, see: `LocalDB @ Library Documentation <https://yombo.net/docs/libraries/localdb>`_
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2012-2016 by Yombo.
+:copyright: Copyright 2012-2018 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/localdb.html>`_
 """
 # Import python libraries
 from collections import OrderedDict
 from sqlite3 import IntegrityError
-import decimal
 import inspect
 from os import chmod
+import re
 import sys
 from time import time
 
@@ -44,7 +43,7 @@ from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 import yombo.core.settings as settings
-from yombo.utils import clean_dict, instance_properties, data_pickle, data_unpickle, bytes_to_unicode
+from yombo.utils import clean_dict, instance_properties, data_pickle, data_unpickle
 from yombo.utils.datatypes import coerce_value
 
 logger = get_logger('library.localdb')
@@ -67,9 +66,12 @@ class CommandDeviceTypes(DBObject):
     TABLENAME = 'command_device_types'
 
 
-class Config(DBObject):
-    #    TABLENAME='devsadf'
-    pass
+class Events(DBObject):
+    TABLENAME = 'events'
+
+
+class EventTypes(DBObject):
+    TABLENAME = 'event_types'
 
 
 class Device(DBObject):
@@ -81,8 +83,6 @@ class Device(DBObject):
                'association_foreign_key': 'device_type_id'}]
     TABLENAME = 'devices'
 
-
-# pass
 
 class DeviceCommandInput(DBObject):
     TABLENAME = 'device_command_inputs'
@@ -237,13 +237,14 @@ class ModuleRoutingView(DBObject):
     TABLENAME = 'module_routing_view'
 
 
-# Registry.register(Config)
 Registry.SCHEMAS['PRAGMA_table_info'] = ['cid', 'name', 'type', 'notnull', 'dft_value', 'pk']
 Registry.register(Device, DeviceStatus, VariableData, DeviceType, Command)
 Registry.register(Modules, ModuleInstalled, ModuleDeviceTypes)
 Registry.register(VariableGroups, VariableData)
 Registry.register(Category)
 Registry.register(DeviceTypeCommand)
+Registry.register(Events)
+Registry.register(EventTypes)
 
 TEMP_MODULE_CLASSES = inspect.getmembers(sys.modules[__name__])
 MODULE_CLASSES = {}
@@ -324,13 +325,18 @@ class LocalDB(YomboLibrary):
 
         yield self._load_db_model()
 
+        # used to cache datatables lookups
+        self.event_counts = self._Cache.ttl(ttl=15, tags='events')
+        self.webinterface_counts = self._Cache.ttl(ttl=15, tags='webinterface_logs')
+
+
     def _load_(self, **kwargs):
         self.gateway_id = self._Configs.get('core', 'gwid', 'local', False)
         self.save_bulk_queue_loop = LoopingCall(self.save_bulk_queue)
         self.save_bulk_queue_loop.start(17, False)
 
     @inlineCallbacks
-    def _stop_(self, **kwargs):
+    def _unload_(self, **kwargs):
         yield self.save_bulk_queue()
         if self.save_bulk_queue_loop is not None and self.save_bulk_queue_loop.running:
             self.save_bulk_queue_loop.stop()
@@ -491,6 +497,111 @@ class LocalDB(YomboLibrary):
             return records
         else:
             return []
+
+
+    #########################
+    ###    Events       #####
+    #########################
+    # @inlineCallbacks
+    # def get_events(self, always_load=None):
+    #     if always_load is None:
+    #         always_load = False
+    #
+    #     if always_load == True:
+    #         records = yield self.dbconfig.select('events', where=['always_load = ?', 1])
+    #         return records
+    #     elif always_load is False:
+    #         records = yield self.dbconfig.select('commands', where=['always_load = ? OR always_load = ?', 1, 0])
+    #         return records
+    #     else:
+    #         return []
+
+    @inlineCallbacks
+    def save_events_bulk(self, events):
+        yield self.dbconfig.insertMany('events', events)
+
+    @inlineCallbacks
+    def search_events_for_datatables(self, event_type, event_subtype, order_column, order_direction, start, length, search=None):
+        # print("search events... event_type:%s, event_subtype: %s, order_column: %s, order_direction: %s, start: %s, length: %s, search:%s" %
+        #       (event_type, event_subtype, order_column, order_direction, start, length, search))
+
+        event_types = self._Events.event_types
+        if event_type not in event_types:
+            raise YomboWarning("Invalid event type")
+        if event_subtype not in event_types[event_type]:
+            raise YomboWarning("Invalid event subtype")
+
+        event = event_types[event_type][event_subtype]
+        attrs = []
+        for i in range(1, len(event['attributes']) + 1):
+            attrs.append("attr%s as %s" % (i, event['attributes'][i-1]))
+        fields = ['created_at', 'priority', 'source',  '(user_id || " " || user_type) as user'] + attrs
+        if search in (None, ''):
+            records = yield self.dbconfig.select(
+                'events',
+                select=", ".join(fields),
+                where=['event_type = ? and event_subtype = ?', event_type, event_subtype],
+                limit=(length, start),
+                orderby="%s %s" % (order_column, order_direction),
+            )
+
+            cache_name_total = "total %s:%s" % (event_type, event_subtype)
+            if cache_name_total in self.event_counts:
+                total_count = self.event_counts[cache_name_total]
+            else:
+                total_count_results = yield self.dbconfig.select(
+                    'events',
+                    select="count(*) as count",
+                    where=['event_type = ? and event_subtype = ?', event_type, event_subtype],
+                )
+                total_count = total_count_results[0]['count']
+                self.event_counts[cache_name_total] = total_count
+            return records, total_count, total_count
+
+        else:
+            if re.match('^[ \w-]+$', search) is None:
+                raise YomboWarning("Invalid search string contents.")
+            where_attrs = ["source LIKE '%%%s%%'" % search, "user_id LIKE '%%%s%%'" % search,
+                           "user_type LIKE '%%%s%%'" % search]
+            for i in range(1, 20):
+                where_attrs.append("attr%s LIKE '%%%s%%'" % (i, search))
+            where_attrs_str = " OR ".join(where_attrs)
+
+            records = yield self.dbconfig.select(
+                'events',
+                select=", ".join(fields),
+                where=["(event_type = ? and event_subtype = ?) and (%s)" % where_attrs_str,
+                       event_type, event_subtype],
+                limit=(length, start),
+                orderby="%s %s" % (order_column, order_direction),
+            )
+
+            cache_name_total = "total %s:%s" % (event_type, event_subtype)
+            if cache_name_total in self.event_counts:
+                total_count = self.event_counts[cache_name_total]
+            else:
+                total_count_results = yield self.dbconfig.select(
+                    'events',
+                    select="count(*) as count",
+                    where=['event_type = ? and event_subtype = ?', event_type, event_subtype],
+                )
+                total_count = total_count_results[0]['count']
+                self.event_counts[cache_name_total] = total_count
+
+            cache_name_filtered = "filtered %s:%s:%s" % (event_type, event_subtype, search)
+            if cache_name_filtered in self.event_counts:
+                filtered_count = self.event_counts[cache_name_filtered]
+            else:
+                filtered_count_results = yield self.dbconfig.select(
+                    'events',
+                    select="count(*) as count",
+                    where=["(event_type = ? and event_subtype = ?) and (%s)" % where_attrs_str,
+                           event_type, event_subtype],
+                )
+                filtered_count = filtered_count_results[0]['count']
+                self.event_counts[cache_name_filtered] = filtered_count
+
+            return records, total_count, filtered_count
 
 
     #########################
@@ -2082,6 +2193,97 @@ ORDER BY id desc"""
     def webinterface_save_logs(self, logs):
         yield self.dbconfig.insertMany('webinterface_logs', logs)
 
+    @inlineCallbacks
+    def search_webinterface_logs_for_datatables(self, order_column, order_direction, start, length, search=None):
+        # print("search weblogs... order_column: %s, order_direction: %s, start: %s, length: %s, search:%s" %
+        #       (order_column, order_direction, start, length, search))
+
+        select_fields = [
+            'request_at',
+            '(CASE secure WHEN 1 THEN \'TLS/SSL\' ELSE \'Unsecure\' END || "<br>" || method || "<br>" || hostname || "<br>" || path) as request_info',
+            # '(method || "<br>" || hostname || "<br>" || path) as request_info',
+            '(user_id || "<br>" || user_type) as user',
+            '(ip || "<br>" || agent || "<br>" || referrer) as client_info',
+            '(response_code || "<br>" || response_size) as response',
+        ]
+
+        if search in (None, ''):
+            records = yield self.dbconfig.select(
+                'webinterface_logs',
+                select=", ".join(select_fields),
+                limit=(length, start),
+                orderby="%s %s" % (order_column, order_direction),
+            )
+
+            cache_name_total = "total"
+            if cache_name_total in self.webinterface_counts:
+                total_count = self.webinterface_counts[cache_name_total]
+            else:
+                total_count_results = yield self.dbconfig.select(
+                    'webinterface_logs',
+                    select="count(*) as count",
+                )
+                total_count = total_count_results[0]['count']
+                self.webinterface_counts[cache_name_total] = total_count
+            return records, total_count, total_count
+
+        else:
+            where_fields = ["request_at LIKE '%%%s%%'" % search,
+                            "request_protocol LIKE '%%%s%%'" % search,
+                            "referrer LIKE '%%%s%%'" % search,
+                            "agent LIKE '%%%s%%'" % search,
+                            "ip LIKE '%%%s%%'" % search,
+                            "hostname LIKE '%%%s%%'" % search,
+                            "method LIKE '%%%s%%'" % search,
+                            "path LIKE '%%%s%%'" % search,
+                            "secure LIKE '%%%s%%'" % search,
+                            "user_id LIKE '%%%s%%'" % search,
+                            "user_type LIKE '%%%s%%'" % search,
+                            "response_code LIKE '%%%s%%'" % search,
+                            "response_size LIKE '%%%s%%'" % search]
+
+            if re.match('^[ \w-]+$', search) is None:
+                raise YomboWarning("Invalid search string contents.")
+            where_attrs_str = " OR ".join(where_fields)
+
+            records = yield self.dbconfig.select(
+                'webinterface_logs',
+                select=", ".join(select_fields),
+                where=["%s" % where_attrs_str],
+                limit=(length, start),
+                orderby="%s %s" % (order_column, order_direction),
+                debug=True
+            )
+
+            cache_name_total = "total"
+            if cache_name_total in self.webinterface_counts:
+                total_count = self.webinterface_counts[cache_name_total]
+            else:
+                total_count_results = yield self.dbconfig.select(
+                    'webinterface_logs',
+                    select="count(*) as count",
+                )
+                total_count = total_count_results[0]['count']
+                self.webinterface_counts[cache_name_total] = total_count
+
+            cache_name_filtered = "filtered %s" % search
+            if cache_name_filtered in self.webinterface_counts:
+                filtered_count = self.webinterface_counts[cache_name_filtered]
+            else:
+                filtered_count_results = yield self.dbconfig.select(
+                    'webinterface_logs',
+                    select="count(*) as count",
+                    where=["%s" % where_attrs_str],
+                    limit=(length, start),
+                )
+                filtered_count = filtered_count_results[0]['count']
+                self.webinterface_counts[cache_name_filtered] = filtered_count
+
+            return records, total_count, filtered_count
+
+    #############################
+    ## Generic SQL ##############
+    #############################
 
     @inlineCallbacks
     def delete(self, table, where=None):

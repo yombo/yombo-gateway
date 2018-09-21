@@ -7,6 +7,20 @@ from decimal import Decimal
 
 from yombo.utils import is_true_false
 
+def determine_variable_type(input):
+    if isinstance(input, int):
+        return 'int'
+    elif isinstance(input, str):
+        return 'str'
+    elif isinstance(input, list):
+        return 'list'
+    elif isinstance(input, dict):
+        return 'dict'
+    elif isinstance(input, float):
+        return 'int'
+    elif isinstance(input, dec):
+        return 'int'
+
 def coerce_value(value, value_type):
     """
     Convert a value to it's intended type. Typically used when loading data from databases.

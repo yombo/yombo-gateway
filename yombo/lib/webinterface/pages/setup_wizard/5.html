@@ -93,53 +93,53 @@
 {% endblock %}
 {% block body_bottom %}
 {% include 'lib/webinterface/fragments/select_js.tpl' %}
-    <script type="text/javascript">
-        function formLoadBottom() {
-            var val = $('#gpg-action').val();
-            console.log("im called. Val: " + val);
-            $.ajax({
-                url: '/setup_wizard/5_gpg_section',
-                type: 'POST',
-                data: {gpg_action: val},
-            })
-            .done(function(data) {
-                console.log("formLoadBottom: done: data:"+ data);
-                $('#GPG-Input-Area').html(data);
-            })
-            .fail(function() {
-                console.log("error");
-            })
-            .always(function() {
-                console.log("complete on load call");
-            });
-        }
+<script type="text/javascript">
+    function formLoadBottom() {
+        var val = $('#gpg-action').val();
+        console.log("im called. Val: " + val);
+        $.ajax({
+            url: '/setup_wizard/5_gpg_section',
+            type: 'POST',
+            data: {gpg_action: val},
+        })
+        .done(function(data) {
+            console.log("formLoadBottom: done: data:"+ data);
+            $('#GPG-Input-Area').html(data);
+        })
+        .fail(function() {
+            console.log("error");
+        })
+        .always(function() {
+            console.log("complete on load call");
+        });
+    }
 
-        $('#gpg-action').on('load change', formLoadBottom);
+    $('#gpg-action').on('load change', formLoadBottom);
 
-        $(document).ready(function() {
-            formLoadBottom();
+    $(document).ready(function() {
+        formLoadBottom();
 //            $("body").prepend('<div id="overlay" class="ui-widget-overlay" style="z-index: 1001; display: none;"></div>');
 //            $("body").prepend("<div id='PleaseWait' style='display: none;'><img src='http://i.stack.imgur.com/FhHRx.gif'/></div>");
-        });
+    });
 
-        $('#myForm').submit(function() {
+    $('#myForm').submit(function() {
 //            $("#overlay, #PleaseWait").show();
-            return true;
-        });
+        return true;
+    });
 
 
-$('#submitBtn').click(function() {
-     /* when the button in the form, display the entered values in the modal */
-     $('#lname').text($('#lastname').val());
-     $('#fname').text($('#firstname').val());
-});
+    $('#submitBtn').click(function() {
+         /* when the button in the form, display the entered values in the modal */
+         $('#lname').text($('#lastname').val());
+         $('#fname').text($('#firstname').val());
+    });
 
-$('#submit').click(function(){
-     /* when the submit button in the modal is clicked, submit the form */
-    $('#myForm').submit();
-});
+    $('#submit').click(function(){
+         /* when the submit button in the modal is clicked, submit the form */
+        $('#myForm').submit();
+    });
 
-    </script>
+</script>
 
 {% endblock %}
 

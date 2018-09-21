@@ -3,13 +3,18 @@
 """
 Manages users within the gateway. All users are loaded on startup.
 
+.. note::
+
+  * End user documentation: `User permissions @ User Documentation <https://yombo.net/docs/gateway/web_interface/user_permissions>`_
+  * End user documentation: `Roles @ User Documentation <https://yombo.net/docs/gateway/web_interface/roles>`_
+  * For library documentation, see: `Users @ Library Documentation <https://yombo.net/docs/libraries/users>`_
+
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.20.0
 
 :copyright: Copyright 2018 by Yombo.
 :license: LICENSE for details.
 """
-# from cachetools import cached
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks
 
@@ -133,6 +138,7 @@ class Users(YomboLibrary):
     def _init_(self, **kwargs):
         self.roles: dict = {}
         self.users: dict = {}
+        self.gateway_id = self._Configs.get('core', 'gwid', 'local', False)
         self.owner_id = self._Configs.get('core', 'owner_id', None, False)
         self.owner_user = None
         self.platforms = []  # list of possible/known access platforms
@@ -169,16 +175,83 @@ class Users(YomboLibrary):
             self.owner_user = self.get(self.owner_id)
             self.owner_user.attach_role('admin')
 
-    def add_user(self, new_user):
+    @inlineCallbacks
+    def api_search_user(self, requested_user, session=None):
         """
-        Primarily called by the users.py web interface routes to add a new user.
+        Search for user using the Yombo API. Must supply a user_id or user email address. If found returns
+        a dictionary with the keys of: 'id', 'name', and 'email'.
 
-        :param new_user:
-        :param roles:
+        :param requested_user: The email address to search for.
+        :param session: Session to use, if available.
         :return:
         """
-        self.users[new_user['email']] = User(self, new_user)
-        # self.users[new_user['email']].sync_user_to_db()
+        try:
+            search_results = yield self._YomboAPI.request('GET',
+                                                          '/v1/user/%s' % requested_user,
+                                                          None,
+                                                          session)
+        except YomboWarning as e:
+            raise YomboWarning("User not found: %s" % requested_user)
+        return search_results['data']
+
+    @inlineCallbacks
+    def add_user(self, requested_user_id, session=None):
+        """
+        Adds a new user to the system using the user's id. The user id  can be found using
+        :py:meth:`api_search_user() <api_search_user>`.
+
+        This function will make a call the the Yombo API to add the user, if successful, adds
+        the user to memory as well. The database isn't updated, it will be updated on next reboot
+        when it pulls configs from the servers.
+
+        :param requested_user:
+        :return:
+        """
+        data = {
+            'user_id': requested_user_id,
+        }
+        try:
+            add_results = yield self._YomboAPI.request('POST',
+                                                       '/v1/gateway/%s/user' % self.gateway_id,
+                                                       data,
+                                                       session)
+        except YomboWarning as e:
+            raise YomboWarning("Could not add user to gateway: %s" % e.message[0],
+                               html_message="Could not add user to gateway: %s" % e.html_message,
+                               details=e.details)
+
+        add_results['data']['id'] = add_results['data']['user_id']
+        self.users[add_results['data']['email']] = User(self, add_results['data'])
+        # self.users[add_results['data']['email']].sync_user_to_db()
+
+    @inlineCallbacks
+    def remove_user(self, requested_user_id, session=None):
+        """
+        Adds a new user to the system using the user's id. The user id  can be found using
+        :py:meth:`api_search_user() <api_search_user>`.
+
+        This function will make a call the the Yombo API to add the user, if successful, adds
+        the user to memory as well. The database isn't updated, it will be updated on next reboot
+        when it pulls configs from the servers.
+
+        :param requested_user:
+        :return:
+        """
+        data = {
+            'user_id': requested_user_id,
+        }
+        try:
+            add_results = yield self._YomboAPI.request('DELETE',
+                                                       '/v1/gateway/%s/user/%s' % (self.gateway_id, requested_user_id),
+                                                       session=session)
+        except YomboWarning as e:
+            raise YomboWarning("Could not remove user from gateway: %s" % e.message[0],
+                               html_message="Could not remove user from gateway: %s" % e.html_message,
+                               details=e.details)
+
+        user = self.get(requested_user_id)
+        if user.email in self.users:
+            del self.users[user.email]
 
     def load_roles(self):
         self.roles.clear()
@@ -186,10 +259,10 @@ class Users(YomboLibrary):
             role_data['machine_label'] = machine_label
             self.roles[machine_label] = self.add_role(role_data, source="system")
 
-        user_roles = self._Configs.get('rbac_roles', '*', {}, False)
-        for role_id, role_data_raw in user_roles.items():
+        rbac_roles = self._Configs.get('rbac_roles', '*', {}, False, ignore_case=None)
+        for role_id, role_data_raw in rbac_roles.items():
             role_data = data_unpickle(role_data_raw, encoder='msgpack_base64')
-            self.roles[machine_label] = self.add_role(role_data, source="user")
+            self.roles[role_data['label']] = self.add_role(role_data, source="user")
 
     @inlineCallbacks
     def load_users(self):
@@ -198,7 +271,7 @@ class Users(YomboLibrary):
         for user in db_users:
             self.users[user.email] = User(self, user.__dict__)
 
-    def add_role(self, data, source=None):
+    def add_role(self, data, source=None, no_save=None):
         """
         Add a new possible role to the system.
 
@@ -217,12 +290,16 @@ class Users(YomboLibrary):
             data['description'] = machine_label
         if 'permissions' not in data:
             data['permissions'] = []
+        if 'saved_permissions' not in data:
+            data['saved_permissions'] = None
         self.roles[machine_label] = Role(self,
                                          machine_label=machine_label,
                                          label=data['label'],
                                          description=data['description'],
                                          source=source,
-                                         permissions=data['permissions'])
+                                         permissions=data['permissions'],
+                                         saved_permissions=data['saved_permissions'],
+                                         )
         return self.roles[machine_label]
 
     def add_permission_to_role(self, machine_label, permission):
@@ -384,7 +461,8 @@ class Users(YomboLibrary):
         :param auth: Either a websession or authkey
         :return:
         """
-        return self.has_access(auth.item_permissions, auth.roles, platform, item, action, raise_error)
+        return self.has_access(auth.item_permissions, auth.roles, platform, item, action, raise_error,
+                               auth.auth_id, auth.auth_type)
 
     def check_user_has_access(self, user_id, user_type, platform, item, action, raise_error=None):
         """
@@ -399,10 +477,10 @@ class Users(YomboLibrary):
 
         if isinstance(user_id, AuthKeyAuth) or isinstance(user_id, WebSessionAuth):
             results = self.has_access(user_id.item_permissions, user_id.roles, platform, item, action, raise_error)
-            return results, user_id.user_id, user_id.auth_type
+            return results, user_id.auth_id, user_id.auth_type
         elif isinstance(user_type, AuthKeyAuth) or isinstance(user_type, WebSessionAuth):
             results = self.has_access(user_type.item_permissions, user_type.roles, platform, item, action, raise_error)
-            return results, user_type.user_id, user_type.auth_type
+            return results, user_type.auth_id, user_type.auth_type
         elif user_id is None:  # soon, this will cause an error!
             logger.warn("Check user has access received NoneType for *user_id*. Future versions will not accept this.")
             return True, 'system', 'system'
@@ -430,22 +508,27 @@ class Users(YomboLibrary):
         else:
             raise YomboWarning("check_user_has_access must be of type user, authkey or websession.")
 
-        return self.has_access(item_permissions, roles, platform, item, action, raise_error), user_id, user_type
+        return self.has_access(item_permissions, roles, platform, item, action, raise_error,
+                               user_id, user_type), user_id, user_type
 
-    @cached()
-    def has_access(self, item_permissions, roles, platform, item, action, raise_error=None):
+    @cached(tags=('user', 'auth'))
+    def has_access(self, item_permissions, roles, platform, item, action, raise_error=None,
+                   user_id=None, user_type=None):
         """
         Usually called by either the user instance, websession instance, or auth key instance. Checks if the provided
         list (strings) of roles will allow or deny the path/action combo.
 
         :return: Boolean
         """
-        print("user:has_access starting....")
         def return_access(value):
             if value is True:
+                self._Events.new('auth', 'accepted', (platform, item, action),
+                                 user_id=user_id, user_type=user_type)
                 return True
 
             if value is False:
+                self._Events.new('auth', 'denied', 'lib.users:has_access', (platform, item, action),
+                                 user_id=user_id, user_type=user_type)
                 if raise_error is not True:
                     return False
             raise YomboNoAccess(item_permissions=item_permissions,
@@ -460,13 +543,13 @@ class Users(YomboLibrary):
         platform = platform.lower()
         action = action.lower()
 
-        logger.info("has_access: platform: {platform}, item: {item}, action: {action}",
+        logger.debug("has_access: platform: {platform}, item: {item}, action: {action}",
                      platform=platform, item=item, action=action)
-        logger.info("has_access: has roles: {roles}", roles=roles)
+        logger.debug("has_access: has roles: {roles}", roles=roles)
 
         # Admins have full access.
         if 'admin' in roles:
-            return True
+            return return_access(True)
 
         # Check if a specific item has a special access listed
         platform_item, platform_item_key, platform_actions = self.get_platform_item(platform, item)
@@ -478,11 +561,11 @@ class Users(YomboLibrary):
                     if "deny_%s" % action in item_actions:
                         return return_access(False)
                     if "allow_%s" % action in item_actions:
-                        return True
+                        return return_access(True)
 
         for a_role in self.get_roles(roles):
             results = a_role.has_access(platform, item, action)
-            logger.info("has_access: results for role.has_access: %s" % results)
+            logger.debug("has_access: results for role.has_access: %s" % results)
             return return_access(results)
         return return_access(False)
 

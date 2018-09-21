@@ -207,10 +207,7 @@ def route_users(webapp):
                 return webinterface.redirect(request, '/users/index')
 
             try:
-                search_results = yield webinterface._YomboAPI.request('GET',
-                                                                      '/v1/user/%s' % user_requested,
-                                                                      None,
-                                                                      session['yomboapi_session'])
+                search_results = yield webinterface._Users.api_search_user(user_requested)
             except YomboWarning as e:
                 webinterface.add_alert("User not found: %s" % user_requested)
                 page = webinterface.get_template(request, webinterface.wi_dir + '/pages/users/add.html')
@@ -221,17 +218,12 @@ def route_users(webapp):
                     last_search=user_requested,
                 )
 
-            data = {
-                'user_id': search_results['data']['id'],
-            }
             try:
-                add_results = yield webinterface._YomboAPI.request('POST',
-                                                                   '/v1/gateway/%s/user' % webinterface.gateway_id(),
-                                                                   data,
-                                                                   session['yomboapi_session'])
+                add_results = yield webinterface._Users.add_user(search_results['id'],
+                                                                 session['yomboapi_session'])
             except YomboWarning as e:
-                print("add_results e: %s" % e)
-                webinterface.add_alert("Could not add user to gateway: %s" % e.html_message)
+                print("page_users_add_post error details: %s" % e.details)
+                webinterface.add_alert(e.html_message)
                 page = webinterface.get_template(request, webinterface.wi_dir + '/pages/users/add.html')
                 root_breadcrumb(webinterface, request)
                 webinterface.add_breadcrumb(request, "/users/add", "Add User")
@@ -239,9 +231,57 @@ def route_users(webapp):
                     alerts=webinterface.get_alerts(),
                     last_search=user_requested,
                 )
-
-            add_results['data']['id'] = add_results['data']['user_id']
-            webinterface._Users.add_user(add_results['data'])
             webinterface.add_alert("User added")
-
             return webinterface.redirect(request, '/users/%s/details' % user_requested)
+
+        @webapp.route('/<string:user_id>/remove', methods=['GET'])
+        @require_auth()
+        def page_users_remove_get(webinterface, request, session, user_id):
+            session.has_access('user', user_id, 'delete', raise_error=True)
+            try:
+                user = webinterface._Users.get(user_id)
+            except KeyError:
+                webinterface.add_alert('Requested user not found.', 'warning')
+                return webinterface.redirect(request, '/users')
+
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/users/remove.html')
+            root_breadcrumb(webinterface, request)
+            webinterface.add_breadcrumb(request, "/users/%s/details" % user.user_id, user.email)
+            webinterface.add_breadcrumb(request, "/users/%s/remove" % user.user_id, "Remove")
+            return page.render(alerts=webinterface.get_alerts(),
+                               user=user,
+                               )
+
+        @webapp.route('/<string:user_id>/remove', methods=['POST'])
+        @require_auth()
+        @inlineCallbacks
+        def page_users_remove_post(webinterface, request, session, user_id):
+            session.has_access('user', user_id, 'delete', raise_error=True)
+            try:
+                user = webinterface._Users.get(user_id)
+            except KeyError:
+                webinterface.add_alert('Requested user not found.', 'warning')
+                return webinterface.redirect(request, '/users')
+
+            confirm = request.args.get('confirm')[0]
+            if confirm != "remove":
+                page = webinterface.get_template(request, webinterface.wi_dir + '/pages/users/remove.html')
+                webinterface.add_alert('Must enter "disable" in the confirmation box to remove the module.', 'warning')
+                return page.render(alerts=webinterface.get_alerts(),
+                                   user=user,
+                                   )
+
+            try:
+                results = yield webinterface._Users.remove_user(user.user_id, session=session['yomboapi_session'])
+            except YomboWarning as e:
+                webinterface.add_alert(e.html_message)
+                page = webinterface.get_template(request, webinterface.wi_dir + '/pages/users/remove.html')
+                root_breadcrumb(webinterface, request)
+                webinterface.add_breadcrumb(request, "/users/%s/details" % user.user_id, user.email)
+                webinterface.add_breadcrumb(request, "/users/%s/remove" % user.user_id, "Remove")
+                return page.render(alerts=webinterface.get_alerts(),
+                                   user=user,
+                                   )
+
+            webinterface.add_alert("User removed")
+            return webinterface.redirect(request, '/users/index')

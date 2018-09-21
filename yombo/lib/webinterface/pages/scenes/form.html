@@ -145,11 +145,8 @@
         })(jQuery);
 
         $("#sceneedit").submit(function(event) {
-//            event.preventDefault();
-
             var rawData = $('#sceneedit').serializeFormJSON();
             var formData = JSON.stringify(rawData);
-            console.log(formData);
         });
 
 

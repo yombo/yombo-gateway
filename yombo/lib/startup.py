@@ -12,12 +12,12 @@ mode.
 
 .. note::
 
-  For more information see: `Startup @ Module Development <https://yombo.net/docs/libraries/startup>`_
+  * For library documentation, see: `Startup @ Library Documentation <https://yombo.net/docs/libraries/startup>`_
 
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2012-2017 by Yombo.
+:copyright: Copyright 2012-2018 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/startup.html>`_
 """
@@ -50,6 +50,15 @@ class Startup(YomboLibrary):
 
     @inlineCallbacks
     def _init_(self, **kwargs):
+        """
+        Gets various configuration items and determines if the system is running for the first time,
+        needs configuration setup, or should run as normal.
+
+        It also validates that the system has a valid API login and API session. This is used to interact
+        with the Yombo API cloud.
+        :param kwargs:
+        :return:
+        """
         self.gwid = self._Configs.get2('core', 'gwid', 'local', False)
         self.gwuuid = self._Configs.get2("core", "gwuuid", None, False)
         self.gwhash = self._Configs.get2("core", "gwhash", None, False)
@@ -65,7 +74,35 @@ class Startup(YomboLibrary):
             self._Loader.operating_mode = 'first_run'
             return True
 
-        operating_mode, items_needed = yield self.check_has_valid_gw_auth()
+        operating_mode = 'run'
+        items_needed = []
+        gwid = self.gwid()
+        if gwid is None or gwid == "":
+            items_needed.append("Gateway ID is missing. Please complete the setup wizard again.")
+            operating_mode = 'first_run'
+            return operating_mode, items_needed
+        gwuuid = self.gwuuid()
+        if gwuuid is None or gwuuid == "":
+            operating_mode = 'config'
+            items_needed.append("Gateway UUID is missing.")
+        gwhash = self.gwhash()
+        if gwhash is None or gwhash == "":
+            operating_mode = 'config'
+            items_needed.append("Gateway password is missing.")
+
+        if len(items_needed) == 0:
+            has_valid_credentials = yield self._YomboAPI.check_gateway_api_auth_valid()
+            if has_valid_credentials is False:
+                received_credentails = yield self.search_for_valid_sessions()
+                if received_credentails is False:
+                    operating_mode = 'config'
+                    logger.error('System is unable to authenticate itself with the server. The owner simply needs to'
+                    ' log into the system. This will activate the reauthorization.')
+                    items_needed.append("Gateway ID, hash, or session is invalid. Tried to get new ones, but failed.")
+                    items_needed.append("The owner needs to log into the gateway to automatically fix.")
+                elif received_credentails is True:
+                    operating_mode = 'config'
+                    items_needed.append("Received new gateway credentials. Restarting too.")
 
         is_master = self._Configs.get("core", "is_master", True)
         if is_master is False:
@@ -89,57 +126,34 @@ class Startup(YomboLibrary):
         yield self._GPG._init_from_startup_()
 
     @inlineCallbacks
-    def check_has_valid_gw_auth(self, session=None):
+    def search_for_valid_sessions(self, items_needed):
+        """
+        Current define API session is invalid, now nose through the
+        current sessions database entries looking for something good to use.
+
+        :param session:
+        :return:
+        """
+
         @inlineCallbacks
-        def try_get_api_auth_keys(try_session):
+        def try_get_new_gateway_credentials(try_session):
             try:
-                yield self._YomboAPI.get_api_auth_keys(session=try_session)
+                yield self._YomboAPI.get_new_gateway_credentials(session=try_session)
             except YomboRestart:
                 logger.error("System going down for restart, have new auth credentials")
                 yield sleep(120)
-                return operating_mode, items_needed
+                return True
             except YomboWarning:
-                pass
+                return False
 
-        operating_mode = 'run'
-        items_needed = []
-        gwid = self.gwid()
-        if gwid is None or gwid == "":
-            items_needed.append("Gateway ID is missing. Please complete the setup wizard again.")
-            operating_mode = 'first_run'
-            return operating_mode, items_needed
-        gwuuid = self.gwuuid()
-        if gwuuid is None or gwuuid == "":
-            operating_mode = 'config'
-            items_needed.append("Gateway UUID is missing.")
-        gwhash = self.gwhash()
-        if gwhash is None or gwhash == "":
-            operating_mode = 'config'
-            items_needed.append("Gateway password is missing.")
-
-        is_valid_system = yield self._YomboAPI.check_api_auth_valid()
-        if is_valid_system is False:
-            # System doesn't have valid auth info. Lets search through the session database and try to
-            # find a user that will has access to refresh our auth information.
-
-            try:
-                sessions = yield self._LocalDB.get_web_session()
-                if session is not None and isinstance(session, str):
-                    yield try_get_api_auth_keys(session)
-            except YomboWarning:
-                pass
-            else:
-                for session in sessions:
-                    data = session['session_data']
-                    if 'yomboapi_session' in data and isinstance(data['yomboapi_session'], str):
-                        yield try_get_api_auth_keys(data['yomboapi_session'])
-
-            # If we here, then no valid session was found. Put system into config mode. It will be attempted
-            # when the user access its. We will also display a notice.
-            operating_mode = 'config'
-            items_needed.append('System is unable to authenticate itself with the server. The owner simply needs to'
-                                ' log into the system. This will activate the reauthorization.')
-        return operating_mode, items_needed
+        sessions = yield self._LocalDB.get_web_session()
+        for session in sessions:
+            data = session['session_data']
+            if 'yomboapi_session' in data and isinstance(data['yomboapi_session'], str):
+                results = yield try_get_new_gateway_credentials(data['yomboapi_session'])
+                if results is True:
+                    return True
+        return False
 
     def _start_(self, **kwargs):
         """
@@ -156,6 +170,8 @@ class Startup(YomboLibrary):
     def update_caches(self, force=None, quick=False):
         """
         Iterates through all libraries to update the cache, then tells the modules to do the same.
+
+        This will be removed in a future version due the new caching library.
         :return:
         """
         if self.cache_updater_running is True and force is True:

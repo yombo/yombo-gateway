@@ -4,7 +4,8 @@
 
 .. note::
 
-  For more information see: `Statistics @ Module Development <https://yombo.net/docs/libraries/statistics>`_
+  * For developer documentation, see: `Statistics @ Module Development <https://yombo.net/docs/libraries/statistics>`_
+  * For library documentation, see: `Statistics @ Library Documentation <https://yombo.net/docs/libraries/loader>`_
 
 
 Statistics allow the gateway to trace various data points. This can be used to track how much time of a day the
@@ -88,7 +89,6 @@ the benefits of better averages, but mitigate loss of data. This is at a cost of
 """
 # Import python libraries
 
-from collections import OrderedDict
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
@@ -189,8 +189,6 @@ class Statistics(YomboLibrary):
         Saves statistics data to database.
         :return: A deferred that the shutdown functions use to wait on.
         """
-        # self._save_statistics(True)
-        # return
         if self.init_deferred is not None and self.init_deferred.called is False:
             self.init_deferred.callback(1)  # if we don't check for this, we can't stop!
 

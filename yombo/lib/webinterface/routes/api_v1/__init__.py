@@ -33,6 +33,23 @@ def args_to_dict(arguments):
     return results
 
 
+def return_json(request, payload, code=None):
+    """
+    Return an un-adulterated json response. Converts payload to json if needed.
+
+    :param request:
+    :param payload:
+    :return:
+    """
+    request.setHeader('Content-Type', CONTENT_TYPE_JSON)
+    if code is None:
+        code = 200
+    request.setResponseCode(code)
+    if isinstance(payload, str):
+        return payload
+    return json.dumps(payload)
+
+
 def return_good(request, message=None, payload=None, comments=None, code=None):
     request.setHeader('Content-Type', CONTENT_TYPE_JSON)
     if comments is None:

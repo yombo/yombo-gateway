@@ -3,8 +3,8 @@
 """
 .. note::
 
-  For more information see:
-  `Automation @ Module Development <https://yombo.net/docs/libraries/automation>`_
+  * End user documentation: `Automation Rules @ User Documentation <https://yombo.net/docs/gateway/web_interface/automation_rules>`_
+  * For library documentation, see: `Automation @ Library Documentation <https://yombo.net/docs/libraries/automation>`_
 
 The automation library provides users an easy method to setup simple automation rules that can respond to events.
 The automation rules can be setup using a simple web interface. Advanced templating is also possible using the
@@ -33,8 +33,7 @@ from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.lib.nodes import Node
-from yombo.utils import (is_true_false, random_string, sleep, global_invoke_all, dict_filter, dict_merge,
-                         bytes_to_unicode)
+from yombo.utils import is_true_false, random_string, sleep, bytes_to_unicode
 from yombo.utils.datatypes import coerce_value
 
 logger = get_logger("library.automation")
@@ -813,7 +812,7 @@ class Automation(YomboLibrary):
                         pass
 
             elif action_type == "state":
-                self._States.set(action['name'], action['value'])
+                self._States.set(action['name'], action['value'], source=self)
 
             elif action_type == "template":
                 try:
