@@ -520,6 +520,7 @@ class LocalDB(YomboLibrary):
 
         if section is None:
             section = 'all'
+        self._Events.new('localdb', 'cleaning', ('start', section))
 
         # Delete old device commands
         if section in ('device_commands', 'all'):
@@ -581,9 +582,13 @@ class LocalDB(YomboLibrary):
                    LIMIT -1 OFFSET 100)"""
             yield Registry.DBPOOL.runQuery(sql)
 
+        self._Events.new('localdb', 'cleaning', ('stop', section))
+
         if section == 'all':
             yield sleep(5)
+            self._Events.new('localdb', 'dbbackup', ('start',))
             self.make_backup()
+            self._Events.new('localdb', 'dbbackup', ('stop',))
             yield sleep(10)
             yield self.dbconfig.vaccum()
 
