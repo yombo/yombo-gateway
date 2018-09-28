@@ -62,7 +62,6 @@
                                 <th style="vertical-align:top;">Name</th>
                                 <th style="vertical-align:top;">Email</th>
                                 <td><label>Roles</label><br>User role membership</td>
-                                <td><label>Devices</label><br>Sepcific device accss</td>
                                 <th style="vertical-align:top;">Actions</th>
                             </tr>
                         </thead>
@@ -77,23 +76,6 @@
                                     {% set role = _users.get_role(role_label) %}
                                         <li><a href="/roles/{{role.role_id}}/details">{{ role.label }}</a></li>
                                     {% endfor %}
-                                    </ul>
-                                    {% endif %}
-                                </td>
-                                <td data-priority="3">
-                                    {%- if user.devices|length == 0 %}User has no specific device access{% else %}
-                                    <ul style="padding-left: 20px">
-                                    {% for device_machine_label, access_list in user.devices.items() %}
-                                        {% set device = _devices[device_machine_label] %}
-                                        <li><a href="/devices/{{device.device_id}}/details">{{ device.full_label }}</a></li>
-                                        <ul style="padding-left: 20px">
-                                            {% for item in  access_list %}
-                                            <li>{{item}}</li>
-                                            {% endfor %}
-                                        </ul>
-
-                                    {% endfor %}
-
                                     </ul>
                                     {% endif %}
                                 </td>

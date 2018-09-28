@@ -465,12 +465,11 @@ class Auth(object):
 
         :param platform:
         :param item:
-        :param action:
+        :param action:ttp://i.henry.yombo.me:8080/api/v1/statistics/echarts/buckets?chart_label=Commands+Sent&stat_name=lib.devices.commands_sent&bucket_size=900&last=1209600
         :param raise_error:
         :return:
         """
-        return self._Parent._Users.has_access(self.item_permissions, self.roles, platform, item, action, raise_error,
-                                              self.auth_id, self.auth_type)
+        return self._Parent._Users.has_access(self, platform, item, action, raise_error)
 
     def check_valid(self):
         if self.is_valid is False:

@@ -76,7 +76,7 @@
                 {% endif %}
                 <div class="col-md-7">
                 {%- if user.roles|length == 0 %}
-                <strong>User has not been assigned any roles, good luck with that.</strong>
+                <strong>User has not been assigned any roles.</strong>
                 {% else %}
                 <ul style="padding-left: 10px">
                 {% for machine_label in user.roles %}
@@ -121,16 +121,16 @@
                     <table style="width: 100%;">
                         <tr style="vertical-align:text-top">
                             <td>
-                                <input type="checkbox" id="allow_view" name="allow_view" value="allow_view">Allow view<br>
-                                <input type="checkbox" id="allow_edit" name="allow_edit" value="allow_edit">Allow edit<br>
-                                <input type="checkbox" id="allow_enable" name="allow_enable" value="allow_enable">Allow enable<br>
-                                <input type="checkbox" id="allow_disable" name="allow_disable" value="allow_disable">Allow disable<br>
+                                <input type="checkbox" id="allow_*" name="allow_*" value="allow_*">Allow ANY<br>
+                                {%- for action in _users.auth_platforms['automation']['actions'] %}
+                                <input type="checkbox" id="allow_{{action}}" name="allow_{{action}}" value="allow_{{action}}">Allow {{action}}<br>
+                                {%- endfor %}
                             </td>
                             <td>
-                                <input type="checkbox" id="deny_view" name="deny_view" value="deny_view">Deny view<br>
-                                <input type="checkbox" id="deny_edit" name="deny_edit" value="deny_edit">Deny edit<br>
-                                <input type="checkbox" id="deny_enable" name="deny_enable" value="deny_enable">Deny enable<br>
-                                <input type="checkbox" id="deny_disable" name="deny_disable" value="deny_disable">Deny disable<br>
+                                <input type="checkbox" id="deny_*" name="allow_*" value="deny_*">Deny ANY<br>
+                                {%- for action in _users.auth_platforms['automation']['actions'] %}
+                                <input type="checkbox" id="deny_{{action}}" name="deny_{{action}}" value="deny_{{action}}">Deny {{action}}<br>
+                                {%- endfor %}
                             </td>
                         </tr>
                     </table>
@@ -140,18 +140,28 @@
                 {% endif %}
                 <div class="col-md-7">
                 <label> Automation permissions: </label><br>
-                {%- if user.item_permissions['automation']|length == 0 %}
-                User has no specific automation rule access
+                {%- set permissions = _users.get_access_permissions(user, 'automation', source_type='user') %}
+                {%- if permissions['allow']|length == 0 and permissions['deny']|length == 0 %}
+                User has no specific automation access
                 {% else %}
-                <ul style="padding-left: 10px">
-                {% for component, actions in user.get_item_permissions('automation') %}
+                {%- for access, access_data in permissions.items() %}
+                    {%- if access_data|length >= 0 %}
+                    <em>{{access}}</em>
+                    <ul style="padding-left: 10px">
+                    {%- for item, actions in access_data.items() %}
+                    {%- set component = _automation.get(item) %}
                     <li>
                         <a href="/automation/{{component.rule_id}}/details">{{ component.label }}</a>
                         <a href="/users/{{user.user_id}}/remove_item_permission/automation/{{component.rule_id}}" class="btn btn-danger btn-xs" role="button">Remove</a>
                     </li>
-                    <ul style="padding-left: 15px">{%for item in actions%}<li>{{item}}</li>{%endfor%}</ul>
-                {% endfor %}
+                    <ul style="padding-left: 15px">
+                        {%- for action in actions %}
+                        <li>{{action}} <a href="/users/{{user.user_id}}/remove_item_permission/automation/{{component.rule_id}}/{{access}}/{{action}}" class="btn btn-danger btn-xs" role="button">Remove</a></li>
+                        {%- endfor %}</ul>
+                    {% endfor %}
                 </ul>
+                    {% endif %}
+                {% endfor %}
                 {% endif %}
                 </div>
             </div>
@@ -183,18 +193,16 @@
                     <table style="width: 100%;">
                         <tr style="vertical-align:text-top">
                             <td>
-                                <input type="checkbox" id="allow_view" name="allow_view" value="allow_view">Allow view<br>
-                                <input type="checkbox" id="allow_control" name="allow_control" value="allow_control">Allow control<br>
-                                <input type="checkbox" id="allow_edit" name="allow_edit" value="allow_edit">Allow edit<br>
-                                <input type="checkbox" id="allow_enable" name="allow_enable" value="allow_enable">Allow enable<br>
-                                <input type="checkbox" id="allow_disable" name="allow_disable" value="allow_disable">Allow disable<br>
+                                <input type="checkbox" id="allow_*" name="allow_*" value="allow_*">Allow ANY<br>
+                                {%- for action in _users.auth_platforms['device']['actions'] %}
+                                <input type="checkbox" id="allow_{{action}}" name="allow_{{action}}" value="allow_{{action}}">Allow {{action}}<br>
+                                {%- endfor %}
                             </td>
                             <td>
-                                <input type="checkbox" id="deny_view" name="deny_view" value="deny_view">Deny view<br>
-                                <input type="checkbox" id="deny_control" name="deny_control" value="deny_control">Deny control<br>
-                                <input type="checkbox" id="deny_edit" name="deny_edit" value="deny_edit">Deny edit<br>
-                                <input type="checkbox" id="deny_enable" name="deny_enable" value="deny_enable">Deny enable<br>
-                                <input type="checkbox" id="deny_disable" name="deny_disable" value="deny_disable">Deny disable<br>
+                                <input type="checkbox" id="deny_*" name="allow_*" value="deny_*">Deny ANY<br>
+                                {%- for action in _users.auth_platforms['device']['actions'] %}
+                                <input type="checkbox" id="deny_{{action}}" name="deny_{{action}}" value="deny_{{action}}">Deny {{action}}<br>
+                                {%- endfor %}
                             </td>
                         </tr>
                     </table>
@@ -204,25 +212,34 @@
                 {% endif %}
                 <div class="col-md-7">
                 <label> Device permissions: </label><br>
-                {%- if user.item_permissions['device']|length == 0 %}
+                {%- set permissions = _users.get_access_permissions(user, 'device', source_type='user') %}
+                {%- if permissions['allow']|length == 0 and permissions['deny']|length == 0 %}
                 User has no specific device access
                 {% else %}
-                <ul style="padding-left: 10px">
-                {% for device, actions in user.get_item_permissions('device') %}
+                {%- for access, access_data in permissions.items() %}
+                    {%- if access_data|length >= 0 %}
+                    <em>{{access}}</em>
+                    <ul style="padding-left: 10px">
+                    {%- for item, actions in access_data.items() %}
+                    {%- set device = _devices.get(item) %}
                     <li>
                         <a href="/devices/{{device.device_id}}/details">{{ device.full_label }}</a>
                         <a href="/users/{{user.user_id}}/remove_item_permission/device/{{device.device_id}}" class="btn btn-danger btn-xs" role="button">Remove</a>
                     </li>
-                    <ul style="padding-left: 15px">{%for item in actions%}<li>{{item}}</li>{%endfor%}</ul>
-                {% endfor %}
+                    <ul style="padding-left: 15px">
+                        {%- for action in actions %}
+                        <li>{{action}} <a href="/users/{{user.user_id}}/remove_item_permission/device/{{device.device_id}}/{{access}}/{{action}}" class="btn btn-danger btn-xs" role="button">Remove</a></li>
+                        {%- endfor %}</ul>
+                    {% endfor %}
                 </ul>
+                    {% endif %}
+                {% endfor %}
                 {% endif %}
                 </div>
             </div>
         </div>
     </div>
 </div>
-<!-- /.row -->
 <div class="row">
     <div class="col-md-12">
         <div class="panel panel-default">
@@ -236,7 +253,7 @@
                 <div class="col-md-5">
                 <form action="/users/{{user.user_id}}/add_item_permission" method="post" id="addscene">
                 <input type="hidden" id="platform_scene" name="platform" value="scene">
-                <label> Add a device: </label><br>
+                <label> Add a scene: </label><br>
                 <select name="item" id="scene_id" class="selectpicker" data-size="10" data-live-search="true"  title="Select scene to add.">
                 {%- for scene_id, scene in _scenes.get().items()
                     if scene.enabled() == true%}
@@ -248,41 +265,47 @@
                     <table style="width: 100%;">
                         <tr style="vertical-align:text-top">
                             <td>
-                                <input type="checkbox" id="allow_view" name="allow_view" value="allow_view">Allow view<br>
-                                <input type="checkbox" id="allow_edit" name="allow_edit" value="allow_edit">Allow edit<br>
-                                <input type="checkbox" id="allow_start" name="allow_start" value="allow_enable">Allow start<br>
-                                <input type="checkbox" id="allow_stop" name="allow_stop" value="allow_disable">Allow stop<br>
-                                <input type="checkbox" id="allow_enable" name="allow_enable" value="allow_enable">Allow enable<br>
-                                <input type="checkbox" id="allow_disable" name="allow_disable" value="allow_disable">Allow disable<br>
+                                <input type="checkbox" id="allow_*" name="allow_*" value="allow_*">Allow ANY<br>
+                                {%- for action in _users.auth_platforms['scene']['actions'] %}
+                                <input type="checkbox" id="allow_{{action}}" name="allow_{{action}}" value="allow_{{action}}">Allow {{action}}<br>
+                                {%- endfor %}
                             </td>
                             <td>
-                                <input type="checkbox" id="deny_view" name="deny_view" value="deny_view">Deny view<br>
-                                <input type="checkbox" id="deny_edit" name="deny_edit" value="deny_edit">Deny edit<br>
-                                <input type="checkbox" id="deny_start" name="deny_start" value="allow_enable">Deny start<br>
-                                <input type="checkbox" id="deny_stop" name="deny_stop" value="allow_disable">Deny stop<br>
-                                <input type="checkbox" id="deny_enable" name="deny_enable" value="deny_enable">Deny enable<br>
-                                <input type="checkbox" id="deny_disable" name="deny_disable" value="deny_disable">Deny disable<br>
+                                <input type="checkbox" id="deny_*" name="allow_*" value="deny_*">Deny ANY<br>
+                                {%- for action in _users.auth_platforms['automation']['actions'] %}
+                                <input type="checkbox" id="deny_{{action}}" name="deny_{{action}}" value="deny_{{action}}">Deny {{action}}<br>
+                                {%- endfor %}
                             </td>
                         </tr>
                     </table>
-                    <button type="submit" id="submit_scene" class="btn btn-success" style="margin-top: 15px; margin-bottom: 10px">Add scene</button>
+                    <button type="submit" id="submit_scene" class="btn btn-success" style="margin-top: 15px; margin-bottom: 10px">Add automation rule</button>
                 </form>
                 </div>
                 {% endif %}
                 <div class="col-md-7">
-                <label> Scene permissions: </label><br>
-                {%- if user.item_permissions['scene']|length == 0 %}
-                User has no specific scene access
+                <label> Automation permissions: </label><br>
+                {%- set permissions = _users.get_access_permissions(user, 'automation', source_type='user') %}
+                {%- if permissions['allow']|length == 0 and permissions['deny']|length == 0 %}
+                User has no specific automation access
                 {% else %}
-                <ul style="padding-left: 10px">
-                {% for component, actions in user.get_item_permissions('scene') %}
+                {%- for access, access_data in permissions.items() %}
+                    {%- if access_data|length >= 0 %}
+                    <em>{{access}}</em>
+                    <ul style="padding-left: 10px">
+                    {%- for item, actions in access_data.items() %}
+                    {%- set component = _automation.get(item) %}
                     <li>
-                        <a href="/scene/{{component.scene_id}}/details">{{ component.label }}</a>
-                        <a href="/users/{{user.user_id}}/remove_item_permission/scene/{{component.scene_id}}" class="btn btn-danger btn-xs" role="button">Remove</a>
+                        <a href="/automation/{{component.rule_id}}/details">{{ component.label }}</a>
+                        <a href="/users/{{user.user_id}}/remove_item_permission/automation/{{component.rule_id}}" class="btn btn-danger btn-xs" role="button">Remove</a>
                     </li>
-                    <ul style="padding-left: 15px">{%for item in actions%}<li>{{item}}</li>{%endfor%}</ul>
-                {% endfor %}
+                    <ul style="padding-left: 15px">
+                        {%- for action in actions %}
+                        <li>{{action}} <a href="/users/{{user.user_id}}/remove_item_permission/automation/{{component.rule_id}}/{{access}}/{{action}}" class="btn btn-danger btn-xs" role="button">Remove</a></li>
+                        {%- endfor %}</ul>
+                    {% endfor %}
                 </ul>
+                    {% endif %}
+                {% endfor %}
                 {% endif %}
                 </div>
             </div>

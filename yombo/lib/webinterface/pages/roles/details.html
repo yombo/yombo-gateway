@@ -95,26 +95,22 @@
             </div>
             <!-- /.panel-heading -->
             <div class="panel-body">
-                {%- if role.permissions['allow']|length == 0 %}
-                No allow permissions defined.
-                {% else %}
-                {% for permission_id, permission in role.permissions['allow'].items() %}
+                {%- for platform, platform_data in role.item_permissions.items() if
+                    'allow' in role.item_permissions[platform] and
+                    role.item_permissions[platform]['allow']|length > 0 %}
                 <ul style="padding-left: 15px">
-                    <a href="#delete_permission_modal" data-toggle="modal"
-                       data-role-id="{{ role.role_id }}"
-                       data-permission-id="{{ permission_id }}"
-                       class="pull-right"
-                       > <i class="fa fa-trash fa-2x pull-right" style="color:Tomato"></i> </a>
-                    <li><strong>Platform: </strong>{{permission['platform']}}</li>
-                    <li><strong>Item: </strong>{{ ID.item_label(permission['platform'], permission['item']) }}</li>
-                    <li><strong>Actions: </strong>{{permission['action']}}</li>
+                    <li><strong>Allow</strong></li>
+                {% for item, actions in role.item_permissions[platform]['allow'].items() %}
+                <ul style="padding-left: 15px">
+                    <li>Platform: {{platform}}</li>
+                    <li>Item: {{item}}</li>
+                    <li style="padding-bottom: 20px">Action: {{actions|join(',')}}</li>
                 </ul>
-                    {%- if not loop.last %}
-                    <hr style="margin-top: 8px; margin-bottom: 8px;">
-                    {%- endif %}
+                {%- if not loop.last %}
+                <hr style="margin-top: 8px; margin-bottom: 8px;">
+                {%- endif %}
                 {%- endfor %}
-                {% endif %}
-
+                {%- endfor %}
             </div>
         </div>
         <!-- /.panel-body -->
@@ -126,25 +122,22 @@
             </div>
             <!-- /.panel-heading -->
             <div class="panel-body">
-                {%- if role.permissions['deny']|length == 0 %}
-                No deny permissions defined.
-                {% else %}
-                {% for permission_id, permission in role.permissions['deny'].items() %}
+                {%- for platform, platform_data in role.item_permissions.items() if
+                    'deny' in role.item_permissions[platform] and
+                    role.item_permissions[platform]['deny']|length > 0 %}
                 <ul style="padding-left: 15px">
-                    <a href="#delete_permission_modal" data-toggle="modal"
-                       data-role-id="{{ role.role_id }}"
-                       data-permission-id="{{ permission_id }}"
-                       class="pull-right"
-                       > <i class="fa fa-trash fa-2x pull-right" style="color:Tomato"></i> </a>
-                    <li><strong>Platform: </strong>{{permission['platform']}}</li>
-                    <li><strong>Item: </strong>{{ ID.item_label(permission['platform'], permission['item']) }}</li>
-                    <li><strong>Actions: </strong>{{permission['action']}}</li>
+                    <li><strong>Deny</strong></li>
+                {% for item, actions in role.item_permissions[platform]['deny'].items() %}
+                <ul style="padding-left: 15px">
+                    <li>Platform: {{platform}}</li>
+                    <li>Item: {{item}}</li>
+                    <li style="padding-bottom: 20px">Action: {{actions|join(',')}}</li>
                 </ul>
-                    {%- if not loop.last %}
-                    <hr style="margin-top: 8px; margin-bottom: 8px;">
-                    {%- endif %}
+                {%- if not loop.last %}
+                <hr style="margin-top: 8px; margin-bottom: 8px;">
+                {%- endif %}
                 {%- endfor %}
-                {% endif %}
+                {%- endfor %}
             </div>
         </div>
     </div>
@@ -310,6 +303,20 @@
 
                 <button type="submit" id="submit_manual" class="btn btn-success" style="margin-top: 15px; margin-bottom: 10px">Add manual permission</button>
                 </form>
+            </div>
+        </div>
+    </div>
+</div>
+{%- else %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h4>Cannot Edit Permissions</h4>
+            </div>
+            <!-- /.panel-heading -->
+            <div class="panel-body">
+                System roles cannot be edited.
             </div>
         </div>
     </div>

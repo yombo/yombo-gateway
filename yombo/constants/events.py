@@ -68,5 +68,13 @@ SYSTEM_EVENT_TYPES = {
             ),
             'expires': 90,  # save events for 90 days
         },
+        'dbbackup': {
+            'description': "Tracks database backup events.",
+            'attributes': (
+                'action',
+                'section',
+            ),
+            'expires': 90,  # save events for 90 days
+        },
     },
 }

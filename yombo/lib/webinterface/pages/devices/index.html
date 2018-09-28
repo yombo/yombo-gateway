@@ -85,8 +85,7 @@
                                 </thead>
                                 <tbody>{% for device_id, device in _devices.items() if device.enabled_status == 1
                                             and device.gateway_id == _local_gateway.gateway_id
-                                            and device.machine_label in item_permissions['device']
-                                            and 'allow_view' in item_permissions['device'][device.machine_label]
+                                            and device.device_id in item_keys
                                         %}
                                      <tr>
                                         <td data-priority="1">
@@ -122,8 +121,7 @@
                                 </thead>
                                 <tbody>{% for device_id, device in _devices.items() if device.enabled_status == 1
                                             and device.gateway_id != _local_gateway.gateway_id
-                                            and device.machine_label in item_permissions['device']
-                                            and 'allow_view' in item_permissions['device'][device.machine_label]
+                                            and device.device_id in item_keys
                                         %}
                                      <tr>
                                         <td>{{ _gateways[device.gateway_id].label }}</td>
@@ -150,8 +148,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>{% for device_id, device in _devices.items() if device.enabled_status == 0
-                                            and device.machine_label in item_permissions['device']
-                                            and 'allow_view' in item_permissions['device'][device.machine_label]
+                                            and device.device_id in item_keys
                                         %}
                                      <tr>
                                         <td data-priority="1">

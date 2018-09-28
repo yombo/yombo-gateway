@@ -169,8 +169,10 @@ class Yombo_Site(Site):
         if request.auth_type == "websession":
             u = request.auth_id.split("@")
             user_id = u[0] + "@" + u[1][0:4] + "..."
-        else:
+        elif request.auth_type == "authkey":
             user_id = request.auth_id[0:-8][0:10]
+        else:
+            user_id = None
 
         self.log_queue.append(OrderedDict({
             'request_at': time(),

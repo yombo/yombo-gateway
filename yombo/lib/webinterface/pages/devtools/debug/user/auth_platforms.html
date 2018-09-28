@@ -1,0 +1,52 @@
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-12">
+        <h1 class="page-header">Authentication PLatforms
+            <a style="float: right;" href="#" data-toggle=modal data-target=#myModal> <i class="fa fa-question-circle  fa-lg"></i></a>
+        </h1>
+        <!-- Modal -->
+        <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+          <div class="modal-dialog" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myModalLabel">Automation Rules</h4>
+              </div>
+              <div class="modal-body">
+                  <p>
+                      Authenication platforms are used to auth various requests. This page lists the complete dictionary
+                      as JSON formatted for debugging.
+                  </p>
+                  <div class="bs-callout bs-callout-success" id=callout-images-ie-rounded-corners>
+                  </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p></p>
+    </div>
+    <!-- /.col-lg-12 -->
+</div>
+<!-- /.row -->
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                Authentation Platforms as JSON
+            </div>
+            <!-- /.panel-heading -->
+            <div class="panel-body">
+                <pre>{{auth_platforms}}</pre>
+            </div>
+        </div>
+        <!-- /.panel-body -->
+    </div>
+    <!-- /.col-lg-6 -->
+</div>
+<!-- /.row -->
+{% endblock %}

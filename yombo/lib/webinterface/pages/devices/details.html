@@ -302,15 +302,15 @@
                             <table width="100%" class="table table-striped table-bordered table-hover" id="dataTables-history">
                                 <thead>
                                     <tr>
-                                        <th>User</th><th>Access</th><th>Action</th>
+                                        <th>User</th><th>Access</th><th>Action</th><th>Controles</th>
                                     </tr>
                                 </thead>
-                                <tbody>{% for email, access in device.device_user_access('direct').items() %}
-                                {%- set user = _users.get(email) %}
+                                <tbody>{% for data in _users.get_user_access_permissions('device', device.device_id, 'users') %}
                                      <tr>
-                                        <td> <a href="/users/{{user.user_id}}/details">{{ user.name }} &lt;{{user.email}}&gt;</a> </td>
-                                        <td> {{ access|sort|join(", ") }}</td>
-                                        <td> <a href="/users/{{user.user_id}}/details">Manage access</a> </td>
+                                        <td> <a href="/users/{{data['auth'].user_id}}/details">{{data['auth'].label}}</a> </td>
+                                        <td> {{ data['access'] }}</td>
+                                        <td> {{ data['action'] }}</td>
+                                        <td> <a href="/users/{{data['auth'].user_id}}/details">Manage access</a> </td>
                                      </tr>{% endfor %}
                                 </tbody>
                             </table>

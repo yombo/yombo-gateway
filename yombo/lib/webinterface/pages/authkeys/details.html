@@ -90,7 +90,7 @@
                         {% for machine_label in authkey.roles %}
                             {% set role = _users.get_role(machine_label) %}
                             <li>
-                                <a href="/roles/{{role.role_id}}/details">{{ role.label }}</a>
+                                <a href="/roles/{{role.role_id}}/details">{{machine_label}} {{ role }}</a>
                                 <a href="/authkeys/{{authkey.label}}/unattach_role/{{role.role_id}}" class="btn btn-danger btn-xs" role="button">Remove</a>
                             </li>
                             <ul style="padding-left: 15px">

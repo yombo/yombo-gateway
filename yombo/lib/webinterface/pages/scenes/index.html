@@ -54,8 +54,7 @@
                                     </thead>
                                     <tbody>{% for scene_id, scene in _scenes.get().items() if
                                                 scene.gateway_id == _local_gateway.gateway_id
-                                                and scene.machine_label in item_permissions['scene']
-                                                and 'allow_view' in item_permissions['scene'][scene.machine_label]
+                                                and scene.scene_id in item_keys
                                             %}
                                          <tr>
                                              <td data-priority="1">

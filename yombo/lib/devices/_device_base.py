@@ -149,8 +149,13 @@ class Device_Base(Device_Attributes):
         # logger.debug("device::command requested_by: {requested_by}", requested_by=requested_by)
 
         # This will raise YomboNoAccess exception if user doesn't have access.
-        has_access, user_id, user_type = self._Parent._Users.check_user_has_access(
-            user_id, user_type, 'device', self.device_id, 'control')
+        if user_id is None or user_type is None:
+            logger.info("Device command received for device {label}, but no user specified."
+                        " This will generate errors in future versions.",
+                        label = self.full_label)
+        else:
+            has_access = self._Parent._Users.check_user_has_access(
+                user_id, user_type, 'device', self.device_id, 'control')
 
         device_command['user_id'] = user_id
         device_command['user_type'] = user_type

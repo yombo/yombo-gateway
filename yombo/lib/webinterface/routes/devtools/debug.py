@@ -1,5 +1,7 @@
 from yombo.lib.webinterface.auth import require_auth
 
+import json
+
 def route_devtools_debug(webapp):
     with webapp.subroute("/devtools/debug") as webapp:
 
@@ -21,6 +23,20 @@ def route_devtools_debug(webapp):
             root_breadcrumb(webinterface, request)
             return page.render(alerts=webinterface.get_alerts(),
                                )
+
+        @webapp.route('/auth_platforms')
+        @require_auth()
+        def page_devtools_debug_auth_platforms(webinterface, request, session):
+            session.has_access('debug', '*', 'cache')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/devtools/debug/user/auth_platforms.html')
+            root_breadcrumb(webinterface, request)
+            webinterface.add_breadcrumb(request, "/devtools/debug/auth_platforms", "Auth Platforms")
+            return page.render(
+                alerts=webinterface.get_alerts(),
+                auth_platforms=json.dumps(
+                        webinterface._Users.auth_platforms, sort_keys=True, indent=4, separators=(',', ': ')
+                    ),
+                )
 
         @webapp.route('/cache')
         @require_auth()
@@ -102,31 +118,6 @@ def route_devtools_debug(webapp):
                                hooks_called=webinterface._Modules.hook_counts
                                )
 
-        @webapp.route('/nodes')
-        @require_auth()
-        def page_devtools_debug_nodes(webinterface, request, session):
-            session.has_access('debug', '*', 'nodes')
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/devtools/debug/nodes/index.html')
-            root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/devtools/debug/nodes", "Nodes")
-            return page.render(alerts=webinterface.get_alerts(),
-                               nodes=webinterface._Nodes.nodes,
-                               )
-
-        @webapp.route('/nodes/<string:node_id>/details')
-        @require_auth()
-        def page_devtools_debug_nodes_details(webinterface, request, session, node_id):
-            node_id = webinterface._Validate.id_string(node_id)
-            session.has_access('debug', node_id, 'device_types')
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/devtools/debug/nodes/details.html')
-            node = webinterface._Nodes.nodes[node_id]
-            root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/devtools/debug/nodes", "Nodes")
-            webinterface.add_breadcrumb(request, "/devtools/debug/nodes/%s/details" % node_id, node.label)
-            return page.render(alerts=webinterface.get_alerts(),
-                               node=node,
-                               )
-
         @webapp.route('/modules')
         @require_auth()
         def page_devtools_debug_modules(webinterface, request, session):
@@ -154,24 +145,29 @@ def route_devtools_debug(webapp):
                                devices=webinterface._Devices,
                                )
 
-        @webapp.route('/requirements')
+        @webapp.route('/nodes')
         @require_auth()
-        def page_devtools_debug_requirements(webinterface, request, session):
-            session.has_access('debug', '*', 'requirements')
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/devtools/debug/requirements/index.html')
+        def page_devtools_debug_nodes(webinterface, request, session):
+            session.has_access('debug', '*', 'nodes')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/devtools/debug/nodes/index.html')
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/devtools/debug/requirements", "Requirements")
+            webinterface.add_breadcrumb(request, "/devtools/debug/nodes", "Nodes")
             return page.render(alerts=webinterface.get_alerts(),
-                               requirements=webinterface._Loader.requirements
+                               nodes=webinterface._Nodes.nodes,
                                )
 
-        @webapp.route('/statistic_bucket_lifetimes')
+        @webapp.route('/nodes/<string:node_id>/details')
         @require_auth()
-        def page_devtools_debug_statistic_bucket_lifetimes(webinterface, request, session):
-            session.has_access('debug', '*', 'statistics')
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/devtools/debug/statistic_bucket_lifetimes.html')
+        def page_devtools_debug_nodes_details(webinterface, request, session, node_id):
+            node_id = webinterface._Validate.id_string(node_id)
+            session.has_access('debug', node_id, 'nodes')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/devtools/debug/nodes/details.html')
+            node = webinterface._Nodes.nodes[node_id]
+            root_breadcrumb(webinterface, request)
+            webinterface.add_breadcrumb(request, "/devtools/debug/nodes", "Nodes")
+            webinterface.add_breadcrumb(request, "/devtools/debug/nodes/%s/details" % node_id, node.label)
             return page.render(alerts=webinterface.get_alerts(),
-                               bucket_lifetimes=webinterface._Statistics.bucket_lifetimes
+                               node=node,
                                )
 
         @webapp.route('/sslcerts')
@@ -198,3 +194,24 @@ def route_devtools_debug(webapp):
             return page.render(alerts=webinterface.get_alerts(),
                                sslcert=sslcert,
                                )
+
+        @webapp.route('/statistic_bucket_lifetimes')
+        @require_auth()
+        def page_devtools_debug_statistic_bucket_lifetimes(webinterface, request, session):
+            session.has_access('debug', '*', 'statistics')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/devtools/debug/statistic_bucket_lifetimes.html')
+            return page.render(alerts=webinterface.get_alerts(),
+                               bucket_lifetimes=webinterface._Statistics.bucket_lifetimes
+                               )
+
+        @webapp.route('/requirements')
+        @require_auth()
+        def page_devtools_debug_requirements(webinterface, request, session):
+            session.has_access('debug', '*', 'requirements')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/devtools/debug/requirements/index.html')
+            root_breadcrumb(webinterface, request)
+            webinterface.add_breadcrumb(request, "/devtools/debug/requirements", "Requirements")
+            return page.render(alerts=webinterface.get_alerts(),
+                               requirements=webinterface._Loader.requirements
+                               )
+

@@ -670,19 +670,6 @@ class Devices(YomboLibrary):
                 self.mqtt.publish('yombo/devices/%s/status' % device.machine_label,
                                   json.dumps(device.status_all))
 
-    def device_permissions(self, session):
-        """
-        Returns a dictionary of devices the current user/auth id has access to. Returns a dict and list of access
-        permissions.
-
-        :param session: A string referencing an attribute of a device.
-        :type session: string
-        :return:
-        """
-        permissions, item_permissions = self._Users.get_access(session.item_permissions, session.roles, 'device')
-        # print("user_available_devices... %s" % item_permissions['device'])
-        return item_permissions['device']
-
     def device_user_access(self, device_id, access_type=None):
         """
         Gets all users that have access to this device.

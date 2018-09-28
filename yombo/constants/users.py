@@ -5,26 +5,76 @@ Constants for users library.
 AUTH_PLATFORM_ATOM = 'atom'
 AUTH_PLATFORM_AUTHKEY = 'authkey'
 AUTH_PLATFORM_AUTOMATION = 'automation'
+AUTH_PLATFORM_DEBUG = 'debug'
 AUTH_PLATFORM_DEVICE = 'device'
+AUTH_PLATFORM_DEVICE_COMMAND = 'device_command'
 AUTH_PLATFORM_EVENTS = 'events'
 AUTH_PLATFORM_GATEWAY = 'gateway'
 AUTH_PLATFORM_LOCATION = 'location'
-
 AUTH_PLATFORM_MODULE = 'module'
-AUTH_PLATFORM_NOTIFICATIONS = 'notifications'
+AUTH_PLATFORM_NOTIFICATION = 'notification'
 AUTH_PLATFORM_PANEL = 'panel'
+AUTH_PLATFORM_ROLE = 'role'
 AUTH_PLATFORM_SCENE = 'scene'
 AUTH_PLATFORM_STATE = 'state'
 AUTH_PLATFORM_STATISTIC = 'statistic'
 AUTH_PLATFORM_SYSTEM_SETTING = 'system_setting'
-AUTH_PLATFORM_SYSTEM_OPTIONS = 'system_options'
+AUTH_PLATFORM_SYSTEM_OPTION = 'system_options'
 AUTH_PLATFORM_USER = 'user'
+AUTH_PLATFORM_WEBSESSION = 'websession'
 AUTH_PLATFORM_WEBLOGS = 'weblogs'
+AUTH_PLATFORM_WILDCARD = '*'
 
-AUTH_PLATFORMS = (AUTH_PLATFORM_ATOM, AUTH_PLATFORM_AUTHKEY, AUTH_PLATFORM_AUTOMATION, AUTH_PLATFORM_DEVICE,
-                  AUTH_PLATFORM_EVENTS, AUTH_PLATFORM_GATEWAY, AUTH_PLATFORM_MODULE, AUTH_PLATFORM_PANEL,
-                  AUTH_PLATFORM_SCENE, AUTH_PLATFORM_STATE, AUTH_PLATFORM_STATISTIC, AUTH_PLATFORM_USER,
-                  AUTH_PLATFORM_SYSTEM_SETTING, AUTH_PLATFORM_SYSTEM_OPTIONS, AUTH_PLATFORM_WEBLOGS)
+ITEMIZED_AUTH_PLATFORMS = AUTH_PLATFORM_AUTOMATION, AUTH_PLATFORM_DEVICE, AUTH_PLATFORM_SCENE
+
+ACTIONS_ATOM = ('view', 'edit', 'enable', 'disable')
+ACTIONS_AUTHKEY = ('add', 'view', 'edit', 'enable', 'disable', 'remove')
+ACTIONS_AUTOMATION = ('add', 'view', 'edit', 'start', 'stop', 'enable', 'disable', 'remove')
+ACTIONS_DEBUG = ('cache', 'view', 'commands', 'device_types', 'libraries', 'modules', 'nodes', 'sslcerts', 'statistics',
+                 'requirements')
+ACTIONS_DEVICE = ('add', 'view', 'control', 'edit', 'enable', 'disable', 'remove')
+ACTIONS_DEVICE_COMMAND = ('view', 'remove')
+ACTIONS_EVENTS = ('view',)
+ACTIONS_GATEWAY = ('add', 'view', 'edit', 'enable', 'disable', 'remove')
+ACTIONS_LOCATION = ('add', 'view', 'edit', 'remove')
+ACTIONS_MODULE = ('add', 'view', 'edit', 'enable', 'disable', 'remove')
+ACTIONS_NOTIFICATION = ('view', 'remove')
+ACTIONS_PANEL = ('view',)
+ACTIONS_ROLE = ('add', 'view', 'edit', 'remove')
+ACTIONS_SCENE = ('add', 'view', 'start', 'stop', 'edit', 'enable', 'disable', 'remove')
+ACTIONS_STATE = ('view',)
+ACTIONS_STATISTIC = ('view',)
+ACTIONS_SYSTEM_SETTING = ('view', 'edit')
+ACTIONS_SYSTEM_OPTION = ('view', 'backup', 'control', 'status', 'stream', 'mqtt')
+ACTIONS_USER = ('add', 'view', 'edit', 'remove')
+ACTIONS_WEBLOGS = ('view',)
+ACTIONS_WEBSESSION = ('view',)
+ACTIONS_WILDCARD = ()
+
+AUTH_PLATFORMS = {
+    AUTH_PLATFORM_ATOM: {'actions': ACTIONS_ATOM},
+    AUTH_PLATFORM_AUTHKEY: {'actions': ACTIONS_AUTHKEY},
+    AUTH_PLATFORM_AUTOMATION: {'actions': ACTIONS_AUTOMATION},
+    AUTH_PLATFORM_DEBUG: {'actions': ACTIONS_DEBUG},
+    AUTH_PLATFORM_DEVICE: {'actions': ACTIONS_DEVICE},
+    AUTH_PLATFORM_DEVICE_COMMAND: {'actions': ACTIONS_DEVICE_COMMAND},
+    AUTH_PLATFORM_EVENTS: {'actions': ACTIONS_EVENTS},
+    AUTH_PLATFORM_GATEWAY: {'actions': ACTIONS_GATEWAY},
+    AUTH_PLATFORM_LOCATION: {'actions': ACTIONS_LOCATION},
+    AUTH_PLATFORM_MODULE: {'actions': ACTIONS_MODULE},
+    AUTH_PLATFORM_NOTIFICATION: {'actions': ACTIONS_NOTIFICATION},
+    AUTH_PLATFORM_PANEL: {'actions': ACTIONS_PANEL},
+    AUTH_PLATFORM_ROLE: {'actions': ACTIONS_ROLE},
+    AUTH_PLATFORM_SCENE: {'actions': ACTIONS_SCENE},
+    AUTH_PLATFORM_STATE: {'actions': ACTIONS_STATE},
+    AUTH_PLATFORM_STATISTIC: {'actions': ACTIONS_STATISTIC},
+    AUTH_PLATFORM_SYSTEM_SETTING: {'actions': ACTIONS_SYSTEM_SETTING},
+    AUTH_PLATFORM_SYSTEM_OPTION: {'actions': ACTIONS_SYSTEM_OPTION},
+    AUTH_PLATFORM_USER: {'actions': ACTIONS_USER},
+    AUTH_PLATFORM_WEBLOGS: {'actions': ACTIONS_WEBLOGS},
+    AUTH_PLATFORM_WEBSESSION: {'actions:': ACTIONS_WEBSESSION},
+    AUTH_PLATFORM_WILDCARD: {'actions': ACTIONS_WILDCARD},
+}
 
 SYSTEM_ROLES = {
     'admin': {
@@ -91,7 +141,7 @@ SYSTEM_ROLES = {
                 'access': 'allow',
             },
             {
-                'platform': AUTH_PLATFORM_NOTIFICATIONS,
+                'platform': AUTH_PLATFORM_NOTIFICATION,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -182,14 +232,14 @@ SYSTEM_ROLES = {
             }
         ]
     },
-    'authkey_delete': {
+    'authkey_remove': {
         'label': 'Auth Key - Delete',
         'description': 'Delete Auth Keys.',
         'permissions': [
             {
                 'platform': AUTH_PLATFORM_AUTHKEY,
                 'item': '*',
-                'action': 'delete',
+                'action': 'remove',
                 'access': 'allow',
             },
             {
@@ -266,14 +316,14 @@ SYSTEM_ROLES = {
             }
         ]
     },
-    'automation_delete': {
+    'automation_remove': {
         'label': 'Automation Rules - Delete',
         'description': 'Delete configured automation rules.',
         'permissions': [
             {
                 'platform': AUTH_PLATFORM_AUTOMATION,
                 'item': '*',
-                'action': 'delete',
+                'action': 'remove',
                 'access': 'allow',
             },
             {
@@ -398,14 +448,14 @@ SYSTEM_ROLES = {
             }
         ]
     },
-    'devices_delete': {
+    'devices_remove': {
         'label': 'Devices - Delete',
-        'description': 'Able to delete devices.',
+        'description': 'Able to remove devices.',
         'permissions': [
             {
                 'platform': AUTH_PLATFORM_DEVICE,
                 'item': '*',
-                'action': 'delete',
+                'action': 'remove',
                 'access': 'allow',
             },
             {
@@ -484,7 +534,7 @@ SYSTEM_ROLES = {
     },
     'devices_admin': {
         'label': 'Devices - Administrator',
-        'description': 'Full access to devices. This includes edit, add, delete, view, and control.',
+        'description': 'Full access to devices. This includes edit, add, remove, view, and control.',
         'permissions': [
             {
                 'platform': AUTH_PLATFORM_DEVICE,
@@ -499,7 +549,7 @@ SYSTEM_ROLES = {
         'description': 'Able to view device commands.',
         'permissions': [
             {
-                'platform': 'device_command',
+                'platform': AUTH_PLATFORM_DEVICE_COMMAND,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -578,14 +628,14 @@ SYSTEM_ROLES = {
             }
         ]
     },
-    'locations_delete': {
+    'locations_remove': {
         'label': 'Locations - Delete',
         'description': 'Delete configured locations.',
         'permissions': [
             {
                 'platform': AUTH_PLATFORM_LOCATION,
                 'item': '*',
-                'action': 'delete',
+                'action': 'remove',
                 'access': 'allow',
             },
             {
@@ -656,14 +706,14 @@ SYSTEM_ROLES = {
             }
         ]
     },
-    'modules_delete': {
+    'modules_remove': {
         'label': 'Modules - Delete',
         'description': 'Delete configured modules.',
         'permissions': [
             {
                 'platform': AUTH_PLATFORM_MODULE,
                 'item': '*',
-                'action': 'delete',
+                'action': 'remove',
                 'access': 'allow',
             },
             {
@@ -724,28 +774,28 @@ SYSTEM_ROLES = {
     },
     'notifications_view': {
         'label': 'Notifications - View',
-        'description': 'View notifications.',
+        'description': 'View notification.',
         'permissions': [
             {
-                'platform': AUTH_PLATFORM_NOTIFICATIONS,
+                'platform': AUTH_PLATFORM_NOTIFICATION,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
             }
         ]
     },
-    'notifications_delete': {
+    'notifications_remove': {
         'label': 'Notifications - Delete',
         'description': 'Delete notifications.',
         'permissions': [
             {
-                'platform': AUTH_PLATFORM_NOTIFICATIONS,
+                'platform': AUTH_PLATFORM_NOTIFICATION,
                 'item': '*',
-                'action': 'delete',
+                'action': 'remove',
                 'access': 'allow',
             },
             {
-                'platform': AUTH_PLATFORM_NOTIFICATIONS,
+                'platform': AUTH_PLATFORM_NOTIFICATION,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -806,14 +856,14 @@ SYSTEM_ROLES = {
             }
         ]
     },
-    'scenes_delete': {
+    'scenes_remove': {
         'label': 'Scenes - Delete',
         'description': 'Delete configured scenes.',
         'permissions': [
             {
                 'platform': AUTH_PLATFORM_SCENE,
                 'item': '*',
-                'action': 'delete',
+                'action': 'remove',
                 'access': 'allow',
             },
             {
@@ -937,7 +987,7 @@ SYSTEM_ROLES = {
         'description': 'Allow user to backup the system.',
         'permissions': [
             {
-                'platform': AUTH_PLATFORM_SYSTEM_OPTIONS,
+                'platform': AUTH_PLATFORM_SYSTEM_OPTION,
                 'item': '*',
                 'action': 'backup',
                 'access': 'allow',
@@ -949,7 +999,7 @@ SYSTEM_ROLES = {
         'description': 'Allow user to shutdown or restart the gateway software.',
         'permissions': [
             {
-                'platform': AUTH_PLATFORM_SYSTEM_OPTIONS,
+                'platform': AUTH_PLATFORM_SYSTEM_OPTION,
                 'item': '*',
                 'action': 'control',
                 'access': 'allow',
@@ -961,7 +1011,7 @@ SYSTEM_ROLES = {
         'description': 'View various system status pages.',
         'permissions': [
             {
-                'platform': AUTH_PLATFORM_SYSTEM_OPTIONS,
+                'platform': AUTH_PLATFORM_SYSTEM_OPTION,
                 'item': '*',
                 'action': 'status',
                 'access': 'allow',
@@ -973,7 +1023,7 @@ SYSTEM_ROLES = {
         'description': 'Allow to connection to the system event stream. This permits live access to nearly any system even change.',
         'permissions': [
             {
-                'platform': AUTH_PLATFORM_SYSTEM_OPTIONS,
+                'platform': AUTH_PLATFORM_SYSTEM_OPTION,
                 'item': '*',
                 'action': 'stream',
                 'access': 'allow',
@@ -985,7 +1035,7 @@ SYSTEM_ROLES = {
         'description': 'Allows connections to the MQTT broker.',
         'permissions': [
             {
-                'platform': AUTH_PLATFORM_SYSTEM_OPTIONS,
+                'platform': AUTH_PLATFORM_SYSTEM_OPTION,
                 'item': '*',
                 'action': 'mqtt',
                 'access': 'allow',
@@ -1052,14 +1102,14 @@ SYSTEM_ROLES = {
             }
         ]
     },
-    'users_delete': {
+    'users_remove': {
         'label': 'Users - Delete',
         'description': 'Delete configured users.',
         'permissions': [
             {
                 'platform': AUTH_PLATFORM_USER,
                 'item': '*',
-                'action': 'delete',
+                'action': 'remove',
                 'access': 'allow',
             }
         ]

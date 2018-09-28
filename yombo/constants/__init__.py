@@ -115,19 +115,6 @@ URL_API_ERROR_LOG = '/api/error_log'
 URL_API_LOG_OUT = '/api/log_out'
 URL_API_TEMPLATE = '/api/template'
 
-PERMISSION_PLATFORMS = ('atom', 'automation', 'device', 'gateway', 'location', 'location', 'module',
-                        'notification', 'panel', 'scene', 'state', 'statistic', 'location', 'user', 'authkey',
-                        'gateway', 'system_options', 'user')
-ITEMIZED_PERMISSION_PLATFORMS = ('device', 'automation', 'scene')
-AUTOMATION_ACTIONS = ('allow_view', 'allow_edit', 'allow_enable', 'allow_disable',
-                  'deny_view', 'deny_edit', 'deny_enable', 'deny_disable')
-
-DEVICE_ACTIONS = ('allow_view', 'allow_control', 'allow_edit', 'allow_enable', 'allow_disable',
-                  'deny_view', 'deny_control', 'deny_edit', 'deny_enable', 'deny_disable')
-
-SCENE_ACTIONS = ('allow_view', 'allow_start', 'allow_stop', 'allow_edit', 'allow_enable', 'allow_disable',
-                  'deny_view', 'deny_start', 'deny_stop', 'deny_edit', 'deny_enable', 'deny_disable')
-
 HTTP_OK = 200
 HTTP_CREATED = 201
 HTTP_MOVED_PERMANENTLY = 301
@@ -149,5 +136,6 @@ QUIT_ERROR_EXIT_CODE = 1
 QUIT_EXIT_CODE = 0
 
 # Session types
+AUTH_TYPE_USER = 'user'  # an actual user object
 AUTH_TYPE_AUTHKEY = 'authkey'
 AUTH_TYPE_WEBSESSION = 'websession'

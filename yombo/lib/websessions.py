@@ -343,8 +343,8 @@ class WebSessions(YomboLibrary):
                     yield self._LocalDB.save_web_session(session)
                     session.in_db = True
                     session.is_dirty = 0
-                if session.last_access < int(time() - (60*60*6)):
-                    # delete session from memory after 6 hours
+                if session.last_access < int(time() - (60*60*24)):
+                    # delete session from memory after 24 hours
                     logger.debug("clean_sessions - Deleting session from memory only: {session_id}", session_id=session_id)
                     del self.active_sessions[session_id]
 
@@ -541,9 +541,7 @@ class Auth(object):
         :raise_error YomboNoAccess:
         :return:
         """
-        return self._Parent._Users.has_access(
-            self.user.item_permissions, self.user.roles, platform, item, action, raise_error,
-            self.auth_id, self.auth_type)
+        return self._Parent._Users.has_access(self, platform, item, action, raise_error)
 
     def check_valid(self, auth_id_missing_ok=None):
         """

@@ -41,17 +41,15 @@ def route_scenes(webapp):
         @webapp.route('/index')
         @require_auth()
         def page_scenes_index(webinterface, request, session):
-            # session.has_access('scene', '*', 'view', raise_error=True)
-            permissions, item_permissions = webinterface._Users.get_access(session.item_permissions,
-                                                                           session.roles,
-                                                                           'scene')
+            session.has_access('scene', '*', 'view', raise_error=True)
+            item_keys, permissions = webinterface._Users.get_access(session, 'scene', 'view')
             root_breadcrumb(webinterface, request)
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/scenes/index.html')
             return page.render(
                 alerts=webinterface.get_alerts(),
                 user=session.user,
                 permissions=permissions,
-                item_permissions=item_permissions,
+                item_keys=item_keys,
                 )
 
         @webapp.route('/<string:scene_id>/details', methods=['GET'])

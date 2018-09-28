@@ -201,11 +201,6 @@ def route_roles(webapp):
                 return webinterface.redirect(request, '/roles/index')
 
             try:
-                add_type = request.args.get('add_type', [None])[0]
-            except KeyError:
-                add_type = None
-
-            try:
                 platform = request.args.get('platform')[0]
             except KeyError:
                 webinterface.add_alert('Invalid request, platform is missing.', 'warning')
@@ -217,18 +212,31 @@ def route_roles(webapp):
                 webinterface.add_alert('Invalid request, item is missing.', 'warning')
                 return webinterface.redirect(request, "/roles/%s/details" % role.role_id)
 
+            newactions = {}
+            for action, values in request.args.items():
+                if action.startswith('allow_') or action.startswith('deny_'):
+                    details = action.split('_', 2)
+                    if details[0] not in newactions:
+                        newactions[details[0]] = []
+                    newactions[details[0]].append(details[1])
+
+            try:
+                for access, actions in newactions.items():
+                    role.add_item_permission(platform, item, access, actions)
+            except YomboWarning as e:
+                webinterface.add_alert('Error adding device actions: %s' % e)
+
+            try:
+                add_type = request.args.get('add_type', [None])[0]
+            except KeyError:
+                add_type = None
+
             if add_type == None:
-                new_permissions = {'allow': [], 'deny': []}
-                for action, values in request.args.items():
-                    if action.startswith('allow_') or action.startswith('deny_'):
-                        access, action = action.split('_', 2)
-                        new_permissions[access].append({
-                            'platform': platform,
-                            'item': item,
-                            'action': action,
-                            'access': access,
-                        })
-                role.add_rules(new_permissions)
+                try:
+                    for access, actions in newactions.items():
+                        role.add_item_permission(platform, item, access, actions)
+                except YomboWarning as e:
+                    webinterface.add_alert('Error adding device actions: %s' % e)
 
             elif add_type == "manual":
                 try:
@@ -242,18 +250,15 @@ def route_roles(webapp):
                     webinterface.add_alert('Invalid request, access is missing.', 'warning')
                     return webinterface.redirect(request, "/roles/%s/details" % role.role_id)
 
-                role.add_rule({
-                    'platform': platform,
-                    'item': item,
-                    'action': action,
-                    'access': access,
-                })
+                except YomboWarning as e:
+                    webinterface.add_alert('Error adding device actions: %s' % e)
+                role.add_item_permission(platform, item, access, actions)
 
             return webinterface.redirect(request, '/roles/%s/details' % role_id)
 
-        @webapp.route('/<string:role_id>/remove_item_permission/<string:permission_id>', methods=['GET'])
+        @webapp.route('/<string:role_id>/remove_item_permission//<string:platform>/<string:item_id>', methods=['GET'])
         @require_auth()
-        def page_roles_remove_item_permission_get(webinterface, request, session, role_id, permission_id):
+        def page_roles_remove_item_permission_get(webinterface, request, session, role_id, platform, item_id):
             """
             Receives request from HTTP GET. Finds the role instance, and then has it remove the permission_id.
 
@@ -261,7 +266,7 @@ def route_roles(webapp):
             :param request:
             :param session:
             :param role_id:
-            :param permission_id:
+            :param platform:
             :return:
             """
             session.has_access('role', role_id, 'edit', raise_error=True)
@@ -273,5 +278,29 @@ def route_roles(webapp):
                 webinterface.add_alert('Invalid role.', 'warning')
                 return webinterface.redirect(request, '/roles/index')
 
-            role.delete_rule(permission_id)
+            try:
+                role.remove_item_permission(platform, item_id)
+            except YomboWarning as e:
+                webinterface.add_alert('Error removing roles permissions: %s' % e)
+
+            return webinterface.redirect(request, '/roles/%s/details' % role_id)
+
+        @webapp.route('/<string:role_id>/remove_item_permission/<string:platform>/<string:item_id>/<string:access>/<string:action>', methods=['GET'])
+        @require_auth()
+        def page_roles_remove_item_permission_action_get(webinterface, request, session, role_id, platform,
+                                                         item_id, access, action):
+            session.has_access('role', role_id, 'edit', raise_error=True)
+            try:
+                role = webinterface._Users.get_role(role_id)
+            except KeyError:
+                role = None
+            if role is None:
+                webinterface.add_alert('Invalid role.', 'warning')
+                return webinterface.redirect(request, '/roles/index')
+
+            print("page_roles_remove_item_permission_action_get: action: %s" % action)
+            try:
+                role.remove_item_permission(platform, item_id, access, action)
+            except YomboWarning as e:
+                webinterface.add_alert('Error removing device actions: %s' % e)
             return webinterface.redirect(request, '/roles/%s/details' % role_id)

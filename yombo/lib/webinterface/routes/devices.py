@@ -36,11 +36,10 @@ def add_devices_breadcrumb(webinterface, request, device_id, session):
     local_devices = []
     cluster_devices = []
 
-    permissions, item_permissions = webinterface._Users.get_access(session.item_permissions, session.roles, 'device')
+    item_keys, permissions = webinterface._Users.get_access(session, 'device', 'view')
 
     for select_device_id, select_device in webinterface._Devices.sorted().items():
-        if select_device.enabled_status != 1 or select_device.machine_label not in item_permissions['device'] or \
-                'allow_view' not in item_permissions['device'][select_device.machine_label]:
+        if select_device.enabled_status != 1 or select_device.device_id not in item_keys:
             continue
 
         if select_device.gateway_id == webinterface.gateway_id():
@@ -85,15 +84,13 @@ def route_devices(webapp):
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/devices/index.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/devices/index", "Devices")
-            permissions, item_permissions = webinterface._Users.get_access(session.item_permissions,
-                                                                           session.roles,
-                                                                           'device')
+            item_keys, permissions = webinterface._Users.get_access(session, 'device', 'view')
             return page.render(
                 alerts=webinterface.get_alerts(),
                 request=request,
                 user=session.user,
                 permissions=permissions,
-                item_permissions=item_permissions,
+                item_keys=item_keys,
             )
 
         @webapp.route('/add')
