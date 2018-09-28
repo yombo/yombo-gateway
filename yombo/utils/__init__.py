@@ -66,6 +66,7 @@ def format_user_id_logging(auth_id, auth_type):
     :param auth_type: Type of auth, such as websession or user.
     :return:
     """
+    # logger.info("format_user_id_logging: {auth_id} - {auth_type}", auth_id=auth_id, auth_type=auth_type)
     if auth_type == "websession":
         user_id_parts = auth_id.split("@")
         return user_id_parts[0] + "@" + user_id_parts[1][0:4] + "..."
