@@ -48,7 +48,7 @@ class Cache(YomboLibrary):
         """
         setup_cache(self)
         self.caches = {}
-        self.lock = RLock()
+        self.lock = RLock()  # lock of last resort
 
     def lfu(self, tags=None, name=None, maxsize=512):
         """
@@ -76,9 +76,10 @@ class Cache(YomboLibrary):
             self.caches[name] = {
                 'cache': LFUCache(maxsize),
                 'tags': tags,
-                'type': 'lfu',
+                'type': 'LFUCache',
+                'lock': RLock(),
             }
-        return self.caches[name]
+        return self.caches[name]['cache']
 
     def lru(self, tags=None, name=None, maxsize=512):
         """
@@ -105,9 +106,10 @@ class Cache(YomboLibrary):
             self.caches[name] = {
                 'cache': LRUCache(maxsize),
                 'tags': tags,
-                'type': 'lru',
+                'type': 'LRUCache',
+                'lock': RLock(),
             }
-        return self.caches[name]
+        return self.caches[name]['cache']
 
     def ttl(self, ttl=120, tags=None, name=None, maxsize=512):
         """
@@ -134,9 +136,10 @@ class Cache(YomboLibrary):
             self.caches[name] = {
                 'cache': TTLCache(maxsize, ttl),
                 'tags': tags,
-                'type': 'ttl',
+                'type': 'TTLCache',
+                'lock': RLock(),
             }
-        return self.caches[name]
+        return self.caches[name]['cache']
 
     def flush(self, tags=None):
         """
@@ -152,7 +155,7 @@ class Cache(YomboLibrary):
 
         for name, cache in self.caches.items():
             if any(x in cache['tags'] for x in tags):
-                with self.lock:
+                with cache['lock']:
                     cache['cache'].clear()
 
     def clear(self, cache_item):
@@ -165,7 +168,7 @@ class Cache(YomboLibrary):
         with self.lock:
             cache_item.clear()
 
-    def flush_item(self, cachename):
+    def clear_item(self, cachename):
         """
         Flush a specific cache. cachename must be the name of the cache, not the actual cache object.
 
@@ -173,8 +176,9 @@ class Cache(YomboLibrary):
         :return:
         """
         if cachename in self.caches:
-            with self.lock:
-                self.caches[cachename]['cache'].clear()
+            cache = self.caches[cachename]
+            with cache['lock']:
+                cache['cache'].clear()
 
     def flush_all(self, tags=None):
         """
@@ -189,5 +193,5 @@ class Cache(YomboLibrary):
             tags = None
 
         for name, cache in self.caches.items():
-            with self.lock:
+            with cache['lock']:
                 cache['cache'].clear()
