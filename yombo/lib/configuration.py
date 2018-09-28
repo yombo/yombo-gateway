@@ -654,7 +654,7 @@ class Configuration(YomboLibrary):
             self._Statistics.increment("lib.configuration.set.invalid_length", bucket_size=15, anon=True)
             raise YomboInvalidArgument("option cannot be more than %d chars" % self.MAX_OPTION_LENGTH)
 
-        if ignore_case is not False:
+        if ignore_case is not True:
             section = section.lower()
             option = option.lower()
 
