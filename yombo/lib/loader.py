@@ -498,14 +498,13 @@ class Loader(YomboLibrary, object):
             library._Devices = self.loadedLibraries['devices']
             library._DeviceTypes = self.loadedLibraries['devicetypes']
             library._Discovery = self.loadedLibraries['discovery']
-            library._Hash = self.loadedLibraries['hash']
-            library._HashIDS = self.loadedLibraries['hashids']
-            library._Locations = self.loadedLibraries['locations']
-            library._DeviceTypes = self.loadedLibraries['devicetypes']
             library._Gateways = self.loadedLibraries['gateways']
             library._GatewayComs = self.loadedLibraries['gateways_communications']
             library._GPG = self.loadedLibraries['gpg']
+            library._Hash = self.loadedLibraries['hash']
+            library._HashIDS = self.loadedLibraries['hashids']
             library._InputTypes = self.loadedLibraries['inputtypes']
+            library._Locations = self.loadedLibraries['locations']
             library._Libraries = self.loadedLibraries
             library._Loader = self
             library._Localize = self.loadedLibraries['localize']
