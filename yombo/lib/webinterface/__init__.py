@@ -75,7 +75,6 @@ from yombo.lib.webinterface.routes.devtools.config_device_command_inputs import 
 from yombo.lib.webinterface.routes.devtools.config_input_types import route_devtools_config_input_types
 from yombo.lib.webinterface.routes.devtools.config_modules import route_devtools_config_modules
 from yombo.lib.webinterface.routes.devtools.config_variables import route_devtools_config_variables
-from yombo.lib.webinterface.routes.devtools.debug import route_devtools_debug
 
 from yombo.lib.webinterface.routes.authkeys import route_authkeys
 from yombo.lib.webinterface.routes.atoms import route_atoms
@@ -86,6 +85,7 @@ from yombo.lib.webinterface.routes.automation.scene import route_automation_scen
 from yombo.lib.webinterface.routes.automation.state import route_automation_state
 from yombo.lib.webinterface.routes.automation.template import route_automation_template
 from yombo.lib.webinterface.routes.configs import route_configs
+from yombo.lib.webinterface.routes.debug import route_debug
 from yombo.lib.webinterface.routes.devices import route_devices
 from yombo.lib.webinterface.routes.discovery import route_discovery
 from yombo.lib.webinterface.routes.events import route_events
@@ -283,7 +283,6 @@ class WebInterface(YomboLibrary):
         route_devtools_config_input_types(self.webapp)
         route_devtools_config_modules(self.webapp)
         route_devtools_config_variables(self.webapp)
-        route_devtools_debug(self.webapp)
 
         # Load web server routes
         route_authkeys(self.webapp)
@@ -295,6 +294,7 @@ class WebInterface(YomboLibrary):
         route_automation_state(self.webapp)
         route_automation_template(self.webapp)
         route_configs(self.webapp)
+        route_debug(self.webapp)
         route_devices(self.webapp)
         route_discovery(self.webapp)
         route_events(self.webapp)

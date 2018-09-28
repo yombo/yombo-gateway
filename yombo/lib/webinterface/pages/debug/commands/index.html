@@ -26,7 +26,7 @@
                                     </thead>
                                     <tbody>{% for command_id, command in commands.items() %}
                                          <tr>
-                                             <td><a href="/devtools/debug/commands/{{ command_id }}/details">{{ command.label }}</a></td>
+                                             <td><a href="/debug/commands/{{ command_id }}/details">{{ command.label }}</a></td>
                                              <td>{{ command.description }}</td>
                                          </tr>{% endfor %}
                                     </tbody>

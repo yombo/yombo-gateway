@@ -256,7 +256,7 @@ NAV_SIDE_MENU = [
         'priority1': 6000,
         'priority2': 3000,
         'icon': 'fa fa-code fa-fw',
-        'url': '/devtools/debug/index',
+        'url': '/debug/index',
         'tooltip': '',
         'opmode': 'run',
         'cluster': 'any',
