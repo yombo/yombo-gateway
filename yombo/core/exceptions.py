@@ -249,7 +249,7 @@ class YomboNoAccess(YomboWarning):
         """
         YomboException.__init__(self, message=message, errorno=403, name=name, component=component,
                                 html_message=html_message)
-        print("Request refused: %s - %s - %s" % (platform, item, action))
+        # print("Request refused: %s - %s - %s" % (platform, item, action))
         self.item_permissions = item_permissions
         self.roles = roles
         self.platform = platform
