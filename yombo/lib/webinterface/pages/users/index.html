@@ -72,8 +72,7 @@
                                 <td data-priority="3">
                                     {%- if user.roles|length == 0 %}User has no roles{% else %}
                                     <ul style="padding-left: 20px">
-                                    {% for role_label in user.roles %}
-                                    {% set role = _users.get_role(role_label) %}
+                                    {% for role_id, role in user.roles.items() %}
                                         <li><a href="/roles/{{role.role_id}}/details">{{ role.label }}</a></li>
                                     {% endfor %}
                                     </ul>

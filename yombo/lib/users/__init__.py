@@ -22,17 +22,15 @@ import json
 from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
-from yombo.constants import AUTH_TYPE_AUTHKEY, AUTH_TYPE_WEBSESSION, AUTH_TYPE_USER
+from yombo.constants.users import *
 from yombo.core.exceptions import YomboWarning, YomboNoAccess
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.lib.authkeys import Auth as AuthKeyAuth
-from yombo.lib.websessions import Auth as WebSessionAuth
 from yombo.lib.users.role import Role
 from yombo.lib.users.user import User
-from yombo.lib.users.systemauth import SystemAuth
-from yombo.constants.users import *
-from yombo.utils import global_invoke_all, data_unpickle, format_user_id_logging, sha256_compact
+from yombo.lib.users.systemuser import SystemUser
+from yombo.mixins.authmixin import AuthMixin
+from yombo.utils import global_invoke_all, data_unpickle, sha256_compact, random_string
 
 logger = get_logger('library.users')
 
@@ -155,31 +153,30 @@ class Users(YomboLibrary):
                 data['item_id_callback'] = None
             if 'item_label_callback' not in data:
                 data['item_label_callback'] = None
+            if 'label_attr' not in data:
+                data['label_attr'] = None
 
         # Itemized platforms allow specific access to one item within a platfrom. such as a device or automation
         self.itemized_auth_platforms = deepcopy(ITEMIZED_AUTH_PLATFORMS)
-        self.system_user = SystemAuth()
+        self.system_user = SystemUser(self)
         self.cache = self._Cache.ttl(name='lib.users.cache', ttl=86400, tags=('role', 'user'))
         self.get_access_cache = self._Cache.ttl(name='lib.users.get_access_cache', ttl=86400, tags=('role', 'user'))
         self.get_access_permissions_cache = self._Cache.ttl(name='lib.users.get_access_permissions_cache', ttl=86400, tags=('role', 'user'))
-        self.get_access_access_permissions_cache = self._Cache.ttl(name='lib.users.get_access_permissions_cache', ttl=300, tags=('role', 'user'))
-        self.has_access_cache = self._Cache.ttl(name='lib.users.has_access_cache', ttl=86400, tags=('role', 'user'))
+        self.get_access_access_permissions_cache = self._Cache.ttl(name='lib.users.get_access_permissions_cache', ttl=21600, tags=('role', 'user'))
+        self.has_access_cache = self._Cache.ttl(name='lib.users.has_access_cache', ttl=43200, tags=('role', 'user'))  # 12hrs
 
-    @inlineCallbacks
-    def _start_(self, **kwargs):
+    def _load_(self, **kwargs):
         """
         Calls the _roles_ hook to all components to add system level roles.
         :param kwargs:
         :return:
         """
         self.load_roles()
-        yield self.load_users()
-        if self.owner_id is not None:
-            self.owner_user = self.get(self.owner_id)
-            self.owner_user.attach_role('admin')
 
+    @inlineCallbacks
+    def _start_(self, **kwargs):
         results = yield global_invoke_all('_auth_platforms_', called_by=self)
-        logger.debug("_auth_platforms_ results: {results}", results=results)
+        logger.info("_auth_platforms_ results: {results}", results=results)
         for component, platforms in results.items():
             for machine_label, platform_data in platforms.items():
                 if 'actions' not in platform_data:
@@ -193,6 +190,8 @@ class Users(YomboLibrary):
                     platform_data['item_id_callback'] = None
                 if 'item_label_callback' not in platform_data:
                     platform_data['item_label_callback'] = None
+                if 'label_attr' not in platform_data:
+                    platform_data['label_attr'] = None
                 self.auth_platforms[machine_label] = platform_data
 
         results = yield global_invoke_all('_roles_', called_by=self)
@@ -216,7 +215,12 @@ class Users(YomboLibrary):
                     source = "module"
                 else:
                     source = "system"
-                self.add_role(role_data, source=source, flush_cache=False, debug=True)
+                self.add_role(role_data, source=source, flush_cache=False)
+
+        yield self.load_users()
+        if self.owner_id is not None:
+            self.owner_user = self.get(self.owner_id)
+            self.owner_user.attach_role('admin')
 
     def load_roles(self):
         for machine_label, role_data in SYSTEM_ROLES.items():
@@ -303,9 +307,9 @@ class Users(YomboLibrary):
         :return:
         """
         try:
-            add_results = yield self._YomboAPI.request('DELETE',
-                                                       '/v1/gateway/%s/user/%s' % (self.gateway_id, requested_user_id),
-                                                       session=session)
+            yield self._YomboAPI.request('DELETE',
+                                         '/v1/gateway/%s/user/%s' % (self.gateway_id, requested_user_id),
+                                         session=session)
         except YomboWarning as e:
             raise YomboWarning("Could not remove user from gateway: %s" % e.message[0],
                                html_message="Could not remove user from gateway: %s" % e.html_message,
@@ -317,7 +321,7 @@ class Users(YomboLibrary):
         if flush_cache in (None, True):
             self._Cache.flush('user')
 
-    def add_role(self, data, source=None, no_save=None, flush_cache=None, debug=None):
+    def add_role(self, data, source=None, flush_cache=None):
         """
         Add a new possible role to the system.
 
@@ -333,7 +337,7 @@ class Users(YomboLibrary):
         if 'label' not in data:
             data['label'] = machine_label
         if 'role_id' not in data:
-            data['role_id'] = sha256_compact(machine_label)
+            data['role_id'] = random_string(length=15)
         if 'description' not in data:
             data['description'] = machine_label
         if 'permissions' not in data:
@@ -350,9 +354,6 @@ class Users(YomboLibrary):
                                            saved_permissions=data['saved_permissions'],
                                            flush_cache=flush_cache
                                            )
-        if debug is True:
-            print("add_role: role_id: %s" % data['role_id'])
-            print("add_role: role: %s" % self.roles[data['role_id']])
         if flush_cache in (None, True):
             self._Cache.flush('role')
         return self.roles[data['role_id']]
@@ -380,10 +381,16 @@ class Users(YomboLibrary):
         role_users = []
         the_role = self.get_role(requested_role)
 
-        role_machine_label = the_role.label
+        cache_id = "list_role_users::%s" % the_role.role_id
+        if cache_id in self.cache:
+            return self.cache[cache_id]
+
+        role_id = the_role.role_id
         for email, the_user in self.users.items():
-            if role_machine_label in user.roles:
+            if role_id in the_user.roles:
                 role_users.append(the_user)
+        self.cache[cache_id] = role_users
+
         return role_users
 
     def list_role_auth_keys(self, requested_role):
@@ -397,7 +404,7 @@ class Users(YomboLibrary):
         the_role = self.get_role(requested_role)
 
         for auth_id, auth_key in self._AuthKeys.items():
-            if the_role.machine_label in auth_key.roles:
+            if the_role.role_id in auth_key.roles:
                 role_authkeys.append(auth_key)
         return role_authkeys
 
@@ -409,36 +416,34 @@ class Users(YomboLibrary):
 
         :return:
         """
-        if 'roles_by_user' in self.cache:
-            return self.cache['roles_by_user']
+        if 'list_roles_by_user' in self.cache:
+            return self.cache['list_roles_by_user']
         roles = {}
         for email, user in self.users.items():
-            for the_role in user.roles:
-                if the_role not in roles:
-                    roles[the_role] = []
-                roles[the_role].append(user)
-        self.cache['roles_by_user'] = roles
+            for the_role_id, the_role in user.roles.items():
+                if the_role_id not in roles:
+                    roles[the_role_id] = []
+                roles[the_role_id].append(user)
+        self.cache['list_roles_by_user'] = roles
         return roles
 
-    def get_all_item_permissions(self, requested_platform, requested_item, source_type):
+    def has_role(self, requested_role_id, auth):
         """
-        List all users and their permissions for a specific platform
+        Checks if a given auth has a role by name or role ID.
 
+        :param requested_role_id:
+        :param auth:
         :return:
         """
-        requested_platform = requested_platform.lower()
-        if requested_platform not in self.itemized_auth_platforms:
-            return {}
-
-        platform_item, platform_item_id, platform_item_label, platform_actions = \
-            self.get_platform_item(requested_platform, requested_item)
-
-        # permissions = {}
-        # for email, the_user in self.users.items():
-        #     for access in ('allow',
-        #     if platform_item_label in the_user.item_permissions[requested_platform]:
-        #         permissions[email] = the_user.item_permissions[platform][platform_item_label]
-        # return permissions
+        requested_role = self.get_role(requested_role_id)
+        search_id = requested_role.role_id
+        roles = auth.roles
+        if search_id in roles:
+            return True
+        for role_id, role in roles.items():
+            if role_id == search_id:
+                return True
+        return False
 
     def get_platform_item(self, platform, item=None):
         """
@@ -449,45 +454,56 @@ class Users(YomboLibrary):
         :param item:
         :return:
         """
+        platform_label_attr = None
         if platform == AUTH_PLATFORM_ATOM:
             platform_actions = self.auth_platforms[AUTH_PLATFORM_ATOM]['actions']
             platform_items = self._Atoms.atoms
         elif platform == AUTH_PLATFORM_AUTHKEY:
             platform_actions = self.auth_platforms[AUTH_PLATFORM_AUTHKEY]['actions']
             platform_items = self._AuthKeys.active_auth_keys
+            platform_label_attr = 'label'
         elif platform == AUTH_PLATFORM_AUTOMATION:
             platform_actions = self.auth_platforms[AUTH_PLATFORM_AUTOMATION]['actions']
             platform_items = self._Automation.rules
+            platform_label_attr = 'machine_label'
         elif platform == AUTH_PLATFORM_DEVICE:
             platform_actions = self.auth_platforms[AUTH_PLATFORM_DEVICE]['actions']
             platform_items = self._Devices.devices
+            platform_label_attr = 'machine_label'
         elif platform == AUTH_PLATFORM_DEVICE_COMMAND:
             platform_actions = self.auth_platforms[AUTH_PLATFORM_DEVICE_COMMAND]['actions']
             platform_items = self._Devices.device_commands
+            platform_label_attr = 'machine_label'
         elif platform == AUTH_PLATFORM_EVENTS:
             platform_actions = self.auth_platforms[AUTH_PLATFORM_EVENTS]['actions']
             platform_items = {}
         elif platform == AUTH_PLATFORM_GATEWAY:
             platform_actions = self.auth_platforms[AUTH_PLATFORM_GATEWAY]['actions']
             platform_items = self._Gateways.gateways
+            platform_label_attr = 'label'
         elif platform == AUTH_PLATFORM_LOCATION:
             platform_actions = self.auth_platforms[AUTH_PLATFORM_LOCATION]['actions']
             platform_items = self._Locations.locations
+            platform_label_attr = 'machine_label'
         elif platform == AUTH_PLATFORM_MODULE:
             platform_actions = self.auth_platforms[AUTH_PLATFORM_MODULE]['actions']
             platform_items = self._Modules.modules
+            platform_label_attr = 'machine_label'
         elif platform == AUTH_PLATFORM_NOTIFICATION:
             platform_actions = self.auth_platforms[AUTH_PLATFORM_NOTIFICATION]['actions']
             platform_items = self._Notifications.notifications
+            platform_label_attr = 'notification_id'
         elif platform == AUTH_PLATFORM_PANEL:
             platform_actions = self.auth_platforms[AUTH_PLATFORM_PANEL]['actions']
             platform_items = {}
         elif platform == AUTH_PLATFORM_ROLE:
             platform_actions = self.auth_platforms[AUTH_PLATFORM_ROLE]['actions']
             platform_items = self._Users.roles
+            platform_label_attr = 'machine_label'
         elif platform == AUTH_PLATFORM_SCENE:
             platform_actions = self.auth_platforms[AUTH_PLATFORM_SCENE]['actions']
             platform_items = self._Scenes.scenes
+            platform_label_attr = 'machine_label'
         elif platform == AUTH_PLATFORM_STATE:
             platform_actions = self.auth_platforms[AUTH_PLATFORM_STATE]['actions']
             platform_items = self._States.states
@@ -503,6 +519,7 @@ class Users(YomboLibrary):
         elif platform == AUTH_PLATFORM_USER:
             platform_actions = self.auth_platforms[AUTH_PLATFORM_USER]['actions']
             platform_items = self._Users.users
+            platform_label_attr = 'email'
         elif platform == AUTH_PLATFORM_WEBLOGS:
             platform_actions = self.auth_platforms[AUTH_PLATFORM_WEBLOGS]['actions']
             platform_items = {}
@@ -517,7 +534,13 @@ class Users(YomboLibrary):
                 if self.auth_platforms[platform]['items_callback'] is not None:
                     platform_items = self.auth_platforms[platform]['items_callback']()
         if item in ('*', None):
-            return platform_items, '*', '*', platform_actions
+            return {
+                'platform_item': platform_items,
+                'platform_item_id': '*',
+                'platform_item_label': '*',
+                'platform_actions': platform_actions,
+                'platform_label_attr': platform_label_attr,
+            }
 
         if platform == AUTH_PLATFORM_ATOM:
             platform_item = self._Atoms.get(item, full=True)
@@ -527,18 +550,22 @@ class Users(YomboLibrary):
             platform_item = self._AuthKeys.get(item)
             platform_item_id = platform_item.auth_id
             platform_item_label = platform_item.label
+            platform_label_attr = 'label'
         elif platform == AUTH_PLATFORM_AUTOMATION:
             platform_item = self._Automation.get(item)
             platform_item_id = item
             platform_item_label = platform_item.machine_label
+            platform_label_attr = 'machine_label'
         elif platform == AUTH_PLATFORM_DEVICE:
             platform_item = self._Devices.get(item)
             platform_item_id = platform_item.device_id
             platform_item_label = platform_item.machine_label
+            platform_label_attr = 'machine_label'
         elif platform == AUTH_PLATFORM_DEVICE_COMMAND:
             platform_item = self._Devices.device_commands[item]
-            platform_item_id = item
-            platform_item_label = item
+            platform_item_id = platform_item.command_id
+            platform_item_label = platform_item.machine_label
+            platform_label_attr = 'machine_label'
         elif platform == AUTH_PLATFORM_EVENTS:
             platform_item = None
             platform_item_id = None
@@ -547,18 +574,22 @@ class Users(YomboLibrary):
             platform_item = self._Gateways.get(item)
             platform_item_id = platform_item.gateway_id
             platform_item_label = platform_item.label
+            platform_label_attr = 'label'
         elif platform == AUTH_PLATFORM_LOCATION:
             platform_item = self._Locations.get(item)
             platform_item_id = platform_item.scene_id
             platform_item_label = platform_item.machine_label
+            platform_label_attr = 'machine_label'
         elif platform == AUTH_PLATFORM_MODULE:
             platform_item = self._Modules.get(item)
             platform_item_id = platform_item._module_id
             platform_item_label = platform_item._machine_label
+            platform_label_attr = 'machine_label'
         elif platform == AUTH_PLATFORM_NOTIFICATION:
             platform_item = self._Notifications.get(item)
             platform_item_id = platform_item.notification_id
             platform_item_label = platform_item.notification_id
+            platform_label_attr = 'notification_id'
         elif platform == AUTH_PLATFORM_PANEL:
             platform_item = None
             platform_item_id = None
@@ -567,14 +598,16 @@ class Users(YomboLibrary):
             platform_item = self._Users.roles[item]
             platform_item_id = platform_item.role_id
             platform_item_label = platform_item.machine_label
+            platform_label_attr = 'machine_label'
         elif platform == AUTH_PLATFORM_SCENE:
             platform_item = self._Scenes.get(item)
             platform_item_id = platform_item.scene_id
             platform_item_label = platform_item.machine_label
+            platform_label_attr = 'machine_label'
         elif platform == AUTH_PLATFORM_STATE:
             platform_item = self._States.get(item)
             platform_item_id = item
-            platform_item_label = item
+            platform_item_label = None
         elif platform == AUTH_PLATFORM_STATISTIC:
             platform_item = None
             platform_item_id = None
@@ -591,6 +624,7 @@ class Users(YomboLibrary):
             platform_item = self._Users.get(item)
             platform_item_id = platform_item.user_id
             platform_item_label = platform_item.email
+            platform_label_attr = 'email'
         elif platform == AUTH_PLATFORM_WEBLOGS:
             platform_item = None
             platform_item_id = None
@@ -612,8 +646,16 @@ class Users(YomboLibrary):
                     platform_item_id = self.auth_platforms[platform]['item_id_callback'](item)
                 if self.auth_platforms[platform]['item_label_callback'] is not None:
                     platform_item_label = self.auth_platforms[platform]['item_label_callback'](item)
+                if self.auth_platforms[platform]['label_attr'] is not None:
+                    platform_label_attr = self.auth_platforms[platform]['label_attr'](item)
 
-        return platform_item, platform_item_id, platform_item_label, platform_actions
+        return {
+            'platform_item': platform_item,
+            'platform_item_id': platform_item_id,
+            'platform_item_label': platform_item_label,
+            'platform_actions': platform_actions,
+            'platform_label_attr': platform_label_attr,
+        }
 
     def return_access(self, value, auth, platform, item, action, cache_id=None, raise_error=None):
         """
@@ -622,19 +664,16 @@ class Users(YomboLibrary):
         :param value:
         :return:
         """
-        auth = self.check_auth(auth)
+        auth = self.validate_auth(auth)
 
         if cache_id not in self.has_access_cache:
             self.has_access_cache[cache_id] = value
 
-        save_user_id = format_user_id_logging(auth.auth_id, auth.auth_type)
         if value is True:
-            self._Events.new('auth', 'accepted', (platform, item, action),
-                             user_id=save_user_id, user_type=auth.auth_type)
+            self._Events.new('auth', 'accepted', (platform, item, action), auth=auth)
             return True
 
-        self._Events.new('auth', 'denied', (platform, item, action),
-                         user_id=save_user_id, user_type=auth.auth_type)
+        self._Events.new('auth', 'denied', (platform, item, action), auth=auth)
         if raise_error is not True:
             return False
         raise YomboNoAccess(item_permissions=auth.item_permissions,
@@ -643,74 +682,16 @@ class Users(YomboLibrary):
                             item=item,
                             action=action)
 
-    def check_auth(self, auth):
+    def validate_auth(self, auth):
         """
-        Checks if the auth variable is valid. Accepts a websession, auth key, or user objects. Also accepts
-        a string as a last resort to try and determine which of the above item is being referenced.
+        Validates an auth isntance is valid. Accepts anyhthing that has an authmixin.
+
         :param auth:
         :return:
         """
-        if isinstance(auth, WebSessionAuth) or isinstance(auth, AuthKeyAuth) or isinstance(auth, User):
+        if isinstance(auth, AuthMixin):
             return auth
-        else:
-            # now brute force lookup by only user_id or authkey_id
-            # print("check auth: auth: %s" % auth)
-            for email, user in self.users.items():
-                # print("check auth: user_id: %s" % user.user_id)
-                if auth == user.user_id:
-                    return user
-            # print("check auth: auth: %s" % auth)
-            for auth_id, auth_key in self._AuthKeys.items():
-                # print("check auth: auth_id: %s" % auth_id)
-                if auth == auth_id:
-                    return auth_key
-            for session_id, session in self._WebSessions.items():
-                if auth == session_id:
-                    return session
         raise YomboWarning("Invalid auth: %s - %s" % (type(auth), auth))
-
-    def check_user_has_access(self, user_id, user_type, platform, item, action, raise_error=None):
-        """
-        Collects the user information and passes it to has_access().
-
-        :param user_id:
-        :param user_type:
-        :return:
-        """
-        logger.debug("check_user_has_access: user_id: {user_id} - user_type: {user_type}", user_id=user_id, user_type=user_type)
-
-        if user_type == 'system':
-            return self.return_access(True, self.system_user, platform, item, action)
-
-        if user_id is None:  # soon, this will cause an error!
-            logger.warn("Check user has access received NoneType for *user_id*. Future versions will not accept this.")
-            return self.return_access(True, self.system_user, platform, item, action)
-        elif user_type is None:  # soon, this will cause an error!
-            logger.warn(
-                "Check user has access received NoneType for *user_id*. Future versions will not accept this.")
-            return self.return_access(True, self.system_user, platform, item, action)
-
-        if isinstance(user_id, AuthKeyAuth) or isinstance(user_id, WebSessionAuth) or isinstance(user_id, User):
-            return self.has_access(user_id, platform, item, action, raise_error)
-        elif isinstance(user_type, AuthKeyAuth) or isinstance(user_type, WebSessionAuth) or isinstance(user_id, User):
-            return self.has_access(user_type, platform, item, action, raise_error)
-        elif isinstance(user_id, str) is False:
-            raise YomboWarning("user_id must be a string")
-        elif isinstance(user_type, str) is False:
-            raise YomboWarning("user_type (%s) must be one of: system, user, %s, or %s" %
-                               (user_type, AUTH_TYPE_AUTHKEY, AUTH_TYPE_WEBSESSION))
-
-        if user_type == AUTH_TYPE_AUTHKEY:
-            auth = self._AuthKeys[user_id]
-            return self.has_access(auth, platform, item, action, raise_error)
-        elif user_type == AUTH_TYPE_USER:
-            auth = self._Users[user_id]
-            return self.has_access(auth, platform, item, action, raise_error)
-        elif user_type == AUTH_TYPE_WEBSESSION:
-            auth = self._WebSessions[user_id]
-            return self.has_access(auth, platform, item, action, raise_error)
-        else:
-            raise YomboWarning("check_user_has_access must be of type user, authkey or websession.")
 
     def has_access_scan_item_permissions(self, item_permissions, requested_platform, requested_action, platform_item,
                                          platform_item_label):
@@ -763,8 +744,7 @@ class Users(YomboLibrary):
         :param auth: Either a websession or authkey
         :return: Boolean
         """
-        auth = self.check_auth(auth)
-
+        auth = self.validate_auth(auth)
         if raise_error is None:
             raise_error = True
         platform = platform.lower()
@@ -776,12 +756,10 @@ class Users(YomboLibrary):
         logger.debug("has_access: platform: {platform}, item: {item}, action: {action}",
                      platform=platform, item=item, action=action)
         logger.debug("has_access: has roles: {roles}", roles=auth.roles)
-        logger.debug("has_access: has roles: user_id: {user_id}, user_type: {user_type}",
-                    user_id=auth.auth_id, user_type=auth.auth_type)
 
         cache_id = sha256_compact("%s:%s:%s:%s:%s" % (
             json.dumps(auth.item_permissions, sort_keys=True),
-            json.dumps(auth.roles, sort_keys=True),
+            json.dumps(list(auth.roles), sort_keys=True),
             platform,
             item,
             action,
@@ -791,18 +769,20 @@ class Users(YomboLibrary):
             return self.return_access(self.has_access_cache[cache_id], auth, platform, item, action, cache_id,
                                       raise_error)
 
-        platform_item, platform_item_id, platform_item_label, platform_actions = \
-            self.get_platform_item(platform, item)
+        platform_data = self.get_platform_item(platform, item)
+        platform_item = platform_data['platform_item']
+        platform_item_label = platform_data['platform_item_label']
+        platform_actions = platform_data['platform_actions']
 
-        logger.debug("has_access: platform_item: {platform_item}, platform_item_id: "
-                    "{platform_item_id}, platform_actions: {platform_actions}",
-                    platform_item=None, platform_item_id=platform_item_id, platform_actions=platform_actions)
+        # logger.debug("has_access: platform_item: {platform_item}, platform_item_id: "
+        #             "{platform_item_id}, platform_actions: {platform_actions}",
+        #             platform_item=None, platform_item_id=platform_item_id, platform_actions=platform_actions)
 
         if action not in platform_actions:
             raise YomboWarning('Action must be one of: %s' % ", ".join(platform_actions))
 
         # Admins have full access.
-        if 'admin' in auth.roles:
+        if auth.has_role('admin'):
             self.has_access_cache[cache_id] = True
             return self.return_access(True, auth, platform, item, action, raise_error)
 
@@ -815,8 +795,8 @@ class Users(YomboLibrary):
         if isinstance(platform_allowed, bool):
             return self.return_access(platform_allowed, auth, platform, item, action, cache_id, raise_error)
 
-        for a_role in self.get_roles(auth.roles):
-            item_permissions = a_role.item_permissions
+        for role_id, the_role in auth.roles.items():
+            item_permissions = the_role.item_permissions
             # print("item_permissions: %s" % item_permissions)
             if platform_item is not None:
                 platform_allowed, platform_from_wild = self.has_access_scan_item_permissions(
@@ -846,7 +826,7 @@ class Users(YomboLibrary):
         :param requested_action:
         :return:
         """
-        auth = self.check_auth(auth)
+        auth = self.validate_auth(auth)
         if source_type is None:
             source_type = 'all'
 
@@ -864,8 +844,9 @@ class Users(YomboLibrary):
             return self.get_access_permissions_cache[cache_id]
 
         if requested_item is not None:
-            platform_item, platform_item_id, requested_item_label, platform_actions = \
-                self.get_platform_item(requested_platform, requested_item)
+            platform_data = self.get_platform_item(requested_platform, requested_item)
+            requested_item_label = platform_data['platform_item_label']
+
         else:
             requested_item_label = None
 
@@ -925,13 +906,16 @@ class Users(YomboLibrary):
                                             del out_permissions['deny']
 
         # go thru all roles and setup base items
+        # print("get_access_permissions in roles- source_type: %s" % source_type)
         if source_type in ("all", "roles"):
-            # print("get_access_permissions in roles- source_type: %s" % source_type)
-            for role_id, role in self.roles.items():
+            for role_id, role in auth.roles.items():
+                # print("get_access_permissions for role: %s" % role.label)
+
                 get_item_permissions(role.item_permissions)
-                # print("out_permissions after ROLE scan: %s" % out_permissions)
+            # print("out_permissions after ROLE scan: %s" % out_permissions)
         # Add user item permissions last, it has the highest priority and will change the roles item permissions.
         if source_type in ("all", "user"):
+            # print("get_access_permissions in user")
             get_item_permissions(auth.item_permissions)
 
         self.get_access_permissions_cache[cache_id] = out_permissions
@@ -956,24 +940,16 @@ class Users(YomboLibrary):
         )
 
         if cache_id in self.get_access_access_permissions_cache:
-            print("returning cache: %s" % cache_id)
             return self.get_access_access_permissions_cache[cache_id]
 
-        platform_item, platform_item_id, requested_item_label, platform_actions = \
-            self.get_platform_item(requested_platform, requested_item)
-
+        platform_data = self.get_platform_item(requested_platform, requested_item)
+        requested_item_label = platform_data['platform_item_label']
         out_permissions = []
 
         def get_item_permissions(item_permissions, auth):
-            print("* > get_item_permissions: item_permissions: %s" % item_permissions)
             for effective_platform in (requested_platform, '*'):
                 if effective_platform not in item_permissions:
-                    print("* -- get_item_permissions effective-platform not found: %s" % effective_platform)
                     continue
-                try:
-                    print("* - get_item_permissions: data: %s" % item_permissions[effective_platform])
-                except:
-                    pass
                 for effective_access, access_data in item_permissions[effective_platform].items():
                     if requested_item_label not in item_permissions[effective_platform][effective_access]:
                         continue
@@ -989,7 +965,7 @@ class Users(YomboLibrary):
 
         # go thru all roles and setup base items
         if source_type in ("roles", "role"):
-            print("get_access_permissions in roles- source_type: %s" % source_type)
+            # print("get_access_permissions in roles- source_type: %s" % source_type)
             for role_id, role in self.roles.items():
                 # print("* -> get_access: role_machine_label: %s" % role_machine_label)
                 get_item_permissions(role.item_permissions, role)
@@ -1014,7 +990,7 @@ class Users(YomboLibrary):
 
         :return: list of a list and dict.
         """
-        auth = self.check_auth(auth)
+        auth = self.validate_auth(auth)
 
         def return_values(final_item_keys, final_permission):
             """
@@ -1042,21 +1018,46 @@ class Users(YomboLibrary):
 
         out_permissions = self.get_access_permissions(auth, requested_platform, requested_action=requested_action)
         # print("* get_access: out_permissions: %s" % out_permissions)
-        platform_item, platform_item_id, platform_item_label, platform_actions = \
-            self.get_platform_item(requested_platform)
+        platform_data = self.get_platform_item(requested_platform)
+        platform_items = platform_data['platform_item']
+        platform_label_attr = platform_data['platform_label_attr']
 
-        platform_item_keys = list(platform_item)
+        platform_item_keys = list(platform_items)
         # print("* get_access: platform_item_keys: %s" % platform_item_keys)
 
         # Call out specific item access according to the out_permissions table.
         out_item_keys = []
 
         if '*' in out_permissions['allow']:
-            return return_values(platform_item_keys, out_permissions)
+            actions = out_permissions['allow']['*']
+            # print("* actions: %s" % actions)
+            # print("generating list of keys for ***")
+            for item, not_used_actions in platform_items.items():
+                # print("requested action: %s" % requested_action)
+                if requested_action in actions:
+                    out_item_keys.append(item)
+            return return_values(out_item_keys, out_permissions)
         else:
-            for item, item_data in out_permissions['allow'].items():
-                out_item_keys.append(item)
+            # Generate platform keys
+            platform_labels = {}
+            # print("generating list of keys...platform_label_attr: %s" % platform_label_attr)
+            if isinstance(platform_items, dict) and isinstance(platform_label_attr, str):
+                for temp_id, temp in platform_items.items():
+                    label = getattr(temp, platform_label_attr)
+                    platform_labels[label] = temp_id
+            else:
+                platform_labels = platform_items
 
+            # print("generating list of keys... %s " % list(platform_labels))
+
+            for item, actions in out_permissions['allow'].items():
+                # print("### actions: %s" % actions)
+                # print("### requested action: %s" % requested_action)
+                # print("### item: %s" % item)
+                if requested_action in actions and item in platform_labels:
+                    out_item_keys.append(platform_labels[item])
+
+        # print("### final out items: %s" % out_item_keys)
         return return_values(out_item_keys, out_permissions)
 
     def get(self, requested_id):
@@ -1074,24 +1075,9 @@ class Users(YomboLibrary):
                 return user
             if user.name == requested_id:
                 return user
+            if user.email == requested_id:
+                return user
         raise KeyError("User not found. %s" % requested_id)
-
-    def get_roles(self, role_labels=None):
-        """
-        Convert a list of roles into a generator that returns a role instance.
-        """
-        if role_labels is None:
-            role_labels = list(self.roles.keys())
-
-        roles = {}
-        for role_id in role_labels:
-            roles[role_id] = self.get_role(role_id)
-
-        for role_id, role in sorted(roles.items(), key=lambda x: x[1].label):
-            try:
-                yield role
-            except KeyError:
-                pass
 
     def get_role(self, requested_role):
         """
@@ -1103,16 +1089,14 @@ class Users(YomboLibrary):
         if isinstance(requested_role, str):
             if requested_role in self.roles:
                 return self.roles[requested_role]
-            for label, role in self.roles.items():
-                if role.role_id == requested_role:
+            for role_id, role in self.roles.items():
+                if role_id == requested_role:
                     return role
                 if role.machine_label == requested_role:
                     return role
                 if role.label == requested_role:
                     return role
-            return None
         elif isinstance(requested_role, Role) is True:
-            role = requested_role
-        else:
-            raise KeyError("Role not found, unknown input type.")
-        return role
+            return requested_role
+
+        raise KeyError("Role not found, unknown input type: %s - %s" % (type(requested_role), requested_role))

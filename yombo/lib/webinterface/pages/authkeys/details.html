@@ -42,10 +42,10 @@
                             {{ authkey.label }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Description: </label><br>
                             {{ authkey.description }}<br>
-                            <label style="margin-top: 15px; margin-bottom: 0px">Is Valid: </label><br>
-                            {{ authkey.is_valid }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Is Enabled: </label><br>
+                            {{ authkey.enabled }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Last Access: </label><br>
-                            {{ authkey.last_access|epoch_to_string }}<br>
+                            {{ authkey.last_access_at|epoch_to_string }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Updated: </label><br>
                             {{ authkey.updated_at|epoch_to_string }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Created: </label><br>
@@ -69,7 +69,7 @@
                         <label> Add a role: </label><br>
                         <select name="role_label" id="role_label" class="selectpicker" data-size="10"
                                 data-live-search="true"  title="Select role to add.">
-                        {% for role in _users.get_roles() if role.label not in authkey.roles %}
+                        {% for role_id, role in _users.roles.items() if role.label not in authkey.roles %}
                           <option value="{{role.machine_label}}" data-subtext="{{role.description|truncate(70)}}">{{role.label}}</option>
                         {% endfor %}
                         </select>
@@ -87,10 +87,9 @@
                         <strong>Auth Key has not been assigned any roles.</strong>
                         {% else %}
                         <ul style="padding-left: 10px">
-                        {% for machine_label in authkey.roles %}
-                            {% set role = _users.get_role(machine_label) %}
+                        {% for role_id, role in authkey.roles.items() %}
                             <li>
-                                <a href="/roles/{{role.role_id}}/details">{{machine_label}} {{ role }}</a>
+                                <a href="/roles/{{role.role_id}}/details">{{ role.label }}</a>
                                 <a href="/authkeys/{{authkey.label}}/unattach_role/{{role.role_id}}" class="btn btn-danger btn-xs" role="button">Remove</a>
                             </li>
                             <ul style="padding-left: 15px">
@@ -172,7 +171,7 @@
     }
     $('#submit_role').prop('disabled', true);
     var rolesList = {
-    {%- for role in _users.get_roles() %}
+    {%- for role_id, role in _users.roles.items() %}
         "{{ role.machine_label }}": {
         "machine_label": "{{ role.machine_label}}",
         "label": "{{ role.label}}",

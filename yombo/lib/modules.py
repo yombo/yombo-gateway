@@ -1245,10 +1245,10 @@ class Modules(YomboLibrary):
                 # print("field_id: %s" % field_id)
                 # print("var_data: %s" % var_data)
                 for data_id, value in var_data.items():
-                    print("data_id: %s" % data_id)
-                    print("data_id: %s" % type(data_id))
+                    # print("data_id: %s" % data_id)
+                    # print("data_id: %s" % type(data_id))
                     if data_id.startswith('new_') or data_id is None or data_id.lower() == 'none':
-                        print("data_id starts with new...")
+                        # print("data_id starts with new...")
                         post_data = {
                             'gateway_id': self.gateway_id,
                             'field_id': field_id,

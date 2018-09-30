@@ -567,8 +567,7 @@ class Gateway_Communications(YomboLibrary):
             try:
                 device.command(
                     cmd=command,
-                    user_id='TO_BE_IMPLETMENTED:MQTT',
-                    user_type='TO_BE_IMPLETMENTED:MQTT',
+                    auth_id=self._Users.system_user,
                     pin=pin_code,
                     delay=delay,
                     max_delay=max_delay,

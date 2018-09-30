@@ -101,13 +101,13 @@ HARD_LOAD["Gateway_Communications"] = {'operating_mode': 'all'}
 HARD_LOAD["Nodes"] = {'operating_mode': 'all'}
 HARD_LOAD["MQTT"] = {'operating_mode': 'run'}
 HARD_LOAD["SSLCerts"] = {'operating_mode': 'all'}
-HARD_LOAD["AuthKeys"] = {'operating_mode': 'all'}
 HARD_LOAD["WebSessions"] = {'operating_mode': 'all'}
 HARD_LOAD["WebInterface"] = {'operating_mode': 'all'}
 HARD_LOAD["Tasks"] = {'operating_mode': 'all'}
 HARD_LOAD["Automation"] = {'operating_mode': 'all'}
 HARD_LOAD["Scenes"] = {'operating_mode': 'all'}
 HARD_LOAD["Users"] = {'operating_mode': 'all'}
+HARD_LOAD["AuthKeys"] = {'operating_mode': 'all'}
 
 HARD_UNLOAD = OrderedDict()
 HARD_UNLOAD["Users"] = {'operating_mode': 'all'}

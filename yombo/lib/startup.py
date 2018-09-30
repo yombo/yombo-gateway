@@ -148,7 +148,7 @@ class Startup(YomboLibrary):
 
         sessions = yield self._LocalDB.get_web_session()
         for session in sessions:
-            data = session['session_data']
+            data = session['auth_data']
             if 'yomboapi_session' in data and isinstance(data['yomboapi_session'], str):
                 results = yield try_get_new_gateway_credentials(data['yomboapi_session'])
                 if results is True:

@@ -52,6 +52,7 @@ def update_request(webinterface, request):
     :param request: 
     :return: 
     """
+    request.auth = None
     request.received_cookies = bytes_to_unicode(request.received_cookies)
     request.args = bytes_to_unicode(request.args)
     webinterface.webapp.templates.globals['_'] = webinterface.i18n(request)
@@ -59,8 +60,6 @@ def update_request(webinterface, request):
     request.setHeader('Expires', '-1')  # don't cache!
     request.setHeader('X-Frame-Options', 'SAMEORIGIN')  # Prevent nesting frames
     request.setHeader('X-Content-Type-Options', 'nosniff');  # We'll do our best to be accurate!
-    request.auth_id = None
-    request.auth_type = None
 
 
 def check_idempotence(webinterface, request, session):
@@ -107,7 +106,6 @@ def run_first(create_session=None, *args, **kwargs):
         def wrapped_f(webinterface, request, *a, **kw):
             session = None
             update_request(webinterface, request)
-            request.auth_id = None
             host = request.getHeader('host')
             if host is None:
                 logger.info("Discarding request, appears to be malformed host header")
@@ -136,15 +134,14 @@ def run_first(create_session=None, *args, **kwargs):
 
             try:
                 if create_session is True:
-                    session = webinterface._WebSessions.create_from_request(request)
+                    session = webinterface._WebSessions.create_from_web_request(request)
             except RateLimitException as e:
                 logger.warn("Too many sessions being created, stopping this one!")
                 return _("ui::messages::rate_limit_exceeded", "Too many attempts, try again later.")
 
             if session is not None:
-                if session.check_valid():
-                    request.auth_id = session.auth_id
-                    request.auth_type = session.auth_type
+                if session.enabled:
+                    request.auth = session
 
             try:
                 results = yield call(f, webinterface, request, session, *a, **kw)
@@ -237,19 +234,18 @@ def require_auth(roles=None, login_redirect=None, access_platform=None, access_i
                     return return_need_login(webinterface, request, None, **kwargs)
 
             if session.auth_type == AUTH_TYPE_WEBSESSION:  # if we have a session, then inspect to see if it's valid.
-                if session.check_valid() is False:
+                if session.enabled is False:
                     return return_need_login(webinterface, request, session, **kwargs)
 
             elif session.auth_type == AUTH_TYPE_AUTHKEY:  # If we have an API session, we are good if it's valid.
-                if session.check_valid() is False:
+                if session.enabled is False:
                     return return_need_login(webinterface,
                                              request,
                                              session,
                                              api_message="API Key is not valid.",
                                              **kwargs)
             session.touch()
-            request.auth_id = session.auth_id
-            request.auth_type = session.auth_type
+            request.auth = session
 
             if access_platform is not None and access_item is not None and access_action is not None:
                 if session.has_access(access_platform, access_item, access_action, raise_error=False) is False:
@@ -325,7 +321,7 @@ def require_auth_pin(roles=None, login_redirect=None, create_session=None, *args
                 if create_session is True:
                     try:
                         if create_session is True:
-                            session = webinterface._WebSessions.create_from_request(request)
+                            session = webinterface._WebSessions.create_from_web_request(request)
                     except RateLimitException as e:
                         logger.warn("Too many sessions being created!")
                         return _("ui::messages::rate_limit_exceeded", "Too many attempts, try again later.")
@@ -341,12 +337,11 @@ def require_auth_pin(roles=None, login_redirect=None, create_session=None, *args
                     if 'auth_pin' in session:
                         if session['auth_pin'] is True:
                             session.touch()
-                            request.auth_id = session.auth_id
-                            request.auth_type = session.auth_type
+                            request.auth = session
                             results = yield call(f, webinterface, request, session, *a, **kw)
                             return results
                 elif session.auth_type == AUTH_TYPE_AUTHKEY:  # If we have an API session, we are good if it's valid.
-                    if session.check_valid() is False:
+                    if session.enabled is False:
 
                         try:
                             results = yield call(f, webinterface, request, session, *a, **kw)
@@ -378,9 +373,8 @@ def require_auth_pin(roles=None, login_redirect=None, create_session=None, *args
                     return return_need_pin(webinterface, request, **kwargs)
 
             else:
-                if session is not None and session.check_valid():
-                    request.auth_id = session.auth_id
-                    request.auth_type = session.auth_type
+                if session is not None and session.enabled:
+                    request.auth = session
 
                 try:
                     results = yield call(f, webinterface, request, session, *a, **kw)
@@ -425,7 +419,7 @@ def setup_login_redirect(webinterface, request, session, login_redirect):
 
     if session is None:
         try:
-            session = webinterface._WebSessions.create_from_request(request)
+            session = webinterface._WebSessions.create_from_web_request(request)
         except YomboWarning as e:
             logger.warn("Discarding request, appears to be malformed request. Unable to create session.")
             return return_need_login(webinterface, request, None)
@@ -433,8 +427,8 @@ def setup_login_redirect(webinterface, request, session, login_redirect):
             logger.warn("Too sessions being created!")
             return _("ui::messages::rate_limit_exceeded", "Too many attempts, try again later.")
 
-    session.create_type = 'login_redirect'
-    request.received_cookies[webinterface._WebSessions.config.cookie_session_name] = session.session_id
+    session.created_by = 'login_redirect'
+    request.received_cookies[webinterface._WebSessions.config.cookie_session_name] = session.auth_id
     session['login_redirect'] = login_redirect
     return session
 

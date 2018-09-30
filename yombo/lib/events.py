@@ -70,8 +70,7 @@ class Events(YomboLibrary):
         """
         yield self.save_event_queue()
 
-    def new(self, event_type, event_subtype, attributes, priority=None, user_id=None, user_type=None,
-            created_at=None):
+    def new(self, event_type, event_subtype, attributes, priority=None, auth=None, created_at=None):
 
         if created_at is None:
             created_at = time()
@@ -85,13 +84,17 @@ class Events(YomboLibrary):
         if event_subtype not in self.event_types[event_type]:
             raise YomboWarning("Invalid event sub-type: %s" % event_subtype)
 
+        if auth is None:
+            auth_id = None
+        else:
+            auth_id = auth.safe_display
+
         event = OrderedDict({
             'event_type': event_type,
             'event_subtype': event_subtype,
             'priority': priority,
             'source': source_label,
-            'user_id': user_id,
-            'user_type': user_type,
+            'auth_id': auth_id,
             'created_at': created_at,
             })
         event.update( OrderedDict({"attr%s" % (v + 1): k for v, k in enumerate(attributes)}) )

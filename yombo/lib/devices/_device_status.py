@@ -82,8 +82,7 @@ class Device_Status(object):
         self.human_message = None
         self.machine_status = None
         self.machine_status_extra = None
-        self.user_id = None
-        self.user_type = None
+        self.auth_id = None
         self.requesting_source = None
         self.reporting_source = None
         self.request_id = None
@@ -151,10 +150,8 @@ class Device_Status(object):
             self.machine_status = device["machine_status"]
         if 'machine_status_extra' in device:
             self.machine_status_extra = device["machine_status_extra"]
-        if 'user_id' in device:
-            self.user_id = device["user_id"]
-        if 'user_type' in device:
-            self.user_type = device["user_type"]
+        if 'auth_id' in device:
+            self.auth_id = device["auth_id"]
         if 'requesting_source' in device:
             self.requesting_source = device["requesting_source"]
         if 'reporting_source' in device:
@@ -189,8 +186,7 @@ class Device_Status(object):
             'human_message': self.human_message,
             'machine_status': self.machine_status,
             'machine_status_extra': self.machine_status_extra,
-            'user_id': self.user_id,
-            'user_type': self.user_type,
+            'auth_id': self.auth_id,
             'requesting_source': self.requesting_source,
             'reporting_source': self.reporting_source,
             'request_id': self.request_id,

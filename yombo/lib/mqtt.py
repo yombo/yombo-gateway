@@ -481,7 +481,8 @@ class MQTT(YomboLibrary):
                 elif user['type'] == AUTH_TYPE_WEBSESSION:
                     try:
                         session = yield self._WebSessions.get_session_by_id(user['username'])
-                        response_code = 200
+                        if session.enable is True:
+                            response_code = 200
                     except YomboWarning:
                         pass
 

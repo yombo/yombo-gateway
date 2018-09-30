@@ -39,6 +39,26 @@
     </div>
     <!-- /.col-lg-12 -->
 </div>
+{%- macro show_permissions(role, access) %}
+    {%- set has_data = 'false' %}
+    {%- for platform, platform_data in role.item_permissions.items() %}
+        {%- if access in role.item_permissions[platform] %}
+            {% for item, actions in role.item_permissions[platform][access].items() %}
+    {%- if has_data == 'false' %}
+        <ul style="padding-left: 15px">
+        <li><strong>{{ _('ui::common::'+access, access) }}</strong></li>
+    {%- endif %}
+                {%- set has_data = 'true' %}
+                <ul style="padding-left: 15px">
+                    <li>Platform: {{platform}}</li>
+                    <li>Item: {{item}}</li>
+                    <li style="padding-bottom: 20px">Action: {{actions|join(", ")}}</li>
+                </ul>
+        </ul>
+            {%- endfor %}
+        {%- endif %}
+    {%- endfor %}
+{%- endmacro %}
 <!-- /.row -->
 <div class="row">
     <div class="col-lg-12">
@@ -106,37 +126,8 @@
                                             </ul>
                                         </td>
                                         <td>
-                                            {%- if 'authkey' in role.item_permissions and
-                                                'allow' in role.item_permissions['authkey'] and
-                                                role.item_permissions['authkey']['allow']|length > 0 %}
-                                            <ul style="padding-left: 15px">
-                                                <li><strong>Allow</strong></li>
-                                            {% for action, action_data in role.item_permissions['authkey']['allow'].items() %}
-                                                {% for item, item_data in role.item_permissions['authkey']['allow'][action].items() %}
-                                            <ul style="padding-left: 15px">
-                                                <li>Platform: authkey</li>
-                                                <li>Item: {{item}}</li>
-                                                <li style="padding-bottom: 20px">Action: {{action}}</li>
-                                            </ul>
-                                                {% endfor %}
-                                            {% endfor %}
-                                            {% endif %}
-                                            {%- if 'authkey' in role.item_permissions and
-                                                'deny' in role.item_permissions['authkey'] and
-                                                role.item_permissions['authkey']['deny']|length > 0 %}
-                                            <strong>Deny</strong>
-                                            <ul style="padding-left: 15px">
-                                            {% for action, action_data in role.item_permissions['authkey']['deny'].items() %}
-                                                {% for item, item_data in role.item_permissions['authkey']['deny'][action].items() %}
-                                            <ul style="padding-left: 15px">
-                                                <li>Platform: authkey</li>
-                                                <li>Item: {{item}}</li>
-                                                <li style="padding-bottom: 20px">Action: {{action}}</li>
-                                            </ul>
-                                                {% endfor %}
-                                            {% endfor %}
-                                            </ul>
-                                            {% endif %}
+                                            {{ show_permissions(role, 'allow') }}
+                                            {{ show_permissions(role, 'deny') }}
                                         </td>
                                         <td style="max-width: 10px;">
                                                 <a href="/roles/{{ role.role_id }}/details">Details</a>
@@ -188,33 +179,8 @@
                                             </ul>
                                         </td>
                                         <td>
-                                            {%- if 'authkey' in role.item_permissions and
-                                                'allow' in role.item_permissions['authkey'] and
-                                                role.item_permissions['authkey']['allow']|length > 0 %}
-                                            <ul style="padding-left: 15px">
-                                                <li><strong>Allow</strong></li>
-                                            {% for item, actions in role.item_permissions['authkey']['allow'].items() %}
-                                            <ul style="padding-left: 15px">
-                                                <li>Platform: authkey</li>
-                                                <li>Item: {{item}}</li>
-                                                <li style="padding-bottom: 20px">Action: {{actions}}</li>
-                                            </ul>
-                                            {% endfor %}
-                                            {% endif %}
-                                            {%- if 'authkey' in role.item_permissions and
-                                                'deny' in role.item_permissions['authkey'] and
-                                                role.item_permissions['authkey']['deny']|length > 0 %}
-                                            <strong>Deny</strong>
-                                            <ul style="padding-left: 15px">
-                                            {% for item, actions in role.item_permissions['authkey']['deny'].items() %}
-                                            <ul style="padding-left: 15px">
-                                                <li>Platform: authkey</li>
-                                                <li>Item: {{item}}</li>
-                                                <li style="padding-bottom: 20px">Action: {{actions}}</li>
-                                            </ul>
-                                            {% endfor %}
-                                            </ul>
-                                            {% endif %}
+                                            {{ show_permissions(role, 'allow') }}
+                                            {{ show_permissions(role, 'deny') }}
                                         </td>
                                         <td style="max-width: 10px;">
                                                 <a href="/roles/{{ role.role_id }}/details">Details</a>
@@ -265,34 +231,11 @@
                                             {% endif %}
                                             </ul>
                                         </td>
+
+
                                         <td>
-                                            {%- if 'authkey' in role.item_permissions and
-                                                'allow' in role.item_permissions['authkey'] and
-                                                role.item_permissions['authkey']['allow']|length > 0 %}
-                                            <ul style="padding-left: 15px">
-                                                <li><strong>Allow</strong></li>
-                                            {% for item, actions in role.item_permissions['authkey']['allow'].items() %}
-                                            <ul style="padding-left: 15px">
-                                                <li>Platform: authkey</li>
-                                                <li>Item: {{item}}</li>
-                                                <li style="padding-bottom: 20px">Action: {{actions}}</li>
-                                            </ul>
-                                            {% endfor %}
-                                            {% endif %}
-                                            {%- if 'authkey' in role.item_permissions and
-                                                'deny' in role.item_permissions['authkey'] and
-                                                role.item_permissions['authkey']['deny']|length > 0 %}
-                                            <strong>Deny</strong>
-                                            <ul style="padding-left: 15px">
-                                            {% for item, actions in role.item_permissions['authkey']['deny'].items() %}
-                                            <ul style="padding-left: 15px">
-                                                <li>Platform: authkey</li>
-                                                <li>Item: {{item}}</li>
-                                                <li style="padding-bottom: 20px">Action: {{actions}}</li>
-                                            </ul>
-                                            {% endfor %}
-                                            </ul>
-                                            {% endif %}
+                                            {{ show_permissions(role, 'allow') }}
+                                            {{ show_permissions(role, 'deny') }}
                                         </td>
                                         <td style="max-width: 10px;">
                                                 <a href="/roles/{{ role.role_id }}/details">Details</a>

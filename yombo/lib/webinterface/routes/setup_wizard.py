@@ -218,7 +218,7 @@ def route_setup_wizard(webapp):
 
             session['setup_wizard_last_step'] = 2
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/setup_wizard/2.html')
-            # print("session: %s" % session.session_data)
+            # print("session: %s" % session.auth_data)
 
             output = page.render(
                                alerts=webinterface.get_alerts(),

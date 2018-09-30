@@ -706,8 +706,7 @@ class Scenes(YomboLibrary, object):
                 logger.info("Scene is firing {label}, device: {device}", label=scene.label, device=device.label)
                 command = self._Commands[action['command_machine_label']]
                 device.command(cmd=command,
-                               user_id='TO_BE_IMPLETMENTED:SCENES',
-                               user_type='TO_BE_IMPLETMENTED:SCENES',
+                               auth_id=self._Users.system_user,
                                control_method='scene',
                                inputs=action['inputs'],
                                **kwargs)

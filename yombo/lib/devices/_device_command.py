@@ -130,8 +130,7 @@ class Device_Command(object):
             'canceled': [],
             'done': [],
         }
-        self.user_id = data['user_id']
-        self.user_type = data['user_type']
+        self.auth_id = data['auth_id']
         self.requesting_source = data['requesting_source']
         self._status = data.get('status', 'new')
 
@@ -264,9 +263,9 @@ class Device_Command(object):
             else:
                 when = self.not_before_at - cur_at
                 if when < 0:
-                    self.device._do_command_hook(self)
+                    self.device._do_command(self)
                 else:
-                    self.call_later = reactor.callLater(when, self.device._do_command_hook, self)
+                    self.call_later = reactor.callLater(when, self.device._do_command, self)
                     self.set_status('delayed')
                 return True
         else:
@@ -274,7 +273,7 @@ class Device_Command(object):
                 logger.debug("Discarding a device command message loaded from database because it's not meant to be called later.")
                 self.set_failed(message="Was loaded from database, but not meant to be called later.");
             else:
-                self.device._do_command_hook(self)
+                self.device._do_command(self)
                 return True
 
     def last_history(self):
@@ -441,8 +440,7 @@ class Device_Command(object):
             "command_status_received": self.command_status_received,
             "history": self.history,
             "status": self.status,
-            "user_id": self.user_id,
-            "user_type": self.user_type,
+            "auth_id": self.auth_id,
             "requesting_source": self.requesting_source,
             "idempotence": self.idempotence,
         }

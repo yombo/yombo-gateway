@@ -32,9 +32,9 @@ from twisted.internet.defer import inlineCallbacks
 # Import Yombo libraries
 from yombo.constants.commands import (COMMAND_COMPONENT_CALLED_BY, COMMAND_COMPONENT_COMMAND,
     COMMAND_COMPONENT_COMMAND_ID, COMMAND_COMPONENT_DEVICE, COMMAND_COMPONENT_DEVICE_COMMAND,
-    COMMAND_COMPONENT_DEVICE_ID, COMMAND_COMPONENT_INPUTS, COMMAND_COMPONENT_PIN, COMMAND_COMPONENT_REQUEST_ID,
-    COMMAND_COMPONENT_SOURCE, COMMAND_COMPONENT_SOURCE_GATEWAY_ID, COMMAND_COMPONENT_USER_ID,
-    COMMAND_COMPONENT_USER_TYPE, COMMAND_COMPONENT_REQUESTING_SOURCE, COMMAND_COMPONENT_REPORTING_SOURCE,
+    COMMAND_COMPONENT_DEVICE_ID, COMMAND_COMPONENT_INPUTS, COMMAND_COMPONENT_PIN,
+    COMMAND_COMPONENT_REQUEST_ID, COMMAND_COMPONENT_SOURCE, COMMAND_COMPONENT_SOURCE_GATEWAY_ID,
+    COMMAND_COMPONENT_AUTH_ID, COMMAND_COMPONENT_REQUESTING_SOURCE, COMMAND_COMPONENT_REPORTING_SOURCE,
     COMMAND_COMPONENT_ENERGY_TYPE, COMMAND_COMPONENT_ENERGY_USAGE, COMMAND_COMPONENT_HUMAN_MESSAGE,
     COMMAND_COMPONENT_HUMAN_STATUS)
 from yombo.core.exceptions import YomboPinCodeError, YomboWarning, YomboNoAccess
@@ -68,7 +68,7 @@ class Device_Base(Device_Attributes):
         * :py:meth:`set_status <Device.set_status>` - Set the device status.
     """
     def command(self, cmd, pin=None, request_id=None, not_before=None, delay=None, max_delay=None,
-                user_id=None, user_type=None, inputs=None, not_after=None, callbacks=None, idempotence=None, **kwargs):
+                auth=None, inputs=None, not_after=None, callbacks=None, idempotence=None, **kwargs):
         """
         Tells the device to a command. This in turn calls the hook _device_command_ so modules can process the command
         if they are supposed to.
@@ -98,10 +98,8 @@ class Device_Base(Device_Attributes):
         :param max_delay: How many second after the 'delay' or 'not_before' can the command be send. This can occur
             if the system was stopped when the command was supposed to be send.
         :type max_delay: int or float
-        :param user_id: The user id or api auth id to check permissions.
-        :type user_id: str
-        :param user_type: Either "user" or "authkey"
-        :type user_type: str
+        :param auth: An auth instance (with authmixin).
+        :type auth: instance
         :param inputs: A list of dictionaries containing the 'input_type_id' and any supplied 'value'.
         :type inputs: dict
         :param not_after: An epoch time when the command should be discarded.
@@ -149,16 +147,19 @@ class Device_Base(Device_Attributes):
         # logger.debug("device::command requested_by: {requested_by}", requested_by=requested_by)
 
         # This will raise YomboNoAccess exception if user doesn't have access.
-        if user_id is None or user_type is None:
+        if auth is None:
             logger.info("Device command received for device {label}, but no user specified."
                         " This will generate errors in future versions.",
-                        label = self.full_label)
+                        label=self.full_label)
         else:
-            has_access = self._Parent._Users.check_user_has_access(
-                user_id, user_type, 'device', self.device_id, 'control')
+            # This validates access. If invalid raises YomboNoAccess.
+            self._Parent._Users.has_access(auth, 'device', self.device_id, 'control')
 
-        device_command['user_id'] = user_id
-        device_command['user_type'] = user_type
+        if auth is None:  # future versions will fail already...
+            device_command['auth_id'] = 'Unknown'
+        else:
+            device_command['auth_id'] = auth.safe_display
+
 
         if COMMAND_COMPONENT_REQUESTING_SOURCE in kwargs:
             device_command[COMMAND_COMPONENT_REQUESTING_SOURCE] = kwargs[COMMAND_COMPONENT_REQUESTING_SOURCE]
@@ -256,15 +257,15 @@ class Device_Base(Device_Attributes):
 
         self.device_commands.appendleft(request_id)
 
-#        print("command source: %s" % device_command[COMMAND_COMPONENT_REQUESTING_SOURCE])
-#        print("command user_id: %s - %s" % (user_id, user_type))
+        print("command source: %s" % device_command[COMMAND_COMPONENT_REQUESTING_SOURCE])
+        print("command auth_id: %s" % device_command['auth_id'])
 
         self._Parent.add_device_command_by_object(Device_Command(device_command, self._Parent))
 
         return request_id
 
     @inlineCallbacks
-    def _do_command_hook(self, device_command):
+    def _do_command(self, device_command):
         """
         Performs the actual sending of a device command. This calls the hook "_device_command_". Any modules that
         have implemented this hook can monitor or act on the hook.
@@ -292,8 +293,7 @@ class Device_Base(Device_Attributes):
             COMMAND_COMPONENT_PIN: device_command.pin,
             COMMAND_COMPONENT_SOURCE_GATEWAY_ID: device_command.source_gateway_id,
             COMMAND_COMPONENT_SOURCE: device_command.source,
-            COMMAND_COMPONENT_USER_ID: device_command.user_id,
-            COMMAND_COMPONENT_USER_TYPE: device_command.user_type,
+            COMMAND_COMPONENT_AUTH_ID: device_command.auth_id,
         }
         # logger.debug("calling _device_command_, request_id: {request_id}", request_id=device_command.request_id)
         device_command.set_broadcast()
@@ -721,12 +721,10 @@ class Device_Base(Device_Attributes):
             kwargs['gateway_id'] = self.gateway_id
 
         request_id = None
-        user_id = "unknown"
-        user_type = "unknown"
+        auth_id = "unknown"
         if COMMAND_COMPONENT_REQUEST_ID in kwargs and kwargs[COMMAND_COMPONENT_REQUEST_ID] in self._Parent.device_commands:
             request_id = kwargs['request_id']
-            user_id = self._Parent.device_commands[request_id].user_id
-            user_type = self._Parent.device_commands[request_id].user_type
+            auth_id = self._Parent.device_commands[request_id].auth_id
             kwargs[COMMAND_COMPONENT_REQUESTING_SOURCE] = self._Parent.device_commands[request_id].requesting_source
             kwargs[COMMAND_COMPONENT_COMMAND] = self._Parent.device_commands[request_id].command
         else:
@@ -744,8 +742,7 @@ class Device_Base(Device_Attributes):
             else:
                 kwargs[COMMAND_COMPONENT_COMMAND] = self.command_from_status(machine_status, machine_status_extra)
 
-        kwargs[COMMAND_COMPONENT_USER_ID] = user_id
-        kwargs[COMMAND_COMPONENT_USER_TYPE] = user_type
+        kwargs[COMMAND_COMPONENT_AUTH_ID] = auth_id
 
         kwargs[COMMAND_COMPONENT_ENERGY_USAGE], kwargs[COMMAND_COMPONENT_ENERGY_TYPE] = \
         energy_usage, energy_type = self.energy_calc(command=kwargs['command'],
@@ -775,8 +772,7 @@ class Device_Base(Device_Attributes):
             'machine_status': machine_status,
             'machine_status_extra': machine_status_extra,
             'gateway_id': kwargs['gateway_id'],
-            'user_id': kwargs[COMMAND_COMPONENT_USER_ID],
-            'user_type': kwargs[COMMAND_COMPONENT_USER_TYPE],
+            'auth_id': kwargs[COMMAND_COMPONENT_AUTH_ID],
             'reporting_source': kwargs[COMMAND_COMPONENT_REPORTING_SOURCE],
             'requesting_source': kwargs[COMMAND_COMPONENT_REQUESTING_SOURCE],
             'request_id': kwargs[COMMAND_COMPONENT_REQUEST_ID],
@@ -918,8 +914,7 @@ class Device_Base(Device_Attributes):
                 'status_previous': previous_status,
                 'gateway_id': kwargs.get('gateway_id', self.gateway_id),
                 'device_features': self.features,  # lowercase version only shows active features.
-                'user_id': kwargs['user_id'],
-                'user_type': kwargs['user_type'],
+                'auth_id': kwargs['auth_id'],
                 'reporting_source': kwargs['reporting_source'],
             },
         }

@@ -9,9 +9,12 @@ Simply base system class to represent a system user.
 :license: LICENSE for details.
 """
 from time import time
+from yombo.mixins.authmixin import AuthMixin
+from yombo.mixins.permissionmixin import PermissionMixin
+from yombo.mixins.rolesmixin import RolesMixin
 
 
-class SystemAuth(object):
+class SystemUser(AuthMixin, PermissionMixin, RolesMixin):
 
     def __contains__(self, data_requested):
         return False
@@ -29,16 +32,28 @@ class SystemAuth(object):
         return []
 
     @property
+    def display(self):
+        return "yombo_system_account"
+
+    @property
+    def safe_display(self):
+        return "system::yombo_system_acc..."
+
+    @property
+    def full_display(self):
+        return "system::yombo_system_account"
+
+    @property
     def auth_id(self):
-        return "system"
+        return "yombo_system_account"
 
     @auth_id.setter
     def auth_id(self, val):
-        return
+        return self._auth_id
 
     @property
     def user_id(self) -> str:
-        return "system"
+        return "yombo_system_account"
 
     @property
     def item_permissions(self):
@@ -48,13 +63,23 @@ class SystemAuth(object):
     def roles(self):
         return ['admin']
 
-    @property
-    def auth_type(self):
-        return 'system'
+    # Local
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        # Auth specific attributes
+        self.auth_type = 'system'
+        self._auth_id = 'yombo_system_account'
+        self.source = "system"
+        self.source_type = "library"
+        self.gateway_id = None
+        self.user = None
+        self.name = "Yombo System Account"
+        self.email = "yombo@example.com"
 
     def has_access(self, platform, item, action, raise_error=None):
         """
-        Check if api auth has access  to a resource / access_type combination.
+        Always has access!
 
         :param platform:
         :param item:
@@ -63,20 +88,18 @@ class SystemAuth(object):
         :raise_error YomboNoAccess:
         :return:
         """
-        return self._Parent._Users.has_access(
-            self.user.item_permissions, self.user.roles, platform, item, action, raise_error,
-            self.auth_id, self.auth_type)
+        return True
 
     def asdict(self):
         cur_time = time()
         return {
             'auth_id': self.auth_id,
-            'gateway_id': None,
-            'session_id': None,
-            'last_access': cur_time,
+            'auth_type': self.auth_type,
+            'user_id': self.user_id,
+            'last_access_at': cur_time,
             'created_at': cur_time,
             'updated_at': cur_time,
-            'session_data': {},
-            'is_valid': True,
+            'auth_data': {},
+            'enabled': True,
             'is_dirty': False,
         }

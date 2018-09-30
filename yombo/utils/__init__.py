@@ -21,7 +21,7 @@ except ImportError:
 import base64
 from difflib import SequenceMatcher
 from docutils.core import publish_parts
-from hashlib import sha256
+from hashlib import sha256, sha224
 import importlib
 import inspect
 import jinja2
@@ -55,23 +55,6 @@ from yombo.utils.decorators import cached, memoize_
 import yombo.ext.base62 as base62
 
 logger = None  # This is set by the set_twisted_logger function.
-
-
-def format_user_id_logging(auth_id, auth_type):
-    """
-    Creates a log friendly version of the user_id so as not to reveal too much information.
-
-    :param self:
-    :param auth_id: The user's id. Usually email address or auth key.
-    :param auth_type: Type of auth, such as websession or user.
-    :return:
-    """
-    # logger.info("format_user_id_logging: {auth_id} - {auth_type}", auth_id=auth_id, auth_type=auth_type)
-    if auth_type == "websession":
-        user_id_parts = auth_id.split("@")
-        return user_id_parts[0] + "@" + user_id_parts[1][0:4] + "..."
-    else:
-        return auth_id[0:-8][0:10]
 
 
 def generate_source_string(gateway_id=None, offset=None):
@@ -145,8 +128,12 @@ def json_human(data):
     return json.dumps(data, indent=4, sort_keys=True)
 
 
-def sha256_compact(input):
-    return base62.encodebytes(sha256(unicode_to_bytes(input)).digest())
+def sha224_compact(value):
+    return base62.encodebytes(sha224(unicode_to_bytes(value)).digest())
+
+
+def sha256_compact(value):
+    return base62.encodebytes(sha256(unicode_to_bytes(value)).digest())
 
 
 @inlineCallbacks
@@ -523,48 +510,48 @@ def clean_dict(dictionary, **kwargs):
     return data
 
 
-def bytes_to_unicode(input):
+def bytes_to_unicode(value):
     """
     Converts strings, lists, and dictionarys to unicode. Handles nested items too. Non-strings are untouched.
     Inspired by: http://stackoverflow.com/questions/13101653/python-convert-complex-dictionary-of-strings-from-unicode-to-ascii
 
-    :param input: Convert strings to unicode.
-    :type input: dict, list, str
+    :param value: Convert strings to unicode.
+    :type value: dict, list, str
     :return:
     """
-    if isinstance(input, dict):
-        return dict((bytes_to_unicode(key), bytes_to_unicode(value)) for key, value in input.items())
-    elif isinstance(input, list):
-        return [bytes_to_unicode(element) for element in input]
-    elif isinstance(input, bytes) or isinstance(input, bytearray):
+    if isinstance(value, dict):
+        return dict((bytes_to_unicode(key), bytes_to_unicode(value)) for key, value in value.items())
+    elif isinstance(value, list):
+        return [bytes_to_unicode(element) for element in value]
+    elif isinstance(value, bytes) or isinstance(value, bytearray):
         try:
-            return input.decode("utf-8")
+            return value.decode("utf-8")
         except Exception:
-            return input
+            return value
     else:
-        return input
+        return value
 
 
-def unicode_to_bytes(input):
+def unicode_to_bytes(value):
     """
     Converts strings, lists, and dictionarys to strings. Handles nested items too. Non-strings are untouched.
     Inspired by: http://stackoverflow.com/questions/13101653/python-convert-complex-dictionary-of-strings-from-unicode-to-ascii
 
-    :param input:
+    :param value:
     :return:
     """
-    if isinstance(input, dict):
-        return dict((unicode_to_bytes(key), unicode_to_bytes(value)) for key, value in input.items())
-    elif isinstance(input, list):
-        return [unicode_to_bytes(element) for element in input]
-    elif isinstance(input, str):
-        return input.encode()
+    if isinstance(value, dict):
+        return dict((unicode_to_bytes(key), unicode_to_bytes(value)) for key, value in value.items())
+    elif isinstance(value, list):
+        return [unicode_to_bytes(element) for element in value]
+    elif isinstance(value, str):
+        return value.encode()
     else:
-        return input
+        return value
 
 
-def snake_case(input):
-    return input.replace(" ", "_").lower()
+def snake_case(value):
+    return value.replace(" ", "_").lower()
 
 
 def dict_has_key(dictionary, keys):
@@ -1179,27 +1166,27 @@ def is_string_bool(value=None):
     raise YomboWarning("String is not true, false, or none.")
 
 
-def is_true_false(input, only_bool=False):
+def is_true_false(value, only_bool=False):
     """
     Used by various utils to determine if an input is high or low. Other functions like is_one_zero and is_yes_no will
     return the results in different ways based on results from here
 
-    :param input: A string, bool, int to test
+    :param value: A string, bool, int to test
     :param only_bool: If true, will only return bools. Otherwise, None will be returned if indeterminate input.
     :return:
     """
-    if isinstance(input, bool):
-            return input
-    elif isinstance(input, str):
-        input = input.lower()
-        if input in (1, "true", "1", "open", "on", "running"):
+    if isinstance(value, bool):
+            return value
+    elif isinstance(value, str):
+        value = value.lower()
+        if value in (1, "true", "1", "open", "on", "running"):
             return True
-        if input in (0, "false", "0", "closed", "off", "stopped"):
+        if value in (0, "false", "0", "closed", "off", "stopped"):
             return False
-    elif isinstance(input, int):
-            if input == 1:
+    elif isinstance(value, int):
+            if value == 1:
                 return True
-            elif input == 0:
+            elif value == 0:
                 return False
     else:
         if only_bool:
@@ -1208,47 +1195,47 @@ def is_true_false(input, only_bool=False):
             return None
 
 
-def is_yes_no(input):
+def is_yes_no(value):
     """
     Tries to guess if input is a positive value (1, "1", True, "On", etc). If it is, returns "Yes", otherwise,
     returns "No". Useful to convert something to human Yes/No.
-    :param input:
+    :param value:
     :return: String on either "Yes" or "No".
     """
-    if is_true_false(input, True):
+    if is_true_false(value, True):
         return "Yes"
     else:
         return "No"
 
 
-def is_one_zero(input):
+def is_one_zero(value):
     """
     Like is_yes_no, but returns 1 for yes/true/on/open/running, 0 for otherwise.
 
     Tries to guess if input is a positive value (1, "1", True, "On", etc). If it is, returns "Yes", otherwise,
     returns "No". Useful to convert something to human Yes/No.
-    :param input:
+    :param value:
     :return:
     """
-    if is_true_false(input, True):
+    if is_true_false(value, True):
         return 1
     else:
         return 0
 
 
-def is_none(input):
+def is_none(value):
     """
     Returns None type if the input is None type, or a string saying "none". If it's not, will return the input.
 
-    :param input:
+    :param value:
     :return:
     """
-    if input is None:
+    if value is None:
         return None
-    elif isinstance(input, str):
-        if input.lower() == "none":
+    elif isinstance(value, str):
+        if value.lower() == "none":
             return None
-    return input
+    return value
 
 
 def forgiving_float(value):

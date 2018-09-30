@@ -5,25 +5,33 @@
 
   For library documentation, see: `Devices @ Module Development <https://yombo.net/docs/libraries/users>`_
 
-Base class for auth type items that can store permissions.
+Mixin class that adds permission handling. Used in things like users and roles objects within the user
+library.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2012-2018 by Yombo.
+:copyright: Copyright 2018 by Yombo.
 :license: LICENSE for details.
 """
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
+from yombo.mixins.yombobasemixin import YomboBaseMixin
 
-logger = get_logger('library.users.authbase')
+logger = get_logger('mixins.permissionmixin')
 
 
-class AuthBase(object):
+class PermissionMixin(YomboBaseMixin):
+    @property
+    def item_permissions(self):
+        return self._item_permissions
 
-    def __init__(self, parent):
-        self._Parent = parent
-        self.item_permissions: dict = {}  # {'device': {'allow': {'view': {'garage_door': True}}}}
-        self.available_roles = self._Parent.roles
+    @item_permissions.setter
+    def item_permissions(self, val):
+        self._item_permissions = val
+
+    def __init__(self, parent, *args, **kwargs):
+        super().__init__(parent, *args, **kwargs)
+        self._item_permissions: dict = {}  # {'device': {'allow': {'view': {'garage_door': True}}}}
 
     def add_item_permission(self, platform, item, access, actions, save=None, flush_cache=None):
         """
@@ -52,8 +60,9 @@ class AuthBase(object):
             raise YomboWarning("Access must be allow or deny.")
 
         # print("add_item_permission: get_platform_item: %s, %s" % (platform, item))
-        platform_item, platform_item_id, platform_item_label, platform_actions = \
-            self._Parent.get_platform_item(platform, item)
+        platform_data = self._Parent.get_platform_item(platform, item)
+        platform_item_label = platform_data['platform_item_label']
+        platform_actions = platform_data['platform_actions']
 
         if platform not in self.item_permissions:
             self.item_permissions[platform] = {}
@@ -120,8 +129,9 @@ class AuthBase(object):
         if platform not in self._Parent.auth_platforms:
             raise YomboWarning("Invalid permission platform.")
 
-        platform_item, platform_item_id, platform_item_label, platform_actions = \
-            self._Parent.get_platform_item(platform, item)
+        platform_data = self._Parent.get_platform_item(platform, item)
+        platform_item_label = platform_data['platform_item_label']
+
         if item == "*":
             platform_item_key = "*"
 

@@ -54,13 +54,17 @@
                 <label> Add a role: </label><br>
                 <select name="role_label" id="role_label" class="selectpicker" data-size="10"
                         data-live-search="true"  title="Select role to add.">
-                 <option disabled style="color: #203684; background: #c7d4ff";>User defined roles</option>
-                {% for role in _users.get_roles() if role.label not in user.roles and role.source != "system" %}
+                 <option disabled style="color: #203684; background: #e4e8ff";>User defined roles</option>
+                {% for role_id, role in _users.roles.items() if role.role_id not in user.roles and role.source == "user" %}
                   <option value="{{role.machine_label}}" data-subtext="{{role.description|truncate(70)}}">{{role.label}}</option>
                 {% endfor %}
                  <option data-divider="true">adf</option>
-                 <option disabled style="color: #203684; background: #c7d4ff";">System defined roles</option>
-                {% for role in _users.get_roles() if role.label not in user.roles and role.source == "system" %}
+                 <option disabled style="color: #203684; background: #e4e8ff;">Module defined roles</option>
+                {% for role_id, role in _users.roles.items() if role_id not in user.roles and role.source == "module" %}
+                  <option value="{{role.machine_label}}" data-subtext="{{role.description|truncate(70)}}">{{role.label}}</option>
+                {% endfor %}
+                 <option disabled style="color: #203684; background: #e4e8ff;">System defined roles</option>
+                {% for role_id, role in _users.roles.items() if role_id not in user.roles and role.source == "system" %}
                   <option value="{{role.machine_label}}" data-subtext="{{role.description|truncate(70)}}">{{role.label}}</option>
                 {% endfor %}
                 </select>
@@ -79,8 +83,7 @@
                 <strong>User has not been assigned any roles.</strong>
                 {% else %}
                 <ul style="padding-left: 10px">
-                {% for machine_label in user.roles %}
-                    {% set role = _users.get_role(machine_label) %}
+                {% for role_id, role in user.roles.items() %}
                     <li>
                         <a href="/roles/{{role.role_id}}/details">{{ role.label }}</a>
                         <a href="/users/{{user.user_id}}/unattach_role/{{role.role_id}}" class="btn btn-danger btn-xs" role="button">Remove</a>
@@ -353,7 +356,7 @@
     }
     $('#submit_role').prop('disabled', true);
     var rolesList = {
-    {%- for role in _users.get_roles() %}
+    {%- for role_id, role in _users.roles.items() %}
         "{{ role.machine_label }}": {
         "machine_label": "{{ role.machine_label}}",
         "label": "{{ role.label}}",

@@ -67,7 +67,7 @@
                 useSSL: useTLS,
                 cleanSession: cleansession,
                 onSuccess: onConnect,
-                userName : "{{session.auth_type}}_{{session.session_id}}s",
+                userName : "{{session.auth_type}}_{{session.auth_id}}s",
                 password : "none",
                 onFailure: function (message) {
                     console.log(JSON.stringify(message, null, 2));

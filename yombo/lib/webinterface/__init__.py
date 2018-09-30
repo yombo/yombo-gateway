@@ -166,12 +166,13 @@ class Yombo_Site(Site):
         if request.getClientIP() == "127.0.0.1" and url_path.startswith('/api/v1/mqtt/auth/'):
             return
 
-        if request.auth_type == "websession":
-            u = request.auth_id.split("@")
-            user_id = u[0] + "@" + u[1][0:4] + "..."
-        elif request.auth_type == "authkey":
-            user_id = request.auth_id[0:-8][0:10]
+        if hasattr(request, 'auth'):
+            if request.auth is None:
+                user_id = None
+            else:
+                user_id = request.auth.safe_display
         else:
+            print("request has no auth! : %s" % request)
             user_id = None
 
         self.log_queue.append(OrderedDict({
@@ -184,8 +185,7 @@ class Yombo_Site(Site):
             'method': request.method.decode().strip(),
             'path': url_path,
             'secure': request.isSecure(),
-            'user_id': user_id,
-            'user_type': request.auth_type,
+            'auth_id': user_id,
             'response_code': request.code,
             'response_size': request.sentLength,
             'uploadable': 1,

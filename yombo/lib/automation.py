@@ -773,8 +773,7 @@ class Automation(YomboLibrary):
                 device = self._Devices[action['device_machine_label']]
                 command = self._Commands[action['command_machine_label']]
                 device.command(cmd=command,
-                               user_id='TO_BE_IMPLETMENTED:AUTOMATION',
-                               user_type='TO_BE_IMPLETMENTED:AUTOMATION',
+                               auth=self._Users.system_user,
                                control_method='automation',
                                inputs=action['inputs'],
                                **kwargs)

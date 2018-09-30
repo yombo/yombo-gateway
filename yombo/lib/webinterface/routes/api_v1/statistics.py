@@ -29,6 +29,7 @@ def route_api_v1_statistics(webapp):
         @require_auth(api=True)
         @inlineCallbacks
         def apiv1_statistics_echarts_buckets(webinterface, request, session):
+
             session.has_access('statistic', '*', 'view', raise_error=True)
             requested_stats = []
 

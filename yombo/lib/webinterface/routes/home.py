@@ -80,6 +80,7 @@ def route_home(webapp):
             submitted_g_recaptcha_response = request.args.get('g-recaptcha-response')[0]
             submitted_email = request.args.get('email')[0]
             submitted_password = request.args.get('password')[0]
+            user = None
             if webinterface.operating_mode == 'run':
                 try:
                     user = webinterface._Users.get(submitted_email)
@@ -97,13 +98,12 @@ def route_home(webapp):
                 return page.render(alerts=webinterface.get_alerts())
             if results['code'] == 200:
                 login = results['response']['login']
-
-                session.auth_id = submitted_email
+                session._user = user
                 session.auth_pin = True
                 session['yomboapi_session'] = login['session']
                 session['yomboapi_login_key'] = login['login_key']
 
-                request.received_cookies[webinterface._WebSessions.config.cookie_session_name] = session.session_id
+                request.received_cookies[webinterface._WebSessions.config.cookie_session_name] = session.auth_id
                 try:
                     webinterface._YomboAPI.check_if_new_gateway_credentials_needed(login['session'])
                 except YomboRestart:
@@ -145,7 +145,7 @@ def route_home(webapp):
                 l_session.auth_id = None
                 l_session['yomboapi_session'] = ''
                 l_session['yomboapi_login_key'] = ''
-                request.received_cookies[l_webinterface._WebSessions.config.cookie_session_name] = l_session.session_id
+                request.received_cookies[l_webinterface._WebSessions.config.cookie_session_name] = l_session.auth_id
 
             if webinterface.auth_pin_type() == 'pin':
                 if submitted_pin == webinterface.auth_pin():

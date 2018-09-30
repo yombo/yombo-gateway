@@ -233,7 +233,7 @@
                             {%- endfor %}
                             <label style="margin-top: 15px; margin-bottom: 0px">Requested By: </label><br>
                             <em>User ID:</em> {{ device.status_all.user_id }}<br>
-                            <em>User Type:</em> {{ device.status_all.user_type }}<br>
+                            <em>User Type:</em> {{ device.status_all.auth_id }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Reported By: </label><br>
                             {{ device.status_all.reporting_source }}<br>
                             {% endif %}
@@ -263,7 +263,7 @@
                                 <tbody>{% for history in device.status_history %}
                                      <tr>
                                         <td> {{ history.set_at|epoch_to_string }}</td>
-                                        <td> User: {{ history.user_id }}<br> User Type: {{ history.user_type }}</td>
+                                        <td> Auth ID: {{ history.auth_id }}</td>
                                         <td> Requesting: {{ history.requesting_source }} <br> Reporting: {{ history.reporting_source }}</td>
                                         <td> {{ history.human_status }}</td>
                                         <td> {{ history.energy_usage }}</td>

@@ -10,17 +10,15 @@ Resounce syntax:
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.20.0
 """
-from copy import deepcopy
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
-from yombo.lib.users.authbase import AuthBase
-from yombo.utils import sha256_compact, data_pickle, data_unpickle
-from yombo.utils.decorators import cached
+from yombo.mixins.permissionmixin import PermissionMixin
+from yombo.utils import data_pickle
 
 logger = get_logger('library.users.role')
 
 
-class Role(AuthBase):
+class Role(PermissionMixin):
     """
     Roles are associated to permissions. Users are added to roles. Resources are protected by permissions.
     """
@@ -53,7 +51,7 @@ class Role(AuthBase):
         :param parent: A reference to the users library.
         """
         super().__init__(parent)
-
+        self.available_roles = self._Parent.roles
         if machine_label is None:
             raise YomboWarning("Role must have a machine_label.")
         if machine_label in self.available_roles:
@@ -77,7 +75,6 @@ class Role(AuthBase):
             self.item_permissions = saved_permissions
         if isinstance(permissions, list):
             for perm in permissions:
-                # print("role adding permissions: %s" % perm)
                 self.add_item_permission(
                     perm['platform'],
                     perm['item'],
@@ -94,15 +91,13 @@ class Role(AuthBase):
         """
         if self.source != "user":
             return
-        # print("Starting role permission save... %s" % self.label)
-        # print("Saving: %s %s" % (self.label, self.permissions))
         tosave = {
+            'role_id': self.role_id,
             'label': self.label,
             'machine_label': self.machine_label,
             'description': self.description,
             'saved_permissions': self.item_permissions
         }
-        # print("writing config for role_id: %s" % self.role_id)
         self._Parent._Configs.set('rbac_roles', self.role_id,
                                   data_pickle(tosave, encoder="msgpack_base64", local=True),
                                   ignore_case=True)

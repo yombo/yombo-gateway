@@ -46,7 +46,7 @@ from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 import yombo.core.settings as settings
-from yombo.utils import clean_dict, instance_properties, data_pickle, data_unpickle, sleep
+from yombo.utils import clean_dict, instance_properties, data_pickle, data_unpickle, sleep, sha224_compact
 from yombo.utils.datatypes import coerce_value
 
 logger = get_logger('library.localdb')
@@ -304,12 +304,11 @@ class LocalDB(YomboLibrary):
             start_schema_version = self.schema_version
             self.database_file_is_new = False
         except Exception as e:
-            logger.info("Problem with database: %s" % e)
-            yield sleep(1000)
+            # logger.info("Problem with database: %s" % e)
             logger.info("Creating new database file.")
             start_schema_version = 0
             self.database_file_is_new = True
-
+        Registry.DBPOOL.runOperation("PRAGMA synchronous=1;")
         self.current_db_meta_file = __import__("yombo.utils.db." + str(LATEST_SCHEMA_VERSION), globals(), locals(),
                                    [str(LATEST_SCHEMA_VERSION)], 0)
         if self.database_file_is_new is False:
@@ -338,6 +337,7 @@ class LocalDB(YomboLibrary):
         chmod("%s/etc/yombo.db" % self.working_dir, 0o600)
 
         yield self._load_db_model()
+        Registry.DBPOOL.runOperation("PRAGMA synchronous=2;")
 
         # used to cache datatables lookups for the webinterface viewers
         self.event_counts = self._Cache.ttl(ttl=15, tags='events')
@@ -621,7 +621,8 @@ class LocalDB(YomboLibrary):
         yield self.dbconfig.insertMany('events', events)
 
     @inlineCallbacks
-    def search_events_for_datatables(self, event_type, event_subtype, order_column, order_direction, start, length, search=None):
+    def search_events_for_datatables(self, event_type, event_subtype, order_column, order_direction, start,
+                                     length, search=None):
         # print("search events... event_type:%s, event_subtype: %s, order_column: %s, order_direction: %s, start: %s, length: %s, search:%s" %
         #       (event_type, event_subtype, order_column, order_direction, start, length, search))
 
@@ -635,7 +636,7 @@ class LocalDB(YomboLibrary):
         attrs = []
         for i in range(1, len(event['attributes']) + 1):
             attrs.append("attr%s as %s" % (i, event['attributes'][i-1]))
-        fields = ['created_at', 'priority', 'source',  '(user_id || " " || user_type) as user'] + attrs
+        fields = ['created_at', 'priority', 'source',  'auth_id as user'] + attrs
         if search in (None, ''):
             records = yield self.dbconfig.select(
                 'events',
@@ -661,8 +662,7 @@ class LocalDB(YomboLibrary):
         else:
             if re.match('^[ \w-]+$', search) is None:
                 raise YomboWarning("Invalid search string contents.")
-            where_attrs = ["source LIKE '%%%s%%'" % search, "user_id LIKE '%%%s%%'" % search,
-                           "user_type LIKE '%%%s%%'" % search]
+            where_attrs = ["source LIKE '%%%s%%'" % search, "auth_id LIKE '%%%s%%'" % search]
             for i in range(1, 20):
                 where_attrs.append("attr%s LIKE '%%%s%%'" % (i, search))
             where_attrs_str = " OR ".join(where_attrs)
@@ -1257,35 +1257,39 @@ class LocalDB(YomboLibrary):
                 return []
             output = []
             for record in records:
-                record.auth_data = data_unpickle(record.auth_data)
+                auth_data = data_unpickle(record.auth_data)
                 record.roles = data_unpickle(record.roles)
                 output.append({
                     'auth_id': record.id,
                     'label': record.label,
                     'description': record.description,
-                    'is_valid': coerce_value(record.is_valid, 'bool'),
-                    'auth_data': record.auth_data,
+                    'enabled': coerce_value(record.enabled, 'bool'),
+                    'auth_data': auth_data,
                     'roles': record.roles,
+                    'created_by': record.created_by,
+                    'created_by_type': record.created_by_type,
                     'created_at': record.created_at,
-                    'last_access': record.last_access,
+                    'last_access_at': record.last_access_at,
                     'updated_at': record.updated_at,
                 })
             return output
         else:
-            record = yield AuthKeys.find(auth_id, where=['is_valid = 1'])
+            record = yield AuthKeys.find(auth_id, where=['enabled = 1'])
             if record is None:
                 raise YomboWarning("No Auth Keys found.")
-            record.auth_data = data_unpickle(record.auth_data)
+            auth_data = data_unpickle(record.auth_data)
             record.roles = data_unpickle(record.roles)
             return {
                 'auth_id': record.id,
                 'label': record.label,
                 'description': record.description,
-                'is_valid': coerce_value(record.is_valid, 'bool'),
-                'auth_data': record.auth_data,
+                'enabled': coerce_value(record.enabled, 'bool'),
+                'auth_data': auth_data,
                 'roles': record.roles,
+                'created_by': record.created_by,
+                'created_by_type': record.created_by_type,
                 'created_at': record.created_at,
-                'last_access': record.last_access,
+                'last_access_at': record.last_access_at,
                 'updated_at': record.updated_at,
             }
 
@@ -1295,11 +1299,13 @@ class LocalDB(YomboLibrary):
             'id': auth_key.auth_id,
             'label': auth_key.label,
             'description': auth_key.description,
-            'is_valid': coerce_value(auth_key.is_valid, 'int'),
+            'enabled': coerce_value(auth_key.enabled, 'int'),
             'auth_data': data_pickle(auth_key.auth_data),
-            'roles': data_pickle(auth_key.roles),
+            'roles': data_pickle(list(auth_key.roles)),
+            'created_by': auth_key.created_by,
+            'created_by_type': auth_key.created_by_type,
             'created_at': auth_key.created_at,
-            'last_access': auth_key.last_access,
+            'last_access_at': auth_key.last_access_at,
             'updated_at': auth_key.updated_at,
         }
         # print("save_auth_key: %s" % args)
@@ -1311,9 +1317,9 @@ class LocalDB(YomboLibrary):
             'label': auth_key.label,
             'description': auth_key.description,
             'auth_data': data_pickle(auth_key.auth_data),
-            'roles': data_pickle(auth_key.roles),
-            'is_valid': coerce_value(auth_key.is_valid, 'bool'),
-            'last_access': auth_key.last_access,
+            'roles': data_pickle(list(auth_key.roles)),
+            'enabled': coerce_value(auth_key.enabled, 'bool'),
+            'last_access_at': auth_key.last_access_at,
             'updated_at': auth_key.updated_at,
             }
         yield self.dbconfig.update('auth_keys', args, where=['id = ?', auth_key.auth_id])
@@ -1335,54 +1341,62 @@ class LocalDB(YomboLibrary):
     @inlineCallbacks
     def get_web_session(self, session_id=None):
         def parse_record(data):
-            save_data = data_unpickle(data.session_data)
+            save_data = data_unpickle(data.auth_data)
             return {
                 'id': data.id,
-                'is_valid': coerce_value(data.is_valid, 'bool'),
-                'auth_id': save_data.get('auth_id', None),
+                'enabled': coerce_value(data.enabled, 'bool'),
+                'user_id': data.user_id,
                 'auth_at': save_data.get('auth_at', 0),
                 'auth_pin': save_data.get('auth_pin', False),
                 'auth_pin_at': save_data.get('auth_pin_at', 0),
                 'created_by': save_data.get('created_by', "unknown"),
                 'gateway_id': data.gateway_id,
-                'session_data': save_data.get('session_data', {}),
+                'auth_data': save_data.get('auth_data', {}),
                 'created_at': data.created_at,
-                'last_access': data.last_access,
+                'last_access_at': data.last_access_at,
                 'updated_at': data.updated_at,
             }
-
         if session_id is None:
+            new_id = None
+        else:
+            new_id = sha224_compact(session_id)[0:15]
+        if new_id is None:
             records = yield Sessions.all()
             if len(records) == 0:
-                raise YomboWarning("Session not found in deep storage.")
+                raise YomboWarning("Session not found in deep storage: %s" % new_id, errorno=23398)
             output = []
             for record in records:
                 output.append(parse_record(record))
             return output
         else:
-            record = yield Sessions.find(session_id)
+            record = yield Sessions.find(new_id)
             if record is None:
-                raise YomboWarning("Session not found in deep storage.")
+                raise YomboWarning("Session not found in deep storage: %s" % new_id, errorno=23231)
             return parse_record(record)
 
     @inlineCallbacks
     def save_web_session(self, session):
         save_data = data_pickle({
-            'session_data': session.session_data,
-            'auth_id': session.auth_id,
+            'auth_data': session.auth_data,
             'auth_at': session.auth_at,
             'auth_pin': session.auth_pin,
             'auth_pin_at': session.auth_pin_at,
             'created_by': session.created_by,
         })
 
+        if session.session_id is None:
+            new_id = None
+        else:
+            new_id = sha224_compact(session.session_id)[0:15]
+
         args = {
-            'id': session.session_id,
-            'is_valid': coerce_value(session.is_valid, 'int'),
+            'id': new_id,
+            'enabled': coerce_value(session.enabled, 'int'),
             'gateway_id': session.gateway_id,
-            'session_data': save_data,
+            'auth_data': save_data,
+            'user_id': session.user_id,
             'created_at': session.created_at,
-            'last_access': session.last_access,
+            'last_access_at': session.last_access_at,
             'updated_at': session.updated_at,
         }
         yield self.dbconfig.insert('webinterface_sessions', args, None, 'OR IGNORE')
@@ -1390,25 +1404,32 @@ class LocalDB(YomboLibrary):
     @inlineCallbacks
     def update_web_session(self, session):
         save_data = data_pickle({
-            'session_data': session.session_data,
-            'auth_id': session.auth_id,
+            'auth_data': session.auth_data,
+            'auth_type': session.auth_type,
             'auth_at': session.auth_at,
             'auth_pin': session.auth_pin,
             'auth_pin_at': session.auth_pin_at,
             'created_by': session.created_by,
         })
 
+        if session.session_id is None:
+            new_id = None
+        else:
+            new_id = sha224_compact(session.session_id)[0:15]
+
         args = {
-            'is_valid': coerce_value(session.is_valid, 'int'),
-            'session_data': save_data,
-            'last_access': session.last_access,
+            'enabled': coerce_value(session.enabled, 'int'),
+            'auth_data': save_data,
+            'user_id': session.user_id,
+            'last_access_at': session.last_access_at,
             'updated_at': session.updated_at,
             }
-        yield self.dbconfig.update('webinterface_sessions', args, where=['id = ?', session.session_id])
+        yield self.dbconfig.update('webinterface_sessions', args, where=['id = ?', new_id])
 
     @inlineCallbacks
     def delete_web_session(self, session_id):
-        yield self.dbconfig.delete('webinterface_sessions', where=['id = ?', session_id])
+        new_id = sha224_compact(session_id)[0:15]
+        yield self.dbconfig.delete('webinterface_sessions', where=['id = ?', new_id])
 
     #########################
     ###    States      #####
@@ -1596,7 +1617,6 @@ GROUP BY name""" % (extra_where, str(int(time()) - 60 * 60 * 24 * 60))
         if search_name_end is not None:
             where['bucket_name'] = ["%%%s" % search_name_end, 'like']
 
-        # print("searching these stats: %s" % dict(where))
         records = yield self.dbconfig.select('statistics',
              where=dictToWhere(where),
              select='bucket_name, bucket_type, bucket_size, bucket_lifetime, MIN(bucket_time) as bucket_time_min, MAX(bucket_time) as bucket_time_max, count(*) as count',
@@ -1840,39 +1860,6 @@ ORDER BY id desc"""
     def get_users(self):
         records = yield Users.all()
         return records
-
-    # @inlineCallbacks
-    # def get_user_roles(self):
-    #     records = yield UserRoles.all()
-    #     # We need this as a dictionary....
-    #     roles = {}
-    #     for record in records:
-    #         record.roles = data_unpickle(record.roles)
-    #         roles[record.email] = record.__dict__
-    #     return roles
-
-    @inlineCallbacks
-    def save_user_data(self, user):
-        records = yield UserRoles.find(where=['email = ?', user.email])
-        if len(records) == 0:
-            print("got no records, will create a user record for roles...")
-            args = {
-                'email': user.email,
-                'devices': data_pickle(user.roles),
-                'roles': data_pickle(user.roles),
-                'updated_at': int(time()),
-                'created_at': int(time()),
-            }
-            yield self.dbconfig.insert('user_roles', args, None, 'OR IGNORE')
-        else:
-            yield self.dbconfig.update("user_roles",
-                                       {
-                                           'devices': data_pickle(user.devices),
-                                           'roles': data_pickle(user.roles),
-                                           'updated_at': int(time())
-                                       },
-                                       where=['id = ?', records[0].id])
-
 
     ###########################
     ###  Variables          ###
@@ -2187,7 +2174,7 @@ ORDER BY id desc"""
 
     @inlineCallbacks
     def add_variable_data(self, data, **kwargs):
-        print("add_variable_data: data: %s" % data)
+        # print("add_variable_data: data: %s" % data)
 
         # add_variable_data: data: {'field_id': 'pVyrdoVdDglKbj', 'relation_id': 'j2z8gbJxkNl4qwM6',
         #                           'relation_type': 'device', 'data_weight': 0, 'data': '4075575332',
@@ -2262,7 +2249,7 @@ ORDER BY id desc"""
             'request_at',
             '(CASE secure WHEN 1 THEN \'TLS/SSL\' ELSE \'Unsecure\' END || "<br>" || method || "<br>" || hostname || "<br>" || path) as request_info',
             # '(method || "<br>" || hostname || "<br>" || path) as request_info',
-            '(user_id || "<br>" || user_type) as user',
+            'auth_id as user',
             '(ip || "<br>" || agent || "<br>" || referrer) as client_info',
             '(response_code || "<br>" || response_size) as response',
         ]
@@ -2297,8 +2284,7 @@ ORDER BY id desc"""
                             "method LIKE '%%%s%%'" % search,
                             "path LIKE '%%%s%%'" % search,
                             "secure LIKE '%%%s%%'" % search,
-                            "user_id LIKE '%%%s%%'" % search,
-                            "user_type LIKE '%%%s%%'" % search,
+                            "auth_id LIKE '%%%s%%'" % search,
                             "response_code LIKE '%%%s%%'" % search,
                             "response_size LIKE '%%%s%%'" % search]
 

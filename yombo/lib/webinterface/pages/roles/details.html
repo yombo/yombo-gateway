@@ -17,7 +17,7 @@
 <!-- /.row -->
 
 <div class="row">
-    <div class="col-lg-5">
+    <div class="col-md-5">
         <div class="panel panel-default">
             <div class="panel-heading">
                 <h4>{{_("ui::header::basic_information")}}</h4>
@@ -36,7 +36,7 @@
         </div>
         <!-- /.panel-body -->
     </div>
-    <div class="col-lg-7">
+    <div class="col-md-7">
         <div class="panel panel-default">
             <div class="panel-heading">
                 <h4>Members</h4>
@@ -45,10 +45,10 @@
             <div class="panel-body">
                 <strong>Users</strong>
                 <ul>
-                {%- set role_members = _users.list_roles_by_user() %}
-                {%- if role_members[role.machine_label]|length > 0 %}
-                {% for member in role_members[role.machine_label] %}
-                    <li><a href="/users/{{member.user_id}}/details">{{ member.name }} &lt;{{member.email}}&gt;</a></li>
+                {%- set role_members = _users.list_role_users(role) %}
+                {%- if role_members|length > 0 %}
+                {%- for user in role_members %}
+                    <li><a href="/users/{{user.user_id}}/details">{{ user.safe_display|e }}</a></li>
                 {% endfor %}
                 {% else %} <li>{{_("ui::common::none")}}</li>
                 {% endif %}
@@ -88,7 +88,7 @@
     </div>
 </div>
 <div class="row">
-    <div class="col-lg-6">
+    <div class="col-md-6">
         <div class="panel panel-default">
             <div class="panel-heading">
                 <h4>Allow Permissions</h4>
@@ -98,24 +98,25 @@
                 {%- for platform, platform_data in role.item_permissions.items() if
                     'allow' in role.item_permissions[platform] and
                     role.item_permissions[platform]['allow']|length > 0 %}
-                <ul style="padding-left: 15px">
+                <ul style="padding-left: 15px;">
                     <li><strong>Allow</strong></li>
                 {% for item, actions in role.item_permissions[platform]['allow'].items() %}
                 <ul style="padding-left: 15px">
                     <li>Platform: {{platform}}</li>
                     <li>Item: {{item}}</li>
-                    <li style="padding-bottom: 20px">Action: {{actions|join(',')}}</li>
+                    <li>Action: {{actions|join(', ')}}</li>
+                </ul>
+                {%- endfor %}
                 </ul>
                 {%- if not loop.last %}
-                <hr style="margin-top: 8px; margin-bottom: 8px;">
+                <hr style="margin-top: 4px; margin-bottom: 4px;">
                 {%- endif %}
-                {%- endfor %}
                 {%- endfor %}
             </div>
         </div>
         <!-- /.panel-body -->
     </div>
-    <div class="col-lg-6">
+    <div class="col-md-6">
         <div class="panel panel-default">
             <div class="panel-heading">
                 <h4>Deny Permissions</h4>
@@ -374,7 +375,7 @@
     $('#submit_role').prop('disabled', true);
 
     var rolesList = {
-    {%- for role in _users.get_roles() %}
+    {%- for role_id, role in _users.roles.items() %}
         "{{ role.machine_label }}": {
         "machine_label": "{{ role.machine_label}}",
         "label": "{{ role.label}}",

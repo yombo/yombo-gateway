@@ -79,15 +79,17 @@ def create_table_schema_version(Registry, **kwargs):
 def create_table_auth_keys(Registry, **kwargs):
     """ Nearly the same as webinterface_sessions, but for auth keys """
     table = """CREATE TABLE `auth_keys` (
-        `id`           TEXT NOT NULL, /* moduleUUID */
-        `label`        TEXT NOT NULL,
-        `description`  TEXT NOT NULL,
-        `is_valid`     INTEGER NOT NULL,
-        `roles`        TEXT,
-        `auth_data`    TEXT NOT NULL,
-        `created_at`   INTEGER NOT NULL,
-        `last_access`  INTEGER NOT NULL,
-        `updated_at`   INTEGER NOT NULL,
+        `id`              TEXT NOT NULL, /* moduleUUID */
+        `label`           TEXT NOT NULL,
+        `description`     TEXT NOT NULL,
+        `enabled`         INTEGER NOT NULL,
+        `roles`           TEXT,
+        `auth_data`       TEXT NOT NULL,
+        `created_by`      INTEGER NOT NULL,
+        `created_by_type` INTEGER NOT NULL,
+        `created_at`      INTEGER NOT NULL,
+        `last_access_at`  INTEGER NOT NULL,
+        `updated_at`      INTEGER NOT NULL,
         PRIMARY KEY(id));"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('auth_keys', 'created_at'))
@@ -224,8 +226,7 @@ def create_table_device_commands(Registry, **kwargs):
         `command_status_received` INT NOT NULL DEFAULT 0,
         `history`           TEXT NOT NULL,
         `status`            TEXT NOT NULL,
-        `user_id`           TEXT NOT NULL,
-        `user_type`         TEXT NOT NULL,
+        `auth_id`           TEXT NOT NULL,
         `requesting_source` TEXT NOT NULL,
         `idempotence`       TEXT,
         `uploaded`          INTEGER NOT NULL DEFAULT 0,
@@ -253,8 +254,7 @@ def create_table_device_status(Registry, **kwargs):
         `human_message`        TEXT NOT NULL,
         `machine_status`       TEXT NOT NULL,
         `machine_status_extra` TEXT,
-        `user_id`              TEXT NOT NULL,
-        `user_type`            TEXT NOT NULL,
+        `auth_id`              TEXT NOT NULL,
         `requesting_source`    TEXT,
         `reporting_source`     TEXT NOT NULL,
         `request_id`           TEXT,
@@ -317,8 +317,7 @@ def create_table_events(Registry, **kwargs):
         `event_subtype` TEXT NOT NULL, /* allow/deny */
         `priority`      TEXT NOT NULL, /* debug, low, normal, high, urgent */
         `source`        TEXT NOT NULL, /* where this message was created lib.states::method() */
-        `user_id`       TEXT,
-        `user_type`     TEXT,
+        `auth_id`       TEXT,
         `attr1`         TEXT,
         `attr2`         TEXT,
         `attr3`         TEXT,
@@ -329,16 +328,6 @@ def create_table_events(Registry, **kwargs):
         `attr8`         TEXT,
         `attr9`         TEXT,
         `attr10`        TEXT,
-        `attr11`        TEXT,
-        `attr12`        TEXT,
-        `attr13`        TEXT,
-        `attr14`        TEXT,
-        `attr15`        TEXT,
-        `attr16`        TEXT,
-        `attr17`        TEXT,
-        `attr18`        TEXT,
-        `attr19`        TEXT,
-        `attr20`        TEXT,
         `meta`          TEXT, /* Any extra meta data. MSGPACK format */
         `created_at`    INTEGER NOT NULL);"""
     yield Registry.DBPOOL.runQuery(table)
@@ -348,7 +337,7 @@ def create_table_events(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(create_index('events', 'attr2'))
     yield Registry.DBPOOL.runQuery(create_index('events', 'attr3'))
     yield Registry.DBPOOL.runQuery(create_index('events', 'attr4'))
-    yield Registry.DBPOOL.runQuery(create_index('events', 'attr5')) # Only do these, majority only have this many items.
+    yield Registry.DBPOOL.runQuery(create_index('events', 'attr5'))  # Only do these, majority only have this many items.
 
 
 @inlineCallbacks
@@ -664,17 +653,18 @@ def create_table_users(Registry, **kwargs):
 def create_table_webinterface_sessions(Registry, **kwargs):
     """ Defines the web interface session store. Used by the :class:`WebInterface` class to maintain session information """
     table = """CREATE TABLE `webinterface_sessions` (
-        `id`           TEXT NOT NULL, /* moduleUUID */
-        `is_valid`     INTEGER NOT NULL,
-        `gateway_id`   TEXT NOT NULL,
-        `session_data` TEXT NOT NULL,
-        `created_at`   INTEGER NOT NULL,
-        `last_access`  INTEGER NOT NULL,
-        `updated_at`   INTEGER NOT NULL,
+        `id`             TEXT NOT NULL, /* moduleUUID */
+        `enabled`        INTEGER NOT NULL,
+        `gateway_id`     TEXT NOT NULL,
+        `user_id`        TEXT NOT NULL,
+        `auth_data`      TEXT NOT NULL,
+        `created_at`     INTEGER NOT NULL,
+        `last_access_at` INTEGER NOT NULL,
+        `updated_at`     INTEGER NOT NULL,
         PRIMARY KEY(id));"""
     yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('webinterface_sessions', 'created_at'))
-    yield Registry.DBPOOL.runQuery(create_index('webinterface_sessions', 'updated_at'))
+    yield Registry.DBPOOL.runQuery(create_index('webinterface_sessions', 'id'))
+    yield Registry.DBPOOL.runQuery(create_index('webinterface_sessions', 'last_access_at'))
 
 
 @inlineCallbacks
@@ -691,8 +681,7 @@ def create_table_webinterface_logs(Registry, **kwargs):
         `method`            TEXT NOT NULL,
         `path`              TEXT NOT NULL,
         `secure`            BOOL NOT NULL,
-        `user_id`           TEXT,
-        `user_type`         TEXT,
+        `auth_id`           TEXT,
         `response_code`     INTEGER NOT NULL,
         `response_size`     INTEGER NOT NULL,
         `uploadable`        BOOL DEFAULT 1,
