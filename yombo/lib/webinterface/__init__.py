@@ -1069,13 +1069,12 @@ class WebInterface(YomboLibrary):
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         CAT_SCRIPTS = [
-            'source/bootstrap/dist/css/bootstrap.min.css',
+            'source/bootstrap/dist/css/bootstrap-theme.min.css',
         ]
-        CAT_SCRIPTS_OUT = 'dist/css/bootstrap.min.css'
+        CAT_SCRIPTS_OUT = 'dist/css/bootstrap-theme.min.css'
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
         CAT_SCRIPTS = [
             'source/bootstrap/dist/css/bootstrap-theme.min.css.map',
-            'source/metisMenu/metisMenu.min.css',
         ]
         CAT_SCRIPTS_OUT = 'dist/css/bootstrap-theme.min.css.map'
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
@@ -1093,13 +1092,28 @@ class WebInterface(YomboLibrary):
             ]
         CAT_SCRIPTS_OUT = 'dist/css/admin2-metisMenu.min.css'
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
+        CAT_SCRIPTS = [
+            'source/metisMenu/metisMenu.min.css.map',
+        ]
+        CAT_SCRIPTS_OUT = 'dist/css/metisMenu.min.css.map'
+        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         CAT_SCRIPTS = [
-            'source/datatables-plugins/integration/bootstrap/3/dataTables.bootstrap.css',
-            'source/datatables-responsive/css/responsive.dataTables.min.css',
+            'source/datatables_1.10.18/dataTables.bootstrap.min.css',
+            'source/datatables_1.10.18/responsive.bootstrap.css',
             ]
         CAT_SCRIPTS_OUT = 'dist/css/datatables.min.css'
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
+
+        CAT_SCRIPTS = [
+            'source/datatables_1.10.18/jquery.dataTables.min.js',
+            'source/datatables_1.10.18/dataTables.bootstrap.min.js',
+            'source/datatables_1.10.18/dataTables.responsive.min.js',
+            'source/datatables_1.10.18/responsive.bootstrap.js',
+            ]
+        CAT_SCRIPTS_OUT = 'dist/js/datatables.min.js'
+        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
+        copytree('source/datatables_1.10.18/images/', 'dist/images/')
 
         CAT_SCRIPTS = [
             'source/jquery/jquery-2.2.4.min.js',
@@ -1108,6 +1122,11 @@ class WebInterface(YomboLibrary):
             'source/metisMenu/metisMenu.min.js',
         ]
         CAT_SCRIPTS_OUT = 'dist/js/jquery-cookie-bootstrap-metismenu.min.js'
+        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
+        CAT_SCRIPTS = [
+            'source/metisMenu/metisMenu.min.js.map',
+        ]
+        CAT_SCRIPTS_OUT = 'dist/js/metisMenu.min.js.map'
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         CAT_SCRIPTS = [
@@ -1127,15 +1146,6 @@ class WebInterface(YomboLibrary):
             'source/font-awesome5/js/fontawesome-all.min.js',
             ]
         CAT_SCRIPTS_OUT = 'dist/js/fontawesome-all.min.js'
-        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
-
-
-        CAT_SCRIPTS = [
-            'source/datatables/js/jquery.dataTables.min.js',
-            'source/datatables-plugins/integration/bootstrap/3/dataTables.bootstrap.min.js',
-            'source/datatables-responsive/js/dataTables.responsive.min.js',
-            ]
-        CAT_SCRIPTS_OUT = 'dist/js/datatables.min.js'
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         CAT_SCRIPTS = [

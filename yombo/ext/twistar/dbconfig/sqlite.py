@@ -9,22 +9,19 @@ class SQLiteDBConfig(InteractionBase):
         args = where[1:]
         return (query, args)
 
-
     def updateArgsToString(self, args):
         colnames = self.escapeColNames(list(args.keys()))
         setstring = ",".join([key + " = ?" for key in colnames])
         return (setstring, list(args.values()))
 
-
     def insertArgsToString(self, vals):
         return "(" + ",".join(["?" for _ in list(vals.items())]) + ")"
 
-
-    # def insertMany(self, tablename, vals):
-    #     def _insertMany(txn):
-    #         for val in vals:
-    #             self.insert(tablename, val, txn)
-    #     return Registry.DBPOOL.runInteraction(_insertMany)
+    def insertMany(self, tablename, vals):
+        def _insertMany(txn):
+            for val in vals:
+                self.insert(tablename, val, txn)
+        return Registry.DBPOOL.runInteraction(_insertMany)
 
     def pragma(self, pragma_string):
         """
