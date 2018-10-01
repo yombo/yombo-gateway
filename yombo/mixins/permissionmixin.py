@@ -131,12 +131,11 @@ class PermissionMixin(YomboBaseMixin):
 
         platform_data = self._Parent.get_platform_item(platform, item)
         platform_item_label = platform_data['platform_item_label']
-
-        if item == "*":
-            platform_item_key = "*"
+        platform_actions = platform_data['platform_actions']
 
         if platform not in self.item_permissions:
             return
+
 
         print("remove item: platform: %s" % platform)
         print("remove item: item: %s" % item)
@@ -160,8 +159,14 @@ class PermissionMixin(YomboBaseMixin):
             return
 
         for action in actions:
+            if action != "*" and action not in platform_actions:
+                raise YomboWarning("Invalid action.")
+
             if action in self.item_permissions[platform][access][platform_item_label]:
                 self.item_permissions[platform][access][platform_item_label].remove(action)
+
+        if len(self.item_permissions[platform][access][platform_item_label]) == 0:
+            del self.item_permissions[platform][access][platform_item_label]
 
         if flush_cache in (None, True):
             self._Parent._Cache.flush(tags=('user', 'role'))

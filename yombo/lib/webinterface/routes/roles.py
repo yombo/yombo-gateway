@@ -256,7 +256,7 @@ def route_roles(webapp):
 
             return webinterface.redirect(request, '/roles/%s/details' % role_id)
 
-        @webapp.route('/<string:role_id>/remove_item_permission//<string:platform>/<string:item_id>', methods=['GET'])
+        @webapp.route('/<string:role_id>/remove_item_permission/<string:platform>/<string:item_id>', methods=['GET'])
         @require_auth()
         def page_roles_remove_item_permission_get(webinterface, request, session, role_id, platform, item_id):
             """

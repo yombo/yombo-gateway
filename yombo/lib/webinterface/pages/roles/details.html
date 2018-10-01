@@ -70,23 +70,6 @@
     </div>
 </div>
 <!-- /.row -->
-<div class="modal" id="delete_permission_modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                <h4 class="modal-title" id="ModalLabel-delete_permission_modal">Confirm deletion</h4>
-            </div>
-            <div class="modal-body">
-                  Confirm permission deletion...
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
-                <a id="delete_permission_link" class="btn btn-info  btn-danger" href="">Delete it...</a>
-            </div>
-        </div>
-    </div>
-</div>
 <div class="row">
     <div class="col-md-6">
         <div class="panel panel-default">
@@ -99,12 +82,18 @@
                     'allow' in role.item_permissions[platform] and
                     role.item_permissions[platform]['allow']|length > 0 %}
                 <ul style="padding-left: 15px;">
-                    <li><strong>Allow</strong></li>
                 {% for item, actions in role.item_permissions[platform]['allow'].items() %}
+                    <li>
+                        <strong>{{platform}} <i class="fas fa-arrow-right"></i> {{item}}</strong>
+                        <a href="/roles/{{role.role_id}}/remove_item_permission/{{platform}}/{{item}}"><i class="fas fa-times" style="color:red"></i></a>
+
+                    </li>
                 <ul style="padding-left: 15px">
-                    <li>Platform: {{platform}}</li>
-                    <li>Item: {{item}}</li>
-                    <li>Action: {{actions|join(', ')}}</li>
+                    {%- for action in actions %}
+                        <li>
+                            {{action}} <a href="/roles/{{role.role_id}}/remove_item_permission/{{platform}}/{{item}}/allow/{{action}}"><i class="fas fa-times" style="color:red"></i></a>
+                        </li>
+                    {%- endfor %}
                 </ul>
                 {%- endfor %}
                 </ul>
@@ -126,18 +115,25 @@
                 {%- for platform, platform_data in role.item_permissions.items() if
                     'deny' in role.item_permissions[platform] and
                     role.item_permissions[platform]['deny']|length > 0 %}
-                <ul style="padding-left: 15px">
-                    <li><strong>Deny</strong></li>
+                <ul style="padding-left: 15px;">
                 {% for item, actions in role.item_permissions[platform]['deny'].items() %}
+                    <li>
+                        <strong>{{platform}} <i class="fas fa-arrow-right"></i> {{item}}</strong>
+                        <a href="/roles/{{role.role_id}}/remove_item_permission/{{platform}}/{{item}}"><i class="fas fa-times" style="color:red"></i></a>
+
+                    </li>
                 <ul style="padding-left: 15px">
-                    <li>Platform: {{platform}}</li>
-                    <li>Item: {{item}}</li>
-                    <li style="padding-bottom: 20px">Action: {{actions|join(',')}}</li>
+                    {%- for action in actions %}
+                        <li>
+                            {{action}} <a href="/roles/{{role.role_id}}/remove_item_permission/{{platform}}/{{item}}/deny/{{action}}"><i class="fas fa-times" style="color:red"></i></a>
+                        </li>
+                    {%- endfor %}
+                </ul>
+                {%- endfor %}
                 </ul>
                 {%- if not loop.last %}
-                <hr style="margin-top: 8px; margin-bottom: 8px;">
+                <hr style="margin-top: 4px; margin-bottom: 4px;">
                 {%- endif %}
-                {%- endfor %}
                 {%- endfor %}
             </div>
         </div>
@@ -168,16 +164,16 @@
                     <table style="width: 100%;">
                         <tr style="vertical-align:text-top">
                             <td>
-                                <input type="checkbox" id="allow_view" name="allow_view" value="allow_view">Allow view<br>
-                                <input type="checkbox" id="allow_edit" name="allow_edit" value="allow_edit">Allow edit<br>
-                                <input type="checkbox" id="allow_enable" name="allow_enable" value="allow_enable">Allow enable<br>
-                                <input type="checkbox" id="allow_disable" name="allow_disable" value="allow_disable">Allow disable<br>
+                                <input type="checkbox" id="allow_*" name="allow_*" value="allow_*">Allow ANY<br>
+                                {%- for action in _users.auth_platforms['automation']['actions'] %}
+                                <input type="checkbox" id="allow_{{action}}" name="allow_{{action}}" value="allow_{{action}}">Allow {{action}}<br>
+                                {%- endfor %}
                             </td>
                             <td>
-                                <input type="checkbox" id="deny_view" name="deny_view" value="deny_view">Deny view<br>
-                                <input type="checkbox" id="deny_edit" name="deny_edit" value="deny_edit">Deny edit<br>
-                                <input type="checkbox" id="deny_enable" name="deny_enable" value="deny_enable">Deny enable<br>
-                                <input type="checkbox" id="deny_disable" name="deny_disable" value="deny_disable">Deny disable<br>
+                                <input type="checkbox" id="deny_*" name="allow_*" value="deny_*">Deny ANY<br>
+                                {%- for action in _users.auth_platforms['automation']['actions'] %}
+                                <input type="checkbox" id="deny_{{action}}" name="deny_{{action}}" value="deny_{{action}}">Deny {{action}}<br>
+                                {%- endfor %}
                             </td>
                         </tr>
                     </table>
@@ -209,18 +205,16 @@
                     <table style="width: 100%;">
                         <tr style="vertical-align:text-top">
                             <td>
-                                <input type="checkbox" id="allow_view" name="allow_view" value="allow_view">Allow view<br>
-                                <input type="checkbox" id="allow_control" name="allow_control" value="allow_control">Allow control<br>
-                                <input type="checkbox" id="allow_edit" name="allow_edit" value="allow_edit">Allow edit<br>
-                                <input type="checkbox" id="allow_enable" name="allow_enable" value="allow_enable">Allow enable<br>
-                                <input type="checkbox" id="allow_disable" name="allow_disable" value="allow_disable">Allow disable<br>
+                                <input type="checkbox" id="allow_*" name="allow_*" value="allow_*">Allow ANY<br>
+                                {%- for action in _users.auth_platforms['device']['actions'] %}
+                                <input type="checkbox" id="allow_{{action}}" name="allow_{{action}}" value="allow_{{action}}">Allow {{action}}<br>
+                                {%- endfor %}
                             </td>
                             <td>
-                                <input type="checkbox" id="deny_view" name="deny_view" value="deny_view">Deny view<br>
-                                <input type="checkbox" id="deny_control" name="deny_control" value="deny_control">Deny control<br>
-                                <input type="checkbox" id="deny_edit" name="deny_edit" value="deny_edit">Deny edit<br>
-                                <input type="checkbox" id="deny_enable" name="deny_enable" value="deny_enable">Deny enable<br>
-                                <input type="checkbox" id="deny_disable" name="deny_disable" value="deny_disable">Deny disable<br>
+                                <input type="checkbox" id="deny_*" name="allow_*" value="deny_*">Deny ANY<br>
+                                {%- for action in _users.auth_platforms['device']['actions'] %}
+                                <input type="checkbox" id="deny_{{action}}" name="deny_{{action}}" value="deny_{{action}}">Deny {{action}}<br>
+                                {%- endfor %}
                             </td>
                         </tr>
                     </table>
@@ -254,20 +248,16 @@
                     <table style="width: 100%;">
                         <tr style="vertical-align:text-top">
                             <td>
-                                <input type="checkbox" id="allow_view" name="allow_view" value="allow_view">Allow view<br>
-                                <input type="checkbox" id="allow_edit" name="allow_edit" value="allow_edit">Allow edit<br>
-                                <input type="checkbox" id="allow_start" name="allow_start" value="allow_enable">Allow start<br>
-                                <input type="checkbox" id="allow_stop" name="allow_stop" value="allow_disable">Allow stop<br>
-                                <input type="checkbox" id="allow_enable" name="allow_enable" value="allow_enable">Allow enable<br>
-                                <input type="checkbox" id="allow_disable" name="allow_disable" value="allow_disable">Allow disable<br>
+                                <input type="checkbox" id="allow_*" name="allow_*" value="allow_*">Allow ANY<br>
+                                {%- for action in _users.auth_platforms['scene']['actions'] %}
+                                <input type="checkbox" id="allow_{{action}}" name="allow_{{action}}" value="allow_{{action}}">Allow {{action}}<br>
+                                {%- endfor %}
                             </td>
                             <td>
-                                <input type="checkbox" id="deny_view" name="deny_view" value="deny_view">Deny view<br>
-                                <input type="checkbox" id="deny_edit" name="deny_edit" value="deny_edit">Deny edit<br>
-                                <input type="checkbox" id="deny_start" name="deny_start" value="allow_enable">Deny start<br>
-                                <input type="checkbox" id="deny_stop" name="deny_stop" value="allow_disable">Deny stop<br>
-                                <input type="checkbox" id="deny_enable" name="deny_enable" value="deny_enable">Deny enable<br>
-                                <input type="checkbox" id="deny_disable" name="deny_disable" value="deny_disable">Deny disable<br>
+                                <input type="checkbox" id="deny_*" name="allow_*" value="deny_*">Deny ANY<br>
+                                {%- for action in _users.auth_platforms['scene']['actions'] %}
+                                <input type="checkbox" id="deny_{{action}}" name="deny_{{action}}" value="deny_{{action}}">Deny {{action}}<br>
+                                {%- endfor %}
                             </td>
                         </tr>
                     </table>
@@ -333,15 +323,6 @@
 
 {% block body_bottom %}
 <script>
-    $('#delete_permission_modal').on('show.bs.modal', function(e) {
-        var roleId = $(e.relatedTarget).data('role-id');
-        var permissionId = $(e.relatedTarget).data('permission-id');
-        // alert("/roles" + roleId + "/remove_item_permission/" + permissionId);
-        $("#delete_permission_link").attr("href", "/roles/" + roleId + "/remove_item_permission/" + permissionId);
-// /<string:role_id>/remove_item_permission/<string:permission_id>
-        // $(e.currentTarget).find('input[name="bookId"]').val(bookId);
-    });
-
     function enableAutomationSubmitBtn(){
         document.getElementById("submit_automation").disabled = false;
     }

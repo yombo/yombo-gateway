@@ -86,7 +86,7 @@
                 {% for role_id, role in user.roles.items() %}
                     <li>
                         <a href="/roles/{{role.role_id}}/details">{{ role.label }}</a>
-                        <a href="/users/{{user.user_id}}/unattach_role/{{role.role_id}}" class="btn btn-danger btn-xs" role="button">Remove</a>
+                        <a href="/users/{{user.user_id}}/unattach_role/{{role.role_id}}"><i class="fas fa-times" style="color:red"></i></a>
                     </li>
                     <ul style="padding-left: 15px">
                         <li  style="padding-bottom: 5px">{{ role.description}}</li>
@@ -155,11 +155,11 @@
                     {%- set component = _automation.get(item) %}
                     <li>
                         <a href="/automation/{{component.rule_id}}/details">{{ component.label }}</a>
-                        <a href="/users/{{user.user_id}}/remove_item_permission/automation/{{component.rule_id}}" class="btn btn-danger btn-xs" role="button">Remove</a>
+                        <a href="/users/{{user.user_id}}/remove_item_permission/automation/{{component.rule_id}}"><i class="fas fa-times" style="color:red"></i></a>
                     </li>
                     <ul style="padding-left: 15px">
                         {%- for action in actions %}
-                        <li>{{action}} <a href="/users/{{user.user_id}}/remove_item_permission/automation/{{component.rule_id}}/{{access}}/{{action}}" class="btn btn-danger btn-xs" role="button">Remove</a></li>
+                        <li>{{action}} <a href="/users/{{user.user_id}}/remove_item_permission/automation/{{component.rule_id}}/{{access}}/{{action}}"><i class="fas fa-times" style="color:red"></i></a></li>
                         {%- endfor %}</ul>
                     {% endfor %}
                 </ul>
@@ -227,11 +227,11 @@
                     {%- set device = _devices.get(item) %}
                     <li>
                         <a href="/devices/{{device.device_id}}/details">{{ device.full_label }}</a>
-                        <a href="/users/{{user.user_id}}/remove_item_permission/device/{{device.device_id}}" class="btn btn-danger btn-xs" role="button">Remove</a>
+                        <a href="/users/{{user.user_id}}/remove_item_permission/device/{{device.device_id}}"><i class="fas fa-times" style="color:red"></i></a>
                     </li>
                     <ul style="padding-left: 15px">
                         {%- for action in actions %}
-                        <li>{{action}} <a href="/users/{{user.user_id}}/remove_item_permission/device/{{device.device_id}}/{{access}}/{{action}}" class="btn btn-danger btn-xs" role="button">Remove</a></li>
+                        <li>{{action}} <a href="/users/{{user.user_id}}/remove_item_permission/device/{{device.device_id}}/{{access}}/{{action}}"><i class="fas fa-times" style="color:red"></i></a></li>
                         {%- endfor %}</ul>
                     {% endfor %}
                 </ul>
@@ -299,11 +299,11 @@
                     {%- set component = _automation.get(item) %}
                     <li>
                         <a href="/automation/{{component.rule_id}}/details">{{ component.label }}</a>
-                        <a href="/users/{{user.user_id}}/remove_item_permission/automation/{{component.rule_id}}" class="btn btn-danger btn-xs" role="button">Remove</a>
+                        <a href="/users/{{user.user_id}}/remove_item_permission/automation/{{component.rule_id}}"><i class="fas fa-times" style="color:red"></i></a>
                     </li>
                     <ul style="padding-left: 15px">
                         {%- for action in actions %}
-                        <li>{{action}} <a href="/users/{{user.user_id}}/remove_item_permission/automation/{{component.rule_id}}/{{access}}/{{action}}" class="btn btn-danger btn-xs" role="button">Remove</a></li>
+                        <li>{{action}} <a href="/users/{{user.user_id}}/remove_item_permission/automation/{{component.rule_id}}/{{access}}/{{action}}"><i class="fas fa-times" style="color:red"></i></a></li>
                         {%- endfor %}</ul>
                     {% endfor %}
                 </ul>
