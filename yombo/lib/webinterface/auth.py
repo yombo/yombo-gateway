@@ -55,11 +55,11 @@ def update_request(webinterface, request):
     request.auth = None
     request.received_cookies = bytes_to_unicode(request.received_cookies)
     request.args = bytes_to_unicode(request.args)
-    webinterface.webapp.templates.globals['_'] = webinterface.i18n(request)
     request.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')  # don't cache!
     request.setHeader('Expires', '-1')  # don't cache!
     request.setHeader('X-Frame-Options', 'SAMEORIGIN')  # Prevent nesting frames
     request.setHeader('X-Content-Type-Options', 'nosniff');  # We'll do our best to be accurate!
+    request.webinterface = webinterface
 
 
 def check_idempotence(webinterface, request, session):

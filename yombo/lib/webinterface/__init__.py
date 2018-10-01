@@ -248,7 +248,6 @@ class WebInterface(YomboLibrary):
         self.wi_port_nonsecure = self._Configs.get2('webinterface', 'nonsecure_port', 8080)
         self.wi_port_secure = self._Configs.get2('webinterface', 'secure_port', 8443)
 
-        # self.webapp.templates = jinja2.Environment(loader=jinja2.FileSystemLoader("yombo"),)
         self.webapp.templates = jinja2.Environment(loader=jinja2.FileSystemLoader("%s/yombo" % self.app_dir),
                                                    extensions=['jinja2.ext.loopcontrols'])
         self.setup_basic_filters()
@@ -875,6 +874,7 @@ class WebInterface(YomboLibrary):
 
     def get_template(self, request, template_path):
         request.setHeader('server', 'Apache/2.4.33 (Ubuntu)')
+        request.webinterface.webapp.templates.globals['_'] = request.webinterface.i18n(request)  # set in auth.update_request.
         return self.webapp.templates.get_template(template_path)
 
     def redirect(self, request, redirect_path):
