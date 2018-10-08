@@ -9,6 +9,7 @@ Mixin class that adds permission handling. Used in things like users and roles o
 library.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+.. versionadded:: 0.22.0
 
 :copyright: Copyright 2018 by Yombo.
 :license: LICENSE for details.

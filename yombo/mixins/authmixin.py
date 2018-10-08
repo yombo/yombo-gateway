@@ -8,6 +8,7 @@
 Mixin class for anything can act like an authentication. For example, users, websession, authkeys.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+.. versionadded:: 0.22.0
 
 :copyright: Copyright 2018 by Yombo.
 :license: LICENSE for details.

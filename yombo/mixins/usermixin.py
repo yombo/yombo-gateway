@@ -10,6 +10,7 @@ Mixin class to represent users.
 THIS MIXIN MUST BE LISTED BEFORE AUTHMIXIN!
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+.. versionadded:: 0.22.0
 
 :copyright: Copyright 2018 by Yombo.
 :license: LICENSE for details.

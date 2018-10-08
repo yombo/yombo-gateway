@@ -4,6 +4,7 @@
 A simple parent class for children of various Yombo libriaries.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+.. versionadded:: 0.22.0
 
 :copyright: Copyright 2018 by Yombo.
 :license: LICENSE for details.
