@@ -345,7 +345,7 @@ class LocalDB(YomboLibrary):
         self.save_bulk_queue_loop = LoopingCall(self.save_bulk_queue)
         self.save_bulk_queue_loop.start(17, False)
         self.cleanup_database_loop = LoopingCall(self.cleanup_database)
-        self._CronTab.new(self.cleanup_database, min=0, hour=3)  # Clean database at 3am every day.
+        self._CronTab.new(self.cleanup_database, min=0, hour=3, label="Periodically clean the database.")  # Clean database at 3am every day.
 
     @inlineCallbacks
     def _unload_(self, **kwargs):

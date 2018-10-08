@@ -202,15 +202,6 @@ class CronTab(YomboLibrary):
         """
         return list(self.cron_tasks.items())
 
-    def iteritems(self):
-        return iter(self.cron_tasks.items())
-
-    def iterkeys(self):
-        return iter(self.cron_tasks.keys())
-
-    def itervalues(self):
-        return iter(self.cron_tasks.values())
-
     def values(self):
         return list(self.cron_tasks.values())
 
@@ -222,7 +213,7 @@ class CronTab(YomboLibrary):
         :type loader: Instance of Loader
         """
         self.cron_tasks = {}
-        self.cron_task_search_attributes = ['cron_task_id', 'label', 'enabled']
+        self.cron_task_search_attributes = ['cron_id', 'label', 'enabled']
         self.check_cron_tabs_loop = None  # a simple loop that checks all cron tabs to see if they need to run.
         self.check_cron_tabs_loop = LoopingCall(self.check_cron_tabs)
 
@@ -254,11 +245,9 @@ class CronTab(YomboLibrary):
         """
         Checks to see if cron needs to run anything.
         """
-        # logger.debug("Cron check: %s" % datetime.now())
-
-        the_time=datetime(*datetime.now().timetuple()[:5])
-        for e in self.cron_tasks:
-          self.cron_tasks[e].check(the_time)
+        the_time = datetime(*datetime.now().timetuple()[:5])
+        for task in self.cron_tasks:
+            self.cron_tasks[task].check(the_time)
 
     def get(self, cron_task_requested, limiter=None, status=None):
         """
@@ -279,8 +268,8 @@ class CronTab(YomboLibrary):
         :raises KeyError: When item requested cannot be found.
         :param cron_task_requested: The cron task ID or cron task label to search for.
         :type cron_task_requested: string
-        :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
-        :type limiter_override: float
+        :param limiter: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
+        :type limiter: float
         :param status: Deafult: 1 - The status of the cron task to check for.
         :type status: int
         :return: Pointer to requested cron tab.
@@ -302,7 +291,7 @@ class CronTab(YomboLibrary):
         else:
             attrs = [
                 {
-                    'field': 'cron_task_id',
+                    'field': 'cron_id',
                     'value': cron_task_requested,
                     'limiter': limiter,
                 },
@@ -318,7 +307,7 @@ class CronTab(YomboLibrary):
                                                                      self.cron_task_search_attributes,
                                                                      limiter=limiter,
                                                                      operation="highest")
-                # logger.debug("found cron tab by search: {cron_task_id}", cron_task_id=key)
+                # logger.debug("found cron tab by search: {cron_id}", cron_id=key)
                 if found:
                     return item
                 else:
@@ -371,7 +360,7 @@ class CronTab(YomboLibrary):
         newCron = CronTask(crontab_callback, min=min, hour=hour, day=day, month=month,
             dow=dow, label=label, enabled=enabled, crontab_library=self, args=args,
             kwargs=kwargs)
-        self.cron_tasks[newCron.cron_task_id] = newCron
+        self.cron_tasks[newCron.cron_id] = newCron
         return newCron
 
     def remove(self, cron_task_requested):
@@ -392,7 +381,7 @@ class CronTab(YomboLibrary):
         """
         crontask = self.get(cron_task_requested)
         crontask.disable()
-        del self.cron_tasks[crontask.cron_task_id]
+        del self.cron_tasks[crontask.cron_id]
 
     def enable(self, cron_task_requested):
         """
@@ -520,10 +509,10 @@ class CronTask(object):
         Setup the cron event.
         """
         self.crontab_library = crontab_library
-        self.cron_task_id = random_string(length=10)
+        self.cron_id = random_string(length=10)
         self.crontab_callback = crontab_callback
         self.mins = conv_to_set(min)
-        self.hours= conv_to_set(hour)
+        self.hours = conv_to_set(hour)
         self.days = conv_to_set(day)
         self.months = conv_to_set(month)
         self.dow = conv_to_set(dow)
@@ -539,7 +528,7 @@ class CronTask(object):
         """
         self.enabled = False
         if self.crontab_library is not None:
-          self.crontab_library.remove(self.cron_task_id)
+          self.crontab_library.remove(self.cron_id)
 
     def enable(self):
         """
