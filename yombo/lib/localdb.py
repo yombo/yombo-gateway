@@ -36,7 +36,6 @@ from yombo.ext.twistar.utils import dictToWhere
 
 # Import twisted libraries
 from twisted.enterprise import adbapi
-from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.task import LoopingCall
 from twisted.internet.utils import getProcessOutput
@@ -330,9 +329,7 @@ class LocalDB(YomboLibrary):
             self.dbconfig.update("schema_version",
                                  {'version': LATEST_SCHEMA_VERSION},
                                  where=['table_name = ?', 'core'])
-            # results = yield Schema_Version.all()
-
-        self._Events.new('localdb', 'connected', (connect_time, start_schema_version, current_schema_version))
+        self._Events.new('localdb', 'connected', (start_schema_version, current_schema_version))
 
         chmod("%s/etc/yombo.db" % self.working_dir, 0o600)
 
@@ -348,8 +345,7 @@ class LocalDB(YomboLibrary):
         self.save_bulk_queue_loop = LoopingCall(self.save_bulk_queue)
         self.save_bulk_queue_loop.start(17, False)
         self.cleanup_database_loop = LoopingCall(self.cleanup_database)
-        self.cleanup_database_loop.start(86309, False)  # about once a day
-        reactor.callLater(600, self.cleanup_database)  # Give the system some time to settle down.
+        self._CronTab.new(self.cleanup_database, min=0, hour=3)  # Clean database at 3am every day.
 
     @inlineCallbacks
     def _unload_(self, **kwargs):
@@ -405,13 +401,13 @@ class LocalDB(YomboLibrary):
     #          results = yield DeviceType.find(where=['id = ?', device.device_variables().get()
 
     @inlineCallbacks
-    def get_dbitem_by_id(self, dbitem, id, status=None):
+    def get_dbitem_by_id(self, dbitem, db_id, status=None):
         if dbitem not in MODULE_CLASSES:
             raise YomboWarning("get_dbitem_by_id expects dbitem to be a DBObject")
         if status is None:
-            records = yield MODULE_CLASSES[dbitem].find(where=['id = ?', id])
+            records = yield MODULE_CLASSES[dbitem].find(where=['id = ?', db_id])
         else:
-            records = yield MODULE_CLASSES[dbitem].find(where=['id = ? and status = ?', id, status])
+            records = yield MODULE_CLASSES[dbitem].find(where=['id = ? and status = ?', db_id, status])
         results = []
         for record in records:
             results.append(record.__dict__)  # we need a dictionary, not an object
@@ -493,12 +489,17 @@ class LocalDB(YomboLibrary):
 
     @inlineCallbacks
     def make_backup(self):
+        """
+        Makes a backup of the database file. This only keeps 10 backups and typically only happens once a day.
+
+        :return:
+        """
         db_file = self._Atoms.get('working_dir') + "/etc/yombo.db"
         db_backup_path = self._Atoms.get('working_dir') + "/bak/db/"
-
         db_backup_files = [f for f in listdir(db_backup_path) if isfile(join(db_backup_path, f))]
+        start_time = time()
         for i in range(1, 10):
-            current_backup_file_name = "yombo.db.%s" % i
+            current_backup_file_name = "yo::_yombo_universal_hook_mbo.db.%s" % i
             if current_backup_file_name in db_backup_files:
                 if i == 10:
                     remove(db_backup_path + current_backup_file_name)
@@ -507,6 +508,7 @@ class LocalDB(YomboLibrary):
                     rename(db_backup_path + current_backup_file_name, db_backup_path + next_backup_file_name)
 
         yield getProcessOutput("sqlite3", [db_file, ".backup %syombo.db.1" % db_backup_path])
+        self._Events.new('localdb', 'dbbackup', time() - start_time)
 
     @inlineCallbacks
     def cleanup_database(self, section=None):
@@ -520,16 +522,16 @@ class LocalDB(YomboLibrary):
 
         if section is None:
             section = 'all'
-        self._Events.new('localdb', 'cleaning', ('start', section))
+        timer = 0
 
         # Delete old device commands
         if section in ('device_commands', 'all'):
             yield sleep(5)
-            cur_time = time()
+            start_time = time()
             for request_id in list(self._Devices.device_commands.keys()):
                 device_command = self._Devices.device_commands[request_id]
                 if device_command.finished_at is not None:
-                    if device_command.finished_at > cur_time - (60 * 60 * 24):  # keep 45 minutes worth.
+                    if device_command.finished_at > start_time - (60 * 60 * 24):  # keep 45 minutes worth.
                         found_dc = False
                         for device_id, device in self._Devices.devices.items():
                             if request_id in device.device_commands:
@@ -539,11 +541,14 @@ class LocalDB(YomboLibrary):
                             yield device_command.save_to_db()
                             del self._Devices.device_commands[request_id]
             yield self.dbconfig.delete('device_commands', where=['created_at < ?', time() - (86400 * 120)])
+            timer += time() - start_time
 
         # Lets delete any device status after 90 days. Long term data should be in the statistics.
         if section in ('device_status', 'all'):
             yield sleep(5)
+            start_time = time()
             yield self.dbconfig.delete('device_status', where=['set_at < ?', time() - (86400 * 90)])
+            timer += time() - start_time
 
         # Cleanup events.
         if section in ('events', 'all'):
@@ -551,29 +556,34 @@ class LocalDB(YomboLibrary):
             for event_type, event_data in self._Events.event_types.items():
                 for event_subtype, even_subdata in event_data.items():
                     yield sleep(1)  # There's no race
+                    start_time = time()
                     results = yield self.dbconfig.delete(
                         'events',
                         where=[
                              'event_type = ? AND event_subtype = ? AND created_at < ?',
                              event_type, event_subtype, time() - (86400 * even_subdata['expires'])])
-                    return results
+                    timer += time() - start_time
 
         # Clean notifications
         if section in ('notifications', 'all'):
             yield sleep(1)
-            cur_time = time()
+            start_time = time()
             for id in list(self._Notifications.notifications.keys()):
                 if self._Notifications.notifications[id].expire_at == "Never":
                     continue
-                if cur_time > self._Notifications.notifications[id].expire_at:
+                if start_time > self._Notifications.notifications[id].expire_at:
                     del self._Notifications.notifications[id]
             yield self.dbconfig.delete('notifications', where=['expire_at < ?', time()])
+            timer += time() - start_time
 
         if section in ('states', 'all'):
             yield sleep(5)
             sql = "DELETE FROM states WHERE created_at < %s" % str(int(time()) - 86400 * 180)
+            start_time = time()
             yield Registry.DBPOOL.runQuery(sql)
+            timer += time() - start_time
             yield sleep(5)
+            start_time = time()
             sql = """DELETE FROM states WHERE id IN
                   (SELECT id
                    FROM states AS s
@@ -581,14 +591,13 @@ class LocalDB(YomboLibrary):
                    ORDER BY created_at DESC
                    LIMIT -1 OFFSET 100)"""
             yield Registry.DBPOOL.runQuery(sql)
+            timer += time() - start_time
 
-        self._Events.new('localdb', 'cleaning', ('stop', section))
+        self._Events.new('localdb', 'cleaning', (section, timer))
 
         if section == 'all':
             yield sleep(5)
-            self._Events.new('localdb', 'dbbackup', ('start',))
             self.make_backup()
-            self._Events.new('localdb', 'dbbackup', ('stop',))
             yield sleep(10)
             yield self.dbconfig.vaccum()
 
@@ -779,11 +788,11 @@ class LocalDB(YomboLibrary):
         return results
 
     @inlineCallbacks
-    def delete_device(self, id, **kwargs):
+    def delete_device(self, device_id, **kwargs):
         args = {
             'status': 2,
         }
-        results = yield self.dbconfig.update('devices', args, where=['id = ?', id])
+        results = yield self.dbconfig.update('devices', args, where=['id = ?', device_id])
         return results
 
     @inlineCallbacks
@@ -862,8 +871,8 @@ class LocalDB(YomboLibrary):
         return records
 
     @inlineCallbacks
-    def get_device_type(self, id):
-        records = yield DeviceType.find(where=['id = ?', id])
+    def get_device_type(self, devicetype_id):
+        records = yield DeviceType.find(where=['id = ?', devicetype_id])
         return records
 
     @inlineCallbacks
@@ -910,8 +919,8 @@ class LocalDB(YomboLibrary):
         return results
 
     @inlineCallbacks
-    def delete_locations(self, id, **kwargs):
-        results = yield self.dbconfig.delete('locations', where=['id = ?', id])
+    def delete_locations(self, location_id, **kwargs):
+        results = yield self.dbconfig.delete('locations', where=['id = ?', location_id])
         return results
 
 

@@ -456,7 +456,6 @@ class WebInterface(YomboLibrary):
         """
         if hook_name in self.hook_listeners:
             for a_callback in self.hook_listeners[hook_name]:
-                # print("web uni hook a_callback: %s" % a_callback)
                 d = Deferred()
                 d.addCallback(lambda ignored: maybeDeferred(a_callback, self, hook_name=hook_name, **kwargs))
                 d.addErrback(self.yombo_universal_hook_failure, hook_name, a_callback)

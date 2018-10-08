@@ -55,26 +55,24 @@ SYSTEM_EVENT_TYPES = {
             'description': "Tracks database cleaning events.",
             'attributes': (
                 'action',
-                'section',
+                'duration',
             ),
-            'expires': 90,  # save events for 90 days
+            'expires': 30,  # save events for 90 days
         },
         'connected': {
             'description': "SQLite connection details.",
             'attributes': (
-                'connect_time',
                 'start_schema_version',
                 'last_schema_version',
             ),
-            'expires': 90,  # save events for 90 days
+            'expires': 30,  # save events for 90 days
         },
         'dbbackup': {
             'description': "Tracks database backup events.",
             'attributes': (
-                'action',
-                'section',
+                'duration',
             ),
-            'expires': 90,  # save events for 90 days
+            'expires': 30,  # save events for 90 days
         },
     },
 }

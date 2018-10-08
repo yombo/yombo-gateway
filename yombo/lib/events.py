@@ -70,7 +70,7 @@ class Events(YomboLibrary):
         """
         yield self.save_event_queue()
 
-    def new(self, event_type, event_subtype, attributes, priority=None, auth=None, created_at=None):
+    def new(self, event_type, event_subtype, attributes=None, priority=None, auth=None, created_at=None):
 
         if created_at is None:
             created_at = time()
@@ -83,6 +83,8 @@ class Events(YomboLibrary):
             raise YomboWarning("Invalid event type: %s" % event_type)
         if event_subtype not in self.event_types[event_type]:
             raise YomboWarning("Invalid event sub-type: %s" % event_subtype)
+        if isinstance(attributes, list) is False and isinstance(attributes, tuple) is False:
+            attributes = [attributes, ]
 
         if auth is None:
             auth_id = None
