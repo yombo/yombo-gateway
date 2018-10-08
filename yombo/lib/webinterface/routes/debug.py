@@ -73,6 +73,17 @@ def route_debug(webapp):
                                command=command,
                                )
 
+        @webapp.route('/crontab')
+        @require_auth()
+        def page_devtools_debug_commands(webinterface, request, session):
+            session.has_access('debug', '*', 'crontab')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/debug/crontab/index.html')
+            root_breadcrumb(webinterface, request)
+            webinterface.add_breadcrumb(request, "/debug/crontab", "Crontab")
+            return page.render(alerts=webinterface.get_alerts(),
+                               crontabs=webinterface._CronTab.cron_tasks,
+                               )
+
         @webapp.route('/device_types')
         @require_auth()
         def page_devtools_debug_device_type(webinterface, request, session):
