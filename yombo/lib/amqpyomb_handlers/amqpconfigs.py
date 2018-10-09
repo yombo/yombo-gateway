@@ -302,20 +302,19 @@ class AmqpConfigHandler(YomboLibrary):
                     if value is None:
                         pass
                     elif table_meta[config_data['map'][key]]['type'] == "INTEGER":
-                        value=int(value)
+                        value = int(value)
                     elif table_meta[config_data['map'][key]]['type'] == "REAL":
-                        value=float(value)
+                        value = float(value)
                     elif table_meta[config_data['map'][key]]['type'] == "BOOLEAN":
                         value = is_true_false(value)
+
                     if key == 'energy_map':
-                        try:
-                            new_data[config_data['map'][key]] = json.dumps(value)
-                            if isinstance(new_data[config_data['map'][key]], dict) is False:
-                                new_data[config_data['map'][key]] = '{"0.0":0,"1.0":0}'
-                        except Exception as e:
-                            new_data[config_data['map'][key]] = '{"0.0":0,"1.0":0}'
-                    else:
-                        new_data[config_data['map'][key]] = value
+                        if isinstance(value, dict):
+                            try:
+                                value = json.dumps(value)
+                            except Exception as e:
+                                value = '{"0.0":0,"1.0":0}'
+                    new_data[config_data['map'][key]] = value
 
                 else:
                     new_data[key] = value
