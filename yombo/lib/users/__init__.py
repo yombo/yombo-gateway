@@ -176,7 +176,7 @@ class Users(YomboLibrary):
     @inlineCallbacks
     def _start_(self, **kwargs):
         results = yield global_invoke_all('_auth_platforms_', called_by=self)
-        logger.info("_auth_platforms_ results: {results}", results=results)
+        logger.debug("_auth_platforms_ results: {results}", results=results)
         for component, platforms in results.items():
             for machine_label, platform_data in platforms.items():
                 if 'actions' not in platform_data:
