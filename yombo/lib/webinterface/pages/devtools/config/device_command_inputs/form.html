@@ -66,7 +66,7 @@
                             ') }}
                             <br>
                             <div class="input-group">
-                                <select tabindex="5" class="selectpicker show-tick form-control" name="live_update" id="live_update">
+                                <select tabindex="5" class="selectpicker show-tick" name="live_update" id="live_update">
                                     <option value="0"{% if command_input.live_update|int == 0 %} selected{% endif %} data-subtext="No live updates.">Disabled</option>
                                     <option value="1"{% if command_input.live_update|int == 1 %} selected{% endif %} data-subtext="Send live updates.">Enabled</option>
                                 </select>
@@ -81,7 +81,7 @@
                             ') }}
                             <br>
                             <div class="input-group">
-                                <select tabindex="5" class="selectpicker show-tick form-control" name="value_required" id="value_required">
+                                <select tabindex="5" class="selectpicker show-tick" name="value_required" id="value_required">
                                     <option value="0"{% if command_input.value_required|int == 0 %} selected{% endif %} data-subtext="Input field can be empty">No</option>
                                     <option value="1"{% if command_input.value_required|int == 1 %} selected{% endif %} data-subtext="Input field must contain a value">Yes</option>
                                 </select>
@@ -98,7 +98,7 @@
                             ') }}
                             <br>
                             <div class="input-group">
-                                <select tabindex="5" class="selectpicker show-tick form-control" name="encryption" id="encryption">
+                                <select tabindex="5" class="selectpicker show-tick" name="encryption" id="encryption">
                                     <option value="nosuggestion"{% if command_input.encryption == "nosuggestion" %} selected{% endif %} data-subtext="Up to user, device, or module">No Suggestion</option>
                                     <option value="never"{% if command_input.encryption == "never" %} selected{% endif %} data-subtext="This data should never be encrypted">Never</option>
                                     <option value="suggested"{% if command_input.encryption == "suggested" %} selected{% endif %} data-subtext="When possible, this data should be encrypted">Suggested</option>
@@ -123,7 +123,7 @@
                             ') }}
                             <br>
                             <div class="input-group">
-                                <select tabindex="5" class="selectpicker show-tick form-control" name="input_casing" id="input_casing">
+                                <select tabindex="5" class="selectpicker show-tick" name="input_casing" id="input_casing">
                                     <option value="none"{% if command_input.input_casing == "none" %} selected{% endif %} data-subtext="No changes.">None</option>
                                     <option value="upper"{% if command_input.input_casing == "upper" %} selected{% endif %} data-subtext="Uppercase filtering applied">Never</option>
                                     <option value="lower"{% if command_input.input_casing == "lower" %} selected{% endif %} data-subtext="Lowercase filtering applied">Suggested</option>

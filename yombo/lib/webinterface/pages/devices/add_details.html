@@ -59,7 +59,7 @@
                                 </div>
                                 <label style="margin-top: 20px; margin-bottom: 0px">Location: </label><br>
                                 <div class="input-group">
-                                    <select class="selectpicker show-tick form-control" tabindex="4" required name="location_id" id="location_id">
+                                    <select class="selectpicker show-tick" tabindex="4" required name="location_id" id="location_id">
                                     {% for location_id, location in locations.items() if location.location_type == 'location' %}
                                         <option value="{{location_id}}" {% if device.location_id == location_id %} selected{% endif %} data-subtext="{{location.description|hide_none}}">{{location.label}}</option>
                                     {% endfor %}
@@ -67,7 +67,7 @@
                                 </div>
                                 <label style="margin-top: 20px; margin-bottom: 0px">Area: </label><br>
                                 <div class="input-group">
-                                    <select class="selectpicker show-tick form-control" tabindex="5" required name="area_id" id="area_id">
+                                    <select class="selectpicker show-tick" tabindex="5" required name="area_id" id="area_id">
                                     {% for location_id, location in locations.items() if location.location_type == 'area' %}
                                         <option value="{{location_id}}" {% if device.area_id == location_id %} selected{% endif %} data-subtext="{{location.description|hide_none}}">{{location.label}}</option>
                                     {% endfor %}
@@ -80,7 +80,7 @@
                                 or send status updates. When deleted, the device will eventually be purged from the Yombo system.') }}
                                 <br>
                                 <div class="input-group">
-                                    <select class="selectpicker show-tick form-control" tabindex="6" name="status" id="status" placeholder="Mark device as enabled, disabled, or deleted.">
+                                    <select class="selectpicker show-tick" tabindex="6" name="status" id="status" placeholder="Mark device as enabled, disabled, or deleted.">
                                         <option value="1"{% if device.status == 1 %} selected{% endif %} data-subtext="Works normally">Enabled</option>
                                         <option value="0"{% if device.status == 0 %} selected{% endif %} data-subtext="Device unusable">Disabled</option>
                                     </select>
@@ -111,7 +111,7 @@
                                 ") }}
                                 <br>
                                 <div class="input-group">
-                                    <select class="selectpicker show-tick form-control" tabindex="10" name="statistic_type" id="statistic_type">
+                                    <select class="selectpicker show-tick" tabindex="10" name="statistic_type" id="statistic_type">
                                         <option value="none"{% if device.energy_type == "none" %} selected{% endif %}>None</option>
                                         <option value="datapoint"{% if device.energy_type == "datapoint" %} selected{% endif %}>Single Data Point</option>
                                         <option value="average"{% if device.energy_type == "average" %} selected{% endif %}>Average</option>
@@ -191,7 +191,7 @@
                                 ') }}
                                 <br>
                                 <div class="input-group">
-                                    <select class="selectpicker show-tick form-control" tabindex="7" name="pin_required" id="pin_required" placeholder="Is a pin required to change status?">
+                                    <select class="selectpicker show-tick" tabindex="7" name="pin_required" id="pin_required" placeholder="Is a pin required to change status?">
                                         <option value="enabled"{% if device.pin_required|yes_no == "Yes" %} selected{% endif %} data-subtext="Contro REQUIRES a pin.">Enabled</option>
                                         <option value="disabled"{% if device.pin_required|yes_no == "No" %} selected{% endif %} data-subtext="Control requires no pin.">Disabled</option>
                                     </select>
@@ -230,7 +230,7 @@
                                 ") }}
                                 <br>
                                 <div class="input-group">
-                                    <select class="form-control" name="energy_type" id="energy_type" placeholder="Energy Type.">
+                                    <select class="selectpicker show-tick" name="energy_type" id="energy_type" placeholder="Energy Type.">
                                         <option value="none"{% if device.energy_type == "none" %} selected{% endif %}>None</option>
                                         <option value="electric"{% if device.energy_type == "electric" %} selected{% endif %}>Electric</option>
                                         <option value="gas"{% if device.energy_type == "gas" %} selected{% endif %}>Gas</option>
@@ -254,7 +254,7 @@
                                     ") }}
                                     <br>
                                     <div class="input-group">
-                                        <select class="form-control" name="energy_tracker_source" id="energy_tracker_source" placeholder="">
+                                        <select class="selectpicker show-tick" name="energy_tracker_source" id="energy_tracker_source" placeholder="">
                                             <option value="calculated"{% if device.energy_type == "calculated" %} selected{% endif %}>Calculated</option>
                                             <option value="device"{% if device.energy_type == "device" %} selected{% endif %}>Device</option>
                                             <option value="state"{% if device.energy_type == "device" %} selected{% endif %}>State</option>

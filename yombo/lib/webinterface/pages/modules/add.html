@@ -36,7 +36,7 @@
                                 ") }}
                                 <br>
                             <div class="input-group">
-                                <select required class="selectpicker show-tick form-control" name="install_branch" id="install_branch" placeholder="">
+                                <select required class="selectpicker show-tick" name="install_branch" id="install_branch" placeholder="">
                                     <option value="production" selected>Production</option>
                                     {%- if server_module.dev_branch != "" %}
                                         <option data-divider="true"></option>
@@ -53,7 +53,7 @@
                                 ") }}
                                 <br>
                             <div class="input-group">
-                                <select required class="selectpicker show-tick form-control" name="status" id="status" placeholder="">
+                                <select required class="selectpicker show-tick" name="status" id="status" placeholder="">
                                     <option value="0" >Disabled</option>
                                     <option value="1" selected>Enabled</option>
                                 </select>

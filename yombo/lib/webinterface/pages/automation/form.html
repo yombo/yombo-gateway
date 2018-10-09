@@ -86,7 +86,7 @@
                     ") }}
                     <br>
                     <div class="input-group">
-                        <select tabindex="5" class="selectpicker show-tick form-control" name="run_on_start" id="run_on_start">
+                        <select tabindex="5" class="selectpicker show-tick" name="run_on_start" id="run_on_start">
                             <option value="true" {% if rule.run_on_start == true %}selected {% endif %}
                                     data-subtext="Check trigger on system start.">Yes</option>
                             <option value="false" {% if rule.run_on_start == false %}selected {% endif %}
@@ -106,7 +106,7 @@
                     ') }}
                     <br>
                     <div class="input-group">
-                        <select tabindex="5" class="selectpicker show-tick form-control" name="status" id="status">
+                        <select tabindex="5" class="selectpicker show-tick" name="status" id="status">
                             <option value="0" {% if rule.status == 0 %}selected {% endif %}
                                     data-subtext="Gateways cannot use.">Disabled</option>
                             <option value="1" {% if rule.status == 1 %}selected {% endif %}

@@ -35,7 +35,7 @@
 {%- endmacro %}
 
 {% macro form_select_state(states, input_name, input_id, selected_item) -%}
-    <select class="selectpicker show-tick form-control" lass="selectpicker show-tick" title="Select..." name="{{input_name}}" id="{{input_id}}">
+    <select class="selectpicker show-tick" lass="selectpicker show-tick" title="Select..." name="{{input_name}}" id="{{input_id}}">
         <option value="" data-subtext="No state selected">None</option>
     {%- for state_id, state in states.items() %}
         <option value="{{state_id}}"{% if selected_item == state_id %} selected{% endif %} data-subtext="{{state['value_human']}}">{{state_id}}</option>
@@ -44,7 +44,7 @@
 {%- endmacro %}
 
 {% macro form_select_device(devices, input_name, input_id, selected_item) -%}
-    <select class="selectpicker show-tick form-control" lass="selectpicker show-tick" title="Select..." name="{{input_name}}" id="{{input_id}}">
+    <select class="selectpicker show-tick" lass="selectpicker show-tick" data-live-search="true" title="Select..." name="{{input_name}}" id="{{input_id}}">
         <option value="" data-subtext="No device selected">None</option>
     {%- for device_id, device in devices.items() %}
         <option value="{{device_id}}"{% if selected_item == device_id %} selected{% endif %} data-subtext="{{device.machine_label}}">{{device.full_label}}</option>
@@ -53,7 +53,7 @@
 {%- endmacro %}
 
 {% macro form_select_users(users, input_name, input_id, selected_item) -%}
-    <select class="selectpicker show-tick form-control" lass="selectpicker show-tick" title="Select..." name="{{input_name}}" id="{{input_id}}">
+    <select class="selectpicker show-tick" lass="selectpicker show-tick" title="Select..." name="{{input_name}}" id="{{input_id}}">
         <option value="" data-subtext="No user selected">None</option>
     {%- for user_id, user in users.items() %}
         <option value="{{user_id}}"{% if selected_item == user_id %} selected{% endif %} data-subtext="{{user.machine_label}}">{{device.full_label}}</option>

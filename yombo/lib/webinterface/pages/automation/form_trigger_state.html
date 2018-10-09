@@ -37,7 +37,7 @@
                     ") }}
                     <br>
                     <div class="input-group">
-                        <select tabindex="3" class="selectpicker show-tick form-control" name="gateway_id" id="gateway_id">
+                        <select tabindex="3" class="selectpicker show-tick" name="gateway_id" id="gateway_id">
                             <option value="cluster"{% if data['gateway_id'] == 'cluster' %} selected{% endif %} data-subtext="Any gateway within cluster">Local cluster</option>
                             <option value="{{_local_gateway.gateway_id}}"{% if data['gateway_id'] == _local_gateway.gateway_id %} selected{% endif %} data-subtext="This gateway">{{_local_gateway.label}}</option>
                             <option data-divider="true"></option>
@@ -88,7 +88,7 @@
                     ") }}
                     <br>
                     <div class="input-group">
-                        <select tabindex="3" class="selectpicker show-tick form-control" name="value_type" id="value_type">
+                        <select tabindex="3" class="selectpicker show-tick" name="value_type" id="value_type">
                             <option value="string"{% if data['value_type'] == 'string' %} selected{% endif %} data-subtext="Make value a string.">String</option>
                             <option value="integer"{% if data['value_type'] == 'integer' %} selected{% endif %} data-subtext="A whole number">Integer</option>
                             <option value="float"{% if data['value_type'] == 'float' %} selected{% endif %} data-subtext="Number with a decimal period in it.">Float</option>

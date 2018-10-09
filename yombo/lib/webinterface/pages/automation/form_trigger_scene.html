@@ -41,7 +41,7 @@
                     <br>
                     <div class="input-group">
 
-                        <select tabindex="3" class="selectpicker show-tick form-control" name="scene_machine_label" id="scene_machine_label">
+                        <select tabindex="3" class="selectpicker show-tick" name="scene_machine_label" id="scene_machine_label">
                             {%- for rule_id, scene in _scenes.get().items() if scene.enabled() <= 1 %}
                             <option value="{{scene.machine_label}}"
                                 {%- if data['scene_machine_label'] == scene.machine_label -%}
@@ -68,7 +68,7 @@
                     ") }}
                     <br>
                     <div class="input-group">
-                        <select tabindex="3" class="selectpicker show-tick form-control" name="scene_action" id="scene_action">
+                        <select tabindex="4" class="selectpicker show-tick" name="scene_action" id="scene_action">
                             <option value="start"
                                 {%- if data['scene_action'] == 'start' %} selected {% endif -%}
                                 data-subtext="Start the scene">Start</option>

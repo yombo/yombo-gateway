@@ -187,6 +187,7 @@
                             {% if device.energy_map is none -%}
                             None
                             {% else -%}
+                            {{device.energy_map}}
                             <table width="100%" class="table table-striped table-bordered table-hover">
                                 <thead>
                                     <tr>
@@ -262,7 +263,7 @@
                                 </thead>
                                 <tbody>{% for history in device.status_history %}
                                      <tr>
-                                        <td> {{ history.set_at|epoch_to_string }}</td>
+                                        <td> {{ history.set_at|epoch_to_string }}<br>{{history.set_at}}</td>
                                         <td> Auth ID: {{ history.auth_id }}</td>
                                         <td> Requesting: {{ history.requesting_source }} <br> Reporting: {{ history.reporting_source }}</td>
                                         <td> {{ history.human_status }}</td>

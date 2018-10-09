@@ -37,7 +37,7 @@
                     ') }}
                     <br>
                     <div class="input-group">
-                        <select id="device_machine_label" name="device_machine_label" class="selectpicker show-tick form-control">
+                        <select id="device_machine_label" name="device_machine_label" class="selectpicker show-tick">
                             {%- for device_id, device in _devices.sorted().items() if device.is_allowed_in_scenes -%}
                             <option value="{{device.machine_label}}" {%
                             if data['device_machine_label'] == device.machine_label %}selected {% endif %}>{{device.full_label}}</option>

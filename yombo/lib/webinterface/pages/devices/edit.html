@@ -76,7 +76,7 @@
                 </div>
                 <label style="margin-top: 20px; margin-bottom: 0px">Device Type: </label><br>
                 <div class="input-group">
-                    <select class="selectpicker show-tick form-control" tabindex="3" required name="device_type_id" id="device_type_id">
+                    <select class="selectpicker show-tick" tabindex="3" required name="device_type_id" id="device_type_id" disabled>
                     {% for device_type_id, device_type in yombo._DeviceTypes.device_types.items() %}
                         <option value="{{device_type_id}}" {% if device.device_type_id == device_type_id %} selected{% endif %} data-subtext="{{device_type_id}}">{{device_type.label}}</option>
                     {% endfor %}
@@ -84,15 +84,15 @@
                 </div>
                 <label style="margin-top: 20px; margin-bottom: 0px">Gateway: </label><br>
                 <div class="input-group">
-                    <select class="selectpicker show-tick form-control" tabindex="3" required name="gateway_id" id="gateway_id">
-                    {% for gateway_id, gateway in _gateways.items() %}
+                    <select class="selectpicker show-tick" data-live-search="true" tabindex="4" required name="gateway_id" id="gateway_id">
+                    {% for gateway_id, gateway in _gateways.items() if gateway.is_real %}
                         <option value="{{gateway_id}}" {% if device.gateway_id == gateway_id %} selected{% endif %} data-subtext="{{gateway.gateway_id}}">{{gateway.label}}</option>
                     {% endfor %}
                     </select>
                 </div>
                 <label style="margin-top: 20px; margin-bottom: 0px">Location: </label><br>
                 <div class="input-group">
-                    <select class="selectpicker show-tick form-control" tabindex="3" required name="location_id" id="location_id">
+                    <select class="selectpicker show-tick" data-live-search="true" tabindex="6" required name="location_id" id="location_id">
                     {% for location_id, location in _locations.items() if location.location_type == 'location' %}
                         <option value="{{location_id}}" {% if device.location_id == location_id %} selected{% endif %} data-subtext="{{location.description|hide_none}}">{{location.label}}</option>
                     {% endfor %}
@@ -100,7 +100,7 @@
                 </div>
                 <label style="margin-top: 20px; margin-bottom: 0px">Area: </label><br>
                 <div class="input-group">
-                    <select class="selectpicker show-tick form-control" tabindex="4" required name="area_id" id="area_id">
+                    <select class="selectpicker show-tick" data-live-search="true" tabindex="7" required name="area_id" id="area_id">
                     {% for location_id, location in _locations.items() if location.location_type == 'area' %}
                         <option value="{{location_id}}" {% if device.area_id == location_id %} selected{% endif %} data-subtext="{{location.description|hide_none}}">{{location.label}}</option>
                     {% endfor %}
@@ -108,7 +108,7 @@
                 </div>
                 <label style="margin-top: 20px; margin-bottom: 0px">Description: </label><br>
                 <div class="input-group">
-                    <input type="text" tabindex="5" class="form-control" name="description" id="description" size="30" placeholder="Description of device." value="{{ device.description|hide_none }}">
+                    <input type="text" tabindex="8" class="form-control" name="description" id="description" size="30" placeholder="Description of device." value="{{ device.description|hide_none }}">
                 </div>
                 <label style="margin-top: 20px; margin-bottom: 0px">Status: </label>
                 <a href="#" data-toggle="modal" data-target="#modalstatus"><i class="fa fa-question fa-lg"></i></a>
@@ -117,7 +117,7 @@
                 or send status updates. When deleted, the device will eventually be purged from the Yombo system.') }}
                 <br>
                 <div class="input-group">
-                    <select class="selectpicker show-tick form-control" tabindex="6" name="status" id="status" placeholder="Mark device as enabled, disabled, or deleted.">
+                    <select class="selectpicker show-tick" tabindex="9" name="status" id="status" placeholder="Mark device as enabled, disabled, or deleted.">
                         <option value="enabled"{% if device.enabled_status == 1 %} selected{% endif %} data-subtext="Works normally">Enabled</option>
                         <option value="disabled"{% if device.enabled_status == 0 %} selected{% endif %} data-subtext="Device unusable">Disabled</option>
                         <option value="deleted"{% if device.enabled_status == 2 %} selected{% endif %} data-subtext="Queue for deletion">Deleted</option>
@@ -149,7 +149,7 @@
                 ") }}
                 <br>
                 <div class="input-group">
-                    <select class="selectpicker show-tick form-control" tabindex="10" name="statistic_type" id="statistic_type">
+                    <select class="selectpicker show-tick" tabindex="10" name="statistic_type" id="statistic_type">
                         <option value="none"{% if device.statistic_type == "none" %} selected{% endif %}>None</option>
                         <option value="datapoint"{% if device.statistic_type == "datapoint" %} selected{% endif %}>Single Data Point</option>
                         <option value="average"{% if device.statistic_type == "average" %} selected{% endif %}>Average</option>
@@ -235,7 +235,7 @@
                 ') }}
                 <br>
                 <div class="input-group">
-                    <select class="selectpicker show-tick form-control" tabindex="20" name="pin_required" id="pin_required" placeholder="Is a pin required to change status?">
+                    <select class="selectpicker show-tick" tabindex="20" name="pin_required" id="pin_required" placeholder="Is a pin required to change status?">
                         <option value="enabled"{% if device.pin_required|yes_no == "Yes" %} selected{% endif %} data-subtext="Contro REQUIRES a pin.">Enabled</option>
                         <option value="disabled"{% if device.pin_required|yes_no == "No" %} selected{% endif %} data-subtext="Control requires no pin.">Disabled</option>
                     </select>
@@ -275,7 +275,7 @@
                 ") }}
                 <br>
                 <div class="input-group">
-                    <select tabindex="30" class="form-control" name="energy_type" id="energy_type" placeholder="Energy Type.">
+                    <select tabindex="30" class="selectpicker show-tick" name="energy_type" id="energy_type" placeholder="Energy Type.">
                         <option value="none"{% if device.energy_type == "none" %} selected{% endif %}>None</option>
                         <option value="electric"{% if device.energy_type == "electric" %} selected{% endif %}>Electric</option>
                         <option value="gas"{% if device.energy_type == "gas" %} selected{% endif %}>Gas</option>
@@ -299,7 +299,7 @@
                     ") }}
                     <br>
                     <div class="input-group">
-                        <select tabindex="31" class="form-control" name="energy_tracker_source" id="energy_tracker_source" placeholder="">
+                        <select tabindex="31" class="selectpicker show-tick" name="energy_tracker_source" id="energy_tracker_source" placeholder="">
                             <option value="calculated"{% if device.energy_type == "calculated" %} selected{% endif %}>Calculated</option>
                             <option value="device"{% if device.energy_type == "device" %} selected{% endif %}>Device</option>
                             <option value="state"{% if device.energy_type == "device" %} selected{% endif %}>State</option>
@@ -329,7 +329,7 @@
                         ") }}
                         <br>
                         <div class="input-group">
-                        {{macros.form_select_state(states, 'energy_tracker_device', 'energy_tracker_device', device.energy_tracker_device)}}
+                        {{macros.form_select_state(states, 'energy_tracker_state', 'energy_tracker_state', device.energy_tracker_device)}}
                         </div>
                     </div>
                     <div id="div_energy_map">

@@ -110,7 +110,7 @@
                             delete device type to fully propagate through the entire Yombo eco system.</p>') }}
                             <br>
                             <div class="input-group">
-                                <select tabindex="6" class="selectpicker show-tick form-control" name="status" id="status">
+                                <select tabindex="6" class="selectpicker show-tick" name="status" id="status">
                                     <option value="0"{% if device_type.status == 0 %} selected{% endif %} data-subtext="Gateways cannot use.">Disabled</option>
                                     <option value="1"{% if device_type.status == 1 %} selected{% endif %} data-subtext="Works as normal.">Enabled</option>
                                     <option value="2"{% if device_type.status == 2 %} selected{% endif %} data-subtext="Will be removed soon.">Deleted</option>
@@ -131,7 +131,7 @@
                             ') }}
                             <br>
                             <div class="input-group">
-                                <select tabindex="7" class="selectpicker show-tick form-control" name="public" id="public">
+                                <select tabindex="7" class="selectpicker show-tick" name="public" id="public">
                                     <option value="0"{% if device_type.public == 0 %} selected{% endif %} data-subtext="Only current user can access.">Private</option>
                                     <option value="1"{% if device_type.public == 1 %} selected{% endif %} data-subtext="Request Yombo to make item available to all.">Public Pending</option>
                                     <option value="2"{% if device_type.public == 2 %} selected{% endif %} data-subtext="Available to everyone.">Public</option>

@@ -107,7 +107,7 @@
 					<a href="#" data-toggle="modal" data-target="#gwmaster"><i class="fa fa-question fa-lg"></i></a>
 					<div class="input-group">
 						<select name="master_gateway_id" id="master_gateway_id" required
-								class="form-control selectpicker show-tick" title="Select...">
+								class="selectpicker show-tick" title="Select...">
 							{%- if _gateways.is_master() == true -%}
 							<option value="{{_local_gateway.gateway_id}}" style="background: #e6f7ff; color: #000;" data-subtext="Currently a master gateway" selected>{{_local_gateway.label}}</option>
 							<option data-divider="true"></option>
@@ -265,7 +265,7 @@
 					<div class="form-group">
 						<label for="webinterface_pin_type" data-toggle="tooltip" title="Pin or OTP when accessing web interface from a new device. Extra layer of protection for this website.  Can use Google Authenticator as well for higher level of protection.">Webinterface Access Protection</label>
 						<div class="input-group">
-							<select class="form-control" name="webinterface_pin_type" id="webinterface_pin_type" placeholder="Select Twilight Degrees">
+							<select class="selectpicker show-tick" name="webinterface_pin_type" id="webinterface_pin_type" placeholder="Select Twilight Degrees">
 								<option value="pin"{% if config.webinterface.auth_pin_type == "pin" %} selected{% endif %}>Static Access Code</option>
 								<option value="totp"{% if config.webinterface.auth_pin_type == "totp" %} selected{% endif %}>TOPT (Google Authenticator)</option>
 								<option value="none"{% if config.webinterface.auth_pin_type == "none" %} selected{% endif %}>None</option>

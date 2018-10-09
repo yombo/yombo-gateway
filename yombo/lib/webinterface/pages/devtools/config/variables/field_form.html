@@ -130,7 +130,7 @@
                                 ') }}
                                 <br>
                                 <div class="input-group">
-                                    <select tabindex="7" class="selectpicker show-tick form-control" name="encryption" id="encryption">
+                                    <select tabindex="7" class="selectpicker show-tick" name="encryption" id="encryption">
                                         <option value="nosuggestion"{% if field.encryption == "nosuggestion" %} selected{% endif %}>No Suggestion</option>
                                         <option value="never"{% if field.encryption == "never" %} selected{% endif %}>Never</option>
                                         <option value="suggested"{% if field.encryption == "suggested" %} selected{% endif %}>Suggested</option>
@@ -193,7 +193,7 @@
                                 ') }}
                                 <br>
                                 <div class="input-group">
-                                    <select tabindex="10" class="selectpicker show-tick form-control" name="value_casing" id="value_casing">
+                                    <select tabindex="10" class="selectpicker show-tick" name="value_casing" id="value_casing">
                                         <option value="none"{% if field.value_casing == "none" %} selected{% endif %} data-subtext="No changes.">None</option>
                                         <option value="upper"{% if field.value_casing == "upper" %} selected{% endif %} data-subtext="Uppercase filtering applied">Uppercase</option>
                                         <option value="lower"{% if field.value_casing == "lower" %} selected{% endif %} data-subtext="Lowercase filtering applied">Lowercase</option>
@@ -235,7 +235,7 @@
                                 ') }}
                                 <br>
                                 <div class="input-group">
-                                    <select tabindex="10" class="selectpicker show-tick form-control" name="value_required" id="value_required">
+                                    <select tabindex="10" class="selectpicker show-tick" name="value_required" id="value_required">
                                         <option value="0"{% if field.value_required == 0 %} selected{% endif %} data-subtext="Do not require value from user">No</option>
                                         <option value="1"{% if field.value_required == 1 %} selected{% endif %} data-subtext="Require value from user">Yes</option>
                                     </select>
