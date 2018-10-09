@@ -38,7 +38,11 @@ class Gateway:
     :ivar created_at: (int) EPOCH time when created
     :ivar updated: (int) EPOCH time when last updated
     """
-
+    @property
+    def is_real(self):
+        if self.machine_label in ('local', 'cluster'):
+            return False
+        return True
     def __init__(self, parent, gateway):
         """
         Setup the gateway object using information passed in.
