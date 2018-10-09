@@ -119,6 +119,17 @@ class Light(Device):
                 return 0
         return None
 
+    def calc_percent(self, machine_status_extra):
+        """
+        Like percent property, but accepts machine_status as input
+        """
+        if STATUS_EXTRA_BRIGHTNESS in machine_status_extra:
+            return translate_int_value(machine_status_extra[STATUS_EXTRA_BRIGHTNESS],
+                                       0, self.FEATURES[FEATURE_NUMBER_OF_STEPS],
+                                       0, 100)
+        else:
+            return 0
+
     @property
     def hsv_color(self):
         """
@@ -236,10 +247,10 @@ class Light(Device):
         return self.command(COMMAND_OFF, **kwargs)
 
     def generate_human_status(self, machine_status, machine_status_extra):
-        return str(self.percent) + '%'
+        return str(self.calc_percent(machine_status_extra)) + '%'
 
     def generate_human_message(self, machine_status, machine_status_extra):
-        return "%s is now %s%%" % (self.area_label, self.percent)
+        return "%s is now %s%%" % (self.area_label, self.calc_percent(machine_status_extra))
 
 class Color_Light(Light):
     """

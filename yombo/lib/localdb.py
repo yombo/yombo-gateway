@@ -734,71 +734,43 @@ class LocalDB(YomboLibrary):
                     record['energy_map'] = data_unpickle(record['energy_map'], encoder='json')
         return records
 
-
     @inlineCallbacks
-    def add_device(self, data, **kwargs):
-        # print("add_device in lcoaldb: %s" % kwargs)
-        device = Device()
-        device.id = data['device_id']
-        device.device_type_id = data['device_type_id']
-        device.location_id = data['location_id']
-        device.area_id = data['area_id']
-        device.label = data['label']
-        device.machine_label = data['machine_label']
-        device.description = data['description']
-        device.pin_required = data['pin_required']
-        device.pin_code = data['pin_code']
-        device.pin_timeout = data['pin_timeout']
-        device.voice_cmd = data['voice_cmd']
-        device.voice_cmd_order = data['voice_cmd_order']
-        device.statistic_label = data['statistic_label']
-        device.statistic_lifetime = data['statistic_lifetime']
-        device.status = data['enabled_status']
-        device.energy_tracker_device = data['energy_tracker_device']
-        device.energy_tracker_source = data['energy_tracker_source']
-        device.energy_map = data['energy_map']
-        device.created_at = data['created_at']
-        device.updated_at = data['updated_at']
-        yield device.save()
-
-    @inlineCallbacks
-    def update_device(self, device, **kwargs):
+    def upsert_device(self, device, **kwargs):
         args = {
+            'gateway_id': device.gateway_id,
             'device_type_id': device.device_type_id,
             'location_id': device.location_id,
             'area_id': device.area_id,
             'machine_label': device.machine_label,
             'label': device.label,
             'description': device.description,
+            'notes': device.notes,
+            'statistic_label': device.statistic_label,
+            'statistic_lifetime': device.statistic_lifetime,
+            # 'data': device.data,
+            # 'attributes': device.attributes,
+            'energy_type': device.energy_type,
+            'energy_tracker_source': device.energy_tracker_source,
+            'energy_tracker_device': device.energy_tracker_device,
+            'energy_map': data_pickle(device.energy_map, encoder='json'),
+            'controllable': device.controllable,
+            'allow_direct_control': device.allow_direct_control,
+            'controllable': device.controllable,
             'pin_required': device.pin_required,
             'pin_code': device.pin_code,
             'pin_timeout': device.pin_timeout,
-            'voice_cmd': device.voice_cmd,
-            'voice_cmd_order': device.voice_cmd_order,
-            'statistic_label': device.statistic_label,
-            'statistic_lifetime': device.statistic_lifetime,
             'status': device.enabled_status,
             'created_at': device.created_at,
             'updated_at': device.updated_at,
-            'energy_tracker_device': device.energy_tracker_device,
-            'energy_tracker_source': device.energy_tracker_source,
-            'energy_map': data_pickle(device.energy_map, encoder='json'),
         }
-        results = yield self.dbconfig.update('devices', args, where=['id = ?', device.device_id])
-        return results
+        if device.is_in_db:
+            print("updating device db: %s " % args)
+            results = yield self.dbconfig.update('devices', args, where=['id = ?', device.device_id])
+        else:
+            print("inserting device into db: %s " % args)
+            results = yield self.dbconfig.insert('devices', args)
 
-    @inlineCallbacks
-    def delete_device(self, device_id, **kwargs):
-        args = {
-            'status': 2,
-        }
-        results = yield self.dbconfig.update('devices', args, where=['id = ?', device_id])
         return results
-
-    @inlineCallbacks
-    def set_device_status(self, device_id, status=1):
-        yield self.dbconfig.update('devices', {'status': status},
-                                             where=['id = ?', device_id])
 
     @inlineCallbacks
     def get_device_by_id(self, device_id, status=1):
@@ -814,7 +786,7 @@ class LocalDB(YomboLibrary):
 
         records = yield self.dbconfig.select('device_status',
                                              where=dictToWhere(where),
-                                             orderby='set_at',
+                                             orderby='set_at DESC',
                                              limit=limit)
         data = []
         for record in records:

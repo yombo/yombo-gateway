@@ -163,7 +163,6 @@ def route_devices(webapp):
 
             variable_data = yield webinterface._Variables.extract_variables_from_web_data(json_output.get('vars', {}))
             device = {
-                # 'garage_id': json_output.get('garage_id', ""),
                 'location_id': json_output.get('location_id', ""),
                 'area_id': json_output.get('area_id', ""),
                 'machine_label': json_output.get('machine_label', ""),
@@ -181,7 +180,7 @@ def route_devices(webapp):
                 'energy_type': json_output.get('energy_type', ""),
                 'energy_map': energy_map,
                 'variable_data': variable_data,
-                'voice_cmd': None,
+                # 'voice_cmd': None,
                 # 'voice_cmd_order': None,
                 # 'voice_cmd_src': None,
             }
@@ -216,8 +215,8 @@ def route_devices(webapp):
                                        msg=msg,
                                        )
                 else:
-                    webinterface.add_alert("%s: %s" % (results['msg'], results['apimsghtml']))
-                    device['device_id'] = results['device_id']
+                    # webinterface.add_alert("%s: %s" % (results['msg'], results['apimsghtml']))
+                    webinterface.add_alert("%s" % results['apimsghtml'])
 
             device_variables = yield webinterface._Variables.get_variable_groups_fields(
                 group_relation_type='device_type',
@@ -500,12 +499,24 @@ def route_devices(webapp):
 
             # print("energy_map: %s " % energy_map)
             variable_data = yield webinterface._Variables.extract_variables_from_web_data(json_output['vars'])
+
+            energy_tracker_source = request.args.get('energy_tracker_source')[0]
+            if energy_tracker_source == "calculated":
+                energy_tracker_device = None
+            elif energy_tracker_source == "device":
+                energy_tracker_device = request.args.get('energy_tracker_device')[0]
+            elif energy_tracker_source == "state":
+                energy_tracker_device = request.args.get('energy_tracker_state')[0]
+            else:
+                webinterface.add_alert('Invalid energy tracker source', 'warning')
+                return webinterface.redirect(request, '/devices/%s/edit' % device_id)
+
             data = {
                 # 'garage_id': request.args.get('garage_id', ""),
                 'location_id': request.args.get('location_id')[0],
                 'area_id': request.args.get('area_id')[0],
                 'machine_label': request.args.get('machine_label')[0],
-                'device_type_id': request.args.get('device_type_id')[0],
+                # 'device_type_id': request.args.get('device_type_id')[0],
                 'label': request.args.get('label')[0],
                 'description': request.args.get('description')[0],
                 'status': status,
@@ -517,6 +528,8 @@ def route_devices(webapp):
                 'pin_code': request.args.get('pin_code')[0],
                 'pin_timeout': request.args.get('pin_timeout')[0],
                 'energy_type': request.args.get('energy_type')[0],
+                'energy_tracker_source':energy_tracker_source,
+                'energy_tracker_device': energy_tracker_device,
                 'energy_map': energy_map,
                 'variable_data':  variable_data,
                 'voice_cmd': None,

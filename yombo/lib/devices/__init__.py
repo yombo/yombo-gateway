@@ -75,7 +75,7 @@ from twisted.internet.defer import inlineCallbacks, maybeDeferred, Deferred
 from yombo.core.exceptions import YomboWarning, YomboHookStopProcessing
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import global_invoke_all, search_instance, do_search_instance, generate_source_string
+from yombo.utils import global_invoke_all, search_instance, do_search_instance, generate_source_string, data_pickle
 
 from ._device import Device
 from ._device_command import Device_Command
@@ -331,17 +331,6 @@ class Devices(YomboLibrary):
                 record['energy_map'] = new_map
                 logger.debug("Loading device: {record}", record=record)
                 device_id = yield self.import_device(record, source='database')
-                d = Deferred()
-                d.addCallback(lambda ignored: maybeDeferred(self.devices[device_id]._init0_))
-                d.addErrback(self.import_device_failure, self.devices[device_id])
-                d.addCallback(lambda ignored: maybeDeferred(self.devices[device_id]._init_))
-                d.addErrback(self.import_device_failure, self.devices[device_id])
-                d.addCallback(lambda ignored: maybeDeferred(self.devices[device_id]._start0_))
-                d.addErrback(self.import_device_failure, self.devices[device_id])
-                d.addCallback(lambda ignored: maybeDeferred(self.devices[device_id]._start_))
-                d.addErrback(self.import_device_failure, self.devices[device_id])
-                d.callback(1)
-                yield d
                 try:
                     global_invoke_all('_device_imported_',
                                       called_by=self,
@@ -351,6 +340,7 @@ class Devices(YomboLibrary):
                 except YomboHookStopProcessing as e:
                     pass
 
+    @inlineCallbacks
     def import_device(self, device, source=None, test_device=None):  # load or re-load if there was an update.
         """
         Add a new device to memory.
@@ -399,41 +389,13 @@ class Devices(YomboLibrary):
                             label=device['label'],
                             class_names=class_names)
 
-            # setup some base items for the new device class.
-            klass._Atoms = self._Loader.loadedLibraries['atoms']
-            klass._Automation = self._Loader.loadedLibraries['automation']
-            klass._AMQP = self._Loader.loadedLibraries['amqp']
-            klass._AMQPYombo = self._Loader.loadedLibraries['amqpyombo']
-            klass._Commands = self._Loader.loadedLibraries['commands']
-            klass._Configs = self._Loader.loadedLibraries['configuration']
-            klass._CronTab = self._Loader.loadedLibraries['crontab']
-            klass._Devices = self
-            klass._DeviceTypes = self._Loader.loadedLibraries['devicetypes']  # All device types.
-            klass._Gateways = self._Loader.loadedLibraries['gateways']
-            klass._GPG = self._Loader.loadedLibraries['gpg']
-            klass._InputTypes = self._Loader.loadedLibraries['inputtypes']  # Input Types
-            klass._Libraries = self._Loader.loadedLibraries
-            klass._Libraries = self._Loader.loadedLibraries
-            klass._Localize = self._Loader.loadedLibraries['localize']
-            klass._Locations = self._Loader.loadedLibraries['locations']  # Basically, all devices
-            klass._MQTT = self._Loader.loadedLibraries['mqtt']
-            klass._Nodes = self._Loader.loadedLibraries['nodes']
-            klass._Notifications = self._Loader.loadedLibraries['notifications']
-            klass._Queue = self._Loader.loadedLibraries['queue']
-            klass._Scenes = self._Loader.loadedLibraries['scenes']
-            klass._SQLDict = self._Loader.loadedLibraries['sqldict']
-            klass._SSLCerts = self._Loader.loadedLibraries['sslcerts']
-            klass._States = self._Loader.loadedLibraries['states']
-            klass._Statistics = self._Loader.loadedLibraries['statistics']
-            klass._Tasks = self._Loader.loadedLibraries['tasks']
-            klass._Template = self._Loader.loadedLibraries['template']
-            klass._Times = self._Loader.loadedLibraries['times']
-            klass._YomboAPI = self._Loader.loadedLibraries['yomboapi']
-            klass._Variables = self._Loader.loadedLibraries['variables']
-            klass._Validate = self._Loader.loadedLibraries['validate']
-            klass._VoiceCmds = self._Loader.loadedLibraries['voicecmds']
+            global_invoke_all('_device_before_import_',
+                              called_by=self,
+                              id=device_id,
+                              data=device,
+                              )
             try:
-                self.devices[device_id] = klass(self, device)
+                self.devices[device_id] = klass(self, device, source=source)
             except Exception as e:
                 logger.error("Error while creating device instance: {e}", e=e)
                 logger.error("-------==(Error: While saving new config data)==--------")
@@ -443,40 +405,29 @@ class Devices(YomboLibrary):
                 logger.error("{trace}", trace=traceback.print_exc(file=sys.stdout))
                 logger.error("--------------------------------------------------------")
 
-        else:
-            import_state = 'update'
+            d = Deferred()
+            d.addCallback(lambda ignored: maybeDeferred(self.devices[device_id]._init0_, device, source=source))
+            d.addErrback(self.import_device_failure, self.devices[device_id])
+            d.addCallback(lambda ignored: maybeDeferred(self.devices[device_id]._init_))
+            d.addErrback(self.import_device_failure, self.devices[device_id])
+            d.addCallback(lambda ignored: maybeDeferred(self.devices[device_id]._start0_))
+            d.addErrback(self.import_device_failure, self.devices[device_id])
+            d.addCallback(lambda ignored: maybeDeferred(self.devices[device_id]._start_))
+            d.addErrback(self.import_device_failure, self.devices[device_id])
+            d.callback(1)
+            yield d
             try:
-                global_invoke_all('_device_before_import_',
-                                  called_by=self,
-                                  id=device_id,
-                                  data=device,
-                                  )
-            except YomboHookStopProcessing as e:
-                pass
-
-            self.devices[device_id].update_attributes(device, source)
-
-        try:
-            self._VoiceCommandsLibrary.add_by_string(device["voice_cmd"], None, device["id"],
-                                                     device["voice_cmd_order"])
-        except Exception:
-            logger.debug("Device {label} has an invalid voice_cmd {voice_cmd}", label=device["label"],
-                         voice_cmd=device["voice_cmd"])
-
-        # logger.debug("_add_device: {device}", device=device)
-        if import_state == 'update':
-            try:
-                global_invoke_all('_device_updated_',
+                global_invoke_all('_device_imported_',
                                   called_by=self,
                                   id=device_id,
                                   device=self.devices[device_id],
                                   )
             except YomboHookStopProcessing as e:
                 pass
+        else:
+            import_state = 'update'
+            self.devices[device_id].update_attributes(device, source)
         return device_id
-
-                # if test_device:
-        #            return self.devices[device_id]
 
     def import_device_failure(self, failure, device):
         logger.error("Got failure while creating device instance for '{label}': {failure}", failure=failure,
@@ -841,7 +792,7 @@ class Devices(YomboLibrary):
         except Exception as e:
             return {
                 'status': 'failed',
-                'msg': "Couldn't add device",
+                'msg': "Couldn't add device due to value mismatches.",
                 'apimsg': e,
                 'apimsghtml': e,
                 'device_id': None,
@@ -876,7 +827,6 @@ class Devices(YomboLibrary):
                     'apimsghtml': "Couldn't add device: %s" % e.html_message,
                 }
             logger.debug("add new device results: {device_results}", device_results=device_results)
-            device_id = yield self.import_device(device_results['data'], source='database')
             if 'variable_data' in api_data and len(api_data['variable_data']) > 0:
                 variable_results = yield self.set_device_variables(device_results['data']['id'],
                                                                    api_data['variable_data'],
@@ -904,23 +854,14 @@ class Devices(YomboLibrary):
         logger.debug("device add results: {device_results}", device_results=device_results)
 
         self.import_device(new_device, source)
-        self.devices[device_id].add_to_db()
 
         try:
-            yield global_invoke_all('_device_changed_',
-                                    change_type='added',
+            yield global_invoke_all('_device_added_',
                                     called_by=self,
                                     id=device_id,
                                     device=self.devices[device_id],
                                     )
-        except Exception as e:
-            pass
-        try:
-            global_invoke_all('_device_added_',
-                              called_by=self,
-                              device=self.devices[device_id],
-                              )
-        except YomboHookStopProcessing as e:
+        except Exception:
             pass
 
         if results is None:
@@ -933,7 +874,6 @@ class Devices(YomboLibrary):
                 'data': new_device,
             }
 
-    #todo: convert to use a deferred semaphore
     @inlineCallbacks
     def set_device_variables(self, device_id, variables, action_type=None, source=None, session=None):
         for field_id, data in variables.items():
@@ -1003,71 +943,6 @@ class Devices(YomboLibrary):
         }
 
     @inlineCallbacks
-    def delete_device(self, device_id, called_from_device=None, **kwargs):
-        """
-        So sad to delete, but life goes on. This will delete a device by calling the API to request
-        the device be deleted.
-
-        :param device_id: Device ID to delete. Will call API
-        :type device_id: string
-        :returns: Pointer to new device. Only used during unittest
-        """
-        if device_id not in self.devices:
-            raise YomboWarning("device_id doesn't exist. Nothing to delete.", 300, 'delete_device', 'Devices')
-
-        try:
-            global_invoke_all('_device_before_delete_',
-                              called_by=self,
-                              id=device_id,
-                              device=self.devices[device_id],
-                              )
-        except YomboHookStopProcessing as e:
-            pass
-
-        try:
-            if 'session' in kwargs:
-                session = kwargs['session']
-            else:
-                session = None
-
-            yield self._YomboAPI.request('DELETE', '/v1/device/%s' % device_id,
-                                         session=session)
-        except YomboWarning as e:
-            return {
-                'status': 'failed',
-                'msg': "Couldn't delete device: %s" % e.message,
-                'apimsg': "Couldn't delete device: %s" % e.message,
-                'apimsghtml': "Couldn't delete device: %s" % e.html_message,
-            }
-
-        if called_from_device is not True:
-            self.devices[device_id].delete(True)
-        try:
-            yield global_invoke_all('_device_changed_',
-                                    change_type='deleted',
-                                    called_by=self,
-                                    id=device_id,
-                                    device=self.devices[device_id],
-                                    )
-        except Exception as e:
-            pass
-        try:
-            yield global_invoke_all('_device_deleted_',
-                                    called_by=self,
-                                    id=self.device_id,
-                                    )
-        except Exception as e:
-            pass
-
-        del self.devices[device_id]
-
-        return {
-            'status': 'success',
-            'msg': "Device deleted.",
-            'device_id': device_id
-        }
-
-    @inlineCallbacks
     def edit_device(self, device_id, data, source=None, **kwargs):
         """
         Edit device settings. Accepts a list of items to change. This will also make an API request to update
@@ -1078,111 +953,19 @@ class Devices(YomboLibrary):
         :param kwargs:
         :return:
         """
-        logger.debug("edit_device date: {data}", data=data)
+        logger.info("edit_device data: {data}", data=data)
         if device_id not in self.devices:
             raise YomboWarning("device_id doesn't exist. Nothing to edit.", 300, 'edit_device', 'Devices')
 
-        device = self.devices[device_id]
-        try:
-            yield global_invoke_all('_device_before_edit_',
-                                    called_by=self,
-                                    id=device_id,
-                                    data=data,
-                                    device=device,
-                                    )
-        except Exception as e:
-            pass
-
-        try:
-            for key in list(data.keys()):
-                if data[key] == "":
-                    data[key] = None
-                elif key in ['statistic_lifetime', 'pin_timeout']:
-                    if data[key] is None or (isinstance(data[key], str) and data[key].lower() == "none"):
-                        del data[key]
-                    else:
-                        data[key] = int(data[key])
-        except Exception as e:
+        device = self.devices.get(device_id)
+        results = yield device.update_attributes(data, source=source)
+        if results is None:
             return {
-                'status': 'failed',
-                'msg': "Couldn't edit device",
-                'apimsg': e,
-                'apimsghtml': e,
-                'device_id': '',
+                'status': 'success',
+                'msg': "Device saved.",
+                'device_id': self.device_id
             }
-
-        api_data = {}
-        for key, value in data.items():
-            if hasattr(device, key):
-                if isinstance(value, str) and len(value) == 0 :
-                    # if key == 'energy_map':
-                    #     api_data['energy_map'] = json.dumps(value, separators=(',',':'))
-                    #     # print("energy map json: %s" % json.dumps(value, separators=(',',':')))
-                    # else:
-                    continue
-                api_data[key] = value
-
-        if source != 'amqp':
-            if 'session' in kwargs:
-                session = kwargs['session']
-            else:
-                session = None
-            device_results = yield self._YomboAPI.request('PATCH', '/v1/device/%s' % device_id,
-                                                          api_data,
-                                                          session=session)
-            if device_results['code'] > 299:
-                return {
-                    'status': 'failed',
-                    'msg': "Couldn't edit device",
-                    'apimsg': device_results['content']['message'],
-                    'apimsghtml': device_results['content']['html_message'],
-                    'device_id': device_id,
-                }
-
-            if 'variable_data' in data and len(api_data) > 0:
-                variable_results = yield self.set_device_variables(device_results['data']['id'],
-                                                                   data['variable_data'],
-                                                                   session=session)
-                if variable_results['code'] > 299:
-                    return {
-                        'status': 'failed',
-                        'msg': "Device saved, but had problems with saving variables: %s" % variable_results['msg'],
-                        'apimsg': variable_results['apimsg'],
-                        'apimsghtml': variable_results['apimsghtml'],
-                        'device_id': device_id,
-                    }
-
-        yield device.device_variables()  # Update device variables cache
-        try:
-            yield global_invoke_all('_device_changed_',
-                                    change_type='edited',
-                                    called_by=self,
-                                    id=device_id,
-                                    device=self.devices[device_id],
-                                    )
-        except Exception as e:
-            pass
-        try:
-            yield global_invoke_all('_device_edited_',
-                                    called_by=self,
-                                    id=device_id,
-                                    data=data,
-                                    device=device,
-                                    )
-        except Exception as e:
-            pass
-
-        if source != 'node':
-            device.update_attributes(data, source='parent')
-            device.save_to_db()
-
-        yield device.device_variables()
-
-        return {
-            'status': 'success',
-            'msg': "Device edited.",
-            'device_id': device_results['data']['id']
-        }
+        return results
 
     @inlineCallbacks
     def enable_device(self, device_id, source=None, **kwargs):
@@ -1195,51 +978,14 @@ class Devices(YomboLibrary):
         if device_id not in self.devices:
             raise YomboWarning("device_id doesn't exist. Nothing to delete.", 300, 'enable_device', 'Devices')
 
-        api_data = {
-            'status': 1,
-        }
+        device = self.devices.get(device_id)
+        if 'session' in kwargs:
+            session = kwargs['session']
+        else:
+            session = None
 
-        try:
-            if 'session' in kwargs:
-                session = kwargs['session']
-            else:
-                session = None
-
-            device_results = yield self._YomboAPI.request('PATCH', '/v1/device/%s' % device_id,
-                                                          api_data,
-                                                          session=session)
-        except YomboWarning as e:
-            return {
-                'status': 'failed',
-                'msg': "Couldn't enable device: %s" % e.message,
-                'apimsg': "Couldn't enable device: %s" % e.message,
-                'apimsghtml': "Couldn't enable device: %s" % e.html_message,
-            }
-
-        if source != 'node':
-            self.devices[device_id].enable(True)
-        try:
-            yield global_invoke_all('_device_changed_',
-                                    change_type='enabled',
-                                    called_by=self,
-                                    id=device_id,
-                                    device=self.devices[device_id],
-                                    )
-        except Exception as e:
-            pass
-        try:
-            yield global_invoke_all('_device_enabled_',
-                                    called_by=self,
-                                    id=self.device_id,
-                                    )
-        except Exception as e:
-            pass
-        yield self.devices[device_id].device_variables()
-        return {
-            'status': 'success',
-            'msg': "Device disabled.",
-            'device_id': device_results['data']['id']
-        }
+        results = yield device.update_attributes({'status': 1}, source=source, session=session)
+        return results
 
     @inlineCallbacks
     def disable_device(self, device_id, source=None, **kwargs):
@@ -1251,50 +997,11 @@ class Devices(YomboLibrary):
         """
         if device_id not in self.devices:
             raise YomboWarning("device_id doesn't exist. Nothing to delete.", 300, 'disable_device', 'Devices')
+        device = self.devices.get(device_id)
+        if 'session' in kwargs:
+            session = kwargs['session']
+        else:
+            session = None
 
-        api_data = {
-            'status': 0,
-        }
-
-        try:
-            if 'session' in kwargs:
-                session = kwargs['session']
-            else:
-                session = None
-
-            device_results = yield self._YomboAPI.request('PATCH', '/v1/device/%s' % device_id,
-                                                          api_data,
-                                                          session=session)
-        except YomboWarning as e:
-            return {
-                'status': 'failed',
-                'msg': "Couldn't disable device: %s" % e.message,
-                'apimsg': "Couldn't disable device: %s" % e.message,
-                'apimsghtml': "Couldn't disable device: %s" % e.html_message,
-            }
-
-        if source != 'node':
-            self.devices[device_id].disable(True)
-
-        try:
-            yield global_invoke_all('_device_changed_',
-                                    change_type='disabled',
-                                    called_by=self,
-                                    id=device_id,
-                                    device=self.devices[device_id],
-                                    )
-        except Exception as e:
-            pass
-        try:
-            yield global_invoke_all('_device_disabled_',
-                                    called_by=self,
-                                    id=device_id,
-                                    device=self.devices[device_id],
-                                    )
-        except Exception as e:
-            pass
-        return {
-            'status': 'success',
-            'msg': "Device disabled.",
-            'device_id': device_results['data']['id']
-        }
+        results = yield device.update_attributes({'status': 0}, source=source, session=session)
+        return results

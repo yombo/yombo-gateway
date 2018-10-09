@@ -33,16 +33,16 @@ from yombo.constants.features import (FEATURE_ALL_OFF, FEATURE_ALL_ON, FEATURE_P
 
 # Import Yombo libraries
 from yombo.utils import is_true_false
-from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
-from yombo.utils import global_invoke_all, do_search_instance
+from yombo.mixins.magicattributesmixin import MagicAttributesMixin
+from yombo.utils import global_invoke_all
 
 from ._device_command import Device_Command
 from ._device_status import Device_Status
 logger = get_logger('library.devices.device_attributes')
 
 
-class Device_Attributes(object):
+class Device_Attributes(MagicAttributesMixin):
     """
     This base class is the main bootstrap and is responsible for settings up all core attributes.
 
@@ -296,7 +296,7 @@ class Device_Attributes(object):
     def __iter__(self):
         return iter(self.__dict__)
 
-    def __init__(self, _Parent, device, test_device=None):
+    def __init__(self, _Parent, device, **kwargs):
         """
         :param device: *(list)* - A device as passed in from the devices class. This is a
             dictionary with various device attributes.
@@ -319,6 +319,7 @@ class Device_Attributes(object):
             values entered by the user.
         :ivar available_commands: *(list)* - A list of command_id's that are valid for this device.
         """
+        super().__init__(_Parent)
         self.PLATFORM_BASE = "device"
         self.PLATFORM = "device"
         self.SUB_PLATFORM = None
@@ -345,6 +346,7 @@ class Device_Attributes(object):
         self._security_send_device_status = self._Configs.get2("security", "amqpsenddevicestatus", True)
 
         self.device_id = device["id"]
+        test_device = kwargs.get('test_device', None)
         if test_device is None:
             self.test_device = False
         else:
@@ -391,6 +393,7 @@ class Device_Attributes(object):
         self.machine_label = None
         self.label = None
         self.description = None
+        self.notes = None
         self.pin_required = None
         self.pin_code = None
         self.pin_timeout = None
@@ -416,8 +419,13 @@ class Device_Attributes(object):
         self.device_model = "Yombo"
         self.status_delayed = {}
         self.status_delayed_calllater = None
+        source = kwargs.get('source', None)
+        if source == 'database':
+            self.is_in_db = True
+        else:
+            self.is_in_db = False
+        self.is_dirty = False
 
-        self.update_attributes(device, source='parent')
         if device["gateway_id"] != self.gateway_id:
             self.device_commands = deque({}, sizes['other_device_commands'])
             self.status_history = deque({}, sizes['other_status_history'])
@@ -426,12 +434,14 @@ class Device_Attributes(object):
             self.status_history = deque({}, sizes['local_status_history'])
 
     @inlineCallbacks
-    def _init0_(self, **kwargs):
+    def _init0_(self, device, source):
         """
         Performs items that require deferreds. This is for system use only.
 
         :return:
         """
+        yield self.update_attributes(device, source=source, broadcast=False)
+
         yield self.device_variables()
         self.device_variables_cached = yield self.device_variables()
         self.device_variable_fields_cached = yield self.device_variable_fields()
@@ -444,8 +454,10 @@ class Device_Attributes(object):
 
         if self.test_device is False and self.device_is_new is True:
             self.device_is_new = False
-            yield self.load_status_history(35)
-            yield self.load_device_commands_history(35)
+            device_history = self._Configs.get("devices", "load_history_depth", 30)
+
+            yield self.load_status_history(device_history)
+            yield self.load_device_commands_history(device_history)
 
     def _init_(self, **kwargs):
         """
@@ -510,6 +522,8 @@ class Device_Attributes(object):
             'gateway_id': self.gateway_id,
             'area': self.area,
             'location': self.location,
+            'area_id': self.area_id,
+            'location_id': self.location_id,
             'area_label': self.area_label,
             'full_label': self.full_label,
             'device_id': str(self.device_id),
@@ -517,6 +531,7 @@ class Device_Attributes(object):
             'device_type_label': self._DeviceTypes[self.device_type_id].machine_label,
             'machine_label': str(self.machine_label),
             'label': str(self.label),
+            'notes': str(self.notes),
             'description': str(self.description),
             'statistic_label': str(self.statistic_label),
             'statistic_type': str(self.statistic_type),
@@ -532,6 +547,8 @@ class Device_Attributes(object):
             'device_commands': list(self.device_commands),
             'status_current': status_current,
             'status_previous': status_previous,
+            'controllable': self.controllable,
+            'allow_direct_control': self.allow_direct_control,
             'device_serial': self.device_serial,
             'device_mfg': self.device_mfg,
             'device_model': self.device_model,
@@ -540,10 +557,15 @@ class Device_Attributes(object):
             'device_features': self.FEATURES,
             'device_variables': clean_device_variables(self.device_variables_cached),
             'device_variable_fields': self.device_variable_fields_cached,
+            'energy_tracker_device': self.energy_tracker_device,
+            'energy_tracker_source': self.energy_tracker_source,
+            'energy_type': self.energy_type,
+            'energy_map': self.energy_map,
             'enabled_status': self.enabled_status,
             }
 
-    def update_attributes(self, device, source=None):
+    @inlineCallbacks
+    def update_attributes(self, device, source=None, session=None, broadcast=None):
         """
         Sets various values from a device dictionary. This can be called when the device is first being setup or
         when being updated by the AMQP service.
@@ -553,60 +575,92 @@ class Device_Attributes(object):
         :param device:
         :return:
         """
+        try:
+            yield global_invoke_all('_device_before_edit_',
+                                    called_by=self,
+                                    id=self.device_id,
+                                    data=device,
+                                    device=self,
+                                    )
+        except Exception as e:
+            pass
+
         if 'device_type_id' in device:
             self.device_type_id = device["device_type_id"]
+            self.is_dirty = True
         if 'gateway_id' in device:
             self.gateway_id = device["gateway_id"]
+            self.is_dirty = True
         if 'location_id' in device:
             self.location_id = device["location_id"]
+            self.is_dirty = True
         if 'area_id' in device:
             self.area_id = device["area_id"]
+            self.is_dirty = True
         if 'machine_label' in device:
             self.machine_label = device["machine_label"]
+            self.is_dirty = True
         if 'label' in device:
             self.label = device["label"]
+            self.is_dirty = True
         if 'description' in device:
             self.description = device["description"]
+            self.is_dirty = True
         if 'pin_required' in device:
             self.pin_required = int(device["pin_required"])
+            self.is_dirty = True
         if 'pin_code' in device:
             self.pin_code = device["pin_code"]
+            self.is_dirty = True
         if 'pin_timeout' in device:
             try:
                 self.pin_timeout = int(device["pin_timeout"])
+                self.is_dirty = True
             except:
                 self.pin_timeout = None
+                self.is_dirty = True
         if 'voice_cmd' in device:
             self.voice_cmd = device["voice_cmd"]
+            self.is_dirty = True
         if 'voice_cmd_order' in device:
             self.voice_cmd_order = device["voice_cmd_order"]
+            self.is_dirty = True
         if 'statistic_label' in device:
             self.statistic_label = device["statistic_label"]  # 'myhome.groundfloor.kitchen'
+            self.is_dirty = True
         if 'statistic_type' in device:
             self.statistic_type = device["statistic_type"]
+            self.is_dirty = True
         if 'statistic_bucket_size' in device:
             self.statistic_bucket_size = device["statistic_bucket_size"]
+            self.is_dirty = True
         if 'statistic_lifetime' in device:
             self.statistic_lifetime = device["statistic_lifetime"]
+            self.is_dirty = True
         if 'status' in device:
             self.enabled_status = int(device["status"])
+            self.is_dirty = True
         if 'created_at' in device:
             self.created_at = int(device["created_at"])
+            self.is_dirty = True
         if 'updated_at' in device:
             self.updated_at = int(device["updated_at"])
+            self.is_dirty = True
         if 'energy_tracker_device' in device:
             self.energy_tracker_device = device['energy_tracker_device']
+            self.is_dirty = True
         if 'energy_tracker_source' in device:
             self.energy_tracker_source = device['energy_tracker_source']
+            self.is_dirty = True
         if 'energy_type' in device:
             self.energy_type = device['energy_type']
-
+            self.is_dirty = True
         if 'energy_map' in device:
             if device['energy_map'] is not None:
                 # create an energy map from a dictionary
                 energy_map_final = {}
                 if isinstance(device['energy_map'], dict) is False:
-                    device['energy_map'] = {"0.0":0,"1.0":0}
+                    device['energy_map'] = {"0.0": 0, "1.0": 0}
 
                 for percent, rate in device['energy_map'].items():
                     energy_map_final[self._Parent._InputTypes.check('percent', percent)] = self._Parent._InputTypes.check('number' , rate)
@@ -614,21 +668,34 @@ class Device_Attributes(object):
                 self.energy_map = energy_map_final
             else:
                 self.energy_map = None
-
+            self.is_dirty = True
         if 'controllable' in device:
             self.controllable = device['controllable']
+            self.is_dirty = True
         if 'allow_direct_control' in device:
             self.allow_direct_control = device['allow_direct_control']
+            self.is_dirty = True
 
-        if self.device_is_new is True:
-            global_invoke_all('_device_updated_',
-                              called_by=self,
-                              id=self.device_id,
-                              device=self,
-                              )
+        if source == "database":
+            self.is_dirty = False
+            save_results = {
+                'status': 'success',
+                'msg': "Device saved.",
+                'device_id': self.device_id
+            }
+        else:
+            save_results = yield self.save(source=source, session=session)
 
-        if source != "parent" and source != "webinterface":
-            self._Parent.edit_device(device, source="node")
+        if broadcast in (None, True):
+            try:
+                yield global_invoke_all('_device_edited_',
+                                        called_by=self,
+                                        id=self.device_id,
+                                        device=self,
+                                        )
+            except:
+                pass
+        return save_results
 
     def has_device_feature(self, feature_name, value=None):
         """
@@ -713,7 +780,7 @@ class Device_Attributes(object):
         return command.comamnd_id in self.available_commands()
 
     @inlineCallbacks
-    def load_status_history(self, limit=40):
+    def load_status_history(self, limit=None):
         """
         Loads device history into the device instance. This method gets the
          data from the db to actually set the values.
@@ -722,7 +789,7 @@ class Device_Attributes(object):
         :return:
         """
         if limit is None:
-            limit = False
+            limit = 40
 
         where = {
             'device_id': self.device_id,
@@ -730,10 +797,10 @@ class Device_Attributes(object):
         records = yield self._Parent._Libraries['LocalDB'].get_device_status(where, limit=limit)
         if len(records) > 0:
             for record in records:
-                self.status_history.appendleft(Device_Status(self._Parent, self, record, source='database'))
+                self.status_history.append(Device_Status(self._Parent, self, record, source='database'))
 
     @inlineCallbacks
-    def load_device_commands_history(self, limit=40):
+    def load_device_commands_history(self, limit=None):
         """
         Loads device command history into the device instance. This method gets the
         data from the db to actually set the values.
@@ -742,7 +809,7 @@ class Device_Attributes(object):
         :return:
         """
         if limit is None:
-            limit = False
+            limit = 40
 
         where = {
             'id': self.device_id,

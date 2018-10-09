@@ -21,8 +21,6 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
 except ImportError:
     import json
 from collections import OrderedDict
-import inspect
-import sys
 from time import time
 
 # Import twisted libraries
@@ -37,11 +35,11 @@ from yombo.constants.commands import (COMMAND_COMPONENT_CALLED_BY, COMMAND_COMPO
     COMMAND_COMPONENT_AUTH_ID, COMMAND_COMPONENT_REQUESTING_SOURCE, COMMAND_COMPONENT_REPORTING_SOURCE,
     COMMAND_COMPONENT_ENERGY_TYPE, COMMAND_COMPONENT_ENERGY_USAGE, COMMAND_COMPONENT_HUMAN_MESSAGE,
     COMMAND_COMPONENT_HUMAN_STATUS)
-from yombo.core.exceptions import YomboPinCodeError, YomboWarning, YomboNoAccess
+from yombo.core.exceptions import YomboPinCodeError, YomboWarning
 from yombo.core.log import get_logger
 from yombo.lib.commands import Command  # used only to determine class type
 from yombo.utils import (random_string, global_invoke_all, do_search_instance, dict_merge, dict_diff,
-    generate_source_string)
+    generate_source_string, data_pickle, data_unpickle)
 
 # Import local items
 from ._device_attributes import Device_Attributes
@@ -257,9 +255,9 @@ class Device_Base(Device_Attributes):
 
         self.device_commands.appendleft(request_id)
 
-        print("command source: %s" % device_command[COMMAND_COMPONENT_REQUESTING_SOURCE])
-        print("command auth_id: %s" % device_command['auth_id'])
-
+        # print("command source: %s" % device_command[COMMAND_COMPONENT_REQUESTING_SOURCE])
+        # print("command auth_id: %s" % device_command['auth_id'])
+        #
         self._Parent.add_device_command_by_object(Device_Command(device_command, self._Parent))
 
         return request_id
@@ -696,6 +694,7 @@ class Device_Base(Device_Attributes):
         :param kwargs: 
         :return: 
         """
+        # print("_set_status start: %s" % kwargs)
         if 'machine_status' not in kwargs:
             raise YomboWarning("set_status was called without a real machine_status!", errorno=120)
         # logger.info("_set_status called...: {kwargs}", kwargs=kwargs)
@@ -765,14 +764,14 @@ class Device_Base(Device_Attributes):
         new_status = Device_Status(self._Parent, self, {
             'command': kwargs['command'],
             'set_at': set_at,
-            'energy_usage': kwargs[COMMAND_COMPONENT_ENERGY_USAGE],
-            'energy_type': kwargs[COMMAND_COMPONENT_ENERGY_USAGE],
+            'energy_usage': energy_usage,
+            'energy_type': energy_type,
             'human_status': kwargs[COMMAND_COMPONENT_HUMAN_STATUS],
             'human_message': kwargs[COMMAND_COMPONENT_HUMAN_MESSAGE],
             'machine_status': machine_status,
             'machine_status_extra': machine_status_extra,
             'gateway_id': kwargs['gateway_id'],
-            'auth_id': kwargs[COMMAND_COMPONENT_AUTH_ID],
+            'auth_id': auth_id,
             'reporting_source': kwargs[COMMAND_COMPONENT_REPORTING_SOURCE],
             'requesting_source': kwargs[COMMAND_COMPONENT_REQUESTING_SOURCE],
             'request_id': kwargs[COMMAND_COMPONENT_REQUEST_ID],
@@ -781,6 +780,12 @@ class Device_Base(Device_Attributes):
             }
         )
         self.status_history.appendleft(new_status)
+        # print("status_history after append left:")
+        # for temp in self.status_history:
+        #     print("set_at: %s, energy_usage: %s, machine_status: %s, machine_status_extra: %s, human_message: %s" % (
+        #         temp.set_at, temp.energy_usage, temp.machine_status, temp.machine_status_extra, temp.human_message
+        #     ))
+        # print(self.status_history)
         self.set_status_machine_extra(**kwargs)
 
         # Yombo doesn't currently have the capacity to collect these....In the future...
@@ -1044,54 +1049,108 @@ class Device_Base(Device_Attributes):
                 return False
                 # raise KeyError('Searched for %s, but had problems: %s' % (command_requested, e))
 
-    def delete(self, called_by_parent=None):
+    @inlineCallbacks
+    def delete(self, session=None):
         """
         Called when the device should delete itself.
 
         :return: 
         """
-        if called_by_parent is not True:
-            self._Parent.delete_device(self.device_id, True)
-        self._Parent._LocalDB.set_device_status(self.device_id, 2)
-        self.enabled_status = 2
+        results = yield self._Parent.delete_device(self.device_id, session=session)
+        return results
 
-    def enable(self, called_by_parent=None):
+    @inlineCallbacks
+    def enable(self, session=None):
         """
         Called when the device should enable itself.
 
         :return:
         """
-        if called_by_parent is not True:
-            self._Parent.enable_device(self.device_id, True)
-        self._Parent._LocalDB.set_device_status(self.device_id, 1)
+        results = yield self._Parent.enable_device(self.device_id, session=session)
+        return results
 
-        self.enabled_status = 1
-
-    def disable(self, called_by_parent=None):
+    @inlineCallbacks
+    def disable(self, session=None):
         """
         Called when the device should disable itself.
 
         :return:
         """
-        if called_by_parent is not True:
-            self._Parent.disable_device(self.device_id, True)
-        self._Parent._LocalDB.set_device_status(self.device_id, 0)
-        self.enabled_status = 0
+        results = yield self._Parent.disable_device(self.device_id, session=session)
+        return results
 
-    def add_to_db(self):
-        """
-        Add this device to the database.
-
-        :return:
-        """
-        if self._Parent.gateway_id == self.gateway_id:
-            self._Parent._LocalDB.add_device(self)
-
-    def save_to_db(self):
+    @inlineCallbacks
+    def save(self, source=None, session=None):
         """
         Save this device to the database.
 
         :return:
         """
-        if self._Parent.gateway_id == self.gateway_id:
-            self._Parent._LocalDB.update_device(self)
+        print("debice base . save....")
+        if self._Parent.gateway_id != self.gateway_id:
+            return {
+                'status': 'failed',
+                'msg': "Can only edit local devices.",
+                'device_id': self.device_id
+            }
+
+        if self.is_dirty is False:
+            return {
+                'status': 'success',
+                'msg': "Device saved.",
+                'device_id': self.device_id
+            }
+
+        if source != 'amqp':
+            print("device base will update server....")
+            api_data = {
+                'device_type_id': str(self.device_type_id),
+                'machine_label': str(self.machine_label),
+                'label': str(self.label),
+                'description': str(self.description),
+                'location_id': self.location_id,
+                'area_id': self.area_id,
+                'notes': str(self.notes),
+                'pin_code': self.pin_code,
+                'pin_required': int(self.pin_required),
+                'pin_timeout': self.pin_timeout,
+                'statistic_label': str(self.statistic_label),
+                'statistic_lifetime': str(self.statistic_lifetime),
+                'statistic_type': str(self.statistic_type),
+                'statistic_bucket_size': str(self.statistic_bucket_size),
+                'energy_type': self.energy_type,
+                'energy_tracker_source': self.energy_tracker_source,
+                'energy_tracker_device': self.energy_tracker_device,
+                'energy_map': self.energy_map,
+                'controllable': self.controllable,
+                'allow_direct_control': self.allow_direct_control,
+                'status': self.enabled_status,
+                'created_at': int(self.created_at),
+                'updated_at': int(self.updated_at),
+            }
+
+            if isinstance(self.energy_map, dict):
+                api_data['energy_map'] = data_pickle(self.energy_map, 'json')
+
+            print("updating device info: %s" % api_data)
+            api_results = yield self._YomboAPI.request('PATCH',
+                                                       '/v1/device/%s' % self.device_id,
+                                                       api_data,
+                                                       session=session)
+            if api_results['code'] > 299:
+                return {
+                    'status': 'failed',
+                    'msg': "Couldn't edit device",
+                    'apimsg': api_results['content']['message'],
+                    'apimsghtml': api_results['content']['html_message'],
+                    'device_id': self.device_id,
+                }
+
+        yield self._Parent._LocalDB.upsert_device(self)
+        yield self.device_variables()  # Update device variables cache
+
+        return {
+            'status': 'success',
+            'msg': "Device saved.",
+            'device_id': self.device_id
+        }

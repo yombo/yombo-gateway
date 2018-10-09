@@ -18,9 +18,13 @@ the Device_Attributes can also be overridden, but that is less common.
 :license: LICENSE for details.
 """
 # Import Yombo libraries
+from yombo.constants.features import (FEATURE_BRIGHTNESS, FEATURE_COLOR_TEMP, FEATURE_EFFECT, FEATURE_PERCENT,
+    FEATURE_RGB_COLOR, FEATURE_TRANSITION, FEATURE_WHITE_VALUE, FEATURE_XY_COLOR, FEATURE_NUMBER_OF_STEPS)
+from yombo.constants.status_extra import STATUS_EXTRA_BRIGHTNESS
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
 from yombo.utils import instance_properties
+from yombo.utils.converters import translate_int_value
 from ._device_base import Device_Base
 
 logger = get_logger('library.devices.device')
@@ -104,23 +108,47 @@ class Device(Device_Base):
         # }
 
         if 'machine_status' in kwargs:
-            machine_status = kwargs['machine_status']
+            machine_status = float(kwargs['machine_status'])
         else:
-            machine_status = self.status_history[0]['machine_status']
+            machine_status = float(self.status_history[0]['machine_status'])
 
-        if machine_status is None:
-            raise ValueError("Machine status cannot be none.")
+        if 'machine_status_extra' in kwargs:
+            machine_status_extra = kwargs['machine_status_extra']
+        else:
+            machine_status_extra = self.status_history[0]['machine_status_extra']
 
-        if self.energy_tracker_source != 'calc':
+        # print("energy_calc: machine_status: %s" % machine_status)
+        # print("energy_calc: machine_status_extra: %s" % machine_status_extra)
+        if STATUS_EXTRA_BRIGHTNESS in machine_status_extra:
+            try:
+                percent = self.calc_percent(machine_status_extra) / 100
+            except:
+                percent = (translate_int_value(machine_status_extra[STATUS_EXTRA_BRIGHTNESS],
+                                           0, self.FEATURES[FEATURE_NUMBER_OF_STEPS],
+                                           0, 100) / 100)
+        else:
+            # print("calculating from machine_status: %s" % machine_status)
+
+            if machine_status is None:
+                percent = 0
+            elif machine_status > 0 and machine_status < 1:
+                percent = machine_status
+            else:
+                percent = 0
+
+        if self.energy_tracker_source != 'calculated':
             return [0, self.energy_type]
 
-        if self.energy_map == None:
+        energy_map = self.energy_map
+        if energy_map is None:
             return [0, self.energy_type]  # if no map is found, we always return 0
 
-        items = list(self.energy_map.items())
-        for i in range(0, len(self.energy_map) - 1):
-            if items[i][0] <= machine_status <= items[i + 1][0]:
-                value = self.energy_translate(machine_status, items[i][0], items[i + 1][0], items[i][1],
+        items = list(energy_map.items())
+        # print("energy_calc: percent: %s" % percent)
+        # print("energy_calc: energy_map items(): %s" % items)
+        for i in range(0, len(energy_map) - 1):
+            if items[i][0] <= percent <= items[i + 1][0]:
+                value = self.energy_translate(percent, items[i][0], items[i + 1][0], items[i][1],
                                               items[i + 1][1])
                 return [value, self.energy_type]
         raise ValueError("Unable to determine enery usage.")
