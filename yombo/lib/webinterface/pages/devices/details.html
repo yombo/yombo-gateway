@@ -183,11 +183,10 @@
                             {{ device.attributes }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Energy Type: </label><br>
                             {{ device.energy_type }}<br>
-                            <label style="margin-top: 15px; margin-bottom: 0px">Energy Map: </label><br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Energy Map: </label>
                             {% if device.energy_map is none -%}
-                            None
+                            <br>None
                             {% else -%}
-                            {{device.energy_map}}
                             <table width="100%" class="table table-striped table-bordered table-hover">
                                 <thead>
                                     <tr>
