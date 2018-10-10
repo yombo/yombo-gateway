@@ -56,7 +56,7 @@ def random_choice(context, values):
     return random.choice(values)
 
 
-class Template(YomboLibrary, object):
+class Template(YomboLibrary):
     """
     Handles compiling templates and rendering them when requested.
     """
