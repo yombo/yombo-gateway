@@ -333,12 +333,6 @@ def create_table_events(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS event_type_idx ON events (event_type, event_subtype)")
     yield Registry.DBPOOL.runQuery(create_index('events', 'created_at'))
-    yield Registry.DBPOOL.runQuery(create_index('events', 'attr1'))
-    yield Registry.DBPOOL.runQuery(create_index('events', 'attr2'))
-    yield Registry.DBPOOL.runQuery(create_index('events', 'attr3'))
-    yield Registry.DBPOOL.runQuery(create_index('events', 'attr4'))
-    yield Registry.DBPOOL.runQuery(create_index('events', 'attr5'))  # Only do these, majority only have this many items.
-
 
 @inlineCallbacks
 def create_table_gateways(Registry, **kwargs):
@@ -515,7 +509,7 @@ def create_table_module_installed(Registry, **kwargs):
 
 @inlineCallbacks
 def create_table_nodes(Registry, **kwargs):
-    """ Defines the statistics data table. Stores node items. """
+    """ Defines the nodes data table. Stores node items. """
     table = """CREATE TABLE `nodes` (
         `id`                TEXT NOT NULL,
         `parent_id`         TEXT,
@@ -538,7 +532,7 @@ def create_table_nodes(Registry, **kwargs):
 
 @inlineCallbacks
 def create_table_notifications(Registry, **kwargs):
-    """ Defines the statistics data table. Stores statistics. """
+    """ Defines the notifications data table. Stores notifications. """
     table = """CREATE TABLE `notifications` (
         `id`                      TEXT NOT NULL,
         `gateway_id`              TEXT NOT NULL,
