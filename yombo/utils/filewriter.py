@@ -21,6 +21,7 @@ This class will keep the file open, so be sure to close this file when done!
        self.file.close()  # Tell FileWriter to close the file. Very important!
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+.. versionadded:: 0.23.0
 
 :copyright: Copyright 2013-2016 by Yombo.
 :license: LICENSE for details.
