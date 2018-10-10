@@ -17,4 +17,12 @@ Locations
    :private-members:
    :undoc-members:
 
+Location
+================
+.. autoclass:: Location
+   :members:
+   :special-members:
+   :private-members:
+   :undoc-members:
+
 Last updated: |today|

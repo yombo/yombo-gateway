@@ -1,6 +1,6 @@
-.. index:: handlers
+.. index:: handlers_summary
 
-.. _handlers:
+.. _handlers_summary:
 
 .. currentmodule:: yombo.lib.handlers
 

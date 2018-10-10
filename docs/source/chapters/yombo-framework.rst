@@ -50,7 +50,7 @@ IoT devices, etc.
 
    ../lib/amqp.rst
    ../lib/amqpyombo.rst
-   ../lib/amqpyombo_handlers/amqpyombo_handlers.rst
+   ../lib/amqpyombo_handlers/_summary.rst
    ../lib/authkey.rst
    ../lib/atoms.rst
    ../lib/automation.rst
@@ -58,15 +58,15 @@ IoT devices, etc.
    ../lib/commands.rst
    ../lib/configuration.rst
    ../lib/crontab.rst
-   ../lib/devices/devices.rst
+   ../lib/devices/_summary.rst
    ../lib/devicetypes.rst
    ../lib/downloadmodules.rst
    ../lib/discovery.rst
    ../lib/events.rst
-   ../lib/gateways.rst
+   ../lib/gateways/_summary.rst
    ../lib/gateway_communications.rst
    ../lib/gpg.rst
-   ../lib/inputtypes/inputtypes.rst
+   ../lib/inputtypes/_summary.rst
    ../lib/hash.rst
    ../lib/hashids.rst
    ../lib/loader.rst
@@ -80,20 +80,39 @@ IoT devices, etc.
    ../lib/queue.rst
    ../lib/queue.rst
    ../lib/requests.rst
+   ../lib/scenes.rst
    ../lib/sqldict.rst
-   ../lib/sslcerts/sslcerts.rst
+   ../lib/sslcerts/_summary.rst
    ../lib/startup.rst
    ../lib/states.rst
-   ../lib/statistics/statistics.rst
+   ../lib/statistics/_summary.rst
    ../lib/tasks.rst
+   ../lib/template.rst
    ../lib/times.rst
-   ../lib/users/users.rst
+   ../lib/users/_summary.rst
    ../lib/validate.rst
    ../lib/variables.rst
-   ../lib/voicecmds.rst
-   ../lib/webinterface/webinterface.rst
+   ../lib/webinterface/_summary.rst
    ../lib/websessions.rst
    ../lib/yomboapi.rst
+
+.. _framework_mixins:
+
+Mixins
+=========
+
+Mixins add various features to a class. For example, add the authmixin to treat
+the object as something can be used for authentication.
+
+.. toctree::
+   :maxdepth: 1
+
+   ../mixins/authmixin.rst
+   ../mixins/magicattributesmixin.rst
+   ../mixins/permissionmixin.rst
+   ../mixins/rolesmixin.rst
+   ../mixins/usermixin.rst
+   ../mixins/yombobasemixin.rst
 
 .. _framework_constants:
 

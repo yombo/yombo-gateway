@@ -16,6 +16,7 @@ Nodes class
    :special-members:
    :private-members:
    :undoc-members:
+   :noindex:
 
 Node class (Helper to Nodes Class)
 ===========================================
@@ -24,5 +25,6 @@ Node class (Helper to Nodes Class)
    :special-members:
    :private-members:
    :undoc-members:
+   :noindex:
 
 Last updated: |today|
