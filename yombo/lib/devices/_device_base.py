@@ -245,9 +245,7 @@ class Device_Base(Device_Attributes):
             for input_label, input_value in inputs.items():
                 try:
                     inputs[input_label] = self._Parent._DeviceTypes.validate_command_input(self.device_type_id, command.command_id, input_label, input_value)
-                    # print("checking input: %s (%s)" % (input_label, type(input_label)))
                 except Exception as e:
-                    # print("error checking input value: %s" % e)
                     pass
         device_command['inputs'] = inputs
         if callbacks is not None:
@@ -694,7 +692,6 @@ class Device_Base(Device_Attributes):
         :param kwargs: 
         :return: 
         """
-        # print("_set_status start: %s" % kwargs)
         if 'machine_status' not in kwargs:
             raise YomboWarning("set_status was called without a real machine_status!", errorno=120)
         # logger.info("_set_status called...: {kwargs}", kwargs=kwargs)
@@ -702,8 +699,6 @@ class Device_Base(Device_Attributes):
         machine_status_extra = kwargs.get('machine_status_extra', {})
         kwargs['machine_status_extra'] = machine_status_extra
 
-        # print("status: %s == %s" % (machine_status, self.machine_status))
-        # print("machine_status_extra: %s == %s" % (machine_status_extra, self.machine_status_extra))
         if machine_status == self.machine_status:
             added, removed, modified, same = dict_diff(machine_status_extra, self.machine_status_extra)
             if len(added) == 0 and len(removed) == 0 and len(modified) == 0:
@@ -1080,7 +1075,6 @@ class Device_Base(Device_Attributes):
 
         :return:
         """
-        print("debice base . save....")
         if self._Parent.gateway_id != self.gateway_id:
             return {
                 'status': 'failed',
@@ -1096,7 +1090,6 @@ class Device_Base(Device_Attributes):
             }
 
         if source != 'amqp':
-            print("device base will update server....")
             api_data = {
                 'device_type_id': str(self.device_type_id),
                 'machine_label': str(self.machine_label),
@@ -1126,7 +1119,6 @@ class Device_Base(Device_Attributes):
             if isinstance(self.energy_map, dict):
                 api_data['energy_map'] = data_pickle(self.energy_map, 'json')
 
-            print("updating device info: %s" % api_data)
             api_results = yield self._YomboAPI.request('PATCH',
                                                        '/v1/device/%s' % self.device_id,
                                                        api_data,

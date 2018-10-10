@@ -368,13 +368,13 @@ class Devices(YomboLibrary):
             all_energy_usage[location_label][status_all['energy_type']] += usage
             all_energy_usage['total'][status_all['energy_type']] += usage
 
-        print("All energy usage: %s" % all_energy_usage)
+        logger.debug("All energy usage: {all_energy_usage}", all_energy_usage=all_energy_usage)
 
         for location, data in all_energy_usage.items():
             if location in self.all_energy_usage:
                 if ENERGY_ELECTRIC in self.all_energy_usage[location] and \
                         all_energy_usage[location][ENERGY_ELECTRIC] != self.all_energy_usage[location][ENERGY_ELECTRIC]:
-                    print("EU: setting eletrcic: %s %s" % (location_label, all_energy_usage[location][ENERGY_ELECTRIC]))
+                    # print("EU: setting eletrcic: %s %s" % (location_label, all_energy_usage[location][ENERGY_ELECTRIC]))
                     self._Statistics.datapoint(
                         "energy.%s.electric" % location_label,
                         round(all_energy_usage[location][ENERGY_ELECTRIC])
