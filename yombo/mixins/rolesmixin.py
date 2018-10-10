@@ -5,7 +5,7 @@
 
   For library documentation, see: `Devices @ Module Development <https://yombo.net/docs/libraries/users>`_
 
-Mixin class to represent users.
+Mixin class to support roles for users, authkeys, etc.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.22.0
