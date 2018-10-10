@@ -25,6 +25,7 @@ from twisted.internet.defer import inlineCallbacks
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
+from yombo.mixins.yombobasemixin import YomboBaseMixin
 from yombo.utils import search_instance, do_search_instance, global_invoke_all
 
 logger = get_logger('library.locations')
@@ -42,6 +43,7 @@ class Locations(YomboLibrary):
         Checks to if a provided location ID or machine_label exists.
 
             >>> if '0kas02j1zss349k1' in self._Locations:
+            >>> if 'area:0kas02j1zss349k1' in self._Locations:
 
         or:
 
@@ -64,7 +66,8 @@ class Locations(YomboLibrary):
         """
         Attempts to find the location requested using a couple of methods.
 
-            >>> location = self.Locations['0kas02j1zss349k1']  #by uuid
+            >>> location = self.Locations['0kas02j1zss349k1']  # by id
+            >>> location = self.Locations['area:0kas02j1zss349k1']  # include location type
 
         or:
 
@@ -144,8 +147,7 @@ class Locations(YomboLibrary):
         Load() stage.
         """
         self.locations = {}
-        self.location_search_attributes = ['location_id', 'gateway_id', 'location', 'machine_label', 'destination',
-            'data_type']
+        self.location_search_attributes = ['location_id', 'label', 'machine_label']
 
         yield self._load_locations_from_database()
 
@@ -230,6 +232,33 @@ class Locations(YomboLibrary):
         for location in locations:
             self.import_location(location.__dict__)
 
+        # Stop here if not in run mode.
+        if self._Loader.operating_mode != 'run':
+            return
+
+        # Now check to make sure we have bare minimum locations for none.
+        try:
+            location = self.get("area:none")
+        except KeyError:
+            logger.warn("No default 'area' location, creating one...")
+            yield self.add_location({
+                'machine_label': 'none',
+                'label': 'none',
+                'location_type': 'area',
+                'description': "Default when no 'area' location is assigned.",
+            })
+
+        try:
+            location = self.get("location:none")
+        except KeyError:
+            logger.warn("No default 'location' location, creating one...")
+            yield self.add_location({
+                'machine_label': 'none',
+                'label': 'none',
+                'location_type': 'location',
+                'description': "Default when no 'location' location is assigned.",
+            })
+
     def import_location(self, location, test_location=False):
         """
         Add a new locations to memory or update an existing locations.
@@ -281,16 +310,6 @@ class Locations(YomboLibrary):
                               location=self.locations[location_id],
                               )
 
-    def remove_location(self, location_id):
-        """
-        Remove a location from memory.
-        
-        :param location_id: 
-        :return: 
-        """
-        if location_id in self.locations:
-            del self.locations[location_id]
-
     def area_label(self,
                    area_id: dict(type=str, help="Area ID (location) to use for prepending to label"),
                    label: dict(type=str, help="Label to prepend Area to.")
@@ -337,13 +356,18 @@ class Locations(YomboLibrary):
 
         .. note::
 
-           Modules can also simply treat this library as a dictionary to lookup items:
+           Modules can also simply treat this library as a dictionary to lookup items, however, this will search
+           any location type.
 
             >>> self.Locations['13ase45']
 
         or:
 
             >>> self.Locations['numeric']
+
+        To specify a location type, use this format for the string:   location_type:location_id
+
+            >>> self.Locations['area:13ase45']
 
         :raises YomboWarning: For invalid requests.
         :raises KeyError: When item requested cannot be found.
@@ -361,6 +385,9 @@ class Locations(YomboLibrary):
             limiter = .99
         elif limiter < .10:
             limiter = .10
+
+        if ":" in location_requested:
+            location_type, location_requested = location_requested.split(':', 1)
 
         if location_requested in self.locations:
             item = self.locations[location_requested]
@@ -384,13 +411,13 @@ class Locations(YomboLibrary):
                 }
             ]
             try:
-                # logger.debug("Get is about to call search...: %s" % location_requested)
+                logger.debug("Get is about to call search...: %s" % location_requested)
                 # found, key, item, ratio, others = self._search(attrs, operation="highest")
                 found, key, item, ratio, others = do_search_instance(attrs, self.locations,
                                                                      self.location_search_attributes,
                                                                      limiter=limiter,
                                                                      operation="highest")
-                # logger.debug("found location by search: others: {others}", others=others)
+                logger.debug("found location by search: others: {others}", others=others)
                 if location_type is not None:
                     for other in others:
                         if other['value'].location_type == location_type and other['ratio'] > limiter:
@@ -462,6 +489,14 @@ class Locations(YomboLibrary):
         :param kwargs:
         :return:
         """
+        if data['machine_label'] == 'none':
+            return {
+                'status': 'failed',
+                'msg': "Cannot edit default locations.",
+                'apimsg': "Cannot edit default locations.",
+                'apimsghtml': "Cannot edit default locations.",
+            }
+
         try:
             if 'session' in kwargs:
                 session = kwargs['session']
@@ -498,13 +533,22 @@ class Locations(YomboLibrary):
         :param kwargs:
         :return:
         """
+        location = self.get(location_id)
+        if location['machine_label'] == 'none':
+            return {
+                'status': 'failed',
+                'msg': "Cannot delete default locations.",
+                'apimsg': "Cannot delete default locations.",
+                'apimsghtml': "Cannot delete default locations.",
+            }
+
         try:
             if 'session' in kwargs:
                 session = kwargs['session']
             else:
                 session = None
 
-            yield self._YomboAPI.request('DELETE', '/v1/location/%s' % location_id,
+            yield self._YomboAPI.request('DELETE', '/v1/location/%s' % location.location_id,
                                          session=session)
         except YomboWarning as e:
             return {
@@ -514,7 +558,9 @@ class Locations(YomboLibrary):
                 'apimsghtml': "Couldn't delete location: %s" % e.html_message,
             }
 
-        self.remove_location(location_id)
+        if location_id in self.locations:
+            del self.locations[location_id]
+
         self._LocalDB.delete_locations(location_id)
         return {
             'status': 'success',
@@ -523,16 +569,15 @@ class Locations(YomboLibrary):
         }
 
 
-class Location:
+class Location(YomboBaseMixin):
     """
     A class to manage a single location.
-    :ivar location_id: (string) The unique ID.
-    :ivar label: (string) Human label
+
+
+
     :ivar machine_label: (string) A non-changable machine label.
-    :ivar category_id: (string) Reference category id.
-    :ivar input_regex: (string) A regex to validate if user input is valid or not.
-    :ivar always_load: (int) 1 if this item is loaded at startup, otherwise 0.
-    :ivar public: (int) 0 - private, 1 - public pending approval, 2 - public
+    :ivar label: (string) Human label
+    :ivar description: (string) Description of the location or area.
     :ivar created_at: (int) EPOCH time when created
     :ivar updated_at: (int) EPOCH time when last updated
     """
@@ -543,14 +588,16 @@ class Location:
 
         :param location: An location with all required items to create the class.
         :type location: dict
-
         """
+        super().__init__(parent)
+
         # logger.debug("Location info: {location}", location=location)
 
-        self._Parent = parent
+        #: str: ID for the location.
         self.location_id = location['id']
 
         # below are configure in update_attributes()
+        #: str: Type of location, one of: area, location
         self.location_type = None
         self.machine_label = None
         self.label = None
@@ -568,7 +615,9 @@ class Location:
         :return: 
         """
         if 'location_type' in location:
-            self.location_type = location['location_type']
+            if location['location_type'].lower() not in ('area', 'location', 'none'):
+                raise YomboWarning("location_type must be one of: area, location.  Received: %s" % location['location_type'])
+            self.location_type = location['location_type'].lower()
         if 'machine_label' in location:
             self.machine_label = location['machine_label']
         if 'label' in location:
