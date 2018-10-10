@@ -195,50 +195,59 @@
 {% block body_bottom_js %}{% include 'lib/webinterface/fragments/datatables_js.tpl' %}{% endblock %}
 
 {% block body_bottom %}
-    <!-- Make the tables pretty -->
-    <script>
-    $(document).ready(function() {
-        var devicesEnabledTable = $('#devices-enabled').DataTable({
-                responsive: true,
-                paging: true,
-                iDisplayLength: 50,
-                "aoColumnDefs": [
-                      { "bSearchable": false, "aTargets": [ 4 ] }
-                    ]
-//                lengthMenu: [ 1, 2, 50, 75, 100 ],
-//                dom: '<f<t>ip>'
-//                dom: 'il<"top"f>rt<"bottom"fl>p<"clear">'
-        });
-        $("#localDevicesEnabledTabLabel").text("Local Devices (" + devicesEnabledTable.page.info().recordsTotal +")");
-
-
-        var devicesOtherGWTable = $('#devices-othergw').DataTable({
-                responsive: true,
-                paging: true,
-                iDisplayLength: 50,
-                order: [[ 0, "desc"], [0, "desc"]],
-                "aoColumnDefs": [
-                      { "bSearchable": false, "aTargets": [ 4 ] }
-                    ]
-        });
-        $("#localDevicesOtherGWTabLabel").text("Other Gateways (" + devicesOtherGWTable.page.info().recordsTotal +")");
-
-        var devicesDisabledTable = $('#devices-disabled').DataTable({
-                responsive: true,
-                paging: true,
-                iDisplayLength: 50,
-                order: [[ 0, "desc"], [0, "desc"]],
-                "aoColumnDefs": [
-                      { "bSearchable": false, "aTargets": [ 4 ] }
-                    ]
-        });
-        $("#localDevicesDisabledTabLabel").text("Disabled Devices (" + devicesDisabledTable.page.info().recordsTotal +")");
-
-        var disabled_table = $('#devices-disabled').DataTable();
-        if (disabled_table.rows( ).count() == 0){
-             $('#tab-device-disbled').css('display','none');
-        }
-
+<script>
+$(document).ready(function() {
+    var devicesEnabledTable = $('#devices-enabled').DataTable({
+            responsive: true,
+            paging: true,
+            iDisplayLength: 50,
+            "aoColumnDefs": [
+                  { "bSearchable": false, "aTargets": [ 4 ] }
+                ]
     });
-    </script>
+    $("#localDevicesEnabledTabLabel").text("Local Devices (" + devicesEnabledTable.page.info().recordsTotal +")");
+
+
+    var devicesOtherGWTable = $('#devices-othergw').DataTable({
+            responsive: true,
+            paging: true,
+            iDisplayLength: 50,
+            order: [[ 0, "desc"], [0, "desc"]],
+            "aoColumnDefs": [
+                  { "bSearchable": false, "aTargets": [ 4 ] }
+                ]
+    });
+    $("#localDevicesOtherGWTabLabel").text("Other Gateways (" + devicesOtherGWTable.page.info().recordsTotal +")");
+
+    var devicesDisabledTable = $('#devices-disabled').DataTable({
+            responsive: true,
+            paging: true,
+            iDisplayLength: 50,
+            order: [[ 0, "desc"], [0, "desc"]],
+            "aoColumnDefs": [
+                  { "bSearchable": false, "aTargets": [ 4 ] }
+                ]
+    });
+    $("#localDevicesDisabledTabLabel").text("Disabled Devices (" + devicesDisabledTable.page.info().recordsTotal +")");
+
+    var disabled_table = $('#devices-disabled').DataTable();
+    if (disabled_table.rows( ).count() == 0){
+         $('#tab-device-disbled').css('display','none');
+    }
+
+});
+
+// Javascript to enable link to tab
+var hash = document.location.hash;
+var prefix = "tab_";
+if (hash) {
+    $('.nav-tabs a[href="'+hash.replace(prefix,"")+'"]').tab('show');
+}
+// Change hash for page-reload
+$('.nav-tabs a').on('shown.bs.tab', function (e) {
+    window.location.hash = e.target.hash;
+    window.scrollTo(0, 0);
+})
+
+</script>
 {% endblock %}
