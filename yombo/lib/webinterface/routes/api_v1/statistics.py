@@ -33,7 +33,7 @@ def route_api_v1_statistics(webapp):
             session.has_access('statistic', '*', 'view', raise_error=True)
             requested_stats = []
 
-            chart_label = request.args.get('chart_label', ['Unlabeled', ])[0]
+            chart_label = request.args.get('chart_label', [None, ])[0]
             time_last = request.args.get('last', [1209600, ])[0]
             time_start = request.args.get('start', [None, ])[0]
             time_end = request.args.get('end', [None, ])[0]
@@ -42,7 +42,8 @@ def route_api_v1_statistics(webapp):
             stat_type = request.args.get('stat_type', [None, ])
             stat_name = request.args.get('stat_name', [None, ])
             bucket_size = request.args.get('bucket_size', [3600, ])
-
+            if chart_label is None:
+                chart_label = stat_name
             try:
                 if time_start is not None:
                     try:
@@ -139,9 +140,9 @@ def route_api_v1_statistics(webapp):
                             return return_error(request, "'bucket_size' must be an int and must be greater than 0.")
                         my_bucket_size = int(bucket_size[idx])
                     else:
-                        my_bucket_size = 900
+                        my_bucket_size = bucket_size
                 except Exception as e:
-                    my_bucket_size = 900
+                    my_bucket_size = bucket_size
 
                 records = yield webinterface._Libraries['localdb'].get_stats_sums(my_stat_name,
                                                                                   bucket_size=my_bucket_size,
