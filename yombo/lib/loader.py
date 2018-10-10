@@ -315,7 +315,7 @@ class Loader(YomboLibrary, object):
                 for requirement_line, details in self.requirements.items():
                     logger.info("Upgrading python package: {line}", line=requirement_line)
                     try:
-                        yield yombo.utils.install_python_package(last_requirements_update)
+                        yield yombo.utils.install_python_package(requirement_line)
                     except YomboWarning as e:
                         pass
                 self._Configs.set('core', 'lastrequirementsudpate', int(time()))
