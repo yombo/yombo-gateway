@@ -6,6 +6,9 @@ A simple parent class for children of various Yombo libriaries.
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.22.0
 
+Yombo base mixin. If submitted, sets the _Parent attribute. Future versions will provide more
+capabilities.
+
 :copyright: Copyright 2018 by Yombo.
 :license: LICENSE for details.
 """
