@@ -115,7 +115,7 @@ $(document).ready(function(){
 //        alert( "Handler for .submit() called: " + selectedValues );
         event.preventDefault();
         //ajax get data...
-        var url="/api/v1/statistics/echarts/buckets?stat_name="+selectedValues+"&bucket_size=900&last=1209600";
+        var url="/api/v1/statistics/echarts/buckets?stat_name="+selectedValues+"&bucket_size=60&last=1209600";
         $.ajax({
             type:"post",
             url:url,

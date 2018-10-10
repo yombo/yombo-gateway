@@ -121,6 +121,7 @@
 
     </div>
     <div class="col-lg-6 col-md-6">
+    <div id="electric" style="width: 100%;height:400px;"></div>
 
     </div>
     <!-- /.col-lg-12 -->
@@ -130,22 +131,44 @@
 {% block body_bottom %}
 <script type="text/javascript">
 $(document).ready(function(){
-    var myChart = echarts.init(document.getElementById('main'));
-    myChart.showLoading({
+    var myChartCommands = echarts.init(document.getElementById('main'));
+    myChartCommands.showLoading({
         text: 'Loading',
     });
 
     //ajax get data...
-    var url="/api/v1/statistics/echarts/buckets?chart_label=Commands+Sent&stat_name=lib.devices.commands_sent&bucket_size=900&last=1209600";
+    var url="/api/v1/statistics/echarts/buckets?chart_label=Commands+Sent&stat_name=lib.devices.commands_sent&bucket_size=300&last=1209600";
     $.ajax({
         type:"post",
         url:url,
         dataType: "json",
         success:function(data){
-            myChart.hideLoading();
+            myChartCommands.hideLoading();
 
             var option=data;
-            myChart.setOption(option);
+            myChartCommands.setOption(option);
+        },
+        error:function(error){
+            alert("Error："+error);
+        }
+    });
+
+    var myChartElectric = echarts.init(document.getElementById('electric'));
+    myChartElectric.showLoading({
+        text: 'Loading',
+    });
+
+    //ajax get data...
+    var url="/api/v1/statistics/echarts/buckets?chart_label=Electric Usage&stat_name=energy.house.electric&bucket_size=60&last=1209600";
+    $.ajax({
+        type:"post",
+        url:url,
+        dataType: "json",
+        success:function(data){
+            myChartElectric.hideLoading();
+
+            var option=data;
+            myChartElectric.setOption(option);
         },
         error:function(error){
             alert("Error："+error);
