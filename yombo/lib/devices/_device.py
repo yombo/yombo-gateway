@@ -117,24 +117,30 @@ class Device(Device_Base):
         else:
             machine_status_extra = self.status_history[0]['machine_status_extra']
 
-        # print("energy_calc: machine_status: %s" % machine_status)
-        # print("energy_calc: machine_status_extra: %s" % machine_status_extra)
-        if STATUS_EXTRA_BRIGHTNESS in machine_status_extra:
-            try:
-                percent = self.calc_percent(machine_status_extra) / 100
-            except:
-                percent = (translate_int_value(machine_status_extra[STATUS_EXTRA_BRIGHTNESS],
-                                           0, self.FEATURES[FEATURE_NUMBER_OF_STEPS],
-                                           0, 100) / 100)
-        else:
-            # print("calculating from machine_status: %s" % machine_status)
+        print("energy_calc: machine_status: %s" % machine_status)
+        print("energy_calc: machine_status_extra: %s" % machine_status_extra)
 
-            if machine_status is None:
-                percent = 0
-            elif machine_status > 0 and machine_status < 1:
-                percent = machine_status
-            else:
-                percent = 0
+        percent = self.calc_percent(machine_status, machine_status_extra) / 100
+        print("energy_calc: percent: %s" % percent)
+
+        #
+        # if STATUS_EXTRA_BRIGHTNESS in machine_status_extra:
+        #     try:
+        #         print("")
+        #         percent = self.calc_percent(machine_status_extra) / 100
+        #     except:
+        #         percent = (translate_int_value(machine_status_extra[STATUS_EXTRA_BRIGHTNESS],
+        #                                    0, self.FEATURES[FEATURE_NUMBER_OF_STEPS],
+        #                                    0, 100) / 100)
+        # else:
+        #     # print("calculating from machine_status: %s" % machine_status)
+        #
+        #     if machine_status is None:
+        #         percent = 0
+        #     elif machine_status > 0 and machine_status < 1:
+        #         percent = machine_status
+        #     else:
+        #         percent = 0
 
         if self.energy_tracker_source != 'calculated':
             return [0, self.energy_type]

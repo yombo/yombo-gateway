@@ -119,7 +119,7 @@ class Light(Device):
                 return 0
         return None
 
-    def calc_percent(self, machine_status_extra):
+    def calc_percent(self, machine_status, machine_status_extra):
         """
         Like percent property, but accepts machine_status as input
         """
@@ -247,10 +247,11 @@ class Light(Device):
         return self.command(COMMAND_OFF, **kwargs)
 
     def generate_human_status(self, machine_status, machine_status_extra):
-        return str(self.calc_percent(machine_status_extra)) + '%'
+        return str(self.calc_percent(machine_status, machine_status_extra)) + '%'
 
     def generate_human_message(self, machine_status, machine_status_extra):
-        return "%s is now %s%%" % (self.area_label, self.calc_percent(machine_status_extra))
+        return "%s is now %s%%" % (self.area_label,
+                                   self.calc_percent(machine_status, machine_status_extra))
 
 class Color_Light(Light):
     """

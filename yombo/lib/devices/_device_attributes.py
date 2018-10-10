@@ -262,6 +262,32 @@ class Device_Attributes(MagicAttributesMixin):
             return True
         return False
 
+    @property
+    def percent(self):
+        """
+        This should be overridden by the device types themselves. This is simply a fallback.
+
+        If the machine_status is 0, returns. Otherwise returns 100.
+        """
+        print("USING DEFAULTY PERCENT!!")
+        if len(self.status_history) > 0:
+            machine_status = self.status_history[0].machine_status
+            if machine_status == 0:
+                return 0
+            else:
+                return 100
+        return 0
+
+    def calc_percent(self, machine_status, machine_status_extra):
+        """
+        Like percent property, but accepts machine_status as input
+        """
+        print("USING DEFAULTY calc_percent!!")
+        if machine_status == 0:
+            return 0
+        else:
+            return 100
+
     def __str__(self):
         """
         Print a string when printing the class.  This will return the device_id so that

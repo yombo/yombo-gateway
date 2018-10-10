@@ -39,7 +39,7 @@ from yombo.core.exceptions import YomboPinCodeError, YomboWarning
 from yombo.core.log import get_logger
 from yombo.lib.commands import Command  # used only to determine class type
 from yombo.utils import (random_string, global_invoke_all, do_search_instance, dict_merge, dict_diff,
-    generate_source_string, data_pickle, data_unpickle)
+    generate_source_string, data_pickle)
 
 # Import local items
 from ._device_attributes import Device_Attributes
@@ -181,7 +181,7 @@ class Device_Base(Device_Attributes):
                     search_device_command.cancel(message="This device command was superseded by a new persistent request.")
 
         if request_id is None:
-            request_id = random_string(length=18)
+            request_id = random_string(length=10, char_set='extended')
 
         device_command['request_id'] = request_id
 
@@ -780,12 +780,6 @@ class Device_Base(Device_Attributes):
             }
         )
         self.status_history.appendleft(new_status)
-        # print("status_history after append left:")
-        # for temp in self.status_history:
-        #     print("set_at: %s, energy_usage: %s, machine_status: %s, machine_status_extra: %s, human_message: %s" % (
-        #         temp.set_at, temp.energy_usage, temp.machine_status, temp.machine_status_extra, temp.human_message
-        #     ))
-        # print(self.status_history)
         self.set_status_machine_extra(**kwargs)
 
         # Yombo doesn't currently have the capacity to collect these....In the future...

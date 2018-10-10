@@ -56,12 +56,13 @@ To send a command to a device is simple.
 """
 # Import python libraries
 
-import inspect
+from copy import deepcopy
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
     import json
 import msgpack
+from numbers import Number
 import sys
 import traceback
 
@@ -69,9 +70,11 @@ from time import time
 from collections import OrderedDict
 
 # Import twisted libraries
+from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks, maybeDeferred, Deferred
 
 # Import Yombo libraries
+from yombo.constants import ENERGY_NONE, ENERGY_ELECTRIC, ENERGY_GAS, ENERGY_WATER, ENERGY_NOISE, ENERGY_TYPES
 from yombo.core.exceptions import YomboWarning, YomboHookStopProcessing
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
@@ -220,6 +223,7 @@ class Devices(YomboLibrary):
             key = 'area_label'
         return OrderedDict(sorted(iter(self.devices.items()), key=lambda i: getattr(i[1], key)))
 
+    @inlineCallbacks
     def _init_(self, **kwargs):
         """
         Sets up basic attributes.
@@ -246,6 +250,8 @@ class Devices(YomboLibrary):
         self.processing_commands = False
 
         self.mqtt = None
+        self.all_energy_usage = yield self._SQLDict.get('yombo.lib.device', 'all_energy_usage')
+        self.all_energy_usage_calllater = None
 
     @inlineCallbacks
     def _start_(self, **kwags):
@@ -260,6 +266,7 @@ class Devices(YomboLibrary):
         if self._States['loader.operating_mode'] == 'run':
             self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming, client_id='Yombo-devices-%s' %
                                                                                             self.gateway_id)
+
 
     def _started_(self, **kwargs):
         """
@@ -309,6 +316,105 @@ class Devices(YomboLibrary):
                          max_delay=request['max_delay'],
                          **request['kwargs'])
         self.startup_queue.clear()
+
+    def _device_status_(self, **kwargs):
+        """
+        Sets up the callLater to calculate total energy usage.
+        Called by send_status when a devices status changes.
+
+        :param kwargs:
+        :return:
+        """
+        if self.all_energy_usage_calllater is not None and self.all_energy_usage_calllater.active():
+            return
+
+        self.all_energy_usage_calllater = reactor.callLater(1, self.calculate_energy_usage)
+
+    def calculate_energy_usage(self):
+        """
+        Iterates thru all the devices and adds up the energy usage across all devices.
+
+        This function is called after a 1 second delay by _device_status_ hook.
+
+        :return:
+        """
+        usage_types = {
+            ENERGY_ELECTRIC: 0,
+            ENERGY_GAS: 0,
+            ENERGY_WATER: 0,
+            ENERGY_NOISE: 0,
+        }
+        all_energy_usage = {
+            'total': deepcopy(usage_types),
+        }
+
+        for device_id, device in self.devices.items():
+            status_all = device.status_all
+            if status_all['fake_data'] is True:
+                continue
+            if status_all['energy_type'] not in ENERGY_TYPES or status_all['energy_type'] == "none":
+                continue
+            energy_usage = status_all['energy_usage']
+            if isinstance(energy_usage, int) or isinstance(energy_usage, float):
+                usage = energy_usage
+            elif isinstance(energy_usage, Number):
+                usage = float(energy_usage)
+            else:
+                continue
+            location_id = self._Locations.get(device.location_id)
+            location_label = location_id.machine_label
+            if location_label not in all_energy_usage:
+                all_energy_usage[location_label] = deepcopy(usage_types)
+            all_energy_usage[location_label][status_all['energy_type']] += usage
+            all_energy_usage['total'][status_all['energy_type']] += usage
+
+        print("All energy usage: %s" % all_energy_usage)
+
+        for location, data in all_energy_usage.items():
+            if location in self.all_energy_usage:
+                if ENERGY_ELECTRIC in self.all_energy_usage[location] and \
+                        all_energy_usage[location][ENERGY_ELECTRIC] != self.all_energy_usage[location][ENERGY_ELECTRIC]:
+                    print("EU: setting eletrcic: %s %s" % (location_label, all_energy_usage[location][ENERGY_ELECTRIC]))
+                    self._Statistics.datapoint(
+                        "energy.%s.electric" % location_label,
+                        round(all_energy_usage[location][ENERGY_ELECTRIC])
+                    )
+                if ENERGY_GAS in self.all_energy_usage[location] and \
+                        all_energy_usage[location][ENERGY_GAS] != self.all_energy_usage[location][ENERGY_GAS]:
+                        self._Statistics.datapoint(
+                            "energy.%s.electric" % location_label,
+                            round(all_energy_usage[location][ENERGY_GAS], 3)
+                        )
+                if ENERGY_WATER in self.all_energy_usage[location] and \
+                        all_energy_usage[location][ENERGY_WATER] != self.all_energy_usage[location][ENERGY_WATER]:
+                        self._Statistics.datapoint(
+                            "energy.%s.electric" % location_label,
+                            round(all_energy_usage[location][ENERGY_WATER], 3)
+                        )
+                if ENERGY_NOISE in self.all_energy_usage[location] and \
+                        all_energy_usage[location][ENERGY_NOISE] != self.all_energy_usage[location][ENERGY_NOISE]:
+                        self._Statistics.datapoint(
+                            "energy.%s.electric" % location_label,
+                            round(all_energy_usage[location][ENERGY_NOISE], 1)
+                        )
+            else:
+                self._Statistics.datapoint(
+                    "energy.%s.electric" % location_label,
+                    round(all_energy_usage[location][ENERGY_ELECTRIC])
+                )
+                self._Statistics.datapoint(
+                    "energy.%s.electric" % location_label,
+                    round(all_energy_usage[location][ENERGY_GAS], 3)
+                )
+                self._Statistics.datapoint(
+                    "energy.%s.electric" % location_label,
+                    round(all_energy_usage[location][ENERGY_WATER], 3)
+                )
+                self._Statistics.datapoint(
+                    "energy.%s.electric" % location_label,
+                    round(all_energy_usage[location][ENERGY_NOISE], 1)
+                )
+        self.all_energy_usage = deepcopy(all_energy_usage)
 
     @inlineCallbacks
     def _load_devices_from_database(self):
