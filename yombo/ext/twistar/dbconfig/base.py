@@ -50,7 +50,11 @@ class InteractionBase(object):
         Simply makes same C{twisted.enterprise.dbapi.ConnectionPool.runOperation} call, but
         with call to L{log} function.
         """
-        self.log(query, args, kwargs)
+        # self.log(query, args, kwargs)
+        Registry.debug("q: %s\n" % query)
+        Registry.debug("args: %s\n" % args)
+        Registry.debug("kwargs: %s\n" % kwargs)
+
         return Registry.DBPOOL.runOperation(query, *args, **kwargs)
 
 
@@ -59,7 +63,10 @@ class InteractionBase(object):
         Simply makes same C{twisted.enterprise.dbapi.ConnectionPool.runQuery} call, but
         with call to L{log} function.
         """
-        self.log(query, args, kwargs)
+        # self.log(query, args, kwargs)
+        Registry.debug("q: %s\n" % query)
+        Registry.debug("args: %s\n" % args)
+        Registry.debug("kwargs: %s\n" % kwargs)
         return Registry.DBPOOL.runQuery(query, *args, **kwargs)
 
 
@@ -68,7 +75,10 @@ class InteractionBase(object):
         Execute given query within the given transaction.  Also, makes call
         to L{log} function.
         """
-        self.log(query, args, kwargs)
+        # self.log(query, args, kwargs)
+        Registry.debug("q: %s\n" % query)
+        Registry.debug("args: %s\n" % args)
+        Registry.debug("kwargs: %s\n" % kwargs)
         return txn.execute(query, *args, **kwargs)
 
 
@@ -124,10 +134,9 @@ class InteractionBase(object):
             q += " LIMIT %s OFFSET %s" % (limit[0], limit[1])
         elif limit is not None:
             q += " LIMIT " + str(limit)
-        if debug is True:
-            print("q: %s" % q)
-            print("args: %s" % args)
-
+        # if debug is True:
+        # Registry.debug("q: %s\n" % q)
+        # Registry.debug("args: %s\n" % args)
         return self.runInteraction(self._doselect, q, args, tablename, one, cacheTableStructure)
 
 
@@ -186,6 +195,7 @@ class InteractionBase(object):
         if prefix is not None:
             insert_prefix = ' ' + prefix + ' '
         q = "INSERT %s INTO %s %s %s" % (insert_prefix, tablename, colnames, params)
+        # Registry.debug("q: %s\n" % q)
 
         # if we have a transaction use it
         if txn is not None:
@@ -226,6 +236,7 @@ class InteractionBase(object):
         for val in vals:
             args = args + list(val.values())
         q = "INSERT INTO %s (%s) VALUES %s" % (tablename, colnames, params)
+        # Registry.debug("q: %s\n" % q)
         return self.executeOperation(q, args)
 
 
@@ -252,6 +263,8 @@ class InteractionBase(object):
         if where is not None:
             wherestr, args = self.whereToString(where)
             q += " WHERE " + wherestr
+        # Registry.debug("q: %s\n" % q)
+        # Registry.debug("args: %s\n" % args)
         return self.executeOperation(q, args)
 
 
@@ -264,6 +277,7 @@ class InteractionBase(object):
         @return: A C{Deferred}.
         """
         q = "DELETE FROM %s WHERE id IN ('%s')" % (tablename, "', '".join(ids))
+        # Registry.debug("q: %s\n" % q)
         return self.executeOperation(q)
 
 
@@ -300,6 +314,8 @@ class InteractionBase(object):
 
         # print("base about to update record: %s -> %s = %s" % (tablename, q, args) )
 
+        # Registry.debug("q: %s\n" % q)
+        # Registry.debug("args: %s\n" % args)
         if txn is not None:
             return self.executeTxn(txn, q, args)
         return self.executeOperation(q, args)
@@ -473,4 +489,5 @@ class InteractionBase(object):
         @return: A C{Deferred}.
         """
         q = "DROP TABLE %s" % tablename
+        # Registry.debug("q: %s\n" % q)
         return self.executeOperation(q, [])

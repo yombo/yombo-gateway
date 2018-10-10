@@ -6,6 +6,7 @@ from __future__ import absolute_import
 from twisted.python import reflect
 
 from yombo.ext.twistar.exceptions import ClassNotRegisteredError
+from yombo.utils.filewriter import FileWriter
 
 
 class Registry(object):
@@ -19,6 +20,8 @@ class Registry(object):
     REGISTRATION = {}
     IMPL = None
     DBPOOL = None
+    DEBUG = False
+    DEBUG_FILE = None
 
 
     @classmethod
@@ -85,3 +88,27 @@ class Registry(object):
             raise NotImplementedError("twisteddb does not support the %s driver" % dbapi.__name__)
 
         return Registry.IMPL
+
+    @classmethod
+    def setDebug(klass, debug):
+        """
+        Sets up debuging, or disables it.
+
+
+        :param debug:
+        :param filepointer:
+        :return:
+        """
+        print("registry debug: %s" % debug)
+        if debug is False:
+            klass.DEBUG = False
+            klass.DEBUG_FILE.close()
+            klass.DEBUG_FILE = None
+        if debug is True:
+            klass.DEBUG = True
+            klass.DEBUG_FILE = FileWriter("db_logs.txt")
+
+    @classmethod
+    def debug(klass, output):
+        if klass.DEBUG_FILE is not None:
+            klass.DEBUG_FILE.write(output)
