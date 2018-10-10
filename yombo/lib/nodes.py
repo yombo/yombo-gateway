@@ -848,6 +848,7 @@ class Nodes(YomboLibrary):
 class Node(object):
     """
     A class to manage a single node.
+
     :ivar node_id: (string) The unique ID.
     :ivar label: (string) Human label
     :ivar machine_label: (string) A non-changable machine label.
@@ -941,6 +942,7 @@ class Node(object):
 
     @property
     def status(self):
+        """int: If the node is enabled. 1 for yes, 0 for no, 2 for about to be deleted."""
         return self._status
 
     @status.setter
@@ -951,6 +953,7 @@ class Node(object):
 
     @property
     def updated_at(self):
+        """int: When the node was last updated."""
         return self._updated_at
 
     @updated_at.setter
