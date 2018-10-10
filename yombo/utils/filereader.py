@@ -38,6 +38,7 @@ import codecs
 import os
 
 # Import twisted libraries
+from twisted.internet import reactor
 from twisted.internet.task import LoopingCall
 from twisted.internet.defer import inlineCallbacks
 
@@ -88,6 +89,7 @@ class FileReader:
         self.make_if_missing = kwargs.get('make_if_missing', True)
         self.frequency = kwargs.get('frequency', 1)
         self._SQLDict = get_component('yombo.gateway.lib.sqldict')
+        reactor.callLater(0.001, self.start)
 
     @inlineCallbacks
     def start(self):
