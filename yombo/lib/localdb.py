@@ -247,6 +247,7 @@ Registry.register(Category)
 Registry.register(DeviceTypeCommand)
 Registry.register(Events)
 Registry.register(EventTypes)
+#Registry.setDebug(True)
 
 TEMP_MODULE_CLASSES = inspect.getmembers(sys.modules[__name__])
 MODULE_CLASSES = {}
@@ -303,7 +304,7 @@ class LocalDB(YomboLibrary):
             start_schema_version = self.schema_version
             self.database_file_is_new = False
         except Exception as e:
-            # logger.info("Problem with database: %s" % e)
+            logger.info("Problem with database: %s" % e)
             logger.info("Creating new database file.")
             start_schema_version = 0
             self.database_file_is_new = True
@@ -473,6 +474,7 @@ class LocalDB(YomboLibrary):
                             yield self.insert_many(table, send_data)
                         except IntegrityError as e:
                             logger.warn("Error trying to insert_many in bulk save: {e}", e=e)
+                            logger.warn("Table: {table}, data: {send_data}", table=table, send_data=send_data)
                     elif queue_type == 'update':
                         send_data = []
                         for key, value in db_data.items():
@@ -481,11 +483,13 @@ class LocalDB(YomboLibrary):
                             yield self.update_many(table, send_data, self.db_bulk_queue_id_cols[table])
                         except IntegrityError as e:
                             logger.warn("Error trying to update_many in bulk save: {e}", e=e)
+                            logger.warn("Table: {table}, data: {send_data}", table=table, send_data=send_data)
                     elif queue_type == 'delete':
                         try:
                             yield self.delete_many(table, db_data)
                         except IntegrityError as e:
                             logger.warn("Error trying to delete_many in bulk save: {e}", e=e)
+                            logger.warn("Table: {table}, data: {send_data}", table=table, send_data=send_data)
 
     @inlineCallbacks
     def make_backup(self):
@@ -531,7 +535,7 @@ class LocalDB(YomboLibrary):
             for request_id in list(self._Devices.device_commands.keys()):
                 device_command = self._Devices.device_commands[request_id]
                 if device_command.finished_at is not None:
-                    if device_command.finished_at > start_time - (60 * 60 * 24):  # keep 45 minutes worth.
+                    if device_command.finished_at > start_time - 3600:  # keep 60 minutes worth.
                         found_dc = False
                         for device_id, device in self._Devices.devices.items():
                             if request_id in device.device_commands:
@@ -540,7 +544,7 @@ class LocalDB(YomboLibrary):
                         if found_dc is False:
                             yield device_command.save_to_db()
                             del self._Devices.device_commands[request_id]
-            yield self.dbconfig.delete('device_commands', where=['created_at < ?', time() - (86400 * 120)])
+            yield self.dbconfig.delete('device_commands', where=['created_at < ?', time() - (86400 * 45)])
             timer += time() - start_time
 
         # Lets delete any device status after 90 days. Long term data should be in the statistics.
@@ -967,7 +971,7 @@ class LocalDB(YomboLibrary):
                 'expires_at': record['expires_at'],
                 'created_at': record['created_at'],
             }
-            keys[record['keyid']] = key
+            keys[record['fingerprint']] = key
         return keys
 
     @inlineCallbacks
@@ -1719,13 +1723,50 @@ ORDER BY id desc"""
         return results
 
     @inlineCallbacks
-    def get_unfinished_statistics(self):
-        records = yield self.dbconfig.select(
-            'statistics',
-            select='*',
-            where=['finished = 0'])
-        self._unpickle_stats(records)
-        return records
+    def get_stat_last_records(self):
+        #                  0            1             2         3            4                5             6
+        sql = """SELECT bucket_type, bucket_time, bucket_name, id, bucket_size, bucket_lifetime, bucket_value,
+    bucket_average_data, anon, uploaded, updated_at
+    FROM  statistics
+    WHERE bucket_time in (
+    SELECT max(bucket_time) FROM statistics
+    GROUP BY bucket_type, bucket_name
+    )"""
+        stats = yield Registry.DBPOOL.runQuery(sql)
+        results = {}
+        for stat in stats:
+            if stat[0] not in results:
+                results[stat[0]] = {}
+            if stat[1] not in results[stat[0]]:
+                results[stat[0]][stat[1]] = {}
+
+            #        type     time      name
+            results[stat[0]][stat[1]][stat[2]] = {
+                'type': stat[0],
+                'time': stat[1],
+                'name': stat[2],
+                'restored_from_db': True,
+                'restored_db_id': stat[3],
+                'size': stat[4],
+                'lifetime': stat[5],
+                'value': stat[6],
+                'average_data': stat[7],
+                'anon': stat[8],
+                'uploaded': stat[9],
+                'updated_at': stat[10],
+                'touched': False
+            }
+
+        return results
+
+    # @inlineCallbacks
+    # def get_unfinished_statistics(self):
+    #     records = yield self.dbconfig.select(
+    #         'statistics',
+    #         select='*',
+    #         where=['finished = 0'])
+    #     self._unpickle_stats(records)
+    #     return records
 
     @inlineCallbacks
     def get_uploadable_statistics(self, uploaded_type = 0):
@@ -1768,7 +1809,7 @@ ORDER BY id desc"""
         wheres = []
         values = []
 
-        wheres.append("(bucket_name like ?)")
+        wheres.append("(bucket_name = ?)")
         values.append(bucket_name)
 
         if bucket_type is not None:
