@@ -636,8 +636,6 @@ class LocalDB(YomboLibrary):
     @inlineCallbacks
     def search_events_for_datatables(self, event_type, event_subtype, order_column, order_direction, start,
                                      length, search=None):
-        # print("search events... event_type:%s, event_subtype: %s, order_column: %s, order_direction: %s, start: %s, length: %s, search:%s" %
-        #       (event_type, event_subtype, order_column, order_direction, start, length, search))
 
         event_types = self._Events.event_types
         if event_type not in event_types:
@@ -676,7 +674,7 @@ class LocalDB(YomboLibrary):
             if re.match('^[ \w-]+$', search) is None:
                 raise YomboWarning("Invalid search string contents.")
             where_attrs = ["source LIKE '%%%s%%'" % search, "auth_id LIKE '%%%s%%'" % search]
-            for i in range(1, 20):
+            for i in range(1, len(event['attributes']) + 1):
                 where_attrs.append("attr%s LIKE '%%%s%%'" % (i, search))
             where_attrs_str = " OR ".join(where_attrs)
 
