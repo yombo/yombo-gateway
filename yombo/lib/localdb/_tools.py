@@ -147,13 +147,11 @@ class DB_Tools(object):
         start_time = time()
         for i in range(20, -1, -1):  # reversed range
             current_backup_file_name = "yombo.db.%s" % i
-            print("make backup: current_backup_file_name: %s" % current_backup_file_name)
             if current_backup_file_name in db_backup_files:
                 if i == 20:
                     remove(db_backup_path + current_backup_file_name)
                 else:
                     next_backup_file_name = "yombo.db.%s" % str(i + 1)
-                    print("make backup: next_backup_file_name: %s" % next_backup_file_name)
                     rename(db_backup_path + current_backup_file_name, db_backup_path + next_backup_file_name)
 
         yield getProcessOutput("sqlite3", [db_file, ".backup %syombo.db.1" % db_backup_path])
