@@ -19,7 +19,6 @@ Documentation Links
   to add support for additional automation protocols and devices, visit the
   `Yombo Development Documentation <https://yombo.net/docs/developing_modules>`_
 
-========================
 Additional Links
 ========================
 * `Yombo.net <https://yombo.net/>`_
@@ -63,7 +62,7 @@ The gateway framework is split into a few directories:
  * :ref:`framework_lib` - Libraries provide all the services and tools to manage the system, including sending
    :doc:`commands <../lib/commands>` to :doc:`devices <../lib/devices/devices>`.
  * :ref:`framework_mixins` - Mixins add various features to a class.
- * :ref:`framework_modules` - Extend the features of the Yombo gateway and are located in the modules folder.
+ * :ref:`framework_modules` - Extend the features of the Yombo gateway.
  * :ref:`framework_utils` - Various utilities for getting things done.
 
 .. _framework_core:
@@ -85,8 +84,8 @@ features to be used by libraries and modules.
 
 .. _framework_lib:
 
-Lib
-=====
+Libraries
+=============
 
 Libraries build on the core modules and functions and provide essential
 gateway services, such as routing commands from devices, talking to other
@@ -186,8 +185,8 @@ For a list of modules available to be installed by end users: `Available Modules
 
 .. _framework_utils:
 
-Utils
-=====
+Utilities
+===========
 
 Various utilities to help the Yombo Gateway get things done.
 
@@ -204,8 +203,8 @@ Various utilities to help the Yombo Gateway get things done.
 
 .. _framework_ext:
 
-Ext
-===
+3rd party extensions
+=====================
 
 This directory contains external modules that ship with Yombo to support
 the framework features. They are governed under their respective
@@ -223,6 +222,16 @@ information.
    ../ext/totp.rst
    ../ext/txrdq.rst
    ../ext/validators.rst
+
+License
+========================
+
+Yombo license information.
+
+.. toctree::
+   :maxdepth: 1
+
+   ../chapters/license.rst
 
 Contributing to Developer Documentation
 ========================================
