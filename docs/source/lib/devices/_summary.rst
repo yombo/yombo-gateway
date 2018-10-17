@@ -44,6 +44,6 @@ Device Types
    scene.rst
    sensor.rst
    switch.rst
-   tv.py
+   tv.rst
 
 Last updated: |today|

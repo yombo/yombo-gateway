@@ -69,8 +69,8 @@ IoT devices, etc.
    ../lib/inputtypes/_summary.rst
    ../lib/hash.rst
    ../lib/hashids.rst
-   ../lib/loader.rst
-   ../lib/localdb.rst
+   ../lib/loader.grst
+   ../lib/localdb/_summary.rst
    ../lib/localize.rst
    ../lib/locations.rst
    ../lib/modules.rst

@@ -5,19 +5,27 @@ Yombo Automation Python Reference
 =================================
 
 Release |release|
-(`Release notes <https://yombo.net/release_notes/gateway/2018_8_19/version_0.21.0>`_)
+(`Release notes <https://yombo.net/release_notes/gateway/0.22.0>`_)
 
-End User Docuementation
+The Yombo Gateway is a framework that allows users to quickly develop
+modules to implement automation of various devices around the home, office,
+and anything in between.
+
+Documentation Links
 =======================
-This site is for those who wish to tinker with writing logic to manage their automation system.
-If you are just getting started, visit the
-`User Quick Start Guide <https://yombo.net/docs/gateway/quick_start>`_.
+* **End user** - For users getting started, visit the
+  `User Quick Start Guide <https://yombo.net/docs/gateway/quick_start>`_.
+* **Developers** - For developing modules to add enhanced automation rules or
+  to add support for additional automation protocols and devices, visit the
+  `Yombo Development Documentation <https://yombo.net/docs/developing_modules>`_
 
-Python API Documentation
 ========================
+Additional Links
+========================
+* `Yombo.net <https://yombo.net/>`_
+* `End user documentation <https://yombo.net/docs>`_
+* `Building your first module - a complete guide <https://yombo.net/docs/developing_modules/building_your_first_module>`_
 
-For code samples and getting started guides, visit the
-`Yombo Development Documentation <https://yombo.net/docs/developing_modules>`_
 
 Overview
 ========
@@ -44,30 +52,177 @@ and turns it off at 10:30pm:
            off_time = self._Times.get_next('hour=22', 'minute'=30')  # get epoch for the next 10:30pm time.
            porch_light.command(cmd='off', not_before=off_time)  # turn of at 10:30pm
 
-Useful links
-=============
+Navigating the framework
+===========================
 
-* `Yombo.net <https://yombo.net/>`_
-* `Quick start guide <https://yombo.net/docs/gateway/quick_start>`_
-* `End user documentation <https://yombo.net/docs>`_
-* `Building your first module - a complete guide <https://yombo.net/docs/developing_modules/building_your_first_module>`_
+The gateway framework is split into a few directories:
 
-Yombo PyDoc Links
------------------
+ * :ref:`framework_ext` - 3rd party extensions.
+ * :ref:`framework_constants` - Used to keep various attributes consistent across the Yombo Gateway framework.
+ * :ref:`framework_core` - Basic functions used by various libraries.
+ * :ref:`framework_lib` - Libraries provide all the services and tools to manage the system, including sending
+   :doc:`commands <../lib/commands>` to :doc:`devices <../lib/devices/devices>`.
+ * :ref:`framework_mixins` - Mixins add various features to a class.
+ * :ref:`framework_modules` - Extend the features of the Yombo gateway and are located in the modules folder.
+ * :ref:`framework_utils` - Various utilities for getting things done.
 
-* :ref:`Full index <genindex>`
-* :ref:`Search page <search>`
+.. _framework_core:
 
-Table of Contents
-=================
+Core
+=====
+
+Core modules are the base Yombo Gateway API functions. They provide the base
+features to be used by libraries and modules.
 
 .. toctree::
-   :maxdepth: 3
-   :numbered:
-   :includehidden:
+   :maxdepth: 1
 
-   chapters/yombo-framework.rst
-   chapters/license.rst
+   ../core/exceptions.rst
+   ../core/gwservice.rst
+   ../core/library.rst
+   ../core/log.rst
+   ../core/module.rst
+
+.. _framework_lib:
+
+Lib
+=====
+
+Libraries build on the core modules and functions and provide essential
+gateway services, such as routing commands from devices, talking to other
+IoT devices, etc.
+
+.. toctree::
+   :maxdepth: 1
+
+   ../lib/amqp.rst
+   ../lib/amqpyombo.rst
+   ../lib/amqpyombo_handlers/_summary.rst
+   ../lib/authkey.rst
+   ../lib/atoms.rst
+   ../lib/automation.rst
+   ../lib/cache.rst
+   ../lib/commands.rst
+   ../lib/configuration.rst
+   ../lib/crontab.rst
+   ../lib/devices/_summary.rst
+   ../lib/devicetypes.rst
+   ../lib/downloadmodules.rst
+   ../lib/discovery.rst
+   ../lib/events.rst
+   ../lib/gateways/_summary.rst
+   ../lib/gateway_communications.rst
+   ../lib/gpg.rst
+   ../lib/inputtypes/_summary.rst
+   ../lib/hash.rst
+   ../lib/hashids.rst
+   ../lib/loader.grst
+   ../lib/localdb/_summary.rst
+   ../lib/localize.rst
+   ../lib/locations.rst
+   ../lib/modules.rst
+   ../lib/mqtt.rst
+   ../lib/nodes.rst
+   ../lib/notifications.rst
+   ../lib/queue.rst
+   ../lib/queue.rst
+   ../lib/requests.rst
+   ../lib/scenes.rst
+   ../lib/sqldict.rst
+   ../lib/sslcerts/_summary.rst
+   ../lib/startup.rst
+   ../lib/states.rst
+   ../lib/statistics/_summary.rst
+   ../lib/tasks.rst
+   ../lib/template.rst
+   ../lib/times.rst
+   ../lib/users/_summary.rst
+   ../lib/validate.rst
+   ../lib/variables.rst
+   ../lib/webinterface/_summary.rst
+   ../lib/websessions.rst
+   ../lib/yomboapi.rst
+
+.. _framework_mixins:
+
+Mixins
+=========
+
+Mixins add various features to a class. For example, add the authmixin to treat
+the object as something can be used for authentication.
+
+.. toctree::
+   :maxdepth: 1
+
+   ../mixins/authmixin.rst
+   ../mixins/magicattributesmixin.rst
+   ../mixins/permissionmixin.rst
+   ../mixins/rolesmixin.rst
+   ../mixins/usermixin.rst
+   ../mixins/yombobasemixin.rst
+
+.. _framework_constants:
+
+Constants
+=========
+
+Easily reference the same values across the Yombo Gateway framework.
+
+.. toctree::
+   :maxdepth: 1
+
+   ../constants/constants.rst
+
+.. _framework_modules:
+
+Modules
+=======
+
+System modules, user modules, and downloaded modules go into the modules folder. These extend
+the capabilites of the gateway and provide the gateway the ability to communicate with
+various devices over various protocols.
+
+For a list of modules available to be installed by end users: `Available Modules <https://yg2.in/f_gdoc_modules>`_
+
+.. _framework_utils:
+
+Utils
+=====
+
+Various utilities to help the Yombo Gateway get things done.
+
+.. toctree::
+   :maxdepth: 1
+
+   ../utils/decorators.rst
+   ../utils/dictobject.rst
+   ../utils/filereader.rst
+   ../utils/fuzzysearch.rst
+   ../utils/lookupdict.rst
+   ../utils/maxdict.rst
+   ../utils/utils.rst
+
+.. _framework_ext:
+
+Ext
+===
+
+This directory contains external modules that ship with Yombo to support
+the framework features. They are governed under their respective
+licenses. See the COPYING file included with this distribution for more
+information.
+
+.. toctree::
+   :maxdepth: 1
+
+   ../ext/bermiinflector.rst
+   ../ext/expiringdict.rst
+   ../ext/hashids.rst
+   ../ext/mqtt.rst
+   ../ext/twistar.rst
+   ../ext/totp.rst
+   ../ext/txrdq.rst
+   ../ext/validators.rst
 
 Contributing to Developer Documentation
 ========================================
@@ -78,5 +233,10 @@ the `source code itself <https://github.com/yombo/yombo-gateway>`_.
 Making changes is easy: simply find the section of the code and update the code comment. This website is periodically
 updated from the source code.
 
+Yombo PyDoc Links
+-----------------
+
+* :ref:`Full index <genindex>`
+* :ref:`Search page <search>`
 
 Last updated: |today|
