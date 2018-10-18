@@ -822,7 +822,7 @@ class Statistics(YomboLibrary):
                             # int(bucket_time), int((current_bucket_time['time']))))
                             od = {
                                 'bucket_time': current_bucket['time'],
-                                'bucket_size': current_bucket_time['size'],
+                                'bucket_size': current_bucket['size'],
                                 'bucket_lifetime': current_bucket['lifetime'],
                                 'bucket_type': current_bucket['type'],
                                 'bucket_name': current_bucket['name'],
@@ -853,7 +853,7 @@ class Statistics(YomboLibrary):
                     # int(bucket_time), int((current_bucket_time['time']))))
                     od = {
                         'bucket_time': current_bucket['time'],
-                        'bucket_size': current_bucket_time['size'],
+                        'bucket_size': current_bucket['size'],
                         'bucket_lifetime': current_bucket['lifetime'],
                         'bucket_type': current_bucket['type'],
                         'bucket_name': current_bucket['name'],
