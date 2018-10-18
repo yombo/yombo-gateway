@@ -132,7 +132,9 @@
 	<div class="col-md-12">
 		<div class="panel panel-default">
 			<div class="panel-heading">
-				<h4>Location</h4>
+				<h4>Physical Location</h4>
+				Set the physical location of where the gateway is installed. This is used for geo fencing and
+				calculating times such as sunset, sunrise, twilight, etc.
 			</div>
 			<div class="panel-body">
 				<div class="row">
@@ -220,8 +222,127 @@
 		</div>
 	</div>
 </div>
-<!-- /.row -->
+
+<div class="modal fade" id="totp_model" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+  <div class="modal-dialog" role="document">
+	<div class="modal-content">
+	  <div class="modal-header">
+		<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+		<h4 class="modal-title" id="myModalLabel">Scan QRCode below</h4>
+	  </div>
+	  <div class="modal-body">
+		<p>Use your TOTP app (such as Google Authenticator). This code will be required when accessing
+		this website from a new machine.
+		</p>
+		  <p><strong>If you don't scan this, you could be locked out of the web interface until you
+		  stop the gateway service, edit the yombo.ini file, and start the gateway again.</strong></p>
+
+	  </div>
+	  <div class="modal-body" id="qrcode_here" align="center">
+	  </div>
+	  <div class="modal-footer">
+		<button type="button" class="btn btn-primary" data-dismiss="modal">I've scanned this code</button>
+	  </div>
+	</div>
+  </div>
+</div>
+
 <div class="row">
+	<div class="col-md-6">
+		<div class="panel panel-default">
+			<div class="panel-heading">
+				<h4>Logical Location and area</h4>
+				<p>Set the location of this gateway, such as House, Shed, Pool House, etc. Also, set the area the
+				gateway is installed. -- {{_location_id}}
+				</p>
+				<p><strong><a href="/locations/index">Manage logical locations</a></strong></p>
+			</div>
+			<div class="panel-body">
+				<div class="form-group">
+					<label for="location_id" data-toggle="tooltip" title="Gateway logical location">Logical Location</label>
+					<div class="material-switch pull-right">
+						<select class="selectpicker show-tick" tabindex="1" required
+								name="location_id" id="location_id" title="Select location...">
+						{% for location_id, location in _locations.items() if location.location_type == 'location' %}
+							<option value="{{location_id}}" {% if location_id == _location_id %} selected{% endif %}>{{location.label}}</option>
+						{% endfor %}
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
+					<label for="area_id" data-toggle="tooltip" title="Gateway logical area">Logical Area</label>
+					<div class="material-switch pull-right">
+						<select class="selectpicker show-tick" tabindex="1" required
+								name="area_id" id="area_id" title="Select area...">
+						{% for location_id, location in _locations.items() if location.location_type == 'area' %}
+							<option value="{{location_id}}" {% if location_id == _area_id %} selected{% endif %}>{{location.label}}</option>
+						{% endfor %}
+						</select>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="panel panel-default">
+			<div class="panel-heading">
+				<h4>Misc Settings</h4>
+			</div>
+			<div class="panel-body">
+				<div class="form-group">
+					<label  for="statistics_enbled" data-toggle="tooltip" title="When enabled, allows various statistics to be collected and gathered.">Statistics Enabled</label>
+					<div class="material-switch pull-right">
+						<input id="statistics_enbled" name="statistics_enbled" type="checkbox" checked/>
+						<label for="statistics_enbled" class="label-primary"></label>
+					</div>
+				</div>
+				<div class="form-group">
+					<label  for="statistics_upload" data-toggle="tooltip" title="Allows stats to be backed up to the cloud and allows you to access this information using various tools.">Statistics Upload</label>
+					<div class="material-switch pull-right">
+						<input id="statistics_upload" name="statistics_upload" type="checkbox" checked/>
+						<label for="statistics_upload" class="label-primary"></label>
+					</div>
+				</div>
+				<div class="form-group">
+					<label  for="statistics_anonymous" data-toggle="tooltip" title="Allows anonymouse usage stats to be collected so Yombo can learn how to better improve performance and featureset.">Anonymous Statistics</label>
+					<div class="material-switch pull-right">
+						<input id="statistics_anonymous" name="statistics_anonymous" type="checkbox" checked/>
+						<label for="statistics_anonymous" class="label-primary"></label>
+					</div>
+				</div>
+				<div class="form-group">
+					<label  for="device_sendstatus" data-toggle="tooltip" title="Send device status to Yombo servers. Allows you to archive and access this information using various tools.">Allow sending device status</label>
+					<div class="material-switch pull-right">
+						<input id="device_sendstatus" name="device_sendstatus" type="checkbox" checked/>
+						<label for="device_sendstatus" class="label-primary"></label>
+					</div>
+				</div>
+				<div class="form-group">
+					<label  for="device_sendstatusgps" data-toggle="tooltip" title="Send device status if contains GPS data to Yombo servers. Most apps and cell phones already send this to various parties. We allow to select if this allowed.">Allow sending device status if GPS</label>
+					<div class="material-switch pull-right">
+						<input id="device_sendstatusgps" name="device_sendstatusgps" type="checkbox" checked/>
+						<label for="device_sendstatusgps" class="label-primary"></label>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="panel panel-default">
+			<div class="panel-heading">
+				<h4>Localization Settings</h4>
+			</div>
+			<div class="panel-body">
+				<div class="form-group">
+					<label  for="system_degrees" data-toggle="tooltip" title="Select how the system should display temperatures.">Temperature Display</label>
+					<div class="material-switch pull-right">
+						<select name="localization_degrees" id="localization_degrees" required class="selectpicker show-tick" title="Select...">
+							<option value="fahrenheit"{% if config.localization.degrees == 'fahrenheit' %} selected{% endif %}>Fahrenheit</option>
+							<option value="celsius"{% if config.localization.degrees == 'celsius' %} selected{% endif %}>Celsius</option>
+						</select>
+					</div>
+				</div>
+
+			</div>
+		</div>
+	</div>
 	<div class="col-lg-6 col-md-6">
 		<div class="panel panel-default">
 			<div class="panel-heading">
@@ -284,99 +405,11 @@
 						</button>
 					</div>
 				</div>
-
-	<div class="col-lg-6 col-md-6">
-			<div class="modal fade" id="totp_model" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
-			  <div class="modal-dialog" role="document">
-				<div class="modal-content">
-				  <div class="modal-header">
-					<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-					<h4 class="modal-title" id="myModalLabel">Scan QRCode below</h4>
-				  </div>
-				  <div class="modal-body">
-					<p>Use your TOTP app (such as Google Authenticator). This code will be required when accessing
-					this website from a new machine.
-					</p>
-					  <p><strong>If you don't scan this, you could be locked out of the web interface until you
-					  stop the gateway service, edit the yombo.ini file, and start the gateway again.</strong></p>
-
-				  </div>
-				  <div class="modal-body" id="qrcode_here" align="center">
-				  </div>
-				  <div class="modal-footer">
-					<button type="button" class="btn btn-primary" data-dismiss="modal">I've scanned this code</button>
-				  </div>
-				</div>
-			  </div>
-			</div>
-	</div>
-					</div>
-			</div>
-	</div>
-	<!-- /.col-lg-6 -->
-	<div class="col-lg-6 col-md-6">
-		<div class="panel panel-default">
-			<div class="panel-heading">
-				<h4>Misc Settings</h4>
-			</div>
-			<div class="panel-body">
-				<div class="form-group">
-					<label  for="statistics_enbled" data-toggle="tooltip" title="When enabled, allows various statistics to be collected and gathered.">Statistics Enabled</label>
-					<div class="material-switch pull-right">
-						<input id="statistics_enbled" name="statistics_enbled" type="checkbox" checked/>
-						<label for="statistics_enbled" class="label-primary"></label>
-					</div>
-				</div>
-				<div class="form-group">
-					<label  for="statistics_upload" data-toggle="tooltip" title="Allows stats to be backed up to the cloud and allows you to access this information using various tools.">Statistics Upload</label>
-					<div class="material-switch pull-right">
-						<input id="statistics_upload" name="statistics_upload" type="checkbox" checked/>
-						<label for="statistics_upload" class="label-primary"></label>
-					</div>
-				</div>
-				<div class="form-group">
-					<label  for="statistics_anonymous" data-toggle="tooltip" title="Allows anonymouse usage stats to be collected so Yombo can learn how to better improve performance and featureset.">Anonymous Statistics</label>
-					<div class="material-switch pull-right">
-						<input id="statistics_anonymous" name="statistics_anonymous" type="checkbox" checked/>
-						<label for="statistics_anonymous" class="label-primary"></label>
-					</div>
-				</div>
-				<div class="form-group">
-					<label  for="device_sendstatus" data-toggle="tooltip" title="Send device status to Yombo servers. Allows you to archive and access this information using various tools.">Allow sending device status</label>
-					<div class="material-switch pull-right">
-						<input id="device_sendstatus" name="device_sendstatus" type="checkbox" checked/>
-						<label for="device_sendstatus" class="label-primary"></label>
-					</div>
-				</div>
-				<div class="form-group">
-					<label  for="device_sendstatusgps" data-toggle="tooltip" title="Send device status if contains GPS data to Yombo servers. Most apps and cell phones already send this to various parties. We allow to select if this allowed.">Allow sending device status if GPS</label>
-					<div class="material-switch pull-right">
-						<input id="device_sendstatusgps" name="device_sendstatusgps" type="checkbox" checked/>
-						<label for="device_sendstatusgps" class="label-primary"></label>
-					</div>
-				</div>
-			</div>
-		</div>
-		<div class="panel panel-default">
-			<div class="panel-heading">
-				<h4>Localization Settings</h4>
-			</div>
-			<div class="panel-body">
-				<div class="form-group">
-					<label  for="system_degrees" data-toggle="tooltip" title="Select how the system should display temperatures.">Temperature Display</label>
-					<div class="material-switch pull-right">
-						<select name="localization_degrees" id="localization_degrees" required class="selectpicker show-tick" title="Select...">
-							<option value="fahrenheit"{% if config.localization.degrees == 'fahrenheit' %} selected{% endif %}>Fahrenheit</option>
-							<option value="celsius"{% if config.localization.degrees == 'celsius' %} selected{% endif %}>Celsius</option>
-						</select>
-					</div>
-				</div>
-
 			</div>
 		</div>
 	</div>
-	<!-- /.col-lg-6 -->
 </div>
+
 <!-- /.row -->
 <div class="row">
 	<div class="col-lg-12">
