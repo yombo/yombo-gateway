@@ -5,7 +5,7 @@ from twisted.internet.defer import inlineCallbacks
 
 from yombo.core.exceptions import YomboWarning, YomboNoAccess
 from yombo.lib.webinterface.auth import require_auth
-from yombo.utils import random_string
+from yombo.utils import random_string, global_invoke_all
 
 def route_configs(webapp):
     with webapp.subroute("/configs") as webapp:
@@ -129,6 +129,21 @@ def route_configs(webapp):
                 valid_submit = False
                 webinterface.add_alert("Invalid Gateway Elevation.")
 
+            try:
+                submitted_area_id = request.args.get('area_id')[0]
+                webinterface._Configs.set('location', 'area_id', submitted_area_id)
+            except:
+                valid_submit = False
+                webinterface.add_alert("Invalid Gateway Location Area.")
+
+            try:
+                submitted_location_id = request.args.get('location_id')[0]
+                webinterface._Configs.set('location', 'location_id', submitted_location_id)
+            except:
+                valid_submit = False
+                webinterface.add_alert("Invalid Gateway Location.")
+
+            yield global_invoke_all('_refresh_jinja2_globals_', called_by=webinterface)
             try:
                 submitted_webinterface_enabled = request.args.get('webinterface_enabled')[0]
                 webinterface._Configs.set('webinterface', 'enabled', submitted_webinterface_enabled)
