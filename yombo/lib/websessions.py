@@ -364,11 +364,11 @@ class WebSessions(YomboLibrary):
 
             if session.is_dirty >= 200 or force_save is True or session.last_access_at < int(time() - (60*30)):
                 if session.in_db:
-                    logger.info("clean_sessions - syncing web session to DB: {id}", id=session_id)
+                    logger.debug("clean_sessions - syncing web session to DB: {id}", id=session_id)
                     yield self._LocalDB.update_web_session(session)
                     session.is_dirty = 0
                 elif session.user_id is not None:
-                    logger.info("clean_sessions - adding web session to DB: {id}", id=session_id)
+                    logger.debug("clean_sessions - adding web session to DB: {id}", id=session_id)
                     yield self._LocalDB.save_web_session(session)
                     session.in_db = True
                     session.is_dirty = 0
@@ -490,6 +490,5 @@ class AuthWebsession(UserMixin, AuthMixin):
             #             auth_id=self.auth_id)
             self.expire()
             return False
-
 
         return True
