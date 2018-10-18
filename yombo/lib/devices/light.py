@@ -1,7 +1,8 @@
 from yombo.constants.devicetypes.light import *
 from yombo.constants.commands import COMMAND_OFF, COMMAND_ON
 from yombo.constants.features import (FEATURE_BRIGHTNESS, FEATURE_COLOR_TEMP, FEATURE_EFFECT, FEATURE_PERCENT,
-    FEATURE_RGB_COLOR, FEATURE_TRANSITION, FEATURE_WHITE_VALUE, FEATURE_XY_COLOR, FEATURE_NUMBER_OF_STEPS)
+    FEATURE_RGB_COLOR, FEATURE_TRANSITION, FEATURE_WHITE_VALUE, FEATURE_XY_COLOR, FEATURE_NUMBER_OF_STEPS,
+    FEATURE_SUPPORT_COLOR)
 from yombo.constants.inputs import INPUT_BRIGHTNESS
 from yombo.constants.platforms import PLATFORM_BASE_LIGHT, PLATFORM_COLOR_LIGHT, PLATFORM_LIGHT
 from yombo.constants.status_extra import STATUS_EXTRA_BRIGHTNESS, STATUS_EXTRA_RGB_COLOR
@@ -265,6 +266,7 @@ class Color_Light(Light):
         super().__init__(*args, **kwargs)
         self.PLATFORM = PLATFORM_COLOR_LIGHT
         self.FEATURES[FEATURE_BRIGHTNESS] = True
+        self.FEATURES[FEATURE_SUPPORT_COLOR] = True
         self.FEATURES[FEATURE_COLOR_TEMP] = False
         self.FEATURES[FEATURE_EFFECT] = False
         self.FEATURES[FEATURE_RGB_COLOR] = True
