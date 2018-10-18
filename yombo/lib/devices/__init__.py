@@ -78,7 +78,7 @@ from yombo.constants import ENERGY_NONE, ENERGY_ELECTRIC, ENERGY_GAS, ENERGY_WAT
 from yombo.core.exceptions import YomboWarning, YomboHookStopProcessing
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import global_invoke_all, search_instance, do_search_instance, generate_source_string, data_pickle
+from yombo.utils import global_invoke_all, search_instance, do_search_instance, generate_source_string, sleep
 
 from ._device import Device
 from ._device_command import Device_Command
@@ -231,9 +231,8 @@ class Devices(YomboLibrary):
         self._VoiceCommandsLibrary = self._Loader.loadedLibraries['voicecmds']
 
         self.devices = {}
-        self.device_search_attributes = ['device_id', 'device_type_id', 'machine_label', 'label', 'description',
-            'pin_required', 'pin_code', 'pin_timeout', 'voice_cmd', 'voice_cmd_order', 'statistic_label', 'status',
-            'created', 'updated', 'location_id', 'area_id', 'gateway_id']
+        self.device_search_attributes = ['device_id', 'device_type_id', 'machine_label', 'label',
+            'area_label_lower', 'full_label_lower', 'area_label', 'full_label', 'description']
 
         self.gateway_id = self._Configs.get("core", "gwid", "local", False)
         self.is_master = self._Configs.get("core", "is_master", "local", False)
@@ -810,7 +809,7 @@ class Devices(YomboLibrary):
             return self.devices[device_requested]
 
         if limiter is None:
-            limiter = .89
+            limiter = .90
 
         if limiter > .99999999:
             limiter = .99
@@ -838,7 +837,27 @@ class Devices(YomboLibrary):
                     'field': 'label',
                     'value': device_requested,
                     'limiter': limiter,
-                }
+                },
+                {
+                    'field': 'area_label',
+                    'value': device_requested,
+                    'limiter': limiter,
+                },
+                {
+                    'field': 'full_label',
+                    'value': device_requested,
+                    'limiter': limiter,
+                },
+                {
+                    'field': 'area_label_lower',
+                    'value': device_requested,
+                    'limiter': limiter,
+                },
+                {
+                    'field': 'full_label_lower',
+                    'value': device_requested,
+                    'limiter': limiter,
+                },
             ]
             try:
                 # logger.debug("Get is about to call search...: %s" % device_requested)
@@ -852,6 +871,7 @@ class Devices(YomboLibrary):
                 if found:
                     return self.devices[key]
                 else:
+                    # logger.info("others ({others})", others=others)
                     raise KeyError("Device not found: %s" % device_requested)
             except YomboWarning as e:
                 raise KeyError('Searched for %s, but had problems: %s' % (device_requested, e))
@@ -1111,3 +1131,33 @@ class Devices(YomboLibrary):
 
         results = yield device.update_attributes({'status': 0}, source=source, session=session)
         return results
+
+    @inlineCallbacks
+    def wait_for_command_to_finish(self, request_id, timeout=1):
+        """
+        Simply waits for a command to finish by monitoring the device command
+        request status.
+
+        :param request_id:
+        :param timeout:
+        :return:
+        """
+        print("wait for command to finish..starting.")
+        if request_id not in self.device_commands:
+            print("wait for command to finish..done")
+            return True
+        device_command = self.device_commands[request_id]
+        waiting = True
+        # print("pending commands: %s" % self.device_commands)
+        waited_time = 0
+        while(waiting):
+            status_id = device_command.status_id
+            if status_id == 100:
+                return True
+            if status_id > 100:
+                return False
+            print("wait for command to finish..waiting..")
+            yield sleep(0.05)
+            waited_time += 0.05
+            if waited_time > timeout:
+                return False
