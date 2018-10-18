@@ -563,6 +563,8 @@ class Loader(YomboLibrary, object):
                 d.callback(1)
                 yield d
 
+        yombo.utils.setup_yombo_references(self.loadedLibraries['amqp'])
+
     def check_operating_mode(self, allowed):
         """
         Checks if something should be run based on the current operating_mode.
@@ -705,7 +707,6 @@ class Loader(YomboLibrary, object):
         except AttributeError:
             self._log_loader('error', componentName, componentType, 'import', 'Not found. Path: %s' % pathName)
             logger.error("Library or Module not found: {pathName}", pathName=pathName)
-            raise YomboCritical("Library or Module not found: %s", pathName)
         try:
             module_root = __import__(pymodulename, globals(), locals(), [], 0)
         except ImportError as detail:
