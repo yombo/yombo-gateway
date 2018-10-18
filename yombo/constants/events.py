@@ -75,4 +75,29 @@ SYSTEM_EVENT_TYPES = {
             'expires': 30,  # save events for 90 days
         },
     },
+    'pip': {
+        'installed': {
+            'description': "Python package installed",
+            'attributes': (
+                'name',
+                'version',
+            ),
+            'expires': 360,  # save events for 90 days
+        },
+        'not_found': {
+            'description': "Python package not found, but was required..",
+            'attributes': (
+                'package_name',
+            ),
+            'expires': 360,  # save events for 90 days
+        },
+        'update_needed': {
+            'description': "When a python package is old and about to updated.",
+            'attributes': (
+                'previous',
+                'new',
+            ),
+            'expires': 360,  # save events for 90 days
+        },
+    },
 }

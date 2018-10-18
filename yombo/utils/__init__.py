@@ -51,10 +51,23 @@ from yombo.ext.hashids import Hashids
 from yombo.core.library import YomboLibrary
 from yombo.core.module import YomboModule
 from yombo.core.exceptions import YomboWarning
+from yombo.mixins.magicattributesmixin import MagicAttributesMixin
 from yombo.utils.decorators import cached, memoize_
 import yombo.ext.base62 as base62
 
 logger = None  # This is set by the set_twisted_logger function.
+_Yombo = None  # Set by setup_yombo_references()
+
+
+def setup_yombo_references(loader):
+    """
+    Setup global references to Yombo libraries. This is called by loader::import_libraries()
+
+    :param loader: Pointer to the loader instance.
+    :return:
+    """
+    global _Yombo
+    _Yombo = MagicAttributesMixin(loader)
 
 
 def generate_source_string(gateway_id=None, offset=None):
@@ -144,6 +157,7 @@ def get_python_package_info(package_name, install_on_error=True):
     :param package_name:
     :return:
     """
+    global _Yombo
     conditions = ('==', '<=', '>=')
     if "=" in package_name:
         if any(s in package_name for s in conditions) is False:
@@ -156,22 +170,26 @@ def get_python_package_info(package_name, install_on_error=True):
     except pkg_resources.DistributionNotFound as e:
         if install_on_error is False:
             logger.warn("Python package was not found, and won't be installed: {package_name}", package_name=package_name)
+            _Yombo._Events.new('pip', 'not_found', (str(package_name)))
+
             return None
     except pkg_resources.VersionConflict as e:
         logger.warn("Python package is out of date. Will try to update. Have version: {dist}, but need: {req}",
                dist=e.dist, req=e.req)
-
+        _Yombo._Events.new('pip', 'update_needed', (str(e.dist), str(e.req)))
     yield install_python_package(package_name)
     importlib.reload(pkg_resources)
     try:
         pkg_info = pkg_resources.require([package_name])[0]
-        logger.warn("Python package updated: {name} = {version}", name=pkg_info.project_name, version=pkg_info.version)
+        logger.warn("Python package installed: {name} = {version}", name=pkg_info.project_name, version=pkg_info.version)
+        _Yombo._Events.new('pip', 'installed', (str(pkg_info.project_name), str(pkg_info.version)))
         return pkg_info
     except pkg_resources.DistributionNotFound as e:
         return None
     except pkg_resources.VersionConflict as e:
         logger.warn("Unable to upgrade python package: {package}", package=package_name)
     return False
+
 
 @inlineCallbacks
 def install_python_package(package_name):
@@ -202,6 +220,7 @@ def install_python_package(package_name):
 #     myRes.port = 5353  # mdns port
 #     a = myRes.query('hostname.local', 'A')
 #     return a[0].to_text()
+
 
 @inlineCallbacks
 def read_file(filename, convert_to_unicode=None):
