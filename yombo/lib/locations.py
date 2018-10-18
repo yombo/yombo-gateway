@@ -38,6 +38,24 @@ class Locations(YomboLibrary):
     def locations_sorted(self):
         return OrderedDict(sorted(self.locations.items(), key=lambda x: x[1].label))
 
+    @property
+    def location_id(self):
+        return self.gateway_location_id()
+
+    @property
+    def area_id(self):
+        return self.gateway_area_id()
+
+    @property
+    def location(self):
+        location = self.gateway_location_id()
+        return self.get(location)
+
+    @property
+    def area(self):
+        location = self.gateway_area_id()
+        return self.get(location)
+
     def __contains__(self, location_requested):
         """
         Checks to if a provided location ID or machine_label exists.
@@ -146,6 +164,7 @@ class Locations(YomboLibrary):
         Setups up the basic framework. Nothing is loaded in here until the
         Load() stage.
         """
+        self._started = False
         self.locations = {}
         self.location_search_attributes = ['location_id', 'label', 'machine_label']
 
@@ -219,6 +238,13 @@ class Locations(YomboLibrary):
             self._States.set('detected_location.elevation', 800, value_type='int', source=self)
             self._States.set('detected_location.use_metric', True, value_type='bool', source=self)
 
+        # Gateway logical location.  House, bedroom, etc.
+        self.gateway_location_id = self._Configs.get2('location', 'location_id', self.get_default('location'), True)
+        self.gateway_area_id = self._Configs.get2('location', 'area_id', self.get_default('area'), True)
+
+    def _start_(self, **kwargs):
+        self._started = True
+
     @inlineCallbacks
     def _load_locations_from_database(self):
         """
@@ -279,36 +305,48 @@ class Locations(YomboLibrary):
         # logger.debug("location: {location}", location=location)
 
         location_id = location["id"]
-        global_invoke_all('_locations_before_import_',
-                          called_by=self,
-                          location_id=location_id,
-                          location=location,
-                          )
+        # Stop here if not in run mode.
+        if self._started is True:
+            global_invoke_all('_locations_before_import_',
+                              called_by=self,
+                              location_id=location_id,
+                              location=location,
+                              )
         if location_id not in self.locations:
-            global_invoke_all('_location_before_load_',
+            if self._started is True:
+                global_invoke_all('_location_before_load_',
                               called_by=self,
                               location_id=location_id,
                               location=location,
                               )
             self.locations[location_id] = Location(self, location)
-            global_invoke_all('_location_loaded_',
+            if self._started is True:
+                global_invoke_all('_location_loaded_',
                               called_by=self,
                               location_id=location_id,
                               location=self.locations[location_id],
                               )
-        elif location_id not in self.locations:
 
-            global_invoke_all('_location_before_update_',
+        elif location_id not in self.locations:
+            if self._started is True:
+                global_invoke_all('_location_before_update_',
                               called_by=self,
                               location_id=location_id,
                               location=self.locations[location_id],
                               )
             self.locations[location_id].update_attributes(location)
-            global_invoke_all('_location_updated_',
+            if self._started is True:
+                global_invoke_all('_location_updated_',
                               called_by=self,
                               location_id=location_id,
                               location=self.locations[location_id],
                               )
+        if self._started is True:
+            global_invoke_all('_locations_imported_',
+                          called_by=self,
+                          location_id=location_id,
+                          location=location,
+                          )
 
     def area_label(self,
                    area_id: dict(type=str, help="Area ID (location) to use for prepending to label"),
@@ -349,6 +387,26 @@ class Locations(YomboLibrary):
         :return:
         """
         return self.locations.copy()
+
+    def get_default(self, location_type):
+        """
+        Get a default location. This only work when there is only one other location other than None. Returns
+        'none' location if there are multiple.
+
+        :param location_type:
+        :return:
+        """
+        if location_type not in ('area', 'location'):
+            raise YomboWarning("Unknown location_type: %s" % location_type)
+
+        found_id = None
+        for location_id, location in self.locations.items():
+            if location.location_type != location_type:
+                continue
+            if found_id is None or location.machine_label != 'none':
+                found_id = location_id
+
+        return found_id
 
     def get(self, location_requested, location_type=None, limiter=None):
         """
@@ -474,6 +532,7 @@ class Locations(YomboLibrary):
         data['created_at'] = time()
         self._LocalDB.insert_locations(data)
         self.import_location(data)
+
         return {
             'status': 'success',
             'msg': "Location type added.",
@@ -518,6 +577,12 @@ class Locations(YomboLibrary):
             self.locations[location_id].update_attributes(data)
             self.locations[location_id].save_to_db()
 
+        global_invoke_all('_locations_updated_',
+                          called_by=self,
+                          location_id=location_id,
+                          location=self.locations[location_id],
+                          )
+
         return {
             'status': 'success',
             'msg': "Device type edited.",
@@ -561,6 +626,12 @@ class Locations(YomboLibrary):
         if location_id in self.locations:
             del self.locations[location_id]
 
+        global_invoke_all('_locations_deleted_',
+                          called_by=self,
+                          location_id=location_id,
+                          location=self.locations[location_id],
+                          )
+
         self._LocalDB.delete_locations(location_id)
         return {
             'status': 'success',
@@ -572,8 +643,6 @@ class Locations(YomboLibrary):
 class Location(YomboBaseMixin):
     """
     A class to manage a single location.
-
-
 
     :ivar machine_label: (string) A non-changable machine label.
     :ivar label: (string) Human label
