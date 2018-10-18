@@ -10,6 +10,7 @@ AUTH_PLATFORM_DEVICE = 'device'
 AUTH_PLATFORM_DEVICE_COMMAND = 'device_command'
 AUTH_PLATFORM_EVENTS = 'events'
 AUTH_PLATFORM_GATEWAY = 'gateway'
+AUTH_PLATFORM_INTENT = 'intent'
 AUTH_PLATFORM_LOCATION = 'location'
 AUTH_PLATFORM_MODULE = 'module'
 AUTH_PLATFORM_NOTIFICATION = 'notification'
@@ -36,6 +37,7 @@ ACTIONS_DEVICE = ('add', 'view', 'control', 'edit', 'enable', 'disable', 'remove
 ACTIONS_DEVICE_COMMAND = ('view', 'remove')
 ACTIONS_EVENTS = ('view',)
 ACTIONS_GATEWAY = ('add', 'view', 'edit', 'enable', 'disable', 'remove')
+ACTIONS_INTENT = ('add', 'view', 'edit', 'remove')
 ACTIONS_LOCATION = ('add', 'view', 'edit', 'remove')
 ACTIONS_MODULE = ('add', 'view', 'edit', 'enable', 'disable', 'remove')
 ACTIONS_NOTIFICATION = ('view', 'remove')
@@ -60,6 +62,7 @@ AUTH_PLATFORMS = {
     AUTH_PLATFORM_DEVICE_COMMAND: {'actions': ACTIONS_DEVICE_COMMAND},
     AUTH_PLATFORM_EVENTS: {'actions': ACTIONS_EVENTS},
     AUTH_PLATFORM_GATEWAY: {'actions': ACTIONS_GATEWAY},
+    AUTH_PLATFORM_INTENT: {'actions': ACTIONS_INTENT},
     AUTH_PLATFORM_LOCATION: {'actions': ACTIONS_LOCATION},
     AUTH_PLATFORM_MODULE: {'actions': ACTIONS_MODULE},
     AUTH_PLATFORM_NOTIFICATION: {'actions': ACTIONS_NOTIFICATION},
@@ -72,9 +75,10 @@ AUTH_PLATFORMS = {
     AUTH_PLATFORM_SYSTEM_OPTION: {'actions': ACTIONS_SYSTEM_OPTION},
     AUTH_PLATFORM_USER: {'actions': ACTIONS_USER},
     AUTH_PLATFORM_WEBLOGS: {'actions': ACTIONS_WEBLOGS},
-    AUTH_PLATFORM_WEBSESSION: {'actions:': ACTIONS_WEBSESSION},
+    AUTH_PLATFORM_WEBSESSION: {'actions': ACTIONS_WEBSESSION},
     AUTH_PLATFORM_WILDCARD: {'actions': ACTIONS_WILDCARD},
 }
+AUTH_PLATFORM_INTENT
 
 SYSTEM_ROLES = {
     'admin': {
