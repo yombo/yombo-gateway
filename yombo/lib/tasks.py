@@ -17,8 +17,7 @@ Performs various tasks as needed. Usually used to run various processes at start
 """
 from time import time
 # Import twisted libraries
-from twisted.enterprise import adbapi
-from twisted.internet.defer import inlineCallbacks, Deferred
+from twisted.internet.defer import inlineCallbacks
 from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
@@ -40,37 +39,31 @@ class Tasks(YomboLibrary):
         """
         return "Yombo tasks library"
 
+    @inlineCallbacks
     def _init_(self, **kwargs):
         self.loop_tasks = {}
-
-        self.init_deffered = Deferred()
-        self.check_tasks('init', self.init_deffered)
-        return self.init_deffered
-
-    def _load_(self, **kwargs):
-        self.load_deferred = Deferred()
-        self.check_tasks('load', self.load_deferred)
-        return self.load_deferred
-
-    def _start_(self, **kwargs):
-        self.start_deferred = Deferred()
-        self.check_tasks('start', self.start_deferred)
-        return self.start_deferred
-
-    def _stop_(self, **kwargs):
-        if hasattr(self, 'self._LocalDB'):  # incase loading got stuck somewhere.
-            self.stop_deferred = Deferred()
-            self.check_tasks('stop', self.stop_deferred)
-            return self.stop_deferred
-
-    def _unload_(self, **kwargs):
-        if hasattr(self, 'self._LocalDB'):  # incase loading got stuck somewhere.
-            self.unload_deferred = Deferred()
-            self.check_tasks('load', self.unload_deferred)
-            return self.unload_deferred
+        yield self.check_tasks('init')
 
     @inlineCallbacks
-    def check_tasks(self, section, deferred):
+    def _load_(self, **kwargs):
+        yield self.check_tasks('load')
+
+    @inlineCallbacks
+    def _start_(self, **kwargs):
+        yield self.check_tasks('start')
+
+    @inlineCallbacks
+    def _stop_(self, **kwargs):
+        if hasattr(self, 'self._LocalDB'):  # incase loading got stuck somewhere.
+            yield self.check_tasks('stop')
+
+    @inlineCallbacks
+    def _unload_(self, **kwargs):
+        if hasattr(self, 'self._LocalDB'):  # incase loading got stuck somewhere.
+            yield self.check_tasks('load')
+
+    @inlineCallbacks
+    def check_tasks(self, section):
         tasks = yield self._LocalDB.get_tasks(section)
         for task in tasks:
             try:
@@ -92,9 +85,6 @@ class Tasks(YomboLibrary):
 
             if task['run_once'] == 1:
                 self._LocalDB.del_task(task['id'])
-        deferred.callback(1)
-
-    # def call_task(self, task):
 
     @inlineCallbacks
     def add_task(self, task):
@@ -139,7 +129,7 @@ class Tasks(YomboLibrary):
 
         if 'task_name' not in task:
             raise YomboWarning("task_name must be set.")
-        new_task['task_name'] = kwargs['task_name']
+        new_task['task_name'] = task['task_name']
 
         if 'source' not in task:
             raise YomboWarning("source must be set.")
