@@ -215,7 +215,7 @@ def require_auth(roles=None, login_redirect=None, access_platform=None, access_i
                     session = webinterface._AuthKeys.get_session_from_request(request)
                     session.touch()
                 except YomboWarning as e:
-                    logger.debug("API key not found, trying web session (cookie).")
+                    logger.debug("API key not found, trying web session (cookie): {e}", e=e)
                     try:
                         session = yield webinterface._WebSessions.get_session_from_request(request)
                     except YomboWarning as e:
