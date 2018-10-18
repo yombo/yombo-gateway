@@ -17,21 +17,16 @@ the Device_Attributes can also be overridden, but that is less common.
 :copyright: Copyright 2012-2018 by Yombo.
 :license: LICENSE for details.
 """
-# Import Yombo libraries
-from yombo.constants.features import (FEATURE_BRIGHTNESS, FEATURE_COLOR_TEMP, FEATURE_EFFECT, FEATURE_PERCENT,
-    FEATURE_RGB_COLOR, FEATURE_TRANSITION, FEATURE_WHITE_VALUE, FEATURE_XY_COLOR, FEATURE_NUMBER_OF_STEPS)
-from yombo.constants.status_extra import STATUS_EXTRA_BRIGHTNESS
-from yombo.core.exceptions import YomboWarning
-from yombo.core.log import get_logger
-from yombo.utils import instance_properties
-from yombo.utils.converters import translate_int_value
-from ._device_base import Device_Base
-
-logger = get_logger('library.devices.device')
-
 # Yombo Constants
 from yombo.constants.commands import (COMMAND_TOGGLE, COMMAND_OPEN, COMMAND_ON, COMMAND_OFF, COMMAND_CLOSE,
                                       COMMAND_HIGH, COMMAND_LOW)
+# Import Yombo libraries
+from yombo.core.exceptions import YomboWarning
+from yombo.core.log import get_logger
+from yombo.utils import instance_properties
+from ._device_base import Device_Base
+
+logger = get_logger('library.devices.device')
 
 
 class Device(Device_Base):
@@ -217,4 +212,3 @@ class Device(Device_Base):
                 except Exception:
                     pass
         return None
-
