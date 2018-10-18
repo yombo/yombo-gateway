@@ -13,15 +13,11 @@ Mixin class to add various Yombo library references.
 :copyright: Copyright 2018 by Yombo.
 :license: LICENSE for details.
 """
-from yombo.core.log import get_logger
-
-logger = get_logger('mixins.magicattributesmixin')
 
 
 class MagicAttributesMixin(object):
 
     def __init__(self, parent, *args, **kwargs):
-        # super().__init__(parent, *args, **kwargs)
         self._AMQP = parent._Loader.loadedLibraries['amqp']
         self._AMQPYombo = parent._Loader.loadedLibraries['amqpyombo']
         self._Atoms = parent._Loader.loadedLibraries['atoms']
@@ -33,10 +29,12 @@ class MagicAttributesMixin(object):
         self._Devices = parent._Loader.loadedLibraries['devices']  # Basically, all devices
         self._DeviceTypes = parent._Loader.loadedLibraries['devicetypes']  # All device types.
         self._Discovery = parent._Loader.loadedLibraries['discovery']
+        self._Events = parent._Loader.loadedLibraries['events']
         self._Gateways = parent._Loader.loadedLibraries['gateways']
         self._GatewayComs = parent._Loader.loadedLibraries['gateways_communications']
         self._GPG = parent._Loader.loadedLibraries['gpg']
         self._InputTypes = parent._Loader.loadedLibraries['inputtypes']  # Input Types
+        self._Intents = parent._Loader.loadedLibraries['intents']
         self._Hash = parent._Loader.loadedLibraries['hash']  # Input Types
         self._HashIDS = parent._Loader.loadedLibraries['hashids']
         self._Libraries = parent._Loader.loadedLibraries
