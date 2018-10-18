@@ -70,7 +70,6 @@ class Template(YomboLibrary):
         self.environment.globals['strptime'] = strptime
         self.environment.globals['utcnow'] = dt.utcnow
 
-        # self.environment.globals['yombo'] = self
         self.environment.globals['local_gateway'] = self._Gateways.local
         self.environment.globals['amqp'] = self._AMQP
         self.environment.globals['amqpyombo'] = self._AMQPYombo
@@ -103,7 +102,7 @@ class Template(YomboLibrary):
         self.environment.globals['users'] = self._Users
         self.environment.globals['variables'] = self._Variables
         self.environment.globals['validate'] = self._Validate
-        # self.environment.globals['voicecmds'] = self._VoiceCmds
+        self._refresh_jinja2_globals_()
 
         self.environment.filters['debug'] = logger_runtime.debug
         self.environment.filters['info'] = logger_runtime.info
@@ -132,16 +131,16 @@ class Template(YomboLibrary):
         self.environment.filters['display_encrypted'] = self._GPG.display_encrypted
         self.environment.filters['display_temperature'] = self._Localize.display_temperature
 
-    # @inlineCallbacks
-    # def _started_(self, **kwargs):
-    #     print("hello...starting...%s" % self._Times.now())
-    #     temp = self.new("hello. {{ now() }} how are you: {{ devices.devices}}")
-    #     output = yield temp.render()
-    #     print("%s" % output)
-    #
-    #     temp2 = self.new("hello. {{ mitch }}")
-    #     output = yield temp.render({'mitch': 'mitch schwenk', 'joe': 193.2031})
-    #     print("%s" % output)
+    def _refresh_jinja2_globals_(self, **kwargs):
+        """
+        Update various globals for the Jinja2 template.
+
+        :return:
+        """
+        self.environment.globals['location_id'] = self._Locations.location_id
+        self.environment.globals['area_id'] = self._Locations.area_id
+        self.environment.globals['location'] = self._Locations.location
+        self.environment.globals['area'] = self._Locations.area
 
     def new(self, template_content):
         """
