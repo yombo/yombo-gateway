@@ -671,6 +671,7 @@ class Modules(YomboLibrary):
             module._GatewayComs = self._Loader.loadedLibraries['gateways_communications']
             module._GPG = self._Loader.loadedLibraries['gpg']
             module._InputTypes = self._Loader.loadedLibraries['inputtypes']  # Input Types
+            module._Intents = self._Loader.loadedLibraries['intents']
             module._Hash = self._Loader.loadedLibraries['hash']  # Input Types
             module._HashIDS = self._Loader.loadedLibraries['hashids']
             module._Libraries = self._Loader.loadedLibraries

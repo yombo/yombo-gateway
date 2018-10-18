@@ -92,6 +92,7 @@ from yombo.lib.webinterface.routes.events import route_events
 from yombo.lib.webinterface.routes.locations import route_locations
 from yombo.lib.webinterface.routes.gateways import route_gateways
 from yombo.lib.webinterface.routes.home import route_home
+from yombo.lib.webinterface.routes.intents import route_intents
 from yombo.lib.webinterface.routes.misc import route_misc
 from yombo.lib.webinterface.routes.modules import route_modules
 from yombo.lib.webinterface.routes.notices import route_notices
@@ -122,7 +123,7 @@ class Yombo_Site(Site):
 
     def setup_log_queue(self, webinterface):
         self.save_log_queue_loop = LoopingCall(self.save_log_queue)
-        self.save_log_queue_loop.start(8.7, False)
+        self.save_log_queue_loop.start(31.7, False)
 
         self.log_queue = []
 
@@ -301,6 +302,7 @@ class WebInterface(YomboLibrary):
         route_devtools_config(self.webapp)
         route_gateways(self.webapp)
         route_home(self.webapp)
+        route_intents(self.webapp)
         route_misc(self.webapp)
         route_modules(self.webapp)
         route_notices(self.webapp)
@@ -375,8 +377,10 @@ class WebInterface(YomboLibrary):
         self.webapp.templates.globals['_gateways'] = self._Gateways
         self.webapp.templates.globals['_gpg'] = self._GPG
         self.webapp.templates.globals['_inputtypes'] = self._InputTypes
+        self.webapp.templates.globals['_intents'] = self._Intents
         self.webapp.templates.globals['_libraries'] = self._Libraries
         self.webapp.templates.globals['_localize'] = self._Localize
+        self.webapp.templates.globals['_locations'] = self._Locations
         self.webapp.templates.globals['_locations'] = self._Locations
         self.webapp.templates.globals['_modules'] = self._Modules
         self.webapp.templates.globals['_mqtt'] = self._MQTT
@@ -398,10 +402,22 @@ class WebInterface(YomboLibrary):
         self.webapp.templates.globals['webinterface'] = self
         # self.webapp.templates.globals['func'] = self.functions
 
+        self._refresh_jinja2_globals_()
         self.starting = False
         self.start_web_servers()
         self.clean_idempotence_ids_loop = LoopingCall(self.clean_idempotence_ids)
         self.clean_idempotence_ids_loop.start(1806, False)
+
+    def _refresh_jinja2_globals_(self, **kwargs):
+        """
+        Update various globals for the Jinja2 template.
+
+        :return:
+        """
+        self.webapp.templates.globals['_location_id'] = self._Locations.location_id
+        self.webapp.templates.globals['_area_id'] = self._Locations.area_id
+        self.webapp.templates.globals['_location'] = self._Locations.location
+        self.webapp.templates.globals['_area'] = self._Locations.area
 
     def _start_(self, **kwargs):
         self._Notifications.add({
@@ -808,7 +824,8 @@ class WebInterface(YomboLibrary):
         self.misc_wi_data['nav_side'] = OrderedDict()
 
         is_master = self.is_master()
-        temp_list = sorted(nav_side_menu, key=itemgetter('priority1', 'label1', 'priority2'))
+        # temp_list = sorted(nav_side_menu, key=itemgetter('priority1', 'priority2', 'label1'))
+        temp_list = sorted(nav_side_menu, key=itemgetter('priority1', 'label1', 'priority2', 'label2'))
         for item in temp_list:
             if 'cluster' not in item:
                 item['cluster'] = 'any'
@@ -824,6 +841,7 @@ class WebInterface(YomboLibrary):
             if label1 not in self.misc_wi_data['nav_side']:
                 self.misc_wi_data['nav_side'][label1] = []
             self.misc_wi_data['nav_side'][label1].append(item)
+
         self.starting = False
 
     def add_alert(self, message, level='info', dismissable=True, type='session', deletable=True):

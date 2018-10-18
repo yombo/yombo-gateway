@@ -41,6 +41,7 @@ Stops components in the following phases. Modules first, then libraries.
 import asyncio
 from collections import OrderedDict, Callable
 import os.path
+from random import randint
 from re import search as ReSearch
 from subprocess import check_output, CalledProcessError
 from time import time
@@ -108,6 +109,7 @@ HARD_LOAD["Automation"] = {'operating_mode': 'all'}
 HARD_LOAD["Scenes"] = {'operating_mode': 'all'}
 HARD_LOAD["Users"] = {'operating_mode': 'all'}
 HARD_LOAD["AuthKeys"] = {'operating_mode': 'all'}
+HARD_LOAD["Intents"] = {'operating_mode': 'all'}
 
 HARD_UNLOAD = OrderedDict()
 HARD_UNLOAD["Users"] = {'operating_mode': 'all'}
@@ -255,6 +257,10 @@ class Loader(YomboLibrary, object):
         This function is called when the gateway is to startup. In turn,
         this function will load all the components and modules of the gateway.
         """
+        if randint(1, 10) == 1:
+            logger.debug("Upgrading pip...")
+            check_output(['pip3', 'install', '--upgrade', 'pip'])
+
         logger.debug("Reading Yombo requirements.txt file")
         if os.path.isfile('requirements.txt'):
             try:
@@ -504,6 +510,7 @@ class Loader(YomboLibrary, object):
             library._Hash = self.loadedLibraries['hash']
             library._HashIDS = self.loadedLibraries['hashids']
             library._InputTypes = self.loadedLibraries['inputtypes']
+            library._Intents = self.loadedLibraries['intents']
             library._Locations = self.loadedLibraries['locations']
             library._Libraries = self.loadedLibraries
             library._Loader = self

@@ -485,6 +485,11 @@ class Users(YomboLibrary):
             platform_actions = self.auth_platforms[AUTH_PLATFORM_LOCATION]['actions']
             platform_items = self._Locations.locations
             platform_label_attr = 'machine_label'
+        elif platform == AUTH_PLATFORM_INTENT:
+            print("1111 : %s" % self.auth_platforms[AUTH_PLATFORM_INTENT])
+            platform_actions = self.auth_platforms[AUTH_PLATFORM_INTENT]['actions']
+            platform_items = self._Intents.intents
+            platform_label_attr = 'intent_id'
         elif platform == AUTH_PLATFORM_MODULE:
             platform_actions = self.auth_platforms[AUTH_PLATFORM_MODULE]['actions']
             platform_items = self._Modules.modules
@@ -575,6 +580,11 @@ class Users(YomboLibrary):
             platform_item_id = platform_item.gateway_id
             platform_item_label = platform_item.label
             platform_label_attr = 'label'
+        elif platform == AUTH_PLATFORM_INTENT:
+            platform_item = self._Intents.get(item)
+            platform_item_id = platform_item.intent_id
+            platform_item_label = platform_item.intent_id
+            platform_label_attr = 'intent_id'
         elif platform == AUTH_PLATFORM_LOCATION:
             platform_item = self._Locations.get(item)
             platform_item_id = platform_item.scene_id

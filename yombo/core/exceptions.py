@@ -70,6 +70,36 @@ class YomboWarning(YomboException):
         YomboException.__init__(self, message, errorno, name, component, html_message)
         self.details = details
 
+class IntentError(YomboWarning):
+    """
+    Base class for intent related errors.
+    """
+
+
+class UnknownIntent(IntentError):
+    """
+    When the intent is not registered.
+    """
+    def __init__(self, message, errorno=1359, name="unknown", component="unknown"):
+        YomboException.__init__(self, message, errorno, name, component)
+
+
+class InvalidSlotInfo(IntentError):
+    """
+    When the slot data is invalid or missing components.
+    """
+
+class IntentHandleError(IntentError):
+    """
+    Error while handling intent.
+    """
+
+
+class IntentUnexpectedError(IntentError):
+    """
+    Unexpected error while handling intent.
+    """
+
 
 class YomboInvalidValidation(YomboException):
     """
