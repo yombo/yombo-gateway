@@ -16,6 +16,8 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
 except ImportError:
     import json
 
+from twisted.internet.defer import inlineCallbacks
+
 # Import Yombo libraries
 from yombo.lib.webinterface.auth import require_auth
 from yombo.core.log import get_logger
@@ -32,9 +34,12 @@ def route_events(webapp):
 
         @webapp.route('/index')
         @require_auth()
+        @inlineCallbacks
         def page_events_index(webinterface, request, session):
             session.has_access('events', '*', 'view', raise_error=True)
             page = webinterface.get_template(request, webinterface.wi_dir + '/pages/events/index.html')
+            webinterface._Events.save_event_queue_loop.reset()
+            yield webinterface._Events.save_event_queue()
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/events/index", "Events")
             return page.render(
