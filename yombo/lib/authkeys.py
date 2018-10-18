@@ -343,6 +343,18 @@ class AuthKey(AuthMixin, PermissionMixin, RolesMixin):
         self._Parent.finish_rotate_key(old_auth_id, self.auth_id, self)
         reactor.callLater(1, self._Parent._LocalDB.rotate_auth_key, old_auth_id, self.auth_id)
 
+    def check_valid(self):
+        """
+        Checks if a session is valid or not.
+
+        :return:
+        """
+        if self.enabled is False:
+            # logger.info("check_valid: enabled is false, returning False")
+            return False
+
+        return True
+
     @inlineCallbacks
     def save(self, call_later_time=None):
         if call_later_time is None or isinstance(call_later_time, int) is False:
