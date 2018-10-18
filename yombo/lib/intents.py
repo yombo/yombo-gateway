@@ -38,8 +38,8 @@ import yombo.utils.color as color_util
 
 logger = get_logger('library.intents')
 
-SLOT_SCHEMA = vol.Schema({
-}, extra=vol.ALLOW_EXTRA)
+SLOT_SCHEMA = vol.Schema({}, extra=vol.ALLOW_EXTRA)
+
 
 class Intents(YomboLibrary):
     """
