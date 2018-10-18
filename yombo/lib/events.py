@@ -58,8 +58,10 @@ class Events(YomboLibrary):
         """
         self.event_queue = {}  # Save events in bulk.
         self.event_types = deepcopy(SYSTEM_EVENT_TYPES)
+        self.save_event_queue_running = False
         self.save_event_queue_loop = LoopingCall(self.save_event_queue)
         self.save_event_queue_loop.start(47, False)
+
 
     @inlineCallbacks
     def _unload_(self, **kwargs):
@@ -131,6 +133,10 @@ class Events(YomboLibrary):
         Bulk save events into the database.
         :return:
         """
+        if self.save_event_queue_running is True:
+            return
+        self.save_event_queue_running = True
+
         if len(self.event_queue) == 0:
             return
 
@@ -138,3 +144,5 @@ class Events(YomboLibrary):
         self.event_queue = {}
         for key, data in event_queue.items():
             yield self._LocalDB.save_events_bulk(data)
+
+        self.save_event_queue_running = False
