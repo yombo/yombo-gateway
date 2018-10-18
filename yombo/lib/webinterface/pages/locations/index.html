@@ -1,5 +1,8 @@
 {% extends "lib/webinterface/fragments/layout.tpl" %}
-{% block head_css %}{% include 'lib/webinterface/fragments/datatables_css.tpl' %}{% endblock %}
+{% block head_css %}
+{% include 'lib/webinterface/fragments/select_css.tpl' %}
+{% include 'lib/webinterface/fragments/datatables_css.tpl' %}
+{% endblock %}
 
 {% block content %}
 <!-- Modal -->
@@ -18,8 +21,10 @@
               'Turn off the shed lights'.
           </p>
           <p>
-              Another way to think of this is: Locations are divided into areas. Areas can also be something like
-              'Front Door', which allows the front door to have a light (porch light), a lock, or a camera.
+              <ol>
+                <li><strong>Location</strong> - Usually a site location, like main house, guest house, etc. </li>
+                <li><strong>Area</strong> - Breaks down locations into smaller areas, like bedroom, den, living room, etc.</li>
+              </ol>
           </p>
       </div>
       <div class="modal-footer">
@@ -33,11 +38,6 @@
     <div class="col-lg-12">
         <h1 class="page-header">{{ _('webinterface_label', 'Locations') }}
             <a href="#" data-toggle=modal data-target=#localModal><i class="fa fa-question pull-right"></i></a></h1>
-        Locations allow devices and other items to be associated with a location. There are two location types:
-        <ol>
-            <li><strong>Location</strong> - Usually a site location, like main house, guest house, etc. </li>
-            <li><strong>Area</strong> - Breaks down locations into smaller areas, like bedroom, den, living room, etc.</li>
-        </ol>
     </div>
     <!-- /.col-lg-12 -->
 </div>
@@ -126,7 +126,11 @@
 <!-- /.row -->
 {% endblock %}
 
-{% block body_bottom_js %}{% include 'lib/webinterface/fragments/datatables_js.tpl' %}{% endblock %}
+{% block body_bottom_js %}
+{% include 'lib/webinterface/fragments/datatables_js.tpl' %}
+{% include 'lib/webinterface/fragments/select_js.tpl' %}
+{% endblock %}
+
 
 {% block body_bottom %}
 <script>
