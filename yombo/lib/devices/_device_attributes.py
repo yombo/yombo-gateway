@@ -92,6 +92,14 @@ class Device_Attributes(MagicAttributesMixin):
             return ""
 
     @property
+    def area_label_lower(self) -> str:
+        """
+        Used for searching, or when lower case is desired. Simply applies lower() to area_label
+        :return:
+        """
+        return self.area_label.lower()
+
+    @property
     def area_label(self) -> str:
         """
         Returns the device's area label + device label.
@@ -107,6 +115,14 @@ class Device_Attributes(MagicAttributesMixin):
         except Exception:
             area = ""
         return "%s%s" % (area, self.label)
+
+    @property
+    def full_label_lower(self) -> str:
+        """
+        Used for searching, or when lower case is desired. Simply applies lower() to full_label
+        :return:
+        """
+        return self.full_label.lower()
 
     @property
     def full_label(self) -> str:
@@ -179,6 +195,24 @@ class Device_Attributes(MagicAttributesMixin):
         :return:
         """
         return self.status_all.machine_status
+
+    @property
+    def human_status(self):
+        """
+        Get the current human status..
+
+        :return:
+        """
+        return self.status_all.human_status
+
+    @property
+    def human_message(self):
+        """
+        Get the current human message..
+
+        :return:
+        """
+        return self.status_all.human_message
 
     @property
     def machine_status_extra(self):
@@ -282,7 +316,6 @@ class Device_Attributes(MagicAttributesMixin):
         """
         Like percent property, but accepts machine_status as input
         """
-        print("USING DEFAULTY calc_percent!!")
         if machine_status == 0:
             return 0
         else:
