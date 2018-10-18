@@ -462,7 +462,6 @@ class MQTT(YomboLibrary):
             @run_first()
             @inlineCallbacks
             def api_v1_mqtt_auth_user(webinterface, request, session):
-                # print("/api/v1/mqtt/auth/user: %s" % request)
                 request.setHeader('Content-Type', CONTENT_TYPE_TEXT_PLAIN)
                 response_code = 403
 
@@ -489,9 +488,12 @@ class MQTT(YomboLibrary):
                 elif user['type'] == AUTH_TYPE_AUTHKEY:
                     try:
                         session = self._AuthKeys.get_session_by_id(user['username'])
-                        response_code = 200
                     except YomboWarning:
-                        pass
+                        yield maybeDeferred(request.setResponseCode, response_code)
+                        return
+
+                if session.check_valid():
+                    response_code = 200
                 yield maybeDeferred(request.setResponseCode, response_code)
                 return
 
