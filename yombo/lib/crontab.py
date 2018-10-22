@@ -70,7 +70,7 @@ from yombo.utils import random_string
 from yombo.core.exceptions import YomboWarning, YomboCronTabError
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import search_instance, do_search_instance
+from yombo.utils import search_instance, do_search_instance, generate_source_string, random_string
 
 logger = get_logger('library.crontab')
 
@@ -332,7 +332,7 @@ class CronTab(YomboLibrary):
 
     def new(self, crontab_callback, min=allMatch, hour=allMatch, day=allMatch,
             month=allMatch, dow=allMatch, label='', enabled=True, args=(),
-            kwargs={}):
+            kwargs={}, source=None):
         """
         Add a new :class:`CronTask`.
 
@@ -357,9 +357,12 @@ class CronTab(YomboLibrary):
         :param kwargs: (optional) Keyword arguments to pass to "crontab_callback"
         :type kwargs: Dict of arguments
         """
+        if source is None:
+            source = 'system'
+
         newCron = CronTask(crontab_callback, min=min, hour=hour, day=day, month=month,
             dow=dow, label=label, enabled=enabled, crontab_library=self, args=args,
-            kwargs=kwargs)
+            kwargs=kwargs, source=source)
         self.cron_tasks[newCron.cron_id] = newCron
         return newCron
 
@@ -504,12 +507,13 @@ class CronTask(object):
     """
     def __init__(self, crontab_callback, min=allMatch, hour=allMatch, day=allMatch,
                        month=allMatch, dow=allMatch, label='',
-                       enabled=True, crontab_library=None, args=(), kwargs={}):
+                       enabled=True, crontab_library=None, args=(), kwargs={},
+                       cron_id=None, source=None):
         """
         Setup the cron event.
         """
         self.crontab_library = crontab_library
-        self.cron_id = random_string(length=10)
+        self.cron_id = cron_id or random_string(length=10)
         self.crontab_callback = crontab_callback
         self.mins = conv_to_set(min)
         self.hours = conv_to_set(hour)
@@ -520,6 +524,7 @@ class CronTask(object):
         self.enabled = enabled
         self.args = args
         self.kwargs = kwargs
+        self.source = source
 
     def __del__(self):
         """
