@@ -106,6 +106,8 @@
                             <div class="col-lg-8">
                                 <label style="margin-top: 0px; margin-bottom: 0px">Description: </label><br>
                                 {{ scene.description() }}<br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">Intents Allowed: </label><br>
+                                {{ _(scene.data['config']['allow_intents']|status_to_string) }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Status: </label><br>
                                 {{ _(scene.effective_status()|status_to_string) }}<br>
                             </div>

@@ -163,7 +163,8 @@ def route_scenes(webapp):
                 'machine_label': scene.machine_label,
                 'description':  scene.description(),
                 'status': scene.effective_status(),
-                'scene_id': scene_id
+                'scene_id': scene_id,
+                'allow_intents': scene.data['config']['allow_intents'],
             }
             return page_scenes_form(webinterface,
                                     request,
@@ -188,12 +189,15 @@ def route_scenes(webapp):
                 'description': webinterface.request_get_default(request, 'description', ""),
                 'status': int(webinterface.request_get_default(request, 'status', 1)),
                 'scene_id': scene_id,
+                'allow_intents': int(webinterface.request_get_default(request, 'allow_intents', 1)),
             }
+            print("scene save: %s" % data)
 
             try:
                 scene = webinterface._Scenes.edit(scene_id,
                                                   data['label'], data['machine_label'],
-                                                  data['description'], data['status'])
+                                                  data['description'], data['status'],
+                                                  data['allow_intents'])
             except YomboWarning as e:
                 webinterface.add_alert("Cannot edit scene. %s" % e.message, 'warning')
                 root_breadcrumb(webinterface, request)

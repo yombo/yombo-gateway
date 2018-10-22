@@ -185,6 +185,8 @@ class Scenes(YomboLibrary, object):
                 scene.data['config'] = {}
             if 'enabled' not in scene.data['config']:
                 scene.data['config']['enabled'] = True
+            if 'allow_intents' not in scene.data['config']:
+                scene.data['config']['allow_intents'] = 1
             if 'description' not in scene.data['config']:
                 scene.data['config']['description'] = scene.label
             self.scenes_running[scene_id] = 'stopped'
@@ -381,6 +383,38 @@ class Scenes(YomboLibrary, object):
                                          name=scene.machine_label,
                                          action='disable')
 
+    def disable_intent(self, scene_id, **kwargs):
+        """
+        Disallow scene to be called via an intent.
+
+        :param scene_id:
+        :return:
+        """
+        scene = self.get(scene_id)
+        data = scene.data
+        data['config']['allow_intents'] = False
+        scene.on_change()
+        self._Automation.trigger_monitor('scene',
+                                         scene=scene,
+                                         name=scene.machine_label,
+                                         action='disable_intent')
+
+    def enable_intent(self, scene_id, **kwargs):
+        """
+        Allow scene to be called via an intent.
+
+        :param scene_id:
+        :return:
+        """
+        scene = self.scenes[scene_id]
+        data = scene.data
+        data['config']['allow_intents'] = True
+        scene.on_change()
+        self._Automation.trigger_monitor('scene',
+                                         scene=scene,
+                                         name=scene.machine_label,
+                                         action='enable_intent')
+
     @inlineCallbacks
     def add(self, label, machine_label, description, status):
         """
@@ -416,7 +450,7 @@ class Scenes(YomboLibrary, object):
                           )
         return new_scene
 
-    def edit(self, scene_id, label=None, machine_label=None, description=None, status=None):
+    def edit(self, scene_id, label=None, machine_label=None, description=None, status=None, allow_intents=None):
         """
         Edit a scene label and machine_label.
 
@@ -440,12 +474,14 @@ class Scenes(YomboLibrary, object):
         if status is not None:
             scene.status = is_true_false(status)
             scene.data['config']['enabled'] = scene.status
+        if allow_intents is not None:
+            scene.data['config']['allow_intents'] = allow_intents
 
         reactor.callLater(0.001, global_invoke_all,
-                                    '_scene_edited_',
-                                    called_by=self,
-                                    scene_id=scene_id,
-                                    scene=scene,
+                                 '_scene_edited_',
+                                 called_by=self,
+                                 scene_id=scene_id,
+                                 scene=scene,
                           )
         return scene
 

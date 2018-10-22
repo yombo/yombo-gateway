@@ -72,6 +72,26 @@
                 </div>
 
                 <div class="form-group">
+                    <label style="margin-top: 0px; margin-bottom: 0px">Allow Intents: </label>
+                    <a href="#" data-toggle="modal" data-target="#allowintents"><i class="fa fa-question fa-lg"></i></a>
+                    {{ macros.modal("allowintents", 'Allow intents', '
+                    <p>
+                        If enabled, allows voice commands from smart speakers and other sources to directly start
+                        and stop a scene.
+                    </p>
+                    ') }}
+                    <br>
+                    <div class="input-group">
+                        <select tabindex="5" class="selectpicker show-tick" name="allow_intents" id="allow_intents">
+                            <option value="0" {% if scene.allow_intents == 0 %}selected {% endif %}
+                                    data-subtext="Gateways cannot use.">Disabled</option>
+                            <option value="1" {% if scene.allow_intents == 1 %}selected {% endif %}
+                                    data-subtext="Works as normal.">Enabled</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
                     <label style="margin-top: 0px; margin-bottom: 0px">Status: </label>
                     <a href="#" data-toggle="modal" data-target="#modalstatus"><i class="fa fa-question fa-lg"></i></a>
                     {{ macros.modal("modalstatus", 'Status: enabled / disabled', '
@@ -82,7 +102,7 @@
                     ') }}
                     <br>
                     <div class="input-group">
-                        <select tabindex="5" class="selectpicker show-tick form-control" name="status" id="status">
+                        <select tabindex="5" class="selectpicker show-tick" name="status" id="status">
                             <option value="0" {% if scene.status == 0 %}selected {% endif %}
                                     data-subtext="Gateways cannot use.">Disabled</option>
                             <option value="1" {% if scene.status == 1 %}selected {% endif %}
