@@ -1,6 +1,9 @@
+import json
+
+from twisted.internet.defer import inlineCallbacks
+
 from yombo.lib.webinterface.auth import require_auth
 
-import json
 
 def route_debug(webapp):
     with webapp.subroute("/debug") as webapp:
@@ -127,6 +130,47 @@ def route_debug(webapp):
             return page.render(alerts=webinterface.get_alerts(),
                                hooks_called=webinterface._Modules.hook_counts
                                )
+
+        @webapp.route('/locales/files')
+        @require_auth()
+        def page_devtools_debug_locales_files_index(webinterface, request, session):
+            session.has_access('debug', '*', 'locales', raise_error=True)
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/debug/locales/files.html')
+            root_breadcrumb(webinterface, request)
+            webinterface.add_breadcrumb(request, "/debug/locales", "Locales - Files")
+            return page.render(
+                alerts=webinterface.get_alerts(),
+                files=webinterface._Localize.files,
+                )
+
+        @webapp.route('/locales/translations')
+        @require_auth()
+        def page_devtools_debug_translations_index(webinterface, request, session):
+            session.has_access('debug', '*', 'locales', raise_error=True)
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/debug/locales/translations.html')
+            root_breadcrumb(webinterface, request)
+            webinterface.add_breadcrumb(request, "/debug/locales", "Locales - Translations")
+            return page.render(
+                alerts=webinterface.get_alerts(),
+                files=webinterface._Localize.files,
+                )
+
+        @webapp.route('/locales/translations_bottom/<string:locale>')
+        @require_auth()
+        @inlineCallbacks
+        def page_devtools_debug_translations_bottom(webinterface, request, session, locale):
+            session.has_access('debug', '*', 'locales', raise_error=True)
+            files = webinterface._Localize.files
+            if locale not in files:
+                page = webinterface.get_template(request, webinterface.wi_dir + '/pages/debug/locales/translations_bottom_invalid.html')
+                return page.render(message="Invalid locale provided.")
+
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/debug/locales/translations_bottom.html')
+            locale = yield webinterface._Localize.locale_to_dict(locale)
+            return page.render(
+                alerts=webinterface.get_alerts(),
+                locale=locale,
+            )
 
         @webapp.route('/modules')
         @require_auth()

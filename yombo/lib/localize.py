@@ -16,7 +16,7 @@ Localization and translation for Yombo Gateway.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/localize.html>`_
 """
 # Import python libraries
-from os import path, listdir, makedirs, environ
+import builtins
 import inspect
 import gettext
 try:  # Prefer simplejson if installed, otherwise json will work swell.
@@ -27,17 +27,23 @@ try:
     from hashlib import sha3_224 as sha224
 except ImportError:
     from hashlib import sha224
-import builtins
 from string import Formatter
+from os import path, listdir, makedirs, environ
+import re
 import sys
 import traceback
+
+from twisted.internet import threads
+from twisted.internet.defer import inlineCallbacks
 
 # Import 3rd-party libs
 import yombo.ext.polib as polib
 
-# Import Yombo libraries
+# Import Yombo librariesA
+from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 import yombo.core.settings as settings
+from yombo.utils import read_file, bytes_to_unicode
 from yombo.utils.converters import unit_convert
 from yombo.core.log import get_logger
 
@@ -68,7 +74,7 @@ class Localize(YomboLibrary):
 
     def _init_(self, **kwargs):
         self.working_dir = settings.arguments['working_dir']
-        self.default_lang = self._Configs.get2('localize', 'default_lang', 'en', False)
+        self.default_lang = self._Configs.get2('localize', 'default_lang', self.get_system_language(), False)
 
         try:
             hashes = self._Configs.get('localize', 'hashes')
@@ -143,6 +149,7 @@ class Localize(YomboLibrary):
             size = size / 1024.0  # apply the division
         return "%.*f%s" % (precision, size, suffixes[suffixIndex])
 
+    @inlineCallbacks
     def _modules_pre_init_(self, **kwargs):
         """
         Called just before modules get their _init_ called. However, all the gateway libraries are loaded.
@@ -219,19 +226,19 @@ class Localize(YomboLibrary):
 
             # Always do english language updates first, it's the base of all.
             if 'en' in languages_to_update:
-                self.do_update('en')
+                self.update_language_files('en')
                 del languages_to_update['en']
 
             # Add the default language to the stack.
             if self.default_lang() in languages_to_update:
-                self.do_update(self.default_lang())
+                self.update_language_files(self.default_lang())
                 del languages_to_update[self.default_lang()]
 
             # self.default_lang() = 'es' # some testing...
             self._States['localize.default_language'] = self.default_lang()
 
             for lang, files in languages_to_update.items():
-                self.do_update(lang)
+                self.update_language_files(lang)
 
             # Save the updated hash into the configuration for next time.
             self._Configs.set('localize', 'hashes', json.dumps(self.hashes, separators=(',',':')))
@@ -249,6 +256,8 @@ class Localize(YomboLibrary):
             logger.error("--------------------------------------------------------")
             self.translator = self.get_translator(get_null=True)
             builtins.__dict__['_'] = self.handle_translate
+
+        yield self.locale_to_dict('en')
 
     def get_system_language(self):
         """
@@ -289,9 +298,10 @@ class Localize(YomboLibrary):
             return yfmt.format(default_text, **kwargs)
         return yfmt.format(translation, **kwargs)
 
-    def do_update(self, language):
+    def update_language_files(self, language):
         """
-        Merges all the files togther and then generates a compiled langauges file (mo)
+        Merges all the files together and then generates a compiled languages file (mo)
+
         :param language:
         :return:
         """
@@ -317,6 +327,7 @@ class Localize(YomboLibrary):
         """
         Checks a directory for any .po or .po.head files to combine them. This allows modules to have translation
         files.
+
         :param directory: The directory to check.
         :return:
         """
@@ -412,3 +423,21 @@ class Localize(YomboLibrary):
             locales.append('en')  # if all else fails, show english.
         return locales
 
+    @inlineCallbacks
+    def locale_to_dict(self, locale=None):
+        if locale is None:
+            locale = self.default_lang()
+
+        print("files: %s" % self.files)
+        if locale not in self.files:
+            raise YomboWarning("Invalid locale for locale_to_dict: %s" % locale)
+
+        po_file = "%s%s/LC_MESSAGES/yombo.po" % (self.locale_save_folder, locale)
+        data = yield read_file(po_file, convert_to_unicode=True)
+        tuples = re.findall(r'msgid "(.+)"\nmsgstr "(.+)"', data)
+
+        po_dict = {}
+        for tuple in tuples:
+            po_dict[tuple[0]] = tuple[1]
+
+        return po_dict

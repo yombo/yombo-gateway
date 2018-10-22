@@ -1,0 +1,101 @@
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+{% block head_css %}
+{%- include 'lib/webinterface/fragments/datatables_css.tpl' %}
+{% include 'lib/webinterface/fragments/select_css.tpl' %}
+{%- endblock %}
+
+{%- block content %}
+<div class="row">
+    <div class="col-lg-12">
+        <h1 class="page-header">{{_("ui::label::localize", 'Localize')}}</h1>
+        <p></p>
+    </div>
+    <!-- /.col-lg-12 -->
+</div>
+<!-- /.row -->
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                Select locale from below to show translations.
+            </div>
+            <!-- /.panel-heading -->
+            <div class="panel-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        Type:<br>
+                        <select class="selectpicker show-tick" tabindex="3" required
+                                title="Choose a locale..." data-live-search="true"
+                                name="locale" id="locale">
+                        {% for locale, data in files.items() %}
+                            <option value="{{locale}}">{{locale}}</option>
+                        {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- /.panel-body -->
+    </div>
+    <!-- /.col-lg-6 -->
+</div>
+<!-- /.row -->
+<span id="event-display-area">
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel panel-default">
+            <!-- /.panel-heading -->
+            <div class="panel-body">
+                Select an event type and sub event type to get started.
+            </div>
+        </div>
+        <!-- /.panel-body -->
+    </div>
+    <!-- /.col-lg-6 -->
+</div>
+<!-- /.row -->
+</span>
+
+{% endblock %}
+
+{% block body_bottom_js %}
+{% include 'lib/webinterface/fragments/datatables_js.tpl' %}
+{% include 'lib/webinterface/fragments/select_js.tpl' %}
+{% endblock %}
+{% block body_bottom %}
+<script type="text/javascript">
+
+    $("select#locale").on('change',function(){
+       var selectedLocale = $('#locale option:selected').attr('value');
+       formLoadBottom();
+    });
+
+    function formLoadBottom() {
+       if ($('#locale option:selected').attr('value') == "") {
+           alert("NONE sub event");
+           return;
+       }
+
+        console.log("im called. Val: " + $('#locale option:selected').attr('value'));
+        $.ajax({
+            url: '/debug/locales/translations_bottom/' + $('#locale option:selected').attr('value'),
+            type: 'GET',
+        })
+        .done(function(data) {
+            $('#event-display-area').html(data);
+                $('#localetable').DataTable({
+                    responsive: true,
+                    paging: true,
+                    iDisplayLength: 50,
+                });
+
+        })
+        .fail(function() {
+            console.log("error");
+        })
+        .always(function() {
+            console.log("complete on load call");
+        });
+    }
+</script>
+{% endblock %}
