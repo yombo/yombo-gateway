@@ -91,6 +91,16 @@ class Device_Command(object):
                 for callback in self.callbacks[val]:
                     callback(self)
 
+    @property
+    def command_id(self):
+        if self.command is None:
+            return None
+        return self.command.command_id
+
+    @property
+    def label(self):
+        return "%s -> %s" % (self.command.label, self.device.full_label)
+
     def __init__(self, data, parent, start=None):
         """
         Get the instance setup.
