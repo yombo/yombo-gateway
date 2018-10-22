@@ -527,7 +527,7 @@ class Automation(YomboLibrary):
                 raise YomboWarning("Rule '%s': Action device has " % rule.label)
             try:
                 self._Scenes.get(action['scene_machine_label'])
-            except YomboWarning as e:
+            except KeyError as e:
                 raise YomboWarning("Cannot find requested scene by it's id or machine_label.")
 
         elif action_type == "state":

@@ -58,7 +58,7 @@ def route_scenes(webapp):
             session.has_access('scene', scene_id, 'view', raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
-            except YomboWarning as e:
+            except KeyError as e:
                 webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
 
@@ -77,13 +77,13 @@ def route_scenes(webapp):
             session.has_access('scene', scene_id, 'start', raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
-            except YomboWarning as e:
+            except KeyError as e:
                 webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
 
             try:
                 webinterface._Scenes.start(scene_id)
-            except YomboWarning as e:
+            except KeyError as e:
                 webinterface.add_alert("Cannot start scene. %s" % e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
 
@@ -96,13 +96,13 @@ def route_scenes(webapp):
             session.has_access('scene', scene_id, 'stop', raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
-            except YomboWarning as e:
+            except KeyError as e:
                 webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
 
             try:
                 webinterface._Scenes.stop(scene_id)
-            except YomboWarning as e:
+            except KeyError as e:
                 webinterface.add_alert("Cannot stop scene. %s" % e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
 
@@ -151,7 +151,7 @@ def route_scenes(webapp):
             session.has_access('scene', scene_id, 'edit', raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
-            except YomboWarning as e:
+            except KeyError as e:
                 webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
 
@@ -178,7 +178,7 @@ def route_scenes(webapp):
             session.has_access('scene', scene_id, 'edit', raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
-            except YomboWarning as e:
+            except KeyError as e:
                 webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
 
@@ -222,7 +222,7 @@ def route_scenes(webapp):
             session.has_access('scene', scene_id, 'delete', raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
-            except YomboWarning as e:
+            except KeyError as e:
                 webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
 
@@ -244,7 +244,7 @@ def route_scenes(webapp):
             session.has_access('scene', scene_id, 'delete', raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
-            except YomboWarning as e:
+            except KeyError as e:
                 webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
 
@@ -274,7 +274,7 @@ def route_scenes(webapp):
             session.has_access('scene', scene_id, 'disable', raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
-            except YomboWarning as e:
+            except KeyError as e:
                 webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
 
@@ -292,7 +292,7 @@ def route_scenes(webapp):
             session.has_access('scene', scene_id, 'disable', raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
-            except YomboWarning as e:
+            except KeyError as e:
                 webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
 
@@ -339,7 +339,7 @@ def route_scenes(webapp):
             session.has_access('scene', scene_id, 'enable', raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
-            except YomboWarning as e:
+            except KeyError as e:
                 webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
 
@@ -357,7 +357,7 @@ def route_scenes(webapp):
             session.has_access('scene', scene_id, 'enable', raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
-            except YomboWarning as e:
+            except KeyError as e:
                 webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
             try:
@@ -385,18 +385,18 @@ def route_scenes(webapp):
             session.has_access('scene', scene_id, 'edit', raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
-            except YomboWarning as e:
+            except KeyError as e:
                 webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
             try:
                 action = webinterface._Scenes.get_action_items(scene_id, action_id)
-            except YomboWarning as e:
+            except KeyError as e:
                 webinterface.add_alert("Requested action id could not be located.", 'warning')
                 return webinterface.redirect(request, "/scenes/%s/details" % scene_id)
 
             try:
                 webinterface._Scenes.move_action_up(scene_id, action_id)
-            except YomboWarning as e:
+            except KeyError as e:
                 webinterface.add_alert("Cannot move action up. %s" % e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
 
@@ -409,18 +409,18 @@ def route_scenes(webapp):
             session.has_access('scene', scene_id, 'edit', raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
-            except YomboWarning as e:
+            except KeyError as e:
                 webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
             try:
                 action = webinterface._Scenes.get_action_items(scene_id, action_id)
-            except YomboWarning as e:
+            except KeyError as e:
                 webinterface.add_alert("Requested action id could not be located.", 'warning')
                 return webinterface.redirect(request, "/scenes/%s/details" % scene_id)
 
             try:
                 webinterface._Scenes.move_action_down(scene_id, action_id)
-            except YomboWarning as e:
+            except KeyError as e:
                 webinterface.add_alert("Cannot move action down. %s" % e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
 
@@ -435,13 +435,13 @@ def route_scenes(webapp):
             session.has_access('scene', '*', 'add', raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
-            except YomboWarning as e:
+            except KeyError as e:
                 webinterface.add_alert(e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
 
             try:
                 yield webinterface._Scenes.duplicate_scene(scene_id)
-            except YomboWarning as e:
+            except KeyError as e:
                 webinterface.add_alert("Cannot duplicate scene. %s" % e.message, 'warning')
                 return webinterface.redirect(request, '/scenes/index')
 

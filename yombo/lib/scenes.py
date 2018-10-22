@@ -311,7 +311,7 @@ class Scenes(YomboLibrary, object):
         for temp_scene_id, scene in self.scenes.items():
             if scene.machine_label.lower() == requested_scene.lower():
                 return scene
-        raise YomboWarning("Cannot find requested scene : %s" % requested_scene)
+        raise KeyError("Cannot find requested scene : %s" % requested_scene)
 
     def get_action_items(self, scene_id, action_id=None):
         """
@@ -328,7 +328,7 @@ class Scenes(YomboLibrary, object):
             try:
                 return scene.data['actions'][action_id]
             except YomboWarning:
-                raise YomboWarning("Unable to find requested action_id (%s) for scene_id (%s)." % (action_id, scene_id))
+                raise KeyError("Unable to find requested action_id (%s) for scene_id (%s)." % (action_id, scene_id))
 
     def check_duplicate_scene(self, label=None, machine_label=None, scene_id=None):
         """
@@ -364,7 +364,6 @@ class Scenes(YomboLibrary, object):
                                          scene=scene,
                                          name=scene.machine_label,
                                          action='disable')
-
 
     def enable(self, scene_id, **kwargs):
         """
@@ -409,6 +408,12 @@ class Scenes(YomboLibrary, object):
                                              status=1)
         self.patch_scene(new_scene)
         self.scenes[new_scene.node_id] = new_scene
+        reactor.callLater(0.001, global_invoke_all,
+                                    '_scene_added_',
+                                    called_by=self,
+                                    scene_id=new_scene.node_id,
+                                    scene=new_scene,
+                          )
         return new_scene
 
     def edit(self, scene_id, label=None, machine_label=None, description=None, status=None):
@@ -435,6 +440,13 @@ class Scenes(YomboLibrary, object):
         if status is not None:
             scene.status = is_true_false(status)
             scene.data['config']['enabled'] = scene.status
+
+        reactor.callLater(0.001, global_invoke_all,
+                                    '_scene_edited_',
+                                    called_by=self,
+                                    scene_id=scene_id,
+                                    scene=scene,
+                          )
         return scene
 
     @inlineCallbacks
@@ -450,6 +462,11 @@ class Scenes(YomboLibrary, object):
         data = scene.data
         data['config']['enabled'] = False
         results = yield self._Nodes.delete_node(scene.scene_id, session=session)
+        yield global_invoke_all('_scene_deleted_',
+                                called_by=self,
+                                scene_id=scene_id,
+                                scene=scene,
+                                )
         return results
 
     @inlineCallbacks
@@ -477,6 +494,11 @@ class Scenes(YomboLibrary, object):
                                              status=1)
         self.patch_scene(new_scene)
         self.scenes[new_scene.node_id] = new_scene
+        yield global_invoke_all('_scene_added_',
+                                called_by=self,
+                                scene_id=scene_id,
+                                scene=scene,
+                                )
         return new_scene
 
     def balance_weights(self, scene_id):
@@ -555,9 +577,15 @@ class Scenes(YomboLibrary, object):
             scene.data['actions'][action_id] = action_data
 
         else:
-            raise YomboWarning("Invalid scene item type.")
+            raise KeyError("Invalid scene item type.")
         self.balance_weights(scene_id)
         scene.on_change()
+        reactor.callLater(0.001, global_invoke_all,
+                          '_scene_edited_',
+                          called_by=self,
+                          scene_id=scene_id,
+                          scene=scene,
+                          )
         return action_id
 
     def edit_action_item(self, scene_id, action_id, **kwargs):
@@ -609,6 +637,12 @@ class Scenes(YomboLibrary, object):
             raise YomboWarning("Invalid scene item type.")
         self.balance_weights(scene_id)
         scene.on_change()
+        reactor.callLater(0.001, global_invoke_all,
+                          '_scene_edited_',
+                          called_by=self,
+                          scene_id=scene_id,
+                          scene=scene,
+                          )
 
     def delete_scene_item(self, scene_id, action_id):
         """
@@ -622,6 +656,12 @@ class Scenes(YomboLibrary, object):
         action = self.get_action_items(scene_id, action_id)
         del scene.data['actions'][action_id]
         self.balance_weights(scene_id)
+        reactor.callLater(0.001, global_invoke_all,
+                          '_scene_edited_',
+                          called_by=self,
+                          scene_id=scene_id,
+                          scene=scene,
+                          )
         return scene
 
     def move_action_down(self, scene_id, action_id):
@@ -634,8 +674,14 @@ class Scenes(YomboLibrary, object):
         """
         scene = self.get(scene_id)
         action = self.get_action_items(scene_id, action_id)
-        item['weight'] += 11
+        action['weight'] += 11
         self.balance_weights(scene_id)
+        reactor.callLater(0.001, global_invoke_all,
+                          '_scene_edited_',
+                          called_by=self,
+                          scene_id=scene_id,
+                          scene=scene,
+                          )
         return scene
 
     def move_action_up(self, scene_id, action_id):
@@ -648,8 +694,14 @@ class Scenes(YomboLibrary, object):
         """
         scene = self.get(scene_id)
         action = self.get_action_items(scene_id, action_id)
-        item['weight'] -= 11
+        action['weight'] -= 11
         self.balance_weights(scene_id)
+        reactor.callLater(0.001, global_invoke_all,
+                          '_scene_edited_',
+                          called_by=self,
+                          scene_id=scene_id,
+                          scene=scene,
+                          )
         return scene
 
     def start(self, scene_id, **kwargs):
@@ -782,6 +834,13 @@ class Scenes(YomboLibrary, object):
             self.scenes_running[scene_id] = "stopping"
             results = True
         results = False
+        reactor.callLater(0.001, global_invoke_all,
+                                    '_scene_stopping_',
+                                    called_by=self,
+                                    scene_id=scene_id,
+                                    scene=scene,
+                          )
+
         self._Automation.trigger_monitor('scene',
                                          scene=scene,
                                          name=scene.machine_label,
