@@ -22,6 +22,7 @@ def new_db_file(Registry, **kwargs):
     # yield create_table_event_types(Registry)
     yield create_table_categories(Registry)
     yield create_table_commands(Registry)
+    yield create_table_crontab(Registry)
     yield create_table_devices(Registry)
     yield create_table_device_commands(Registry)
     yield create_table_device_command_inputs(Registry)
@@ -237,6 +238,27 @@ def create_table_device_commands(Registry, **kwargs):
     # yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS device_command_id_nottimes_idx ON device_command (device_id, not_before_at, not_after_at)")
     yield Registry.DBPOOL.runQuery(create_index('device_commands', 'finished_at'))
     # yield Registry.DBPOOL.runQuery(create_index('device_status', 'status'))
+
+
+@inlineCallbacks
+def create_table_crontab(Registry, **kwargs):
+    """ Stores user defined crontabs. """
+    table = """CREATE TABLE `crontab` (
+        `id`           TEXT NOT NULL,
+        `minute`       TEXT NOT NULL,
+        `hour`         TEXT,
+        `day`          TEXT NOT NULL,
+        `month`        TEXT NOT NULL,
+        `dow`          TEXT NOT NULL,
+        `label`        TEXT,
+        `enabled`      TEXT,
+        `args`         TEXT,
+        `kwargs`       FLOAT,
+        `created_at`   FLOAT,
+        `updated_at`   FLOAT
+        );"""
+    yield Registry.DBPOOL.runQuery(table)
+    yield Registry.DBPOOL.runQuery(create_index('crontab', 'id', unique=True))
 
 
 @inlineCallbacks
