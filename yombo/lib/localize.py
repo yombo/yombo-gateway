@@ -149,7 +149,6 @@ class Localize(YomboLibrary):
             size = size / 1024.0  # apply the division
         return "%.*f%s" % (precision, size, suffixes[suffixIndex])
 
-    @inlineCallbacks
     def _modules_pre_init_(self, **kwargs):
         """
         Called just before modules get their _init_ called. However, all the gateway libraries are loaded.
@@ -256,8 +255,6 @@ class Localize(YomboLibrary):
             logger.error("--------------------------------------------------------")
             self.translator = self.get_translator(get_null=True)
             builtins.__dict__['_'] = self.handle_translate
-
-        yield self.locale_to_dict('en')
 
     def get_system_language(self):
         """
@@ -428,7 +425,6 @@ class Localize(YomboLibrary):
         if locale is None:
             locale = self.default_lang()
 
-        print("files: %s" % self.files)
         if locale not in self.files:
             raise YomboWarning("Invalid locale for locale_to_dict: %s" % locale)
 
