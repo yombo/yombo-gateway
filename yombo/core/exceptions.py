@@ -70,6 +70,7 @@ class YomboWarning(YomboException):
         YomboException.__init__(self, message, errorno, name, component, html_message)
         self.details = details
 
+
 class IntentError(YomboWarning):
     """
     Base class for intent related errors.
@@ -88,6 +89,7 @@ class InvalidSlotInfo(IntentError):
     """
     When the slot data is invalid or missing components.
     """
+
 
 class IntentHandleError(IntentError):
     """
