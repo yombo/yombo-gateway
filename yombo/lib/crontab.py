@@ -74,12 +74,15 @@ from yombo.utils import search_instance, do_search_instance, generate_source_str
 
 logger = get_logger('library.crontab')
 
+
 # Some utility classes / functions first
 class AllMatch(set):
     """Universal set - match everything"""
     def __contains__(self, item): return True
 
+
 allMatch = AllMatch()
+
 
 def conv_to_set(obj):  # Allow single integer to be provided
     if isinstance(obj, str) and obj == '*': # return AllMatch
@@ -89,6 +92,7 @@ def conv_to_set(obj):  # Allow single integer to be provided
     if not isinstance(obj, set):
         obj = set(obj)
     return obj
+
 
 class CronTab(YomboLibrary):
     """
@@ -212,6 +216,7 @@ class CronTab(YomboLibrary):
         :param loader: A pointer to the Loader library.
         :type loader: Instance of Loader
         """
+        self.gateway_id = self._Configs.get2("core", "gwid", "local", False)
         self.cron_tasks = {}
         self.cron_task_search_attributes = ['cron_id', 'label', 'enabled']
         self.check_cron_tabs_loop = None  # a simple loop that checks all cron tabs to see if they need to run.
@@ -249,7 +254,7 @@ class CronTab(YomboLibrary):
         for task in self.cron_tasks:
             self.cron_tasks[task].check(the_time)
 
-    def get(self, cron_task_requested, limiter=None, status=None):
+    def get(self, cron_task_requested=None, limiter=None, status=None):
         """
         Looks for a cron task by it's id and label.
 
@@ -275,6 +280,9 @@ class CronTab(YomboLibrary):
         :return: Pointer to requested cron tab.
         :rtype: dict
         """
+        if cron_task_requested is None:
+            return self.cron_tasks
+
         if limiter is None:
             limiter = .89
 
@@ -332,7 +340,7 @@ class CronTab(YomboLibrary):
 
     def new(self, crontab_callback, min=allMatch, hour=allMatch, day=allMatch,
             month=allMatch, dow=allMatch, label='', enabled=True, args=(),
-            kwargs={}, source=None):
+            kwargs={}, source=None, gateway_id=None):
         """
         Add a new :class:`CronTask`.
 
@@ -359,10 +367,12 @@ class CronTab(YomboLibrary):
         """
         if source is None:
             source = 'system'
+        if gateway_id is None:
+            gateway_id = self.gateway_id()
 
-        newCron = CronTask(crontab_callback, min=min, hour=hour, day=day, month=month,
+        newCron = CronTask(self, crontab_callback, min=min, hour=hour, day=day, month=month,
             dow=dow, label=label, enabled=enabled, crontab_library=self, args=args,
-            kwargs=kwargs, source=source)
+            kwargs=kwargs, source=source, gateway_id=gateway_id)
         self.cron_tasks[newCron.cron_id] = newCron
         return newCron
 
@@ -505,13 +515,15 @@ class CronTask(object):
     """
     Individual cron task job, can be used to control the cron task.
     """
-    def __init__(self, crontab_callback, min=allMatch, hour=allMatch, day=allMatch,
+    def __init__(self, parent,
+                       crontab_callback, min=allMatch, hour=allMatch, day=allMatch,
                        month=allMatch, dow=allMatch, label='',
                        enabled=True, crontab_library=None, args=(), kwargs={},
-                       cron_id=None, source=None):
+                       cron_id=None, source=None, gateway_id=None):
         """
         Setup the cron event.
         """
+        self._Parent = parent
         self.crontab_library = crontab_library
         self.cron_id = cron_id or random_string(length=10)
         self.crontab_callback = crontab_callback
@@ -525,6 +537,7 @@ class CronTask(object):
         self.args = args
         self.kwargs = kwargs
         self.source = source
+        self.gateway_id = gateway_id or parent.gateway_id()
 
     def __del__(self):
         """

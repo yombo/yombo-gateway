@@ -58,9 +58,21 @@ NAV_SIDE_MENU = [
     },
 
     {
+        'label1': 'CronTab',
+        'label2': 'Scenes',
+        'priority1': 1500,
+        'priority2': 500,
+        'icon': 'fa fa-clock fa-fw',
+        'url': '/crontab/index',
+        'tooltip': 'Manage CronTab.',
+        'opmode': 'run',
+        'cluster': 'any',
+    },
+
+    {
         'label1': 'Modules',
         'label2': 'Modules',
-        'priority1': 1200,
+        'priority1': 2000,
         'priority2': 500,
         'icon': 'fa fa-puzzle-piece fa-fw',
         'url': '/modules/index',
@@ -72,7 +84,7 @@ NAV_SIDE_MENU = [
     {
         'label1': 'Info',
         'label2': 'Atoms',
-        'priority1': 1400,
+        'priority1': 3000,
         'priority2': 2000,
         'icon': 'fa fa-info fa-fw',
         'url': '/atoms/index',
@@ -83,7 +95,7 @@ NAV_SIDE_MENU = [
     {
         'label1': 'Info',
         'label2': 'Device Commands',
-        'priority1': 1400,
+        'priority1': 3000,
         'priority2': 3000,
         'icon': 'fa fa-info fa-fw',
         'url': '/devices/device_commands',
@@ -94,7 +106,7 @@ NAV_SIDE_MENU = [
     {
         'label1': 'Info',
         'label2': 'Intents',
-        'priority1': 1400,
+        'priority1': 3000,
         'priority2': 4000,
         'icon': 'fa fa-info fa-fw',
         'url': '/intents/index',
@@ -105,7 +117,7 @@ NAV_SIDE_MENU = [
     {
         'label1': 'Info',
         'label2': 'States',
-        'priority1': 1400,
+        'priority1': 3000,
         'priority2': 5000,
         'icon': 'fa fa-info fa-fw',
         'url': '/states/index',
@@ -117,7 +129,7 @@ NAV_SIDE_MENU = [
     {
         'label1': 'Statistics',
         'label2': 'General',
-        'priority1': 2000,
+        'priority1': 3500,
         'priority2': 500,
         'icon': 'fa fa-chart-line fa-fw',
         'url': '/statistics/index',
@@ -129,7 +141,7 @@ NAV_SIDE_MENU = [
     {
         'label1': 'System Settings',
         'label2': 'Basic Settings',
-        'priority1': 3500,
+        'priority1': 4000,
         'priority2': 500,
         'icon': 'fa fa-cog fa-fw',
         'url': '/configs/basic',
@@ -140,7 +152,7 @@ NAV_SIDE_MENU = [
     {
         'label1': 'System Settings',
         'label2': 'Locations',
-        'priority1': 3500,
+        'priority1': 4000,
         'priority2': 750,
         'icon': 'fa fa-cog fa-fw',
         'url': '/locations/index',
@@ -151,7 +163,7 @@ NAV_SIDE_MENU = [
     {
         'label1': 'System Settings',
         'label2': 'DNS',
-        'priority1': 3500,
+        'priority1': 4000,
         'priority2': 2500,
         'icon': 'fa fa-cogs fa-fw',
         'url': '/configs/dns',
@@ -162,7 +174,7 @@ NAV_SIDE_MENU = [
     {
         'label1': 'System Settings',
         'label2': 'Encryption Keys',
-        'priority1': 3500,
+        'priority1': 4000,
         'priority2': 3000,
         'icon': 'fa fa-wrench fa-fw',
         'url': '/configs/gpg/index',
@@ -173,7 +185,7 @@ NAV_SIDE_MENU = [
     {
         'label1': 'System Settings',
         'label2': 'Gateways',
-        'priority1': 3500,
+        'priority1': 4000,
         'priority2': 4000,
         'icon': 'fa fa-cogs fa-fw',
         'url': '/gateways/index',
@@ -184,7 +196,7 @@ NAV_SIDE_MENU = [
     {
         'label1': 'System Settings',
         'label2': 'Yombo.Ini',
-        'priority1': 3500,
+        'priority1': 4000,
         'priority2': 4500,
         'icon': 'fa fa-wrench fa-fw',
         'url': '/configs/yombo_ini',
@@ -196,7 +208,7 @@ NAV_SIDE_MENU = [
     {
         'label1': 'Permissions',
         'label2': 'Auth Keys',
-        'priority1': 4000,
+        'priority1': 5000,
         'priority2': 1000,
         'icon': 'fa fa-user-shield fa-fw',
         'url': '/authkeys/index',
@@ -207,7 +219,7 @@ NAV_SIDE_MENU = [
     {
         'label1': 'Permissions',
         'label2': 'Roles',
-        'priority1': 4000,
+        'priority1': 5000,
         'priority2': 2000,
         'icon': 'fa fa-user-shield fa-fw',
         'url': '/roles/index',
@@ -218,7 +230,7 @@ NAV_SIDE_MENU = [
     {
         'label1': 'Permissions',
         'label2': 'Users',
-        'priority1': 4000,
+        'priority1': 5000,
         'priority2': 3000,
         'icon': 'fa fa-user-shield fa-fw',
         'url': '/users/index',

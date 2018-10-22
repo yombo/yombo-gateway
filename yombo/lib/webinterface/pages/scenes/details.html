@@ -54,12 +54,11 @@
         <h1 class="page-header has-buttons-under"><a class="success" href="/scenes/index" aria-label="Delete">
             <i class="fa fa-arrow-left" aria-hidden="true"></i></a> Scene: {{ scene.label}}
         </h1>
+        <a class="btn btn-md btn-primary" href="/scenes/{{scene.scene_id}}/edit" title="Edit scene.">Edit Scene</a>
 {% if scene.effective_status() == 0 %}
-        <a class="btn btn-md btn-primary" href="/scenes/{{scene.scene_id}}/edit" title="Edit scene labels.">Edit Scene</a>
         <a class="btn btn-md btn-success" href="/scenes/{{scene.scene_id}}/enable">Enable Scene</a>
         <a class="btn btn-md btn-danger" href="/scenes/{{scene.scene_id}}/delete">Delete Scene</a>
 {% elif scene.effective_status() == 1  %}
-        <a class="btn btn-md btn-primary" href="/scenes/{{scene.scene_id}}/edit" title="Edit scene labels.">Edit Scene</a>
         <a class="btn btn-md btn-warning" href="/scenes/{{scene.scene_id}}/disable">Disable Scene </a>
         <a class="btn btn-md btn-danger" href="/scenes/{{scene.scene_id}}/delete">Delete Scene</a>
         <a class="btn btn-md btn-primary pull-right" href="/scenes/{{scene.scene_id}}/start" style="margin-left: 10px" title="Start scene">Start Scene</a>

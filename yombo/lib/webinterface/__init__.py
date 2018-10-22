@@ -85,6 +85,7 @@ from yombo.lib.webinterface.routes.automation.scene import route_automation_scen
 from yombo.lib.webinterface.routes.automation.state import route_automation_state
 from yombo.lib.webinterface.routes.automation.template import route_automation_template
 from yombo.lib.webinterface.routes.configs import route_configs
+from yombo.lib.webinterface.routes.crontab import route_crontabs
 from yombo.lib.webinterface.routes.debug import route_debug
 from yombo.lib.webinterface.routes.devices import route_devices
 from yombo.lib.webinterface.routes.discovery import route_discovery
@@ -294,6 +295,7 @@ class WebInterface(YomboLibrary):
         route_automation_state(self.webapp)
         route_automation_template(self.webapp)
         route_configs(self.webapp)
+        route_crontabs(self.webapp)
         route_debug(self.webapp)
         route_devices(self.webapp)
         route_discovery(self.webapp)

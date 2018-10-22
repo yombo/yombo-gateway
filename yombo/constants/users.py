@@ -5,6 +5,7 @@ Constants for users library.
 AUTH_PLATFORM_ATOM = 'atom'
 AUTH_PLATFORM_AUTHKEY = 'authkey'
 AUTH_PLATFORM_AUTOMATION = 'automation'
+AUTH_PLATFORM_CRONTAB = 'crontab'
 AUTH_PLATFORM_DEBUG = 'debug'
 AUTH_PLATFORM_DEVICE = 'device'
 AUTH_PLATFORM_DEVICE_COMMAND = 'device_command'
@@ -31,6 +32,7 @@ ITEMIZED_AUTH_PLATFORMS = AUTH_PLATFORM_AUTOMATION, AUTH_PLATFORM_DEVICE, AUTH_P
 ACTIONS_ATOM = ('view', 'edit', 'enable', 'disable')
 ACTIONS_AUTHKEY = ('add', 'view', 'edit', 'enable', 'disable', 'remove')
 ACTIONS_AUTOMATION = ('add', 'view', 'edit', 'start', 'stop', 'enable', 'disable', 'remove')
+ACTIONS_CRONTAB = ('add', 'view', 'edit', 'enable', 'disable')
 ACTIONS_DEBUG = ('cache', 'view', 'commands', 'device_types', 'libraries', 'modules', 'nodes', 'sslcerts', 'statistics',
                  'requirements', 'crontab', 'locales')
 ACTIONS_DEVICE = ('add', 'view', 'control', 'edit', 'enable', 'disable', 'remove')
@@ -57,6 +59,7 @@ AUTH_PLATFORMS = {
     AUTH_PLATFORM_ATOM: {'actions': ACTIONS_ATOM},
     AUTH_PLATFORM_AUTHKEY: {'actions': ACTIONS_AUTHKEY},
     AUTH_PLATFORM_AUTOMATION: {'actions': ACTIONS_AUTOMATION},
+    AUTH_PLATFORM_CRONTAB: {'actions': ACTIONS_CRONTAB},
     AUTH_PLATFORM_DEBUG: {'actions': ACTIONS_DEBUG},
     AUTH_PLATFORM_DEVICE: {'actions': ACTIONS_DEVICE},
     AUTH_PLATFORM_DEVICE_COMMAND: {'actions': ACTIONS_DEVICE_COMMAND},
@@ -110,6 +113,12 @@ SYSTEM_ROLES = {
             },
             {
                 'platform': AUTH_PLATFORM_AUTOMATION,
+                'item': '*',
+                'action': 'view',
+                'access': 'allow',
+            },
+            {
+                'platform': AUTH_PLATFORM_CRONTAB,
                 'item': '*',
                 'action': 'view',
                 'access': 'allow',
@@ -418,6 +427,78 @@ SYSTEM_ROLES = {
                 'platform': AUTH_PLATFORM_AUTOMATION,
                 'item': '*',
                 'action': '*',
+                'access': 'allow',
+            }
+        ]
+    },
+    'crontab_add': {
+        'label': 'Crontab - Add',
+        'description': 'Able to add crontabs.',
+        'permissions': [
+            {
+                'platform': AUTH_PLATFORM_CRONTAB,
+                'item': '*',
+                'action': 'add',
+                'access': 'allow',
+            },
+            {
+                'platform': AUTH_PLATFORM_CRONTAB,
+                'item': '*',
+                'action': 'view',
+                'access': 'allow',
+            }
+        ]
+    },
+    'crontab_edit': {
+        'label': 'Crontab - Edit',
+        'description': 'Able to edit crontabs.',
+        'permissions': [
+            {
+                'platform': AUTH_PLATFORM_CRONTAB,
+                'item': '*',
+                'action': 'edit',
+                'access': 'allow',
+            },
+            {
+                'platform': AUTH_PLATFORM_CRONTAB,
+                'item': '*',
+                'action': 'view',
+                'access': 'allow',
+            }
+        ]
+    },
+    'crontab_disable': {
+        'label': 'Crontab - Disable',
+        'description': 'Able to disable crontabs.',
+        'permissions': [
+            {
+                'platform': AUTH_PLATFORM_CRONTAB,
+                'item': '*',
+                'action': 'disable',
+                'access': 'allow',
+            },
+            {
+                'platform': AUTH_PLATFORM_CRONTAB,
+                'item': '*',
+                'action': 'view',
+                'access': 'allow',
+            }
+        ]
+    },
+    'crontab_enable': {
+        'label': 'Crontab - Enable',
+        'description': 'Able to enable crontabs.',
+        'permissions': [
+            {
+                'platform': AUTH_PLATFORM_CRONTAB,
+                'item': '*',
+                'action': 'enable',
+                'access': 'allow',
+            },
+            {
+                'platform': AUTH_PLATFORM_CRONTAB,
+                'item': '*',
+                'action': 'view',
                 'access': 'allow',
             }
         ]

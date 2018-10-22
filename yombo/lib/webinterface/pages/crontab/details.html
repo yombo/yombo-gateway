@@ -1,0 +1,98 @@
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+{% include 'lib/webinterface/fragments/select_css.tpl' %}
+{% block content %}
+<div class="row">
+    <div class="col-lg-12">
+        <h1 class="page-header has-buttons-under"><a class="success" href="/crontab/index" aria-label="Delete">
+            <i class="fa fa-arrow-left" aria-hidden="true"></i></a> Crontab: {{ crontab.label}}
+        </h1>
+        <a class="btn btn-md btn-primary" href="/crontab/{{crontab.cron_id}}/edit" title="Edit crontab.">Edit Crontab</a>
+{% if crontab.enabled == false %}
+        <a class="btn btn-md btn-success" href="/crontab/{{crontab.cron_id}}/enable">Enable Crontab</a>
+{% elif crontab.enabled == true  %}
+        <a class="btn btn-md btn-warning" href="/crontab/{{crontab.cron_id}}/disable">Disable Crontab </a>
+{% endif %}
+        <a class="btn btn-md btn-danger" href="/crontab/{{crontab.cron_id}}/delete">Delete Crontab</a>
+        <hr class="under-buttons">
+    </div>
+    <!-- /.col-lg-12 -->
+</div>
+<!-- /.row -->
+<div class="row">
+    <div class="col-lg-12">
+    </div>
+</div>
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <label>Basic Information</label>
+            </div>
+
+            <!-- /.panel-heading -->
+            <div class="panel-body">
+                <div class="row">
+                    <div class="col-lg-4">
+                        <label style="margin-top: 0px; margin-bottom: 0px">Label: </label><br>
+                        {{ crontab.label }}<br>
+                        <label style="margin-top: 15px; margin-bottom: 0px">Gateway: </label><br>
+                        {{ _gateways[crontab.gateway_id].label}} <br>
+                        <label style="margin-top: 15px; margin-bottom: 0px">Callback: </label><br>
+                        {{ crontab.crontab_callback|e }}<br>
+                        <label style="margin-top: 15px; margin-bottom: 0px">Source: </label><br>
+                        {{ crontab.source }}<br>
+                    </div>
+                    <div class="col-lg-8">
+                        <label style="margin-top: 0px; margin-bottom: 0px">Minutes: </label><br>
+                        {{ crontab.mins }}<br>
+                        <label style="margin-top: 15px; margin-bottom: 0px">Hours: </label><br>
+                        {{ crontab.hours }}<br>
+                        <label style="margin-top: 15px; margin-bottom: 0px">Days: </label><br>
+                        {{ crontab.days }}<br>
+                        <label style="margin-top: 15px; margin-bottom: 0px">Months: </label><br>
+                        {{ crontab.mins }}<br>
+                        <label style="margin-top: 15px; margin-bottom: 0px">Day of week (DOW): </label><br>
+                        {{ crontab.dow }}<br>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <label>Crontab Arguments</label><br>
+            </div>
+            <!-- /.panel-heading -->
+            <div class="panel-body">
+                {%- if crontab.args|length == 0 %}
+                No arguments found.
+                {%- else %}
+                <ul>
+                 {% for argument in crontab.args %}
+                    <li>{{argument}}</li>
+                 {% endfor %}
+                </ul>
+                {%- endif %}
+            </div>
+        </div>
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <label>Crontab Named Arguments</label><br>
+            </div>
+            <!-- /.panel-heading -->
+            <div class="panel-body">
+                {%- if crontab.args|length == 0 %}
+                No named arguments found.
+                {%- else %}
+                <ul>
+                 {% for name, value in crontab.kwargs.items() %}
+                    <li>{{name}} -> {{value}}</li>
+                 {% endfor %}
+                </ul>
+                {%- endif %}
+            </div>
+        </div>
+    </div>
+    <!-- /.col-lg-12 -->
+</div>
+<!-- /.row -->
+{% endblock %}

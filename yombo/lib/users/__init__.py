@@ -561,6 +561,11 @@ class Users(YomboLibrary):
             platform_item_id = item
             platform_item_label = platform_item.machine_label
             platform_label_attr = 'machine_label'
+        elif platform == AUTH_PLATFORM_CRONTAB:
+            platform_item = self._CronTab.get(item)
+            platform_item_id = platform_item.cron_id
+            platform_item_label = platform_item.label
+            platform_label_attr = 'label'
         elif platform == AUTH_PLATFORM_DEVICE:
             platform_item = self._Devices.get(item)
             platform_item_id = platform_item.device_id
