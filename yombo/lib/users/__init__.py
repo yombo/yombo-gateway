@@ -569,8 +569,8 @@ class Users(YomboLibrary):
         elif platform == AUTH_PLATFORM_DEVICE_COMMAND:
             platform_item = self._Devices.device_commands[item]
             platform_item_id = platform_item.command_id
-            platform_item_label = platform_item.machine_label
-            platform_label_attr = 'machine_label'
+            platform_item_label = platform_item.label
+            platform_label_attr = 'label'
         elif platform == AUTH_PLATFORM_EVENTS:
             platform_item = None
             platform_item_id = None
