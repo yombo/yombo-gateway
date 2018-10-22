@@ -231,15 +231,13 @@ def read_file(filename, convert_to_unicode=None):
     :param filename:
     :return:
     """
-    def getFile(filename):
-        with open(filename) as f:
-            d = Deferred()
-            fd = f.fileno()
-            setNonBlocking(fd)
-            readFromFD(fd, d.callback)
-            return d
+    def getFile(read_filename):
+        f = open(read_filename, 'r')
+        data = f.read()
+        f.close()
+        return data
 
-    contents = yield getFile(filename)
+    contents = yield threads.deferToThread(getFile, filename)
     if convert_to_unicode is True:
         return bytes_to_unicode(contents)
     return contents
