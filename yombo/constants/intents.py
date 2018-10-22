@@ -5,6 +5,8 @@ INTENT_OPEN_COVER = 'open_cover'
 INTENT_CLOSE_COVER = 'close_cover'
 INTENT_DISABLE = 'enable'
 INTENT_ENABLE = 'enable'
+INTENT_START = 'start'
+INTENT_STOP = 'stop'
 
 INTENT_DOMAIN_DEVICE = 'device'
 INTENT_DOMAIN_SCENE = 'scene'
