@@ -24,32 +24,32 @@
                   <ul id="myTab" class="nav nav-tabs nav-tabs-responsive" role="tablist">
                     <li role="presentation" class="active bg-success">
                       <a href="#delayed" id="delayed-tab" role="tab" data-toggle="tab" aria-controls="home" aria-expanded="true">
-                        <span class="text-success">Delayed</span>
+                        <span class="text-success" id="delayedTabLabel">Delayed</span>
                       </a>
                     </li>
-                    <li role="presentation" class="next bg-success" id="tab-done">
-                      <a href="#done" role="tab" id="done-tab" data-toggle="tab" aria-controls="profile">
-                        <span class="text-success">Finished</span>
+                    <li role="presentation" class="next bg-success" id="tab-finished">
+                      <a href="#finished" role="tab" id="finished-tab" data-toggle="tab" aria-controls="profile">
+                        <span class="text-success" id="finishedTabLabel">Finished</span>
                       </a>
                     </li>
                     <li role="presentation" class="next bg-warning" id="tab-pending">
                       <a href="#pending" role="tab" id="pending-tab" data-toggle="tab" aria-controls="profile">
-                        <span class="text-warning">Pending</span>
+                        <span class="text-success" id="pendingTabLabel">Pending</span>
                       </a>
                     </li>
                     <li role="presentation" class="next bg-danger" id="tab-failed">
                       <a href="#failed" role="tab" id="failed-tab" data-toggle="tab" aria-controls="profile">
-                        <span class="text-danger">Failed</span>
+                        <span class="text-success" id="failedTabLabel">Failed</span>
                       </a>
                     </li>
                     <li role="presentation" class="next bg-warning" id="tab-others">
                       <a href="#others" role="tab" id="others-tab" data-toggle="tab" aria-controls="profile">
-                        <span class="text-warning">Others</span>
+                        <span class="text-success" id="othersTabLabel">Others</span>
                       </a>
                     </li>
                   </ul>
                   <div id="myTabContent" class="tab-content">
-                    <div role="tabpanel" class="tab-pane fade in active" id="delayed" aria-labelledby="home-tab">
+                    <div role="tabpanel" class="tab-pane fade in active" id="delayed" aria-labelledby="delayed-tab">
                         <div class="dataTable_wrapper">
                             <table width="100%" class="table table-striped table-bordered table-hover" id="devices-delayed">
                                 <thead>
@@ -70,7 +70,28 @@
                             </table>
                         </div>
                     </div>
-                    <div role="tabpanel" class="tab-pane fade" id="pending" aria-labelledby="profile-tab">
+                    <div role="tabpanel" class="tab-pane fade" id="finished" aria-labelledby="finished-tab">
+                        <div class="dataTable_wrapper">
+                            <table width="100%" class="table table-striped table-bordered table-hover" id="devices-finished">
+                                <thead>
+                                    <tr>
+                                        <th>Device</th><th>Command</th><th>Status</th><th>Requested By</th><th>Created</th>
+                                    </tr>
+                                </thead>
+                                <tbody>{% for request_id, command in device_commands.items()
+                                if command.status == 'finished' %}
+                                     <tr>
+                                        <td><a href="/devices/device_commands/{{ request_id }}/details">{{ command.device.full_label }}</a></td>
+                                        <td>{{ command.command.label }}</td>
+                                        <td>{{ command.status }}</td>
+                                        <td>{{ command.auth_id }} / {{ command.requesting_source }}</td>
+                                        <td>{{ command.created_at|epoch_to_string }}</td>
+                                     </tr>{% endfor %}
+                                </tbody>
+                            </table>
+                         </div>
+                    </div>
+                    <div role="tabpanel" class="tab-pane fade" id="pending" aria-labelledby="pending-tab">
                         <div class="dataTable_wrapper">
                             <table width="100%" class="table table-striped table-bordered table-hover" id="devices-pending">
                                 <thead>
@@ -112,30 +133,10 @@
                             </table>
                          </div>
                     </div>
-                    <div role="tabpanel" class="tab-pane fade" id="done" aria-labelledby="dropdown1-tab">
+
+                    <div role="tabpanel" class="tab-pane fade" id="others" aria-labelledby="others-tab">
                         <div class="dataTable_wrapper">
-                            <table width="100%" class="table table-striped table-bordered table-hover" id="devices-failed">
-                                <thead>
-                                    <tr>
-                                        <th>Device</th><th>Command</th><th>Status</th><th>Requested By</th><th>Created</th>
-                                    </tr>
-                                </thead>
-                                <tbody>{% for request_id, command in device_commands.items()
-                                if command.status == 'finished' %}
-                                     <tr>
-                                        <td><a href="/devices/device_commands/{{ request_id }}/details">{{ command.device.full_label }}</a></td>
-                                        <td>{{ command.command.label }}</td>
-                                        <td>{{ command.status }}</td>
-                                        <td>{{ command.auth_id }} / {{ command.requesting_source }}</td>
-                                        <td>{{ command.created_at|epoch_to_string }}</td>
-                                     </tr>{% endfor %}
-                                </tbody>
-                            </table>
-                         </div>
-                    </div>
-                    <div role="tabpanel" class="tab-pane fade" id="others" aria-labelledby="dropdown1-tab">
-                        <div class="dataTable_wrapper">
-                            <table width="100%" class="table table-striped table-bordered table-hover" id="devices-failed">
+                            <table width="100%" class="table table-striped table-bordered table-hover" id="devices-others">
                                 <thead>
                                     <tr>
                                         <th>Device</th><th>Command</th><th>Status</th><th>Requested By</th><th>Created</th>
@@ -174,11 +175,41 @@
     <!-- Make the tables pretty -->
     <script>
     $(document).ready(function() {
-        $('#dataTables-example').DataTable({
+        var delayedTable = $('#devices-delayed').DataTable({
                 responsive: true,
                 paging: true,
                 iDisplayLength: 50
         });
+        $("#delayedTabLabel").text("Delayed (" + delayedTable.page.info().recordsTotal +")");
+
+        var finishedTable = $('#devices-finished').DataTable({
+                responsive: true,
+                paging: true,
+                iDisplayLength: 50
+        });
+        $("#finishedTabLabel").text("Finished  (" + finishedTable.page.info().recordsTotal +")");
+
+        var pendingTable = $('#devices-pending').DataTable({
+                responsive: true,
+                paging: true,
+                iDisplayLength: 50
+        });
+        $("#pendingTabLabel").text("Pending (" + pendingTable.page.info().recordsTotal +")");
+
+        var failedTable = $('#devices-failed').DataTable({
+                responsive: true,
+                paging: true,
+                iDisplayLength: 50
+        });
+        $("#failedTabLabel").text("Failed (" + failedTable.page.info().recordsTotal +")");
+
+        var othersTable = $('#devices-others').DataTable({
+                responsive: true,
+                paging: true,
+                iDisplayLength: 50
+        });
+        $("#othersTabLabel").text("Others (" + othersTable.page.info().recordsTotal +")");
+
     });
     // Javascript to enable link to tab
 var hash = document.location.hash;
