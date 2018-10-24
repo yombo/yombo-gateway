@@ -298,7 +298,7 @@ class SSLCert(object):
         if self.current_is_valid is not True or \
                 self.current_key is None or \
                 self.current_expires is None or \
-                int(self.current_expires) < int(time() + (60*60*24*30)):
+                int(self.current_expires) < int(time() + (86400*30)):
             if self.next_is_valid is True:
                 self.make_next_be_current()  # Migrate the next key to the current key.
             else:  # next is not valid
@@ -710,7 +710,7 @@ class SSLCert(object):
         logger.debug("request_new_csr: {sslname}", sslname=self.sslname)
         results = bytes_to_unicode(results)
         self.next_status = "new"
-        self.next_status_message = "Created but unsent for signing."
+        self.next_status_msg = "Created but unsent for signing. Will send when previous cert nears expiration."
         self.next_csr = results['csr']
         self.next_csr_hash = results['csr_hash']
         self.next_key = results['key']
