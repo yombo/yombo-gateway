@@ -43,7 +43,8 @@ from yombo.ext.expiringdict import ExpiringDict
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import save_file, read_file, global_invoke_all, random_int, unicode_to_bytes, bytes_to_unicode
+from yombo.utils import (save_file, read_file, global_invoke_all, random_int, unicode_to_bytes,
+                         bytes_to_unicode, sha256_compact)
 from yombo.utils.dictobject import DictObject
 
 from .sslcert import SSLCert
@@ -56,6 +57,7 @@ class SSLCerts(YomboLibrary):
     Responsible for managing various encryption and TLS (SSL) certificates.
     """
     managed_certs = {}
+    received_message_for_unknown = ExpiringDict(100, 600)
 
     def __contains__(self, cert_requested):
         """
@@ -100,7 +102,6 @@ class SSLCerts(YomboLibrary):
         self.gateway_id = self._Configs.get('core', 'gwid', 'local', False)
         self.fqdn = self._Configs.get2('dns', 'fqdn', None, False)
 
-        self.received_message_for_unknown = ExpiringDict(100, 600)
         self.self_signed_cert_file = self._Atoms.get('working_dir') + "/etc/certs/sslcert_selfsigned.cert.pem"
         self.self_signed_key_file = self._Atoms.get('working_dir') + "/etc/certs/sslcert_selfsigned.key.pem"
         self.self_signed_expires = self._Configs.get("sslcerts", "self_signed_expires", None, False)
@@ -362,14 +363,17 @@ class SSLCerts(YomboLibrary):
             for i in kwargs['sans']:
                 san_string.append("DNS: %s" % i)
             san_string = ", ".join(san_string)
-
             x509_extensions = [crypto.X509Extension(b'subjectAltName', False, unicode_to_bytes(san_string))]
             req.add_extensions(x509_extensions)
 
+        start = time()
         key = yield threads.deferToThread(
             self._generate_key,
             **{'key_type': kwargs['key_type'], 'key_size': kwargs['key_size']}
         )
+        duration = round(float(time()) - start, 4)
+        self._Events.new('sslcerts', 'generate_new', (args['sslname'], kwargs['cn'], san_string, duration))
+
         req.set_pubkey(key)
 
         req.sign(key, "sha256")
@@ -384,6 +388,7 @@ class SSLCerts(YomboLibrary):
 
         return {
                 'csr': csr,
+                'csr_hash': sha256_compact(unicode_to_bytes(csr)),
                 'key': key_file
                }
 
@@ -498,7 +503,7 @@ class SSLCerts(YomboLibrary):
         :param kwargs: 
         :return: 
         """
-        # logger.debug("Received CSR response message: {body}", body=body)
+        logger.info("Received CSR response message: {body}", body=body)
         if 'sslname' not in body:
             logger.warn("Discarding response, doesn't have an sslname attached.") # can't raise exception due to AMPQ processing.
             return
