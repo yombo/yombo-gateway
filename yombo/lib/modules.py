@@ -509,32 +509,7 @@ class Modules(YomboLibrary):
                 else:
                     requirements = bytes_to_unicode(input.splitlines())
                     for line in requirements:
-                        if line is None or line == '':
-                            continue
-                        try:
-                            pkg_info = yield get_python_package_info(line)
-                        except YomboWarning:
-                            pass
-
-                        if line not in self._Loader.requirements:
-                            if pkg_info is None:
-                                self._Loader.requirements[line] = {
-                                    'name': line,
-                                    'version': 'Invalid python module',
-                                    'path': 'Invalid module',
-                                    'used_by': [module['machine_label']],
-                                    'line': line,
-                                }
-                            else:
-                                self._Loader.requirements[line] = {
-                                    'name': pkg_info.project_name,
-                                    'version': pkg_info._version,
-                                    'path': pkg_info.location,
-                                    'used_by': [module['machine_label']],
-                                    'line': line,
-                                }
-                        else:
-                            self._Loader.requirements[line]['used_by'].append(module['machine_label'])
+                        yield self._Loader.install_python_requirement(line)
 
     def import_modules(self):
         """

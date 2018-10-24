@@ -214,6 +214,7 @@ class Loader(YomboLibrary, object):
                                % component_requested, '101', '__getitem__', 'loader')
 
     def __init__(self, testing=False, loop=None):
+        self.startup_events_queue = []
         self._operating_mode = "system_init"
         self._run_phase = "system_init"
         self.unittest = testing
@@ -241,16 +242,8 @@ class Loader(YomboLibrary, object):
         self.run_phase = "shutdown"
         self.sigint = True
 
-    def update_pip_module(self, module_name):
-        try:
-            out = check_output(['pip3', 'install', '-u', module_name])
-            t = 0, out
-        except CalledProcessError as e:
-            t = e.returncode, e.message
-        return t
-
     @inlineCallbacks
-    def start(self):  #on startup, load libraried, then modules
+    def start(self):  # on startup, load libraries, then modules
         """
         This is effectively the main start function.
 
@@ -270,33 +263,7 @@ class Loader(YomboLibrary, object):
             else:
                 requirements = yombo.utils.bytes_to_unicode(input.splitlines())
                 for line in requirements:
-                    line = line.strip()
-                    if len(line) == 0 or line.startswith('#'):
-                        continue
-                    logger.debug("Processing requirement: {requirement}", requirement=line)
-                    try:
-                        pkg_info = yield yombo.utils.get_python_package_info(line)
-                        if pkg_info is False:
-                            continue
-                    except YomboWarning as e:
-                        raise YomboCritical(e.message)
-                    logger.debug("Have requirement details...")
-                    if pkg_info is not None:
-                        self.requirements[line] = {
-                            'name': pkg_info.project_name,
-                            'version': pkg_info._version,
-                            'path': pkg_info.location,
-                            'used_by': ['Yombo framework'],
-                            'package': line,
-                        }
-                    else:
-                        self.requirements[line] = {
-                            'name': line,
-                            'version': 'Invalid python module',
-                            'path': 'Invalid module',
-                            'used_by': ['Yombo framework'],
-                            'package': line,
-                        }
+                    yield self.install_python_requirement(line)
 
         # Get a reference to the asyncio event loop.
         logger.debug("Starting UVLoop")
@@ -315,17 +282,6 @@ class Loader(YomboLibrary, object):
         self.operating_mode = self.operating_mode  # so we can update the State!
         if self.operating_mode == 'run':
             yield self._moduleLibrary.prepare_modules()
-
-            last_requirements_update = self._Configs.get('core', 'lastrequirementsudpate', 0, False)
-            if self.force_python_module_upgrade or last_requirements_update < int(time()) - 86400:
-                for requirement_line, details in self.requirements.items():
-                    logger.info("Upgrading python package: {line}", line=requirement_line)
-                    try:
-                        yield yombo.utils.install_python_package(requirement_line)
-                    except YomboWarning as e:
-                        pass
-                self._Configs.set('core', 'lastrequirementsudpate', int(time()))
-
             self._moduleLibrary.import_modules()
 
         for name, config in HARD_LOAD.items():
@@ -409,6 +365,10 @@ class Loader(YomboLibrary, object):
              'targets': 'system_startup_complete',
              })
 
+        for event in self.startup_events_queue:
+            created_at=event.pop()
+            self.loadedLibraries['events'].new(*event, created_at=created_at)
+        self.startup_events_queue = None
         logger.info("Yombo Gateway started.")
 
     @inlineCallbacks
@@ -423,6 +383,38 @@ class Loader(YomboLibrary, object):
             yield self._moduleLibrary.unload_modules()
         yield self.unload_libraries()
         # self.loop.close()
+
+    @inlineCallbacks
+    def install_python_requirement(self, requirement):
+        line = yombo.utils.bytes_to_unicode(requirement)
+        line = line.strip()
+        if len(line) == 0 or line.startswith('#'):
+            return
+        logger.debug("Processing requirement: {requirement}", requirement=line)
+        try:
+            pkg_info = yield yombo.utils.get_python_package_info(line, events_queue=self.startup_events_queue)
+            logger.debug("Processing requirement: results: {results}", results=pkg_info)
+            if pkg_info is None:
+                return
+        except YomboWarning as e:
+            raise YomboCritical(e.message)
+        logger.debug("Have requirement details...")
+        if pkg_info is not None:
+            self.requirements[line] = {
+                'name': pkg_info.project_name,
+                'version': pkg_info._version,
+                'path': pkg_info.location,
+                'used_by': ['Yombo framework'],
+                'package': line,
+            }
+        else:
+            self.requirements[line] = {
+                'name': line,
+                'version': 'Invalid python module',
+                'path': 'Invalid module',
+                'used_by': ['Yombo framework'],
+                'package': line,
+            }
 
     def Loader_i18n_atoms(self, **kwargs):
        return [
