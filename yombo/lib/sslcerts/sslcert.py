@@ -70,13 +70,13 @@ class SSLCert(object):
     """
     A class representing a single cert.
     """
-    @property
-    def current_status(self):
-        return human_status(self.current_is_valid)
-
-    @property
-    def next_status(self):
-        return human_status(self.next_is_valid)
+    # @property
+    # def current_status(self):
+    #     return human_status(self.current_is_valid)
+    #
+    # @property
+    # def next_status(self):
+    #     return human_status(self.next_is_valid)
 
     def __str__(self):
         """
@@ -116,6 +116,9 @@ class SSLCert(object):
         self.key_size = None
         self.key_type = None
 
+        self.current_status = None
+        self.current_status_msg = None
+        self.current_csr_hash = None
         self.current_cert = None
         self.current_cert_crypt = None
         self.current_chain = None
@@ -129,6 +132,9 @@ class SSLCert(object):
         self.current_fqdn = None
         self.current_is_valid = None
 
+        self.next_status = None
+        self.next_status_msg = None
+        self.next_csr_hash = None
         self.next_csr = None
         self.next_cert = None
         self.next_chain = None
@@ -226,6 +232,12 @@ class SSLCert(object):
             else:
                 self.current_key_crypt = None
 
+        if 'current_status' in attributes:
+            self.current_status = attributes['current_status']
+        if 'current_status_msg' in attributes:
+            self.current_status_msg = attributes['current_status_msg']
+        if 'current_csr_hash' in attributes:
+            self.current_csr_hash = attributes['current_csr_hash']
         if 'current_created' in attributes:
             self.current_created = int(attributes['current_created']) if attributes['current_created'] else None
         if 'current_expires' in attributes:
@@ -239,6 +251,12 @@ class SSLCert(object):
         if 'current_is_valid' in attributes:
             self.current_is_valid = attributes['current_is_valid']
 
+        if 'next_status' in attributes:
+            self.next_status = attributes['next_status']
+        if 'next_status_msg' in attributes:
+            self.next_status_msg = attributes['next_status_msg']
+        if 'next_csr_hash' in attributes:
+            self.next_csr_hash = attributes['next_csr_hash']
         if 'next_csr' in attributes:
             self.next_csr = attributes['next_csr']
         if 'next_cert' in attributes:
@@ -306,6 +324,9 @@ class SSLCert(object):
 
         :return:
         """
+        self.current_status = self.next_status
+        self.current_status_msg = self.next_status_msg
+        self.current_csr_hash = self.next_csr_hash
         self.current_cert = self.next_cert
         self.current_chain = self.next_chain
         self.current_key = self.next_key
@@ -338,6 +359,8 @@ class SSLCert(object):
             self.next_csr = None
             self.next_csr_generation_error_count = 0
 
+        setattr(self, "%s_status" % label, None)
+        setattr(self, "%s_status_msg" % label, None)
         setattr(self, "%s_cert" % label, None)
         setattr(self, "%s_chain" % label, None)
         setattr(self, "%s_key" % label, None)
@@ -426,7 +449,7 @@ class SSLCert(object):
 
         :return:
         """
-        logger.info("Inspecting file system for certs, and loading them.")
+        logger.info("Inspecting file system for certs, and loading them for: {name}", name=self.sslname)
 
         for label in ['current', 'next']:
             setattr(self, "%s_is_valid" % label, None)
@@ -524,6 +547,8 @@ class SSLCert(object):
                     setattr(self, "%s_chain" % label, chain)
                 if key_read:
                     setattr(self, "%s_key" % label, key)
+                setattr(self, "%s_status" % label, return_int(meta['status']))
+                setattr(self, "%s_status_msg" % label, return_int(meta['status_msg']))
                 setattr(self, "%s_expires" % label, return_int(meta['expires']))
                 setattr(self, "%s_created" % label, return_int(meta['created']))
                 setattr(self, "%s_signed" % label, return_int(meta['signed']))
@@ -554,6 +579,8 @@ class SSLCert(object):
         for label in ['current', 'next']:
 
             meta = {
+                'status': getattr(self, "%s_status" % label),
+                'status_msg': getattr(self, "%s_status_msg" % label),
                 'created': getattr(self, "%s_created" % label),
                 'expires': getattr(self, "%s_expires" % label),
                 'signed': getattr(self, "%s_signed" % label),
@@ -682,8 +709,11 @@ class SSLCert(object):
 
         logger.debug("request_new_csr: {sslname}", sslname=self.sslname)
         results = bytes_to_unicode(results)
-        self.next_key = results['key']
+        self.next_status = "new"
+        self.next_status_message = "Created but unsent for signing."
         self.next_csr = results['csr']
+        self.next_csr_hash = results['csr_hash']
+        self.next_key = results['key']
         # print("request_new_csr csr: %s " % self.next_csr)
         yield save_file("%s/etc/certs/%s.next.csr.pem" % (self.working_dir, self.sslname), self.next_csr)
         yield save_file("%s/etc/certs/%s.next.key.pem" % (self.working_dir, self.sslname), self.next_key)
@@ -731,7 +761,19 @@ class SSLCert(object):
         :param correlation: Any correlation data regarding the AQMP message. We can check for timing, etc.
         :return:
         """
-        logger.debug("Received a signed SSL/TLS certificate for: {sslname}", sslname=self.sslname)
+        logger.info("Received a signed SSL/TLS certificate for: {sslname}", sslname=self.sslname)
+        logger.info("TLS cert body: {body}", body=body)
+        if 'csr_hash' not in body:
+            logger.warn("'csr_hash' is missing from incoming amqp TLS key.")
+            return
+        csr_hash = body['csr_hash']
+        if csr_hash != self.next_csr_hash:
+            logger.warn("Incoming TLS key hash is mismatched. Discarding. Have: {next_csr_hash}, received: {csr_hash}",
+                        next_csr_hash=self.next_csr_hash, csr_hash=csr_hash)
+            return
+
+        self.next_status = body['status']
+        self.next_status_msg = body['status_msg']
         if body['status'] == "signed":
             self.next_chain = body['chain_text']
             self.next_cert = body['cert_text']
@@ -740,7 +782,6 @@ class SSLCert(object):
             self.next_is_valid = True
             self.dirty = True
             yield self.check_if_rotate_needed()  # this will rotate next into current
-
 
         method = None
         if self.current_is_valid is not True:
@@ -782,7 +823,7 @@ class SSLCert(object):
         Returns a signed cert, the key, and the chain.
         """
         if self.current_is_valid is True:
-            logger.debug("Sending public signed cert details for {sslname}", sslname=self.sslname)
+            logger.debug("Returning a signed cert to caller for cert: {sslname}", sslname=self.sslname)
             return {
                 'key': self.current_key,
                 'key_crypt': self.current_key_crypt,
@@ -843,6 +884,9 @@ class SSLCert(object):
             'update_callback_function': self.update_callback_function,
             'key_size': int(self.key_size),
             'key_type': self.key_type,
+            'current_status': self.current_status,
+            'current_status_msg': self.current_status_msg,
+            'current_csr_hash': self.current_csr_hash,
             'current_cert': self.current_cert,
             'current_chain': self.current_chain,
             'current_key': self.current_key,
@@ -852,6 +896,8 @@ class SSLCert(object):
             'current_submitted': self.current_submitted,
             'current_fqdn': self.current_fqdn,
             'current_is_valid': self.current_is_valid,
+            'next_status': self.next_status,
+            'next_status_msg': self.next_status_msg,
             'next_csr': self.next_csr,
             'next_cert': self.next_cert,
             'next_chain': self.next_chain,
