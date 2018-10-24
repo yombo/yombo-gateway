@@ -503,7 +503,7 @@ class SSLCerts(YomboLibrary):
         :param kwargs: 
         :return: 
         """
-        logger.info("Received CSR response message: {body}", body=body)
+        logger.debug("Received CSR response message: {body}", body=body)
         if 'sslname' not in body:
             logger.warn("Discarding response, doesn't have an sslname attached.") # can't raise exception due to AMPQ processing.
             return

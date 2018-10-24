@@ -62,14 +62,14 @@
                                 {{ sslcert.current_csr_hash }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Created: </label><br>
                                 {{ sslcert.current_created|epoch_to_string }}<br>
-                                <label style="margin-top: 15px; margin-bottom: 0px">Created: </label><br>
-                                {{ sslcert.current_created|epoch_to_string }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Submitted: </label><br>
                                 {{ sslcert.current_submitted|epoch_to_string }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Signed: </label><br>
                                 {{ sslcert.current_signed|epoch_to_string }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Expires: </label><br>
                                 {{ sslcert.current_expires|epoch_to_string }}<br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">Is Valid: </label><br>
+                                {{ sslcert.current_is_valid }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">FQDN: </label><br>
                                 {{ sslcert.current_fqdn }}<br>
                             </div>
@@ -97,7 +97,9 @@
                                 <label style="margin-top: 15px; margin-bottom: 0px">Expires: </label><br>
                                 {{ sslcert.next_expires|epoch_to_string }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Is Valid: </label><br>
-                                {{ sslcert.next_is_valid|epoch_to_string }}<br>
+                                {{ sslcert.next_is_valid }}<br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">FQDN: </label><br>
+                                {{ sslcert.next_fqdn }}<br>
                             </div>
                         </div>
                     </div>
