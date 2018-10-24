@@ -81,6 +81,7 @@ SYSTEM_EVENT_TYPES = {
             'attributes': (
                 'name',
                 'version',
+                'duration',
             ),
             'expires': 360,  # save events for 90 days
         },
@@ -94,8 +95,22 @@ SYSTEM_EVENT_TYPES = {
         'update_needed': {
             'description': "When a python package is old and about to updated.",
             'attributes': (
-                'previous',
-                'new',
+                'package_name',
+                'current',
+                'requested',
+            ),
+            'expires': 360,  # save events for 90 days
+        },
+    },
+    'sslcerts': {
+        'generate_new': {
+            'description': "Generated a TLS certificate.",
+            'attributes': (
+                'name',
+                'cn',
+                'san',
+                'duration',
+                '',
             ),
             'expires': 360,  # save events for 90 days
         },
