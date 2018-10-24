@@ -75,7 +75,9 @@ class Events(YomboLibrary):
     def new(self, event_type, event_subtype, attributes=None, priority=None, auth=None, created_at=None):
 
         if created_at is None:
-            created_at = time()
+            created_at = round(time(), 3)
+        elif isinstance(created_at, float):
+            created_at = round(created_at, 3)
         if priority is None:
             priority = 'normal'
 
