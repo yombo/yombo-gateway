@@ -92,14 +92,15 @@ class HashIDS(YomboLibrary, object):
                 },
         }]
 
-    def encode(self, hashedid, hasher_name):
+    def encode(self, hasher_name, id_to_hash):
+        print("hashids::encode::keys: %s" % self.keys)
         if hasher_name in self.keys:
-            return self.keys[hasher_name]['hasher'].encode(hashedid)
+            return self.keys[hasher_name]['hasher'].encode(id_to_hash)
         else:
-            return self.keys[hasher_name]['hasher'].encode(hashedid)
+            return self.keys[hasher_name]['hasher'].encode(id_to_hash)
 
-    def decode(self, id_to_hash, hasher_name):
+    def decode(self, hasher_name, hash_to_id):
         if hasher_name in self.keys:
-            return self.keys[hasher_name]['hasher'].decode(id_to_hash)
+            return self.keys[hasher_name]['hasher'].decode(hash_to_id)
         else:
-            return self.keys[hasher_name]['hasher'].decode(id_to_hash)
+            return self.keys[hasher_name]['hasher'].decode(hash_to_id)
