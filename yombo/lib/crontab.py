@@ -528,10 +528,15 @@ class CronTask(object):
         self.cron_id = cron_id or random_string(length=10)
         self.crontab_callback = crontab_callback
         self.mins = conv_to_set(min)
+        self.mins_orig = min
         self.hours = conv_to_set(hour)
+        self.hours_orig = hour
         self.days = conv_to_set(day)
+        self.days_orig = day
         self.months = conv_to_set(month)
+        self.months_orig = month
         self.dow = conv_to_set(dow)
+        self.dow_orig = dow
         self.label = label
         self.enabled = enabled
         self.args = args

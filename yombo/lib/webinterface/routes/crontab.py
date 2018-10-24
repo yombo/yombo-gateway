@@ -52,11 +52,11 @@ def route_crontabs(webapp):
         @webapp.route('/<string:crontab_id>/details', methods=['GET'])
         @require_auth()
         def page_crontabs_details_get(webinterface, request, session, crontab_id):
-            session.has_access('crontab', crontab_id, 'view', raise_error=True)
             try:
+                session.has_access('crontab', crontab_id, 'view', raise_error=True)
                 crontab = webinterface._CronTab.get(crontab_id)
             except KeyError as e:
-                webinterface.add_alert(e.message, 'warning')
+                webinterface.add_alert(e, 'warning')
                 return webinterface.redirect(request, '/crontab/index')
 
             page = webinterface.get_template(
