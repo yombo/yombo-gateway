@@ -552,8 +552,8 @@ class WebInterface(YomboLibrary):
             else:
                 self.web_server_ssl_started = True
                 # print("########### WEBINTER: lib_webinterface")
-
                 cert = self._SSLCerts.get('lib_webinterface')
+                # print("########### WEBINTER: got cert....")
                 privkeypyssl = crypto.load_privatekey(crypto.FILETYPE_PEM, cert['key'])
                 certpyssl = crypto.load_certificate(crypto.FILETYPE_PEM, cert['cert'])
                 if cert['chain'] is not None:
@@ -583,6 +583,8 @@ class WebInterface(YomboLibrary):
                                                         certificate=cert['cert_crypt'],
                                                         extraCertChain=cert['chain_crypt'])
                 port_attempts = 0
+                # print("########### WEBINTER: about to start SSL port listener")
+
                 while port_attempts < 100:
                     try:
                         # print("about to start ssl listener on port: %s" % self.wi_port_secure())
