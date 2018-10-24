@@ -29,20 +29,23 @@ import markdown
 import math
 import msgpack
 import os
+from packaging.version import Version as pkg_version
+from packaging.requirements import Requirement as pkg_requirement
 import pkg_resources
 import random
 import re
 import string
 from subprocess import check_output, CalledProcessError
 import sys
+from time import time
 import textwrap
 import zlib
 
 from twisted.internet import reactor, threads
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.task import deferLater
-from twisted.internet.defer import Deferred
-from twisted.internet.fdesc import readFromFD, writeToFD, setNonBlocking
+# from twisted.internet.defer import Deferred
+from twisted.internet.fdesc import writeToFD, setNonBlocking
 
 # Import 3rd-party libs
 from yombo.ext.hashids import Hashids
@@ -150,45 +153,75 @@ def sha256_compact(value):
 
 
 @inlineCallbacks
-def get_python_package_info(package_name, install_on_error=True):
+def get_python_package_info(required_package_name, install=None, events_queue=None):
     """
     Checks if a given python package name is installed. If so, returns it's info, otherwise returns None.
 
-    :param package_name:
+    :param required_package_name:
     :return:
     """
     global _Yombo
+    if install is None:
+        install = True
+
     conditions = ('==', '<=', '>=')
-    if "=" in package_name:
-        if any(s in package_name for s in conditions) is False:
-            logger.warn("Invalid python requirement line: {package_name}", package_name=package_name)
-            return False
+    if any(s in required_package_name for s in conditions) is False:
+        logger.warn("Invalid python requirement line: {package_name}", package_name=required_package_name)
+        raise YomboWarning("python requirement must specify a version or version with wildcard.")
+
+    requirement = pkg_requirement(required_package_name)
+    package_name = requirement.name
 
     try:
-        results = pkg_resources.require([package_name])[0]
-        return results
+        pkg_info = pkg_resources.get_distribution(required_package_name)
     except pkg_resources.DistributionNotFound as e:
-        if install_on_error is False:
-            logger.warn("Python package was not found, and won't be installed: {package_name}", package_name=package_name)
-            _Yombo._Events.new('pip', 'not_found', (str(package_name)))
-
+        if events_queue is not None:
+            events_queue.append(['pip', 'not_found', (str(required_package_name)), time()])
+        else:
+            _Yombo._Events.new('pip', 'not_found', (str(required_package_name)))
+        logger.info("Python package {required_package} is missing.",
+                    required_package=required_package_name,
+                    )
+        if install is False:
             return None
     except pkg_resources.VersionConflict as e:
-        logger.warn("Python package is out of date. Will try to update. Have version: {dist}, but need: {req}",
-               dist=e.dist, req=e.req)
-        _Yombo._Events.new('pip', 'update_needed', (str(e.dist), str(e.req)))
-    yield install_python_package(package_name)
+        pkg_info = pkg_resources.get_distribution(package_name)
+        logger.info("Python package {required_package} is old. Found: {version_installed}, want: {wanted}",
+                    required_package=package_name,
+                    version_installed=pkg_info.version,
+                    wanted=str(requirement.specifier),
+                    )
+        if events_queue is not None:
+            events_queue.append(['pip', 'update_needed',
+                                 (package_name, str(pkg_info.version), str(requirement.specifier)), time()])
+        else:
+            _Yombo._Events.new('pip', 'update_needed',
+                               (package_name, str(pkg_info.version), str(requirement.specifier)))
+        if install is False:
+            return pkg_info
+
+    else:
+        return pkg_info
+
+    # We now install the package...
+    start_time = time()
+    yield install_python_package(required_package_name)
+    duration = round(float(time()) - start_time, 4)
     importlib.reload(pkg_resources)
     try:
-        pkg_info = pkg_resources.require([package_name])[0]
-        logger.warn("Python package installed: {name} = {version}", name=pkg_info.project_name, version=pkg_info.version)
-        _Yombo._Events.new('pip', 'installed', (str(pkg_info.project_name), str(pkg_info.version)))
+        pkg_info = pkg_resources.get_distribution(required_package_name)
+        logger.info("Python package installed: {name} = {version}",
+                    name=pkg_info.project_name, version=pkg_info.version)
+
+        if events_queue is not None:
+            events_queue.append(['pip', 'installed',
+                                 (str(pkg_info.project_name), str(pkg_info.version), duration), time()])
+        else:
+            _Yombo._Events.new('pip', 'installed', (str(pkg_info.project_name), str(pkg_info.version), duration))
         return pkg_info
     except pkg_resources.DistributionNotFound as e:
-        return None
-    except pkg_resources.VersionConflict as e:
-        logger.warn("Unable to upgrade python package: {package}", package=package_name)
-    return False
+        raise YomboWarning("Unable to upgrade package: %s", e)
+    return None
 
 
 @inlineCallbacks
@@ -202,7 +235,6 @@ def install_python_package(package_name):
             t = e.returncode, e.message
         return t
 
-    print("install_python_package: package_name: %s" % package_name)
     try:
         pip_results = yield threads.deferToThread(update_pip_module, package_name)
         if pip_results[0] != 0:
@@ -226,7 +258,6 @@ def install_python_package(package_name):
 def read_file(filename, convert_to_unicode=None):
     """
     Read a file, non-blocking.
-    Based from: https://stackoverflow.com/questions/1720816/non-blocking-file-access-with-twisted
 
     :param filename:
     :return:
@@ -262,6 +293,22 @@ def save_file(filename, content, mode=None):
             setNonBlocking(fd)
             writeToFD(fd, content)
     writeFile(filename, unicode_to_bytes(content), mode)
+
+
+@inlineCallbacks
+def delete_file(filename):
+    """
+    Delete a file, non-blocking.
+
+    :param filename:
+    :return:
+    """
+    def deleteFile(delete_filename):
+        try:
+            os.remove(delete_filename)
+        except OSError as e:
+            logger.warn("delete_file: Could not delete: {e}", e=e)
+    yield threads.deferToThread(deleteFile, filename)
 
 
 @inlineCallbacks
