@@ -65,8 +65,6 @@ class cached(object):
         """
         from yombo.utils import generate_source_string, random_string
 
-        # def random_string():  # because we can't import from utils...
-        #     return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(20))
         global cache_library
 
         if cache_type is None:

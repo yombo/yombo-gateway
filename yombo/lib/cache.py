@@ -50,7 +50,7 @@ class Cache(YomboLibrary):
         self.caches = {}
         self.lock = RLock()  # lock of last resort
 
-    def lfu(self, tags=None, name=None, maxsize=512):
+    def lfu(self, tags=None, name=None, maxsize=None):
         """
         Create a new LFU (Least Frequently Used) based cache. This counts how often
         the cache items are used, and when the maxsize is reached, it will discard
@@ -65,6 +65,9 @@ class Cache(YomboLibrary):
         :param maxsize: Max number of entries.
         :return:
         """
+        if maxsize is None:
+            maxsize = 512
+
         if isinstance(tags, str):
             tags = (tags,)
         elif tags is None:
@@ -81,7 +84,7 @@ class Cache(YomboLibrary):
             }
         return self.caches[name]['cache']
 
-    def lru(self, tags=None, name=None, maxsize=512):
+    def lru(self, tags=None, name=None, maxsize=None):
         """
         Create a new LRU (least recently used) based cache. This cache discards the
         least recently used items to make space if needed.
@@ -94,6 +97,9 @@ class Cache(YomboLibrary):
         :param maxsize: Max number of entries.
         :return:
         """
+        if maxsize is None:
+            maxsize = 512
+
         if isinstance(tags, str):
             tags = (tags,)
         elif tags is None:
@@ -111,7 +117,7 @@ class Cache(YomboLibrary):
             }
         return self.caches[name]['cache']
 
-    def ttl(self, ttl=120, tags=None, name=None, maxsize=512):
+    def ttl(self, ttl=None, tags=None, name=None, maxsize=None):
         """
         Create a new TTL based cache. Items in this cache will timeout after a certain period
         of time.
@@ -124,6 +130,11 @@ class Cache(YomboLibrary):
         :param maxsize: Max number of entries.
         :return:
         """
+        if ttl is None:
+            ttl = 120
+        if maxsize is None:
+            maxsize = 512
+
         if isinstance(tags, str):
             tags = (tags,)
         elif tags is None:
