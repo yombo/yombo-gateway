@@ -1,70 +1,71 @@
 {% extends "lib/webinterface/fragments/layout.tpl" %}
 
 {% block content %}
-            <div class="row">
-                <div class="col-lg-12">
-                    <h1 class="page-header">Debug and inspection tools
-                        <a style="float: right;" href="#" data-toggle=modal data-target=#myModal> <i class="fa fa-question-circle  fa-lg"></i></a>
-                    </h1>
-                    <!-- Modal -->
-                    <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
-                      <div class="modal-dialog" role="document">
-                        <div class="modal-content">
-                          <div class="modal-header">
-                            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                            <h4 class="modal-title" id="myModalLabel">Developer Tools</h4>
-                          </div>
-                          <div class="modal-body">
-                              <p>View various information, not normally used by users. These tools can help you dig into
-                                  the gateway system and view lots of extra details about what's going on under
-                                  the hood.</p>
-                          </div>
-                          <div class="modal-footer">
-                            <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+<div class="row">
+    <div class="col-lg-12">
+        <h1 class="page-header">Debug and inspection tools
+            <a style="float: right;" href="#" data-toggle=modal data-target=#myModal> <i class="fa fa-question-circle  fa-lg"></i></a>
+        </h1>
+        <!-- Modal -->
+        <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+          <div class="modal-dialog" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myModalLabel">Developer Tools</h4>
+              </div>
+              <div class="modal-body">
+                  <p>View various information, not normally used by users. These tools can help you dig into
+                      the gateway system and view lots of extra details about what's going on under
+                      the hood.</p>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
 
-                    <p>
-                        <ul>
-                            <li><b><a href="/debug/auth_platforms">Auth Platforms</b></a> - All the authentication platform data.</li>
-                            <li><b><a href="/debug/cache">Cache</b></a> - Caches in use</li>
-                            <li><b><a href="/debug/commands">Commands</b></a> - Commands loaded</li>
-                            <li><b><a href="/debug/crontab">CronTab</b></a> - Crontabs configured</li>
-                            <li><b><a href="/debug/device_types">Device Types</b></a> - Device types loaded.</li>
-                            <li><b>Hooks</b> - View what hooks have been called and how many times.</li>
-                            <ul>
-                                <li>
-                                    <a href="/debug/hooks_called_libraries">Library hooks called.</a>
-                                </li>
-                                <li>
-                                    <a href="/debug/hooks_called_modules">Module hooks called.</a>
-                                </li>
-                            </ul>
-                            <li><b>Localization</b> - Various Localization data.</li>
-                            <ul>
-                                <li>
-                                    <a href="/debug/locales/files">Files used to generate completed translation files.</a>
-                                </li>
-                                <li>
-                                    <a href="/debug/locales/translations">Translation tokens</a>
-                                </li>
-                            </ul>
+        <p>
+            <ul>
+                <li><b><a href="/debug/auth_platforms">Auth Platforms</b></a> - All the authentication platform data.</li>
+                <li><b><a href="/debug/cache">Cache</b></a> - Caches in use</li>
+                <li><b><a href="/debug/commands">Commands</b></a> - Commands loaded</li>
+                <li><b><a href="/debug/crontab">CronTab</b></a> - Crontabs configured</li>
+                <li><b><a href="/debug/device_types">Device Types</b></a> - Device types loaded.</li>
+                <li><b><a href="/debug/events/event_types">Events Types</b></a> - Event types available</li>
+                <li><b>Hooks</b> - View what hooks have been called and how many times.</li>
+                <ul>
+                    <li>
+                        <a href="/debug/hooks_called_libraries">Library hooks called.</a>
+                    </li>
+                    <li>
+                        <a href="/debug/hooks_called_modules">Module hooks called.</a>
+                    </li>
+                </ul>
+                <li><b>Localization</b> - Various Localization data.</li>
+                <ul>
+                    <li>
+                        <a href="/debug/locales/files">Files used to generate completed translation files.</a>
+                    </li>
+                    <li>
+                        <a href="/debug/locales/translations">Translation tokens</a>
+                    </li>
+                </ul>
 
-                            <li><b><a href="/debug/modules">Modules</b></a> - Inspect various module attributes.</li>
-                            <li><b><a href="/debug/nodes">Nodes</b></a> - System nodes.</li>
-                            <li><b>Statistics</b> - Various information abou the statistics library.</li>
-                            <ul>
-                                <li>
-                                    <a href="/debug/statistic_bucket_lifetimes">Storage lifetimes</a>
-                                </li>
-                            </ul>
-                            <li><b><a href="/debug/requirements">Requirements</b></a> - View Python3 required modules.</li>
-                            <li><b><a href="/debug/sslcerts">SSL Certificates</b></a> - Encryption certificates used for TLS (SSL).</li>
-                        </li>
-                        </ul>
-                    </p>
-                </div> <!-- /.col-lg-12 -->
-            </div> <!-- /.row -->
+                <li><b><a href="/debug/modules">Modules</b></a> - Inspect various module attributes.</li>
+                <li><b><a href="/debug/nodes">Nodes</b></a> - System nodes.</li>
+                <li><b>Statistics</b> - Various information abou the statistics library.</li>
+                <ul>
+                    <li>
+                        <a href="/debug/statistic_bucket_lifetimes">Storage lifetimes</a>
+                    </li>
+                </ul>
+                <li><b><a href="/debug/requirements">Requirements</b></a> - View Python3 required modules.</li>
+                <li><b><a href="/debug/sslcerts">SSL Certificates</b></a> - Encryption certificates used for TLS (SSL).</li>
+            </li>
+            </ul>
+        </p>
+    </div> <!-- /.col-lg-12 -->
+</div> <!-- /.row -->
 {% endblock %}

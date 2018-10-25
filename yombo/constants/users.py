@@ -34,7 +34,7 @@ ACTIONS_AUTHKEY = ('add', 'view', 'edit', 'enable', 'disable', 'remove')
 ACTIONS_AUTOMATION = ('add', 'view', 'edit', 'start', 'stop', 'enable', 'disable', 'remove')
 ACTIONS_CRONTAB = ('add', 'view', 'edit', 'enable', 'disable')
 ACTIONS_DEBUG = ('cache', 'view', 'commands', 'device_types', 'libraries', 'modules', 'nodes', 'sslcerts', 'statistics',
-                 'requirements', 'crontab', 'locales')
+                 'requirements', 'crontab', 'locales', 'event_types')
 ACTIONS_DEVICE = ('add', 'view', 'control', 'edit', 'enable', 'disable', 'remove')
 ACTIONS_DEVICE_COMMAND = ('view', 'remove')
 ACTIONS_EVENTS = ('view',)

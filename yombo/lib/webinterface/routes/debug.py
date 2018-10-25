@@ -113,6 +113,16 @@ def route_debug(webapp):
                                devices=webinterface._Devices,
                                )
 
+        @webapp.route('/events/event_types')
+        @require_auth()
+        def page_devtools_debug_event_types(webinterface, request, session):
+            session.has_access('debug', '*', 'event_types')
+            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/debug/events/eventtypes.html')
+            root_breadcrumb(webinterface, request)
+            webinterface.add_breadcrumb(request, "/debug/events/event_types", "Event Types")
+            return page.render(alerts=webinterface.get_alerts(),
+                               )
+
         @webapp.route('/hooks_called_libraries')
         @require_auth()
         def page_devtools_debug_hooks_called_libraries(webinterface, request, session):
