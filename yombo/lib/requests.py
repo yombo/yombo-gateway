@@ -7,7 +7,7 @@
   * For library documentation, see: `Requests @ Library Documentation <https://yombo.net/docs/libraries/requests>`_
 
 
-A friendly HTTP helper. Usese treq to process requests. Also provides various helper functions to massage data
+A friendly HTTP helper. Uses treq to process requests. Also provides various helper functions to massage data
 even if this library wasn't used to make the request.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
@@ -76,7 +76,7 @@ class Requests(YomboLibrary):
 
         This must be called with 'yield'.
 
-        It returns a dictionary with 3 keys: content and response.
+        It returns a dictionary with these keys:
            * content - The processed content. Convert JSON and msgpack to a dictionary.
            * raw_content - The raw content from server, only passed through bytes to unicode.
            * response - Raw treq response, with 'all_headers' injected; which is a cleaned up headers version of
@@ -106,10 +106,12 @@ class Requests(YomboLibrary):
         :return:
         """
         logger.debug("Request receive: {method} : {url}", method=method, url=url)
+        method = method.upper()
         response = yield treq.request(method, url, **kwargs)
-        content_type, content = yield self.process_response(response)
+        content_type, content, content_raw = yield self.process_response(response)
         return {
             'content': content,
+            'content_raw': content_raw,
             'response': response,
             'content_type': content_type,
             'request': response.request.original,
@@ -170,4 +172,4 @@ class Requests(YomboLibrary):
                     content_type = "dict"
                 except Exception:
                     pass
-        return content_type, bytes_to_unicode(content)
+        return content_type, bytes_to_unicode(content), raw_content
