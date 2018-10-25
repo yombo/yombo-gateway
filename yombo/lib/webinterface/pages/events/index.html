@@ -27,9 +27,9 @@
                         <select class="selectpicker show-tick" tabindex="3" required
                                 title="Choose an event..."
                                 name="event_type" id="event_type">
-                        {% for event_type, data in event_types.items() %}
+                        {%- for event_type, data in event_types.items() %}
                             <option value="{{event_type}}">{{event_type}}</option>
-                        {% endfor %}
+                        {%- endfor %}
                         </select>
                     </div>
                     <div class="col-md-8">
@@ -103,8 +103,20 @@
         $('select#event_subtype').selectpicker('refresh');
     };
 
+    function ChangeUrl(title, url) {
+        if (typeof (history.pushState) != "undefined") {
+            var obj = {Title: title, Url: url};
+            history.pushState(obj, obj.Title, obj.Url);
+        }
+    }
+
     $("select#event_subtype").on('change',function(){
        console.log("sub type changed...")
+       var eventsUrl = window.location.href.split('?')[0];
+       var urlquery = "?eventtype=" + $('#event_type option:selected').attr('value') +
+           "&eventsubtype=" + $('#event_subtype option:selected').attr('value');
+       // alert('Current URL = ' + eventsUrl + urlquery);
+       ChangeUrl('Events - Yombo Gateway', eventsUrl + urlquery);
        formLoadBottom();
     });
 
@@ -130,5 +142,22 @@
             console.log("complete on load call");
         });
     }
+
+     $(document).ready(function() {
+         let urlParams = new URLSearchParams(window.location.search);
+         let eventtype = urlParams.get('eventtype');
+         let eventsubtype = urlParams.get('eventsubtype');
+         // var val = location.href.match(/[?&]eventtype=(.*?)[$&]/);
+         console.log("urlParams: " + urlParams)
+         console.log("eventtype: " + eventtype)
+         console.log("eventsubtype: " + eventsubtype)
+         $('#event_type').val(eventtype);
+         updateEventSubType(eventtype);
+         $('#event_subtype').val(eventsubtype);
+         $('#event_subtype').selectpicker('refresh');
+         formLoadBottom();
+         // $('select.SearchSortingList option[value="' + sortBy + '"]').prop("selected", true);
+     });
+
 </script>
 {% endblock %}
