@@ -373,6 +373,7 @@ class WebInterface(YomboLibrary):
         self.webapp.templates.globals['_commands'] = self._Commands
         self.webapp.templates.globals['_configs'] = self._Configs
         self.webapp.templates.globals['_crontab'] = self._CronTab
+        self.webapp.templates.globals['_events'] = self._Events
         self.webapp.templates.globals['_devices'] = self._Devices
         self.webapp.templates.globals['_devicetypes'] = self._DeviceTypes
         self.webapp.templates.globals['_gatewaycoms'] = self._GatewayComs
