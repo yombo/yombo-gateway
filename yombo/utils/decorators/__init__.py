@@ -11,10 +11,8 @@ from cachetools import TTLCache
 from functools import wraps
 import inspect
 from time import time
-import random
-import string
-import sys
 
+from yombo.core.exceptions import YomboWarning
 from yombo.utils.decorators.deprecation import deprecated
 
 cache_library = None  # References to the Yombo libraries
@@ -55,7 +53,7 @@ class cached(object):
             else:
                 return fib(num-1) + fib(num-2)
     """
-    def __init__(self, ttl=120, maxsize=1024, cachename=None, tags=(), cache_type=None):
+    def __init__(self, ttl=None, maxsize=None, cachename=None, tags=(), cache_type=None):
         """
         Setup the cache.
 
@@ -73,12 +71,18 @@ class cached(object):
 
         if cache_type is None:
             cache_type = 'ttl'
+        else:
+            cache_type = cache_type.lower()
 
         if cachename is None:
             cachename = "%s R:%s" % (generate_source_string(), random_string(length=10))
 
         self.kwd_mark = object()  # sentinel for separating args from kwargs
-        if cache_library is None:  # this is here for debugging.
+        if cache_library is None:  # Here in case cache is called before fully started.
+            if ttl is None:
+                ttl = 120
+            if maxsize is None:
+                maxsize = 512
             self.cache = TTLCache(maxsize, ttl)
         else:
             if cache_type == 'ttl':
@@ -87,6 +91,8 @@ class cached(object):
                 self.cache = cache_library.lru(tags=tags, name=cachename, maxsize=maxsize)
             elif cache_type == 'lfu':
                 self.cache = cache_library.lfu(tags=tags, name=cachename, maxsize=maxsize)
+            else:
+                raise YomboWarning("Unknown cache type: %s" % cache_type)
 
     def __call__(self, f):
         def wrapped_f(*args, **kwargs):
