@@ -57,7 +57,7 @@ SYSTEM_EVENT_TYPES = {
                 'action',
                 'duration',
             ),
-            'expires': 30,  # save events for 90 days
+            'expires': 30,  # save events for 30 days
         },
         'connected': {
             'description': "SQLite connection details.",
@@ -65,14 +65,14 @@ SYSTEM_EVENT_TYPES = {
                 'start_schema_version',
                 'last_schema_version',
             ),
-            'expires': 30,  # save events for 90 days
+            'expires': 30,  # save events for 30 days
         },
         'dbbackup': {
             'description': "Tracks database backup events.",
             'attributes': (
                 'duration',
             ),
-            'expires': 30,  # save events for 90 days
+            'expires': 30,  # save events for 30 days
         },
     },
     'pip': {
@@ -83,14 +83,14 @@ SYSTEM_EVENT_TYPES = {
                 'version',
                 'duration',
             ),
-            'expires': 360,  # save events for 90 days
+            'expires': 365*5,
         },
         'not_found': {
             'description': "Python package not found, but was required..",
             'attributes': (
                 'package_name',
             ),
-            'expires': 360,  # save events for 90 days
+            'expires': 365*5,
         },
         'update_needed': {
             'description': "When a python package is old and about to updated.",
@@ -99,7 +99,7 @@ SYSTEM_EVENT_TYPES = {
                 'current',
                 'requested',
             ),
-            'expires': 360,  # save events for 90 days
+            'expires': 365*5,
         },
     },
     'sslcerts': {
@@ -110,9 +110,8 @@ SYSTEM_EVENT_TYPES = {
                 'cn',
                 'san',
                 'duration',
-                '',
             ),
-            'expires': 360,  # save events for 90 days
+            'expires': 365*5,
         },
     },
 }
