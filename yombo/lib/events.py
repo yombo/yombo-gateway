@@ -31,7 +31,7 @@ from yombo.constants.events import SYSTEM_EVENT_TYPES
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import generate_source_string
+from yombo.utils import generate_source_string, global_invoke_all
 
 logger = get_logger('library.events')
 
@@ -62,6 +62,27 @@ class Events(YomboLibrary):
         self.save_event_queue_loop = LoopingCall(self.save_event_queue)
         self.save_event_queue_loop.start(47, False)
 
+    @inlineCallbacks
+    def _load_(self, **kwargs):
+        """
+        Asks libraries and modules if they have any additional event types. This calls
+        the modules after they have been imported, but before their init is called.
+
+        :return:
+        """
+        event_types = yield global_invoke_all('_event_types_',
+                                              called_by=self,
+                                              )
+        for component, options in event_types.items():
+            for event_type, event_data in options.items():
+                if event_type not in self.event_types:
+                    self.event_types[event_type] = {}
+                for event_subtype, event_subdata in event_data.items():
+                    if event_subtype in self.event_types:
+                        logger.warn("Cannot add event type, already exists: {event_type}:{event_subtype}",
+                                    event_type=event_type, event_subtype=event_subtype)
+                        continue
+                    self.event_types[event_type][event_subtype] = event_subdata
 
     @inlineCallbacks
     def _unload_(self, **kwargs):
