@@ -15,10 +15,6 @@ access the gateway API.
 :view-source: `View Source Code <https://github.com/yombo/yombo-gateway/blob/master/yombo/lib/webinterface/routes/authkey.py>`_
 """
 
-try:  # Prefer simplejson if installed, otherwise json will work swell.
-    import simplejson as json
-except ImportError:
-    import json
 import voluptuous as vol
 
 from twisted.internet.defer import inlineCallbacks

@@ -16,10 +16,7 @@ This handler library is responsible for handling configuration messages received
 """
 # Import python libraries
 from collections import deque, OrderedDict
-try:  # Prefer simplejson if installed, otherwise json will work swell.
-    import simplejson as json
-except ImportError:
-    import json
+import json
 import sys
 from time import time
 import traceback

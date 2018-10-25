@@ -89,13 +89,10 @@ the benefits of better averages, but mitigate loss of data. This is at a cost of
 """
 # Import python libraries
 
-try:  # Prefer simplejson if installed, otherwise json will work swell.
-    import simplejson as json
-except ImportError:
-    import json
-from time import time
 from difflib import SequenceMatcher
+import json
 import re
+from time import time
 
 # Import twisted libraries
 from twisted.internet.task import LoopingCall

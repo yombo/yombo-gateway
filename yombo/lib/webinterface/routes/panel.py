@@ -10,11 +10,6 @@ This implements the "/panel" sub-route of the web interface.
 :view-source: `View Source Code <https://github.com/yombo/yombo-gateway/blob/master/yombo/lib/webinterface/route_devices.py>`_
 """
 # from collections import OrderedDict
-try:  # Prefer simplejson if installed, otherwise json will work swell.
-    import simplejson as json
-except ImportError:
-    import json
-
 # Import Yombo libraries
 from yombo.lib.webinterface.auth import require_auth
 from yombo.core.log import get_logger

@@ -71,10 +71,6 @@ import sys
 import textwrap
 from time import time
 import traceback
-try:  # Prefer simplejson if installed, otherwise json will work swell.
-    import simplejson as json
-except ImportError:
-    import json
 
 # Import twisted libraries
 from twisted.internet.task import LoopingCall

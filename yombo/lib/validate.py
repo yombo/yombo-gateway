@@ -19,10 +19,7 @@ YomboInvalidValidation.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/validate.html>`_
 """
-try:  # Prefer simplejson if installed, otherwise json will work swell.
-    import simplejson as json
-except ImportError:
-    import json
+import json
 from datetime import timedelta, datetime as datetime_sys
 import msgpack
 import re

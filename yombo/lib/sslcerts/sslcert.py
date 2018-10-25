@@ -26,17 +26,13 @@ and then can find the certificate for use in the usr/etc/certs directory.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/sslcerts.html>`_
 """
-try:  # Prefer simplejson if installed, otherwise json will work swell.
-    import simplejson as json
-except ImportError:
-    import json
-
 import glob
 from hashlib import sha256
+import json
+from OpenSSL import crypto
 import os
 import os.path
 from time import time
-from OpenSSL import crypto
 
 # Import twisted libraries
 from twisted.internet import reactor

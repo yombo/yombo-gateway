@@ -57,10 +57,7 @@ Example states: times_dark, weather_raining, alarm_armed, yombo_service_connecti
 # Import python libraries
 from collections import OrderedDict, deque
 from copy import deepcopy
-try:  # Prefer simplejson if installed, otherwise json will work swell.
-    import simplejson as json
-except ImportError:
-    import json
+import json
 from time import time
 from functools import partial
 

@@ -18,10 +18,6 @@ A library to get variables in various formats. Also used to send updates to Yomb
 """
 # Import python libraries
 
-try:  # Prefer simplejson if installed, otherwise json will work swell.
-    import simplejson as json
-except ImportError:
-    import json
 from functools import partial
 from time import time
 

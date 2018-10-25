@@ -1,16 +1,10 @@
 # Import python libraries
-try:  # Prefer simplejson if installed, otherwise json will work swell.
-    import simplejson as json
-except ImportError:
-    import json
 import re
-from time import time
 
 from twisted.internet.defer import inlineCallbacks
 
 from yombo.lib.webinterface.auth import require_auth
 from yombo.lib.webinterface.routes.api_v1.__init__ import return_json
-from yombo.utils.converters import epoch_to_string
 
 def route_api_v1_webinterface_logs(webapp):
     with webapp.subroute("/api/v1") as webapp:

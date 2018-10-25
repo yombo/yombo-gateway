@@ -22,9 +22,6 @@ try:
 except ImportError:
     from hashlib import sha224
 
-try: import simplejson as json
-except ImportError: import json
-
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks
 from twisted.web.client import Agent
@@ -36,7 +33,6 @@ from yombo.core.exceptions import YomboWarning, YomboAPICredentials, YomboRestar
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import bytes_to_unicode
-from yombo.constants import CONTENT_TYPE_JSON
 
 logger = get_logger('library.yomboapi')
 
@@ -302,8 +298,6 @@ class YomboAPI(YomboLibrary):
         logger.debug("session: {session_type} {session}", session_type=session_type, session=session)
         headers = self.make_headers(session, session_type)
         logger.debug("headers: {headers}", headers=headers)
-        # if request_data is not None:
-        #     request_data = json.dumps(request_data).encode()
         logger.debug("yombo api request headers: {headers}", headers=headers)
         logger.debug("yombo api request request_data: {request_data}", request_data=request_data)
         treq_results = yield self._Requests.request(method, url, headers=headers, json=request_data, timeout=30)

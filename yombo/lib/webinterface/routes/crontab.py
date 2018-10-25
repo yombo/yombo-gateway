@@ -10,17 +10,9 @@ This implements the "/crontabs" sub-route of the web interface.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://github.com/yombo/yombo-gateway/blob/master/yombo/lib/webinterface/routes/crontabs.py>`_
 """
-# from collections import OrderedDict
-try:  # Prefer simplejson if installed, otherwise json will work swell.
-    import simplejson as json
-except ImportError:
-    import json
-
-from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
 from yombo.lib.webinterface.auth import require_auth
-from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
 
 logger = get_logger("library.webinterface.routes.crontabs")

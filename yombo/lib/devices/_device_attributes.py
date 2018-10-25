@@ -15,10 +15,6 @@ This class in inherited by _device_base, which is inherited by _device.
 :license: LICENSE for details.
 """
 # Import python libraries
-try:  # Prefer simplejson if installed, otherwise json will work swell.
-    import simplejson as json
-except ImportError:
-    import json
 from collections import deque, OrderedDict
 from copy import deepcopy
 from time import time

@@ -1,16 +1,11 @@
 # Import python libraries
-try:  # Prefer simplejson if installed, otherwise json will work swell.
-    import simplejson as json
-except ImportError:
-    import json
+import json
 from time import time
 
 from twisted.internet import defer
 
 from yombo.lib.webinterface.auth import require_auth
-# from yombo.lib.webinterface.routes.api_v1.__init__ import return_good, return_not_found, return_error, return_unauthorized
 from yombo.utils import unicode_to_bytes, random_string
-from yombo.utils.converters import epoch_to_string
 
 HOOK_NAME_TO_PATH = {
     '_device_status_': {

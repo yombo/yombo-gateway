@@ -20,6 +20,7 @@ from collections import OrderedDict
 from copy import deepcopy
 from hashlib import sha256
 import jinja2
+import json
 from klein import Klein
 from OpenSSL import crypto
 from operator import itemgetter
@@ -27,10 +28,6 @@ from os import path, listdir, mkdir
 import shutil
 from time import time
 from urllib.parse import parse_qs, urlparse
-try:  # Prefer simplejson if installed, otherwise json will work swell.
-    import simplejson as json
-except ImportError:
-    import json
 
 # Import twisted libraries
 from twisted.web.server import Site

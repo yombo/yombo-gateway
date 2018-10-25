@@ -10,12 +10,7 @@ This implements the device handling for /automation sub directory.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://github.com/yombo/yombo-gateway/blob/master/yombo/lib/webinterface/routes/automation.py>`_
 """
-# from collections import OrderedDict
-try:  # Prefer simplejson if installed, otherwise json will work swell.
-    import simplejson as json
-except ImportError:
-    import json
-
+import json
 
 # Import Yombo libraries
 from yombo.lib.webinterface.auth import require_auth

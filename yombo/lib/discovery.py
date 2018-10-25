@@ -15,10 +15,7 @@ Tracks all auto-discovered devices in one location.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/discovery.html>`_
 """
 # Import python libraries
-try:  # Prefer simplejson if installed, otherwise json will work swell.
-    import simplejson as json
-except ImportError:
-    import json
+import json
 from time import time
 
 # Import twisted libraries

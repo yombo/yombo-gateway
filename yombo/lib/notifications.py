@@ -26,10 +26,7 @@ Priority levels:
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/notifications.html>`_
 """
 from collections import OrderedDict
-try:  # Prefer simplejson if installed, otherwise json will work swell.
-    import simplejson as json
-except ImportError:
-    import json
+import json
 from time import time
 from itertools import islice
 

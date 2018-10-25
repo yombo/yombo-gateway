@@ -57,10 +57,7 @@ To send a command to a device is simple.
 # Import python libraries
 
 from copy import deepcopy
-try:  # Prefer simplejson if installed, otherwise json will work swell.
-    import simplejson as json
-except ImportError:
-    import json
+import json
 import msgpack
 from numbers import Number
 import sys

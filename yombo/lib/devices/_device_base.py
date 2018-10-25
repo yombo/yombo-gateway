@@ -16,10 +16,7 @@ This device inherits from _device_attributes.
 :license: LICENSE for details.
 """
 # Import python libraries
-try:  # Prefer simplejson if installed, otherwise json will work swell.
-    import simplejson as json
-except ImportError:
-    import json
+import json
 from collections import OrderedDict
 from time import time
 

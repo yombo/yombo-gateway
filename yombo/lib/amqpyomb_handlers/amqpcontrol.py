@@ -15,10 +15,7 @@ This handler library is responsible for handling control messages received from 
 :view-source: `View Source Code <https://github.com/yombo/yombo-gateway/blob/master/yombo/lib/handler/amqpcontrol.py>`_
 """
 # Import python libraries
-try:  # Prefer simplejson if installed, otherwise json will work swell.
-    import simplejson as json
-except ImportError:
-    import json
+import json
 
 # Import twisted libraries
 

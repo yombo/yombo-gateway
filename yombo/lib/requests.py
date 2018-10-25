@@ -25,10 +25,7 @@ except ImportError:
     from hashlib import sha224
 import treq
 
-try:
-    import simplejson as json
-except ImportError:
-    import json
+import json
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks

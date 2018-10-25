@@ -13,10 +13,7 @@ try:
 except ImportError:
     # fcntl is not available on windows
     HAS_FCNTL = False
-try:  # Prefer simplejson if installed, otherwise json will work swell.
-    import simplejson as json
-except ImportError:
-    import json
+import json
 
 import base64
 from difflib import SequenceMatcher

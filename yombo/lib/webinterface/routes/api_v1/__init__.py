@@ -1,8 +1,5 @@
 # Import python libraries
-try:  # Prefer simplejson if installed, otherwise json will work swell.
-    import simplejson as json
-except ImportError:
-    import json
+import json
 
 from yombo.constants import CONTENT_TYPE_JSON
 

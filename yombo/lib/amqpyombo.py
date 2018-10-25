@@ -32,10 +32,7 @@ or 3rd party sources such as Amazon Alexa, Google Home, etc etc.
 
 # Import python libraries
 
-try:  # Prefer simplejson if installed, otherwise json will work swell.
-    import simplejson as json
-except ImportError:
-    import json
+import json
 import zlib
 import collections
 import msgpack

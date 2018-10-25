@@ -40,10 +40,7 @@ Implements MQTT. It does 2 things:
 # Import python libraries
 from collections import deque, Callable, OrderedDict
 from datetime import datetime
-try:  # Prefer simplejson if installed, otherwise json will work swell.
-    import simplejson as json
-except ImportError:
-    import json
+import json
 
 # Import twisted libraries
 from twisted.internet.ssl import ClientContextFactory

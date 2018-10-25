@@ -18,12 +18,6 @@ Responsible for adding, removing, and updating users and their roles.
 :view-source: `View Source Code <https://github.com/yombo/yombo-gateway/blob/master/yombo/lib/webinterface/route_devices.py>`_
 """
 
-from collections import OrderedDict
-try:  # Prefer simplejson if installed, otherwise json will work swell.
-    import simplejson as json
-except ImportError:
-    import json
-
 from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries

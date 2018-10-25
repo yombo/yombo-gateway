@@ -18,10 +18,7 @@ Responsible for adding, removing, and updating devices that are used by the gate
 """
 
 from collections import OrderedDict
-try:  # Prefer simplejson if installed, otherwise json will work swell.
-    import simplejson as json
-except ImportError:
-    import json
+import json
 
 from twisted.internet.defer import inlineCallbacks
 

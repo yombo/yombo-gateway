@@ -9,12 +9,6 @@ This implements the "/events" sub-route of the web interface.
 :copyright: Copyright 2018 by Yombo.
 :license: LICENSE for details.
 """
-# from collections import OrderedDict
-try:  # Prefer simplejson if installed, otherwise json will work swell.
-    import simplejson as json
-except ImportError:
-    import json
-
 from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries

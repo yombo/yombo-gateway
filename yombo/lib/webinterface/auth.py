@@ -1,11 +1,8 @@
 from functools import wraps
+import json
+from ratelimit import RateLimitException
 from time import time
 import traceback
-try:  # Prefer simplejson if installed, otherwise json will work swell.
-    import simplejson as json
-except ImportError:
-    import json
-from ratelimit import RateLimitException
 
 from twisted.internet.defer import inlineCallbacks
 
