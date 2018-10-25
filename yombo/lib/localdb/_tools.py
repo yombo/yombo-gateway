@@ -201,14 +201,16 @@ class DB_Tools(object):
         if section in ('events', 'all'):
             yield sleep(5)
             for event_type, event_data in self._Events.event_types.items():
-                for event_subtype, even_subdata in event_data.items():
+                for event_subtype, event_subdata in event_data.items():
+                    if event_subdata['expires'] == 0:  # allow data collection for forever.
+                        continue
                     yield sleep(1)  # There's no race
                     start_time = time()
                     results = yield self.dbconfig.delete(
                         'events',
                         where=[
                             'event_type = ? AND event_subtype = ? AND created_at < ?',
-                            event_type, event_subtype, time() - (86400 * even_subdata['expires'])])
+                            event_type, event_subtype, time() - (86400 * event_subdata['expires'])])
                     timer += time() - start_time
 
         # Clean notifications
