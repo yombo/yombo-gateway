@@ -20,10 +20,7 @@ Also calls module hooks as requested by other libraries and modules.
 """
 # Import python libraries
 import configparser
-try:
-    from hashlib import sha3_224 as sha224
-except ImportError:
-    from hashlib import sha224
+from hashlib import sha224
 from functools import partial, reduce
 import os.path
 from pyclbr import readmodule

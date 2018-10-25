@@ -60,10 +60,7 @@ from base64 import b64encode, b64decode
 import configparser
 from datetime import datetime
 from functools import partial
-try:
-    from hashlib import sha3_224 as sha224
-except ImportError:
-    from hashlib import sha224
+from hashlib import sha224
 import msgpack
 import os
 from shutil import copy2 as copyfile

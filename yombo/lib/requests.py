@@ -18,14 +18,9 @@ even if this library wasn't used to make the request.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/requests.html>`_
 """
 # Import python libraries
-import msgpack
-try:
-    from hashlib import sha3_224 as sha224
-except ImportError:
-    from hashlib import sha224
-import treq
-
 import json
+import msgpack
+import treq
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks

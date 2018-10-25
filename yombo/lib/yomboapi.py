@@ -17,10 +17,7 @@ Manages interactions with api.yombo.net
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/yomboapi.html>`_
 """
 # Import python libraries
-try:
-    from hashlib import sha3_224 as sha224
-except ImportError:
-    from hashlib import sha224
+from hashlib import sha224
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks

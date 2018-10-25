@@ -28,10 +28,7 @@ Yombo Gateway interacts with Yombo servers using AMQPYombo which depends on this
 """
 # Import python libraries
 from collections import deque
-try:
-    from hashlib import sha3_256 as sha256
-except ImportError:
-    from hashlib import sha256
+from hashlib import sha256
 import pika
 from pika.exceptions import ChannelClosed
 import sys
@@ -45,7 +42,7 @@ from twisted.internet.defer import inlineCallbacks, Deferred
 from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboWarning, YomboCritical
+from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import random_string, unicode_to_bytes

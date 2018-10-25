@@ -20,10 +20,7 @@ import builtins
 import inspect
 import gettext
 import json
-try:
-    from hashlib import sha3_224 as sha224
-except ImportError:
-    from hashlib import sha224
+from hashlib import sha224
 from string import Formatter
 from os import path, listdir, makedirs, environ
 import re
