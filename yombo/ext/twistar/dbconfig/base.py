@@ -2,14 +2,14 @@
 Base module for interfacing with databases.
 """
 
-from __future__ import absolute_import
 from twisted.python import log
 from twisted.internet import defer
+import traceback
 
 from yombo.ext.twistar.registry import Registry
 from yombo.ext.twistar.exceptions import ImaginaryTableError, CannotRefreshError
 from yombo.ext.twistar.utils import joinWheres, transaction
-from six.moves import range
+# from six.moves import range
 
 
 class InteractionBase(object):
@@ -51,9 +51,9 @@ class InteractionBase(object):
         with call to L{log} function.
         """
         # self.log(query, args, kwargs)
-        Registry.debug("q: %s\n" % query)
-        Registry.debug("args: %s\n" % args)
-        Registry.debug("kwargs: %s\n" % kwargs)
+        Registry.debug(f"q: {query}\n")
+        Registry.debug(f"args: {args}\n")
+        Registry.debug(f"kwargs: {kwargs}\n")
 
         return Registry.DBPOOL.runOperation(query, *args, **kwargs)
 
@@ -64,9 +64,9 @@ class InteractionBase(object):
         with call to L{log} function.
         """
         # self.log(query, args, kwargs)
-        Registry.debug("q: %s\n" % query)
-        Registry.debug("args: %s\n" % args)
-        Registry.debug("kwargs: %s\n" % kwargs)
+        Registry.debug(f"q: {query}\n")
+        Registry.debug(f"args: {args}\n")
+        Registry.debug(f"kwargs: {kwargs}\n")
         return Registry.DBPOOL.runQuery(query, *args, **kwargs)
 
 
@@ -75,10 +75,9 @@ class InteractionBase(object):
         Execute given query within the given transaction.  Also, makes call
         to L{log} function.
         """
-        # self.log(query, args, kwargs)
-        Registry.debug("q: %s\n" % query)
-        Registry.debug("args: %s\n" % args)
-        Registry.debug("kwargs: %s\n" % kwargs)
+        Registry.debug(f"q: {query}\n")
+        Registry.debug(f"args: {args}\n")
+        Registry.debug(f"kwargs: {kwargs}\n")
         return txn.execute(query, *args, **kwargs)
 
 
@@ -359,7 +358,7 @@ class InteractionBase(object):
         if cacheable and tablename not in Registry.SCHEMAS:
             Registry.SCHEMAS[tablename] = cols
         h = {}
-        for index in range(len(values)):
+        for index in list(range(len(values))):
             colname = cols[index]
             h[colname] = values[index]
         return h
@@ -372,10 +371,14 @@ class InteractionBase(object):
         """
         if tablename not in Registry.SCHEMAS and txn is not None:
             try:
-                self.executeTxn(txn, "SELECT rowid as _rowid, * FROM %s LIMIT 1" % tablename)
+                self.executeTxn(txn, f"SELECT rowid as _rowid, * FROM {tablename} LIMIT 1")
                 # self.executeTxn(txn, "SELECT * FROM %s LIMIT 1" % tablename)
-            except Exception:
-                raise ImaginaryTableError("Table %s does not exist." % tablename)
+            except Exception as e:
+                print("---------------==(Traceback)==--------------------------")
+                print(f"{traceback.format_exc()}")
+                print("--------------------------------------------------------")
+                print("getSchema error: %s" % e)
+                raise ImaginaryTableError(f"getSchema error on table '{tablename}': {e}")
             Registry.SCHEMAS[tablename] = [row[0] for row in txn.description]
         return Registry.SCHEMAS.get(tablename, [])
 
