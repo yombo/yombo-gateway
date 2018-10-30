@@ -194,7 +194,6 @@ class Configuration(YomboLibrary):
 
         Import the configuration items into the database, also prime the configs for reading.
         """
-        self.location_info = None
         self.exit_config_file = None  # Holds a complete configuration file to save when exiting.
         self.cache_dirty = False
         self.configs = {}  # Holds actual config data
@@ -271,15 +270,15 @@ class Configuration(YomboLibrary):
         # Ask external services what they know about us.
         # detected_location states are based off this and is set in the locations library.
         # times uses this
-        self.location_info = self.get('core', 'locationinfo', None, False)
-        if self.location_info is None or \
+        self.detected_location_info = self.get('core', 'locationinfo', None, False)
+        if self.detected_location_info is None or \
                 self.get('core', 'locationinfotime', 0, False) < current_time - 3600:
-            self.location_info = yield detect_location_info()
-            self.set('core', 'locationinfo', data_pickle(self.location_info, encoder="msgpack_base64", local=True))
+            self.detected_location_info = yield detect_location_info()
+            self.set('core', 'locationinfo', data_pickle(self.detected_location_info, encoder="msgpack_base64", local=True))
             self.set('core', 'locationinfotime', current_time)
         else:
-            self.location_info = data_unpickle(self.location_info, encoder="msgpack_base64")
-        self.set("core", "externalipaddress_v4", self.location_info['ip'])
+            self.detected_location_info = data_unpickle(self.detected_location_info, encoder="msgpack_base64")
+        self.set("core", "externalipaddress_v4", self.detected_location_info['ip'])
 
         if self.get('core', 'localipaddress_v4', False, False) is False or \
                 self.get('core', 'localipaddresstime', False, False) is False:
