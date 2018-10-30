@@ -9,67 +9,68 @@ body { height: 100%; margin: 0; padding: 0 }
 #map_canvas { height: 100% }
 </style>
 <script type="text/javascript"
-src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAR-Ax0ec01AV_Z3fOX6f6OEZoyCumzzck&sensor=false">
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAR-Ax0ec01AV_Z3fOX6f6OEZoyCumzzck">
 </script>
 <script type="text/javascript">
 
     function initialize() {
-			// initialize map
-			var map = new google.maps.Map(document.getElementById("gmap"), {
-				center: new google.maps.LatLng(33.808678, -117.918921),
-				zoom: 13,
-				mapTypeId: google.maps.MapTypeId.ROADMAP
-			});
-			// initialize marker
-			var marker = new google.maps.Marker({
-				position: map.getCenter(),
-				draggable: true,
-				map: map
-			});
-			// intercept map and marker movements
-			google.maps.event.addListener(map, "idle", function() {
-				marker.setPosition(map.getCenter());
-				document.getElementById("map-output").innerHTML = "Latitude:  " + map.getCenter().lat().toFixed(6) + "<br>Longitude: " + map.getCenter().lng().toFixed(6) + "<a href='https://www.google.com/maps?q=" + encodeURIComponent(map.getCenter().toUrlValue()) + "' target='_blank'>Go to maps.google.com</a>";
-			});
-			google.maps.event.addListener(marker, "dragend", function(mapEvent) {
-				map.panTo(mapEvent.latLng);
-			});
-			// initialize geocoder
-			var geocoder = new google.maps.Geocoder();
-			google.maps.event.addDomListener(document.getElementById("search-btn"), "click", function() {
-				geocoder.geocode({ address: document.getElementById("search-txt").value }, function(results, status) {
-					if (status == google.maps.GeocoderStatus.OK) {
-						var result = results[0];
-						document.getElementById("search-txt").value = result.formatted_address;
-						if (result.geometry.viewport) {
-							map.fitBounds(result.geometry.viewport);
-						} else {
-							map.setCenter(result.geometry.location);
-						}
-					} else if (status == google.maps.GeocoderStatus.ZERO_RESULTS) {
-						alert("Sorry, geocoder API failed to locate the address.");
-					} else {
-						alert("Sorry, geocoder API failed with an error.");
-					}
-				});
-			});
-			google.maps.event.addDomListener(document.getElementById("search-txt"), "keydown", function(domEvent) {
-				if (domEvent.which === 13 || domEvent.keyCode === 13) {
-					google.maps.event.trigger(document.getElementById("search-btn"), "click");
-				}
-			});
-			// initialize geolocation
-			if (navigator.geolocation) {
-				google.maps.event.addDomListener(document.getElementById("detect-btn"), "click", function() {
-					navigator.geolocation.getCurrentPosition(function(position) {
-						map.setCenter(new google.maps.LatLng(position.coords.latitude, position.coords.longitude));
-					}, function() {
-						alert("Sorry, geolocation API failed to detect your location.");
-					});
-				});
-				document.getElementById("detect-btn").disabled = false;
-			}
+        // initialize map
+        var map = new google.maps.Map(document.getElementById("gmap"), {
+            center: new google.maps.LatLng(33.808678, -117.918921),
+            zoom: 13,
+            mapTypeId: google.maps.MapTypeId.ROADMAP
+        });
+        // initialize marker
+        var marker = new google.maps.Marker({
+            position: map.getCenter(),
+            draggable: true,
+            map: map
+        });
+        // intercept map and marker movements
+        google.maps.event.addListener(map, "idle", function() {
+            marker.setPosition(map.getCenter());
+            document.getElementById("map-output").innerHTML = "Latitude:  " + map.getCenter().lat().toFixed(6) + "<br>Longitude: " + map.getCenter().lng().toFixed(6) + "<a href='https://www.google.com/maps?q=" + encodeURIComponent(map.getCenter().toUrlValue()) + "' target='_blank'>Go to maps.google.com</a>";
+        });
+        google.maps.event.addListener(marker, "dragend", function(mapEvent) {
+            map.panTo(mapEvent.latLng);
+        });
+        // initialize geocoder
+        var geocoder = new google.maps.Geocoder();
+        google.maps.event.addDomListener(document.getElementById("search-btn"), "click", function() {
+            geocoder.geocode({ address: document.getElementById("search-txt").value }, function(results, status) {
+                if (status == google.maps.GeocoderStatus.OK) {
+                    var result = results[0];
+                    document.getElementById("search-txt").value = result.formatted_address;
+                    if (result.geometry.viewport) {
+                        map.fitBounds(result.geometry.viewport);
+                    } else {
+                        map.setCenter(result.geometry.location);
+                    }
+                } else if (status == google.maps.GeocoderStatus.ZERO_RESULTS) {
+                    alert("Sorry, geocoder API failed to locate the address.");
+                } else {
+                    alert("Sorry, geocoder API failed with an error.");
+                }
+            });
+        });
+        google.maps.event.addDomListener(document.getElementById("search-txt"), "keydown", function(domEvent) {
+            if (domEvent.which === 13 || domEvent.keyCode === 13) {
+                google.maps.event.trigger(document.getElementById("search-btn"), "click");
+            }
+        });
+        // initialize geolocation
+        if (navigator.geolocation) {
+            google.maps.event.addDomListener(document.getElementById("detect-btn"), "click", function() {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    map.setCenter(new google.maps.LatLng(position.coords.latitude, position.coords.longitude));
+                }, function() {
+                    alert("Sorry, geolocation API failed to detect your location.");
+                });
+            });
+            document.getElementById("detect-btn").disabled = false;
+        }
 	}
+
     window.onload = function () { initialize() };
 $("#myinput").keydown(function (e) { if(e.which == 13) e.preventDefault(); });</script>
      <style>
