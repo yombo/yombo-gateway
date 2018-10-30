@@ -169,58 +169,57 @@ class Locations(YomboLibrary):
         self.location_search_attributes = ['location_id', 'label', 'machine_label']
 
         yield self._load_locations_from_database()
-
-        location_info = self._Configs.location_info
-        if location_info['ip'] is not None:
-            self._States.set('detected_location.source', location_info['source'],
+        detected_location_info = self._Configs.detected_location_info
+        if detected_location_info['ip'] is not None:
+            self._States.set('detected_location.source', detected_location_info['source'],
                              value_type='string', source=self)
-            self._States.set('detected_location.ip', location_info['ip'],
+            self._States.set('detected_location.ip', detected_location_info['ip'],
                              value_type='string', source=self)
-            self._States.set('detected_location.country_code', location_info['country_code'],
+            self._States.set('detected_location.country_code', detected_location_info['country_code'],
                              value_type='string', source=self)
-            self._States.set('detected_location.country_name', location_info['country_name'],
+            self._States.set('detected_location.country_name', detected_location_info['country_name'],
                              value_type='string', source=self)
-            self._States.set('detected_location.region_code', location_info['region_code'],
+            self._States.set('detected_location.region_code', detected_location_info['region_code'],
                              value_type='string', source=self)
-            self._States.set('detected_location.region_name', location_info['region_name'],
+            self._States.set('detected_location.region_name', detected_location_info['region_name'],
                              value_type='string', source=self)
-            self._States.set('detected_location.city', location_info['city'],
+            self._States.set('detected_location.city', detected_location_info['city'],
                              value_type='string', source=self)
-            self._States.set('detected_location.zip_code', location_info['zip_code'],
+            self._States.set('detected_location.zip_code', detected_location_info['zip_code'],
                              value_type='string', source=self)
-            self._States.set('detected_location.time_zone', location_info['time_zone'],
+            self._States.set('detected_location.time_zone', detected_location_info['time_zone'],
                              value_type='string', source=self)
-            self._States.set('detected_location.latitude', location_info['latitude'],
+            self._States.set('detected_location.latitude', detected_location_info['latitude'],
                              value_type='float', source=self)
-            self._States.set('detected_location.longitude', location_info['longitude'],
+            self._States.set('detected_location.longitude', detected_location_info['longitude'],
                              value_type='float', source=self)
-            self._States.set('detected_location.elevation', location_info['elevation'],
+            self._States.set('detected_location.elevation', detected_location_info['elevation'],
                              value_type='int', source=self)
-            self._States.set('detected_location.isp', location_info['isp'],
+            self._States.set('detected_location.isp', detected_location_info['isp'],
                              value_type='string', source=self)
-            self._States.set('detected_location.use_metric', location_info['use_metric'],
+            self._States.set('detected_location.use_metric', detected_location_info['use_metric'],
                              value_type='bool', source=self)
 
             data = {
-                'latitude': float(self._Configs.get('location', 'latitude', location_info['latitude'], False)),
-                'longitude': float(self._Configs.get('location', 'longitude', location_info['longitude'], False)),
-                'elevation': int(self._Configs.get('location', 'elevation', location_info['elevation'], False)),
-                'city': str(self._Configs.get('location', 'city', location_info['city'], False)),
-                'country_code': str(self._Configs.get('location', 'country_code',  location_info['country_code'], False)),
-                'country_name': str(self._Configs.get('location', 'country_name', location_info['country_name'], False)),
-                'region_code': str(self._Configs.get('location', 'region_code', location_info['region_code'], False)),
-                'region_name': str(self._Configs.get('location', 'region_name', location_info['region_name'], False)),
-                'time_zone': str(self._Configs.get('location', 'time_zone', location_info['time_zone'], False)),
-                'zip_code': str(self._Configs.get('location', 'zip_code', location_info['zip_code'], False)),
+                'latitude': float(self._Configs.get('location', 'latitude', detected_location_info['latitude'], False)),
+                'longitude': float(self._Configs.get('location', 'longitude', detected_location_info['longitude'], False)),
+                'elevation': int(self._Configs.get('location', 'elevation', detected_location_info['elevation'], False)),
+                'city': str(self._Configs.get('location', 'city', detected_location_info['city'], False)),
+                'country_code': str(self._Configs.get('location', 'country_code',  detected_location_info['country_code'], False)),
+                'country_name': str(self._Configs.get('location', 'country_name', detected_location_info['country_name'], False)),
+                'region_code': str(self._Configs.get('location', 'region_code', detected_location_info['region_code'], False)),
+                'region_name': str(self._Configs.get('location', 'region_name', detected_location_info['region_name'], False)),
+                'time_zone': str(self._Configs.get('location', 'time_zone', detected_location_info['time_zone'], False)),
+                'zip_code': str(self._Configs.get('location', 'zip_code', detected_location_info['zip_code'], False)),
             }
             for label, value in data.items():
                 if value in (None, '', 'None'):
-                    self._Configs.set('location', label, location_info[label])
+                    self._Configs.set('location', label, detected_location_info[label])
 
             if self._Configs.get('location', 'searchbox', None, False) in (None, '', 'None'):
-                searchbox = "%s, %s, %s" % (location_info['city'],
-                                          location_info['region_code'],
-                                          location_info['country_code'])
+                searchbox = "%s, %s, %s" % (detected_location_info['city'],
+                                          detected_location_info['region_code'],
+                                          detected_location_info['country_code'])
                 self._Configs.set('location', 'searchbox', searchbox)
         else:
             self._States.set('detected_location.source', None, source=self)
@@ -258,32 +257,25 @@ class Locations(YomboLibrary):
         for location in locations:
             self.import_location(location.__dict__)
 
-        # Stop here if not in run mode.
-        if self._Loader.operating_mode != 'run':
-            return
-
-        # Now check to make sure we have bare minimum locations for none.
-        try:
-            location = self.get("area:none")
-        except KeyError:
-            logger.warn("No default 'area' location, creating one...")
-            yield self.add_location({
-                'machine_label': 'none',
-                'label': 'none',
-                'location_type': 'area',
-                'description': "Default when no 'area' location is assigned.",
-            })
-
-        try:
-            location = self.get("location:none")
-        except KeyError:
-            logger.warn("No default 'location' location, creating one...")
-            yield self.add_location({
-                'machine_label': 'none',
-                'label': 'none',
-                'location_type': 'location',
-                'description': "Default when no 'location' location is assigned.",
-            })
+        # Have 'none' site location and area locations as defaults.
+        self.locations['area_none'] = Location(self, {
+            'id': 'area_none',
+            'location_type': 'area',
+            'machine_label': 'none',
+            'label': 'None',
+            'description': "Default when no 'area' location is assigned.",
+            'updated_at': int(time()),
+            'created_at': int(time()),
+        })
+        self.locations['location_none'] = Location(self, {
+            'id': 'location_none',
+            'location_type': 'location',
+            'machine_label': 'none',
+            'label': 'None',
+            'description': "Default when no 'location' location is assigned.",
+            'updated_at': int(time()),
+            'created_at': int(time()),
+        })
 
     def import_location(self, location, test_location=False):
         """
@@ -406,6 +398,12 @@ class Locations(YomboLibrary):
             if found_id is None or location.machine_label != 'none':
                 found_id = location_id
 
+        if found_id is None:
+            print("get_defauly: %s" % location_type)
+            print("locations: %s" % self.locations)
+            if f"{location_type}_none" in self.locations:
+                return f"{location_type}_none"
+        print("get_default: returning: %s" % found_id)
         return found_id
 
     def get(self, location_requested, location_type=None, limiter=None):
