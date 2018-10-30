@@ -99,7 +99,7 @@ class WebSessions(YomboLibrary):
             'cookie_path': '/',
             'max_session': 15552000,  # How long session can be good for: 180 days
             'max_idle': 5184000,  # Max idle timeout: 60 days
-            'max_session_no_auth': 600,  # If not auth in 10 mins, delete session
+            'max_session_no_auth': 1200,  # If not auth in 20 mins, delete session
             'ignore_expiry': True,
             'ignore_change_ip': True,
             'expired_message': 'Session expired',
