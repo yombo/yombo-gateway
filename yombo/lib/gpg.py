@@ -191,10 +191,10 @@ class GPG(YomboLibrary):
         if myfingerprint not in self._gpg_keys:
             valid = False
             logger.warn("Cannot find my GPG key!")
-        if self.gateway_id() != self._gpg_keys[myfingerprint]['endpoint_id']:
-            valid = False
-            logger.warn("Local gateway_id '{gateway_id}' doesn't match my GPG endpoint id '{endpoint_id}'",
-                        gateway_id=self.gateway_id(), endpoint_id=self._gpg_keys[myfingerprint]['endpoint_id'])
+        if myfingerprint in self._gpg_keys and self.gateway_id() != self._gpg_keys[myfingerprint]['endpoint_id']:
+                valid = False
+                logger.warn("Local gateway_id '{gateway_id}' doesn't match my GPG endpoint id '{endpoint_id}'",
+                            gateway_id=self.gateway_id(), endpoint_id=self._gpg_keys[myfingerprint]['endpoint_id'])
         if valid is False:
             logger.info("Gateway doesn't have GPG key, creating one...")
             yield self.generate_key()
