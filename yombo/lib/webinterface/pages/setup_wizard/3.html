@@ -152,7 +152,8 @@
                             <div id="map-search">
                                 <div id="gmap"></div>
                             </div>
-                        </div>						</div> <!-- /row -->
+                        </div>
+                    </div> <!-- /row -->
                     <div class="row">
                         <div class="col-md-12">
                         <div>&nbsp;</div>
@@ -253,10 +254,8 @@ $(document).ready(function()
     {
          $('#location_search').val($('#search_txt').val());
     });
-});
 
-	$(document).ready(function(){
-		$('[data-toggle="tooltip"]').tooltip();
+    $('[data-toggle="tooltip"]').tooltip();
 		$("#times-twilight").val("{{ settings.times.twilighthorizon.data }}");
 	});
     </script>
