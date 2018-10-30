@@ -144,8 +144,8 @@ class Requests(YomboLibrary):
             try:
                 content = yield treq.json_content(response)
                 content_type = "dict"
-            except Exception:
-                raise YomboWarning("Receive response reported json, but isn't: %s" % content)
+            except Exception as e:
+                raise YomboWarning("Receive response reported json, but found an error: %s" % e)
         elif content_type == CONTENT_TYPE_MSGPACK:
             try:
                 content = msgpack.loads(raw_content)
