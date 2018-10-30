@@ -53,6 +53,8 @@ class Gateways(YomboLibrary):
 
     @property
     def master_id(self):
+        if self.master_gateway_id() is None:
+            return self.local_id
         return self.master_gateway_id()
 
     @master_id.setter
@@ -61,6 +63,8 @@ class Gateways(YomboLibrary):
 
     @property
     def master(self):
+        if self.master_gateway_id() is None:
+            return self.gateways[self.gateway_id()]
         return self.gateways[self.master_gateway_id()]
 
     @master.setter
