@@ -309,37 +309,38 @@ def route_setup_wizard(webapp):
                 settings['location']['location_search'] = {'data': session['setup_wizard_gateway_location_search']}
             else:
                 if 'latitude' not in settings['location']:
-                    settings['location']['location_search'] = {'data': 'San Francisco, CA, USA'}
+                    default_search = f"{webinterface._Configs.detected_location_info['city']}, " \
+                                     f"{webinterface._Configs.detected_location_info['region_code']} " \
+                                     f"{str(webinterface._Configs.detected_location_info['zip_code'])}, " \
+                                     f"{str(webinterface._Configs.detected_location_info['country_code'])}"
+                    settings['location']['location_search'] = {'data': default_search}
 
             if 'setup_wizard_gateway_latitude' in session:
-                settings['location']['latitude'] = {'data': session['setup_wizard_gateway_latitude']}
+                settings['location']['latitude'] = {'data': str(session['setup_wizard_gateway_latitude'])}
             else:
                 if 'latitude' not in settings['location']:
-                    settings['location']['latitude'] = {'data': '37.757'}
+                    settings['location']['latitude'] = \
+                        {'data': str(webinterface._Configs.detected_location_info['latitude'])}
 
             if 'setup_wizard_gateway_longitude' in session:
-                settings['location']['longitude'] = {'data': session['setup_wizard_gateway_longitude']}
+                settings['location']['longitude'] = \
+                    {'data': session['setup_wizard_gateway_longitude']}
             else:
                 if 'longitude' not in settings['location']:
-                    settings['location']['longitude'] = {'data': '-122.437'}
+                    settings['location']['longitude'] = \
+                        {'data': str(webinterface._Configs.detected_location_info['longitude'])}
 
             if 'setup_wizard_gateway_elevation' in session:
                 settings['location']['elevation'] = {'data': session['setup_wizard_gateway_elevation']}
             else:
                 if 'elevation' not in settings['location']:
-                    settings['location']['elevation'] = {'data': '90'}
-            #
-            # if 'latitude' not in settings['location']:
-            #     settings['location']['latitude'] = { 'data' : '37.757'}
-            # if 'longitude' not in settings['location']:
-            #     settings['location']['longitude'] = { 'data' : '-122.437'}
-            # if 'elevation' not in settings['location']:
-            #     settings['location']['elevation'] = { 'data' : '90'}
+                    settings['location']['elevation'] = \
+                        {'data': str(webinterface._Configs.detected_location_info['elevation'])}
 
             if 'times' not in settings:
                 settings['times'] = {}
             if 'twilighthorizon' not in settings['times']:
-                settings['times']['twilighthorizon'] = { 'data' : '-6'}
+                settings['times']['twilighthorizon'] = {'data': '-6'}
 
             # session['setup_wizard_gateway_latitude'] = available_gateways[wizard_gateway_id]['variables']['latitude']
             # session['setup_wizard_gateway_longitude'] = available_gateways[wizard_gateway_id]['variables']['longitude']
@@ -515,7 +516,7 @@ def route_setup_wizard(webapp):
                 valid_submit = False
                 webinterface.add_alert("Invalid Master Gateway.")
 
-            # print("b13: %s - %s" % (submitted_gateway_is_master, submitted_gateway_master_gateway_id))
+            # print("ismaster: %s - master: %s" % (submitted_gateway_is_master, submitted_gateway_master_gateway_id))
             # print("valid: %s" % valid_submit)
             try:
                 submitted_security_status = request.args.get('security-status')[0]
@@ -673,7 +674,12 @@ def route_setup_wizard(webapp):
                     'machine_label': session['setup_wizard_gateway_machine_label'],
                     'label': session['setup_wizard_gateway_label'],
                     'description': session['setup_wizard_gateway_description'],
+                    'is_master': session['setup_wizard_gateway_is_master'],
+                    'status': 1,
                 }
+                if session['setup_wizard_gateway_master_gateway_id'] is not None:
+                    data['master_gateway'] = session['setup_wizard_gateway_master_gateway_id'],
+
                 try:
                     results = yield webinterface._YomboAPI.request('POST', '/v1/gateway',
                                                                    data,
@@ -696,8 +702,9 @@ def route_setup_wizard(webapp):
                     webinterface.add_alert(results['content']['html_message'], 'warning')
                     return webinterface.redirect(request, '/setup_wizard/5')
 
-                results = yield webinterface._YomboAPI.request('GET', '/v1/gateway/%s/new_hash' % session['setup_wizard_gateway_id'],
-                                                               session=session['yomboapi_session'])
+                results = yield webinterface._YomboAPI.request(
+                    'GET', '/v1/gateway/%s/new_hash' % session['setup_wizard_gateway_id'],
+                    session=session['yomboapi_session'])
                 if results['code'] > 299:
                     webinterface.add_alert(results['content']['html_message'], 'warning')
                     return webinterface.redirect(request, '/setup_wizard/5')
