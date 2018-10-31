@@ -25,7 +25,7 @@ logger = get_logger("modules.logreader")
 
 class LogReader(YomboModule):
     """
-    Monitors a file for voice commands and send them to yombobot for processing.
+    Monitors a file for intents and sends them to the intents library for processing.
 
     :ivar fileReader: A yombo :doc:`FileReader <../utils/filereader>` that reads text files
       delivers lines of text to callable.

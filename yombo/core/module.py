@@ -84,8 +84,6 @@ See :ref:`Hooks <hooks>` for details on usage and examples.
             pass    #the gateway is on final phase of shutdown. Must quit now!
         def ExampleModule_message_subscriptions(self, **kwargs):
            return ['cmd'] # register to get all CMD messages.
-        def ExampleModule_voicecmds(self, **kwargs):
-           return [ {'voiceCmd': "homevision [reset]", 'order' : 'nounverb'} ] # register new voice commands
         def message(self, message):
             pass    #process an incoming message.
 

@@ -416,11 +416,6 @@ class Notifications(YomboLibrary):
 class Notification:
     """
     A class to manage a notification.
-
-    :ivar label: Command label
-    :ivar description: The description of the command.
-    :ivar inputTypeID: The type of input that is required as a variable.
-    :ivar voice_cmd: The voice command of the command.
     """
 
     def __init__(self, parent, notice):

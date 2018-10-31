@@ -106,7 +106,6 @@ from yombo.lib.webinterface.routes.statistics import route_statistics
 from yombo.lib.webinterface.routes.states import route_states
 from yombo.lib.webinterface.routes.system import route_system
 from yombo.lib.webinterface.routes.users import route_users
-from yombo.lib.webinterface.routes.voicecmds import route_voicecmds
 from yombo.lib.webinterface.routes.webinterface_logs import route_webinterface_logs
 from yombo.lib.webinterface.constants import NAV_SIDE_MENU, DEFAULT_NODE, NOTIFICATION_PRIORITY_MAP_CSS
 
@@ -241,7 +240,6 @@ class WebInterface(YomboLibrary):
         self._build_dist()  # Make all the JS and CSS files
         self.secret_pin_totp = self._Configs.get2('webinterface', 'auth_pin_totp',
                                      yombo.utils.random_string(length=16, letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'))
-        self._VoiceCmds = self._Loader.loadedLibraries['voicecmds']
         self.misc_wi_data = {}
 
         self.wi_port_nonsecure = self._Configs.get2('webinterface', 'nonsecure_port', 8080)
@@ -319,7 +317,6 @@ class WebInterface(YomboLibrary):
         route_states(self.webapp)
         route_system(self.webapp)
         route_users(self.webapp)
-        route_voicecmds(self.webapp)
         route_webinterface_logs(self.webapp)
         if self.is_master():
             route_panel(self.webapp)
@@ -397,10 +394,8 @@ class WebInterface(YomboLibrary):
         self.webapp.templates.globals['_times'] = self._Times
         self.webapp.templates.globals['_variables'] = self._Variables
         self.webapp.templates.globals['_validate'] = self._Validate
-        self.webapp.templates.globals['_voicecmds'] = self._VoiceCmds
         self.webapp.templates.globals['misc_wi_data'] = self.misc_wi_data
         self.webapp.templates.globals['webinterface'] = self
-        # self.webapp.templates.globals['func'] = self.functions
 
         self._refresh_jinja2_globals_()
         self.starting = False
@@ -549,55 +544,33 @@ class WebInterface(YomboLibrary):
                 logger.warn("Secure port has been disabled. With gateway stopped, edit yomobo.ini and change: webinterface->secure_port")
             else:
                 self.web_server_ssl_started = True
-                # print("########### WEBINTER: lib_webinterface")
                 cert = self._SSLCerts.get('lib_webinterface')
-                # print("########### WEBINTER: got cert....")
-                privkeypyssl = crypto.load_privatekey(crypto.FILETYPE_PEM, cert['key'])
-                certpyssl = crypto.load_certificate(crypto.FILETYPE_PEM, cert['cert'])
-                if cert['chain'] is not None:
-                    chainpyssl = [crypto.load_certificate(crypto.FILETYPE_PEM, cert['chain'])]
-                else:
-                    chainpyssl = None
-                # print("web ssl cert: key_crypt %s" % cert['key_crypt'])
-                # print("web ssl cert: key_crypt type %s" % type(cert['key_crypt']))
-                # # print("web ssl cert: key_crypt type %s" % type(cert['key_crypt'][0]))
-                # # print("web ssl cert: key_crypt type %s" % type(cert['key_crypt'][1]))
-                # print("web ssl cert: privkeypyssl %s" % privkeypyssl)
-                # print("web ssl cert: privkeypyssl type: %s" % type(privkeypyssl))
-                # print("web ssl cert: privkeypyssl.serial: %s" % privkeypyssl.__dict__)
-                #
-                # print("web ssl cert: cert_crypt %s" % cert['cert_crypt'])
-                # print("web ssl cert: cert_crypt.type %s" % type(cert['cert_crypt']))
-                # print("web ssl cert: certpyssl %s" % certpyssl)
-                # print("web ssl cert: certpyssl.type %s" % type(certpyssl))
-                # print("web ssl cert: chain_crypt %s" % cert['chain_crypt'])
-                # print("web ssl cert: chain_crypt.type %s" % type(cert['chain_crypt']))
-                # print("web ssl cert: chainpyssl %s" % certpyssl)
-                # print("web ssl cert: chainpyssl.type %s" % type(certpyssl))
-                #
-                #     # chainpyssl = [crypto.load_certificate(crypto.FILETYPE_PEM, cert['chain'])]
-                # # chainpyssl = None
-                contextFactory = ssl.CertificateOptions(privateKey=cert['key_crypt'],
-                                                        certificate=cert['cert_crypt'],
-                                                        extraCertChain=cert['chain_crypt'])
-                port_attempts = 0
-                # print("########### WEBINTER: about to start SSL port listener")
 
-                while port_attempts < 100:
-                    try:
-                        # print("about to start ssl listener on port: %s" % self.wi_port_secure())
-                        self.web_interface_ssl_listener = reactor.listenSSL(self.wi_port_secure(), self.web_factory,
-                                                                            contextFactory)
-                        break
-                    except Exception as e:
-                        port_attempts += 1
-                if port_attempts >= 100:
-                    logger.warn("Unable to start secure web server, no available port could be found. Tried: {starting} - {ending}",
-                                starting=self.wi_port_secure(), ending=self.wi_port_secure()+port_attempts)
-                elif port_attempts > 0:
-                    self._Configs.set('webinterface', 'secure_port', self.wi_port_secure()+port_attempts)
-                    logger.warn(
-                        "Secure (tls/ssl) web interface is on a new port: {new_port}", new_port=self.wi_port_secure()+port_attempts)
+                if cert['key_crypt'] is None or cert['cert_crypt'] is None:
+                    logger.warn("Unable to start secure web interface, cert is not valid.")
+                else:
+                    contextFactory = ssl.CertificateOptions(privateKey=cert['key_crypt'],
+                                                            certificate=cert['cert_crypt'],
+                                                            extraCertChain=cert['chain_crypt'])
+                    port_attempts = 0
+                    # print("########### WEBINTER: about to start SSL port listener")
+
+                    while port_attempts < 100:
+                        try:
+                            # print("about to start ssl listener on port: %s" % self.wi_port_secure())
+                            self.web_interface_ssl_listener = reactor.listenSSL(self.wi_port_secure(), self.web_factory,
+                                                                                contextFactory)
+                            break
+                        except Exception as e:
+                            print("Unable to start secure web server: %s" % e)
+                            port_attempts += 1
+                    if port_attempts >= 100:
+                        logger.warn("Unable to start secure web server, no available port could be found. Tried: {starting} - {ending}",
+                                    starting=self.wi_port_secure(), ending=self.wi_port_secure()+port_attempts)
+                    elif port_attempts > 0:
+                        self._Configs.set('webinterface', 'secure_port', self.wi_port_secure()+port_attempts)
+                        logger.warn(
+                            "Secure (tls/ssl) web interface is on a new port: {new_port}", new_port=self.wi_port_secure()+port_attempts)
 
         logger.debug("done starting web servers")
         self.already_starting_web_servers = False

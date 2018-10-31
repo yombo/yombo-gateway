@@ -59,5 +59,4 @@ class MagicAttributesMixin(object):
         self._YomboAPI = parent._Loader.loadedLibraries['yomboapi']
         self._Variables = parent._Loader.loadedLibraries['variables']
         self._Validate = parent._Loader.loadedLibraries['validate']
-        self._VoiceCmds = parent._Loader.loadedLibraries['voicecmds']
         self._WebSessions = parent._Loader.loadedLibraries['websessions']

@@ -95,11 +95,3 @@ class Yombo_Module(Input_Type):
                 return the_item.device_id
         except Exception as e:
             raise AssertionError("Value is not a valid yombo module.")
-
-
-class Voice_Command(Input_Type):
-
-    def validate(self, value, **kwargs):
-        if value in self._Parent._VoiceCmds:
-            return value
-        raise AssertionError("Invalid voice command input.")

@@ -225,8 +225,6 @@ class Devices(YomboLibrary):
         """
         Sets up basic attributes.
         """
-        self._VoiceCommandsLibrary = self._Loader.loadedLibraries['voicecmds']
-
         self.devices = {}
         self.device_search_attributes = ['device_id', 'device_type_id', 'machine_label', 'label',
             'area_label_lower', 'full_label_lower', 'area_label', 'full_label', 'description']

@@ -41,7 +41,7 @@ BASE_INPUT_TYPE_PLATFORMS = {
                                         'IPv4_Address_Public', 'IPv4_Address_Private', 'IPv6_Address',
                                         'IPv6_Address_Public', 'IPv6_Address_Private'],
     'yombo.lib.inputtypes.latin_alphabet': ['Latin_Alphabet', 'Latin_Alphanumeric'],
-    'yombo.lib.inputtypes.yombo_items': ['Voice_Command', 'Yombo_Command', 'Yombo_Device_Type', 'Yombo_Module',
+    'yombo.lib.inputtypes.yombo_items': ['Yombo_Command', 'Yombo_Device_Type', 'Yombo_Module',
                                          'Yombo_Device'],
 }
 

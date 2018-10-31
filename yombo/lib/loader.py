@@ -67,6 +67,7 @@ HARD_LOAD = OrderedDict()
 HARD_LOAD["Events"] = {'operating_mode': 'all'}
 HARD_LOAD["Cache"] = {'operating_mode': 'all'}
 HARD_LOAD["Validate"] = {'operating_mode': 'all'}
+HARD_LOAD["Locations"] = {'operating_mode': 'all'}
 HARD_LOAD["Requests"] = {'operating_mode': 'all'}
 HARD_LOAD["Template"] = {'operating_mode': 'all'}
 HARD_LOAD["Queue"] = {'operating_mode': 'all'}
@@ -84,7 +85,6 @@ HARD_LOAD["States"] = {'operating_mode': 'all'}
 HARD_LOAD["Statistics"] = {'operating_mode': 'all'}
 HARD_LOAD["YomboAPI"] = {'operating_mode': 'all'}
 HARD_LOAD["Startup"] = {'operating_mode': 'all'}
-HARD_LOAD["Locations"] = {'operating_mode': 'all'}
 HARD_LOAD["AMQP"] = {'operating_mode': 'run'}
 HARD_LOAD["CronTab"] = {'operating_mode': 'all'}
 HARD_LOAD["DownloadModules"] = {'operating_mode': 'run'}
@@ -92,7 +92,6 @@ HARD_LOAD["Times"] = {'operating_mode': 'all'}
 HARD_LOAD["Commands"] = {'operating_mode': 'all'}
 HARD_LOAD["DeviceTypes"] = {'operating_mode': 'all'}
 HARD_LOAD["InputTypes"] = {'operating_mode': 'all'}
-HARD_LOAD["VoiceCmds"] = {'operating_mode': 'all'}
 HARD_LOAD["Variables"] = {'operating_mode': 'all'}
 HARD_LOAD["Modules"] = {'operating_mode': 'all'}
 HARD_LOAD["Devices"] = {'operating_mode': 'all'}
@@ -128,7 +127,6 @@ HARD_UNLOAD["Times"] = {'operating_mode': 'all'}
 HARD_UNLOAD["Commands"] = {'operating_mode': 'all'}
 HARD_UNLOAD["DeviceTypes"] = {'operating_mode': 'all'}
 HARD_UNLOAD["InputTypes"] = {'operating_mode': 'all'}
-HARD_UNLOAD["VoiceCmds"] = {'operating_mode': 'all'}
 HARD_UNLOAD["Devices"] = {'operating_mode': 'all'}
 HARD_UNLOAD["Locations"] = {'operating_mode': 'all'}
 HARD_UNLOAD["Nodes"] = {'operating_mode': 'all'}
@@ -146,7 +144,7 @@ HARD_UNLOAD["MQTT"] = {'operating_mode': 'run'}
 HARD_UNLOAD["SQLDict"] = {'operating_mode': 'all'}
 HARD_UNLOAD["AMQP"] = {'operating_mode': 'run'}
 HARD_UNLOAD["Modules"] = {'operating_mode': 'all'}
-HARD_LOAD["Variables"] = {'operating_mode': 'all'}
+HARD_UNLOAD["Variables"] = {'operating_mode': 'all'}
 HARD_UNLOAD["DownloadModules"] = {'operating_mode': 'run'}
 HARD_UNLOAD["Queue"] = {'operating_mode': 'all'}
 HARD_UNLOAD["Events"] = {'operating_mode': 'all'}
@@ -631,8 +629,9 @@ class Loader(YomboLibrary, object):
 
                     try:
                         d = Deferred()
-                        d.addCallback(lambda ignored: self._log_loader('debug', library._Name, 'library', hook,
-                                                                       'About to call %s' % hook))
+                        if hook != '_yombo_universal_hook_':
+                            d.addCallback(lambda ignored: self._log_loader(
+                                'debug', library._Name, 'library', hook, 'About to call %s' % hook))
                         # print("calling %s:%s" % (library._Name, hook))
                         d.addCallback(lambda ignored: maybeDeferred(method, **kwargs))
                         d.addErrback(self.library_invoke_failure, requested_library, hook)

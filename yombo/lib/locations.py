@@ -159,7 +159,7 @@ class Locations(YomboLibrary):
         return list(self.locations.values())
 
     @inlineCallbacks
-    def _init_(self, **kwargs):
+    def _load_(self, **kwargs):
         """
         Setups up the basic framework. Nothing is loaded in here until the
         Load() stage.
@@ -169,6 +169,7 @@ class Locations(YomboLibrary):
         self.location_search_attributes = ['location_id', 'label', 'machine_label']
 
         yield self._load_locations_from_database()
+
         detected_location_info = self._Configs.detected_location_info
         if detected_location_info['ip'] is not None:
             self._States.set('detected_location.source', detected_location_info['source'],
@@ -399,11 +400,8 @@ class Locations(YomboLibrary):
                 found_id = location_id
 
         if found_id is None:
-            print("get_defauly: %s" % location_type)
-            print("locations: %s" % self.locations)
             if f"{location_type}_none" in self.locations:
                 return f"{location_type}_none"
-        print("get_default: returning: %s" % found_id)
         return found_id
 
     def get(self, location_requested, location_type=None, limiter=None):

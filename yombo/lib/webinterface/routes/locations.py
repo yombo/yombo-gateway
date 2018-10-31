@@ -149,7 +149,6 @@ def route_locations(webapp):
         def page_lib_location_edit_post(webinterface, request, session, location_id):
             session.has_access('location', location_id, 'edit')
             data = {
-                'voice_cmd': webinterface.request_get_default(request, 'voice_cmd', ""),
                 'label': webinterface.request_get_default(request, 'label', ""),
                 'machine_label': webinterface.request_get_default(request, 'machine_label', ""),
                 'description': webinterface.request_get_default(request, 'description', ""),

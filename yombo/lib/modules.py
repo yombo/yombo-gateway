@@ -668,7 +668,6 @@ class Modules(YomboLibrary):
             module._YomboAPI = self._Loader.loadedLibraries['yomboapi']
             module._Variables = self._Loader.loadedLibraries['variables']
             module._Validate = self._Loader.loadedLibraries['validate']
-            module._VoiceCmds = self._Loader.loadedLibraries['voicecmds']
             module._WebSessions = self._Loader.loadedLibraries['websessions']
 
             module._hooks_called['_init_'] = 0

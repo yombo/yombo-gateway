@@ -452,8 +452,8 @@ class Device_Attributes(MagicAttributesMixin):
         self.pin_required = None
         self.pin_code = None
         self.pin_timeout = None
-        self.voice_cmd = None
-        self.voice_cmd_order = None
+        self.intent_allow = None
+        self.intent_text = None
         self.statistic_label = None
         self.statistic_type = None
         self.statistic_bucket_size = None
@@ -595,8 +595,8 @@ class Device_Attributes(MagicAttributesMixin):
             'pin_code': "********",
             'pin_required': int(self.pin_required),
             'pin_timeout': self.pin_timeout,
-            'voice_cmd': str(self.voice_cmd),
-            'voice_cmd_order': str(self.voice_cmd_order),
+            'intent_allow': int(self.intent_allow),
+            'intent_text': str(self.intent_text),
             'created_at': int(self.created_at),
             'updated_at': int(self.updated_at),
             'device_commands': list(self.device_commands),
@@ -674,11 +674,11 @@ class Device_Attributes(MagicAttributesMixin):
             except:
                 self.pin_timeout = None
                 self.is_dirty = True
-        if 'voice_cmd' in device:
-            self.voice_cmd = device["voice_cmd"]
+        if 'intent_allow' in device:
+            self.intent_allow = device["intent_allow"]
             self.is_dirty = True
-        if 'voice_cmd_order' in device:
-            self.voice_cmd_order = device["voice_cmd_order"]
+        if 'intent_text' in device:
+            self.intent_text = device["intent_text"]
             self.is_dirty = True
         if 'statistic_label' in device:
             self.statistic_label = device["statistic_label"]  # 'myhome.groundfloor.kitchen'

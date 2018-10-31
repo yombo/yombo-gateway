@@ -177,9 +177,8 @@ def route_devices(webapp):
                 'energy_type': json_output.get('energy_type', ""),
                 'energy_map': energy_map,
                 'variable_data': variable_data,
-                # 'voice_cmd': None,
-                # 'voice_cmd_order': None,
-                # 'voice_cmd_src': None,
+                # 'intent_allow': None,
+                # 'intent_text': None,
             }
 
             if ok_to_save:
@@ -529,9 +528,8 @@ def route_devices(webapp):
                 'energy_tracker_device': energy_tracker_device,
                 'energy_map': energy_map,
                 'variable_data':  variable_data,
-                'voice_cmd': None,
-                # 'voice_cmd_order': None,
-                # 'voice_cmd_src': None,
+                # 'intent_allow': None,
+                # 'intent_text': None,
             }
 
             try:

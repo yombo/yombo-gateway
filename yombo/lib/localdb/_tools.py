@@ -50,8 +50,7 @@ class DB_Tools(object):
         if device is None:
             device = yield Device(id='device1', machine_label='on', label='Lamp1', gateway_id='gateway1',
                                   device_type_id='devicetype1', pin_required=0, pin_timeout=0, status=1, created_at=1,
-                                  updated_at=1, description='desc', notes='note', Voice_cmd_src='auto',
-                                  voice_cmd='lamp on').save()
+                                  updated_at=1, description='desc', notes='note').save()
             # variable = yield Variable(variable_type='device', variable_id="variable_id1", foreign_id='deviceVariable1', device_id=device.id, weigh=0, machine_label='device_var_1', label='Device Var 1', value='somevalue1', updated_at=1, created_at=1).save()
 
         deviceType = yield DeviceType.find('devicetype1')
