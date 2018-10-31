@@ -203,7 +203,7 @@ class SSLCerts(YomboLibrary):
             yield cert.check_if_rotate_needed()
 
     @inlineCallbacks
-    def add_sslcert(self, ssl_data, bypass_checks=None):
+    def add_sslcert(self, ssl_data):
         """
         Called when new SSL Certs need to be managed.
         

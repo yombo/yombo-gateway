@@ -149,7 +149,7 @@ def route_setup_wizard(webapp):
                     yield save_file(filename, key['passphrase'])
 
             for cert_name, cert in data['sslcerts'].items():
-                webinterface._SSLCerts.import_cert(cert_name, cert)
+                webinterface._SSLCerts.add_sslcert(cert)
 
             webinterface._Configs.exit_config_file = data['yombo_ini']
             yield webinterface._GPG.import_trust(data['gpg_trust'])

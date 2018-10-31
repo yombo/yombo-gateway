@@ -62,16 +62,8 @@ def route_system(webapp):
             sslcerts = {}
             for sslname, cert in webinterface._SSLCerts.managed_certs.items():
                 sslcerts[sslname] = cert.asdict()
-                #     'current_cert': cert.current_cert,
-                #     'current_chain': cert.current_chain,
-                #     'current_key': cert.current_key,
-                #     'next_cert': cert.next_cert,
-                #     'next_chain': cert.next_chain,
-                #     'next_key': cert.next_key,
-                # }
 
             key = webinterface._GPG.gpg_key_full
-            gpg_keys = {}
             yombo_ini = yield webinterface._Configs.generate_yombo_ini()
             gpg_trust = yield webinterface._GPG.export_trust()
             core_output = {
