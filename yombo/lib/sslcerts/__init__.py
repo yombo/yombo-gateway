@@ -137,24 +137,27 @@ class SSLCerts(YomboLibrary):
         self.check_if_certs_need_update_loop = LoopingCall(self.check_if_certs_need_update)
         self.check_if_certs_need_update_loop.start(self._Configs.get('sqldict',
                                                                      'save_interval',
-                                                                     random_int(60*60*2, .2),
+                                                                     random_int(60*60*24, .1),
                                                                      False),
                                                    False)
 
         # Check if any libraries or modules need certs.
         fqdn = self._Configs.get('dns', 'fqdn', None, False)
         if fqdn is None:
-            logger.warn("Unable to create webinterface SSL cert: DNS not set properly.")
+            logger.warn("Unable to generate sign ssl/tls certs, gateway has no domain name.")
             return
 
         if self._Loader.operating_mode != 'run':
             return
-        # print("########### SSL CERTS: calling _sslcerts....")
         sslcerts = yield global_invoke_all('_sslcerts_',
                                            called_by=self,
                                            )
-        yield self._add_sslcerts(sslcerts)
-        # print("done...about to add sslcerts: %s" % self.managed_certs['lib_webinterface'].__dict__)
+        for component_name, ssl_certs in sslcerts.items():
+            logger.debug("Adding new managed certs from hook: %s" % component_name)
+            if isinstance(ssl_certs, tuple) is False and isinstance(ssl_certs, list) is False:
+                ssl_certs = [ssl_certs]
+            for ssl_item in ssl_certs:
+                yield self.add_sslcert(ssl_item)
 
     def _stop_(self, **kwargs):
         """
@@ -169,44 +172,10 @@ class SSLCerts(YomboLibrary):
             for sslname, cert in self.managed_certs.items():
                 cert.stop()
 
-    @inlineCallbacks
-    def check_if_certs_need_update(self):
-        """
-        Called periodically to see if any certs need to be updated. Once a day is enough, we have 30 days to get this
-        done.
-        """
-        for sslname, cert in self.managed_certs.items():
-            yield cert.check_if_rotate_needed()
-
-    @inlineCallbacks
-    def _add_sslcerts(self, sslcerts):
-        """
-        Called when new SSL Certs need to be managed.
-        
-        :param sslcerts: 
-        :return: 
-        """
-        for component_name, item in sslcerts.items():
-            logger.debug("Adding new managed certs: %s" % component_name)
-            # print("SSLCERTS: mod started, from: %s item: %s" % (component_name, item))
-            try:
-                item = self.check_csr_input(item)  # Clean up module developers input.
-            except YomboWarning as e:
-                logger.warn("Cannot add cert from hook: %s" % e)
-                continue
-            if item['sslname'] in self.managed_certs:
-                # print("add_ssl_certs: update addtributes: %s" % item)
-                self.managed_certs[item['sslname']].update_attributes(item)
-            else:
-                self.managed_certs[item['sslname']] = SSLCert('sslcerts', DictObject(item), self)
-                # print("loading from file system!!!!: %s" % self.managed_certs[item['sslname']])
-                yield self.managed_certs[item['sslname']].start()
-                # print("done...loading from file system!!!!: %s" % self.managed_certs[item['sslname']])
-
     def sslcert_serializer(self, item):
         """
         Used to hydrate the list of certs. Somethings shouldn't be stored in the SQLDict.
-        
+
         :param item:
         :return:
         """
@@ -220,13 +189,49 @@ class SSLCerts(YomboLibrary):
         :param item:
         :return:
         """
-        results = SSLCert('sqldict', DictObject(item), self)
+        results = SSLCert(self, 'sqldict', DictObject(item))
         yield results.start()
         return results
 
     @inlineCallbacks
-    def import_cert(self, cert_name, data):
-        self.managed_certs[cert_name] = SSLCert('sqldict', DictObject(data), self)
+    def check_if_certs_need_update(self):
+        """
+        Called periodically to see if any certs need to be updated. Once a day is enough, we have 30 days to get this
+        done.
+        """
+        for sslname, cert in self.managed_certs.items():
+            yield cert.check_if_rotate_needed()
+
+    @inlineCallbacks
+    def add_sslcert(self, ssl_data, bypass_checks=None):
+        """
+        Called when new SSL Certs need to be managed.
+        
+        :param sslcerts:
+        :param bypass_checks: For internal use only.
+        :return: 
+        """
+        fqdn = self._Configs.get('dns', 'fqdn', None, False)
+        if fqdn is None:
+            logger.warn("Unable to generate sign ssl/tls certs, gateway has no domain name.")
+            return
+
+        try:
+            ssl_data = self.check_csr_input(ssl_data)  # Clean up module developers input.
+        except YomboWarning as e:
+            logger.warn("Cannot add cert: %s" % e)
+            return
+
+        if ssl_data['sslname'] in self.managed_certs:
+            self.managed_certs[ssl_data['sslname']].update_attributes(ssl_data)
+        else:
+            yield self._import_cert(ssl_data['sslname'], DictObject(ssl_data))
+
+    @inlineCallbacks
+    def _import_cert(self, cert_name, data, source=None):
+        if source is None:
+            source = 'sslcerts'
+        self.managed_certs[cert_name] = SSLCert(self, source, DictObject(data))
         yield self.managed_certs[cert_name].start()
 
     def get(self, sslname_requested):
