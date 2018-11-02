@@ -252,7 +252,7 @@ class Intents(YomboLibrary):
                     continue
                 area_label = area.label.lower()
                 statements.append({
-                    "statement": f"Turn [all] [the] {location_label} {area_label} {item_type}[s] {action.lower()}",
+                    "statement": f"Turn [all] [the] {location_label} {area_label} {{item_type}}[s] {action.lower()}",
                     "statement_slots": {"location_id": {"value": location_id},
                               "area_id": {"value": area_id},
                               }
@@ -260,7 +260,7 @@ class Intents(YomboLibrary):
                 )
 
                 statements.append({
-                    "statement": f"Turn {action.lower()} [all] [the] {location_label} {area_label} {item_type}[s]",
+                    "statement": f"Turn {action.lower()} [all] [the] {location_label} {{area_label}} {{item_type}}[s]",
                     "statement_slots": {"location_id": {"value": location_id},
                               "area_id": {"value": area_id}
                               },
@@ -268,13 +268,13 @@ class Intents(YomboLibrary):
                 )
 
                 statements.append({
-                    "statement": f"Turn [all] [the] {area_label} {item_type}[s] {action.lower()}",
+                    "statement": f"Turn [all] [the] {area_label} {{item_type}}[s] {action.lower()}",
                     "statement_slots": {"area_id": {"value": area_id}},
                     }
                 )
 
                 statements.append({
-                    "statement": f"Turn {action.lower()} [all] [the] {area_label} {item_type}[s]",
+                    "statement": f"Turn {action.lower()} [all] [the] {area_label} {{item_type}}[s]",
                     "statement_slots": {"area_id": {"value": area_id}},
                     }
                 )
