@@ -256,11 +256,6 @@ class AmqpConfigHandler(YomboLibrary):
 
         elif config_item in CONFIG_ITEMS:
             config_data = CONFIG_ITEMS[config_item]
-            # if config_type == "full":
-                # logger.info("Truncating table: {table}", table=config_data["table"])
-                # yield self._LocalDB.truncate(config_data["table"])
-                # logger.info("Truncating table: {table}..done", table=config_data["table"])
-
             if msg["data_type"] == "object":
                 # print("field remap start object")
                 data = self.field_remap(msg["data"], config_data)
@@ -547,18 +542,18 @@ class AmqpConfigHandler(YomboLibrary):
 
         allCommands = [
             "get_categories",
-            "get_gateway_commands",
-            "get_gateway_devices", # Includes device variable groups/fields/data
-            "get_gateway_locations", # Includes device variable groups/fields/data
-            "get_gateway_device_types",
-            "get_gateway_modules", # Includes module variable groups/fields/data
-            "get_gateway_device_type_commands",
-            "get_gateway_device_command_inputs",
-            "get_gateway_input_types",
-            "get_gateway_users",
-            "get_gateway_dns_name",
             "get_gateway_cluster",
-            "get_gateway_nodes",  # Includes module variable groups/fields/data
+            "get_gateway_commands",
+            "get_gateway_device_command_inputs",
+            "get_gateway_device_types",
+            "get_gateway_device_type_commands",
+            "get_gateway_devices",  # Includes device variable groups/fields/data
+            "get_gateway_dns_name",
+            "get_gateway_input_types",
+            "get_gateway_locations",
+            "get_gateway_modules",  # Includes device variable groups/fields/data
+            "get_gateway_nodes",
+            "get_gateway_users",
 
             # "get_gateway_configs",
             # "getGatewayUserTokens",
