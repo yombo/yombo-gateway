@@ -9,9 +9,9 @@ A dictionary that can be access as either an object or dictionary, it's seed is 
 
    from yombo.utils.dictobject import DictObject
 
-   items = LookupDict({'mom' : 'Jane', 'dad' : 'Joe'}) # Can accept a dictionary to get started.
+   items = LookupDict({"mom" : "Jane", "dad" : "Joe"}) # Can accept a dictionary to get started.
    result = items.mom  # Jane
-   result = items['mom']  # Jane
+   result = items["mom"]  # Jane
 
 Original from: https://github.com/webpy/webpy/blob/master/web/utils.py
 Modified for use with Yombo by Mitch
@@ -45,4 +45,4 @@ class DictObject(dict):
             return default
 
     def __repr__(self):
-        return '<DictObject ' + dict.__repr__(self) + '>'
+        return "<DictObject " + dict.__repr__(self) + ">"

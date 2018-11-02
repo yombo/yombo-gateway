@@ -220,11 +220,11 @@ class YomboCritical(RuntimeWarning):
         from twisted.internet import reactor
         import os
         print("Yombo critical stopping......")
-        reactor.addSystemEventTrigger('after', 'shutdown', os._exit, self.exit_code)
+        reactor.addSystemEventTrigger("after", "shutdown", os._exit, self.exit_code)
         try:
             reactor.stop()
         except ReactorNotRunning as e:
-            print("Unable to stop reactor....%s" % e)
+            print(f"Unable to stop reactor....{e}")
             pass
 
 
@@ -249,7 +249,7 @@ class YomboRestart(RuntimeWarning):
         @return: A formated string of the error message.
         @rtype: string
         """
-        output = "Restarting Yombo Gateway. Reason: %s." % self.message
+        output = f"Restarting Yombo Gateway. Reason: {self.message}."
         return repr(output)
 
     def exit(self):
@@ -258,7 +258,7 @@ class YomboRestart(RuntimeWarning):
         """
         from twisted.internet import reactor
         import os
-        reactor.addSystemEventTrigger('after', 'shutdown', os._exit, RESTART_EXIT_CODE)
+        reactor.addSystemEventTrigger("after", "shutdown", os._exit, RESTART_EXIT_CODE)
         reactor.stop()
 
 
@@ -281,7 +281,6 @@ class YomboNoAccess(YomboWarning):
         """
         YomboException.__init__(self, message=message, errorno=403, name=name, component=component,
                                 html_message=html_message)
-        # print("Request refused: %s - %s - %s" % (platform, item, action))
         self.item_permissions = item_permissions
         self.roles = roles
         self.platform = platform
@@ -351,7 +350,8 @@ class YomboFuzzySearchError(Exception):
         :return: A formated string of the error message.
         :rtype: string
         """
-        output = "Key (%s) not found above the cutoff limit. Closest key found: %s with ratio of: %.3f." % (self.searchFor, self.key, self.ratio)
+        output = "Key (%s) not found above the cutoff limit. Closest key found: %s with ratio of: %.3f." %\
+                 (self.searchFor, self.key, self.ratio)
         return repr(output)
 
 

@@ -13,7 +13,7 @@ from yombo.ext.twistar.utils import dictToWhere
 from yombo.lib.localdb import Statistics
 from yombo.utils import data_pickle, data_unpickle
 
-logger = get_logger('library.localdb.variables')
+logger = get_logger("library.localdb.variables")
 
 
 class DB_Statistics(object):
@@ -23,20 +23,20 @@ class DB_Statistics(object):
         where = {}
         dictToWhere
         if bucket_type is not None:
-            where['bucket_type'] = bucket_type
+            where["bucket_type"] = bucket_type
         if name is not None:
-            where['bucket_name'] = name
+            where["bucket_name"] = name
         if search_name_all is not None:
-            where['bucket_name'] = ["%%%s%%" % search_name_all, 'like']
+            where["bucket_name"] = [f"%%{search_name_all}%%", "like"]
         if search_name_start is not None:
-            where['bucket_name'] = ["%s%%" % search_name_start, 'like']
+            where["bucket_name"] = [f"{search_name_start}%%", "like"]
         if search_name_end is not None:
-            where['bucket_name'] = ["%%%s" % search_name_end, 'like']
+            where["bucket_name"] = [f"%%{search_name_end}", "like"]
 
-        records = yield self.dbconfig.select('statistics',
+        records = yield self.dbconfig.select("statistics",
                                              where=dictToWhere(where),
-                                             select='bucket_name, bucket_type, bucket_size, bucket_lifetime, MIN(bucket_time) as bucket_time_min, MAX(bucket_time) as bucket_time_max, count(*) as count',
-                                             group='bucket_name')
+                                             select="bucket_name, bucket_type, bucket_size, bucket_lifetime, MIN(bucket_time) as bucket_time_min, MAX(bucket_time) as bucket_time_max, count(*) as count",
+                                             group="bucket_name")
         return records
 
     @inlineCallbacks
@@ -50,13 +50,13 @@ class DB_Statistics(object):
         if isinstance(names, list) is False:
             raise YomboWarning("statistic_get_range: names argument expects a list.")
         if isinstance(start, int) is False and isinstance(start, float) is False:
-            raise YomboWarning("statistic_get_range: start argument expects an int or float, got: %s" % start)
+            raise YomboWarning(f"statistic_get_range: start argument expects an int or float, got: {start}")
         if isinstance(stop, int) is False and isinstance(stop, float) is False:
             # print("stop is typE: %s" % type(stop))
-            raise YomboWarning("statistic_get_range: stop argument expects an int or float, got: %s" % stop)
+            raise YomboWarning(f"statistic_get_range: stop argument expects an int or float, got: {stop}")
 
         # names_str = ", ".join(map(str, names))
-        names_str = ', '.join('"{0}"'.format(w) for w in names)
+        names_str = ", ".join(f'"{w}"' for w in names)
         sql = """SELECT id, bucket_time, bucket_size, bucket_lifetime, bucket_type, bucket_name,
      bucket_value, bucket_average_data, anon, uploaded, finished, updated_at 
      FROM  statistics WHERE bucket_name in (%s) AND bucket_time >= %s
@@ -68,28 +68,28 @@ class DB_Statistics(object):
         for record in records:
             if minimal in (None, False):
                 results.append({
-                    'id': record[0],
-                    'bucket_time': record[1],
-                    'bucket_size': record[2],
-                    'bucket_lifetime': record[3],
-                    'bucket_type': record[4],
-                    'bucket_name': record[5],
-                    'bucket_value': record[6],
-                    'bucket_average_data': record[7],
-                    'anon': record[8],
-                    'uploaded': record[9],
-                    'finished': record[10],
-                    'updated_at': record[11],
+                    "id": record[0],
+                    "bucket_time": record[1],
+                    "bucket_size": record[2],
+                    "bucket_lifetime": record[3],
+                    "bucket_type": record[4],
+                    "bucket_name": record[5],
+                    "bucket_value": record[6],
+                    "bucket_average_data": record[7],
+                    "anon": record[8],
+                    "uploaded": record[9],
+                    "finished": record[10],
+                    "updated_at": record[11],
                 })
             else:
                 results.append({
-                    'id': record[0],
-                    'bucket_time': record[1],
-                    'bucket_size': record[2],
-                    'bucket_lifetime': record[3],
-                    'bucket_type': record[4],
-                    'bucket_name': record[5],
-                    'bucket_value': record[6],
+                    "id": record[0],
+                    "bucket_time": record[1],
+                    "bucket_size": record[2],
+                    "bucket_lifetime": record[3],
+                    "bucket_type": record[4],
+                    "bucket_name": record[5],
+                    "bucket_value": record[6],
                 })
 
         return results
@@ -116,7 +116,7 @@ class DB_Statistics(object):
 
     @inlineCallbacks
     def save_statistic_bulk(self, buckets):
-        results = yield self.dbconfig.insertMany('statistics', buckets)
+        results = yield self.dbconfig.insertMany("statistics", buckets)
         return results
 
     @inlineCallbacks
@@ -125,31 +125,31 @@ class DB_Statistics(object):
         if finished is None:
             finished = False
 
-        args = {'bucket_value': bucket['value'],
-                'updated_at': int(time()),
-                'anon': bucket['anon'],
+        args = {"bucket_value": bucket["value"],
+                "updated_at": int(time()),
+                "anon": bucket["anon"],
                 }
 
         if finished is not None:
-            args['finished'] = finished
+            args["finished"] = finished
         else:
-            args['finished'] = 0
+            args["finished"] = 0
 
-        if bucket['type'] == 'average':
-            args['bucket_average_data'] = data_pickle(bucket['average_data'], separators=(',', ':'))
+        if bucket["type"] == "average":
+            args["bucket_average_data"] = data_pickle(bucket["average_data"], separators=(",", ":"))
 
-        if 'restored_db_id' in bucket:
-            results = yield self.dbconfig.update('statistics',
+        if "restored_db_id" in bucket:
+            results = yield self.dbconfig.update("statistics",
                                                  args,
-                                                 where=['id = ?',
-                                                        bucket['restored_db_id']
+                                                 where=["id = ?",
+                                                        bucket["restored_db_id"]
                                                         ]
                                                  )
         else:
-            args['bucket_time'] = bucket['time']
-            args['bucket_type'] = bucket['type']
-            args['bucket_name'] = bucket['bucket_name']
-            results = yield self.dbconfig.insert('statistics', args, None, 'OR IGNORE')
+            args["bucket_time"] = bucket["time"]
+            args["bucket_type"] = bucket["type"]
+            args["bucket_name"] = bucket["bucket_name"]
+            results = yield self.dbconfig.insert("statistics", args, None, "OR IGNORE")
 
         return results
 
@@ -173,52 +173,54 @@ class DB_Statistics(object):
 
             #        type     time      name
             results[stat[0]][stat[1]][stat[2]] = {
-                'type': stat[0],
-                'time': stat[1],
-                'name': stat[2],
-                'restored_from_db': True,
-                'restored_db_id': stat[3],
-                'size': stat[4],
-                'lifetime': stat[5],
-                'value': stat[6],
-                'average_data': stat[7],
-                'anon': stat[8],
-                'uploaded': stat[9],
-                'updated_at': stat[10],
-                'touched': False
+                "type": stat[0],
+                "time": stat[1],
+                "name": stat[2],
+                "restored_from_db": True,
+                "restored_db_id": stat[3],
+                "size": stat[4],
+                "lifetime": stat[5],
+                "value": stat[6],
+                "average_data": stat[7],
+                "anon": stat[8],
+                "uploaded": stat[9],
+                "updated_at": stat[10],
+                "touched": False
             }
 
         return results
 
     @inlineCallbacks
     def get_uploadable_statistics(self, uploaded_type=0):
-        anonymous_allowed = self._Configs.get('statistics', 'anonymous', True)
+        anonymous_allowed = self._Configs.get("statistics", "anonymous", True)
         if anonymous_allowed:
-            records = yield self.dbconfig.select('statistics',
-                                                 select='id as stat_id, bucket_time, bucket_size, bucket_type, bucket_name, bucket_value, bucket_average_data, bucket_time',
-                                                 where=['finished = 1 AND uploaded = ?', uploaded_type], limit=750)
+            records = yield self.dbconfig.select(
+                "statistics",
+                 select="id as stat_id, bucket_time, bucket_size, bucket_type, bucket_name, bucket_value, bucket_average_data, bucket_time",
+                 where=["finished = 1 AND uploaded = ?", uploaded_type], limit=750)
         else:
-            records = yield self.dbconfig.select('statistics', select='*',
-                                                 where=['finished = 1 AND uploaded = ? and anon = 0', uploaded_type])
+            records = yield self.dbconfig.select(
+                "statistics", select="*",
+                where=["finished = 1 AND uploaded = ? and anon = 0", uploaded_type])
 
-        self._unpickle_stats(records, 'bucket_type', 'bucket_average_data')
+        self._unpickle_stats(records, "bucket_type", "bucket_average_data")
 
         return records
 
     @inlineCallbacks
     def set_uploaded_statistics(self, value, the_list):
         where_str = "id in (" + ", ".join(map(str, the_list)) + ")"
-        yield self.dbconfig.update('statistics', {'updated_at': int(time()), 'uploaded': value},
+        yield self.dbconfig.update("statistics", {"updated_at": int(time()), "uploaded": value},
                                    where=[where_str])
 
     def _unpickle_stats(self, stats, type_name=None, averagedata_name=None):
         if averagedata_name is None:
-            averagedata_name = 'bucket_average_data'
+            averagedata_name = "bucket_average_data"
         if type_name is None:
-            type_name = 'bucket_type'
+            type_name = "bucket_type"
         if isinstance(stats, list):
             for s in stats:
-                if s[type_name] == 'average':
+                if s[type_name] == "average":
                     s[averagedata_name] = data_unpickle(s[averagedata_name])
         else:
             stats[averagedata_name] = data_unpickle(stats[averagedata_name])
@@ -247,12 +249,13 @@ class DB_Statistics(object):
             values.append(time_end)
         where_final = [(" AND ").join(wheres)] + values
 
-        # records = yield self.dbconfig.select('statistics',
-        #             select='sum(value), bucket_name, bucket_type, round(bucket / 3600) * 3600 AS bucket',
-        select_fields = 'sum(bucket_value) as value, bucket_name, bucket_type, round(bucket_time / %s) * %s AS bucket' % (
-            bucket_size, bucket_size)
-        records = yield self.dbconfig.select('statistics',
+        # records = yield self.dbconfig.select("statistics",
+        #             select="sum(value), bucket_name, bucket_type, round(bucket / 3600) * 3600 AS bucket",
+        select_fields = f"sum(bucket_value) as value, bucket_name, bucket_type, round(bucket_time / {bucket_size}) * " \
+                        f"{bucket_size} AS bucket"
+
+        records = yield self.dbconfig.select("statistics",
                                              select=select_fields,
                                              where=where_final,
-                                             group='bucket')
+                                             group="bucket")
         return records

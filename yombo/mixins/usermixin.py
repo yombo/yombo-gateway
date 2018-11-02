@@ -23,14 +23,14 @@ from yombo.mixins.yombobasemixin import YomboBaseMixin
 from yombo.core.exceptions import YomboWarning
 from yombo.mixins.rolesmixin import RolesMixin
 
-logger = get_logger('mixins.usermixin')
+logger = get_logger("mixins.usermixin")
 
 
 class UserMixin(RolesMixin, YomboBaseMixin):
 
     @property
     def display(self):
-        return "%s <%s>" % (self._user.name, self._user.email)
+        return f"{self._user.name} <{self._user.email}>"
 
     @property
     def has_user(self) -> str:

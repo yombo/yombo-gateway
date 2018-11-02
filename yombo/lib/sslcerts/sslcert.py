@@ -45,7 +45,7 @@ import yombo.core.settings as settings
 from yombo.utils import save_file, read_file, bytes_to_unicode
 import collections
 
-logger = get_logger('library.sslcerts.sslcert')
+logger = get_logger("library.sslcerts.sslcert")
 
 
 def human_status(valid):
@@ -81,24 +81,23 @@ class SSLCert(object):
         :return: Name of the library
         :rtype: string
         """
-        return "Yombo SSLCert: %s with status: %s" % (self._sslname,
-                                                      self.current_status)
+        return f"Yombo SSLCert: {self._sslname} with status: {self.current_status}"
 
     def __init__(self, _parent_library, source, sslcert):
         """
-        Setup basic properties and populate values from the 'sslcert' incoming argument.
+        Setup basic properties and populate values from the "sslcert" incoming argument.
 
-        :param source: *(source)* - One of: 'sql', 'sslcerts', or 'sqldict'
+        :param source: *(source)* - One of: "sql", "sslcerts", or "sqldict"
         :param sslcert: *(dictionary)* - A dictionary of the attributes to setup the class.
         :ivar sslname: *(string)* - The name of base file. The archive name will be based off this.
         :ivar key_size: *(int)* - Size of the key in bits.
         :ivar key_type: *(string)* - Either rsa or dsa.
         """
-        self._FullName = 'yombo.gateway.lib.SSLCerts.SSLCert'
-        self._Name = 'SSLCerts.SSLCert'
+        self._FullName = "yombo.gateway.lib.SSLCerts.SSLCert"
+        self._Name = "SSLCerts.SSLCert"
         self._Parent = _parent_library
         self.source = source
-        self.working_dir = settings.arguments['working_dir']
+        self.working_dir = settings.arguments["working_dir"]
 
         self.sslname = sslcert.sslname
         self.cn = sslcert.cn
@@ -160,7 +159,7 @@ class SSLCert(object):
         :return:
         """
         # SQLDict means it came from the database, so only scan the filesystem.
-        if self.source != 'sqldict':
+        if self.source != "sqldict":
             yield self.sync_from_filesystem()
 
         self.check_is_valid()
@@ -172,7 +171,7 @@ class SSLCert(object):
     @inlineCallbacks
     def stop(self):
         """
-        Saves the cert meta data to disk...if it's dirty.
+        Saves the cert meta data to disk...if it"s dirty.
 
         :return:
         """
@@ -189,73 +188,73 @@ class SSLCert(object):
         :param attributes:
         :return:
         """
-        if 'update_callback' in attributes:
-            self.update_callback = attributes['update_callback']
-        if 'update_callback_type' in attributes:
-            self.update_callback_type = attributes['update_callback_type']
-        if 'update_callback_component' in attributes:
-            self.update_callback_component = attributes['update_callback_component']
-        if 'update_callback_function' in attributes:
-            self.update_callback_function = attributes['update_callback_function']
+        if "update_callback" in attributes:
+            self.update_callback = attributes["update_callback"]
+        if "update_callback_type" in attributes:
+            self.update_callback_type = attributes["update_callback_type"]
+        if "update_callback_component" in attributes:
+            self.update_callback_component = attributes["update_callback_component"]
+        if "update_callback_function" in attributes:
+            self.update_callback_function = attributes["update_callback_function"]
 
-        if 'key_size' in attributes:
-            self.key_size = int(attributes['key_size']) if attributes['key_size'] else None
-        if 'key_type' in attributes:
-            self.key_type = attributes['key_type']
+        if "key_size" in attributes:
+            self.key_size = int(attributes["key_size"]) if attributes["key_size"] else None
+        if "key_type" in attributes:
+            self.key_type = attributes["key_type"]
 
-        if 'current_cert' in attributes:
-            self.current_cert = attributes['current_cert']
-        if 'current_chain' in attributes:
-            self.current_chain = attributes['current_chain']
-        if 'current_key' in attributes:
-            self.current_key = attributes['current_key']
+        if "current_cert" in attributes:
+            self.current_cert = attributes["current_cert"]
+        if "current_chain" in attributes:
+            self.current_chain = attributes["current_chain"]
+        if "current_key" in attributes:
+            self.current_key = attributes["current_key"]
         self.set_crypto()
 
-        if 'current_status' in attributes:
-            self.current_status = attributes['current_status']
-        if 'current_status_msg' in attributes:
-            self.current_status_msg = attributes['current_status_msg']
-        if 'current_csr_hash' in attributes:
-            self.current_csr_hash = attributes['current_csr_hash']
-        if 'current_created' in attributes:
-            self.current_created = int(attributes['current_created']) if attributes['current_created'] else None
-        if 'current_expires' in attributes:
-            self.current_expires = int(attributes['current_expires']) if attributes['current_expires'] else None
-        if 'current_signed' in attributes:
-            self.current_signed = int(attributes['current_signed']) if attributes['current_signed'] else None
-        if 'current_submitted' in attributes:
-            self.current_submitted = int(attributes['current_submitted']) if attributes['current_submitted'] else None
-        if 'current_fqdn' in attributes:
-            self.current_fqdn = attributes['current_fqdn']
-        if 'current_is_valid' in attributes:
-            self.current_is_valid = attributes['current_is_valid']
+        if "current_status" in attributes:
+            self.current_status = attributes["current_status"]
+        if "current_status_msg" in attributes:
+            self.current_status_msg = attributes["current_status_msg"]
+        if "current_csr_hash" in attributes:
+            self.current_csr_hash = attributes["current_csr_hash"]
+        if "current_created" in attributes:
+            self.current_created = int(attributes["current_created"]) if attributes["current_created"] else None
+        if "current_expires" in attributes:
+            self.current_expires = int(attributes["current_expires"]) if attributes["current_expires"] else None
+        if "current_signed" in attributes:
+            self.current_signed = int(attributes["current_signed"]) if attributes["current_signed"] else None
+        if "current_submitted" in attributes:
+            self.current_submitted = int(attributes["current_submitted"]) if attributes["current_submitted"] else None
+        if "current_fqdn" in attributes:
+            self.current_fqdn = attributes["current_fqdn"]
+        if "current_is_valid" in attributes:
+            self.current_is_valid = attributes["current_is_valid"]
 
-        if 'next_status' in attributes:
-            self.next_status = attributes['next_status']
-        if 'next_status_msg' in attributes:
-            self.next_status_msg = attributes['next_status_msg']
-        if 'next_csr_hash' in attributes:
-            self.next_csr_hash = attributes['next_csr_hash']
-        if 'next_csr' in attributes:
-            self.next_csr = attributes['next_csr']
-        if 'next_cert' in attributes:
-            self.next_cert = attributes['next_cert']
-        if 'next_chain' in attributes:
-            self.next_chain = attributes['next_chain']
-        if 'next_key' in attributes:
-            self.next_key = attributes['next_key']
-        if 'next_created' in attributes:
-            self.next_created = int(attributes['next_created']) if attributes['next_created'] else None
-        if 'next_expires' in attributes:
-            self.next_expires = int(attributes['next_expires']) if attributes['next_expires'] else None
-        if 'next_signed' in attributes:
-            self.next_signed = int(attributes['next_signed']) if attributes['next_signed'] else None
-        if 'next_submitted' in attributes:
-            self.next_submitted = int(attributes['next_submitted']) if attributes['next_submitted'] else None
-        if 'next_fqdn' in attributes:
-            self.next_fqdn = attributes['next_fqdn']
-        if 'next_is_valid' in attributes:
-            self.next_is_valid = attributes['next_is_valid']
+        if "next_status" in attributes:
+            self.next_status = attributes["next_status"]
+        if "next_status_msg" in attributes:
+            self.next_status_msg = attributes["next_status_msg"]
+        if "next_csr_hash" in attributes:
+            self.next_csr_hash = attributes["next_csr_hash"]
+        if "next_csr" in attributes:
+            self.next_csr = attributes["next_csr"]
+        if "next_cert" in attributes:
+            self.next_cert = attributes["next_cert"]
+        if "next_chain" in attributes:
+            self.next_chain = attributes["next_chain"]
+        if "next_key" in attributes:
+            self.next_key = attributes["next_key"]
+        if "next_created" in attributes:
+            self.next_created = int(attributes["next_created"]) if attributes["next_created"] else None
+        if "next_expires" in attributes:
+            self.next_expires = int(attributes["next_expires"]) if attributes["next_expires"] else None
+        if "next_signed" in attributes:
+            self.next_signed = int(attributes["next_signed"]) if attributes["next_signed"] else None
+        if "next_submitted" in attributes:
+            self.next_submitted = int(attributes["next_submitted"]) if attributes["next_submitted"] else None
+        if "next_fqdn" in attributes:
+            self.next_fqdn = attributes["next_fqdn"]
+        if "next_is_valid" in attributes:
+            self.next_is_valid = attributes["next_is_valid"]
 
         self.dirty = True
 
@@ -296,7 +295,7 @@ class SSLCert(object):
 
     def make_next_be_current(self):
         """
-        Makes the next cert become the current cert. Then calls 'clean_section()'.
+        Makes the next cert become the current cert. Then calls "clean_section()".
 
         :return:
         """
@@ -321,34 +320,34 @@ class SSLCert(object):
         self.current_submitted = self.next_submitted
         self.current_fqdn = self.next_fqdn
         self.current_is_valid = self.next_is_valid
-        self.clean_section('next')
+        self.clean_section("next")
 
     def clean_section(self, label):
         """
-        Used wipe out either 'next', or 'current'. This allows to make room or something new.
+        Used wipe out either "next", or "current". This allows to make room or something new.
 
         :param label:
         :return:
         """
-        if label == 'next':
+        if label == "next":
             self.next_csr = None
             self.next_csr_generation_error_count = 0
 
-        setattr(self, "%s_status" % label, None)
-        setattr(self, "%s_status_msg" % label, None)
-        setattr(self, "%s_cert" % label, None)
-        setattr(self, "%s_chain" % label, None)
-        setattr(self, "%s_key" % label, None)
-        setattr(self, "%s_created" % label, None)
-        setattr(self, "%s_expires" % label, None)
-        setattr(self, "%s_signed" % label, None)
-        setattr(self, "%s_submitted" % label, None)
-        setattr(self, "%s_fqdn" % label, None)
-        setattr(self, "%s_is_valid" % label, None)
+        setattr(self, f"{label}_status", None)
+        setattr(self, f"{label}_status_msg", None)
+        setattr(self, f"{label}_cert", None)
+        setattr(self, f"{label}_chain", None)
+        setattr(self, f"{label}_key", None)
+        setattr(self, f"{label}_created", None)
+        setattr(self, f"{label}_expires", None)
+        setattr(self, f"{label}_signed", None)
+        setattr(self, f"{label}_submitted", None)
+        setattr(self, f"{label}_fqdn", None)
+        setattr(self, f"{label}_is_valid", None)
 
         # now the the variables are deleted, lets delete the matching files
         for file_to_delete in glob.glob("%s/etc/certs/%s.%s.*" % (self.working_dir, self.sslname, label)):
-            logger.debug("Removing ssl file file: %s" % file_to_delete)
+            logger.debug("Removing ssl file file: {file}", file=file_to_delete)
             os.remove(file_to_delete)
 
         self.dirty = True
@@ -367,7 +366,7 @@ class SSLCert(object):
 
         if system_fqdn != self.next_fqdn and self.next_fqdn is not None:
             logger.warn("System FQDN doesn't match next requested cert for: {sslname}", sslname=self.sslname)
-            self.clean_section('next')
+            self.clean_section("next")
 
     def check_messages_of_the_unknown(self):
         if self.sslname in self._Parent.received_message_for_unknown:
@@ -382,30 +381,30 @@ class SSLCert(object):
         :return: 
         """
         if label is None:
-            labels = ['current', 'next']
+            labels = ["current", "next"]
         else:
             labels = [label]
 
         for label in labels:
-            if getattr(self, "%s_expires" % label) is not None and \
-                    int(getattr(self, "%s_expires" % label)) > int(time()) and \
-                    getattr(self, "%s_signed" % label) is not None and \
-                    getattr(self, "%s_key" % label) is not None and \
-                    getattr(self, "%s_cert" % label) is not None and \
-                    getattr(self, "%s_chain" % label) is not None:
-                setattr(self, "%s_is_valid" % label, True)
+            if getattr(self, f"{label}_expires") is not None and \
+                    int(getattr(self, f"{label}_expires")) > int(time()) and \
+                    getattr(self, f"{label}_signed") is not None and \
+                    getattr(self, f"{label}_key") is not None and \
+                    getattr(self, f"{label}_cert") is not None and \
+                    getattr(self, f"{label}_chain") is not None:
+                setattr(self, f"{label}_is_valid", True)
             else:
-                setattr(self, "%s_is_valid" % label, False)
+                setattr(self, f"{label}_is_valid", False)
                 if label != "next":
-                    if getattr(self, "%s_key" % label) is None or \
-                            getattr(self, "%s_cert" % label) is None or \
-                            getattr(self, "%s_chain" % label) is None or \
-                            getattr(self, "%s_created" % label) is None:
+                    if getattr(self, f"{label}_key") is None or \
+                            getattr(self, f"{label}_cert") is None or \
+                            getattr(self, f"{label}_chain") is None or \
+                            getattr(self, f"{label}_created") is None:
                         self.clean_section(label)
                 else:
-                    if getattr(self, "%s_key" % label) is None or \
-                            getattr(self, "%s_csr" % label) is None or \
-                            getattr(self, "%s_created" % label) is None:
+                    if getattr(self, f"{label}_key") is None or \
+                            getattr(self, f"{label}_csr") is None or \
+                            getattr(self, f"{label}_created") is None:
                         self.clean_section(label)
 
         self.dirty = True
@@ -442,77 +441,77 @@ class SSLCert(object):
         """
         logger.debug("Inspecting file system for certs, and loading them for: {name}", name=self.sslname)
 
-        for label in ['current', 'next']:
-            setattr(self, "%s_is_valid" % label, None)
+        for label in ["current", "next"]:
+            setattr(self, f"{label}_is_valid", None)
 
-            if os.path.exists("%s/etc/certs/%s.%s.meta" % (self.working_dir, self.sslname, label)):
+            if os.path.exists(f"{self.working_dir}/etc/certs/{self.sslname}.{label}.meta"):
                 logger.debug("SSL Meta found for: {label} - {sslname}", label=label, sslname=self.sslname)
-                file_content = yield read_file("%s/etc/certs/%s.%s.meta" % (self.working_dir, self.sslname, label))
+                file_content = yield read_file(f"{self.working_dir}/etc/certs/{self.sslname}.{label}.meta")
                 meta = json.loads(file_content)
                 csr_read = False
-                if label == 'next':
+                if label == "next":
                     logger.debug("Looking for 'next' information.")
-                    if os.path.exists("%s/etc/certs/%s.%s.csr.pem" % (self.working_dir, self.sslname, label)):
-                        if getattr(self, "%s_csr" % label) is None:
+                    if os.path.exists(f"{self.working_dir}/etc/certs/{self.sslname}.{label}.csr.pem"):
+                        if getattr(self, f"{label}_csr") is None:
                             csr = yield read_file(
-                                "%s/etc/certs/%s.%s.csr.pem" % (self.working_dir, self.sslname, label),
+                                f"{self.working_dir}/etc/certs/{self.sslname}.{label}.csr.pem",
                                 True,
                             )
-                            if sha256(str(csr).encode('utf-8')).hexdigest() == meta['csr']:
+                            if sha256(str(csr).encode("utf-8")).hexdigest() == meta["csr"]:
                                 csr_read = True
                             else:
                                 logger.warn("Appears that the file system has bad meta signatures (csr). Purging.")
-                                for file_to_delete in glob.glob("%s/etc/certs/%s.%s.*" % (self.working_dir, self.sslname, label)):
-                                    logger.warn("Removing bad file: %s" % file_to_delete)
+                                for file_to_delete in glob.glob(f"{self.working_dir}/etc/certs/{self.sslname}.{label}.*"):
+                                    logger.warn("Removing bad file: {file}", file=file_to_delete)
                                     os.remove(file_to_delete)
                                 continue
 
                 cert_read = False
-                if getattr(self, "%s_cert" % label) is None:
-                    if os.path.exists("%s/etc/certs/%s.%s.cert.pem" % (self.working_dir, self.sslname, label)):
+                if getattr(self, f"{label}_cert") is None:
+                    if os.path.exists(f"{self.working_dir}/etc/certs/{self.sslname}.{label}.cert.pem"):
                         # print("setting cert!!!")
                         cert = yield read_file(
-                            "%s/etc/certs/%s.%s.cert.pem" % (self.working_dir, self.sslname, label),
+                            f"{self.working_dir}/etc/certs/{self.sslname}.{label}.cert.pem",
                             True
                         )
                         cert_read = True
                         # print("testing with this cert: %s" % cert)
-                        if sha256(str(cert).encode('utf-8')).hexdigest() != meta['cert']:
-                            # print("%s != %s" % (sha256(str(cert).encode('utf-8')).hexdigest(), meta['cert']))
+                        if sha256(str(cert).encode("utf-8")).hexdigest() != meta["cert"]:
+                            # print("%s != %s" % (sha256(str(cert).encode("utf-8")).hexdigest(), meta["cert"]))
                             logger.warn("Appears that the file system has bad meta signatures (cert). Purging.")
-                            for file_to_delete in glob.glob("%s/etc/certs/%s.%s.*" % (self.working_dir, self.sslname, label)):
-                                logger.warn("Removing bad file: %s" % file_to_delete)
+                            for file_to_delete in glob.glob(f"{self.working_dir}/etc/certs/{self.sslname}.{label}.*"):
+                                logger.warn("Removing bad file: {file}", file=file_to_delete)
                                 os.remove(file_to_delete)
                             continue
 
                 chain_read = False
-                if getattr(self, "%s_chain" % label) is None:
-                    if os.path.exists("%s/etc/certs/%s.%s.chain.pem" % (self.working_dir, self.sslname, label)):
+                if getattr(self, f"{label}_chain") is None:
+                    if os.path.exists(f"{self.working_dir}/etc/certs/{self.sslname}.{label}.chain.pem"):
                         # print("setting chain!!!")
                         chain = yield read_file(
-                            "%s/etc/certs/%s.%s.chain.pem" % (self.working_dir, self.sslname, label),
+                            f"{self.working_dir}/etc/certs/{self.sslname}.{label}.chain.pem",
                             True
                         )
                         chain_read = True
-                        if sha256(str(chain).encode('utf-8')).hexdigest() != meta['chain']:
+                        if sha256(str(chain).encode("utf-8")).hexdigest() != meta["chain"]:
                             logger.warn("Appears that the file system has bad meta signatures (chain). Purging.")
-                            for file_to_delete in glob.glob("%s/etc/certs/%s.%s.*" % (self.working_dir, self.sslname, label)):
-                                logger.warn("Removing bad file: %s" % file_to_delete)
+                            for file_to_delete in glob.glob(f"{self.working_dir}/etc/certs/{self.sslname}.{label}.*"):
+                                logger.warn("Removing bad file: {file}", file=file_to_delete)
                                 os.remove(file_to_delete)
                             continue
 
                 key_read = False
-                if getattr(self, "%s_key" % label) is None:
-                    if os.path.exists("%s/etc/certs/%s.%s.key.pem" % (self.working_dir, self.sslname, label)):
+                if getattr(self, f"{label}_key") is None:
+                    if os.path.exists(f"{self.working_dir}/etc/certs/{self.sslname}.{label}.key.pem"):
                         key = yield read_file(
-                            "%s/etc/certs/%s.%s.key.pem" % (self.working_dir, self.sslname, label),
+                            f"{self.working_dir}/etc/certs/{self.sslname}.{label}.key.pem",
                             True
                         )
                         key_read = True
-                        if sha256(str(key).encode('utf-8')).hexdigest() != meta['key']:
+                        if sha256(str(key).encode("utf-8")).hexdigest() != meta["key"]:
                             logger.warn("Appears that the file system has bad meta signatures (key). Purging.")
-                            for file_to_delete in glob.glob("%s/etc/certs/%s.%s.*" % (self.working_dir, self.sslname, label)):
-                                logger.warn("Removing bad file: %s" % file_to_delete)
+                            for file_to_delete in glob.glob(f"{self.working_dir}/etc/certs/{self.sslname}.{label}.*"):
+                                logger.warn("Removing bad file: {file}", file=file_to_delete)
                                 os.remove(file_to_delete)
                             continue
 
@@ -525,24 +524,24 @@ class SSLCert(object):
                         return the_input
 
                 if csr_read:
-                    setattr(self, "%s_csr" % label, csr)
+                    setattr(self, f"{label}_csr", csr)
                 if cert_read:
-                    setattr(self, "%s_cert" % label, cert)
+                    setattr(self, f"{label}_cert", cert)
                 if chain_read:
-                    setattr(self, "%s_chain" % label, chain)
+                    setattr(self, f"{label}_chain", chain)
                 if key_read:
-                    setattr(self, "%s_key" % label, key)
-                setattr(self, "%s_status" % label, return_int(meta['status']))
-                setattr(self, "%s_status_msg" % label, return_int(meta['status_msg']))
-                setattr(self, "%s_expires" % label, return_int(meta['expires']))
-                setattr(self, "%s_created" % label, return_int(meta['created']))
-                setattr(self, "%s_signed" % label, return_int(meta['signed']))
-                setattr(self, "%s_submitted" % label, return_int(meta['submitted']))
-                setattr(self, "%s_fqdn" % label, return_int(meta['fqdn']))
+                    setattr(self, f"{label}_key", key)
+                setattr(self, f"{label}_status", return_int(meta["status"]))
+                setattr(self, f"{label}_status_msg", return_int(meta["status_msg"]))
+                setattr(self, f"{label}_expires", return_int(meta["expires"]))
+                setattr(self, f"{label}_created", return_int(meta["created"]))
+                setattr(self, f"{label}_signed", return_int(meta["signed"]))
+                setattr(self, f"{label}_submitted", return_int(meta["submitted"]))
+                setattr(self, f"{label}_fqdn", return_int(meta["fqdn"]))
 
                 self.check_is_valid(label)
             else:
-                setattr(self, "%s_is_valid" % label, False)
+                setattr(self, f"{label}_is_valid", False)
         self.set_crypto()
 
     @inlineCallbacks
@@ -562,64 +561,68 @@ class SSLCert(object):
 
     @inlineCallbacks
     def _sync_to_filesystem(self):
-        for label in ['current', 'next']:
+        for label in ["current", "next"]:
 
             meta = {
-                'status': getattr(self, "%s_status" % label),
-                'status_msg': getattr(self, "%s_status_msg" % label),
-                'created': getattr(self, "%s_created" % label),
-                'expires': getattr(self, "%s_expires" % label),
-                'signed': getattr(self, "%s_signed" % label),
-                'submitted': getattr(self, "%s_submitted" % label),
-                'fqdn': getattr(self, "%s_fqdn" % label),
-                'key_type': self.key_type,
-                'key_size': self.key_size,
+                "status": getattr(self, f"{label}_status"),
+                "status_msg": getattr(self, f"{label}_status_msg"),
+                "created": getattr(self, f"{label}_created"),
+                "expires": getattr(self, f"{label}_expires"),
+                "signed": getattr(self, f"{label}_signed"),
+                "submitted": getattr(self, f"{label}_submitted"),
+                "fqdn": getattr(self, f"{label}_fqdn"),
+                "key_type": self.key_type,
+                "key_size": self.key_size,
             }
 
-            if getattr(self, "%s_cert" % label) is None:
-                meta['cert'] = None
-                file = "%s/etc/certs/%s.%s.cert.pem" % (self.working_dir, self.sslname, label)
+            if getattr(self, f"{label}_cert") is None:
+                meta["cert"] = None
+                file = f"{self.working_dir}/etc/certs/{self.sslname}.{label}.cert.pem"
                 if os.path.exists(file):
                     os.remove(file)
             else:
-                meta['cert'] = sha256(str(getattr(self, "%s_cert" % label)).encode('utf-8')).hexdigest()
-                yield save_file("%s/etc/certs/%s.%s.cert.pem" % (self.working_dir, self.sslname, label),  getattr(self, "%s_cert" % label))
+                meta["cert"] = sha256(str(getattr(self, f"{label}_cert")).encode("utf-8")).hexdigest()
+                yield save_file(f"{self.working_dir}/etc/certs/{self.sslname}.{label}.cert.pem",
+                                getattr(self, f"{label}_cert"))
 
-            if getattr(self, "%s_chain" % label) is None:
-                meta['chain'] = None
-                file = "%s/etc/certs/%s.%s.chain.pem" % (self.working_dir, self.sslname, label)
+            if getattr(self, f"{label}_chain") is None:
+                meta["chain"] = None
+                file = f"{self.working_dir}/etc/certs/{self.sslname}.{label}.chain.pem"
                 if os.path.exists(file):
                     os.remove(file)
             else:
-                meta['chain'] = sha256(str(getattr(self, "%s_chain" % label)).encode('utf-8')).hexdigest()
-                yield save_file("%s/etc/certs/%s.%s.chain.pem" % (self.working_dir, self.sslname, label), getattr(self, "%s_chain" % label))
+                meta["chain"] = sha256(str(getattr(self, f"{label}_chain")).encode("utf-8")).hexdigest()
+                yield save_file(f"{self.working_dir}/etc/certs/{self.sslname}.{label}.chain.pem",
+                                getattr(self, f"{label}_chain"))
 
-            if getattr(self, "%s_key" % label) is None:
-                meta['key'] = None
-                file = "%s/etc/certs/%s.%s.key.pem" % (self.working_dir, self.sslname, label)
+            if getattr(self, f"{label}_key") is None:
+                meta["key"] = None
+                file = f"{self.working_dir}/etc/certs/{self.sslname}.{label}.key.pem"
                 if os.path.exists(file):
                     os.remove(file)
             else:
-                meta['key'] = sha256(str(getattr(self, "%s_key" % label)).encode('utf-8')).hexdigest()
-                yield save_file("%s/etc/certs/%s.%s.key.pem" % (self.working_dir, self.sslname, label), getattr(self, "%s_key" % label))
+                meta["key"] = sha256(str(getattr(self, f"{label}_key")).encode("utf-8")).hexdigest()
+                yield save_file(f"{self.working_dir}/etc/certs/{self.sslname}.{label}.key.pem",
+                                getattr(self, f"{label}_key"))
 
-            if label == 'next':
-                if getattr(self, "%s_csr" % label) is None:
-                    meta['csr'] = None
-                    file = "%s/etc/certs/%s.%s.csr.pem" % (self.working_dir, self.sslname, label)
+            if label == "next":
+                if getattr(self, f"{label}_csr") is None:
+                    meta["csr"] = None
+                    file = f"{self.working_dir}/etc/certs/{self.sslname}.{label}.csr.pem"
                     if os.path.exists(file):
                         os.remove(file)
                 else:
-                    meta['csr'] = sha256(str(getattr(self, "%s_csr" % label)).encode('utf-8')).hexdigest()
-                    yield save_file("%s/etc/certs/%s.%s.csr.pem" % (self.working_dir, self.sslname, label), getattr(self, "%s_csr" % label))
+                    meta["csr"] = sha256(str(getattr(self, f"{label}_csr")).encode("utf-8")).hexdigest()
+                    yield save_file(f"{self.working_dir}/etc/certs/{self.sslname}.{label}.csr.pem",
+                                    getattr(self, f"{label}_csr"))
 
-            yield save_file("%s/etc/certs/%s.%s.meta" % (self.working_dir, self.sslname, label),
+            yield save_file(f"{self.working_dir}/etc/certs/{self.sslname}.{label}.meta",
                             json.dumps(meta, indent=4))
 
-            yield save_file("%s/etc/certs/%s.meta" % (self.working_dir, self.sslname),
+            yield save_file(f"{self.working_dir}/etc/certs/{self.sslname}.meta",
                             json.dumps({
-                                'sans': self.sans,
-                                'cn': self.cn,
+                                "sans": self.sans,
+                                "cn": self.cn,
                             }, indent=4))
 
     @inlineCallbacks
@@ -640,9 +643,9 @@ class SSLCert(object):
         #     )
         # )
         if force_new is True:
-            self.clean_section('next')
+            self.clean_section("next")
         else:
-            self.check_is_valid('next')
+            self.check_is_valid("next")
 
         if self.next_is_valid is not None:
             if submit is True:
@@ -657,11 +660,11 @@ class SSLCert(object):
         logger.debug("generate_new_csr: {sslname}.  Submit: {submit}", sslname=self.sslname, submit=submit)
         # End local functions.
         request = {
-            'sslname': self.sslname,
-            'key_size': self.key_size,
-            'key_type': self.key_type,
-            'cn': self.cn,
-            'sans': self.sans
+            "sslname": self.sslname,
+            "key_size": self.key_size,
+            "key_type": self.key_type,
+            "cn": self.cn,
+            "sans": self.sans
         }
 
         if self.next_csr_generation_in_progress is True:  # don't run twice!
@@ -697,12 +700,12 @@ class SSLCert(object):
         results = bytes_to_unicode(results)
         self.next_status = "new"
         self.next_status_msg = "Created but unsent for signing. Will send when previous cert nears expiration."
-        self.next_csr = results['csr']
-        self.next_csr_hash = results['csr_hash']
-        self.next_key = results['key']
+        self.next_csr = results["csr"]
+        self.next_csr_hash = results["csr_hash"]
+        self.next_key = results["key"]
         # print("request_new_csr csr: %s " % self.next_csr)
-        yield save_file("%s/etc/certs/%s.next.csr.pem" % (self.working_dir, self.sslname), self.next_csr)
-        yield save_file("%s/etc/certs/%s.next.key.pem" % (self.working_dir, self.sslname), self.next_key)
+        yield save_file(f"{self.working_dir}/etc/certs/{self.sslname}.next.csr.pem", self.next_csr)
+        yield save_file(f"{self.working_dir}/etc/certs/{self.sslname}.next.key.pem", self.next_key)
         self.next_created = int(time())
         self.dirty = True
         self.next_csr_generation_in_progress = False
@@ -715,7 +718,7 @@ class SSLCert(object):
         Submit a CSR for signing, only if we have a CSR and KEY.
         :return:
         """
-        if self._Parent._Loader.operating_mode != 'run':
+        if self._Parent._Loader.operating_mode != "run":
             return
 
         # self.next_submitted = int(time())
@@ -729,7 +732,7 @@ class SSLCert(object):
         if len(missing) == 0:
             request = self._Parent.send_csr_request(self.next_csr, self.sslname)
             logger.debug("Sending CSR Request from instance. Correlation id: {correlation_id}",
-                         correlation_id=request['properties']['correlation_id'])
+                         correlation_id=request["properties"]["correlation_id"])
             self.next_submitted = int(time())
         else:
             logger.warn("Requested to submit CSR, but these are missing: {missing}", missing=".".join(missing))
@@ -749,22 +752,22 @@ class SSLCert(object):
         """
         logger.debug("Received a signed SSL/TLS certificate for: {sslname}", sslname=self.sslname)
         logger.debug("TLS cert body: {body}", body=body)
-        if 'csr_hash' not in body:
+        if "csr_hash" not in body:
             logger.warn("'csr_hash' is missing from incoming amqp TLS key.")
             return
-        csr_hash = body['csr_hash']
+        csr_hash = body["csr_hash"]
         if csr_hash != self.next_csr_hash:
             logger.warn("Incoming TLS key hash is mismatched. Discarding. Have: {next_csr_hash}, received: {csr_hash}",
                         next_csr_hash=self.next_csr_hash, csr_hash=csr_hash)
             return
 
-        self.next_status = body['status']
-        self.next_status_msg = body['status_msg']
-        if body['status'] == "signed":
-            self.next_chain = body['chain_text']
-            self.next_cert = body['cert_text']
-            self.next_signed = body['cert_signed']
-            self.next_expires = body['cert_expires']
+        self.next_status = body["status"]
+        self.next_status_msg = body["status_msg"]
+        if body["status"] == "signed":
+            self.next_chain = body["chain_text"]
+            self.next_cert = body["cert_text"]
+            self.next_signed = body["cert_signed"]
+            self.next_expires = body["cert_expires"]
             self.next_is_valid = True
             self.dirty = True
             yield self.check_if_rotate_needed()  # this will rotate next into current
@@ -786,7 +789,7 @@ class SSLCert(object):
                     self.update_callback_function,
                 )
             except YomboWarning as e:
-                logger.warn("Invalid update_callback information provided: %s" % e)
+                logger.warn("Invalid update_callback information provided: {e}", e=e)
 
         logger.info("Method to notify ssl requester that there's a new cert: {method}", method=method)
 
@@ -811,22 +814,19 @@ class SSLCert(object):
         if self.current_is_valid is True:
             logger.debug("Returning a signed cert to caller for cert: {sslname}", sslname=self.sslname)
             return {
-                'key': self.current_key,
-                'key_crypt': self.current_key_crypt,
-                'cert': self.current_cert,
-                'cert_crypt': self.current_cert_crypt,
-                'chain': self.current_chain,
-                'chain_crypt': [self.current_chain_crypt],
-                'expires': self.current_expires,
-                'created': self.current_created,
-                'signed': self.current_signed,
-                'self_signed': False,
-                'cert_file': self._Parent._Atoms.get('working_dir') + "/etc/certs/%s.current.cert.pem" %
-                            self.sslname,
-                'key_file': self._Parent._Atoms.get('working_dir') + "/etc/certs/%s.current.key.pem" %
-                            self.sslname,
-                'chain_file': self._Parent._Atoms.get('working_dir') + "/etc/certs/%s.current.chain.pem" %
-                            self.sslname,
+                "key": self.current_key,
+                "key_crypt": self.current_key_crypt,
+                "cert": self.current_cert,
+                "cert_crypt": self.current_cert_crypt,
+                "chain": self.current_chain,
+                "chain_crypt": [self.current_chain_crypt],
+                "expires": self.current_expires,
+                "created": self.current_created,
+                "signed": self.current_signed,
+                "self_signed": False,
+                "cert_file": self._Parent._Atoms.get("working_dir") + f"/etc/certs/{self.sslname}.current.cert.pem",
+                "key_file": self._Parent._Atoms.get("working_dir") + f"/etc/certs/{self.sslname}.current.key.pem",
+                "chain_file": self._Parent._Atoms.get("working_dir") + f"/etc/certs/{self.sslname}.current.chain.pem",
             }
         else:
             logger.debug("Sending SELF SIGNED cert details for {sslname}", sslname=self.sslname)
@@ -840,19 +840,19 @@ class SSLCert(object):
                 if isinstance(cert_crypt, tuple):
                     cert_crypt = cert_crypt[0]
                 return {
-                    'key': self._Parent.self_signed_key,
-                    'cert': self._Parent.self_signed_cert,
-                    'chain': None,
-                    'key_crypt': key_crypt, ####
-                    'cert_crypt': cert_crypt,
-                    'chain_crypt': None,
-                    'expires': self._Parent.self_signed_expires,
-                    'created': self._Parent.self_signed_created,
-                    'signed': self._Parent.self_signed_created,
-                    'self_signed': True,
-                    'cert_file': self._Parent._Atoms.get('working_dir') + "/etc/certs/sslcert_selfsigned.cert.pem",
-                    'key_file': self._Parent._Atoms.get('working_dir') + "/etc/certs/%sslcert_selfsigned.key.pem",
-                    'chain_file': None,
+                    "key": self._Parent.self_signed_key,
+                    "cert": self._Parent.self_signed_cert,
+                    "chain": None,
+                    "key_crypt": key_crypt, ####
+                    "cert_crypt": cert_crypt,
+                    "chain_crypt": None,
+                    "expires": self._Parent.self_signed_expires,
+                    "created": self._Parent.self_signed_created,
+                    "signed": self._Parent.self_signed_created,
+                    "self_signed": True,
+                    "cert_file": self._Parent._Atoms.get("working_dir") + "/etc/certs/sslcert_selfsigned.cert.pem",
+                    "key_file": self._Parent._Atoms.get("working_dir") + "/etc/certs/sslcert_selfsigned.key.pem",
+                    "chain_file": None,
                 }
 
     def asdict(self):
@@ -862,36 +862,36 @@ class SSLCert(object):
         :return:
         """
         return {
-            'sslname': self.sslname,
-            'cn': self.cn,
-            'sans': self.sans,
-            'update_callback_type': self.update_callback_type,
-            'update_callback_component': self.update_callback_component,
-            'update_callback_function': self.update_callback_function,
-            'key_size': int(self.key_size),
-            'key_type': self.key_type,
-            'current_status': self.current_status,
-            'current_status_msg': self.current_status_msg,
-            'current_csr_hash': self.current_csr_hash,
-            'current_cert': self.current_cert,
-            'current_chain': self.current_chain,
-            'current_key': self.current_key,
-            'current_created': None if self.current_created is None else int(self.current_created),
-            'current_expires': None if self.current_expires is None else int(self.current_expires),
-            'current_signed': self.current_signed,
-            'current_submitted': self.current_submitted,
-            'current_fqdn': self.current_fqdn,
-            'current_is_valid': self.current_is_valid,
-            'next_status': self.next_status,
-            'next_status_msg': self.next_status_msg,
-            'next_csr': self.next_csr,
-            'next_cert': self.next_cert,
-            'next_chain': self.next_chain,
-            'next_key': self.next_key,
-            'next_created': None if self.next_created is None else int(self.next_created),
-            'next_expires': None if self.next_expires is None else int(self.next_expires),
-            'next_signed': self.next_signed,
-            'next_submitted': self.next_submitted,
-            'next_fqdn': self.next_fqdn,
-            'next_is_valid': self.next_is_valid,
+            "sslname": self.sslname,
+            "cn": self.cn,
+            "sans": self.sans,
+            "update_callback_type": self.update_callback_type,
+            "update_callback_component": self.update_callback_component,
+            "update_callback_function": self.update_callback_function,
+            "key_size": int(self.key_size),
+            "key_type": self.key_type,
+            "current_status": self.current_status,
+            "current_status_msg": self.current_status_msg,
+            "current_csr_hash": self.current_csr_hash,
+            "current_cert": self.current_cert,
+            "current_chain": self.current_chain,
+            "current_key": self.current_key,
+            "current_created": None if self.current_created is None else int(self.current_created),
+            "current_expires": None if self.current_expires is None else int(self.current_expires),
+            "current_signed": self.current_signed,
+            "current_submitted": self.current_submitted,
+            "current_fqdn": self.current_fqdn,
+            "current_is_valid": self.current_is_valid,
+            "next_status": self.next_status,
+            "next_status_msg": self.next_status_msg,
+            "next_csr": self.next_csr,
+            "next_cert": self.next_cert,
+            "next_chain": self.next_chain,
+            "next_key": self.next_key,
+            "next_created": None if self.next_created is None else int(self.next_created),
+            "next_expires": None if self.next_expires is None else int(self.next_expires),
+            "next_signed": self.next_signed,
+            "next_submitted": self.next_submitted,
+            "next_fqdn": self.next_fqdn,
+            "next_is_valid": self.next_is_valid,
         }

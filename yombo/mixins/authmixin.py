@@ -18,7 +18,7 @@ from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
 from yombo.mixins.yombobasemixin import YomboBaseMixin
 
-logger = get_logger('mixins.authmixin')
+logger = get_logger("mixins.authmixin")
 
 
 class AuthMixin(YomboBaseMixin):
@@ -89,8 +89,8 @@ class AuthMixin(YomboBaseMixin):
 
         :return:
         """
-        if hasattr(self, '_user_id'):  # Here incase the ording was wrong on loading... BAD DEV!
-            return "%s <%s>" % (self.name, self.email)
+        if hasattr(self, "_user_id"):  # Here incase the ording was wrong on loading... BAD DEV!
+            return f"{self.name} <{self.email}>"
         return self.auth_id
 
     @property
@@ -103,10 +103,10 @@ class AuthMixin(YomboBaseMixin):
 
         :return:
         """
-        if hasattr(self, '_user_id'):  # Here incase the ording was wrong on loading... BAD DEV!
-            return "%s (%s) <%s>" % (self.name, self.user_id, self.email)
+        if hasattr(self, "_user_id"):  # Here incase the ording was wrong on loading... BAD DEV!
+            return f"{self.name} ({self.user_id}) <{self.email}>"
         elif self.auth_id is not None:
-            return "%s::%s" % (self.auth_type, self.auth_id)
+            return f"{self.auth_type}::{self.auth_id}"
         return None
 
     @property
@@ -125,11 +125,11 @@ class AuthMixin(YomboBaseMixin):
 
         :return:
         """
-        if hasattr(self, 'email') and self.email is not None:
+        if hasattr(self, "email") and self.email is not None:
             u = self.email.split("@")
             return u[0] + "@" + u[1][0:4] + "..."
         elif self.auth_id is not None:
-            return "%s::%s..." % (self.auth_type, self.auth_id[0:-8][0:10])
+            return f"{self.auth_type}::{self.auth_id[0:-8][0:10]}..."
         return None
 
     @property
@@ -145,7 +145,7 @@ class AuthMixin(YomboBaseMixin):
 
     @property
     def has_user(self) -> str:
-        if hasattr(self, '_user_id'):
+        if hasattr(self, "_user_id"):
             if self._user_id is None:
                 return True
             return True
@@ -162,8 +162,8 @@ class AuthMixin(YomboBaseMixin):
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
         self._enabled = True
-        load_source = kwargs.get('load_source', 'database')
-        if load_source == 'database':
+        load_source = kwargs.get("load_source", "database")
+        if load_source == "database":
             self.in_db = True
             self.is_dirty = 0
         else:
@@ -196,9 +196,9 @@ class AuthMixin(YomboBaseMixin):
         :param default:
         :return:
         """
-        if key in ('last_access_at', 'created_at', 'updated_at', 'auth_id', 'user_id', 'created_by'):
+        if key in ("last_access_at", "created_at", "updated_at", "auth_id", "user_id", "created_by"):
             return getattr(self, key)
-        elif key == 'enabled':
+        elif key == "enabled":
             raise YomboWarning("Use expire() method to disable this auth.")
         elif key in self.auth_data:
             self.last_access_at = int(time())
@@ -206,7 +206,7 @@ class AuthMixin(YomboBaseMixin):
         elif default != "BRFEqgdgLgI0I8QM2Em2nWeJGEuY71TTo7H08uuT":
             return default
         else:
-            raise KeyError("Cannot find auth key: %s" % key)
+            raise KeyError("Cannot find auth key: {key}")
 
     def set(self, key, val):
         """
@@ -216,16 +216,16 @@ class AuthMixin(YomboBaseMixin):
         :param default:
         :return:
         """
-        if key in ('last_access_at', 'created_at', 'updated_at', 'auth_id', 'user_id', 'created_by'):
+        if key in ("last_access_at", "created_at", "updated_at", "auth_id", "user_id", "created_by"):
             raise YomboWarning("Cannot use this method to object attribute: {key}", key=key)
-        elif key == 'enabled':
+        elif key == "enabled":
             raise YomboWarning("Use expire() method to disable this auth.")
-        elif key in ('auth_id', 'user_id'):
+        elif key in ("auth_id", "user_id"):
             raise YomboWarning("Cannot change the ID of this session.")
         else:
             self.updated_at = int(time())
             self.auth_data[key] = val
-            if hasattr(self, 'is_dirty'):
+            if hasattr(self, "is_dirty"):
                 self.is_dirty += 50
             return val
 
@@ -242,7 +242,7 @@ class AuthMixin(YomboBaseMixin):
             try:
                 del self.auth_data[key]
                 self.updated_at = int(time())
-                if hasattr(self, 'is_dirty'):
+                if hasattr(self, "is_dirty"):
                     self.is_dirty += 50
             except Exception:
                 pass
@@ -274,7 +274,7 @@ class AuthMixin(YomboBaseMixin):
         :return:
         """
         self.enabled = True
-        if hasattr(self, 'is_dirty'):
+        if hasattr(self, "is_dirty"):
             self.is_dirty += 50000
         self.save()
 
@@ -286,19 +286,19 @@ class AuthMixin(YomboBaseMixin):
         """
         logger.debug("Expiring '{auth_type}' id: {id}", auth_type=self.auth_type, id=self._auth_id)
         self.enabled = False
-        if hasattr(self, 'is_dirty'):
+        if hasattr(self, "is_dirty"):
             self.is_dirty += 50000
         self.save()
 
     def asdict(self):
         return {
-            'auth_id': self.auth_id,
-            'auth_type': self.auth_type,
-            'user_id': self.user_id,
-            'last_access_at': self.last_access_at,
-            'created_at': self.created_at,
-            'updated_at': self.updated_at,
-            'auth_data': self.auth_data,
-            'enabled': self.enabled,
-            'is_dirty': self.is_dirty,
+            "auth_id": self.auth_id,
+            "auth_type": self.auth_type,
+            "user_id": self.user_id,
+            "last_access_at": self.last_access_at,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+            "auth_data": self.auth_data,
+            "enabled": self.enabled,
+            "is_dirty": self.is_dirty,
         }

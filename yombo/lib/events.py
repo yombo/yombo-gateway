@@ -33,7 +33,7 @@ from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import generate_source_string, global_invoke_all
 
-logger = get_logger('library.events')
+logger = get_logger("library.events")
 
 MAX_DURATION = 300
 
@@ -70,7 +70,7 @@ class Events(YomboLibrary):
 
         :return:
         """
-        event_types = yield global_invoke_all('_event_types_',
+        event_types = yield global_invoke_all("_event_types_",
                                               called_by=self,
                                               )
         for component, options in event_types.items():
@@ -100,14 +100,14 @@ class Events(YomboLibrary):
         elif isinstance(created_at, float):
             created_at = round(created_at, 3)
         if priority is None:
-            priority = 'normal'
+            priority = "normal"
 
         source_label = generate_source_string()  # get the module/class/function name of caller
 
         if event_type not in self.event_types:
-            raise YomboWarning("Invalid event type: %s" % event_type)
+            raise YomboWarning(f"Invalid event type: {event_type}")
         if event_subtype not in self.event_types[event_type]:
-            raise YomboWarning("Invalid event sub-type: %s" % event_subtype)
+            raise YomboWarning(f"Invalid event sub-type: {event_subtype}")
         if isinstance(attributes, list) is False and isinstance(attributes, tuple) is False:
             attributes = [attributes, ]
 
@@ -117,14 +117,14 @@ class Events(YomboLibrary):
             auth_id = auth.safe_display
 
         event = OrderedDict({
-            'event_type': event_type,
-            'event_subtype': event_subtype,
-            'priority': priority,
-            'source': source_label,
-            'auth_id': auth_id,
-            'created_at': created_at,
+            "event_type": event_type,
+            "event_subtype": event_subtype,
+            "priority": priority,
+            "source": source_label,
+            "auth_id": auth_id,
+            "created_at": created_at,
             })
-        event.update( OrderedDict({"attr%s" % (v + 1): k for v, k in enumerate(attributes)}) )
+        event.update(OrderedDict({f"attr{v + 1}": k for v, k in enumerate(attributes)}))
         length = str(len(event))
         if length not in self.event_queue:
             self.event_queue[length] = []
@@ -146,8 +146,8 @@ class Events(YomboLibrary):
         if event_subtype in self.event_types[event_type]:
             raise YomboWarning("Event type & sub type combo already exists.")
         self.event_types[event_type][event_subtype] = {
-            'descrption': description,
-            'attributes': attributes,
+            "descrption": description,
+            "attributes": attributes,
         }
 
     @inlineCallbacks

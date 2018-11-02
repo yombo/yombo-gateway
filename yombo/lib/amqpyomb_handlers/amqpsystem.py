@@ -26,7 +26,7 @@ from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 
-logger = get_logger('library.amqpyomb_handlers.amqpsystem')
+logger = get_logger("library.amqpyomb_handlers.amqpsystem")
 
 
 class AmqpSystemHandler(YomboLibrary):
@@ -49,7 +49,7 @@ class AmqpSystemHandler(YomboLibrary):
         """
         Handles requests from the Yombo server.
         """
-        request_type = headers['request_type']
+        request_type = headers["request_type"]
         if request_type == "ping":
             self.process_request_ping(headers, body, properties, **kwargs)
         else:
@@ -61,7 +61,7 @@ class AmqpSystemHandler(YomboLibrary):
         Handles responses to system calls to yombo servers.
         """
 
-        response_type = headers['response_type']
+        response_type = headers["response_type"]
         if response_type == "ping":
             self.process_response_ping(headers, body, properties, **kwargs)
         else:

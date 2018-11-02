@@ -1,4 +1,5 @@
 from typing import Any, Union, TypeVar, Callable, Sequence, Dict
+import string
 
 from yombo.lib.inputtypes.input_type import Input_Type
 
@@ -26,9 +27,9 @@ class _Bool(Input_Type):
             raise AssertionError("Value is not a boolean.")
 
         value = value.lower()
-        if value in (1, '1', 'true', 'yes', 'on', 'enable'):
+        if value in (1, "1", "true", "yes", "on", "enable"):
             return True
-        if value in (0, '0', 'false', 'no', 'off', 'disable'):
+        if value in (0, "0", "false", "no", "off", "disable"):
             return False
         raise AssertionError("Value is not a boolean.")
 
@@ -48,9 +49,9 @@ class _Checkbox(Input_Type):
             raise AssertionError("Value is not a boolean.")
 
         value = value.lower()
-        if value in (1, '1', 'true', 'yes', 'on', 'enable'):
+        if value in (1, "1", "true", "yes", "on", "enable"):
             return True
-        if value in (0, '0', 'false', 'no', 'off', 'disable'):
+        if value in (0, "0", "false", "no", "off", "disable"):
             return False
         raise AssertionError("Value is not a boolean.")
 
@@ -96,12 +97,13 @@ class Filename(Input_Type):
                     raise AssertionError("Unable to convert input to string, from bytes.")
         if isinstance(value, str) is False:
             raise AssertionError("Input must be string.")
-        valid_chars = "-_.() /%s%s" % (string.ascii_letters, string.digits)
+        valid_chars = f"-_.() /{string.ascii_letters}{string.digits}"
         for char in value:
             if char not in valid_chars:
-                raise AssertionError("Input has invalid character: %s" % char)
+                raise AssertionError(f"Input has invalid character: {char}")
         self.check_min_max(value, **kwargs)
         return value
+
 
 class _Float(Input_Type):
     """
@@ -131,7 +133,7 @@ class _None(Input_Type):
         if self.CONVERT is False:
             raise AssertionError("Value is not NoneType or empty.")
         if isinstance(value, str):
-            if value.lower() == 'none' or value == "":
+            if value.lower() == "none" or value == "":
                 return None
         raise AssertionError("Value is not NoneType or empty.")
 
@@ -188,7 +190,7 @@ class _String(Input_Type):
 
     def validate(self, value, **kwargs):
         if isinstance(value, str) is False:
-            if self.ALLOW_NONE is True or 'allow_none' in kwargs:
+            if self.ALLOW_NONE is True or "allow_none" in kwargs:
                 return "None"
             if self.CONVERT is True:
                 try:

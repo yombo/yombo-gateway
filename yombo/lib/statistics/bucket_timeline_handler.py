@@ -25,12 +25,12 @@ class BucketTimelineHandler:
         self._bucket_type = bucket_type
         self._aggregator = aggregator if aggregator is not None else AggregatorFactory.get_aggregator(bucket_type)
         # sort db values by bucket_time
-        self._db_values = sorted(db_values, key=lambda d: d['bucket_time'])
+        self._db_values = sorted(db_values, key=lambda d: d["bucket_time"])
         intervals = []
         for db_value in self._db_values:
-            start = db_value['bucket_time']
-            end = db_value['bucket_time'] + db_value['bucket_size']
-            value = db_value['bucket_value']
+            start = db_value["bucket_time"]
+            end = db_value["bucket_time"] + db_value["bucket_size"]
+            value = db_value["bucket_value"]
             if self._bucket_type == "datapoint":
                 intervals.append(Point(start, value))
             else:

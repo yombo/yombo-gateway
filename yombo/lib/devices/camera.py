@@ -29,7 +29,7 @@ class Camera(Device):
             FEATURE_DETECTS_MOTION: False,
         })
 
-        # self.MACHINE_STATUS_EXTRA_FIELDS['mode'] = ['idle', 'streaming', 'recording']
+        # self.MACHINE_STATUS_EXTRA_FIELDS["mode"] = ["idle", "streaming", "recording"]
 
     def toggle(self):
         if self.status_history[0].machine_status == SEVALUE_IDLE:
@@ -53,6 +53,6 @@ class Camera(Device):
             self.FEATURES[FEATURE_DETECTS_MOTION] = val
         else:
             try:
-                self.FEATURES[FEATURE_DETECTS_MOTION] = coerce_value(val, 'boolean')
+                self.FEATURES[FEATURE_DETECTS_MOTION] = coerce_value(val, "boolean")
             except Exception:
                 pass

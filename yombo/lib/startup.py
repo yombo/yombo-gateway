@@ -32,7 +32,7 @@ from yombo.core.log import get_logger
 
 from yombo.utils import sleep
 
-logger = get_logger('library.startup')
+logger = get_logger("library.startup")
 
 class Startup(YomboLibrary):
     """
@@ -59,7 +59,7 @@ class Startup(YomboLibrary):
         :param kwargs:
         :return:
         """
-        self.gwid = self._Configs.get2('core', 'gwid', 'local', False)
+        self.gwid = self._Configs.get2("core", "gwid", "local", False)
         self.gwuuid = self._Configs.get2("core", "gwuuid", None, False)
         self.gwhash = self._Configs.get2("core", "gwhash", None, False)
         self.api_auth = self._Configs.get2("core", "api_auth", None, False)
@@ -67,27 +67,27 @@ class Startup(YomboLibrary):
 
         self.cache_updater_running = False
         self.system_stopping = False
-        if self._Loader.operating_mode == 'first_run':  # will know if first_run already or yombo.ini is missing.
+        if self._Loader.operating_mode == "first_run":  # will know if first_run already or yombo.ini is missing.
             return
-        first_run = self._Configs.get('core', 'first_run', False, False)
+        first_run = self._Configs.get("core", "first_run", False, False)
         if first_run is True:
-            self._Loader.operating_mode = 'first_run'
+            self._Loader.operating_mode = "first_run"
             return True
 
-        operating_mode = 'run'
+        operating_mode = "run"
         items_needed = []
         gwid = self.gwid()
         if gwid is None or gwid == "":
             items_needed.append("Gateway ID is missing. Please complete the setup wizard again.")
-            operating_mode = 'first_run'
+            operating_mode = "first_run"
             return operating_mode, items_needed
         gwuuid = self.gwuuid()
         if gwuuid is None or gwuuid == "":
-            operating_mode = 'config'
+            operating_mode = "config"
             items_needed.append("Gateway UUID is missing.")
         gwhash = self.gwhash()
         if gwhash is None or gwhash == "":
-            operating_mode = 'config'
+            operating_mode = "config"
             items_needed.append("Gateway password is missing.")
 
         if len(items_needed) == 0:
@@ -95,13 +95,13 @@ class Startup(YomboLibrary):
             if has_valid_credentials is False:
                 received_credentails = yield self.search_for_valid_sessions()
                 if received_credentails is False:
-                    operating_mode = 'config'
-                    logger.error('System is unable to authenticate itself with the server. The owner simply needs to'
-                    ' log into the system. This will activate the reauthorization.')
+                    operating_mode = "config"
+                    logger.error("System is unable to authenticate itself with the server. The owner simply needs to"
+                                 " log into the system. This will activate the reauthorization.")
                     items_needed.append("Gateway ID, hash, or session is invalid. Tried to get new ones, but failed.")
                     items_needed.append("The owner needs to log into the gateway to automatically fix.")
                 elif received_credentails is True:
-                    operating_mode = 'config'
+                    operating_mode = "config"
                     items_needed.append("Received new gateway credentials. Restarting too.")
 
         is_master = self._Configs.get("core", "is_master", True)
@@ -111,16 +111,18 @@ class Startup(YomboLibrary):
                 items_needed.append("Gateway is marked as slave, but no master gateway set.")
 
         if len(items_needed) > 0:
-            needed_text = '</li><li>'.join(items_needed)
-            self._Notifications.add({'title': 'Need configurations',
-                                     'message': 'System has been placed into configuration mode. The following configurations are needed:<p><ul><li>%s</li></ul>' % needed_text,
-                                     'source': 'Yombo Startup Library',
-                                     'persist': False,
-                                     'priority': 'high',
-                                     'always_show': True,
-                                     'always_show_allow_clear': True,
+            needed_text = "</li><li>".join(items_needed)
+            self._Notifications.add({"title": "Need configurations",
+                                     "message":
+                                         f"System has been placed into configuration mode. The following "
+                                         f"configurations are needed:<p><ul><li>{needed_text}</li></ul>",
+                                     "source": "Yombo Startup Library",
+                                     "persist": False,
+                                     "priority": "high",
+                                     "always_show": True,
+                                     "always_show_allow_clear": True,
                                      })
-            self._Loader.operating_mode = 'config'
+            self._Loader.operating_mode = "config"
         else:
             self._Loader.operating_mode = operating_mode
         yield self._GPG._init_from_startup_()
@@ -148,9 +150,9 @@ class Startup(YomboLibrary):
 
         sessions = yield self._LocalDB.get_web_session()
         for session in sessions:
-            data = session['auth_data']
-            if 'yomboapi_session' in data and isinstance(data['yomboapi_session'], str):
-                results = yield try_get_new_gateway_credentials(data['yomboapi_session'])
+            data = session["auth_data"]
+            if "yomboapi_session" in data and isinstance(data["yomboapi_session"], str):
+                results = yield try_get_new_gateway_credentials(data["yomboapi_session"])
                 if results is True:
                     return True
         return False
@@ -178,7 +180,7 @@ class Startup(YomboLibrary):
             self.cache_updater_running == None
             return
 
-        if self._Loader.operating_mode != 'run' or self.cache_updater_running is not False or \
+        if self._Loader.operating_mode != "run" or self.cache_updater_running is not False or \
                 self.system_stopping is True:
             return
 

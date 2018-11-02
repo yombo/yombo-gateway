@@ -13,7 +13,7 @@ from yombo.lib.webinterface.routes.api_v1.__init__ import return_error, args_to_
 from yombo.utils import bytes_to_unicode, sha256_compact
 from yombo.utils.networking import ip_addres_in_local_network
 
-logger = get_logger('library.webinterface.auth')
+logger = get_logger("library.webinterface.auth")
 
 
 def get_session(roles=None, *args, **kwargs):
@@ -40,11 +40,11 @@ def get_session(roles=None, *args, **kwargs):
 
 def update_request(webinterface, request):
     """
-    Modifies the request to add 'received_cookies in unicode. Also, adds a 'args'
-    attribute that contains the incoming arguments, but in unicode. Also adds '_' to the
+    Modifies the request to add "received_cookies in unicode. Also, adds a "args"
+    attribute that contains the incoming arguments, but in unicode. Also adds "_" to the
     templates, but it for the current user's language.
 
-    Finally, it adds cache-control and expires items to ensure the content isnt' cached.
+    Finally, it adds cache-control and expires items to ensure the content isnt" cached.
 
     :param request: 
     :return: 
@@ -52,10 +52,10 @@ def update_request(webinterface, request):
     request.auth = None
     request.received_cookies = bytes_to_unicode(request.received_cookies)
     request.args = bytes_to_unicode(request.args)
-    request.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')  # don't cache!
-    request.setHeader('Expires', '-1')  # don't cache!
-    request.setHeader('X-Frame-Options', 'SAMEORIGIN')  # Prevent nesting frames
-    request.setHeader('X-Content-Type-Options', 'nosniff');  # We'll do our best to be accurate!
+    request.setHeader("Cache-Control", "no-cache, no-store, must-revalidate")  # don't cache!
+    request.setHeader("Expires", "-1")  # don't cache!
+    request.setHeader("X-Frame-Options", "SAMEORIGIN")  # Prevent nesting frames
+    request.setHeader("X-Content-Type-Options", "nosniff");  # We"ll do our best to be accurate!
     request.webinterface = webinterface
 
 
@@ -69,15 +69,15 @@ def check_idempotence(webinterface, request, session):
     :param session:
     :return:
     """
-    idempotence = request.getHeader('x-idempotence')
+    idempotence = request.getHeader("x-idempotence")
     if idempotence is None:
         arguments = args_to_dict(request.args)
-        idempotence = arguments.get('_idempotence', None)
+        idempotence = arguments.get("_idempotence", None)
     request.idempotence = idempotence
     if idempotence is not None:
-        idempotence = sha256_compact("%s:%s" % (session.auth_id, idempotence))
+        idempotence = sha256_compact(f"{session.auth_id}:{idempotence}")
         if idempotence in webinterface.idempotence:
-            return return_error(request, 'idempotence error', 409,
+            return return_error(request, "idempotence error", 409,
                                 "This idempotence key has already be processed.")
         webinterface.idempotence[idempotence] = int(time())
         return True
@@ -103,21 +103,21 @@ def run_first(create_session=None, *args, **kwargs):
         def wrapped_f(webinterface, request, *a, **kw):
             session = None
             update_request(webinterface, request)
-            host = request.getHeader('host')
+            host = request.getHeader("host")
             if host is None:
                 logger.info("Discarding request, appears to be malformed host header")
                 return return_need_login(webinterface, request, None, **kwargs)
-            host_info = host.split(':')
-            request.requestHeaders.setRawHeaders('host_name', [host_info[0]])
+            host_info = host.split(":")
+            request.requestHeaders.setRawHeaders("host_name", [host_info[0]])
 
             if len(host_info) > 1:
-                request.requestHeaders.setRawHeaders('host_port', [host_info[1]])
+                request.requestHeaders.setRawHeaders("host_port", [host_info[1]])
             else:
-                request.requestHeaders.setRawHeaders('host_port', [None])
+                request.requestHeaders.setRawHeaders("host_port", [None])
 
-            if hasattr(request, 'breadcrumb') is False:
+            if hasattr(request, "breadcrumb") is False:
                 request.breadcrumb = []
-                webinterface.misc_wi_data['breadcrumb'] = request.breadcrumb
+                webinterface.misc_wi_data["breadcrumb"] = request.breadcrumb
 
             try:
                 session = webinterface._AuthKeys.get_session_from_request(request)
@@ -153,14 +153,14 @@ def run_first(create_session=None, *args, **kwargs):
                 logger.error("Request: {request}", request=request)
                 logger.error("{trace}", trace=traceback.format_exc())
                 logger.error("--------------------------------------------------------")
-                content_type = request.getHeader('content-type')
+                content_type = request.getHeader("content-type")
                 if isinstance(content_type, str):
                     content_type = content_type.lower()
                 else:
-                    content_type = ''
-                if 'json' in content_type:
-                    return return_error(request, 'Server Error', 500, traceback.format_exc())
-                page = webinterface.get_template(request, webinterface.wi_dir + '/pages/misc/traceback.html')
+                    content_type = ""
+                if "json" in content_type:
+                    return return_error(request, "Server Error", 500, traceback.format_exc())
+                page = webinterface.get_template(request, webinterface.wi_dir + "/pages/misc/traceback.html")
                 return page.render(traceback=traceback.format_exc())
 
             return results
@@ -191,23 +191,23 @@ def require_auth(roles=None, login_redirect=None, access_platform=None, access_i
         def wrapped_f(webinterface, request, *a, **kw):
             update_request(webinterface, request)
 
-            host = request.getHeader('host')
+            host = request.getHeader("host")
             if host is None:
                 logger.info("Discarding request, appears to be malformed host header")
                 return return_need_login(webinterface, request, None, **kwargs)
-            host_info = host.split(':')
-            request.requestHeaders.setRawHeaders('host_name', [host_info[0]])
+            host_info = host.split(":")
+            request.requestHeaders.setRawHeaders("host_name", [host_info[0]])
 
             if len(host_info) > 1:
-                request.requestHeaders.setRawHeaders('host_port', [host_info[1]])
+                request.requestHeaders.setRawHeaders("host_port", [host_info[1]])
             else:
-                request.requestHeaders.setRawHeaders('host_port', [None])
+                request.requestHeaders.setRawHeaders("host_port", [None])
 
-            if hasattr(request, 'breadcrumb') is False:
+            if hasattr(request, "breadcrumb") is False:
                 request.breadcrumb = []
-                webinterface.misc_wi_data['breadcrumb'] = request.breadcrumb
+                webinterface.misc_wi_data["breadcrumb"] = request.breadcrumb
 
-            if 'api' in kwargs and kwargs['api'] is True:
+            if "api" in kwargs and kwargs["api"] is True:
                 try:
                     session = webinterface._AuthKeys.get_session_from_request(request)
                     session.touch()
@@ -261,14 +261,14 @@ def require_auth(roles=None, login_redirect=None, access_platform=None, access_i
                 logger.error("Request: {request}", request=request)
                 logger.error("{trace}", trace=traceback.format_exc())
                 logger.error("--------------------------------------------------------")
-                content_type = request.getHeader('content-type')
+                content_type = request.getHeader("content-type")
                 if isinstance(content_type, str):
                     content_type = content_type.lower()
                 else:
-                    content_type = ''
-                if 'json' in content_type:
-                    return return_error(request, 'Server Error', 500, traceback.format_exc())
-                page = webinterface.get_template(request, webinterface.wi_dir + '/pages/misc/traceback.html')
+                    content_type = ""
+                if "json" in content_type:
+                    return return_error(request, "Server Error", 500, traceback.format_exc())
+                page = webinterface.get_template(request, webinterface.wi_dir + "/pages/misc/traceback.html")
                 return page.render(traceback=traceback.format_exc())
         return wrapped_f
     return deco
@@ -295,21 +295,21 @@ def require_auth_pin(roles=None, login_redirect=None, create_session=None, *args
         def wrapped_f(webinterface, request, *a, **kw):
             update_request(webinterface, request)
 
-            host = request.getHeader('host')
+            host = request.getHeader("host")
             if host is None:
                 logger.info("Discarding request, appears to be malformed host header")
                 return return_need_pin(webinterface, request, **kwargs)
-            host_info = host.split(':')
-            request.requestHeaders.setRawHeaders('host_name', [host_info[0]])
+            host_info = host.split(":")
+            request.requestHeaders.setRawHeaders("host_name", [host_info[0]])
 
             if len(host_info) > 1:
-                request.requestHeaders.setRawHeaders('host_port', [host_info[1]])
+                request.requestHeaders.setRawHeaders("host_port", [host_info[1]])
             else:
-                request.requestHeaders.setRawHeaders('host_port', [None])
+                request.requestHeaders.setRawHeaders("host_port", [None])
 
-            if hasattr(request, 'breadcrumb') is False:
+            if hasattr(request, "breadcrumb") is False:
                 request.breadcrumb = []
-                webinterface.misc_wi_data['breadcrumb'] = request.breadcrumb
+                webinterface.misc_wi_data["breadcrumb"] = request.breadcrumb
 
             try:
                 session = yield webinterface._WebSessions.get_session_from_request(request)
@@ -331,8 +331,8 @@ def require_auth_pin(roles=None, login_redirect=None, create_session=None, *args
                     return return_need_pin(webinterface, request, **kwargs)
 
                 if session.auth_type == AUTH_TYPE_WEBSESSION:  # if we have a websession, then inspect to see if it's valid.
-                    if 'auth_pin' in session:
-                        if session['auth_pin'] is True:
+                    if "auth_pin" in session:
+                        if session["auth_pin"] is True:
                             session.touch()
                             request.auth = session
                             results = yield call(f, webinterface, request, session, *a, **kw)
@@ -353,15 +353,15 @@ def require_auth_pin(roles=None, login_redirect=None, create_session=None, *args
                             logger.error("Request: {request}", request=request)
                             logger.error("{trace}", trace=traceback.format_exc())
                             logger.error("--------------------------------------------------------")
-                            content_type = request.getHeader('content-type')
+                            content_type = request.getHeader("content-type")
                             if isinstance(content_type, str):
                                 content_type = content_type.lower()
                             else:
-                                content_type = ''
-                            if 'json' in content_type:
-                                return return_error(request, 'Server Error', 500, traceback.format_exc())
+                                content_type = ""
+                            if "json" in content_type:
+                                return return_error(request, "Server Error", 500, traceback.format_exc())
                             page = webinterface.get_template(request,
-                                                             webinterface.wi_dir + '/pages/misc/traceback.html')
+                                                             webinterface.wi_dir + "/pages/misc/traceback.html")
                             return page.render(traceback=traceback.format_exc())
 
                     results = yield call(f, webinterface, request, session, *a, **kw)
@@ -386,14 +386,14 @@ def require_auth_pin(roles=None, login_redirect=None, create_session=None, *args
                     logger.error("Request: {request}", request=request)
                     logger.error("{trace}", trace=traceback.format_exc())
                     logger.error("--------------------------------------------------------")
-                    content_type = request.getHeader('content-type')
+                    content_type = request.getHeader("content-type")
                     if isinstance(content_type, str):
                         content_type = content_type.lower()
                     else:
-                        content_type = ''
-                    if 'json' in content_type:
-                        return return_error(request, 'Server Error', 500, traceback.format_exc())
-                    page = webinterface.get_template(request, webinterface.wi_dir + '/pages/misc/traceback.html')
+                        content_type = ""
+                    if "json" in content_type:
+                        return return_error(request, "Server Error", 500, traceback.format_exc())
+                    page = webinterface.get_template(request, webinterface.wi_dir + "/pages/misc/traceback.html")
                     return page.render(traceback=traceback.format_exc())
 
                 return results
@@ -424,9 +424,9 @@ def setup_login_redirect(webinterface, request, session, login_redirect):
             logger.warn("Too sessions being created!")
             return _("ui::messages::rate_limit_exceeded", "Too many attempts, try again later.")
 
-    session.created_by = 'login_redirect'
+    session.created_by = "login_redirect"
     request.received_cookies[webinterface._WebSessions.config.cookie_session_name] = session.auth_id
-    session['login_redirect'] = login_redirect
+    session["login_redirect"] = login_redirect
     return session
 
 
@@ -444,14 +444,14 @@ def return_need_login(webinterface, request, session, api_message=None, **kwargs
     if check_needs_web_pin(webinterface, request, session):
         return return_need_pin(webinterface, request, **kwargs)
     else:
-        content_type = request.getHeader('content-type')
+        content_type = request.getHeader("content-type")
         if isinstance(content_type, str):
             content_type = content_type.lower()
         else:
-            content_type = ''
-        if ('api' in kwargs and kwargs['api'] is True) or 'json' in content_type:
-            return return_error(request, 'Unauthorized', 401, api_message)
-    page = webinterface.get_template(request, webinterface.wi_dir + '/pages/misc/login_user.html')
+            content_type = ""
+        if ("api" in kwargs and kwargs["api"] is True) or "json" in content_type:
+            return return_error(request, "Unauthorized", 401, api_message)
+    page = webinterface.get_template(request, webinterface.wi_dir + "/pages/misc/login_user.html")
     return page.render(alerts=webinterface.get_alerts())
 
 
@@ -464,17 +464,17 @@ def return_need_pin(webinterface, request, **kwargs):
     :param kwargs:
     :return:
     """
-    content_type = request.getHeader('content-type')
+    content_type = request.getHeader("content-type")
     if isinstance(content_type, str):
         content_type = content_type.lower()
     else:
-        content_type = ''
-    if ('api' in kwargs and kwargs['api'] is True) or 'json' in content_type:
-        return return_error(request, 'Unauthorized - Pin required', 401)
+        content_type = ""
+    if ("api" in kwargs and kwargs["api"] is True) or "json" in content_type:
+        return return_error(request, "Unauthorized - Pin required", 401)
     if webinterface._display_pin_console_at < int(time()) - 30:
         webinterface._display_pin_console_at = int(time())
         webinterface.display_pin_console()
-    page = webinterface.get_template(request, webinterface.wi_dir + '/pages/misc/login_pin.html')
+    page = webinterface.get_template(request, webinterface.wi_dir + "/pages/misc/login_pin.html")
     return page.render(alerts=webinterface.get_alerts())
 
 
@@ -490,14 +490,14 @@ def return_not_valid_input(webinterface, request, **kwargs):
     :param kwargs:
     :return:
     """
-    content_type = request.getHeader('content-type')
+    content_type = request.getHeader("content-type")
     if isinstance(content_type, str):
         content_type = content_type.lower()
     else:
-        content_type = ''
-    if ('api' in kwargs and kwargs['api'] is True) or 'json' in content_type:
-        return return_error(request, 'Forbidden - No access to protected resource', 400)
-    page = webinterface.get_template(request, webinterface.wi_dir + '/pages/errors/400.html')
+        content_type = ""
+    if ("api" in kwargs and kwargs["api"] is True) or "json" in content_type:
+        return return_error(request, "Forbidden - No access to protected resource", 400)
+    page = webinterface.get_template(request, webinterface.wi_dir + "/pages/errors/400.html")
     return page.render(
         alerts=webinterface.get_alerts(),
         title="Invalid request",
@@ -515,14 +515,14 @@ def return_no_access(webinterface, request, error, **kwargs):
     :param kwargs:
     :return:
     """
-    content_type = request.getHeader('content-type')
+    content_type = request.getHeader("content-type")
     if isinstance(content_type, str):
         content_type = content_type.lower()
     else:
-        content_type = ''
-    if ('api' in kwargs and kwargs['api'] is True) or 'json' in content_type:
-        return return_error(request, 'Forbidden - No access to protected resource', 403)
-    page = webinterface.get_template(request, webinterface.wi_dir + '/pages/errors/403.html')
+        content_type = ""
+    if ("api" in kwargs and kwargs["api"] is True) or "json" in content_type:
+        return return_error(request, "Forbidden - No access to protected resource", 403)
+    page = webinterface.get_template(request, webinterface.wi_dir + "/pages/errors/403.html")
     return page.render(alerts=webinterface.get_alerts(), error=error)
 
 
@@ -537,7 +537,7 @@ def check_needs_web_pin(webinterface, request, session):
     :return:
     """
     # print("CNWP: %s" % session)
-    if session is not None and 'auth_pin' in session and session['auth_pin'] is True:
+    if session is not None and "auth_pin" in session and session["auth_pin"] is True:
         return False
 
     if webinterface.auth_pin_required is False:  # if user has configured gateway to not require a pin

@@ -24,166 +24,166 @@ def route_crontabs(webapp):
             webinterface.add_breadcrumb(request, "/?", "Home")
             webinterface.add_breadcrumb(request, "/crontab/index", "CronTabs")
 
-        @webapp.route('/')
+        @webapp.route("/")
         @require_auth()
         def page_crontabs(webinterface, request, session):
-            session.has_access('crontab', '*', 'view', raise_error=True)
-            return webinterface.redirect(request, '/crontab/index')
+            session.has_access("crontab", "*", "view", raise_error=True)
+            return webinterface.redirect(request, "/crontab/index")
 
-        @webapp.route('/index')
+        @webapp.route("/index")
         @require_auth()
         def page_crontabs_index(webinterface, request, session):
-            session.has_access('crontab', '*', 'view', raise_error=True)
-            item_keys, permissions = webinterface._Users.get_access(session, 'crontab', 'view')
+            session.has_access("crontab", "*", "view", raise_error=True)
+            item_keys, permissions = webinterface._Users.get_access(session, "crontab", "view")
             root_breadcrumb(webinterface, request)
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/crontab/index.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/crontab/index.html")
             return page.render(
                 alerts=webinterface.get_alerts(),
                 )
 
-        @webapp.route('/<string:crontab_id>/details', methods=['GET'])
+        @webapp.route("/<string:crontab_id>/details", methods=["GET"])
         @require_auth()
         def page_crontabs_details_get(webinterface, request, session, crontab_id):
             try:
-                session.has_access('crontab', crontab_id, 'view', raise_error=True)
+                session.has_access("crontab", crontab_id, "view", raise_error=True)
                 crontab = webinterface._CronTab.get(crontab_id)
             except KeyError as e:
-                webinterface.add_alert(e, 'warning')
-                return webinterface.redirect(request, '/crontab/index')
+                webinterface.add_alert(e, "warning")
+                return webinterface.redirect(request, "/crontab/index")
 
             page = webinterface.get_template(
                 request,
-                webinterface.wi_dir + '/pages/crontab/details.html')
+                webinterface.wi_dir + "/pages/crontab/details.html")
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/crontab/%s/details" % crontab.cron_id, crontab.label)
+            webinterface.add_breadcrumb(request, f"/crontab/{crontab.cron_id}/details", crontab.label)
             return page.render(alerts=webinterface.get_alerts(),
                                crontab=crontab,
                                )
 
-        # @webapp.route('/add', methods=['GET'])
+        # @webapp.route("/add", methods=["GET"])
         # @require_auth()
         # def page_crontabs_add_get(webinterface, request, session):
-        #     session.has_access('crontab', '*', 'add', raise_error=True)
+        #     session.has_access("crontab", "*", "add", raise_error=True)
         #     data = {
-        #         'label': webinterface.request_get_default(request, 'label', ""),
-        #         'machine_label': webinterface.request_get_default(request, 'machine_label', ""),
-        #         'description': webinterface.request_get_default(request, 'description', ""),
-        #         'status': int(webinterface.request_get_default(request, 'status', 1)),
+        #         "label": webinterface.request_get_default(request, "label", ""),
+        #         "machine_label": webinterface.request_get_default(request, "machine_label", ""),
+        #         "description": webinterface.request_get_default(request, "description", ""),
+        #         "status": int(webinterface.request_get_default(request, "status", 1)),
         #     }
         #     root_breadcrumb(webinterface, request)
         #     webinterface.add_breadcrumb(request, "/crontab/add", "Add")
-        #     return page_crontabs_form(webinterface, request, session, 'add', data, "Add CronTab")
+        #     return page_crontabs_form(webinterface, request, session, "add", data, "Add CronTab")
         #
-        # @webapp.route('/add', methods=['POST'])
+        # @webapp.route("/add", methods=["POST"])
         # @require_auth()
         # @inlineCallbacks
         # def page_crontabs_add_post(webinterface, request, session):
-        #     session.has_access('crontab', '*', 'add', raise_error=True)
+        #     session.has_access("crontab", "*", "add", raise_error=True)
         #     data = {
-        #         'label': webinterface.request_get_default(request, 'label', ""),
-        #         'machine_label': webinterface.request_get_default(request, 'machine_label', ""),
-        #         'description': webinterface.request_get_default(request, 'description', ""),
-        #         'status': int(webinterface.request_get_default(request, 'status', 1)),
+        #         "label": webinterface.request_get_default(request, "label", ""),
+        #         "machine_label": webinterface.request_get_default(request, "machine_label", ""),
+        #         "description": webinterface.request_get_default(request, "description", ""),
+        #         "status": int(webinterface.request_get_default(request, "status", 1)),
         #     }
         #
         #     try:
-        #         crontab = yield webinterface._CronTab.add(data['label'], data['machine_label'],
-        #                                                data['description'], data['status'])
+        #         crontab = yield webinterface._CronTab.add(data["label"], data["machine_label"],
+        #                                                data["description"], data["status"])
         #     except YomboWarning as e:
-        #         webinterface.add_alert("Cannot add crontab. %s" % e.message, 'warning')
-        #         return page_crontabs_form(webinterface, request, session, 'add', data, "Add CronTab",)
+        #         webinterface.add_alert("Cannot add crontab. %s" % e.message, "warning")
+        #         return page_crontabs_form(webinterface, request, session, "add", data, "Add CronTab",)
         #
-        #     webinterface.add_alert("New crontab '%s' added." % crontab.label)
+        #     webinterface.add_alert("New crontab "%s" added." % crontab.label)
         #     return webinterface.redirect(request, "/crontab/%s/details" % crontab.crontab_id)
         #
-        # @webapp.route('/<string:crontab_id>/edit', methods=['GET'])
+        # @webapp.route("/<string:crontab_id>/edit", methods=["GET"])
         # @require_auth()
         # def page_crontabs_edit_get(webinterface, request, session, crontab_id):
-        #     session.has_access('crontab', crontab_id, 'edit', raise_error=True)
+        #     session.has_access("crontab", crontab_id, "edit", raise_error=True)
         #     try:
         #         crontab = webinterface._CronTab.get(crontab_id)
         #     except KeyError as e:
-        #         webinterface.add_alert(e.message, 'warning')
-        #         return webinterface.redirect(request, '/crontab/index')
+        #         webinterface.add_alert(e.message, "warning")
+        #         return webinterface.redirect(request, "/crontab/index")
         #
         #     root_breadcrumb(webinterface, request)
         #     webinterface.add_breadcrumb(request, "/crontab/%s/details" % crontab.crontab_id, crontab.label)
         #     webinterface.add_breadcrumb(request, "/crontab/%s/edit" % crontab.crontab_id, "Edit")
         #     data = {
-        #         'label': crontab.label,
-        #         'machine_label': crontab.machine_label,
-        #         'description':  crontab.description(),
-        #         'status': crontab.effective_status(),
-        #         'crontab_id': crontab_id,
-        #         'allow_intents': crontab.data['config']['allow_intents'],
+        #         "label": crontab.label,
+        #         "machine_label": crontab.machine_label,
+        #         "description":  crontab.description(),
+        #         "status": crontab.effective_status(),
+        #         "crontab_id": crontab_id,
+        #         "allow_intents": crontab.data["config"]["allow_intents"],
         #     }
         #     return page_crontabs_form(webinterface,
         #                             request,
         #                             session,
-        #                             'edit',
+        #                             "edit",
         #                             data,
         #                             "Edit CronTab: %s" % crontab.label)
         #
-        # @webapp.route('/<string:crontab_id>/edit', methods=['POST'])
+        # @webapp.route("/<string:crontab_id>/edit", methods=["POST"])
         # @require_auth()
         # def page_crontabs_edit_post(webinterface, request, session, crontab_id):
-        #     session.has_access('crontab', crontab_id, 'edit', raise_error=True)
+        #     session.has_access("crontab", crontab_id, "edit", raise_error=True)
         #     try:
         #         crontab = webinterface._CronTab.get(crontab_id)
         #     except KeyError as e:
-        #         webinterface.add_alert(e.message, 'warning')
-        #         return webinterface.redirect(request, '/crontab/index')
+        #         webinterface.add_alert(e.message, "warning")
+        #         return webinterface.redirect(request, "/crontab/index")
         #
         #     data = {
-        #         'label': webinterface.request_get_default(request, 'label', ""),
-        #         'machine_label': webinterface.request_get_default(request, 'machine_label', ""),
-        #         'description': webinterface.request_get_default(request, 'description', ""),
-        #         'status': int(webinterface.request_get_default(request, 'status', 1)),
-        #         'crontab_id': crontab_id,
-        #         'allow_intents': int(webinterface.request_get_default(request, 'allow_intents', 1)),
+        #         "label": webinterface.request_get_default(request, "label", ""),
+        #         "machine_label": webinterface.request_get_default(request, "machine_label", ""),
+        #         "description": webinterface.request_get_default(request, "description", ""),
+        #         "status": int(webinterface.request_get_default(request, "status", 1)),
+        #         "crontab_id": crontab_id,
+        #         "allow_intents": int(webinterface.request_get_default(request, "allow_intents", 1)),
         #     }
         #     print("crontab save: %s" % data)
         #
         #     try:
         #         crontab = webinterface._CronTab.edit(crontab_id,
-        #                                           data['label'], data['machine_label'],
-        #                                           data['description'], data['status'],
-        #                                           data['allow_intents'])
+        #                                           data["label"], data["machine_label"],
+        #                                           data["description"], data["status"],
+        #                                           data["allow_intents"])
         #     except YomboWarning as e:
-        #         webinterface.add_alert("Cannot edit crontab. %s" % e.message, 'warning')
+        #         webinterface.add_alert("Cannot edit crontab. %s" % e.message, "warning")
         #         root_breadcrumb(webinterface, request)
         #         webinterface.add_breadcrumb(request, "/crontab/%s/details" % crontab.crontab_id, crontab.label)
         #         webinterface.add_breadcrumb(request, "/crontab/%s/edit", "Edit")
         #
-        #         return page_crontabs_form(webinterface, request, session, 'edit', data,
+        #         return page_crontabs_form(webinterface, request, session, "edit", data,
         #                                                 "Edit CronTab: %s" % crontab.label)
         #
-        #     webinterface.add_alert("CronTab '%s' edited." % crontab.label)
+        #     webinterface.add_alert("CronTab "%s" edited." % crontab.label)
         #     return webinterface.redirect(request, "/crontab/%s/details" % crontab.crontab_id)
         #
         # def page_crontabs_form(webinterface, request, session, action_type, crontab, header_label):
         #     page = webinterface.get_template(
         #         request,
-        #         webinterface.wi_dir + '/pages/crontab/form.html')
+        #         webinterface.wi_dir + "/pages/crontab/form.html")
         #     return page.render(alerts=webinterface.get_alerts(),
         #                        header_label=header_label,
         #                        crontab=crontab,
         #                        action_type=action_type,
         #                        )
         #
-        # @webapp.route('/<string:crontab_id>/delete', methods=['GET'])
+        # @webapp.route("/<string:crontab_id>/delete", methods=["GET"])
         # @require_auth()
         # def page_crontabs_details_post(webinterface, request, session, crontab_id):
-        #     session.has_access('crontab', crontab_id, 'delete', raise_error=True)
+        #     session.has_access("crontab", crontab_id, "delete", raise_error=True)
         #     try:
         #         crontab = webinterface._CronTab.get(crontab_id)
         #     except KeyError as e:
-        #         webinterface.add_alert(e.message, 'warning')
-        #         return webinterface.redirect(request, '/crontab/index')
+        #         webinterface.add_alert(e.message, "warning")
+        #         return webinterface.redirect(request, "/crontab/index")
         #
         #     page = webinterface.get_template(
         #         request,
-        #         webinterface.wi_dir + '/pages/crontab/delete.html'
+        #         webinterface.wi_dir + "/pages/crontab/delete.html"
         #     )
         #     root_breadcrumb(webinterface, request)
         #     webinterface.add_breadcrumb(request, "/crontab/%s/details" % crontab_id, crontab.label)
@@ -192,48 +192,48 @@ def route_crontabs(webapp):
         #                        crontab=crontab,
         #                        )
         #
-        # @webapp.route('/<string:crontab_id>/delete', methods=['POST'])
+        # @webapp.route("/<string:crontab_id>/delete", methods=["POST"])
         # @require_auth()
         # @inlineCallbacks
         # def page_crontabs_delete_post(webinterface, request, session, crontab_id):
-        #     session.has_access('crontab', crontab_id, 'delete', raise_error=True)
+        #     session.has_access("crontab", crontab_id, "delete", raise_error=True)
         #     try:
         #         crontab = webinterface._CronTab.get(crontab_id)
         #     except KeyError as e:
-        #         webinterface.add_alert(e.message, 'warning')
-        #         return webinterface.redirect(request, '/crontab/index')
+        #         webinterface.add_alert(e.message, "warning")
+        #         return webinterface.redirect(request, "/crontab/index")
         #
         #     try:
-        #         confirm = request.args.get('confirm')[0]
+        #         confirm = request.args.get("confirm")[0]
         #     except:
-        #         webinterface.add_alert('Must enter "delete" in the confirmation box to delete the crontab.', 'warning')
-        #         return webinterface.redirect(request, '/crontab/%s/details' % crontab_id)
+        #         webinterface.add_alert("Must enter "delete" in the confirmation box to delete the crontab.", "warning")
+        #         return webinterface.redirect(request, "/crontab/%s/details" % crontab_id)
         #
         #     if confirm != "delete":
-        #         webinterface.add_alert('Must enter "delete" in the confirmation box to delete the crontab.', 'warning')
+        #         webinterface.add_alert("Must enter "delete" in the confirmation box to delete the crontab.", "warning")
         #         return webinterface.redirect(request,
-        #                                      '/crontab/%s/details' % crontab_id)
+        #                                      "/crontab/%s/details" % crontab_id)
         #
         #     try:
-        #         yield crontab.delete(session=session['yomboapi_session'])
+        #         yield crontab.delete(session=session["yomboapi_session"])
         #     except YomboWarning as e:
-        #         webinterface.add_alert("Cannot delete crontab. %s" % e.message, 'warning')
-        #         return webinterface.redirect(request, '/crontab/%s/details' % crontab_id)
+        #         webinterface.add_alert("Cannot delete crontab. %s" % e.message, "warning")
+        #         return webinterface.redirect(request, "/crontab/%s/details" % crontab_id)
         #
-        #     webinterface.add_alert('CronTab deleted. Will be fully removed from system on next restart.')
-        #     return webinterface.redirect(request, '/crontab/index')
+        #     webinterface.add_alert("CronTab deleted. Will be fully removed from system on next restart.")
+        #     return webinterface.redirect(request, "/crontab/index")
         #
-        # @webapp.route('/<string:crontab_id>/disable', methods=['GET'])
+        # @webapp.route("/<string:crontab_id>/disable", methods=["GET"])
         # @require_auth()
         # def page_crontabs_disable_get(webinterface, request, session, crontab_id):
-        #     session.has_access('crontab', crontab_id, 'disable', raise_error=True)
+        #     session.has_access("crontab", crontab_id, "disable", raise_error=True)
         #     try:
         #         crontab = webinterface._CronTab.get(crontab_id)
         #     except KeyError as e:
-        #         webinterface.add_alert(e.message, 'warning')
-        #         return webinterface.redirect(request, '/crontab/index')
+        #         webinterface.add_alert(e.message, "warning")
+        #         return webinterface.redirect(request, "/crontab/index")
         #
-        #     page = webinterface.get_template(request, webinterface.wi_dir + '/pages/crontab/disable.html')
+        #     page = webinterface.get_template(request, webinterface.wi_dir + "/pages/crontab/disable.html")
         #     root_breadcrumb(webinterface, request)
         #     webinterface.add_breadcrumb(request, "/crontab/%s/details" % crontab.crontab_id, crontab.label)
         #     webinterface.add_breadcrumb(request, "/crontab/%s/disable" % crontab.crontab_id, "Disable")
@@ -241,46 +241,46 @@ def route_crontabs(webapp):
         #                        crontab=crontab,
         #                        )
         #
-        # @webapp.route('/<string:crontab_id>/disable', methods=['POST'])
+        # @webapp.route("/<string:crontab_id>/disable", methods=["POST"])
         # @require_auth()
         # def page_crontabs_disable_post(webinterface, request, session, crontab_id):
-        #     session.has_access('crontab', crontab_id, 'disable', raise_error=True)
+        #     session.has_access("crontab", crontab_id, "disable", raise_error=True)
         #     try:
         #         crontab = webinterface._CronTab.get(crontab_id)
         #     except KeyError as e:
-        #         webinterface.add_alert(e.message, 'warning')
-        #         return webinterface.redirect(request, '/crontab/index')
+        #         webinterface.add_alert(e.message, "warning")
+        #         return webinterface.redirect(request, "/crontab/index")
         #
         #     try:
-        #         confirm = request.args.get('confirm')[0]
+        #         confirm = request.args.get("confirm")[0]
         #     except:
-        #         webinterface.add_alert('Must enter "disable" in the confirmation box to disable the crontab.',
-        #                                'warning')
-        #         return webinterface.redirect(request, '/crontab/%s/details' % crontab_id)
+        #         webinterface.add_alert("Must enter "disable" in the confirmation box to disable the crontab.",
+        #                                "warning")
+        #         return webinterface.redirect(request, "/crontab/%s/details" % crontab_id)
         #
         #     if confirm != "disable":
-        #         webinterface.add_alert('Must enter "disable" in the confirmation box to disable the crontab.',
-        #                                'warning')
-        #         return webinterface.redirect(request, '/crontab/%s/details' % crontab_id)
+        #         webinterface.add_alert("Must enter "disable" in the confirmation box to disable the crontab.",
+        #                                "warning")
+        #         return webinterface.redirect(request, "/crontab/%s/details" % crontab_id)
         #
         #     try:
-        #         crontab.disable(session=session['yomboapi_session'])
+        #         crontab.disable(session=session["yomboapi_session"])
         #     except YomboWarning as e:
-        #         webinterface.add_alert("Cannot disable crontab. %s" % e.message, 'warning')
-        #         return webinterface.redirect(request, '/crontab/%s/details' % crontab_id)
+        #         webinterface.add_alert("Cannot disable crontab. %s" % e.message, "warning")
+        #         return webinterface.redirect(request, "/crontab/%s/details" % crontab_id)
         #
         #     msg = {
-        #         'header': 'CronTab Disabled',
-        #         'label': 'CronTab disabled successfully',
-        #         'description': '<p>The crontab has been disabled.'
-        #                        '<p>Continue to:</p><ul>'
-        #                        ' <li><strong><a href="/crontab/index">CronTab index</a></strong></li>'
-        #                        ' <li><a href="/crontab/%s/details">View the disabled crontab</a></li>'
-        #                        '<ul>' %
+        #         "header": "CronTab Disabled",
+        #         "label": "CronTab disabled successfully",
+        #         "description": "<p>The crontab has been disabled."
+        #                        "<p>Continue to:</p><ul>"
+        #                        " <li><strong><a href="/crontab/index">CronTab index</a></strong></li>"
+        #                        " <li><a href="/crontab/%s/details">View the disabled crontab</a></li>"
+        #                        "<ul>" %
         #                        crontab.crontab_id,
         #     }
         #
-        #     page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
+        #     page = webinterface.get_template(request, webinterface.wi_dir + "/pages/display_notice.html")
         #     root_breadcrumb(webinterface, request)
         #     webinterface.add_breadcrumb(request, "/crontab/%s/details" % crontab.crontab_id, crontab.label)
         #     webinterface.add_breadcrumb(request, "/crontab/%s/disable" % crontab.crontab_id, "Disable")
@@ -288,17 +288,17 @@ def route_crontabs(webapp):
         #                        msg=msg,
         #                        )
         #
-        # @webapp.route('/<string:crontab_id>/enable', methods=['GET'])
+        # @webapp.route("/<string:crontab_id>/enable", methods=["GET"])
         # @require_auth()
         # def page_crontabs_enable_get(webinterface, request, session, crontab_id):
-        #     session.has_access('crontab', crontab_id, 'enable', raise_error=True)
+        #     session.has_access("crontab", crontab_id, "enable", raise_error=True)
         #     try:
         #         crontab = webinterface._CronTab.get(crontab_id)
         #     except KeyError as e:
-        #         webinterface.add_alert(e.message, 'warning')
-        #         return webinterface.redirect(request, '/crontab/index')
+        #         webinterface.add_alert(e.message, "warning")
+        #         return webinterface.redirect(request, "/crontab/index")
         #
-        #     page = webinterface.get_template(request, webinterface.wi_dir + '/pages/crontab/enable.html')
+        #     page = webinterface.get_template(request, webinterface.wi_dir + "/pages/crontab/enable.html")
         #     root_breadcrumb(webinterface, request)
         #     webinterface.add_breadcrumb(request, "/crontab/%s/details" % crontab.crontab_id, crontab.label)
         #     webinterface.add_breadcrumb(request, "/crontab/%s/enable" % crontab.crontab_id, "Enable")
@@ -306,51 +306,51 @@ def route_crontabs(webapp):
         #                        crontab=crontab,
         #                        )
         #
-        # @webapp.route('/<string:crontab_id>/enable', methods=['POST'])
+        # @webapp.route("/<string:crontab_id>/enable", methods=["POST"])
         # @require_auth()
         # def page_crontabs_enable_post(webinterface, request, session, crontab_id):
-        #     session.has_access('crontab', crontab_id, 'enable', raise_error=True)
+        #     session.has_access("crontab", crontab_id, "enable", raise_error=True)
         #     try:
         #         crontab = webinterface._CronTab.get(crontab_id)
         #     except KeyError as e:
-        #         webinterface.add_alert(e.message, 'warning')
-        #         return webinterface.redirect(request, '/crontab/index')
+        #         webinterface.add_alert(e.message, "warning")
+        #         return webinterface.redirect(request, "/crontab/index")
         #     try:
-        #         confirm = request.args.get('confirm')[0]
+        #         confirm = request.args.get("confirm")[0]
         #     except:
-        #         webinterface.add_alert('Must enter "enable" in the confirmation box to enable the crontab.', 'warning')
-        #         return webinterface.redirect(request, '/crontab/%s/details' % crontab_id)
+        #         webinterface.add_alert("Must enter "enable" in the confirmation box to enable the crontab.", "warning")
+        #         return webinterface.redirect(request, "/crontab/%s/details" % crontab_id)
         #
         #     if confirm != "enable":
-        #         webinterface.add_alert('Must enter "enable" in the confirmation box to enable the crontab.', 'warning')
-        #         return webinterface.redirect(request, '/crontab/%s/details' % crontab_id)
+        #         webinterface.add_alert("Must enter "enable" in the confirmation box to enable the crontab.", "warning")
+        #         return webinterface.redirect(request, "/crontab/%s/details" % crontab_id)
         #
         #     try:
-        #         crontab.enable(session=session['yomboapi_session'])
+        #         crontab.enable(session=session["yomboapi_session"])
         #     except YomboWarning as e:
-        #         webinterface.add_alert("Cannot enable crontab. %s" % e.message, 'warning')
-        #         return webinterface.redirect(request, '/crontab/%s/details' % crontab_id)
+        #         webinterface.add_alert("Cannot enable crontab. %s" % e.message, "warning")
+        #         return webinterface.redirect(request, "/crontab/%s/details" % crontab_id)
         #
-        #     webinterface.add_alert("CronTab '%s' enabled." % crontab.label)
+        #     webinterface.add_alert("CronTab "%s" enabled." % crontab.label)
         #     return webinterface.redirect(request, "/crontab/%s/details" % crontab.crontab_id)
         #
-        # @webapp.route('/<string:crontab_id>/duplicate_crontab', methods=['GET'])
+        # @webapp.route("/<string:crontab_id>/duplicate_crontab", methods=["GET"])
         # @require_auth()
         # @inlineCallbacks
         # def page_crontabs_duplicate_crontab_get(webinterface, request, session, crontab_id):
-        #     session.has_access('crontab', crontab_id, 'view', raise_error=True)
-        #     session.has_access('crontab', '*', 'add', raise_error=True)
+        #     session.has_access("crontab", crontab_id, "view", raise_error=True)
+        #     session.has_access("crontab", "*", "add", raise_error=True)
         #     try:
         #         crontab = webinterface._CronTab.get(crontab_id)
         #     except KeyError as e:
-        #         webinterface.add_alert(e.message, 'warning')
-        #         return webinterface.redirect(request, '/crontab/index')
+        #         webinterface.add_alert(e.message, "warning")
+        #         return webinterface.redirect(request, "/crontab/index")
         #
         #     try:
         #         yield webinterface._CronTab.duplicate_crontab(crontab_id)
         #     except KeyError as e:
-        #         webinterface.add_alert("Cannot duplicate crontab. %s" % e.message, 'warning')
-        #         return webinterface.redirect(request, '/crontab/index')
+        #         webinterface.add_alert("Cannot duplicate crontab. %s" % e.message, "warning")
+        #         return webinterface.redirect(request, "/crontab/index")
         #
         #     webinterface.add_alert("CronTab dupllicated.")
-        #     return webinterface.redirect(request, '/crontab/index')
+        #     return webinterface.redirect(request, "/crontab/index")

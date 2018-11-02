@@ -97,7 +97,7 @@ class AuthKeys(YomboLibrary):
     def load_auth_keys(self):
         auth_keys = yield self._LocalDB.get_auth_key()
         for record in auth_keys:
-            self.active_auth_keys[record['auth_id']] = AuthKey(self, record, load_source='database')
+            self.active_auth_keys[record["auth_id"]] = AuthKey(self, record, load_source="database")
 
     def get(self, key):
         """
@@ -114,7 +114,7 @@ class AuthKeys(YomboLibrary):
                 if auth.label.lower() == key.lower():
                     return auth
 
-        raise KeyError("Cannot find auth key: %s" % key)
+        raise KeyError(f"Cannot find auth key: {key}")
 
     def close_session(self, request):
         return
@@ -122,7 +122,7 @@ class AuthKeys(YomboLibrary):
     def get_session_from_request(self, request=None):
         """
         Called by the web interface auth system to check if the provided request
-        has an auth key. Can be in the query string as '?_auth_key=key' or '?_api_auth=key'
+        has an auth key. Can be in the query string as "?_auth_key=key" or "?_api_auth=key"
         or in the header as "x-auth-key: key" or "x-api-auth: key"
 
         Returns the auth object if found otherwise raises YomboWarning.
@@ -132,15 +132,15 @@ class AuthKeys(YomboLibrary):
         """
         auth_id = None
         if request is not None:
-            auth_id = bytes_to_unicode(request.getHeader(b'x-auth-key'))
+            auth_id = bytes_to_unicode(request.getHeader(b"x-auth-key"))
             if auth_id is None:
-                auth_id = bytes_to_unicode(request.getHeader(b'x-api-auth'))
+                auth_id = bytes_to_unicode(request.getHeader(b"x-api-auth"))
             if auth_id is None:
                 try:
-                    auth_id = request.args.get('_auth_key')[0]
+                    auth_id = request.args.get("_auth_key")[0]
                 except:
                     try:
-                        auth_id = request.args.get('_api_auth')[0]
+                        auth_id = request.args.get("_api_auth")[0]
                     except:
                         pass
 
@@ -189,13 +189,13 @@ class AuthKeys(YomboLibrary):
         auth_id = random_string(length=randint(45, 50))
 
         data = {
-            'auth_id': auth_id,
-            'label': label,
-            'description': description,
-            'auth_data': auth_data,
-            'enabled': enabled,
-            'roles': roles,
-            'created_by': created_by,
+            "auth_id": auth_id,
+            "label": label,
+            "description": description,
+            "auth_data": auth_data,
+            "enabled": enabled,
+            "roles": roles,
+            "created_by": created_by,
         }
 
         self.active_auth_keys[auth_id] = AuthKey(self, data)
@@ -275,7 +275,7 @@ class AuthKey(AuthMixin, PermissionMixin, RolesMixin):
     """
     @property
     def editable(self):
-        if self.created_by in (None, 'user'):
+        if self.created_by in (None, "user"):
             return True
         return False
 
@@ -284,17 +284,17 @@ class AuthKey(AuthMixin, PermissionMixin, RolesMixin):
 
         # Auth specific attributes
         self.auth_type = AUTH_TYPE_AUTHKEY
-        self._auth_id = record['auth_id']
+        self._auth_id = record["auth_id"]
         self.source = "authkey"
         self.source_type = "library"
 
         # Local attributes
         self.label = ""
         self.description = ""
-        self.auth_id = record['auth_id']
+        self.auth_id = record["auth_id"]
         self.last_access_at = 1
 
-        self.update_attributes(record, stay_dirty=(load_source == 'database'))
+        self.update_attributes(record, stay_dirty=(load_source == "database"))
 
     def update_attributes(self, record=None, stay_dirty=None):
         """
@@ -305,35 +305,35 @@ class AuthKey(AuthMixin, PermissionMixin, RolesMixin):
         """
         if record is None:
             return
-        if 'enabled' in record:
-            self.enabled = coerce_value(record['enabled'], 'bool')
-        if 'label' in record:
-            self.label = record['label']
-        if 'label' in record:
-            self.label = record['label']
-        if 'description' in record:
-            self.description = record['description']
-        if 'last_access_at' in record:
-            self.last_access_at = record['last_access_at']
-        if 'created_at' in record:
-            self.created_at = record['created_at']
-        if 'updated_at' in record:
-            self.updated_at = record['updated_at']
-        if 'source' in record:
-            self.source = record['source']
-        if 'auth_data' in record:
-            if isinstance(record['auth_data'], dict):
-                self.auth_data.update(record['auth_data'])
-        if 'item_permissions' in record:
-            if isinstance(record['item_permissions'], dict):
-                self.item_permissions = record['item_permissions']
-        if 'roles' in record:
-            if isinstance(record['roles'], list):
-                for role_id in record['roles']:
+        if "enabled" in record:
+            self.enabled = coerce_value(record["enabled"], "bool")
+        if "label" in record:
+            self.label = record["label"]
+        if "label" in record:
+            self.label = record["label"]
+        if "description" in record:
+            self.description = record["description"]
+        if "last_access_at" in record:
+            self.last_access_at = record["last_access_at"]
+        if "created_at" in record:
+            self.created_at = record["created_at"]
+        if "updated_at" in record:
+            self.updated_at = record["updated_at"]
+        if "source" in record:
+            self.source = record["source"]
+        if "auth_data" in record:
+            if isinstance(record["auth_data"], dict):
+                self.auth_data.update(record["auth_data"])
+        if "item_permissions" in record:
+            if isinstance(record["item_permissions"], dict):
+                self.item_permissions = record["item_permissions"]
+        if "roles" in record:
+            if isinstance(record["roles"], list):
+                for role_id in record["roles"]:
                     try:
                         self.attach_role(role_id, save=False, flush_cache=False)
                     except KeyError:
-                        logger.warn("Auth key '%s' was unable to add role_id (don't exist)" % self.label)
+                        logger.warn("Auth key {label} was unable to add role_id (don't exist)", label=self.label)
         if stay_dirty is not True:
             self.save()
 
@@ -383,4 +383,4 @@ class AuthKey(AuthMixin, PermissionMixin, RolesMixin):
         self.is_dirty = 0
 
     def __str__(self):
-        return "AuthKeys - %s" % self.label
+        return f"AuthKeys - {self.label}"

@@ -68,12 +68,12 @@ class cached(object):
         global cache_library
 
         if cache_type is None:
-            cache_type = 'ttl'
+            cache_type = "ttl"
         else:
             cache_type = cache_type.lower()
 
         if cachename is None:
-            cachename = "%s R:%s" % (generate_source_string(), random_string(length=10))
+            cachename = f"{generate_source_string()} R:{random_string(length=10)}"
 
         self.kwd_mark = object()  # sentinel for separating args from kwargs
         if cache_library is None:  # Here in case cache is called before fully started.
@@ -83,14 +83,14 @@ class cached(object):
                 maxsize = 512
             self.cache = TTLCache(maxsize, ttl)
         else:
-            if cache_type == 'ttl':
+            if cache_type == "ttl":
                 self.cache = cache_library.ttl(ttl=ttl, tags=tags, name=cachename, maxsize=maxsize)
-            elif cache_type == 'lru':
+            elif cache_type == "lru":
                 self.cache = cache_library.lru(tags=tags, name=cachename, maxsize=maxsize)
-            elif cache_type == 'lfu':
+            elif cache_type == "lfu":
                 self.cache = cache_library.lfu(tags=tags, name=cachename, maxsize=maxsize)
             else:
-                raise YomboWarning("Unknown cache type: %s" % cache_type)
+                raise YomboWarning(f"Unknown cache type: {cache_type}")
 
     def __call__(self, f):
         def wrapped_f(*args, **kwargs):
@@ -128,7 +128,7 @@ def static_var(varname, value):
         @static_var("my_variable", 0)
         def some_function(x):
             some_function.my_variable += 1
-            print "I've been called %s times." % some_function.my_variable
+            print(f"I've been called {some_function.my_variable} times.")
 
     :param varname: variable name to create
     :param value: initial value to set.
@@ -182,7 +182,7 @@ def timing(function):
         data = function(*args, **yombo.utils.clean_kwargs(**kwargs))
         end_time = time()
         mod_name = function.__module__
-        print("Function %s.%s took %s seconds to execute." % (mod_name, function.__name__, (end_time - start_time)))
+        print(f"Function {mod_name}.{function.__name__} took {(end_time - start_time)} seconds to execute.")
         return data
     return wrapped
 

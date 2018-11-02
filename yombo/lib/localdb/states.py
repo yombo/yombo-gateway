@@ -12,7 +12,7 @@ from yombo.ext.twistar.utils import dictToWhere
 from yombo.lib.localdb import States
 from yombo.utils import clean_dict
 
-logger = get_logger('library.localdb.variables')
+logger = get_logger("library.localdb.variables")
 
 
 class DB_States(object):
@@ -25,9 +25,9 @@ class DB_States(object):
         :return:
         """
         if name is not None:
-            extra_where = "AND name = %s" % name
+            extra_where = f"AND name = {name}"
         else:
-            extra_where = ''
+            extra_where = ""
 
         sql = """SELECT name, gateway_id, value, value_type, live, created_at, updated_at
     FROM states s1
@@ -39,13 +39,13 @@ class DB_States(object):
         results = []
         for state in states:
             results.append({
-                'name': state[0],
-                'gateway_id': state[1],
-                'value': state[2],
-                'value_type': state[3],
-                'live': state[4],
-                'created_at': state[5],
-                'updated_at': state[6],
+                "name": state[0],
+                "gateway_id": state[1],
+                "value": state[2],
+                "value_type": state[3],
+                "live": state[4],
+                "created_at": state[5],
+                "updated_at": state[6],
             })
         return results
 
@@ -59,7 +59,7 @@ class DB_States(object):
         """
         if gateway_id is None:
             gateway_id = self.gateway_id
-        count = yield States.count(where=['name = ? and gateway_id = ?', name, gateway_id])
+        count = yield States.count(where=["name = ? and gateway_id = ?", name, gateway_id])
         return count
 
     @inlineCallbacks
@@ -72,7 +72,7 @@ class DB_States(object):
         """
         if gateway_id is None:
             gateway_id = self.gateway_id
-        count = yield self.dbconfig.delete('states', where=['name = ? and gateway_id = ?', name, gateway_id])
+        count = yield self.dbconfig.delete("states", where=["name = ? and gateway_id = ?", name, gateway_id])
         return count
 
     @inlineCallbacks
@@ -94,40 +94,38 @@ class DB_States(object):
             limit = (limit, offset)
 
         where = {
-            'name': name,
+            "name": name,
         }
-        # if gateway_id is not None:
-        #     where['gateway_id'] = gateway_id
         sql_where = dictToWhere(where)
 
         results = yield States.find(where=sql_where, limit=limit)
         records = []
         for item in results:
             temp = clean_dict(item.__dict__)
-            del temp['errors']
+            del temp["errors"]
             records.append(temp)
         return records
 
     @inlineCallbacks
     def save_state(self, name, values):
-        if values['live'] is True:
+        if values["live"] is True:
             live = 1
         else:
             live = 0
 
-        if values['gateway_id'] == 'local':
+        if values["gateway_id"] == "local":
             return
         yield States(
-            gateway_id=values['gateway_id'],
+            gateway_id=values["gateway_id"],
             name=name,
-            value=values['value'],
-            value_type=values['value_type'],
+            value=values["value"],
+            value_type=values["value_type"],
             live=live,
-            created_at=values['created_at'],
-            updated_at=values['updated_at'],
+            created_at=values["created_at"],
+            updated_at=values["updated_at"],
         ).save()
 
     @inlineCallbacks
     def save_state_bulk(self, states):
-        results = yield self.dbconfig.insertMany('states', states)
+        results = yield self.dbconfig.insertMany("states", states)
         return results

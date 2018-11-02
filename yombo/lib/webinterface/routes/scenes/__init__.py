@@ -26,19 +26,19 @@ def route_scenes(webapp):
             webinterface.add_breadcrumb(request, "/?", "Home")
             webinterface.add_breadcrumb(request, "/scenes/index", "Scenes")
 
-        @webapp.route('/')
+        @webapp.route("/")
         @require_auth()
         def page_scenes(webinterface, request, session):
-            session.has_access('scene', '*', 'view', raise_error=True)
-            return webinterface.redirect(request, '/scenes/index')
+            session.has_access("scene", "*", "view", raise_error=True)
+            return webinterface.redirect(request, "/scenes/index")
 
-        @webapp.route('/index')
+        @webapp.route("/index")
         @require_auth()
         def page_scenes_index(webinterface, request, session):
-            session.has_access('scene', '*', 'view', raise_error=True)
-            item_keys, permissions = webinterface._Users.get_access(session, 'scene', 'view')
+            session.has_access("scene", "*", "view", raise_error=True)
+            item_keys, permissions = webinterface._Users.get_access(session, "scene", "view")
             root_breadcrumb(webinterface, request)
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/scenes/index.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/scenes/index.html")
             return page.render(
                 alerts=webinterface.get_alerts(),
                 user=session.user,
@@ -46,402 +46,401 @@ def route_scenes(webapp):
                 item_keys=item_keys,
                 )
 
-        @webapp.route('/<string:scene_id>/details', methods=['GET'])
+        @webapp.route("/<string:scene_id>/details", methods=["GET"])
         @require_auth()
         def page_scenes_details_get(webinterface, request, session, scene_id):
-            session.has_access('scene', scene_id, 'view', raise_error=True)
+            session.has_access("scene", scene_id, "view", raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
             except KeyError as e:
-                webinterface.add_alert(e.message, 'warning')
-                return webinterface.redirect(request, '/scenes/index')
+                webinterface.add_alert(e.message, "warning")
+                return webinterface.redirect(request, "/scenes/index")
 
             page = webinterface.get_template(
                 request,
-                webinterface.wi_dir + '/pages/scenes/details.html')
+                webinterface.wi_dir + "/pages/scenes/details.html")
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene.scene_id, scene.label)
+            webinterface.add_breadcrumb(request, f"/scenes/{scene.scene_id}/details", scene.label)
             return page.render(alerts=webinterface.get_alerts(),
                                scene=scene,
                                )
 
-        @webapp.route('/<string:scene_id>/start', methods=['GET'])
+        @webapp.route("/<string:scene_id>/start", methods=["GET"])
         @require_auth()
         def page_scenes_trigger_get(webinterface, request, session, scene_id):
-            session.has_access('scene', scene_id, 'start', raise_error=True)
+            session.has_access("scene", scene_id, "start", raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
             except KeyError as e:
-                webinterface.add_alert(e.message, 'warning')
-                return webinterface.redirect(request, '/scenes/index')
+                webinterface.add_alert(e.message, "warning")
+                return webinterface.redirect(request, "/scenes/index")
 
             try:
                 webinterface._Scenes.start(scene_id)
             except KeyError as e:
-                webinterface.add_alert("Cannot start scene. %s" % e.message, 'warning')
-                return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
+                webinterface.add_alert(f"Cannot start scene. {e.message}", "warning")
+                return webinterface.redirect(request, f"/scenes/{scene_id}/details")
 
-            webinterface.add_alert("The scene '%s' has been started" % scene.label)
-            return webinterface.redirect(request, "/scenes/%s/details" % scene.scene_id)
+            webinterface.add_alert(f"The scene '{scene.label}' has been started")
+            return webinterface.redirect(request, f"/scenes/{scene.scene_id}/details")
 
-        @webapp.route('/<string:scene_id>/stop', methods=['GET'])
+        @webapp.route("/<string:scene_id>/stop", methods=["GET"])
         @require_auth()
         def page_scenes_stop_trigger_get(webinterface, request, session, scene_id):
-            session.has_access('scene', scene_id, 'stop', raise_error=True)
+            session.has_access("scene", scene_id, "stop", raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
             except KeyError as e:
-                webinterface.add_alert(e.message, 'warning')
-                return webinterface.redirect(request, '/scenes/index')
+                webinterface.add_alert(e.message, "warning")
+                return webinterface.redirect(request, "/scenes/index")
 
             try:
                 webinterface._Scenes.stop(scene_id)
             except KeyError as e:
-                webinterface.add_alert("Cannot stop scene. %s" % e.message, 'warning')
-                return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
+                webinterface.add_alert(f"Cannot stop scene. {e.message}", "warning")
+                return webinterface.redirect(request, f"/scenes/{scene_id}/details")
 
-            webinterface.add_alert("The scene '%s' has been stopped" % scene.label)
-            return webinterface.redirect(request, "/scenes/%s/details" % scene.scene_id)
+            webinterface.add_alert(f"The scene '{scene.label}' has been stopped")
+            return webinterface.redirect(request, f"/scenes/{scene.scene_id}/details")
 
-        @webapp.route('/add', methods=['GET'])
+        @webapp.route("/add", methods=["GET"])
         @require_auth()
         def page_scenes_add_get(webinterface, request, session):
-            session.has_access('scene', '*', 'add', raise_error=True)
+            session.has_access("scene", "*", "add", raise_error=True)
             data = {
-                'label': webinterface.request_get_default(request, 'label', ""),
-                'machine_label': webinterface.request_get_default(request, 'machine_label', ""),
-                'description': webinterface.request_get_default(request, 'description', ""),
-                'status': int(webinterface.request_get_default(request, 'status', 1)),
+                "label": webinterface.request_get_default(request, "label", ""),
+                "machine_label": webinterface.request_get_default(request, "machine_label", ""),
+                "description": webinterface.request_get_default(request, "description", ""),
+                "status": int(webinterface.request_get_default(request, "status", 1)),
             }
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/scenes/add", "Add")
-            return page_scenes_form(webinterface, request, session, 'add', data, "Add Scene")
+            return page_scenes_form(webinterface, request, session, "add", data, "Add Scene")
 
-        @webapp.route('/add', methods=['POST'])
+        @webapp.route("/add", methods=["POST"])
         @require_auth()
         @inlineCallbacks
         def page_scenes_add_post(webinterface, request, session):
-            session.has_access('scene', '*', 'add', raise_error=True)
+            session.has_access("scene", "*", "add", raise_error=True)
             data = {
-                'label': webinterface.request_get_default(request, 'label', ""),
-                'machine_label': webinterface.request_get_default(request, 'machine_label', ""),
-                'description': webinterface.request_get_default(request, 'description', ""),
-                'status': int(webinterface.request_get_default(request, 'status', 1)),
+                "label": webinterface.request_get_default(request, "label", ""),
+                "machine_label": webinterface.request_get_default(request, "machine_label", ""),
+                "description": webinterface.request_get_default(request, "description", ""),
+                "status": int(webinterface.request_get_default(request, "status", 1)),
             }
 
             try:
-                scene = yield webinterface._Scenes.add(data['label'], data['machine_label'],
-                                                       data['description'], data['status'])
+                scene = yield webinterface._Scenes.add(data["label"], data["machine_label"],
+                                                       data["description"], data["status"])
             except YomboWarning as e:
-                webinterface.add_alert("Cannot add scene. %s" % e.message, 'warning')
-                return page_scenes_form(webinterface, request, session, 'add', data, "Add Scene",)
+                webinterface.add_alert(f"Cannot add scene. {e.message}", "warning")
+                return page_scenes_form(webinterface, request, session, "add", data, "Add Scene",)
 
-            webinterface.add_alert("New scene '%s' added." % scene.label)
-            return webinterface.redirect(request, "/scenes/%s/details" % scene.scene_id)
+            webinterface.add_alert(f"New scene '{scene.label}' added.")
+            return webinterface.redirect(request, f"/scenes/{scene.scene_id}/details")
 
-        @webapp.route('/<string:scene_id>/edit', methods=['GET'])
+        @webapp.route("/<string:scene_id>/edit", methods=["GET"])
         @require_auth()
         def page_scenes_edit_get(webinterface, request, session, scene_id):
-            session.has_access('scene', scene_id, 'edit', raise_error=True)
+            session.has_access("scene", scene_id, "edit", raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
             except KeyError as e:
-                webinterface.add_alert(e.message, 'warning')
-                return webinterface.redirect(request, '/scenes/index')
+                webinterface.add_alert(e.message, "warning")
+                return webinterface.redirect(request, "/scenes/index")
 
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene.scene_id, scene.label)
-            webinterface.add_breadcrumb(request, "/scenes/%s/edit" % scene.scene_id, "Edit")
+            webinterface.add_breadcrumb(request, f"/scenes/{scene.scene_id}/details", scene.label)
+            webinterface.add_breadcrumb(request, f"/scenes/{scene.scene_id}/edit", "Edit")
             data = {
-                'label': scene.label,
-                'machine_label': scene.machine_label,
-                'description':  scene.description(),
-                'status': scene.effective_status(),
-                'scene_id': scene_id,
-                'allow_intents': scene.data['config']['allow_intents'],
+                "label": scene.label,
+                "machine_label": scene.machine_label,
+                "description":  scene.description(),
+                "status": scene.effective_status(),
+                "scene_id": scene_id,
+                "allow_intents": scene.data["config"]["allow_intents"],
             }
             return page_scenes_form(webinterface,
                                     request,
                                     session,
-                                    'edit',
+                                    "edit",
                                     data,
-                                    "Edit Scene: %s" % scene.label)
+                                    f"Edit Scene: {scene.label}")
 
-        @webapp.route('/<string:scene_id>/edit', methods=['POST'])
+        @webapp.route("/<string:scene_id>/edit", methods=["POST"])
         @require_auth()
         def page_scenes_edit_post(webinterface, request, session, scene_id):
-            session.has_access('scene', scene_id, 'edit', raise_error=True)
+            session.has_access("scene", scene_id, "edit", raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
             except KeyError as e:
-                webinterface.add_alert(e.message, 'warning')
-                return webinterface.redirect(request, '/scenes/index')
+                webinterface.add_alert(e.message, "warning")
+                return webinterface.redirect(request, "/scenes/index")
 
             data = {
-                'label': webinterface.request_get_default(request, 'label', ""),
-                'machine_label': webinterface.request_get_default(request, 'machine_label', ""),
-                'description': webinterface.request_get_default(request, 'description', ""),
-                'status': int(webinterface.request_get_default(request, 'status', 1)),
-                'scene_id': scene_id,
-                'allow_intents': int(webinterface.request_get_default(request, 'allow_intents', 1)),
+                "label": webinterface.request_get_default(request, "label", ""),
+                "machine_label": webinterface.request_get_default(request, "machine_label", ""),
+                "description": webinterface.request_get_default(request, "description", ""),
+                "status": int(webinterface.request_get_default(request, "status", 1)),
+                "scene_id": scene_id,
+                "allow_intents": int(webinterface.request_get_default(request, "allow_intents", 1)),
             }
-            print("scene save: %s" % data)
+            # print(f"scene save: {data}")
 
             try:
                 scene = webinterface._Scenes.edit(scene_id,
-                                                  data['label'], data['machine_label'],
-                                                  data['description'], data['status'],
-                                                  data['allow_intents'])
+                                                  data["label"], data["machine_label"],
+                                                  data["description"], data["status"],
+                                                  data["allow_intents"])
             except YomboWarning as e:
-                webinterface.add_alert("Cannot edit scene. %s" % e.message, 'warning')
+                webinterface.add_alert(f"Cannot edit scene. {e.message}", "warning")
                 root_breadcrumb(webinterface, request)
-                webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene.scene_id, scene.label)
-                webinterface.add_breadcrumb(request, "/scenes/%s/edit", "Edit")
+                webinterface.add_breadcrumb(request, f"/scenes/{scene.scene_id}/details", scene.label)
+                webinterface.add_breadcrumb(request, f"/scenes/{scene.scene_id}/edit", "Edit")
 
-                return page_scenes_form(webinterface, request, session, 'edit', data,
-                                                        "Edit Scene: %s" % scene.label)
+                return page_scenes_form(webinterface, request, session, "edit", data,
+                                        f"Edit Scene: {scene.label}")
 
-            webinterface.add_alert("Scene '%s' edited." % scene.label)
-            return webinterface.redirect(request, "/scenes/%s/details" % scene.scene_id)
+            webinterface.add_alert(f"Scene '{scene.label}' edited.")
+            return webinterface.redirect(request, f"/scenes/{scene.scene_id}/details")
 
         def page_scenes_form(webinterface, request, session, action_type, scene, header_label):
             page = webinterface.get_template(
                 request,
-                webinterface.wi_dir + '/pages/scenes/form.html')
+                webinterface.wi_dir + "/pages/scenes/form.html")
             return page.render(alerts=webinterface.get_alerts(),
                                header_label=header_label,
                                scene=scene,
                                action_type=action_type,
                                )
 
-        @webapp.route('/<string:scene_id>/delete', methods=['GET'])
+        @webapp.route("/<string:scene_id>/delete", methods=["GET"])
         @require_auth()
         def page_scenes_details_post(webinterface, request, session, scene_id):
-            session.has_access('scene', scene_id, 'delete', raise_error=True)
+            session.has_access("scene", scene_id, "delete", raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
             except KeyError as e:
-                webinterface.add_alert(e.message, 'warning')
-                return webinterface.redirect(request, '/scenes/index')
+                webinterface.add_alert(e.message, "warning")
+                return webinterface.redirect(request, "/scenes/index")
 
             page = webinterface.get_template(
                 request,
-                webinterface.wi_dir + '/pages/scenes/delete.html'
+                webinterface.wi_dir + "/pages/scenes/delete.html"
             )
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene_id, scene.label)
-            webinterface.add_breadcrumb(request, "/scenes/%s/delete" % scene_id, "Delete")
+            webinterface.add_breadcrumb(request, f"/scenes/{scene_id}/details", scene.label)
+            webinterface.add_breadcrumb(request, f"/scenes/{scene_id}/delete", "Delete")
             return page.render(alerts=webinterface.get_alerts(),
                                scene=scene,
                                )
 
-        @webapp.route('/<string:scene_id>/delete', methods=['POST'])
+        @webapp.route("/<string:scene_id>/delete", methods=["POST"])
         @require_auth()
         @inlineCallbacks
         def page_scenes_delete_post(webinterface, request, session, scene_id):
-            session.has_access('scene', scene_id, 'delete', raise_error=True)
+            session.has_access("scene", scene_id, "delete", raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
             except KeyError as e:
-                webinterface.add_alert(e.message, 'warning')
-                return webinterface.redirect(request, '/scenes/index')
+                webinterface.add_alert(e.message, "warning")
+                return webinterface.redirect(request, "/scenes/index")
 
             try:
-                confirm = request.args.get('confirm')[0]
+                confirm = request.args.get("confirm")[0]
             except:
-                webinterface.add_alert('Must enter "delete" in the confirmation box to delete the scene.', 'warning')
-                return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
+                webinterface.add_alert("Must enter 'delete' in the confirmation box to delete the scene.", "warning")
+                return webinterface.redirect(request, f"/scenes/{scene_id}/details")
 
             if confirm != "delete":
-                webinterface.add_alert('Must enter "delete" in the confirmation box to delete the scene.', 'warning')
+                webinterface.add_alert("Must enter 'delete' in the confirmation box to delete the scene.", "warning")
                 return webinterface.redirect(request,
-                                             '/scenes/%s/details' % scene_id)
+                                             f"/scenes/{scene_id}/details")
 
             try:
-                yield scene.delete(session=session['yomboapi_session'])
+                yield scene.delete(session=session["yomboapi_session"])
             except YomboWarning as e:
-                webinterface.add_alert("Cannot delete scene. %s" % e.message, 'warning')
-                return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
+                webinterface.add_alert(f"Cannot delete scene. {e.message}", "warning")
+                return webinterface.redirect(request, f"/scenes/{scene_id}/details")
 
-            webinterface.add_alert('Scene deleted. Will be fully removed from system on next restart.')
-            return webinterface.redirect(request, '/scenes/index')
+            webinterface.add_alert("Scene deleted. Will be fully removed from system on next restart.")
+            return webinterface.redirect(request, "/scenes/index")
 
-        @webapp.route('/<string:scene_id>/disable', methods=['GET'])
+        @webapp.route("/<string:scene_id>/disable", methods=["GET"])
         @require_auth()
         def page_scenes_disable_get(webinterface, request, session, scene_id):
-            session.has_access('scene', scene_id, 'disable', raise_error=True)
+            session.has_access("scene", scene_id, "disable", raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
             except KeyError as e:
-                webinterface.add_alert(e.message, 'warning')
-                return webinterface.redirect(request, '/scenes/index')
+                webinterface.add_alert(e.message, "warning")
+                return webinterface.redirect(request, "/scenes/index")
 
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/scenes/disable.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/scenes/disable.html")
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene.scene_id, scene.label)
-            webinterface.add_breadcrumb(request, "/scenes/%s/disable" % scene.scene_id, "Disable")
+            webinterface.add_breadcrumb(request, f"/scenes/{scene.scene_id}/details", scene.label)
+            webinterface.add_breadcrumb(request, f"/scenes/{scene.scene_id}/disable", "Disable")
             return page.render(alerts=webinterface.get_alerts(),
                                scene=scene,
                                )
 
-        @webapp.route('/<string:scene_id>/disable', methods=['POST'])
+        @webapp.route("/<string:scene_id>/disable", methods=["POST"])
         @require_auth()
         def page_scenes_disable_post(webinterface, request, session, scene_id):
-            session.has_access('scene', scene_id, 'disable', raise_error=True)
+            session.has_access("scene", scene_id, "disable", raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
             except KeyError as e:
-                webinterface.add_alert(e.message, 'warning')
-                return webinterface.redirect(request, '/scenes/index')
+                webinterface.add_alert(e.message, "warning")
+                return webinterface.redirect(request, "/scenes/index")
 
             try:
-                confirm = request.args.get('confirm')[0]
+                confirm = request.args.get("confirm")[0]
             except:
-                webinterface.add_alert('Must enter "disable" in the confirmation box to disable the scene.',
-                                       'warning')
-                return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
+                webinterface.add_alert("Must enter 'delete' in the confirmation box to disable the scene.",
+                                       "warning")
+                return webinterface.redirect(request, f"/scenes/{scene_id}/details")
 
             if confirm != "disable":
-                webinterface.add_alert('Must enter "disable" in the confirmation box to disable the scene.',
-                                       'warning')
-                return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
+                webinterface.add_alert("Must enter 'delete' in the confirmation box to disable the scene.",
+                                       "warning")
+                return webinterface.redirect(request, f"/scenes/{scene_id}/details")
 
             try:
-                scene.disable(session=session['yomboapi_session'])
+                scene.disable(session=session["yomboapi_session"])
             except YomboWarning as e:
-                webinterface.add_alert("Cannot disable scene. %s" % e.message, 'warning')
-                return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
+                webinterface.add_alert(f"Cannot disable scene. {e.message}", "warning")
+                return webinterface.redirect(request, f"/scenes/{scene_id}/details")
 
             msg = {
-                'header': 'Scene Disabled',
-                'label': 'Scene disabled successfully',
-                'description': '<p>The scene has been disabled.'
-                               '<p>Continue to:</p><ul>'
+                "header": "Scene Disabled",
+                "label": "Scene disabled successfully",
+                "description": "<p>The scene has been disabled."
+                               "<p>Continue to:</p><ul>"
                                ' <li><strong><a href="/scenes/index">Scene index</a></strong></li>'
-                               ' <li><a href="/scenes/%s/details">View the disabled scene</a></li>'
-                               '<ul>' %
-                               scene.scene_id,
+                               f' <li><a href="/scenes/{scene.scene_id}/details">View the disabled scene</a></li>'
+                               "<ul>",
             }
 
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/display_notice.html")
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene.scene_id, scene.label)
-            webinterface.add_breadcrumb(request, "/scenes/%s/disable" % scene.scene_id, "Disable")
+            webinterface.add_breadcrumb(request, f"/scenes/{scene.scene_id}/details", scene.label)
+            webinterface.add_breadcrumb(request, f"/scenes/{scene.scene_id}/disable", "Disable")
             return page.render(alerts=webinterface.get_alerts(),
                                msg=msg,
                                )
 
-        @webapp.route('/<string:scene_id>/enable', methods=['GET'])
+        @webapp.route("/<string:scene_id>/enable", methods=["GET"])
         @require_auth()
         def page_scenes_enable_get(webinterface, request, session, scene_id):
-            session.has_access('scene', scene_id, 'enable', raise_error=True)
+            session.has_access("scene", scene_id, "enable", raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
             except KeyError as e:
-                webinterface.add_alert(e.message, 'warning')
-                return webinterface.redirect(request, '/scenes/index')
+                webinterface.add_alert(e.message, "warning")
+                return webinterface.redirect(request, "/scenes/index")
 
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/scenes/enable.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/scenes/enable.html")
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/scenes/%s/details" % scene.scene_id, scene.label)
-            webinterface.add_breadcrumb(request, "/scenes/%s/enable" % scene.scene_id, "Enable")
+            webinterface.add_breadcrumb(request, f"/scenes/{scene.scene_id}/details", scene.label)
+            webinterface.add_breadcrumb(request, f"/scenes/{scene.scene_id}/enable", "Enable")
             return page.render(alerts=webinterface.get_alerts(),
                                scene=scene,
                                )
 
-        @webapp.route('/<string:scene_id>/enable', methods=['POST'])
+        @webapp.route("/<string:scene_id>/enable", methods=["POST"])
         @require_auth()
         def page_scenes_enable_post(webinterface, request, session, scene_id):
-            session.has_access('scene', scene_id, 'enable', raise_error=True)
+            session.has_access("scene", scene_id, "enable", raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
             except KeyError as e:
-                webinterface.add_alert(e.message, 'warning')
-                return webinterface.redirect(request, '/scenes/index')
+                webinterface.add_alert(e.message, "warning")
+                return webinterface.redirect(request, "/scenes/index")
             try:
-                confirm = request.args.get('confirm')[0]
+                confirm = request.args.get("confirm")[0]
             except:
-                webinterface.add_alert('Must enter "enable" in the confirmation box to enable the scene.', 'warning')
-                return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
+                webinterface.add_alert("Must enter 'enable' in the confirmation box to enable the scene.", "warning")
+                return webinterface.redirect(request, f"/scenes/{scene_id}/details")
 
             if confirm != "enable":
-                webinterface.add_alert('Must enter "enable" in the confirmation box to enable the scene.', 'warning')
-                return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
+                webinterface.add_alert("Must enter 'enable' in the confirmation box to enable the scene.", "warning")
+                return webinterface.redirect(request, f"/scenes/{scene_id}/details")
 
             try:
-                scene.enable(session=session['yomboapi_session'])
+                scene.enable(session=session["yomboapi_session"])
             except YomboWarning as e:
-                webinterface.add_alert("Cannot enable scene. %s" % e.message, 'warning')
-                return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
+                webinterface.add_alert(f"Cannot enable scene. {e.message}", "warning")
+                return webinterface.redirect(request, f"/scenes/{scene_id}/details")
 
-            webinterface.add_alert("Scene '%s' enabled." % scene.label)
-            return webinterface.redirect(request, "/scenes/%s/details" % scene.scene_id)
+            webinterface.add_alert(f"Scene '{scene.label}' enabled.")
+            return webinterface.redirect(request, f"/scenes/{scene.scene_id}/details")
 
-        @webapp.route('/<string:scene_id>/move_up/<string:action_id>', methods=['GET'])
+        @webapp.route("/<string:scene_id>/move_up/<string:action_id>", methods=["GET"])
         @require_auth()
         def page_scenes_action_move_up_get(webinterface, request, session, scene_id, action_id):
-            session.has_access('scene', scene_id, 'edit', raise_error=True)
+            session.has_access("scene", scene_id, "edit", raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
             except KeyError as e:
-                webinterface.add_alert(e.message, 'warning')
-                return webinterface.redirect(request, '/scenes/index')
+                webinterface.add_alert(e.message, "warning")
+                return webinterface.redirect(request, "/scenes/index")
             try:
                 action = webinterface._Scenes.get_action_items(scene_id, action_id)
             except KeyError as e:
-                webinterface.add_alert("Requested action id could not be located.", 'warning')
-                return webinterface.redirect(request, "/scenes/%s/details" % scene_id)
+                webinterface.add_alert("Requested action id could not be located.", "warning")
+                return webinterface.redirect(request, f"/scenes/{scene_id}/details")
 
             try:
                 webinterface._Scenes.move_action_up(scene_id, action_id)
             except KeyError as e:
-                webinterface.add_alert("Cannot move action up. %s" % e.message, 'warning')
-                return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
+                webinterface.add_alert(f"Cannot move action up. {e.message}", "warning")
+                return webinterface.redirect(request, f"/scenes/{scene_id}/details")
 
             webinterface.add_alert("Action moved up.")
-            return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
+            return webinterface.redirect(request, f"/scenes/{scene_id}/details")
 
-        @webapp.route('/<string:scene_id>/move_down/<string:action_id>', methods=['GET'])
+        @webapp.route("/<string:scene_id>/move_down/<string:action_id>", methods=["GET"])
         @require_auth()
         def page_scenes_action_move_down_get(webinterface, request, session, scene_id, action_id):
-            session.has_access('scene', scene_id, 'edit', raise_error=True)
+            session.has_access("scene", scene_id, "edit", raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
             except KeyError as e:
-                webinterface.add_alert(e.message, 'warning')
-                return webinterface.redirect(request, '/scenes/index')
+                webinterface.add_alert(e.message, "warning")
+                return webinterface.redirect(request, "/scenes/index")
             try:
                 action = webinterface._Scenes.get_action_items(scene_id, action_id)
             except KeyError as e:
-                webinterface.add_alert("Requested action id could not be located.", 'warning')
-                return webinterface.redirect(request, "/scenes/%s/details" % scene_id)
+                webinterface.add_alert("Requested action id could not be located.", "warning")
+                return webinterface.redirect(request, f"/scenes/{scene_id}/details")
 
             try:
                 webinterface._Scenes.move_action_down(scene_id, action_id)
             except KeyError as e:
-                webinterface.add_alert("Cannot move action down. %s" % e.message, 'warning')
-                return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
+                webinterface.add_alert(f"Cannot move action down. {e.message}", "warning")
+                return webinterface.redirect(request, f"/scenes/{scene_id}/details")
 
             webinterface.add_alert("Action moved down.")
-            return webinterface.redirect(request, '/scenes/%s/details' % scene_id)
+            return webinterface.redirect(request, f"/scenes/{scene_id}/details")
 
-        @webapp.route('/<string:scene_id>/duplicate_scene', methods=['GET'])
+        @webapp.route("/<string:scene_id>/duplicate_scene", methods=["GET"])
         @require_auth()
         @inlineCallbacks
         def page_scenes_duplicate_scene_get(webinterface, request, session, scene_id):
-            session.has_access('scene', scene_id, 'view', raise_error=True)
-            session.has_access('scene', '*', 'add', raise_error=True)
+            session.has_access("scene", scene_id, "view", raise_error=True)
+            session.has_access("scene", "*", "add", raise_error=True)
             try:
                 scene = webinterface._Scenes.get(scene_id)
             except KeyError as e:
-                webinterface.add_alert(e.message, 'warning')
-                return webinterface.redirect(request, '/scenes/index')
+                webinterface.add_alert(e.message, "warning")
+                return webinterface.redirect(request, "/scenes/index")
 
             try:
                 yield webinterface._Scenes.duplicate_scene(scene_id)
             except KeyError as e:
-                webinterface.add_alert("Cannot duplicate scene. %s" % e.message, 'warning')
-                return webinterface.redirect(request, '/scenes/index')
+                webinterface.add_alert(f"Cannot duplicate scene. {e.message}", "warning")
+                return webinterface.redirect(request, "/scenes/index")
 
             webinterface.add_alert("Scene dupllicated.")
-            return webinterface.redirect(request, '/scenes/index')
+            return webinterface.redirect(request, "/scenes/index")

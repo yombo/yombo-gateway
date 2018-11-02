@@ -26,7 +26,7 @@ from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import search_instance, do_search_instance, sha256_compact
 
-logger = get_logger('library.discovery')
+logger = get_logger("library.discovery")
 
 
 class Discovery(YomboLibrary):
@@ -39,11 +39,11 @@ class Discovery(YomboLibrary):
         """
         Checks to if a provided device id is found.
 
-            >>> if '129da137ab9318' in self._Discovery:
+            >>> if "129da137ab9318" in self._Discovery:
 
         or:
 
-            >>> if 'module.mymodule.mycron' in self._Discovery:
+            >>> if "module.mymodule.mycron" in self._Discovery:
 
         :raises YomboWarning: Raised when request is malformed.
         :param device_requested: The discovered device ID, label, or machine_label to search for.
@@ -61,11 +61,11 @@ class Discovery(YomboLibrary):
         """
         Attempts to find the device requested using a couple of methods.
 
-            >>> off_cmd = self._Discovery['129da137ab9318']  #by id
+            >>> off_cmd = self._Discovery["129da137ab9318"]  #by id
 
         or:
 
-            >>> off_cmd = self._Discovery['something here']  #by description or other attributes
+            >>> off_cmd = self._Discovery["something here"]  #by description or other attributes
 
         :raises YomboWarning: Raised when request is malformed.
         :raises KeyError: Raised when request is not found.
@@ -142,7 +142,7 @@ class Discovery(YomboLibrary):
         :param loader: A pointer to the Loader library.
         :type loader: Instance of Loader
         """
-        self.discovered_search_attributes = ['description']
+        self.discovered_search_attributes = ["description"]
         self.discovered = {}
         self.discovery_history = yield self._SQLDict.get(self, "discovery_history")
 
@@ -164,7 +164,7 @@ class Discovery(YomboLibrary):
         """
         newly_found = False
         logger.debug("new device: {discover_id}", discover_id=discover_id)
-        source = device_data['source']
+        source = device_data["source"]
         discover_id = self.get_device_hash(discover_id, source)
         if discover_id in self.discovered:
             self.discovered[discover_id].update_attributes(device_data)
@@ -178,33 +178,32 @@ class Discovery(YomboLibrary):
             self.discovery_history[discover_id] = time()
             newly_found = True
 
-        device_data['discovered_at'] = self.discovery_history[discover_id]
+        device_data["discovered_at"] = self.discovery_history[discover_id]
 
-        if 'notification_title' in kwargs:
-            notification_title = kwargs['notification_title']
+        if "notification_title" in kwargs:
+            notification_title = kwargs["notification_title"]
         else:
-            notification_title = "New %s device found." % device_data['source']
-        if 'notification_message' in kwargs:
-            notification_message = kwargs['notification_message']
+            notification_title = f"New {device_data['source']} device found."
+        if "notification_message" in kwargs:
+            notification_message = kwargs["notification_message"]
         else:
-            notification_message = "<p>New %s device found:</p><p>Description: %s</p>" \
-                                   % (device_data['source'], device_data['notification_description'])
-            if discovered.mfr != '':
-                notification_message += "<p>Manufacturer: %s</p>" % discovered.mfr
-            if discovered.model != '':
-                notification_message += "<p>Model: %s</p>" % discovered.model
-            if discovered.serial != '':
-                notification_message += "<p>Serial: %s</p>" % discovered.serial
+            notification_message = f"<p>New {device_data['source']} device found:</p><p>Description: {device_data['notification_description']}</p>"
+            if discovered.mfr != "":
+                notification_message += f"<p>Manufacturer: {discovered.mfr}</p>"
+            if discovered.model != "":
+                notification_message += f"<p>Model: {discovered.model}</p>"
+            if discovered.serial != "":
+                notification_message += f"<p>Serial: {discovered.serial}</p>"
 
         if newly_found is True:
             self._Notifications.add({
-                'title': notification_title,
-                'message': notification_message,
-                'source': discovered.source,
-                'persist': True,
-                'priority': 'high',
-                'always_show': True,
-                'always_show_allow_clear': True,
+                "title": notification_title,
+                "message": notification_message,
+                "source": discovered.source,
+                "persist": True,
+                "priority": "high",
+                "always_show": True,
+                "always_show_allow_clear": True,
             })
         return discovered
 
@@ -226,8 +225,8 @@ class Discovery(YomboLibrary):
             return discover_id
 
         if source is None:
-            source = 'unknown'
-        return sha256_compact(str(source + discover_id).encode('utf-8'))
+            source = "unknown"
+        return sha256_compact(str(source + discover_id).encode("utf-8"))
 
     def disable(self, discovered_id):
         if discovered_id in self.discovered:
@@ -260,19 +259,19 @@ class DiscoveredDevice(object):
         """
         self._Parent = parent
         self.discover_id = discover_id
-        self.discovered_at = data.get('discovered_at', time())
-        self.last_seen_at = data.get('last_seen_at', time())
-        self.source = data['source']
-        self.description = data.get('description', '')
-        self.mfr = data.get('mfr', '')
-        self.model = data.get('model', '')
-        self.serial = data.get('serial', '')
-        self.label = data.get('label', '')
-        self.machine_label = data.get('machine_label', '')
-        self.device_type = data.get('device_type', '')
-        self.variables = data.get('variables', {})
-        self.yombo_device = data.get('yombo_device', None)
-        self.enabled = data.get('enabled', True)
+        self.discovered_at = data.get("discovered_at", time())
+        self.last_seen_at = data.get("last_seen_at", time())
+        self.source = data["source"]
+        self.description = data.get("description", "")
+        self.mfr = data.get("mfr", "")
+        self.model = data.get("model", "")
+        self.serial = data.get("serial", "")
+        self.label = data.get("label", "")
+        self.machine_label = data.get("machine_label", "")
+        self.device_type = data.get("device_type", "")
+        self.variables = data.get("variables", {})
+        self.yombo_device = data.get("yombo_device", None)
+        self.enabled = data.get("enabled", True)
 
     def update_attributes(self, device, source=None):
         """
@@ -280,29 +279,29 @@ class DiscoveredDevice(object):
         :param device:
         :return:
         """
-        if 'source' in device:
+        if "source" in device:
             self.source = device["source"]
-        if 'description' in device:
+        if "description" in device:
             self.description = device["description"]
-        if 'mfr' in device:
+        if "mfr" in device:
             self.mfr = device["mfr"]
-        if 'model' in device:
+        if "model" in device:
             self.model = device["model"]
-        if 'serial' in device:
+        if "serial" in device:
             self.serial = device["serial"]
-        if 'label' in device:
+        if "label" in device:
             self.label = device["label"]
-        if 'machine_label' in device:
+        if "machine_label" in device:
             self.machine_label = device["machine_label"]
-        if 'device_type' in device:
+        if "device_type" in device:
             self.device_type = device["device_type"]
-        if 'variables' in device:
+        if "variables" in device:
             self.variables = device["variables"]
-        if 'yombo_device' in device:
+        if "yombo_device" in device:
             self.yombo_device = device["yombo_device"]
-        if 'discovered_at' in device:
+        if "discovered_at" in device:
             self.discovered_at = device["discovered_at"]
-        if 'last_seen_at' in device:
+        if "last_seen_at" in device:
             self.last_seen_at = device["last_seen_at"]
 
     def disable(self):
@@ -315,7 +314,7 @@ class DiscoveredDevice(object):
         self.last_seen_at = time()
 
     def __str__(self):
-        return "Discovered: %s - %s" % (self.label, self.description)
+        return f"Discovered: {self.label} - {self.description}"
 
     @property
     def create_yombo_device_details(self):
@@ -330,17 +329,17 @@ class DiscoveredDevice(object):
                 out_variables[variable_name] = {}
             if isinstance(variables, list):
                 for variable in variables:
-                    out_variables[variable_name]["new_%s" % counter] = variable
+                    out_variables[variable_name][f"new_{counter}"] = variable
                     counter += 1
             else:
-                out_variables[variable_name]["new_%s" % counter] = variables
+                out_variables[variable_name][f"new_{counter}"] = variables
                 counter += 1
         return json.dumps({
-            'label': self.label,
-            'machine_label': self.machine_label,
-            'description': self.description,
-            'device_type_id': self.device_type.device_type_id,
-            'vars': out_variables,
+            "label": self.label,
+            "machine_label": self.machine_label,
+            "description": self.description,
+            "device_type_id": self.device_type.device_type_id,
+            "vars": out_variables,
         })
 
     def asdict(self):
@@ -355,28 +354,28 @@ class DiscoveredDevice(object):
                 out_variables[variable_name] = {}
             if isinstance(variables, list):
                 for variable in variables:
-                    out_variables[variable_name]["new_%s" % counter] = variable
+                    out_variables[variable_name][f"new_{counter}"] = variable
                     counter += 1
             else:
-                out_variables[variable_name]["new_%s" % counter] = variables
+                out_variables[variable_name][f"new_{counter}"] = variables
                 counter += 1
         if self.yombo_device is not None:
             yombo_device_id = self.yombo_device.device_id
             yombo_device_label = self.yombo_device.full_label
         else:
             yombo_device_id = None
-            yombo_device_label = ''
+            yombo_device_label = ""
 
         return {
-            'label': self.label,
-            'machine_label': self.machine_label,
-            'description': self.description,
-            'source': self.source,
-            'device_type_id': self.device_type.device_type_id,
-            'device_type_machine_label': self.device_type.machine_label,
-            'yombo_device_id': yombo_device_id,
-            'yombo_device_label': yombo_device_label,
-            'model': self.model,
-            'serial': self.serial,
-            'vars': out_variables,
+            "label": self.label,
+            "machine_label": self.machine_label,
+            "description": self.description,
+            "source": self.source,
+            "device_type_id": self.device_type.device_type_id,
+            "device_type_machine_label": self.device_type.machine_label,
+            "yombo_device_id": yombo_device_id,
+            "yombo_device_label": yombo_device_label,
+            "model": self.model,
+            "serial": self.serial,
+            "vars": out_variables,
         }

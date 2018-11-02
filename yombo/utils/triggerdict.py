@@ -11,8 +11,8 @@ changes.
    from yombo.utils.triggerdict import TriggerDict
 
    # Set a callback to be called whenever the dictionary changes.
-   items = TriggerDict(200, {'mom' : 'Jane', 'dad' : 'Joe'}, callback=self.somefunction)
-   items['brother'] = 'Jeff'   # add an additional entry.
+   items = TriggerDict(200, {"mom" : "Jane", "dad" : "Joe"}, callback=self.somefunction)
+   items["brother"] = "Jeff"   # add an additional entry.
 
    # Change the callback method
    items.set_callback(self.anotherfunction)

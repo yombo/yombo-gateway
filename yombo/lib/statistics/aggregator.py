@@ -97,14 +97,14 @@ class AggregatorFactory():
     # This is the factory method
     @staticmethod
     def get_aggregator(bucket_type, **kwargs):
-        if bucket_type == 'counter':
+        if bucket_type == "counter":
             return CounterAggregator()
-        elif bucket_type == 'average':
+        elif bucket_type == "average":
             return AverageAggregator()
-        elif bucket_type == 'datapoint':
+        elif bucket_type == "datapoint":
             return PointAverageAggregator()
         else:
             # default behaviour for unknown bucket_type is averaging
-            agg_func = kwargs.get('agg_func', np.average)
-            default_agg_func_value = kwargs.get('default_agg_func_value', 0)
+            agg_func = kwargs.get("agg_func", np.average)
+            default_agg_func_value = kwargs.get("default_agg_func_value", 0)
             return CustomAggregator(agg_func, default_agg_func_value)

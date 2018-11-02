@@ -32,347 +32,348 @@ def route_modules(webapp):
     :return:
     """
     with webapp.subroute("/modules") as webapp:
-        @webapp.route('/')
+        @webapp.route("/")
         @require_auth()
         def page_modules(webinterface, request, session):
-            return webinterface.redirect(request, '/modules/index')
+            return webinterface.redirect(request, "/modules/index")
 
-        @webapp.route('/index')
+        @webapp.route("/index")
         @require_auth()
         def page_modules_index(webinterface, request, session):
             """
             Show an index of modules configured on the Gateway.
             :param webinterface: pointer to the web interface library
             :param request: a Twisted request
-            :param session: User's session information.
+            :param session: User"s session information.
             :return:
             """
-            session.has_access('module', '*', 'view')
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/modules/index.html')
+            session.has_access("module", "*", "view")
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/modules/index.html")
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/modules/index", "Modules")
             return page.render(alerts=webinterface.get_alerts(),
                                )
 
-        @webapp.route('/server_index')
+        @webapp.route("/server_index")
         @require_auth()
         def page_modules_server_index(webinterface, request, session):
-            session.has_access('module', '*', 'view')
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/modules/server_index.html')
+            session.has_access("module", "*", "view")
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/modules/server_index.html")
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/modules/index", "Server Modules")
             return page.render(alerts=webinterface.get_alerts(),
                                )
 
-        @webapp.route('/<string:module_id>/server_details')
+        @webapp.route("/<string:module_id>/server_details")
         @require_auth()
         @inlineCallbacks
         def page_modules_details_from_server(webinterface, request, session, module_id):
-            session.has_access('module', module_id, 'view')
+            session.has_access("module", module_id, "view")
             try:
-                module_results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id,
-                                                                      session=session['yomboapi_session'])
+                module_results = yield webinterface._YomboAPI.request("GET", f"/v1/module/{module_id}",
+                                                                      session=session["yomboapi_session"])
             except YomboWarning as e:
-                webinterface.add_alert(e.html_message, 'warning')
-                return webinterface.redirect(request, '/modules/index')
+                webinterface.add_alert(e.html_message, "warning")
+                return webinterface.redirect(request, "/modules/index")
 
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/modules/details_server.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/modules/details_server.html")
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/modules/index", "Modules")
             webinterface.add_breadcrumb(request, "/modules/server_index", "Server Modules")
-            webinterface.add_breadcrumb(request, "/modules/%s/server_details" % module_results['data']['id'], module_results['data']['label'])
+            webinterface.add_breadcrumb(request, f"/modules/{module_results['data']['id']}/server_details", module_results["data"]["label"])
             return page.render(alerts=webinterface.get_alerts(),
-                               server_module=module_results['data'],
+                               server_module=module_results["data"],
                                )
 
-        @webapp.route('/<string:module_id>/add', methods=['POST', 'GET'])
+        @webapp.route("/<string:module_id>/add", methods=["POST", "GET"])
         @require_auth()
         @inlineCallbacks
         def page_modules_add(webinterface, request, session, module_id):
-            session.has_access('module', '*', 'add', raise_error=True)
+            session.has_access("module", "*", "add", raise_error=True)
             try:
-                module_results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id,
-                                                                      session=session['yomboapi_session'])
+                module_results = yield webinterface._YomboAPI.request("GET", f"/v1/module/{module_id}",
+                                                                      session=session["yomboapi_session"])
             except YomboWarning as e:
-                webinterface.add_alert(e.html_message, 'warning')
-                return webinterface.redirect(request, '/modules/index')
+                webinterface.add_alert(e.html_message, "warning")
+                return webinterface.redirect(request, "/modules/index")
 
             ok_to_save = True
 
-            if 'json_output' in request.args:
-                json_output = request.args.get('json_output', [{}])[0]
+            if "json_output" in request.args:
+                json_output = request.args.get("json_output", [{}])[0]
                 json_output = json.loads(json_output)
                 data = {
-                    'status': json_output['status'],
-                    'module_id': json_output['module_id'],
-                    'module_label': json_output['module_label'],
-                    'install_branch': json_output['install_branch'],
+                    "status": json_output["status"],
+                    "module_id": json_output["module_id"],
+                    "module_label": json_output["module_label"],
+                    "install_branch": json_output["install_branch"],
                 }
-                if 'first_time' in json_output:
+                if "first_time" in json_output:
                     ok_to_save = False
             else:
                 data = {
-                    'status': 1,
-                    'module_id': module_results['data']['id'],
-                    'install_branch': module_results['data']['prod_branch'],
-                    'variable_data': {},
+                    "status": 1,
+                    "module_id": module_results["data"]["id"],
+                    "install_branch": module_results["data"]["prod_branch"],
+                    "variable_data": {},
                 }
                 json_output = {}
                 ok_to_save = False
 
 
             if ok_to_save:
-                if 'vars' in json_output:
+                if "vars" in json_output:
                     variable_data = yield webinterface._Variables.extract_variables_from_web_data(
-                        json_output.get('vars', {}))
-                    data['variable_data'] = variable_data
+                        json_output.get("vars", {}))
+                    data["variable_data"] = variable_data
 
                 results = yield webinterface._Modules.add_module(data)
-                if results['status'] == 'success':
+                if results["status"] == "success":
 
-                    webinterface._Notifications.add({'title': 'Restart Required',
-                                                     'message': 'Module added. A system <strong><a  class="confirm-restart" href="#" title="Restart Yombo Gateway">restart is required</a></strong> to take affect.',
-                                                     'source': 'Web Interface',
-                                                     'persist': False,
-                                                     'priority': 'high',
-                                                     'always_show': True,
-                                                     'always_show_allow_clear': False,
-                                                     'id': 'reboot_required',
-                                                     'local': True,
+                    webinterface._Notifications.add({"title": "Restart Required",
+                                                     "message":
+                                                         'Module added. A system <strong><a  class="confirm-restart" href="#" title="Restart Yombo Gateway">restart is required</a></strong> to take affect.',
+                                                     "source": "Web Interface",
+                                                     "persist": False,
+                                                     "priority": "high",
+                                                     "always_show": True,
+                                                     "always_show_allow_clear": False,
+                                                     "id": "reboot_required",
+                                                     "local": True,
                                                      })
 
-                    page = webinterface.get_template(request, webinterface.wi_dir + '/pages/misc/reboot_needed.html')
+                    page = webinterface.get_template(request, webinterface.wi_dir + "/pages/misc/reboot_needed.html")
                     msg={
-                        'header': 'Module Added',
-                        'label': 'Module added successfully',
-                        'description': '',
-                        'content': 'The module was added and will be installed on next reboot. You can also '\
+                        "header": "Module Added",
+                        "label": "Module added successfully",
+                        "description": "",
+                        "content": "The module was added and will be installed on next reboot. You can also "\
                         '<a href="/modules/server_index"><label>add another module</label></a>.'
                     }
                     return page.render(alerts=webinterface.get_alerts(), msg=msg)
                 else:
-                    webinterface.add_alert(results['apimsghtml'], 'warning')
+                    webinterface.add_alert(results["apimsghtml"], "warning")
                     variable_groups = yield webinterface._Variables.get_variable_groups_fields(
-                        group_relation_type='device_type',
-                        group_relation_id='device_type_id',
+                        group_relation_type="device_type",
+                        group_relation_id="device_type_id",
                     )
             else:
                 variable_groups = {}
-                for group in module_results['data']['variable_groups']:
-                    variable_groups[group['id']] = group
-                for field in module_results['data']['variable_fields']:
-                    if 'fields' not in variable_groups[field['group_id']]:
-                        variable_groups[field['group_id']]['fields'] = {}
-                    variable_groups[field['group_id']]['fields'][field['id']] = field
+                for group in module_results["data"]["variable_groups"]:
+                    variable_groups[group["id"]] = group
+                for field in module_results["data"]["variable_fields"]:
+                    if "fields" not in variable_groups[field["group_id"]]:
+                        variable_groups[field["group_id"]]["fields"] = {}
+                    variable_groups[field["group_id"]]["fields"][field["id"]] = field
 
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/modules/add.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/modules/add.html")
 
 
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/modules/index", "Modules")
             webinterface.add_breadcrumb(request, "/modules/index", "Add Module")
             return page.render(alerts=webinterface.get_alerts(),
-                               server_module=module_results['data'],
+                               server_module=module_results["data"],
                                variable_groups=variable_groups,
                                # input_types=webinterface._InputTypes.input_types,
                                module_data=data,
                                )
 
-        @webapp.route('/<string:module_id>/details')
+        @webapp.route("/<string:module_id>/details")
         @require_auth()
         @inlineCallbacks
         def page_modules_details(webinterface, request, session, module_id):
-            session.has_access('module', module_id, 'view', raise_error=True)
+            session.has_access("module", module_id, "view", raise_error=True)
             try:
                 module = webinterface._Modules[module_id]
             except Exception as e:
-                webinterface.add_alert('Module ID was not found.', 'warning')
-                return webinterface.redirect(request, '/modules/index')
+                webinterface.add_alert("Module ID was not found.", "warning")
+                return webinterface.redirect(request, "/modules/index")
 
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/modules/details.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/modules/details.html")
             module_device_types = yield webinterface._Modules.module_device_types(module_id)
             module_variables = yield module._module_variables()
             # print("module_variables: %s" % module_variables)
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/modules/index", "Modules")
-            webinterface.add_breadcrumb(request, "/modules/%s/details" % module._module_id, module._label)
+            webinterface.add_breadcrumb(request, f"/modules/{module._module_id}/details", module._label)
             return page.render(alerts=webinterface.get_alerts(),
                                module=module,
                                module_variables=module_variables,
                                module_device_types=module_device_types,
                                )
 
-        @webapp.route('/<string:module_id>/disable', methods=['GET'])
+        @webapp.route("/<string:module_id>/disable", methods=["GET"])
         @require_auth()
         def page_modules_disable_get(webinterface, request, session, module_id):
-            session.has_access('module', module_id, 'disable', raise_error=True)
+            session.has_access("module", module_id, "disable", raise_error=True)
             try:
                 module = webinterface._Modules[module_id]
             except Exception as e:
-                webinterface.add_alert('Module ID was not found.', 'warning')
-                return webinterface.redirect(request, '/modules/index')
+                webinterface.add_alert("Module ID was not found.", "warning")
+                return webinterface.redirect(request, "/modules/index")
 
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/modules/disable.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/modules/disable.html")
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/modules/index", "Modules")
-            webinterface.add_breadcrumb(request, "/modules/%s/details" % module._module_id, module._label)
-            webinterface.add_breadcrumb(request, "/modules/%s/disable" % module._module_id, "Disable")
+            webinterface.add_breadcrumb(request, f"/modules/{module._module_id}/details", module._label)
+            webinterface.add_breadcrumb(request, f"/modules/{module._module_id}/disable", "Disable")
             return page.render(alerts=webinterface.get_alerts(),
                                module=module,
                                )
 
-        @webapp.route('/<string:module_id>/disable', methods=['POST'])
+        @webapp.route("/<string:module_id>/disable", methods=["POST"])
         @require_auth()
         @inlineCallbacks
         def page_modules_disable_post(webinterface, request, session, module_id):
-            session.has_access('module', module_id, 'disable', raise_error=True)
+            session.has_access("module", module_id, "disable", raise_error=True)
             try:
                 module = webinterface._Modules[module_id]
             except Exception as e:
-                webinterface.add_alert('Module ID was not found.', 'warning')
-                return webinterface.redirect(request, '/modules/index')
+                webinterface.add_alert("Module ID was not found.", "warning")
+                return webinterface.redirect(request, "/modules/index")
 
-            confirm = request.args.get('confirm')[0]
+            confirm = request.args.get("confirm")[0]
             if confirm != "disable":
-                page = webinterface.get_template(request, webinterface.wi_dir + '/pages/modules/disable.html')
-                webinterface.add_alert('Must enter "disable" in the confirmation box to disable the module.', 'warning')
+                page = webinterface.get_template(request, webinterface.wi_dir + "/pages/modules/disable.html")
+                webinterface.add_alert("Must enter 'disable' in the confirmation box to disable the module.", "warning")
                 return page.render(alerts=webinterface.get_alerts(),
                                    module=module,
                                    )
 
             results = yield webinterface._Modules.disable_module(module._module_id)
 
-            if results['status'] == 'failed':
-                webinterface.add_alert(results['apimsghtml'], 'warning')
+            if results["status"] == "failed":
+                webinterface.add_alert(results["apimsghtml"], "warning")
 
-                page = webinterface.get_template(request, webinterface.wi_dir + '/pages/modules/disable.html')
+                page = webinterface.get_template(request, webinterface.wi_dir + "/pages/modules/disable.html")
                 return page.render(alerts=webinterface.get_alerts(),
                                    module=module,
                                    )
 
             msg = {
-                'header': 'Module Disabled',
-                'label': 'Module configuration updated successfully',
-                'description': '',
+                "header": "Module Disabled",
+                "label": "Module configuration updated successfully",
+                "description": "",
             }
 
-            webinterface._Notifications.add({'title': 'Restart Required',
-                                             'message': 'Module disabled. A system <strong><a  class="confirm-restart" href="#" title="Restart Yombo Gateway">restart is required</a></strong> to take affect.',
-                                             'source': 'Web Interface',
-                                             'persist': False,
-                                             'priority': 'high',
-                                             'always_show': True,
-                                             'always_show_allow_clear': False,
-                                             'id': 'reboot_required',
-                                             'local': True,
+            webinterface._Notifications.add({"title": "Restart Required",
+                                             "message": 'Module disabled. A system <strong><a  class="confirm-restart" href="#" title="Restart Yombo Gateway">restart is required</a></strong> to take affect.',
+                                             "source": "Web Interface",
+                                             "persist": False,
+                                             "priority": "high",
+                                             "always_show": True,
+                                             "always_show_allow_clear": False,
+                                             "id": "reboot_required",
+                                             "local": True,
                                              })
 
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/misc/reboot_needed.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/misc/reboot_needed.html")
             return page.render(alerts=webinterface.get_alerts(),
                                msg=msg,
                                )
 
-        @webapp.route('/<string:module_id>/edit', methods=['GET'])
+        @webapp.route("/<string:module_id>/edit", methods=["GET"])
         @require_auth()
         @inlineCallbacks
         def page_modules_edit_get(webinterface, request, session, module_id):
-            session.has_access('module', module_id, 'edit', raise_error=True)
+            session.has_access("module", module_id, "edit", raise_error=True)
             try:
                 module = webinterface._Modules.get(module_id)
             except Exception as e:
-                webinterface.add_alert('Module ID was not found.', 'warning')
-                return webinterface.redirect(request, '/modules/index')
+                webinterface.add_alert("Module ID was not found.", "warning")
+                return webinterface.redirect(request, "/modules/index")
 
             try:
-                module_results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id,
-                                                                      session=session['yomboapi_session'])
+                module_results = yield webinterface._YomboAPI.request("GET", f"/v1/module/{module_id}",
+                                                                      session=session["yomboapi_session"])
             except YomboWarning as e:
-                webinterface.add_alert(e.html_message, 'warning')
-                return webinterface.redirect(request, '/modules/index')
+                webinterface.add_alert(e.html_message, "warning")
+                return webinterface.redirect(request, "/modules/index")
 
             module_variables = yield module._module_variables()
             device_types = yield webinterface._LocalDB.get_module_device_types(module_id)
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/modules/edit.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/modules/edit.html")
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/modules/index", "Modules")
-            webinterface.add_breadcrumb(request, "/modules/%s/details" % module._module_id, module._label)
-            webinterface.add_breadcrumb(request, "/modules/%s/edit" % module._module_id, "Edit")
+            webinterface.add_breadcrumb(request, f"/modules/{module._module_id}/details", module._label)
+            webinterface.add_breadcrumb(request, f"/modules/{module._module_id}/edit", "Edit")
             return page.render(alerts=webinterface.get_alerts(),
-                               server_module=module_results['data'],
+                               server_module=module_results["data"],
                                module=module,
                                module_variables=module_variables,
                                device_types=device_types,
                                )
 
-        @webapp.route('/<string:module_id>/edit', methods=['POST'])
+        @webapp.route("/<string:module_id>/edit", methods=["POST"])
         @require_auth()
         @inlineCallbacks
         def page_modules_edit_post(webinterface, request, session, module_id):
-            session.has_access('module', module_id, 'edit', raise_error=True)
+            session.has_access("module", module_id, "edit", raise_error=True)
             try:
                 module = webinterface._Modules[module_id]
             except Exception:
-                webinterface.add_alert('Module ID was not found.', 'warning')
-                return webinterface.redirect(request, '/modules/index')
+                webinterface.add_alert("Module ID was not found.", "warning")
+                return webinterface.redirect(request, "/modules/index")
 
-            json_output = json.loads(request.args.get('json_output')[0])
+            json_output = json.loads(request.args.get("json_output")[0])
 
             data = {
-                'status': json_output['status'],
-                'module_id': json_output['module_id'],
-                'install_branch': json_output['install_branch'],
+                "status": json_output["status"],
+                "module_id": json_output["module_id"],
+                "install_branch": json_output["install_branch"],
             }
 
             variable_data = yield webinterface._Variables.extract_variables_from_web_data(
-                json_output.get('vars', {}))
-            data['variable_data'] = variable_data
+                json_output.get("vars", {}))
+            data["variable_data"] = variable_data
 
-            results = yield webinterface._Modules.edit_module(module_id, data, session=session['yomboapi_session'])
-            if results['status'] == 'failed':
-                webinterface.add_alert(results['apimsghtml'], 'warning')
+            results = yield webinterface._Modules.edit_module(module_id, data, session=session["yomboapi_session"])
+            if results["status"] == "failed":
+                webinterface.add_alert(results["apimsghtml"], "warning")
 
                 try:
-                    results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id,
-                                                                   session=session['yomboapi_session'])
+                    results = yield webinterface._YomboAPI.request("GET", f"/v1/module/{module_id}",
+                                                                   session=session["yomboapi_session"])
                 except YomboWarning as e:
-                    webinterface.add_alert(e.html_message, 'warning')
-                    return webinterface.redirect(request, '/modules/index')
-                page = webinterface.get_template(request, webinterface.wi_dir + '/pages/modules/edit.html')
+                    webinterface.add_alert(e.html_message, "warning")
+                    return webinterface.redirect(request, "/modules/index")
+                page = webinterface.get_template(request, webinterface.wi_dir + "/pages/modules/edit.html")
                 return page.render(alerts=webinterface.get_alerts(),
-                                   server_module=results['data'],
+                                   server_module=results["data"],
                                    module=module,
                                    )
 
             msg = {
-                'header': 'Module Updated',
-                'label': 'Module configuration updated successfully',
-                'description': '',
+                "header": "Module Updated",
+                "label": "Module configuration updated successfully",
+                "description": "",
             }
 
-            webinterface._Notifications.add({'title': 'Restart Required',
-                                             'message': 'Module edited. A system <strong><a  class="confirm-restart" href="#" title="Restart Yombo Gateway">restart is required</a></strong> to take affect.',
-                                             'source': 'Web Interface',
-                                             'persist': False,
-                                             'priority': 'high',
-                                             'always_show': True,
-                                             'always_show_allow_clear': False,
-                                             'id': 'reboot_required',
-                                             'local': True,
+            webinterface._Notifications.add({"title": "Restart Required",
+                                             "message": 'Module edited. A system <strong><a  class="confirm-restart" href="#" title="Restart Yombo Gateway">restart is required</a></strong> to take affect.',
+                                             "source": "Web Interface",
+                                             "persist": False,
+                                             "priority": "high",
+                                             "always_show": True,
+                                             "always_show_allow_clear": False,
+                                             "id": "reboot_required",
+                                             "local": True,
                                              })
 
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/misc/reboot_needed.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/misc/reboot_needed.html")
             return page.render(alerts=webinterface.get_alerts(),
                                msg=msg,
                                )
 
         @inlineCallbacks
         def page_modules_edit_form(webinterface, request, session, device, variable_data=None):
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/devices/edit.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/devices/edit.html")
             device_variables = yield webinterface._Variables.get_variable_groups_fields_data(
-                group_relation_type='device_type',
-                group_relation_id=device['device_type_id'],
-                data_relation_type='device',
-                data_relation_id=device['device_id'],
+                group_relation_type="device_type",
+                group_relation_id=device["device_type_id"],
+                data_relation_type="device",
+                data_relation_id=device["device_id"],
             )
 
             if variable_data is not None:
@@ -385,142 +386,142 @@ def route_modules(webapp):
                                device_variables=device_variables,
                                )
 
-        @webapp.route('/<string:module_id>/enable', methods=['GET'])
+        @webapp.route("/<string:module_id>/enable", methods=["GET"])
         @require_auth()
         def page_modules_enable_get(webinterface, request, session, module_id):
-            session.has_access('module', module_id, 'enable', raise_error=True)
+            session.has_access("module", module_id, "enable", raise_error=True)
             try:
                 module = webinterface._Modules[module_id]
             except Exception as e:
-                webinterface.add_alert('Module ID was not found.', 'warning')
-                return webinterface.redirect(request, '/modules/index')
+                webinterface.add_alert("Module ID was not found.", "warning")
+                return webinterface.redirect(request, "/modules/index")
 
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/modules/enable.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/modules/enable.html")
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/modules/index", "Modules")
-            webinterface.add_breadcrumb(request, "/modules/%s/details" % module._module_id, module._label)
-            webinterface.add_breadcrumb(request, "/modules/%s/enable" % module._module_id, "Enable")
+            webinterface.add_breadcrumb(request, f"/modules/{module._module_id}/details", module._label)
+            webinterface.add_breadcrumb(request, f"/modules/{module._module_id}/enable", "Enable")
             return page.render(alerts=webinterface.get_alerts(),
                                module=module,
                                )
 
-        @webapp.route('/<string:module_id>/enable', methods=['POST'])
+        @webapp.route("/<string:module_id>/enable", methods=["POST"])
         @require_auth()
         @inlineCallbacks
         def page_modules_enable_post(webinterface, request, session, module_id):
-            session.has_access('module', module_id, 'enable', raise_error=True)
+            session.has_access("module", module_id, "enable", raise_error=True)
             try:
                 module = webinterface._Modules[module_id]
             except Exception as e:
-                webinterface.add_alert('Module ID was not found.', 'warning')
-                return webinterface.redirect(request, '/modules/index')
+                webinterface.add_alert("Module ID was not found.", "warning")
+                return webinterface.redirect(request, "/modules/index")
 
-            confirm = request.args.get('confirm')[0]
+            confirm = request.args.get("confirm")[0]
             if confirm != "enable":
-                page = webinterface.get_template(request, webinterface.wi_dir + '/pages/modules/enable.html')
-                webinterface.add_alert('Must enter "disable" in the confirmation box to enable the module.', 'warning')
+                page = webinterface.get_template(request, webinterface.wi_dir + "/pages/modules/enable.html")
+                webinterface.add_alert("Must enter 'disable' in the confirmation box to enable the module.", "warning")
                 return page.render(alerts=webinterface.get_alerts(),
                                    module=module,
                                    )
 
-            results = yield webinterface._Modules.enable_module(module._module_id, session=session['yomboapi_session'])
+            results = yield webinterface._Modules.enable_module(module._module_id, session=session["yomboapi_session"])
 
-            if results['status'] == 'failed':
-                webinterface.add_alert(results['apimsghtml'], 'warning')
+            if results["status"] == "failed":
+                webinterface.add_alert(results["apimsghtml"], "warning")
 
-                page = webinterface.get_template(request, webinterface.wi_dir + '/pages/modules/enable.html')
+                page = webinterface.get_template(request, webinterface.wi_dir + "/pages/modules/enable.html")
                 return page.render(alerts=webinterface.get_alerts(),
                                    module=module,
                                    )
 
-            webinterface._Notifications.add({'title': 'Restart Required',
-                                             'message': 'Module enabled. A system <strong><a  class="confirm-restart" href="#" title="Restart Yombo Gateway">restart is required</a></strong> to take affect.',
-                                             'source': 'Web Interface',
-                                             'persist': False,
-                                             'priority': 'high',
-                                             'always_show': True,
-                                             'always_show_allow_clear': False,
-                                             'id': 'reboot_required',
-                                             'local': True,
+            webinterface._Notifications.add({"title": "Restart Required",
+                                             "message": 'Module enabled. A system <strong><a  class="confirm-restart" href="#" title="Restart Yombo Gateway">restart is required</a></strong> to take affect.',
+                                             "source": "Web Interface",
+                                             "persist": False,
+                                             "priority": "high",
+                                             "always_show": True,
+                                             "always_show_allow_clear": False,
+                                             "id": "reboot_required",
+                                             "local": True,
                                              })
 
             msg = {
-                'header': 'Module Enabled',
-                'label': 'Module configuration updated successfully',
-                'description': '',
+                "header": "Module Enabled",
+                "label": "Module configuration updated successfully",
+                "description": "",
             }
 
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/misc/reboot_needed.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/misc/reboot_needed.html")
             return page.render(alerts=webinterface.get_alerts(),
                                msg=msg,
                                )
 
-        @webapp.route('/<string:module_id>/remove', methods=['GET'])
+        @webapp.route("/<string:module_id>/remove", methods=["GET"])
         @require_auth()
         def page_modules_remove_get(webinterface, request, session, module_id):
-            session.has_access('module', module_id, 'delete', raise_error=True)
+            session.has_access("module", module_id, "delete", raise_error=True)
             try:
                 module = webinterface._Modules[module_id]
             except Exception as e:
-                webinterface.add_alert('Module ID was not found.', 'warning')
-                return webinterface.redirect(request, '/modules/index')
+                webinterface.add_alert("Module ID was not found.", "warning")
+                return webinterface.redirect(request, "/modules/index")
 
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/modules/remove.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/modules/remove.html")
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/modules/index", "Modules")
-            webinterface.add_breadcrumb(request, "/modules/%s/details" % module._module_id, module._label)
-            webinterface.add_breadcrumb(request, "/modules/%s/remove" % module._module_id, "Remove")
+            webinterface.add_breadcrumb(request, f"/modules/{module._module_id}/details", module._label)
+            webinterface.add_breadcrumb(request, f"/modules/{module._module_id}/remove", "Remove")
             return page.render(alerts=webinterface.get_alerts(),
                                module=module,
                                )
 
-        @webapp.route('/<string:module_id>/remove', methods=['POST'])
+        @webapp.route("/<string:module_id>/remove", methods=["POST"])
         @require_auth()
         @inlineCallbacks
         def page_modules_remove_post(webinterface, request, session, module_id):
-            session.has_access('module', module_id, 'delete', raise_error=True)
+            session.has_access("module", module_id, "delete", raise_error=True)
             try:
                 module = webinterface._Modules[module_id]
             except Exception as e:
-                webinterface.add_alert('Module ID was not found.', 'warning')
-                return webinterface.redirect(request, '/modules/index')
+                webinterface.add_alert("Module ID was not found.", "warning")
+                return webinterface.redirect(request, "/modules/index")
 
-            confirm = request.args.get('confirm')[0]
+            confirm = request.args.get("confirm")[0]
             if confirm != "remove":
-                page = webinterface.get_template(request, webinterface.wi_dir + '/pages/modules/remove.html')
-                webinterface.add_alert('Must enter "disable" in the confirmation box to remove the module.', 'warning')
+                page = webinterface.get_template(request, webinterface.wi_dir + "/pages/modules/remove.html")
+                webinterface.add_alert("Must enter 'disable' in the confirmation box to remove the module.", "warning")
                 return page.render(alerts=webinterface.get_alerts(),
                                    module=module,
                                    )
 
-            results = yield webinterface._Modules.remove_module(module._module_id, session=session['yomboapi_session'])
+            results = yield webinterface._Modules.remove_module(module._module_id, session=session["yomboapi_session"])
 
-            if results['status'] == 'failed':
-                webinterface.add_alert(results['apimsghtml'], 'warning')
+            if results["status"] == "failed":
+                webinterface.add_alert(results["apimsghtml"], "warning")
 
-                page = webinterface.get_template(request, webinterface.wi_dir + '/pages/modules/remove.html')
+                page = webinterface.get_template(request, webinterface.wi_dir + "/pages/modules/remove.html")
                 return page.render(alerts=webinterface.get_alerts(),
                                    module=module,
                                    )
 
             msg = {
-                'header': 'Module Removed',
-                'label': 'Module configuration updated successfully',
-                'description': '',
+                "header": "Module Removed",
+                "label": "Module configuration updated successfully",
+                "description": "",
             }
 
-            webinterface._Notifications.add({'title': 'Restart Required',
-                                             'message': 'Module removed. A system <strong><a  class="confirm-restart" href="#" title="Restart Yombo Gateway">restart is required</a></strong> to take affect.',
-                                             'source': 'Web Interface',
-                                             'persist': False,
-                                             'priority': 'high',
-                                             'always_show': True,
-                                             'always_show_allow_clear': False,
-                                             'id': 'reboot_required',
-                                             'local': True,
+            webinterface._Notifications.add({"title": "Restart Required",
+                                             "message": 'Module removed. A system <strong><a  class="confirm-restart" href="#" title="Restart Yombo Gateway">restart is required</a></strong> to take affect.',
+                                             "source": "Web Interface",
+                                             "persist": False,
+                                             "priority": "high",
+                                             "always_show": True,
+                                             "always_show_allow_clear": False,
+                                             "id": "reboot_required",
+                                             "local": True,
                                              })
 
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/misc/reboot_needed.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/misc/reboot_needed.html")
             return page.render(alerts=webinterface.get_alerts(),
                                msg=msg,
                                )

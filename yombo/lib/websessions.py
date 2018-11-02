@@ -42,6 +42,7 @@ from yombo.utils.dictobject import DictObject
 
 logger = get_logger("library.websessions")
 
+
 class WebSessions(YomboLibrary):
     """
     Session management.
@@ -58,7 +59,7 @@ class WebSessions(YomboLibrary):
         if key in self.active_sessions:
             return self.active_sessions[key]
         else:
-            raise KeyError("Cannot find websession key: %s" % key)
+            raise KeyError(f"Cannot find websession key: {key}")
 
     def __len__(self):
         return len(self.active_sessions)
@@ -90,25 +91,25 @@ class WebSessions(YomboLibrary):
         return list(self.active_sessions.items())
 
     def _init_(self, **kwargs):
-        self.gateway_id = self._Configs.get('core', 'gwid', 'local', False)
-        cookie_id= self._Configs.get('webinterface', 'cookie_id',
+        self.gateway_id = self._Configs.get("core", "gwid", "local", False)
+        cookie_id= self._Configs.get("webinterface", "cookie_id",
                                             sha256_compact(random_string(length=randint(200, 1000))))
 
         self.config = DictObject({
-            'cookie_session_name': 'yombo_' + cookie_id,
-            'cookie_path': '/',
-            'max_session': 15552000,  # How long session can be good for: 180 days
-            'max_idle': 5184000,  # Max idle timeout: 60 days
-            'max_session_no_auth': 1200,  # If not auth in 20 mins, delete session
-            'ignore_expiry': True,
-            'ignore_change_ip': True,
-            'expired_message': 'Session expired',
-            'httponly': True,
-            'secure': False,
+            "cookie_session_name": "yombo_" + cookie_id,
+            "cookie_path": "/",
+            "max_session": 15552000,  # How long session can be good for: 180 days
+            "max_idle": 5184000,  # Max idle timeout: 60 days
+            "max_session_no_auth": 1200,  # If not auth in 20 mins, delete session
+            "ignore_expiry": True,
+            "ignore_change_ip": True,
+            "expired_message": "Session expired",
+            "httponly": True,
+            "secure": False,
         })
         self.clean_sessions_loop = LoopingCall(self.clean_sessions)
         self.clean_sessions_loop.start(random_int(30, .2), False)  # Every hour-ish. Save to disk, or remove from memory.
-        self.get_session_by_id_cache = self._Cache.ttl(name='lib.websessions.get_session_by_id_cache', ttl=120, tags=('websession', 'user'))
+        self.get_session_by_id_cache = self._Cache.ttl(name="lib.websessions.get_session_by_id_cache", ttl=120, tags=("websession", "user"))
 
     @inlineCallbacks
     def _stop_(self, **kwargs):
@@ -129,14 +130,14 @@ class WebSessions(YomboLibrary):
     def get(self, key):
         if key in self.active_sessions:
             return self.active_sessions[key]
-        raise KeyError("Cannot find web session: %s" % key)
+        raise KeyError(f"Cannot find web session: {key}")
 
     def close_session(self, request):
         cookie_session_name = self.config.cookie_session_name
         cookies = request.received_cookies
         if cookie_session_name in cookies:
-            request.addCookie(cookie_session_name, 'LOGOFF', domain=self.get_cookie_domain(request),
-                          path=self.config.cookie_path, expires='Thu, 01 Jan 1970 00:00:00 GMT',
+            request.addCookie(cookie_session_name, "LOGOFF", domain=self.get_cookie_domain(request),
+                          path=self.config.cookie_path, expires="Thu, 01 Jan 1970 00:00:00 GMT",
                           secure=self.config.secure, httpOnly=self.config.httponly)
 
         reactor.callLater(.01, self.do_close_session, request)
@@ -218,14 +219,14 @@ class WebSessions(YomboLibrary):
         else:
             try:
                 db_session = yield self._LocalDB.get_web_session(session_id)
-                db_session['id'] = session_id
+                db_session["id"] = session_id
             except Exception as e:
-                raise_error("Cannot find session id: %s" % e)
+                raise_error(f"Cannot find session id: {e}")
             try:
-                db_session['user'] = self._Users.get(db_session['user_id'])
+                db_session["user"] = self._Users.get(db_session["user_id"])
             except KeyError as e:
                 raise_error("User in session wasn't found.")
-            self.active_sessions[session_id] = AuthWebsession(self, db_session, load_source='database')
+            self.active_sessions[session_id] = AuthWebsession(self, db_session, load_source="database")
             if self.active_sessions[session_id].enabled is True:
                 return self.active_sessions[session_id]
             else:
@@ -233,8 +234,8 @@ class WebSessions(YomboLibrary):
         raise_error("Unknown session lookup error.")
 
     def get_cookie_domain(self, request):
-        fqdn = self._Configs.get("dns", 'fqdn', None, False)
-        host = "%s" % request.getRequestHostname().decode()
+        fqdn = self._Configs.get("dns", "fqdn", None, False)
+        host = str(request.getRequestHostname().decode())
 
         if fqdn is None:
             return host
@@ -282,20 +283,20 @@ class WebSessions(YomboLibrary):
         """
         if data is None:
             data = {}
-        if 'gateway_id' not in data or data['gateway_id'] is None:
-            data['gateway_id'] = self.gateway_id
-        if 'auth_data' not in data:
-            data['auth_data'] = {}
+        if "gateway_id" not in data or data["gateway_id"] is None:
+            data["gateway_id"] = self.gateway_id
+        if "auth_data" not in data:
+            data["auth_data"] = {}
 
-        data['id'] = random_string(length=randint(60, 70))
+        data["id"] = random_string(length=randint(60, 70))
 
         if request is not None:
-            request.addCookie(self.config.cookie_session_name, data['id'], domain=self.get_cookie_domain(request),
+            request.addCookie(self.config.cookie_session_name, data["id"], domain=self.get_cookie_domain(request),
                               path=self.config.cookie_path, max_age=self.config.max_session,
                               secure=self.config.secure, httpOnly=self.config.httponly)
 
-        self.active_sessions[data['id']] = AuthWebsession(self, data)
-        return self.active_sessions[data['id']]
+        self.active_sessions[data["id"]] = AuthWebsession(self, data)
+        return self.active_sessions[data["id"]]
 
     def set(self, request, name, value):
         """
@@ -404,11 +405,11 @@ class AuthWebsession(UserMixin, AuthMixin):
 
         # Auth specific attributes
         self.auth_type = AUTH_TYPE_WEBSESSION
-        self._auth_id = record['id']
-        self.session_id = record['id']
+        self._auth_id = record["id"]
+        self.session_id = record["id"]
         self.source = "websessions"
         self.source_type = "library"
-        self.gateway_id = record['gateway_id']
+        self.gateway_id = record["gateway_id"]
 
         # Local attributes
         self.auth_at = None
@@ -416,20 +417,20 @@ class AuthWebsession(UserMixin, AuthMixin):
         self.auth_pin_at = None
 
         # Attempt to set _user based on user_id
-        if 'user' in record:
-            self._user = record['user']
-        elif 'user_id' in record:
+        if "user" in record:
+            self._user = record["user"]
+        elif "user_id" in record:
             try:
-                self._user = self._Parent._Users.get(record['user_id'])
+                self._user = self._Parent._Users.get(record["user_id"])
             except:
                 raise YomboWarning("User_id not found, cannot full create websession.")
 
         self.auth_data.update({
-            'yomboapi_session': None,
-            'yomboapi_login_key': None,
+            "yomboapi_session": None,
+            "yomboapi_login_key": None,
         })
 
-        self.update_attributes(record, load_source == 'database')
+        self.update_attributes(record, load_source == "database")
 
     def update_attributes(self, record=None, stay_clean=None):
         """
@@ -440,23 +441,23 @@ class AuthWebsession(UserMixin, AuthMixin):
         """
         if record is None:
             return
-        if 'auth_id' in record:
-            self._auth_id = record['auth_id']
-        if 'enabled' in record:
-            self._enabled = record['enabled']
-        if 'last_access_at' in record:
-            self.last_access_at = record['last_access_at']
-        if 'created_at' in record:
-            self.created_at = record['created_at']
-        if 'updated_at' in record:
-            self.updated_at = record['updated_at']
-        if 'auth_data' in record:
-            if isinstance(record['auth_data'], dict):
-                self.auth_data.update(record['auth_data'])
-        if 'yomboapi_session' not in self.auth_data:
-            self.auth_data['yombo_session'] = None
-            if 'yomboapi_login_key' not in self.auth_data:
-                self.auth_data['yomboapi_login_key'] = None
+        if "auth_id" in record:
+            self._auth_id = record["auth_id"]
+        if "enabled" in record:
+            self._enabled = record["enabled"]
+        if "last_access_at" in record:
+            self.last_access_at = record["last_access_at"]
+        if "created_at" in record:
+            self.created_at = record["created_at"]
+        if "updated_at" in record:
+            self.updated_at = record["updated_at"]
+        if "auth_data" in record:
+            if isinstance(record["auth_data"], dict):
+                self.auth_data.update(record["auth_data"])
+        if "yomboapi_session" not in self.auth_data:
+            self.auth_data["yombo_session"] = None
+            if "yomboapi_login_key" not in self.auth_data:
+                self.auth_data["yomboapi_login_key"] = None
 
         if stay_clean is not True:
             self.is_dirty = 2000

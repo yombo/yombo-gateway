@@ -32,7 +32,7 @@ class YomboLibrary(Entity):
         super().__init__()
         self._Entity_type = "yombo_library"
         self._Name = self.__class__.__name__
-        self._FullName = "yombo.gateway.lib.%s" % (self.__class__.__name__)
+        self._FullName = f"yombo.gateway.lib.{self.__class__.__name__}"
 
     def _init_(self, **kwargs):
         """
@@ -67,12 +67,12 @@ class YomboLibrary(Entity):
 
     def amqp_incoming(self, headers, **kwargs):
         """
-        Basic routing of incoming AQMP message packagets to a module. Sends requests to 'amqp_incoming_request'
-        and responses to 'amqp_incoming_response'.
+        Basic routing of incoming AQMP message packagets to a module. Sends requests to "amqp_incoming_request"
+        and responses to "amqp_incoming_response".
         """
-        if headers['message_type'] == 'request':
+        if headers["message_type"] == "request":
             self.amqp_incoming_request(headers=headers, **kwargs)
-        if headers['message_type'] == 'response':
+        if headers["message_type"] == "response":
             self.amqp_incoming_response(headers=headers, **kwargs)
 
     def amqp_incoming_request(self, **kwargs):

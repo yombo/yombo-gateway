@@ -16,8 +16,8 @@ above or below the horizon (saturn, moon, sun, etc), and then they will transiti
 
 .. code-block:: python
 
-   times = self._Libraries['Times']
-   moonrise = times.item_rise(dayOffset=1, item='Moon') # 1 - we want the next moon rise
+   times = self._Libraries["Times"]
+   moonrise = times.item_rise(dayOffset=1, item="Moon") # 1 - we want the next moon rise
 
 
 .. todo::
@@ -53,7 +53,7 @@ from yombo.utils import is_one_zero, global_invoke_all
 import yombo.utils.datetime as dt
 
 
-logger = get_logger('library.times')
+logger = get_logger("library.times")
 
 class Times(YomboLibrary, object):
     """
@@ -92,16 +92,16 @@ class Times(YomboLibrary, object):
 
     def setup_obs(self):
         self.obs = ephem.Observer()
-        self.obs.lat = str(self._Configs.get('location', 'latitude', 38.576694))
-        self.obs.lon = str(self._Configs.get('location', 'longitude', -121.493259))
-        self.obs.elevation = int(self._Configs.get('location', 'elevation', 800))
+        self.obs.lat = str(self._Configs.get("location", "latitude", 38.576694))
+        self.obs.lon = str(self._Configs.get("location", "longitude", -121.493259))
+        self.obs.elevation = int(self._Configs.get("location", "elevation", 800))
 
         self.obsTwilight = ephem.Observer()
         # civil = -6, nautical = -12, astronomical = -18
-        self.obsTwilight.horizon = str(self._Configs.get('times', 'twilighthorizon', '-6'))
-        self.obsTwilight.lat = str(self._Configs.get('location', 'latitude', 38.576694))
-        self.obsTwilight.lon = str(self._Configs.get('location', 'longitude', -121.493259))
-        self.obsTwilight.elevation = int(self._Configs.get('location', 'elevation', 800))
+        self.obsTwilight.horizon = str(self._Configs.get("times", "twilighthorizon", "-6"))
+        self.obsTwilight.lat = str(self._Configs.get("location", "latitude", 38.576694))
+        self.obsTwilight.lon = str(self._Configs.get("location", "longitude", -121.493259))
+        self.obsTwilight.elevation = int(self._Configs.get("location", "elevation", 800))
 
     @property
     def next_new_moon(self):
@@ -129,9 +129,9 @@ class Times(YomboLibrary, object):
         moon = ephem.Moon()
         moon.compute(self.obs)
         return {
-            'phase': moon.phase,
-            'az': str(moon.az),
-            'alt': str(moon.alt),
+            "phase": moon.phase,
+            "az": str(moon.az),
+            "alt": str(moon.alt),
         }
 
     @property
@@ -140,13 +140,13 @@ class Times(YomboLibrary, object):
         sun = ephem.Sun()
         sun.compute(self.obs)
         return {
-            'az': str(sun.az),
-            'alt': str(sun.alt),
+            "az": str(sun.az),
+            "alt": str(sun.alt),
         }
 
     @is_moon_visible.setter
     def is_moon_visible(self, val):
-        self._States.set('is.moonvisible', val, value_type='bool', source=self)
+        self._States.set("is.moonvisible", val, value_type="bool", source=self)
         self.__is_moon_visible = val
         self._Statistics.datapoint("lib.times.is_moonvisible", is_one_zero(val))
 
@@ -156,9 +156,8 @@ class Times(YomboLibrary, object):
 
     @is_sun_visible.setter
     def is_sun_visible(self, val):
-        self._States.set('is.sunvisible', val, value_type='bool', source=self)
+        self._States.set("is.sunvisible", val, value_type="bool", source=self)
         self.__is_sun_visible = val
-        # print("is sun visable: %s" % val)
         self._Statistics.datapoint("lib.times.is_sunvisible", is_one_zero(val))
 
     @property
@@ -167,7 +166,7 @@ class Times(YomboLibrary, object):
 
     @is_twilight.setter
     def is_twilight(self, val):
-        self._States.set('is.twilight', val, value_type='bool', source=self)
+        self._States.set("is.twilight", val, value_type="bool", source=self)
         self.__is_twilight = val
         self._Statistics.datapoint("lib.times.is_twilight", is_one_zero(val))
 
@@ -177,7 +176,7 @@ class Times(YomboLibrary, object):
 
     @is_twilight.setter
     def is_twilight(self, val):
-        self._States.set('is.twilight', val, value_type='bool', source=self)
+        self._States.set("is.twilight", val, value_type="bool", source=self)
         self.__is_twilight = val
         self._Statistics.datapoint("lib.times.is_twilight", is_one_zero(val))
 
@@ -187,7 +186,7 @@ class Times(YomboLibrary, object):
 
     @is_light.setter
     def is_light(self, val):
-        self._States.set('is.light', val, value_type='bool', source=self)
+        self._States.set("is.light", val, value_type="bool", source=self)
         self.__is_light = val
         self._Statistics.datapoint("lib.times.is_light", is_one_zero(val))
 
@@ -197,7 +196,7 @@ class Times(YomboLibrary, object):
 
     @is_dark.setter
     def is_dark(self, val):
-        self._States.set('is.dark', val, value_type='bool', source=self)
+        self._States.set("is.dark", val, value_type="bool", source=self)
         self.__is_dark = val
         self._Statistics.datapoint("lib.times.is_dark", is_one_zero(val))
 
@@ -207,7 +206,7 @@ class Times(YomboLibrary, object):
 
     @is_day.setter
     def is_day(self, val):
-        self._States.set('is.day', val, value_type='bool', source=self)
+        self._States.set("is.day", val, value_type="bool", source=self)
         self.__is_day = val
         self._Statistics.datapoint("lib.times.is_day", is_one_zero(val))
 
@@ -217,7 +216,7 @@ class Times(YomboLibrary, object):
 
     @is_night.setter
     def is_night(self, val):
-        self._States.set('is.night', val, value_type='bool', source=self)
+        self._States.set("is.night", val, value_type="bool", source=self)
         self.__is_night = val
         self._Statistics.datapoint("lib.times.is_night", is_one_zero(val))
 
@@ -227,7 +226,7 @@ class Times(YomboLibrary, object):
 
     @is_dawn.setter
     def is_dawn(self, val):
-        self._States.set('is.dawn', val, value_type='bool', source=self)
+        self._States.set("is.dawn", val, value_type="bool", source=self)
         self.__is_dawn = val
         self._Statistics.datapoint("lib.times.is_dawn", is_one_zero(val))
 
@@ -237,7 +236,7 @@ class Times(YomboLibrary, object):
 
     @is_dusk.setter
     def is_dusk(self, val):
-        self._States.set('is.dusk', val, value_type='bool', source=self)
+        self._States.set("is.dusk", val, value_type="bool", source=self)
         self.__is_dusk = val
         self._Statistics.datapoint("lib.times.is_dusk", is_one_zero(val))
 
@@ -247,7 +246,7 @@ class Times(YomboLibrary, object):
 
     @is_weekend.setter
     def is_weekend(self, val):
-        self._States.set('is.weekend', val, value_type='bool', source=self)
+        self._States.set("is.weekend", val, value_type="bool", source=self)
         self.__is_weekend = val
 
     @property
@@ -256,7 +255,7 @@ class Times(YomboLibrary, object):
 
     @is_weekday.setter
     def is_weekday(self, val):
-        self._States.set('is.weekday', val, value_type='bool', source=self)
+        self._States.set("is.weekday", val, value_type="bool", source=self)
         self.__is_weekday = val
 
     @property
@@ -265,7 +264,7 @@ class Times(YomboLibrary, object):
 
     @day_of_week.setter
     def day_of_week(self, val):
-        self._States.set('day_of_week', val, value_type='string', source=self)
+        self._States.set("day_of_week", val, value_type="string", source=self)
         self.__day_of_week = val
 
     @property
@@ -274,13 +273,13 @@ class Times(YomboLibrary, object):
 
     @next_day.setter
     def next_day(self, val):
-        if '__next_day' in locals():
+        if "__next_day" in locals():
             if val != self.__next_day:
-                self._States.set('next.day', int(round(val)), value_type='epoch', source=self)
+                self._States.set("next.day", int(round(val)), value_type="epoch", source=self)
                 self.__next_day = val
         else:
             self.__next_day = val
-            self._States.set('next.day', int(round(val)), value_type='epoch', source=self)
+            self._States.set("next.day", int(round(val)), value_type="epoch", source=self)
 
     @property
     def next_night(self):
@@ -288,13 +287,13 @@ class Times(YomboLibrary, object):
 
     @next_night.setter
     def next_night(self, val):
-        if '__next_night' in locals():
+        if "__next_night" in locals():
             if val != self.__next_night:
-                self._States.set('next.night', int(round(val)), value_type='epoch', source=self)
+                self._States.set("next.night", int(round(val)), value_type="epoch", source=self)
                 self.__next_night = val
         else:
             self.__next_night = val
-            self._States.set('next.night', int(round(val)), value_type='epoch', source=self)
+            self._States.set("next.night", int(round(val)), value_type="epoch", source=self)
 
     @property
     def next_light(self):
@@ -302,13 +301,13 @@ class Times(YomboLibrary, object):
 
     @next_light.setter
     def next_light(self, val):
-        if '__next_light' in locals():
+        if "__next_light" in locals():
             if val != self.__next_light:
-                self._States.set('next.light', int(round(val)), value_type='epoch', source=self)
+                self._States.set("next.light", int(round(val)), value_type="epoch", source=self)
                 self.__next_light = val
         else:
             self.__next_light = val
-            self._States.set('next.light', int(round(val)), value_type='epoch', source=self)
+            self._States.set("next.light", int(round(val)), value_type="epoch", source=self)
 
     @property
     def next_dark(self):
@@ -316,13 +315,13 @@ class Times(YomboLibrary, object):
 
     @next_dark.setter
     def next_dark(self, val):
-        if '__next_dark' in locals():
+        if "__next_dark" in locals():
             if val != self.__next_dark:
-                self._States.set('next.dark', int(round(val)), value_type='epoch', source=self)
+                self._States.set("next.dark", int(round(val)), value_type="epoch", source=self)
                 self.__next_dark = val
         else:
             self.__next_dark = val
-            self._States.set('next.dark', int(round(val)), value_type='epoch', source=self)
+            self._States.set("next.dark", int(round(val)), value_type="epoch", source=self)
 
     @property
     def next_wilight_start(self):
@@ -330,13 +329,13 @@ class Times(YomboLibrary, object):
 
     @next_wilight_start.setter
     def next_wilight_start(self, val):
-        if '__next_wilight_start' in locals():
+        if "__next_wilight_start" in locals():
             if val != self.__next_wilight_start:
-                self._States.set('next.twilightstart', int(round(val)), value_type='epoch', source=self)
+                self._States.set("next.twilightstart", int(round(val)), value_type="epoch", source=self)
                 self.__next_wilight_start = val
         else:
             self.__next_wilight_start = val
-            self._States.set('next.twilightstart', int(round(val)), value_type='epoch', source=self)
+            self._States.set("next.twilightstart", int(round(val)), value_type="epoch", source=self)
 
     @property
     def next_twilight_end(self):
@@ -344,13 +343,13 @@ class Times(YomboLibrary, object):
 
     @next_twilight_end.setter
     def next_twilight_end(self, val):
-        if '__next_twilight_end' in locals():
+        if "__next_twilight_end" in locals():
             if val != self.__next_twilight_end:
-                self._States.set('next.twilightend', int(round(val)), value_type='epoch', source=self)
+                self._States.set("next.twilightend", int(round(val)), value_type="epoch", source=self)
                 self.__next_twilight_end = val
         else:
             self.__next_twilight_end = val
-            self._States.set('next.twilightend', int(round(val)), value_type='epoch', source=self)
+            self._States.set("next.twilightend", int(round(val)), value_type="epoch", source=self)
 
     @property
     def next_sunrise(self):
@@ -358,13 +357,13 @@ class Times(YomboLibrary, object):
 
     @next_sunrise.setter
     def next_sunrise(self, val):
-        if '__next_sunrise' in locals():
+        if "__next_sunrise" in locals():
             if val != self.__next_sunrise:
-                self._States.set('next.sunrise', int(round(val)), value_type='epoch', source=self)
+                self._States.set("next.sunrise", int(round(val)), value_type="epoch", source=self)
                 self.__next_sunrise = val
         else:
             self.__next_sunrise = val
-            self._States.set('next.sunrise', int(round(val)), value_type='epoch', source=self)
+            self._States.set("next.sunrise", int(round(val)), value_type="epoch", source=self)
 
     @property
     def next_sunset(self, val):
@@ -372,12 +371,12 @@ class Times(YomboLibrary, object):
 
     @next_sunset.setter
     def next_sunset(self, val):
-        if '__next_sunset' in locals():
+        if "__next_sunset" in locals():
             if val != self.__next_sunset:
-                self._States.set('next.sunset', int(round(val)), value_type='epoch', source=self)
+                self._States.set("next.sunset", int(round(val)), value_type="epoch", source=self)
                 self.__next_sunset = val
         else:
-            self._States.set('next.sunset', int(round(val)), value_type='epoch', source=self)
+            self._States.set("next.sunset", int(round(val)), value_type="epoch", source=self)
             self.__next_sunset = val
 
     @property
@@ -386,12 +385,12 @@ class Times(YomboLibrary, object):
 
     @next_moonrise.setter
     def next_moonrise(self, val):
-        if '__moonRise' in locals():
+        if "__moonRise" in locals():
             if val != self.__moonRise:
-                self._States.set('next.moonrise', int(round(val)), value_type='epoch', source=self)
+                self._States.set("next.moonrise", int(round(val)), value_type="epoch", source=self)
                 self.__moonRise = val
         else:
-            self._States.set('next.moonrise', int(round(val)), value_type='epoch', source=self)
+            self._States.set("next.moonrise", int(round(val)), value_type="epoch", source=self)
             self.__moonRise = val
 
     @property
@@ -400,12 +399,12 @@ class Times(YomboLibrary, object):
 
     @next_moonset.setter
     def next_moonset(self, val):
-        if '__moonSet' in locals():
+        if "__moonSet" in locals():
             if val != self.__moonSet:
-                self._States.set('next.moonset', int(round(val)), value_type='epoch', source=self)
+                self._States.set("next.moonset", int(round(val)), value_type="epoch", source=self)
                 self.__moonSet = val
         else:
-            self._States.set('next.moonset', int(round(val)), value_type='epoch', source=self)
+            self._States.set("next.moonset", int(round(val)), value_type="epoch", source=self)
             self.__moonSet = val
 
     # Functions dealing with celestial objects
@@ -415,10 +414,10 @@ class Times(YomboLibrary, object):
         Returns a dictionary containing the next time twilight starts and ends.
         """
         if self.is_dark:
-            type = 'sunrise'
+            type = "sunrise"
         else:
-            type = 'sunset'
-        return {'start': self.next_wilight_start, 'end': self.next_twilight_end, 'now': self.is_twilight, 'type': type}
+            type = "sunset"
+        return {"start": self.next_wilight_start, "end": self.next_twilight_end, "now": self.is_twilight, "type": type}
 
     def item_visible(self, **kwargs):
         """
@@ -428,7 +427,7 @@ class Times(YomboLibrary, object):
 
         .. code-block:: python
 
-            saturn_visible = self._Times.item_visible(item='Saturn') # Is Saturn above the horizon? (True/False)
+            saturn_visible = self._Times.item_visible(item="Saturn") # Is Saturn above the horizon? (True/False)
 
         :raises YomboInvalidArgument: Raised if an argument is invalid or illegal.
         :raises AttributeError: Raised if PhPhem doesn't have the requested item.
@@ -437,14 +436,14 @@ class Times(YomboLibrary, object):
         :return: Pointer to array of all devices for requested device type
         :rtype: dict
         """
-        if 'item' not in kwargs:
+        if "item" not in kwargs:
             raise YomboInvalidArgument("Missing 'item' argument.")
-        item = kwargs['item']
+        item = kwargs["item"]
 
         try:
             obj = getattr(ephem, item)
         except AttributeError:
-            raise AttributeError("PyEphem doesn't have requested item: %s" % item)
+            raise AttributeError(f"PyEphem doesn't have requested item: {item}")
         self.obs.date = datetime.utcnow()
 
         # if it is rised and not set, then it is visible
@@ -469,28 +468,28 @@ class Times(YomboLibrary, object):
 
         .. code-block:: python
 
-            mars_rise = self._Times.item_rise(dayOffset=1, item='Saturn') # the NEXT (1) rising of Mars.
+            mars_rise = self._Times.item_rise(dayOffset=1, item="Saturn") # the NEXT (1) rising of Mars.
 
         :raises YomboInvalidArgument: Raised if an argument is invalid or illegal.
         :raises AttributeError: Raised if PhPhem doesn't have the requested item.
         :param dayOffset: Default=0. How many days in future to find when item rises. 0 = Today, 1=Tomorrow, etc, -1=Yesterday
         :type dayOffset: int
-        :param item: Default='Sun'. PyEphem item to search for and return results for.
+        :param item: Default="Sun". PyEphem item to search for and return results for.
         :type item: string
         :return: Pointer to array of all devices for requested device type
         :rtype: dict
         """
-        if 'item' not in kwargs:
+        if "item" not in kwargs:
             raise YomboInvalidArgument("Missing 'item' argument.")
-        item = kwargs['item']
+        item = kwargs["item"]
         dayOffset = 0
-        if 'dayOffset' in kwargs:
-            dayOffset = kwargs['dayOffset']
+        if "dayOffset" in kwargs:
+            dayOffset = kwargs["dayOffset"]
 
         try:
             obj = getattr(ephem, item)
         except AttributeError:
-            raise AttributeError("PyEphem doesn't have requested item: %s" % item)
+            raise AttributeError(f"PyEphem doesn't have requested item: {item}")
         self.obs.date = datetime.utcnow() + timedelta(days=dayOffset)
         temp = self._next_rising(self.obs, obj())
         return self._timegm(temp)
@@ -503,28 +502,28 @@ class Times(YomboLibrary, object):
 
         .. code-block:: python
 
-            pluto_set = self._Times.item_set(dayOffset=0, item='Pluto') # the NEXT (0) setting of Pluto.
+            pluto_set = self._Times.item_set(dayOffset=0, item="Pluto") # the NEXT (0) setting of Pluto.
 
         :raises YomboInvalidArgument: Raised if an argument is invalid or illegal.
         :raises AttributeError: Raised if PhPhem doesn't have the requested item.
         :param dayOffset: Default=0. How many days in future to find when item sets. 0 = Today, 1=Tomorrow, etc, -1=Yesterday
         :type dayOffset: int
-        :param item: Default='Sun'. PyEphem item to search for and return results for.
+        :param item: Default="Sun". PyEphem item to search for and return results for.
         :type item: string
         :return: Pointer to array of all devices for requested device type
         :rtype: dict
         """
-        if 'item' not in kwargs:
+        if "item" not in kwargs:
             raise YomboInvalidArgument("Missing 'item' argument.")
-        item = kwargs['item']
+        item = kwargs["item"]
         dayOffset = 0
-        if 'dayOffset' in kwargs:
-            dayOffset = kwargs['dayOffset']
+        if "dayOffset" in kwargs:
+            dayOffset = kwargs["dayOffset"]
 
         try:
             obj = getattr(ephem, item)
         except AttributeError:
-            raise AttributeError("PyEphem doesn't have requested item: %s" % item)
+            raise AttributeError(f"PyEphem doesn't have requested item: {item}")
         # we want the date part only, but date.today() isn't UTC.
         self.obs.date = datetime.utcnow() + timedelta(days=dayOffset)
 
@@ -537,11 +536,11 @@ class Times(YomboLibrary, object):
         for the next sunrise.
         :param dayOffset: Default=0. How many days to offset. 0 would be next, -1 is today.
         :type dayOffset: int
-        :param item: Default='Sun'. PyEphem item to search for and return results for.
+        :param item: Default="Sun". PyEphem item to search for and return results for.
         :type item: string
         """
-        dayOffset = kwargs.get('dayOffset', 0)
-        return self.item_rise(dayOffset=dayOffset, item='Sun')
+        dayOffset = kwargs.get("dayOffset", 0)
+        return self.item_rise(dayOffset=dayOffset, item="Sun")
 
     def sunset(self, **kwargs):
         """
@@ -549,13 +548,13 @@ class Times(YomboLibrary, object):
 
         :param dayOffset: Default=0. How many days to offset. 0 would be next, -1 is today.
         :type dayOffset: int
-        :param item: Default='Sun'. PyEphem item to search for and return results for.
+        :param item: Default="Sun". PyEphem item to search for and return results for.
         :type item: string
         """
         dayOffset = 0
-        if 'dayOffset' in kwargs:
-            dayOffset = kwargs['dayOffset']
-        return self.item_set(dayOffset=dayOffset, item='Sun')
+        if "dayOffset" in kwargs:
+            dayOffset = kwargs["dayOffset"]
+        return self.item_set(dayOffset=dayOffset, item="Sun")
 
     def sunrise_twilight(self, **kwargs):
         """
@@ -568,16 +567,16 @@ class Times(YomboLibrary, object):
         :type item: string
         """
         dayOffset = 0
-        if 'dayOffset' in kwargs:
-            dayOffset = kwargs['dayOffset']
-        item = 'Sun'
-        if 'item' in kwargs:
-            item = kwargs['item']
+        if "dayOffset" in kwargs:
+            dayOffset = kwargs["dayOffset"]
+        item = "Sun"
+        if "item" in kwargs:
+            item = kwargs["item"]
 
         try:
             obj = getattr(ephem, item)
         except AttributeError:
-            raise AttributeError("PyEphem doesn't have requested item: %s" % item)
+            raise AttributeError(f"PyEphem doesn't have requested item: {item}")
 
         self.obsTwilight.date = datetime.utcnow() + timedelta(days=dayOffset)
         temp = self._next_rising(self.obsTwilight, obj(), use_center=True)
@@ -594,16 +593,16 @@ class Times(YomboLibrary, object):
         :type item: string
         """
         dayOffset = 0
-        if 'dayOffset' in kwargs:
-            dayOffset = kwargs['dayOffset']
-        item = 'Sun'
-        if 'item' in kwargs:
-            item = kwargs['item']
+        if "dayOffset" in kwargs:
+            dayOffset = kwargs["dayOffset"]
+        item = "Sun"
+        if "item" in kwargs:
+            item = kwargs["item"]
 
         try:
             obj = getattr(ephem, item)
         except AttributeError:
-            raise AttributeError("PyEphem doesn't have requested item: %s" % item)
+            raise AttributeError(f"PyEphem doesn't have requested item: {item}")
 
         # we want the date part only, but date.today() isn't UTC.
         dt = datetime.utcnow() + timedelta(days=dayOffset)
@@ -618,17 +617,17 @@ class Times(YomboLibrary, object):
         the second callLater is to come back to this function and redo it all.
         This is different than day/night since it accounts for twilight.
         """
-        moonrise = self.item_rise(item='Moon')
-        moonset = self.item_set(item='Moon')
+        moonrise = self.item_rise(item="Moon")
+        moonset = self.item_set(item="Moon")
         cur_time = time.time()
 
         if self.is_now_init:
             self.next_moonrise = moonrise
             self.next_moonset = moonset
-            # print("_setup_moon_events and is_now_init: sunvisiable: %s" % self.item_visible(item='Sun'))
-            self.is_moon_visible = self.item_visible(item='Moon')
+            # print("_setup_moon_events and is_now_init: sunvisiable: %s" % self.item_visible(item="Sun"))
+            self.is_moon_visible = self.item_visible(item="Moon")
 
-        if self.item_visible(item='Moon'):
+        if self.item_visible(item="Moon"):
             reactor.callLater(moonset-cur_time+0.1, self._send_now_moonset)
             reactor.callLater(moonset-cur_time+1, self._setup_moon_events)
         else:
@@ -648,9 +647,9 @@ class Times(YomboLibrary, object):
 
         self._CalcLightDark()
         if self.is_now_init:
-            # print("_setup_light_dark_events and is_now_init: sunvisiable: %s" % self.item_visible(item='Sun'))
-            # print("_setup_light_dark_events and is_now_init: moon: %s" % self.item_visible(item='Moon'))
-            self.is_sun_visible = self.item_visible(item='Sun')
+            # print("_setup_light_dark_events and is_now_init: sunvisiable: %s" % self.item_visible(item="Sun"))
+            # print("_setup_light_dark_events and is_now_init: moon: %s" % self.item_visible(item="Moon"))
+            self.is_sun_visible = self.item_visible(item="Sun")
             self.next_dark = sunset
             self.next_light = sunrise
 
@@ -713,7 +712,7 @@ class Times(YomboLibrary, object):
             riseTime = self.sunrise() + 1.1
             twTime = min(setTime, riseTime)
             logger.debug("nowNotTwilight event in: {twTime}", twTime=twTime)
-            reactor.callLater(twTime-cur_time, self.send_event_hook, 'now_twilight_end')
+            reactor.callLater(twTime-cur_time, self.send_event_hook, "now_twilight_end")
             reactor.callLater(twTime-cur_time+1, self._setup_next_twilight_events)
             self.next_twilight_end = twTime
 
@@ -727,7 +726,7 @@ class Times(YomboLibrary, object):
             riseTime = self.sunrise_twilight() + 1.1
             twTime = min(setTime, riseTime)
             logger.debug("nowTwilight event in: {twTime}", twTime=twTime)
-            reactor.callLater(twTime-cur_time, self.send_event_hook, 'now_twilight_start')
+            reactor.callLater(twTime-cur_time, self.send_event_hook, "now_twilight_start")
             reactor.callLater(twTime-cur_time+1, self._setup_next_twilight_events)
             self.next_wilight_start = twTime
 
@@ -792,13 +791,13 @@ class Times(YomboLibrary, object):
         Sets "is.weekday" and "is.weekend" states. Also setups up "day_of_week" for mon-sun.
         """
         day_map = {
-            0: 'monday',
-            1: 'tuesday',
-            2: 'wednesday',
-            3: 'thursday',
-            4: 'friday',
-            5: 'saturday',
-            6: 'sunday',
+            0: "monday",
+            1: "tuesday",
+            2: "wednesday",
+            3: "thursday",
+            4: "friday",
+            5: "saturday",
+            6: "sunday",
         }
 
         day_number = datetime.today().weekday()
@@ -811,16 +810,16 @@ class Times(YomboLibrary, object):
             self.is_weekend = True
 
         self.day_of_week = day_map[day_number]
-        reactor.callLater(dt.get_next_time('12:00am')[0] - time.time(), self._setup_weekday_events)
+        reactor.callLater(dt.get_next_time("12:00am")[0] - time.time(), self._setup_weekday_events)
 
     def _send_now_night(self):
         """
         Called by timer when the sunsets. Called by: _setup_sun_events
         """
         self.is_sun_visible = False
-        self.next_sunset = self.item_set(item='Sun')
-        self.send_event_hook('now_night')
-        self.send_event_hook('now_day')
+        self.next_sunset = self.item_set(item="Sun")
+        self.send_event_hook("now_night")
+        self.send_event_hook("now_day")
 
     def _send_now_day(self):
         """
@@ -828,25 +827,25 @@ class Times(YomboLibrary, object):
         """
         # print("_send_now_day")
         self.is_sun_visible = True
-        self.next_sunrise = self.item_set(item='Moon')
-        self.send_event_hook('now_sunrise')
-        self.send_event_hook('now_sunrise')
+        self.next_sunrise = self.item_set(item="Moon")
+        self.send_event_hook("now_sunrise")
+        self.send_event_hook("now_sunrise")
 
     def _send_now_moonset(self):
         """
         Called by timer when the moon sets. Called by: _setup_moon_events
         """
         self.is_moon_visible = False
-        self.next_moonset = self.item_set(item='Moon')
-        self.send_event_hook('now_moonset')
+        self.next_moonset = self.item_set(item="Moon")
+        self.send_event_hook("now_moonset")
 
     def _send_now_moonrise(self):
         """
         Called by timer when the moon risess. Called by: _setup_moon_events
         """
         self.is_moon_visible = True
-        self.next_moonrise = self.item_rise(item='Moon')
-        self.send_event_hook('now_moonrise')
+        self.next_moonrise = self.item_rise(item="Moon")
+        self.send_event_hook("now_moonrise")
 
     def _send_now_dark(self):
         """
@@ -854,7 +853,7 @@ class Times(YomboLibrary, object):
         to setup the next twilight cycle for dawn.
         """
         self.next_dark = self.sunset_twilight()
-        self.send_event_hook('now_dark')
+        self.send_event_hook("now_dark")
 
     def _send_now_light(self):
         """
@@ -862,14 +861,14 @@ class Times(YomboLibrary, object):
         to setup the next twilight cycle for dawn.
         """
         self.next_light = self.sunrise_twilight()
-        self.send_event_hook('now_light')
+        self.send_event_hook("now_light")
 
     def _send_now_dusk_start(self):
         """
         Called by timer when it's nowDusk.
         """
         self.is_dusk = True
-        self.send_event_hook('now_dusk_start')
+        self.send_event_hook("now_dusk_start")
 
     def _send_now_dusk_end(self):
         """
@@ -877,14 +876,14 @@ class Times(YomboLibrary, object):
         to setup the next twilight cycle for dawn.
         """
         self.is_dusk = False
-        self.send_event_hook('now_dusk_end')
+        self.send_event_hook("now_dusk_end")
 
     def _send_now_dawn_start(self):
         """
         Called by timer when it's nowDawn.
         """
         self.is_dawn = True
-        self.send_event_hook('now_dawn_start')
+        self.send_event_hook("now_dawn_start")
 
     def _send_now_dawn_end(self):
         """
@@ -892,7 +891,7 @@ class Times(YomboLibrary, object):
         to setup the next twilight cycle for dusk.
         """
         self.is_dawn = False
-        self.send_event_hook('now_dawn_end')
+        self.send_event_hook("now_dawn_end")
 
     def send_event_hook(self, event_msg):
         """
@@ -906,7 +905,7 @@ class Times(YomboLibrary, object):
         """
         if self.is_now_init is False:
             try:
-                global_invoke_all('_time_event_',
+                global_invoke_all("_time_event_",
                                   called_by=self,
                                   value=event_msg,
                                   stoponerror=True,
@@ -985,16 +984,16 @@ class Times(YomboLibrary, object):
 
     # These wrappers need for polar regions where day might be longer than 24 hours
     def _previous_rising(self, observer, item, use_center=False):
-        return self._riset_wrapper(observer,'previous_rising',item,use_center=use_center)
+        return self._riset_wrapper(observer, "previous_rising", item, use_center=use_center)
 
-    def _previous_setting(self, observer: dict(type=float, help='the dividend'), item, use_center=False):
-        return self._riset_wrapper(observer,'previous_setting',item,use_center=use_center)
+    def _previous_setting(self, observer: dict(type=float, help="the dividend"), item, use_center=False):
+        return self._riset_wrapper(observer, "previous_setting", item, use_center=use_center)
 
     def _next_rising(self, observer, item, use_center=False):
-        return self._riset_wrapper(observer,'next_rising',item,use_center=use_center)
+        return self._riset_wrapper(observer, "next_rising", item, use_center=use_center)
 
     def _next_setting(self, observer, item, use_center=False):
-        return self._riset_wrapper(observer,'next_setting',item,use_center=use_center)
+        return self._riset_wrapper(observer, "next_setting", item, use_center=use_center)
     def _riset_wrapper(self, observer, obsf_name, obj,use_center=False):
         save_date = observer.date #we need to save this date to compare with later
         while True:
@@ -1030,19 +1029,19 @@ class Times(YomboLibrary, object):
             coef = time.time()
             self.mutex.acquire()
             if (self.show_messages):
-                print('calling reactor.callLater (', a, b, c, ')')
+                print("calling reactor.callLater (", a, b, c, ")")
             #            self.call_arr.append((a,b,c))
             if (a+coef in self.call_dict):
                 self.call_dict[a+coef] = self.call_dict[a+coef] + [(float(a+coef),b,c,self.uniq)]
             else:
                 self.call_dict[a+coef] = [(float(a+coef),b,c,self.uniq)]
             if (self.show_messages):
-                print(('calling in %s:%s:%s.%s - ' % (int(a/60/60),int(a/60)%60,int(a)%60,int(a*1000)%1000)), datetime.utcnow() + timedelta(seconds=a))
+                print(("calling in %s:%s:%s.%s - " % (int(a/60/60),int(a/60)%60,int(a)%60,int(a*1000)%1000)), datetime.utcnow() + timedelta(seconds=a))
             self.uniq = self.uniq + 1
             self.mutex.release()
 
-        self._reactor_callLater = getattr(reactor,'callLater')
-        setattr(reactor, 'callLater', callLaterMy)
+        self._reactor_callLater = getattr(reactor, "callLater")
+        setattr(reactor, "callLater", callLaterMy)
 
         self.year_array = [0]*(365*24)
         self.start_time = time.time()
@@ -1052,87 +1051,87 @@ class Times(YomboLibrary, object):
             #print 'send_event_hook %s on %s' % (a, datetime.fromtimestamp(time.time()))
             if (ct >= (365*24)):
                 return
-            if (a == 'nowDark'):
+            if (a == "nowDark"):
                 assert (self.year_array[ct] & 1) == 0, "nowDark duplicate"
                 self.year_array[ct] = self.year_array[ct] | 1
-            if (a == 'nowLight'):
+            if (a == "nowLight"):
                 assert (self.year_array[ct] & 2) == 0, "nowLight duplicate"
                 self.year_array[ct] = self.year_array[ct] | 2
-            if (a == 'nowNight'):
+            if (a == "nowNight"):
                 assert (self.year_array[ct] & 4) == 0, "nowNight duplicate"
                 self.year_array[ct] = self.year_array[ct] | 4
-            if (a == 'nowDay'):
+            if (a == "nowDay"):
                 assert (self.year_array[ct] & 8) == 0, "nowDay duplicate"
                 self.year_array[ct] = self.year_array[ct] | 8
-            if (a == 'nowTwilight'):
+            if (a == "nowTwilight"):
                 assert (self.year_array[ct] & 16) == 0, "nowTwilight duplicate"
                 self.year_array[ct] = self.year_array[ct] | 16
-            if (a == 'nowNotTwilight'):
+            if (a == "nowNotTwilight"):
                 assert (self.year_array[ct] & 32) == 0, "nowNotTwilight duplicate"
                 self.year_array[ct] = self.year_array[ct] | 32
-            if (a == 'nowDawn'):
+            if (a == "nowDawn"):
                 assert (self.year_array[ct] & 64) == 0, "nowDawn duplicate"
                 self.year_array[ct] = self.year_array[ct] | 64
-            if (a == 'nowNotDawn'):
+            if (a == "nowNotDawn"):
                 assert (self.year_array[ct] & 128) == 0, "nowNotDawn duplicate"
                 self.year_array[ct] = self.year_array[ct] | 128
-            if (a == 'nowDusk'):
+            if (a == "nowDusk"):
                 assert (self.year_array[ct] & 256) == 0, "nowDusk duplicate"
                 self.year_array[ct] = self.year_array[ct] | 256
-            if (a == 'nowNotDusk'):
+            if (a == "nowNotDusk"):
                 assert (self.year_array[ct] & 512) == 0, "nowNotDusk duplicate"
                 self.year_array[ct] = self.year_array[ct] | 512
-        self.send_event_hook_old = getattr(self, 'send_event_hook')
-        setattr(self, 'send_event_hook', send_event_hook_my)
+        self.send_event_hook_old = getattr(self, "send_event_hook")
+        setattr(self, "send_event_hook", send_event_hook_my)
 
     def finish_tests(self):
-        setattr(reactor, 'callLater', self._reactor_callLater)
-        setattr(self, 'send_event_hook', self.send_event_hook_old)
+        setattr(reactor, "callLater", self._reactor_callLater)
+        setattr(self, "send_event_hook", self.send_event_hook_old)
 
     def run_inner_tests_chk_year(self, set_olddt, set_newdt, lat, lon):
-        print('************check year: lat = %s, lon = %s *********************' % (lat,lon))
+        print(f"************check year: lat = {lat}, lon = {lon} *********************")
 
-        globals()['time'] = lambda:t
+        globals()["time"] = lambda:t
         self.obs.lat = lat
         self.obs.lon = lon
         self.obsTwilight.lat = lat
         self.obsTwilight.lon = lon
 
-        #        globals()['datetime'] = old_datetime
+        #        globals()["datetime"] = old_datetime
         set_olddt()
         midnight_utc = datetime.utcnow().date()
         midday_utc = datetime.utcnow().date() + timedelta(hours=12)
-        #        globals()['datetime'] = DateTime
+        #        globals()["datetime"] = DateTime
         set_newdt()
         t = CalTimegm (midnight_utc.timetuple())
 
         err = 0
-        print('Year check results (. - ok, X - should be day but night, x - should be night):[', midnight_utc,']', end=' ')
+        print("Year check results (. - ok, X - should be day but night, x - should be night):[", midnight_utc,"]", end=" ")
         for i in range (0,366): #check night is night and day is day
             #midnight
             self._CalcDayNight()
-            if (self.is_night): print('.', end=' ')
+            if (self.is_night): print(".", end=" ")
             else:
-                print('x', end=' ')
+                print("x", end=" ")
                 err = err + 1
             t = t + 60*60*12
             #midday
             self._CalcDayNight()
-            if (self.is_day): print('.', end=' ')
+            if (self.is_day): print(".", end=" ")
             else:
-                print('X', end=' ')
+                print("X", end=" ")
                 err = err + 1
             t = t + 60*60*12
 
-        print('Errors:', err)
+        print("Errors:", err)
 
         # parameters: latm lon, date that day, twilight begin time, sunrise, sunset, twilight end time
-    def table_check(self,lat,lon,dt,twb,psr,nss,twe,msg,sun_hor='0'):
-        print('checking table times for ', msg)
-        print('lat = %s, lon = %s, dt = %s, twb = %s, psr = %s, nss = %s, twe = %s, horizon correction = %s' % (lat,lon,dt,twb,psr,nss,twe,sun_hor))
-        d = lambda x:datetime.strptime(x,'%Y/%m/%d %H:%M:%S')
+    def table_check(self, lat, lon, dt, twb, psr, nss, twe, msg, sun_hor="0"):
+        print("checking table times for ", msg)
+        print("lat = %s, lon = %s, dt = %s, twb = %s, psr = %s, nss = %s, twe = %s, horizon correction = %s" % (lat,lon,dt,twb,psr,nss,twe,sun_hor))
+        d = lambda x:datetime.strptime(x,"%Y/%m/%d %H:%M:%S")
         t = CalTimegm(d(dt).timetuple())
-        globals()['time'] = lambda:t
+        globals()["time"] = lambda: t
 
         #to check tables we should regulate pressure
         self.obs.temp = 0
@@ -1142,7 +1141,7 @@ class Times(YomboLibrary, object):
         self.obs.horizon = sun_hor
         self.obsTwilight.temp = 0
         self.obsTwilight.pressure = 0
-        self.obsTwilight.horizon = '-6'
+        self.obsTwilight.horizon = "-6"
         self.obsTwilight.lat = lat
         self.obsTwilight.lon = lon
 
@@ -1158,28 +1157,28 @@ class Times(YomboLibrary, object):
 
         assert (abs(err_sr) < 120), "time skew is more than 2 minutes for sunrise (%s)" % msg
         assert (abs(err_twb) < 120), "time skew is more than 2 minutes for twilight start (%s)" % msg
-        print('table check passed')
+        print("table check passed")
         self.obs.pressure = 1010
         self.obsTwilight.pressure = 1010
-        self.obs.horizon='0'
+        self.obs.horizon="0"
         self.obs.temp = 15
         self.obsTwilight.temp = 15
     def run_inner_tests(self):
         print(self.obs)
         print(self.obsTwilight)
-        print('time.time()', time.time())
-        print('sr', self.sunrise())
-        print('ss', self.sunset())
-        print('srt', self.sunrise_twilight())
-        print('sst', self.sunset_twilight())
+        print("time.time()", time.time())
+        print("sr", self.sunrise())
+        print("ss", self.sunset())
+        print("srt", self.sunrise_twilight())
+        print("sst", self.sunset_twilight())
         assert (self.sunrise()>time.time()),"next rise after current time"
         assert (self.sunset()>time.time()),"next set after current time"
         assert (self.sunrise_twilight()>time.time()),"next twilight rise after current time"
         assert (self.sunset_twilight()>time.time()),"next twilight set after current time"
 
-        print('************Year check midnights********************')
-        old_time=globals()['time']
-        old_datetime = globals()['datetime']
+        print("************Year check midnights********************")
+        old_time=globals()["time"]
+        old_datetime = globals()["datetime"]
         class DateTime(datetime):
             @staticmethod
             def utcnow():
@@ -1189,70 +1188,70 @@ class Times(YomboLibrary, object):
                 return datetime.fromtimestamp(time.time())
             def timetuple(self):
                 return(self.year, self.month, self.day, self.hour, self.minute, self.second + self.microsecond / 1000000.0)
-        globals()['datetime'] = DateTime
-        globals()['time'] = lambda:t
+        globals()["datetime"] = DateTime
+        globals()["time"] = lambda: t
 
-        print('************adding day*********************')
+        print("************adding day*********************")
 
-        globals()['datetime'] = old_datetime
+        globals()["datetime"] = old_datetime
         t = CalTimegm (datetime.utcnow().timetuple()) + 24*60*60
-        globals()['datetime'] = DateTime
-        print('time.time()', time.time())
-        print('sr', self.sunrise())
-        print('ss', self.sunset())
-        print('srt', self.sunrise_twilight())
-        print('sst', self.sunset_twilight())
+        globals()["datetime"] = DateTime
+        print("time.time()", time.time())
+        print("sr", self.sunrise())
+        print("ss", self.sunset())
+        print("srt", self.sunrise_twilight())
+        print("sst", self.sunset_twilight())
 
         def _set_dt(dt):
-            globals()['datetime'] = dt
+            globals()["datetime"] = dt
 
         set_olddt = lambda:_set_dt(old_datetime)
         set_newdt = lambda:_set_dt(DateTime)
 
         #Greenwich ecuator
-        self.run_inner_tests_chk_year(set_olddt, set_newdt, '0', '0')
+        self.run_inner_tests_chk_year(set_olddt, set_newdt, "0", "0")
 
         #Murmansk lat
-        self.run_inner_tests_chk_year(set_olddt, set_newdt, '69', '0')
+        self.run_inner_tests_chk_year(set_olddt, set_newdt, "69", "0")
 
         #near north pole
-        #        self.run_inner_tests_chk_year(set_olddt, set_newdt, '89:30', '0')
+        #        self.run_inner_tests_chk_year(set_olddt, set_newdt, "89:30", "0")
 
         #check Atlanta
-        self.obs.lat = '33.8'
-        self.obs.lon = '-84.4'
-        self.obsTwilight.lat = '33.8'
-        self.obsTwilight.lon = '-84.4'
+        self.obs.lat = "33.8"
+        self.obs.lon = "-84.4"
+        self.obsTwilight.lat = "33.8"
+        self.obsTwilight.lon = "-84.4"
         t = CalTimegm (datetime (2009,9,6,17,0).timetuple())
 
-        globals()['time'] = lambda:t #renew closure
+        globals()["time"] = lambda:t #renew closure
 
-        print('************table check********************')
+        print("************table check********************")
 
-        self.table_check('33.8','-84.4','2009/09/06 17:00:00','2009/09/06 10:50:00','2009/09/06 11:15:00','2009/09/06 23:56:00','2009/09/07 00:21:00','Atlanta','-0:34')
-        #        self.table_check('68.95','33.1','2013/08/12 12:00:00','2013/08/11 22:18:13','2013/08/12 00:44:48','2013/08/12 19:03:14','2013/08/12 21:10:48','Murmansk','-0:50')
+        self.table_check("33.8","-84.4","2009/09/06 17:00:00","2009/09/06 10:50:00","2009/09/06 11:15:00","2009/09/06 23:56:00","2009/09/07 00:21:00","Atlanta","-0:34")
+        #        self.table_check("68.95","33.1","2013/08/12 12:00:00","2013/08/11 22:18:13","2013/08/12 00:44:48","2013/08/12 19:03:14","2013/08/12 21:10:48","Murmansk","-0:50")
 
-        print('************callLater check********************')
+        print("************callLater check********************")
 
-        self.obs.lat = '33.8'
-        self.obs.lon = '-84.4'
+        self.obs.lat = "33.8"
+        self.obs.lon = "-84.4"
         self.obs.pressure = 0
         self.obs.temp = 0
         self.obs.pressure = 0
-        self.obs.horizon = '-0:34'
-        self.obsTwilight.lat = '33.8'
-        self.obsTwilight.lon = '-84.4'
+        self.obs.horizon = "-0:34"
+        self.obsTwilight.lat = "33.8"
+        self.obsTwilight.lon = "-84.4"
         self.obsTwilight.pressure = 0
         self.obsTwilight.temp = 0
-        self.obsTwilight.horizon = '-6:0'
+        self.obsTwilight.horizon = "-6:0"
         self.mutex.acquire()
         self.call_dict = {} #reset call array
         self.mutex.release()
         #set some timw point (now will be good enough!)
-        globals()['datetime'] = old_datetime
+        globals()["datetime"] = old_datetime
         t = CalTimegm (datetime.utcnow().timetuple())
-        globals()['datetime'] = DateTime
-        globals()['time'] = lambda:t #renew closure
+        globals()["datetime"] = DateTime
+        globals()["time"] = lambda:t #renew closure
 
         self.year_array = [0]*(365*24)
 
@@ -1271,30 +1270,30 @@ class Times(YomboLibrary, object):
             #print "On %s iteration there are %s later calls" % (i, len(self.call_dict))
             def prnDict():
                 for s in list(self.call_dict.keys()):
-                    print('dict[%s]:' % datetime.fromtimestamp(s))
+                    print("dict[%s]:" % datetime.fromtimestamp(s))
                     c_l = self.call_dict[s]
                     for (a,b,c,d) in c_l:
-                        #print 'check ', c
+                        #print "check ", c
                         print("%s --- func = %s, param = %s" % (d,b,c))
             #prnDict()
-            assert (len(self.call_dict) > 0), 'no more laterCalls on %s iteration' % i
+            assert (len(self.call_dict) > 0), "no more laterCalls on %s iteration" % i
             t_corr_l = list(self.call_dict.keys())
             assert (t_corr_l[0] > 0), "bad value of seconds in laterCall: %s" % t_corr_l[0]
 
             #check dict (there should not be fully duplicate events (or should?))
             to_call_list = []
-            #print 'dict check: ', t_corr_l
+            #print "dict check: ", t_corr_l
             for s in list(self.call_dict.keys()):
-                #print 'check second = %s' % s
+                #print "check second = %s" % s
                 c_l = self.call_dict[s]
                 to_call_list = to_call_list + c_l
                 for (a,b,c,d) in c_l:
-                    #print 'check ', c
+                    #print "check ", c
                     assert ((a,b,c) not in old_events), "laterCall is duplicated:%s,%s,%s (u=%s)" % (a,b,c,d)
                     old_events = old_events + [(a,b,c)]
             self.call_dict = {} #clear call dict
 
-            #print 'dict calls'
+            #print "dict calls"
             self.mutex.release()
             #call functions on that time
             old_t = t
@@ -1317,34 +1316,34 @@ class Times(YomboLibrary, object):
                 for p in range(0,10):
                     if (c & (1 << p) > 0):
                         rc [p] = rc [p] + 1
-                l = ''
-                if (c & 1) > 0 : l = l + 'R'
-                elif (c & 2) > 0 : l = l + 'L'
-                else: l = l + ' '
+                l = ""
+                if (c & 1) > 0 : l = l + "R"
+                elif (c & 2) > 0 : l = l + "L"
+                else: l = l + " "
 
-                if (c & 4) > 0 : l = l + 'N'
-                elif (c & 8) > 0 : l = l + 'D'
-                else: l = l + ' '
+                if (c & 4) > 0 : l = l + "N"
+                elif (c & 8) > 0 : l = l + "D"
+                else: l = l + " "
 
-                if (c & 48) == 48: l = l + '+'
-                elif (c & 16) > 0 : l = l + 'W'
-                elif (c & 32) > 0 : l = l + 'w'
-                else: l = l + ' '
+                if (c & 48) == 48: l = l + "+"
+                elif (c & 16) > 0 : l = l + "W"
+                elif (c & 32) > 0 : l = l + "w"
+                else: l = l + " "
 
-                if (c & 192) == 192: l = l + '/'
-                elif (c & 64) > 0 : l = l + 'A'
-                elif (c & 128) > 0 : l = l + 'a'
-                else: l = l + ' '
+                if (c & 192) == 192: l = l + "/"
+                elif (c & 64) > 0 : l = l + "A"
+                elif (c & 128) > 0 : l = l + "a"
+                else: l = l + " "
 
-                if (c & 768) == 768: l = l + '\\'
-                elif (c & 256) > 0 : l = l + 'U'
-                elif (c & 512) > 0 : l = l + 'u'
-                else: l = l + ' '
-                print("%s"%l, end=' ')
+                if (c & 768) == 768: l = l + "\\"
+                elif (c & 256) > 0 : l = l + "U"
+                elif (c & 512) > 0 : l = l + "u"
+                else: l = l + " "
+                print("%s"%l, end=" ")
             print()
 
-        print('indeces in result count: 0-Dark,1-Light,2-Night,3-Day,4-Twilight,5-NotTwi,6-Dawn,7-NotDawn,8-Dusk,9-NotDusk')
-        print('result count = ', rc)
-        globals()['time']=old_time
-        globals()['datetime'] = old_datetime
+        print("indeces in result count: 0-Dark,1-Light,2-Night,3-Day,4-Twilight,5-NotTwi,6-Dawn,7-NotDawn,8-Dusk,9-NotDusk")
+        print("result count = ", rc)
+        globals()["time"]=old_time
+        globals()["datetime"] = old_datetime
         self.finish_tests() #revert reactor.callLater patch

@@ -86,13 +86,13 @@ class DeprecatedWarning(DeprecationWarning):
         parts["called_by"] = self.called_by
 
         if self.deprecated_in:
-            parts["deprecated"] = " as of %s" % self.deprecated_in
+            parts["deprecated"] = f" as of {self.deprecated_in}"
         if self.removed_in:
-            parts["removed"] = " and will be removed in %s" % self.removed_in
+            parts["removed"] = f" and will be removed in {self.removed_in}"
         if any([self.deprecated_in, self.removed_in, self.details]):
             parts["period"] = "."
         if self.details:
-            parts["details"] = " %s" % self.details
+            parts["details"] = f" {self.details}"
 
         return ("%(function)s was called by '%(called_by)s' and is deprecated%(deprecated)s%(removed)s"
                 "%(period)s%(details)s" % (parts))
@@ -114,7 +114,7 @@ class UnsupportedWarning(DeprecatedWarning):
         parts["removed"] = self.removed_in
 
         if self.details:
-            parts["details"] = " %s" % self.details
+            parts["details"] = f" {self.details}"
 
         return ("%(function)s is unsupported as of %(removed)s."
                 "%(details)s" % (parts))
@@ -270,17 +270,17 @@ def deprecated(deprecated_in=None, removed_in=None, current_version=None,
             frm = inspect.stack()[1]
             mod = inspect.getmodule(frm[0])
             callingframe = sys._getframe(1)
-            if 'self' in callingframe.f_locals:
+            if "self" in callingframe.f_locals:
                 called_by = "%s.%s.%s" % \
                           (mod.__name__,
-                           callingframe.f_locals['self'].__class__.__name__,
+                           callingframe.f_locals["self"].__class__.__name__,
                            callingframe.f_code.co_name)
             else:
                 called_by = "%s.%s" % \
                             (mod.__name__,
                              callingframe.f_code.co_name)
 
-            called_by = ".".join(list(OrderedDict.fromkeys(called_by.split('.'))))  # remove duplicates
+            called_by = ".".join(list(OrderedDict.fromkeys(called_by.split("."))))  # remove duplicates
             frm_module = inspect.getmodule(function).__name__
 
             if should_warn:

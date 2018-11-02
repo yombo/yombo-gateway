@@ -30,10 +30,10 @@ class BucketsManager:
         bucket_dict = defaultdict(lambda: [])
 
         for values in data:
-            bucket_dict[values['bucket_name']].append(values)
+            bucket_dict[values["bucket_name"]].append(values)
 
         for bucket_name, values in bucket_dict.items():
-            bucket_type = values[0]['bucket_type']
+            bucket_type = values[0]["bucket_type"]
             self._handlers[bucket_name] = BucketTimelineHandler(bucket_name=bucket_name,
                                                                 bucket_type=bucket_type,
                                                                 db_values=values,
@@ -56,9 +56,9 @@ class BucketsManager:
 
     def get_stats(self, bucket_size, start, end):
         granulated = list(range(start, end, bucket_size))
-        result = {'buckets': granulated, 'values': {}}
+        result = {"buckets": granulated, "values": {}}
         for bucket_name in self._handlers.keys():
-            result['values'][bucket_name] = self.stat_bucket(bucket_name, bucket_size, start, end)
+            result["values"][bucket_name] = self.stat_bucket(bucket_name, bucket_size, start, end)
         return result
 
     def bucket_names(self):

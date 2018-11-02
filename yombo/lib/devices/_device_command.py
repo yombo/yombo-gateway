@@ -25,7 +25,7 @@ from yombo.core.exceptions import YomboWarning
 from yombo.utils import is_true_false, data_pickle
 
 from yombo.core.log import get_logger
-logger = get_logger('library.devices.device_command')
+logger = get_logger("library.devices.device_command")
 
 
 class Device_Command(object):
@@ -35,18 +35,18 @@ class Device_Command(object):
     request.
     """
     status_ids = {
-        'unknown': 0,
-        'new': 10,
-        'accepted': 20,
-        'broadcast': 30,
-        'sent': 40,
-        'received': 50,
-        'delayed': 55,
-        'pending': 60,
-        'done': 100,
-        'canceled': 200,
-        'failed': 220,
-        'expired': 240,
+        "unknown": 0,
+        "new": 10,
+        "accepted": 20,
+        "broadcast": 30,
+        "sent": 40,
+        "received": 50,
+        "delayed": 55,
+        "pending": 60,
+        "done": 100,
+        "canceled": 200,
+        "failed": 220,
+        "expired": 240,
     }
 
     @property
@@ -54,7 +54,7 @@ class Device_Command(object):
         if self._status not in self.status_ids:
             logger.warn("Device command {id} has invalid status: {status}",
                         id=self.request_id, status=self._status)
-            self.status = 'unknown'
+            self.status = "unknown"
             return 0
         else:
             return self.status_ids[self._status]
@@ -65,7 +65,7 @@ class Device_Command(object):
             if key_id == val:
                 self._status = key
                 break
-        raise Exception("Invalid status_id: %s" % val)
+        raise Exception(f"Invalid status_id: {val}")
 
     @property
     def status(self):
@@ -78,13 +78,13 @@ class Device_Command(object):
             if status not in self.status_ids:
                 logger.warn("Device command {id} tried to set an invalid status: {status}",
                             id=self.request_id, status=val)
-                self._status = 'unknown'
+                self._status = "unknown"
             else:
                 self._status = status
         except AttributeError as e:
             logger.warn("Error setting device command {id} tried to set an invalid status: {status}, error: {error}",
                         id=self.request_id, status=val, error=e)
-            self._status = 'unknown'
+            self._status = "unknown"
 
         if val in self.callbacks:
             if len(self.callbacks[val]) > 0:
@@ -99,7 +99,7 @@ class Device_Command(object):
 
     @property
     def label(self):
-        return "%s -> %s" % (self.command.label, self.device.full_label)
+        return f"{self.command.label} -> {self.device.full_label}"
 
     def __init__(self, data, parent, start=None):
         """
@@ -109,69 +109,72 @@ class Device_Command(object):
         :param parent: A pointer to the device types instance.
         """
         self._Parent = parent
-        self.source_gateway_id = data.get('source_gateway_id', self._Parent.gateway_id)
+        self.source_gateway_id = data.get("source_gateway_id", self._Parent.gateway_id)
         self.local_gateway_id = self._Parent.gateway_id
-        self.request_id = data['request_id']
+        self.request_id = data["request_id"]
 
-        if 'device' in data:
-            self.device = data['device']
-        elif 'device_id' in data:
-            self.device = parent.get(data['device_id'])
+        if "device" in data:
+            self.device = data["device"]
+        elif "device_id" in data:
+            self.device = parent.get(data["device_id"])
         else:
             raise ValueError("Must have either device reference, or device_id")
-        if 'command' in data:
-            self.command = data['command']
-        elif 'command_id' in data:
-            self.command = parent._Commands.get(data['command_id'])
+        if "command" in data:
+            self.command = data["command"]
+        elif "command_id" in data:
+            self.command = parent._Commands.get(data["command_id"])
         else:
             raise ValueError("Must have either command reference, or command_id")
-        self.inputs = data.get('inputs', None)
-        if 'history' in data:
-            self.history = data['history']
+        self.inputs = data.get("inputs", None)
+        if "history" in data:
+            self.history = data["history"]
         else:
             self.history = []
         self.callbacks = {
-            'broadcast': [],
-            'accepted': [],
-            'sent': [],
-            'received': [],
-            'pending': [],
-            'failed': [],
-            'canceled': [],
-            'done': [],
+            "broadcast": [],
+            "accepted": [],
+            "sent": [],
+            "received": [],
+            "pending": [],
+            "failed": [],
+            "canceled": [],
+            "done": [],
         }
-        self.auth_id = data['auth_id']
-        self.requesting_source = data['requesting_source']
-        self._status = data.get('status', 'new')
+        self.auth_id = data["auth_id"]
+        self.requesting_source = data["requesting_source"]
+        self._status = data.get("status", "new")
 
-        self.command_status_received = is_true_false(data.get('command_status_received', False))  # if a status has been reported against this request
-        self.persistent_request_id = data.get('persistent_request_id', None)
-        self.broadcast_at = data.get('broadcast_at', None)  # time when command was sent through hooks.
-        self.accepted_at = data.get('accepted_at', None)  # when a module accepts the device command for processing
-        self.sent_at = data.get('sent_at', None)  # when a module or receiver sent the command to final end-point
-        self.received_at = data.get('received_at', None)  # when the command was received by the final end-point
-        self.pending_at = data.get('pending_at', None)  # if command takes a while to process time, this is the timestamp of last update
-        self.finished_at = data.get('finished_at', None)  # when the command is finished and end-point has changed state
-        self.not_before_at = data.get('not_before_at', None)
-        self.not_after_at = data.get('not_after_at', None)
-        self.pin = data.get('pin', None)
+        self.command_status_received = is_true_false(data.get("command_status_received", False))  # if a status has been reported against this request
+        self.persistent_request_id = data.get("persistent_request_id", None)
+        self.broadcast_at = data.get("broadcast_at", None)  # time when command was sent through hooks.
+        self.accepted_at = data.get("accepted_at", None)  # when a module accepts the device command for processing
+        self.sent_at = data.get("sent_at", None)  # when a module or receiver sent the command to final end-point
+        self.received_at = data.get("received_at", None)  # when the command was received by the final end-point
+        self.pending_at = data.get("pending_at", None)  # if command takes a while to process time, this is the timestamp of last update
+        self.finished_at = data.get("finished_at", None)  # when the command is finished and end-point has changed state
+        self.not_before_at = data.get("not_before_at", None)
+        self.not_after_at = data.get("not_after_at", None)
+        self.pin = data.get("pin", None)
         self.call_later = None
-        self.created_at = data.get('created_at', time())
-        self._dirty = is_true_false(data.get('dirty', True))
-        self.source = data.get('source', None)
-        self.started = data.get('started', False)
-        self.idempotence = data.get('idempotence', None)
+        self.created_at = data.get("created_at", time())
+        self._dirty = is_true_false(data.get("dirty", True))
+        self.source = data.get("source", None)
+        self.started = data.get("started", False)
+        self.idempotence = data.get("idempotence", None)
 
-        if self.source == 'database':
+        if self.source == "database":
             self._dirty = False
             self._in_db = True
-        elif self.source == 'gateway_coms':
+        elif self.source == "gateway_coms":
             self._dirty = False
             self._in_db = False
             reactor.callLater(1, self.check_if_device_command_in_database)
 
         else:
-            self.history.append(self.history_dict(self.created_at, self.status, 'Created.', self.local_gateway_id))
+            self.history.append(self.history_dict(self.created_at,
+                                                  self.status,
+                                                  "Created.",
+                                                  self.local_gateway_id))
             self._in_db = False
 
         if self.device.gateway_id == self.local_gateway_id:
@@ -179,8 +182,8 @@ class Device_Command(object):
             start = True
 
         # Allows various callbacks to be called when status changes.
-        if 'callbacks' in data and data['callbacks'] is not None:
-            for cb_status, cb_callback in data['callbacks'].items():
+        if "callbacks" in data and data["callbacks"] is not None:
+            for cb_status, cb_callback in data["callbacks"].items():
                 self.add_callback(cb_status, cb_callback)
 
         if start is None or start is True:
@@ -197,10 +200,10 @@ class Device_Command(object):
         :return:
         """
         return {
-            'time': timestamp,
-            'status': status,
-            'msg': message,
-            'gid': gateway_id,
+            "time": timestamp,
+            "status": status,
+            "msg": message,
+            "gid": gateway_id,
         }
 
     def add_callback(self, status, callback):
@@ -214,7 +217,7 @@ class Device_Command(object):
     @inlineCallbacks
     def check_if_device_command_in_database(self):
         where = {
-            'request_id': self.request_id,
+            "request_id": self.request_id,
         }
         device_commands = yield self._Parent._LocalDB.get_device_commands(where)
         if len(device_commands) > 0:
@@ -222,40 +225,40 @@ class Device_Command(object):
             self.save_to_db()
 
     def update_attributes(self, data):
-        if 'command_status_received' in data:
-            self.command_status_received = data['command_status_received']
-        if 'broadcast_at' in data:
-            self.broadcast_at = data['broadcast_at']
-        if 'accepted_at' in data:
-            self.accepted_at = data['accepted_at']
-        if 'sent_at' in data:
-            self.sent_at = data['sent_at']
-        if 'received_at' in data:
-            self.received_at = data['received_at']
-        if 'pending_at' in data:
-            self.pending_at = data['pending_at']
-        if 'finished_at' in data:
-            self.finished_at = data['finished_at']
-        if 'not_before_at' in data:
-            self.not_before_at = data['not_before_at']
+        if "command_status_received" in data:
+            self.command_status_received = data["command_status_received"]
+        if "broadcast_at" in data:
+            self.broadcast_at = data["broadcast_at"]
+        if "accepted_at" in data:
+            self.accepted_at = data["accepted_at"]
+        if "sent_at" in data:
+            self.sent_at = data["sent_at"]
+        if "received_at" in data:
+            self.received_at = data["received_at"]
+        if "pending_at" in data:
+            self.pending_at = data["pending_at"]
+        if "finished_at" in data:
+            self.finished_at = data["finished_at"]
+        if "not_before_at" in data:
+            self.not_before_at = data["not_before_at"]
             # print("in device command, setting not before: %s (currently: %s_" % (self.not_before_at, time()))
-        if 'not_after_at' in data:
-            self.not_after_at = data['not_after_at']
-        if 'history' in data:
-            self.history = data['history']
-        if 'status' in data:
-            self.status = data['status']
+        if "not_after_at" in data:
+            self.not_after_at = data["not_after_at"]
+        if "history" in data:
+            self.history = data["history"]
+        if "status" in data:
+            self.status = data["status"]
 
     def start(self):
         """
-        Send the device command to the device's command processor, which calls the '_device_command_'.
+        Send the device command to the device's command processor, which calls the "_device_command_".
 
         :return:
         """
         if self.started is True:
             return
         self.started = True
-        if self.source == 'database' and self.status == 'sent':
+        if self.source == "database" and self.status == "sent":
             logger.debug(
                 "Discarding a device command message loaded from database it's already been sent.")
             self.set_sent()
@@ -266,9 +269,10 @@ class Device_Command(object):
         if self.not_before_at is not None:
             cur_at = time()
             if self.not_after_at < cur_at:
-                self.set_delay_expired(message='Unable to send message due to request being expired by "%s" seconds.'
-                                    % str(cur_at - self.not_after_at))
-                if self.source != 'database':  # Nothing should be loaded from the database that not a delayed command.
+                self.set_delay_expired(
+                    message=f'Unable to send message due to request being expired by "{cur_at - self.not_after_at}" seconds.'
+                )
+                if self.source != "database":  # Nothing should be loaded from the database that not a delayed command.
                     raise YomboWarning("Cannot setup delayed device command, it's already expired.")
             else:
                 when = self.not_before_at - cur_at
@@ -276,10 +280,10 @@ class Device_Command(object):
                     self.device._do_command(self)
                 else:
                     self.call_later = reactor.callLater(when, self.device._do_command, self)
-                    self.set_status('delayed')
+                    self.set_status("delayed")
                 return True
         else:
-            if self.source == 'database':  # Nothing should be loaded from the database that not a delayed command.
+            if self.source == "database":  # Nothing should be loaded from the database that not a delayed command.
                 logger.debug("Discarding a device command message loaded from database because it's not meant to be called later.")
                 self.set_failed(message="Was loaded from database, but not meant to be called later.");
             else:
@@ -294,9 +298,9 @@ class Device_Command(object):
         if broadcast_at is None:
             broadcast_at = time()
         self.broadcast_at = broadcast_at
-        self.status = 'broadcast'
+        self.status = "broadcast"
         if message is None:
-            message='Command broadcasted to hooks and gateway coms.'
+            message="Command broadcasted to hooks and gateway coms."
         self.history.append(self.history_dict(broadcast_at, self.status, message, self.local_gateway_id))
 
     def set_accepted(self, accepted_at=None, message=None):
@@ -304,9 +308,9 @@ class Device_Command(object):
         if accepted_at is None:
             accepted_at = time()
         self.accepted_at = accepted_at
-        self.status = 'accepted'
+        self.status = "accepted"
         if message is None:
-            message='Command sent to device or processing sub-system.'
+            message="Command sent to device or processing sub-system."
         self.history.append(self.history_dict(accepted_at, self.status, message, self.local_gateway_id))
 
     def set_sent(self, sent_at=None, message=None):
@@ -314,9 +318,9 @@ class Device_Command(object):
         if sent_at is None:
             sent_at = time()
         self.sent_at = sent_at
-        self.status = 'sent'
+        self.status = "sent"
         if message is None:
-            message='Command sent to device or processing sub-system.'
+            message="Command sent to device or processing sub-system."
         self.history.append(self.history_dict(sent_at, self.status, message, self.local_gateway_id))
 
     def set_received(self, received_at=None, message=None):
@@ -324,9 +328,9 @@ class Device_Command(object):
         if received_at is None:
             received_at = time()
         self.received_at = received_at
-        self.status = 'received'
+        self.status = "received"
         if message is None:
-            message='Command received by the device or processing sub-system.'
+            message="Command received by the device or processing sub-system."
         self.history.append(self.history_dict(received_at, self.status, message, self.local_gateway_id))
 
     def set_pending(self, pending_at=None, message=None):
@@ -334,15 +338,21 @@ class Device_Command(object):
         if pending_at is None:
             pending_at = time()
         self.pending_at = pending_at
-        self.status = 'pending'
+        self.status = "pending"
         if message is None:
-            message='Command processing or being completed by the device or processing sub-system.'
+            message="Command processing or being completed by the device or processing sub-system."
         if self.set_sent is None:
             self.set_sent = pending_at
-            self.history.append(self.history_dict(pending_at, 'sent', 'Command sent to device or processing sub-system. Back filled by pending action.', self.local_gateway_id))
+            self.history.append(self.history_dict(pending_at,
+                                                  "sent",
+                                                  "Command sent to device or processing sub-system. Back filled by pending action.",
+                                                  self.local_gateway_id))
         if self.received_at is None:
             self.received_at = pending_at
-            self.history.append(self.history_dict(pending_at, 'received', 'Command received by the device or processing sub-system. Back filled by pending action.', self.local_gateway_id))
+            self.history.append(self.history_dict(pending_at,
+                                                  "received",
+                                                  "Command received by the device or processing sub-system. Back filled by pending action.",
+                                                  self.local_gateway_id))
         self.history.append(self.history_dict(pending_at, self.status, message, self.local_gateway_id))
 
     def set_finished(self, finished_at=None, status=None, message=None):
@@ -351,11 +361,14 @@ class Device_Command(object):
             finished_at = time()
         self.finished_at = finished_at
         if status is None:
-            status = 'done'
+            status = "done"
         self.status = status
         if self.set_sent is None:
             self.set_sent = finished_at
-            self.history.append(self.history_dict(finished_at, 'sent', 'Command sent to device or processing sub-system. Back filled by finished action.', self.local_gateway_id))
+            self.history.append(self.history_dict(finished_at,
+                                                  "sent",
+                                                  "Command sent to device or processing sub-system. Back filled by finished action.",
+                                                  self.local_gateway_id))
         if message is None:
             message = "Finished."
         self.history.append(self.history_dict(finished_at, self.status, message, self.local_gateway_id))
@@ -369,17 +382,17 @@ class Device_Command(object):
     def set_canceled(self, finished_at=None, message=None):
         if message is None:
             message = "Request canceled."
-        self.set_finished(finished_at=finished_at, status='canceled', message=message)
+        self.set_finished(finished_at=finished_at, status="canceled", message=message)
 
     def set_failed(self, finished_at=None, message=None):
         if message is None:
             message = "System reported command failed."
-        self.set_finished(finished_at=finished_at, status='failed', message=message)
+        self.set_finished(finished_at=finished_at, status="failed", message=message)
 
     def set_delay_expired(self, finished_at=None, message=None):
         if message is None:
             message = "System reported command failed."
-        self.set_finished(finished_at=finished_at, status='delay_expired', message=message)
+        self.set_finished(finished_at=finished_at, status="delay_expired", message=message)
 
     def set_status(self, status, message=None, log_at=None, gateway_id=None):
         logger.debug("device ({label}) has new status: {status}", label=self.device.full_label, status=status)
@@ -387,8 +400,8 @@ class Device_Command(object):
             gateway_id = self.local_gateway_id
         self._dirty = True
         self.status = status
-        if hasattr(self, '%s_at' % status):
-            setattr(self, '%s_at' % status, log_at)
+        if hasattr(self, f"{status}_at"):
+            setattr(self, f"status_at", log_at)
         if log_at is None:
             log_at = time()
         self.history.append(self.history_dict(log_at, status, message, gateway_id))
@@ -400,11 +413,11 @@ class Device_Command(object):
 
     def status_received(self):
         self.command_status_received = True
-        self.set_message('status_received')
+        self.set_message("status_received")
 
     def cancel(self, finished_at=None, status=None, message=None):
         if status is None:
-            status = 'canceled'
+            status = "canceled"
         self.set_finished(finished_at, status, message)
 
     # @inlineCallbacks
@@ -414,17 +427,17 @@ class Device_Command(object):
             return
         if self._dirty or forced is True:
             data = self.asdict()
-            del data['started']
+            del data["started"]
             # if self.inputs is None:
-            #     data['inputs'] = None
+            #     data["inputs"] = None
             # else:
-            data['history'] = data_pickle(self.history)
-            data['inputs'] = data_pickle(self.inputs)
+            data["history"] = data_pickle(self.history)
+            data["inputs"] = data_pickle(self.inputs)
 
             if self._in_db is True:
-                self._Parent._LocalDB.add_bulk_queue('device_commands', 'update', data, 'request_id')
+                self._Parent._LocalDB.add_bulk_queue("device_commands", "update", data, "request_id")
             else:
-                self._Parent._LocalDB.add_bulk_queue('device_commands', 'insert', data, 'request_id')
+                self._Parent._LocalDB.add_bulk_queue("device_commands", "insert", data, "request_id")
 
             self._dirty = False
             self._in_db = True
@@ -456,4 +469,4 @@ class Device_Command(object):
         }
 
     def __repr__(self):
-        return "Device command for '%s': %s" % (self.device.label, self.command.label)
+        return f"Device command for '{self.device.label}': {self.command.label}"

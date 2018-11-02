@@ -16,7 +16,7 @@ needs to return several things:
 * key_size (optional) - Int - Accepts a size of 2048 and 4096, default is 4096.
 * key_type (optional) - String - Either "rsa" or "dsa", default is rsa.
 * sans (optional) - List - A list of SAN (Subject Alternative Names)
-* type (optional) - String - Either 'client' or 'server'. (not implemented)
+* type (optional) - String - Either "client" or "server". (not implemented)
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.13.0
@@ -49,7 +49,7 @@ from yombo.utils.dictobject import DictObject
 
 from .sslcert import SSLCert
 
-logger = get_logger('library.sslcerts')
+logger = get_logger("library.sslcerts")
 
 
 class SSLCerts(YomboLibrary):
@@ -63,7 +63,7 @@ class SSLCerts(YomboLibrary):
         """
         Looks for an sslkey with the given sslname.
 
-            >>> if 'webinterface' in self._SSLCerts['library_webinterface']:  #by uuid
+            >>> if "webinterface" in self._SSLCerts["library_webinterface"]:  #by uuid
 
         :param cert_requested: The ssl cert sslname to search for.
         :type cert_requested: string
@@ -96,14 +96,14 @@ class SSLCerts(YomboLibrary):
         :return:
         """
         # Since SSL generation can take some time on slower devices, we use a simple queue system.
-        self.generate_csr_queue = self._Queue.new('library.sslcerts.generate_csr', self.generate_csr)
+        self.generate_csr_queue = self._Queue.new("library.sslcerts.generate_csr", self.generate_csr)
         self.hostname = gethostname()
 
-        self.gateway_id = self._Configs.get('core', 'gwid', 'local', False)
-        self.fqdn = self._Configs.get2('dns', 'fqdn', None, False)
+        self.gateway_id = self._Configs.get("core", "gwid", "local", False)
+        self.fqdn = self._Configs.get2("dns", "fqdn", None, False)
 
-        self.self_signed_cert_file = self._Atoms.get('working_dir') + "/etc/certs/sslcert_selfsigned.cert.pem"
-        self.self_signed_key_file = self._Atoms.get('working_dir') + "/etc/certs/sslcert_selfsigned.key.pem"
+        self.self_signed_cert_file = self._Atoms.get("working_dir") + "/etc/certs/sslcert_selfsigned.cert.pem"
+        self.self_signed_key_file = self._Atoms.get("working_dir") + "/etc/certs/sslcert_selfsigned.key.pem"
         self.self_signed_expires = self._Configs.get("sslcerts", "self_signed_expires", None, False)
         self.self_signed_created = self._Configs.get("sslcerts", "self_signed_created", None, False)
 
@@ -135,25 +135,25 @@ class SSLCerts(YomboLibrary):
         :return:
         """
         self.check_if_certs_need_update_loop = LoopingCall(self.check_if_certs_need_update)
-        self.check_if_certs_need_update_loop.start(self._Configs.get('sqldict',
-                                                                     'save_interval',
+        self.check_if_certs_need_update_loop.start(self._Configs.get("sqldict",
+                                                                     "save_interval",
                                                                      random_int(60*60*24, .1),
                                                                      False),
                                                    False)
 
         # Check if any libraries or modules need certs.
-        fqdn = self._Configs.get('dns', 'fqdn', None, False)
+        fqdn = self._Configs.get("dns", "fqdn", None, False)
         if fqdn is None:
             logger.warn("Unable to generate sign ssl/tls certs, gateway has no domain name.")
             return
 
-        if self._Loader.operating_mode != 'run':
+        if self._Loader.operating_mode != "run":
             return
-        sslcerts = yield global_invoke_all('_sslcerts_',
+        sslcerts = yield global_invoke_all("_sslcerts_",
                                            called_by=self,
                                            )
         for component_name, ssl_certs in sslcerts.items():
-            logger.debug("Adding new managed certs from hook: %s" % component_name)
+            logger.debug(f"Adding new managed certs from hook: {component_name}")
             if isinstance(ssl_certs, tuple) is False and isinstance(ssl_certs, list) is False:
                 ssl_certs = [ssl_certs]
             for ssl_item in ssl_certs:
@@ -164,11 +164,11 @@ class SSLCerts(YomboLibrary):
         Simply stop any loops, tell all the certs to save themselves to disk as a backup.
         :return:
         """
-        if hasattr(self, 'check_if_certs_need_update_loop'):
+        if hasattr(self, "check_if_certs_need_update_loop"):
             if self.check_if_certs_need_update_loop is not None and self.check_if_certs_need_update_loop.running:
                 self.check_if_certs_need_update_loop.stop()
 
-        if hasattr(self, 'managed_certs'):
+        if hasattr(self, "managed_certs"):
             for sslname, cert in self.managed_certs.items():
                 cert.stop()
 
@@ -189,7 +189,7 @@ class SSLCerts(YomboLibrary):
         :param item:
         :return:
         """
-        results = SSLCert(self, 'sqldict', DictObject(item))
+        results = SSLCert(self, "sqldict", DictObject(item))
         yield results.start()
         return results
 
@@ -211,7 +211,7 @@ class SSLCerts(YomboLibrary):
         :param bypass_checks: For internal use only.
         :return: 
         """
-        fqdn = self._Configs.get('dns', 'fqdn', None, False)
+        fqdn = self._Configs.get("dns", "fqdn", None, False)
         if fqdn is None:
             logger.warn("Unable to generate sign ssl/tls certs, gateway has no domain name.")
             return
@@ -219,18 +219,18 @@ class SSLCerts(YomboLibrary):
         try:
             ssl_data = self.check_csr_input(ssl_data)  # Clean up module developers input.
         except YomboWarning as e:
-            logger.warn("Cannot add cert: %s" % e)
+            logger.warn(f"Cannot add cert: {e}")
             return
 
-        if ssl_data['sslname'] in self.managed_certs:
-            self.managed_certs[ssl_data['sslname']].update_attributes(ssl_data)
+        if ssl_data["sslname"] in self.managed_certs:
+            self.managed_certs[ssl_data["sslname"]].update_attributes(ssl_data)
         else:
-            yield self._import_cert(ssl_data['sslname'], DictObject(ssl_data))
+            yield self._import_cert(ssl_data["sslname"], DictObject(ssl_data))
 
     @inlineCallbacks
     def _import_cert(self, cert_name, data, source=None):
         if source is None:
-            source = 'sslcerts'
+            source = "sslcerts"
         self.managed_certs[cert_name] = SSLCert(self, source, DictObject(data))
         yield self.managed_certs[cert_name].start()
 
@@ -240,97 +240,97 @@ class SSLCerts(YomboLibrary):
 
         .. note::
 
-           self._SSLCerts('library_webinterface', self.have_updated_ssl_cert)
+           self._SSLCerts("library_webinterface", self.have_updated_ssl_cert)
         """
         # logger.debug("looking for: {sslname_requested}", sslname_requested=sslname_requested)
         if sslname_requested in self.managed_certs:
             # logger.debug("found by cert! {sslname_requested}", sslname_requested=sslname_requested)
             return self.managed_certs[sslname_requested].get()
         else:
-            if sslname_requested != 'selfsigned':
+            if sslname_requested != "selfsigned":
                 logger.info("Could not find cert for '{sslname}', sending self signed. Library or module should implement _sslcerts_ with a callback method.", sslname=sslname_requested)
             return {
-                'key': self.self_signed_key,
-                'cert': self.self_signed_cert,
-                'chain': None,
-                'key_crypt': crypto.load_privatekey(crypto.FILETYPE_PEM, self.self_signed_key),
-                'cert_crypt': crypto.load_certificate(crypto.FILETYPE_PEM, self.self_signed_cert),
-                'chain_crypt': None,
-                'expires': self.self_signed_expires,
-                'created': self.self_signed_created,
-                'signed': self.self_signed_created,
-                'self_signed': True,
-                'cert_file': self.self_signed_cert_file,
-                'key_file': self.self_signed_key_file,
-                'chain_file': None,
+                "key": self.self_signed_key,
+                "cert": self.self_signed_cert,
+                "chain": None,
+                "key_crypt": crypto.load_privatekey(crypto.FILETYPE_PEM, self.self_signed_key),
+                "cert_crypt": crypto.load_certificate(crypto.FILETYPE_PEM, self.self_signed_cert),
+                "chain_crypt": None,
+                "expires": self.self_signed_expires,
+                "created": self.self_signed_created,
+                "signed": self.self_signed_created,
+                "self_signed": True,
+                "cert_file": self.self_signed_cert_file,
+                "key_file": self.self_signed_key_file,
+                "chain_file": None,
             }
 
     def check_csr_input(self, csr_request):
         results = {}
 
-        if 'sslname' not in csr_request:
+        if "sslname" not in csr_request:
             raise YomboWarning("'sslname' is required.")
-        results['sslname'] = csr_request['sslname']
+        results["sslname"] = csr_request["sslname"]
 
         fqdn = self.fqdn()
         if fqdn is None:
             raise YomboWarning("Unable to create SSL Certs, no system domain set.")
 
-        if 'cn' not in csr_request:
-            raise YomboWarning("'cn' must be included, and must end with our local FQDN: %s" % fqdn)
-        elif csr_request['cn'].endswith(fqdn) is False:
-            results['cn'] = csr_request['cn'] + "." + fqdn
+        if "cn" not in csr_request:
+            raise YomboWarning(f"'cn' must be included, and must end with our local FQDN: {fqdn}")
+        elif csr_request["cn"].endswith(fqdn) is False:
+            results["cn"] = csr_request["cn"] + "." + fqdn
         else:
-            results['cn'] = csr_request['cn']
+            results["cn"] = csr_request["cn"]
 
-        if 'sans' not in csr_request:
-            results['sans'] = None
+        if "sans" not in csr_request:
+            results["sans"] = None
         else:
             san_list = []
-            for san in csr_request['sans']:
+            for san in csr_request["sans"]:
                 if san.endswith(fqdn) is False:
                     san_list.append(str(san + "." + fqdn))
                 else:
                     san_list.append(str(san))
 
-            results['sans'] = san_list
+            results["sans"] = san_list
 
-        # if 'key_type' in csr_request:  # allow changing default, might change in the future.
-        #     if csr_request['key_type'] != 'rsa':
-        #         raise YomboWarning("key_type must be 'rsa', received: %s" % csr_request['key_type'])
-        #     results['key_type'] = csr_request['key_type']
+        # if "key_type" in csr_request:  # allow changing default, might change in the future.
+        #     if csr_request["key_type"] != "rsa":
+        #         raise YomboWarning("key_type must be 'rsa', received: %s" % csr_request["key_type"])
+        #     results["key_type"] = csr_request["key_type"]
         # else:
         #
-        results['key_type'] = 'rsa'
-        results['key_size'] = 4096
+        results["key_type"] = "rsa"
+        results["key_size"] = 4096
 
-        if 'csr_file' not in csr_request:
-            csr_request['csr_file'] = None
-        results['csr_file'] = csr_request['csr_file']
+        if "csr_file" not in csr_request:
+            csr_request["csr_file"] = None
+        results["csr_file"] = csr_request["csr_file"]
 
-        if 'key_file' not in csr_request:
-            csr_request['key_file'] = None
-        results['key_file'] = csr_request['key_file']
+        if "key_file" not in csr_request:
+            csr_request["key_file"] = None
+        results["key_file"] = csr_request["key_file"]
 
-        if 'callback' in csr_request:
-            results['update_callback'] = csr_request['callback']
-        elif 'update_callback' in csr_request:
-            results['update_callback'] = csr_request['update_callback']
+        if "callback" in csr_request:
+            results["update_callback"] = csr_request["callback"]
+        elif "update_callback" in csr_request:
+            results["update_callback"] = csr_request["update_callback"]
 
-        if 'callback_type' in csr_request:
-            results['update_callback_type'] = csr_request['callback_type']
-        elif 'update_callback_type' in csr_request:
-            results['update_callback_type'] = csr_request['update_callback_type']
+        if "callback_type" in csr_request:
+            results["update_callback_type"] = csr_request["callback_type"]
+        elif "update_callback_type" in csr_request:
+            results["update_callback_type"] = csr_request["update_callback_type"]
 
-        if 'callback_component' in csr_request:
-            results['update_callback_component'] = csr_request['callback_component']
-        elif 'update_callback_component' in csr_request:
-            results['update_callback_component'] = csr_request['update_callback_component']
+        if "callback_component" in csr_request:
+            results["update_callback_component"] = csr_request["callback_component"]
+        elif "update_callback_component" in csr_request:
+            results["update_callback_component"] = csr_request["update_callback_component"]
 
-        if 'callback_function' in csr_request:
-            results['update_callback_function'] = csr_request['callback_function']
-        elif 'update_callback_function' in csr_request:
-            results['update_callback_function'] = csr_request['update_callback_function']
+        if "callback_function" in csr_request:
+            results["update_callback_function"] = csr_request["callback_function"]
+        elif "update_callback_function" in csr_request:
+            results["update_callback_function"] = csr_request["update_callback_function"]
         return results
 
     @inlineCallbacks
@@ -348,36 +348,36 @@ class SSLCerts(YomboLibrary):
         logger.debug("Generate_CSR called with args: {args}", args=args)
         kwargs = self.check_csr_input(args)
 
-        if kwargs['key_type'] == 'rsa':
-            kwargs['key_type'] = crypto.TYPE_RSA
+        if kwargs["key_type"] == "rsa":
+            kwargs["key_type"] = crypto.TYPE_RSA
         else:
-            kwargs['key_type'] = crypto.TYPE_DSA
+            kwargs["key_type"] = crypto.TYPE_DSA
 
-        gwid = "gw_%s" % self.gateway_id[0:10]
+        gwid = "gw_" + self.gateway_id[0:10]
         req = crypto.X509Req()
-        req.get_subject().CN = kwargs['cn']
-        req.get_subject().countryName = 'US'
-        req.get_subject().stateOrProvinceName = 'California'
-        req.get_subject().localityName = 'Sacramento'
-        req.get_subject().organizationName = 'Yombo'
+        req.get_subject().CN = kwargs["cn"]
+        req.get_subject().countryName = "US"
+        req.get_subject().stateOrProvinceName = "California"
+        req.get_subject().localityName = "Sacramento"
+        req.get_subject().organizationName = "Yombo"
         req.get_subject().organizationalUnitName = gwid
 
-        # Appends SAN to have 'DNS:'
-        if kwargs['sans'] is not None:
+        # Appends SAN to have "DNS:"
+        if kwargs["sans"] is not None:
             san_string = []
-            for i in kwargs['sans']:
-                san_string.append("DNS: %s" % i)
+            for i in kwargs["sans"]:
+                san_string.append(f"DNS: {i}")
             san_string = ", ".join(san_string)
-            x509_extensions = [crypto.X509Extension(b'subjectAltName', False, unicode_to_bytes(san_string))]
+            x509_extensions = [crypto.X509Extension(b"subjectAltName", False, unicode_to_bytes(san_string))]
             req.add_extensions(x509_extensions)
 
         start = time()
         key = yield threads.deferToThread(
             self._generate_key,
-            **{'key_type': kwargs['key_type'], 'key_size': kwargs['key_size']}
+            **{"key_type": kwargs["key_type"], "key_size": kwargs["key_size"]}
         )
         duration = round(float(time()) - start, 4)
-        self._Events.new('sslcerts', 'generate_new', (args['sslname'], kwargs['cn'], san_string, duration))
+        self._Events.new("sslcerts", "generate_new", (args["sslname"], kwargs["cn"], san_string, duration))
 
         req.set_pubkey(key)
 
@@ -386,15 +386,15 @@ class SSLCerts(YomboLibrary):
         csr = crypto.dump_certificate_request(crypto.FILETYPE_PEM, req)
         key_file = crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
 
-        if kwargs['csr_file'] is not None:
-            yield save_file(kwargs['csr_file'], csr)
-        if kwargs['key_file'] is not None:
-            yield save_file(kwargs['key_file'], key_file)
+        if kwargs["csr_file"] is not None:
+            yield save_file(kwargs["csr_file"], csr)
+        if kwargs["key_file"] is not None:
+            yield save_file(kwargs["key_file"], key_file)
 
         return {
-                'csr': csr,
-                'csr_hash': sha256_compact(unicode_to_bytes(csr)),
-                'key': key_file
+                "csr": csr,
+                "csr_hash": sha256_compact(unicode_to_bytes(csr)),
+                "key": key_file
                }
 
     @inlineCallbacks
@@ -405,12 +405,12 @@ class SSLCerts(YomboLibrary):
         """
         logger.debug("Creating self signed cert.")
         req = crypto.X509()
-        gwid = "%s %s" % (self.gateway_id, self.hostname)
-        req.get_subject().CN = 'localhost'
-        req.get_subject().countryName = 'US'
-        req.get_subject().stateOrProvinceName = 'California'
-        req.get_subject().localityName = 'Sacramento'
-        req.get_subject().organizationName = 'Yombo'
+        gwid = f"{self.gateway_id} {self.hostname}"
+        req.get_subject().CN = "localhost"
+        req.get_subject().countryName = "US"
+        req.get_subject().stateOrProvinceName = "California"
+        req.get_subject().localityName = "Sacramento"
+        req.get_subject().organizationName = "Yombo"
         req.get_subject().organizationalUnitName = gwid[0:63]
 
         req.set_serial_number(int(time()))
@@ -421,9 +421,9 @@ class SSLCerts(YomboLibrary):
         self._Configs.set("sslcerts", "self_signed_expires", self.self_signed_expires)
         self._Configs.set("sslcerts", "self_signed_created", self.self_signed_created)
         req.set_issuer(req.get_subject())
-        key = yield threads.deferToThread(self._generate_key, **{'key_type': crypto.TYPE_RSA, 'key_size': 4096})
+        key = yield threads.deferToThread(self._generate_key, **{"key_type": crypto.TYPE_RSA, "key_size": 4096})
         req.set_pubkey(key)
-        req.sign(key, 'sha256')
+        req.sign(key, "sha256")
 
         csr_key = crypto.dump_certificate(crypto.FILETYPE_PEM, req)
         key_file = crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
@@ -432,8 +432,8 @@ class SSLCerts(YomboLibrary):
         yield save_file(self.self_signed_key_file, key_file)
 
         return {
-                'csr_key': csr_key,
-                'key': key_file
+                "csr_key": csr_key,
+                "key": key_file
                }
 
     def _generate_key(self, **kwargs):
@@ -447,7 +447,7 @@ class SSLCerts(YomboLibrary):
         """
         # logger.debug("About to generate key: {kwargs}", kwargs=kwargs)
         key = crypto.PKey()
-        key.generate_key(kwargs['key_type'], kwargs['key_size'])
+        key.generate_key(kwargs["key_type"], kwargs["key_size"])
         return key
 
     def send_csr_request(self, csr_text, sslname):
@@ -465,15 +465,15 @@ class SSLCerts(YomboLibrary):
             raise YomboWarning("'sslname' too long, limit is 100 characters.")
 
         body = {
-            'csr_text': csr_text,
-            'sslname': sslname,
+            "csr_text": csr_text,
+            "sslname": sslname,
         }
 
         request_msg = self._AMQPYombo.generate_message_request(
-            exchange_name='ysrv.e.gw_sslcerts',
-            source='yombo.gateway.lib.amqpyobo',
-            destination='yombo.server.sslcerts',
-            request_type='csr_request',
+            exchange_name="ysrv.e.gw_sslcerts",
+            source="yombo.gateway.lib.amqpyobo",
+            destination="yombo.server.sslcerts",
+            request_type="csr_request",
             body=body,
         )
         self._AMQPYombo.publish(**request_msg)
@@ -482,16 +482,16 @@ class SSLCerts(YomboLibrary):
     def amqp_incoming_request(self, headers, body, **kwargs):
         """
         Signed SSL certs comes as requests, even though it's really a response. This avoids the requirement
-        that all 'responses' have a sent correlation ID.
+        that all "responses" have a sent correlation ID.
 
         :param headers:
         :param body:
         :param kwargs:
         :return:
         """
-        request_type = headers['request_type']
-        kwargs['headers'] = headers
-        kwargs['body'] = body
+        request_type = headers["request_type"]
+        kwargs["headers"] = headers
+        kwargs["body"] = body
         if request_type == "csr_response":
             self.amqp_incoming_response_to_csr_request(**kwargs)
         else:
@@ -509,14 +509,14 @@ class SSLCerts(YomboLibrary):
         :return: 
         """
         logger.debug("Received CSR response message: {body}", body=body)
-        if 'sslname' not in body:
+        if "sslname" not in body:
             logger.warn("Discarding response, doesn't have an sslname attached.") # can't raise exception due to AMPQ processing.
             return
-        logger.info("Received a new signed SSL/TLS certificate for: {sslname}", sslname=body['sslname'])
-        sslname = bytes_to_unicode(body['sslname'])
+        logger.info("Received a new signed SSL/TLS certificate for: {sslname}", sslname=body["sslname"])
+        sslname = bytes_to_unicode(body["sslname"])
         if sslname not in self.managed_certs:
-            logger.warn("It doesn't appear we have a managed cert for the given SSL name. Lets store it for a few minutes: %s" %
-                        sslname)
+            logger.warn("It doesn't appear we have a managed cert for the given SSL name. Lets store it for a few minutes: {sslname}",
+                sslname=sslname)
             if sslname in self.received_message_for_unknown:
                 self.received_message_for_unknown[sslname].append(body)
             else:

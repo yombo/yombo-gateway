@@ -8,25 +8,25 @@ from yombo.lib.webinterface.auth import require_auth
 from yombo.utils import unicode_to_bytes, random_string
 
 HOOK_NAME_TO_PATH = {
-    '_device_status_': {
-        'path': 'device:',
-        'allow_non_wildcard': True,
-        'id_field': 'device_id',
+    "_device_status_": {
+        "path": "device:",
+        "allow_non_wildcard": True,
+        "id_field": "device_id",
     },
-    '_notification_add_': {
-        'path': 'device:',
-        'allow_non_wildcard': True,
-        'id_field': 'notice_id',
+    "_notification_add_": {
+        "path": "device:",
+        "allow_non_wildcard": True,
+        "id_field": "notice_id",
     },
-    '_notification_delete_': {
-        'path': 'notification:',
-        'allow_non_wildcard': False,
-        'id_field': 'notice_id',
+    "_notification_delete_": {
+        "path": "notification:",
+        "allow_non_wildcard": False,
+        "id_field": "notice_id",
     },
-    '_notification_acked_': {
-        'path': 'notification:',
-        'allow_non_wildcard': False,
-        'id_field': 'notice_id',
+    "_notification_acked_": {
+        "path": "notification:",
+        "allow_non_wildcard": False,
+        "id_field": "notice_id",
     },
 }
 
@@ -42,17 +42,17 @@ def broadcast(webinterface, hook_name, data):
     output = EventMsg(data, hook_name)
     for spectator_id in list(webinterface.api_stream_spectators):
         spectator = webinterface.api_stream_spectators[spectator_id]
-        request = spectator['request']
-        session = spectator['session']
-        permissions = spectator['permissions']
+        request = spectator["request"]
+        session = spectator["session"]
+        permissions = spectator["permissions"]
         hook_props = HOOK_NAME_TO_PATH[hook_name]
-        if hook_props['allow_non_wildcard'] is True:
-            permission_name = "%s%s" % (hook_props['path'], data[hook_props['id_field']])
+        if hook_props["allow_non_wildcard"] is True:
+            permission_name = hook_props["path"] + data[hook_props["id_field"]]
         else:
-            permission_name = "%s*" % hook_props['path']
+            permission_name = f"{hook_props['path']}*"
 
         if permission_name not in permissions:
-            permissions[permission_name] = session.has_access(permission_name, 'view')
+            permissions[permission_name] = session.has_access(permission_name, "view")
 
         if permissions[permission_name] is False:
             continue
@@ -63,28 +63,28 @@ def broadcast(webinterface, hook_name, data):
             del webinterface.api_stream_spectators[spectator_id]
 
 def hook_was_called(webinterface, hook_name, **kwargs):
-    broadcast(webinterface, hook_name, kwargs['event'])
+    broadcast(webinterface, hook_name, kwargs["event"])
 
 def route_api_v1_stream(webapp, webinterface_local):
-    webinterface_local.register_hook('_device_status_', hook_was_called)
-    webinterface_local.register_hook('_notification_add_', hook_was_called)
-    webinterface_local.register_hook('_notification_delete_', hook_was_called)
-    webinterface_local.register_hook('_notification_acked_', hook_was_called)
+    webinterface_local.register_hook("_device_status_", hook_was_called)
+    webinterface_local.register_hook("_notification_add_", hook_was_called)
+    webinterface_local.register_hook("_notification_delete_", hook_was_called)
+    webinterface_local.register_hook("_notification_acked_", hook_was_called)
 
     with webapp.subroute("/api/v1") as webapp:
-        @webapp.route('/stream', methods=['GET'])
+        @webapp.route("/stream", methods=["GET"])
         @require_auth(api=True)
         def apiv1_stream_get(webinterface, request, session):
-            session.has_access('system_options', '*', 'stream', raise_error=True)
-            request.setHeader('Content-type', 'text/event-stream')
-            request.write(EventMsg(int(time()), 'ping'))
+            session.has_access("system_options", "*", "stream", raise_error=True)
+            request.setHeader("Content-type", "text/event-stream")
+            request.write(EventMsg(int(time()), "ping"))
 
-            # We'll want to write more things to this client later, so keep the request
+            # We"ll want to write more things to this client later, so keep the request
             # around somewhere.
             webinterface.api_stream_spectators[random_string(length=14)] = {
-                'request': request,
-                'session': session,
-                'permissions': {},
+                "request": request,
+                "session": session,
+                "permissions": {},
             }
 
             # Indicate we're not done with this request by returning a deferred.
@@ -112,9 +112,9 @@ def EventMsg(data, name=None):
             # assert '\n' not in jsonData
 
     if name:
-        output = 'event: %s\n' % (name,)
+        output = f"event: {name}\n"
     else:
-        output = ''
+        output = ""
 
-    output += 'data: %s\n\n' % (jsonData,)
+    output += f"data: {jsonData}\n\n"
     return unicode_to_bytes(output)

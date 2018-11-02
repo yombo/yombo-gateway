@@ -26,15 +26,15 @@ requires the serializer and unserializer to be set inside the get() request.
 
 .. code-block:: python
 
-   resources  = yield self._SQLDict.get(self, "someVars") # 'self' is required for data isolation
+   resources  = yield self._SQLDict.get(self, "someVars") # "self" is required for data isolation
    # set a serializer when requesting a SQLDict:
    # resources  = yield self._SQLDict.get(self, "someVars", self.serialize_data) # Set a serializer on init.
    # set a serializer and unserializer:
    # resources  = yield self._SQLDict.get(self, "someVars", self.serialize_data, self.unserialize_data) # Set a serializer on init.
 
-   resources['apple'] = 'ripe'
-   resources['fruits'] = ['grape', 'orange', 'plum']
-   resources['family'] = {'brother' : 'Jeff', 'mom' : 'Sara', 'dad' : 'Sam'}
+   resources["apple"] = "ripe"
+   resources["fruits"] = ["grape", "orange", "plum"]
+   resources["family"] = {"brother" : "Jeff", "mom" : "Sara", "dad" : "Sam"}
 
    # optional, set a serializer after init. Unserializer must be set within the get() function above.
    resources.set_serializer(self.serialize_data)
@@ -54,7 +54,7 @@ from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 
-logger = get_logger('core.sqldict')
+logger = get_logger("core.sqldict")
 
 
 class SQLDict(YomboLibrary):
@@ -83,7 +83,7 @@ class SQLDict(YomboLibrary):
         :return:
         """
         self._saveSQLDictLoop = LoopingCall(self.save_sql_dict)
-        self._saveSQLDictLoop.start(self._Configs.get('sqldict', 'save_interval', 60, False))
+        self._saveSQLDictLoop.start(self._Configs.get("sqldict", "save_interval", 60, False))
 
     def _stop_(self, **kwargs):
         """
@@ -112,16 +112,16 @@ class SQLDict(YomboLibrary):
             component_name = str(owner_object._FullName.lower())
         dict_name = str(dict_name)
         if component_name+":"+dict_name in self._dictionaries:
-            return self._dictionaries[component_name+":"+dict_name]['dict']
+            return self._dictionaries[component_name+":"+dict_name]["dict"]
 
         sqldict = SQLDictionary(self, component_name, dict_name, serializer, unserializer, max_length)
         yield sqldict.load()
 
         self._dictionaries[component_name+":"+dict_name] = {
-            'component_name': component_name,
-            'dict_name': dict_name,
-            'dict': sqldict,
-            'dirty': False  # True if data needs to be saved.
+            "component_name": component_name,
+            "dict_name": dict_name,
+            "dict": sqldict,
+            "dirty": False  # True if data needs to be saved.
             }
         return sqldict
 
@@ -137,22 +137,22 @@ class SQLDict(YomboLibrary):
         :return:
         """
         for name, di in self._dictionaries.items():
-            if di['dirty'] or save_all:
+            if di["dirty"] or save_all:
                 safe_data = {}  # Sometimes wierd datatype's happen...  Not good.
-                for key, item in di['dict'].items():
+                for key, item in di["dict"].items():
 
-                    if di['dict']._SQLDictionary__serializer is not None:
+                    if di["dict"]._SQLDictionary__serializer is not None:
                         try:
-                            safe_data[key] = di['dict']._SQLDictionary__serializer(item)
+                            safe_data[key] = di["dict"]._SQLDictionary__serializer(item)
                         except YomboWarning:
                             continue
 
                     else:
                         safe_data[key] = item
 
-                yield self._Libraries['localdb'].set_sql_dict(di['component_name'],
-                        di['dict_name'], safe_data)
-                di['dirty'] = False
+                yield self._Libraries["localdb"].set_sql_dict(di["component_name"],
+                        di["dict_name"], safe_data)
+                di["dirty"] = False
 
 
 class SQLDictionary(dict):
@@ -171,8 +171,8 @@ class SQLDictionary(dict):
     """
     def __init__(self, parent, component_name, dict_name, serializer=None, unserializer=None, max_length=None):
         """
-        On init, construct a new dictionary. If there is an existing 'dict_name' for
-        the given 'moduleObj', then it will be loaded.
+        On init, construct a new dictionary. If there is an existing "dict_name" for
+        the given "moduleObj", then it will be loaded.
 
         Update SQL on any updates/deletes.
 
@@ -196,7 +196,7 @@ class SQLDictionary(dict):
         self.__max_length = max_length
 
         if max_length is not None and isinstance(max_length, int) is False:
-            raise YomboWarning("SQLDict accepts either None or int for max_length. Recieved: %s" % max_length)
+            raise YomboWarning(f"SQLDict accepts either None or int for max_length. Received: {max_length}")
 
         if max_length is not None:
             while len(self) > max_length:
@@ -205,11 +205,11 @@ class SQLDictionary(dict):
     @inlineCallbacks
     def load(self):
         self.__load = True  # only true when loaded, don't save what was just loaded.
-        results = yield self._Parent._Libraries['localdb'].get_sql_dict(self.__component_name, self.__dict_name)
+        results = yield self._Parent._Libraries["localdb"].get_sql_dict(self.__component_name, self.__dict_name)
         if len(results) != 1:
             return None
 
-        data = results[0]['dict_data']
+        data = results[0]["dict_data"]
         if data is None:
             data = {}
 
@@ -247,7 +247,7 @@ class SQLDictionary(dict):
 
     def touch(self):
         if not self.__load:
-            self._Parent._dictionaries[self.__component_name+":"+self.__dict_name]['dirty'] = True
+            self._Parent._dictionaries[self.__component_name+":"+self.__dict_name]["dirty"] = True
 
     def _update_sql(self, key, value):
         """
@@ -267,7 +267,7 @@ class SQLDictionary(dict):
         """
         if args:
             if len(args) > 1:
-                raise TypeError("update expected at most 1 arguments, got %d" % len(args))
+                raise TypeError(f"update expected at most 1 arguments, got {len(args):d}")
             other = dict(args[0])
             for key in other:
                 self[key] = other[key]

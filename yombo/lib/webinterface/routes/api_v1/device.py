@@ -8,71 +8,67 @@ from yombo.lib.webinterface.auth import require_auth
 from yombo.lib.webinterface.routes.api_v1.__init__ import return_good, return_not_found, return_error, args_to_dict
 from yombo.utils import sleep
 
+
 def route_api_v1_device(webapp):
     with webapp.subroute("/api/v1") as webapp:
 
-        @webapp.route('/device', methods=['GET'])
+        @webapp.route("/device", methods=["GET"])
         @require_auth(api=True)
         def apiv1_device_get(webinterface, request, session):
-            session.has_access('device', '*', 'view', raise_error=True)
+            session.has_access("device", "*", "view", raise_error=True)
             return return_good(
                 request,
                 payload=webinterface._Devices.full_list_devices(),
             )
 
-        @webapp.route('/device/<string:device_id>', methods=['GET'])
+        @webapp.route("/device/<string:device_id>", methods=["GET"])
         @require_auth(api=True)
         def apiv1_device_details_get(webinterface, request, session, device_id):
-            session.has_access('device', device_id, 'view', raise_error=True)
+            session.has_access("device", device_id, "view", raise_error=True)
             arguments = args_to_dict(request.args)
             if len(device_id) > 200 or isinstance(device_id, str) is False:
-                return return_error(request, 'invalid device_id format', 400)
+                return return_error(request, "invalid device_id format", 400)
 
             if device_id in webinterface._Devices:
                 device = webinterface._Devices[device_id]
             else:
-                return return_not_found(request, 'Device not found')
+                return return_not_found(request, "Device not found")
 
             payload = device.asdict()
-            if 'item' in arguments:
-                payload = payload[arguments['item']]
+            if "item" in arguments:
+                payload = payload[arguments["item"]]
             return return_good(
                 request,
                 payload=payload
             )
 
-        @webapp.route('/device/<string:device_id>/command/<string:command_id>', methods=['GET', 'POST'])
+        @webapp.route("/device/<string:device_id>/command/<string:command_id>", methods=["GET", "POST"])
         @require_auth(api=True)
         @inlineCallbacks
         def apiv1_device_command_get_post(webinterface, request, session, device_id, command_id):
-            session.has_access('device', device_id, 'control', raise_error=True)
+            session.has_access("device", device_id, "control", raise_error=True)
             if len(device_id) > 200 or isinstance(device_id, str) is False:
-                return return_error(request, 'invalid device_id format', 400)
+                return return_error(request, "invalid device_id format", 400)
             if len(command_id) > 200 or isinstance(command_id, str) is False:
-                return return_error(request, 'invalid command_id format', 400)
+                return return_error(request, "invalid command_id format", 400)
 
             try:
-                wait_time = float(request.args.get('_wait')[0])
+                wait_time = float(request.args.get("_wait")[0])
             except:
                 wait_time = 2
 
             arguments = args_to_dict(request.args)
-            # print("api v1 dev args: %s" % request.args)
-            # print("api v1 dev arguments: %s" % arguments)
-            # if 'inputs' in arguments:
-            #     inputs = arguments['inputs']
-            # else:
-            #     inputs = None
-            pin_code = arguments.get('pin_code', None)
-            delay = arguments.get('delay', None)
-            max_delay = arguments.get('max_delay', None)
-            not_before = arguments.get('not_before', None)
-            not_after = arguments.get('not_after', None)
-            inputs = arguments.get('inputs', None)
+
+            pin_code = arguments.get("pin_code", None)
+            delay = arguments.get("delay", None)
+            max_delay = arguments.get("max_delay", None)
+            not_before = arguments.get("not_before", None)
+            not_after = arguments.get("not_after", None)
+            inputs = arguments.get("inputs", None)
             if device_id in webinterface._Devices:
                 device = webinterface._Devices[device_id]
             else:
-                return return_not_found(request, 'Device not found')
+                return return_not_found(request, "Device not found")
             try:
                 request_id = device.command(
                     cmd=command_id,
@@ -86,11 +82,11 @@ def route_api_v1_device(webapp):
                     idempotence=request.idempotence,
                 )
             except KeyError as e:
-                print("error with apiv1_device_command_get_post keyerror: %s" % e)
-                return return_not_found(request, 'Error with command, it is not found: %s' % e)
+                print(f"error with apiv1_device_command_get_post keyerror: {e}")
+                return return_not_found(request, f"Error with command, it is not found: {e}")
             except YomboWarning as e:
-                print("error with apiv1_device_command_get_post warning: %s" % e)
-                return return_error(request, 'Error with command: %s' % e)
+                print(f"error with apiv1_device_command_get_post warning: {e}")
+                return return_error(request, f"Error with command: {e}")
 
             DC = webinterface._Devices.device_commands[request_id]
             if wait_time > 0:
@@ -113,10 +109,10 @@ def route_api_v1_device(webapp):
             return return_good(
                 request,
                 payload={
-                    'device_command_id': request_id,
-                    'device_command': DC.asdict(),
-                    'status_current': status_current,
-                    'status_previous': status_previous,
+                    "device_command_id": request_id,
+                    "device_command": DC.asdict(),
+                    "status_current": status_current,
+                    "status_previous": status_previous,
 
                 }
             )

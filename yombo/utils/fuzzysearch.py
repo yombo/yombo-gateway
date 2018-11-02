@@ -12,19 +12,19 @@ exactness can be fine tuned using a percent value from .99 - .10, the default 75
 
    from yombo.utils.fuzzysearch import FuzzySearch
     
-   items = FuzzySearch({'mom' : 'Jane', 'dad' : 'Joe'}, .95) # Lets be strict, much match 95%
-   items['brother'] = 'Jeff'  # add an additional entry.
+   items = FuzzySearch({"mom" : "Jane", "dad" : "Joe"}, .95) # Lets be strict, much match 95%
+   items["brother"] = "Jeff"  # add an additional entry.
    
-   momName = ''
+   momName = ""
    try:
-       momName = items['mum']  #this will result in a YomboFuzzySearchError due to our 95% requirement
+       momName = items["mum"]  #this will result in a YomboFuzzySearchError due to our 95% requirement
                                #if we lowered the requirement to 90%, it would find it.
    catch YomboFuzzySearchError, e:  #e contains a bunch of attributes that are useful.
            momName = e.value   #Use the highest value that was found.
    print momName               #this will output Jane
    
    We can also specifically call the search function
-   momName = items.search('mum', .50)
+   momName = items.search("mum", .50)
    Search, but only require 50% match.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
@@ -126,12 +126,12 @@ class FuzzySearch(dict):
         """
         results = self._search(searchFor, limiter_override)
         return {
-            'valid': results[0],
-            'key': results[1],
-            'value': results[2],
-            'ratio': results[3],
-            'others': results[4],
-            'searchFor': searchFor,
+            "valid": results[0],
+            "key": results[1],
+            "value": results[2],
+            "ratio": results[3],
+            "others": results[4],
+            "searchFor": searchFor,
         }
 
     def search2(self, searchFor, limiter_override=None):
@@ -194,7 +194,7 @@ class FuzzySearch(dict):
             try:
                 stringDiffLib.set_seq2(key.lower())
             except TypeError:
-                continue                # might get here, even though it's not a string. Catch it!
+                continue                # might get here, even though it"s not a string. Catch it!
 
             try:
                 # get the match ratio
@@ -209,7 +209,7 @@ class FuzzySearch(dict):
                 best_match = self._dict_getitem(key)
             
             # return a list of the top 5 key matches on failure.
-            key_list[curRatio] = {'key': key, 'value': self._dict_getitem(key), 'ratio': curRatio}
+            key_list[curRatio] = {"key": key, "value": self._dict_getitem(key), "ratio": curRatio}
             sorted_list = self.take(5, sorted(iter(key_list.items()), key=operator.itemgetter(0), reverse=True))
 
         limiter = None
@@ -244,7 +244,7 @@ class FuzzySearch(dict):
 
     def get_key(self, searchFor):
         """
-        Returns the closest key of this dictionary for 'searchFor'.
+        Returns the closest key of this dictionary for "searchFor".
         
         :param searchFor: The key of the dictionary to search for.
         :type searchFor: int or string

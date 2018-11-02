@@ -18,23 +18,23 @@ logger = get_logger("library.webinterface.route_devices")
 
 def route_panel(webapp):
     with webapp.subroute("/panel") as webapp:
-        @webapp.route('/')
+        @webapp.route("/")
         @require_auth()
         def page_panel(webinterface, request, session):
-            session.has_access('panel', '*', 'view', raise_error=True)
-            return webinterface.redirect(request, '/panel/index')
+            session.has_access("panel", "*", "view", raise_error=True)
+            return webinterface.redirect(request, "/panel/index")
 
-        @webapp.route('/index')
+        @webapp.route("/index")
         @require_auth()
         def page_panel_index(webinterface, request, session):
-            session.has_access('panel', '*', 'view', raise_error=True)
-            master_gateway_id = webinterface._Configs.get('core', 'master_gateway_id', None, False)
+            session.has_access("panel", "*", "view", raise_error=True)
+            master_gateway_id = webinterface._Configs.get("core", "master_gateway_id", None, False)
             if master_gateway_id is None:
-                page = webinterface.get_template(request, webinterface.wi_dir + '/pages/panel/no_master_gateway.html')
+                page = webinterface.get_template(request, webinterface.wi_dir + "/pages/panel/no_master_gateway.html")
                 master_gateway_id = None
             else:
                 master_gateway_id = webinterface._Gateways[master_gateway_id]
-                page = webinterface.get_template(request, webinterface.wi_dir + '/pages/panel/index.html')
+                page = webinterface.get_template(request, webinterface.wi_dir + "/pages/panel/index.html")
 
             return page.render(
                 alerts=webinterface.get_alerts(),

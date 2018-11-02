@@ -35,7 +35,7 @@ from yombo.utils import global_invoke_all
 
 from ._device_command import Device_Command
 from ._device_status import Device_Status
-logger = get_logger('library.devices.device_attributes')
+logger = get_logger("library.devices.device_attributes")
 
 
 class Device_Attributes(MagicAttributesMixin):
@@ -110,7 +110,7 @@ class Device_Attributes(MagicAttributesMixin):
                 area = area + " "
         except Exception:
             area = ""
-        return "%s%s" % (area, self.label)
+        return f"{area}{self.label}"
 
     @property
     def full_label_lower(self) -> str:
@@ -227,21 +227,21 @@ class Device_Attributes(MagicAttributesMixin):
         """
         if len(self.status_history) == 0:
             return Device_Status(self._Parent, self, {
-                'command': None,
-                'set_at': time(),
-                'energy_usage': 0,
-                'energy_type': self.energy_type,
-                'human_status': 'Unknown',
-                'human_message': 'Unknown status for device',
-                'machine_status': None,
-                'machine_status_extra': {},
-                'gateway_id': self.gateway_id,
-                'auth_id': 'unknown',
-                'reporting_source': 'unknown',
-                'request_id': None,
-                'uploaded': 0,
-                'uploadable': 1,
-                'fake_data': True,
+                "command": None,
+                "set_at": time(),
+                "energy_usage": 0,
+                "energy_type": self.energy_type,
+                "human_status": "Unknown",
+                "human_message": "Unknown status for device",
+                "machine_status": None,
+                "machine_status_extra": {},
+                "gateway_id": self.gateway_id,
+                "auth_id": "unknown",
+                "reporting_source": "unknown",
+                "request_id": None,
+                "uploaded": 0,
+                "uploadable": 1,
+                "fake_data": True,
             })
         return self.status_history[0]
 
@@ -393,50 +393,50 @@ class Device_Attributes(MagicAttributesMixin):
         self.MACHINE_STATUS_EXTRA_FIELDS = {}  # Track what fields in status extra are allowed.
         self.TOGGLE_COMMANDS = False  # Put two command machine_labels in a list to enable toggling.
 
-        self._FullName = 'yombo.gateway.lib.Devices.Device'
-        self._Name = 'Devices.Device'
+        self._FullName = "yombo.gateway.lib.Devices.Device"
+        self._Name = "Devices.Device"
         self._Parent = _Parent
         self.call_before_command = []
         self.call_after_command = []
         self._security_send_device_status = self._Configs.get2("security", "amqpsenddevicestatus", True)
 
         self.device_id = device["id"]
-        test_device = kwargs.get('test_device', None)
+        test_device = kwargs.get("test_device", None)
         if test_device is None:
             self.test_device = False
         else:
             self.test_device = test_device
 
         memory_sizing = {
-            'x_small': {'other_device_commands': 2,  #less then 256mb
-                           'other_status_history': 2,
-                           'local_device_commands': 5,
-                           'local_status_history': 5},
-            'small': {'other_device_commands': 5,  #About 512mb
-                           'other_status_history': 5,
-                           'local_device_commands': 25,
-                           'local_status_history': 25},
-            'medium': {'other_device_commands': 25,  # About 1024mb
-                      'other_status_history': 25,
-                      'local_device_commands': 75,
-                      'local_status_history': 75},
-            'large': {'other_device_commands': 50,  # About 2048mb
-                       'other_status_history': 50,
-                       'local_device_commands': 125,
-                       'local_status_history': 125},
-            'x_large': {'other_device_commands': 100,  # About 4092mb
-                      'other_status_history': 100,
-                      'local_device_commands': 250,
-                      'local_status_history': 250},
-            'xx_large': {'other_device_commands': 200,  # About 8000mb
-                        'other_status_history': 200,
-                        'local_device_commands': 500,
-                        'local_status_history': 500},
+            "x_small": {"other_device_commands": 2,  #less then 256mb
+                           "other_status_history": 2,
+                           "local_device_commands": 5,
+                           "local_status_history": 5},
+            "small": {"other_device_commands": 5,  #About 512mb
+                           "other_status_history": 5,
+                           "local_device_commands": 25,
+                           "local_status_history": 25},
+            "medium": {"other_device_commands": 25,  # About 1024mb
+                      "other_status_history": 25,
+                      "local_device_commands": 75,
+                      "local_status_history": 75},
+            "large": {"other_device_commands": 50,  # About 2048mb
+                       "other_status_history": 50,
+                       "local_device_commands": 125,
+                       "local_status_history": 125},
+            "x_large": {"other_device_commands": 100,  # About 4092mb
+                      "other_status_history": 100,
+                      "local_device_commands": 250,
+                      "local_status_history": 250},
+            "xx_large": {"other_device_commands": 200,  # About 8000mb
+                        "other_status_history": 200,
+                        "local_device_commands": 500,
+                        "local_status_history": 500},
         }
 
-        sizes = memory_sizing[self._Parent._Atoms['mem.sizing']]
-        self.device_commands = deque({}, sizes['other_device_commands'])
-        self.status_history = deque({}, sizes['other_status_history'])
+        sizes = memory_sizing[self._Parent._Atoms["mem.sizing"]]
+        self.device_commands = deque({}, sizes["other_device_commands"])
+        self.status_history = deque({}, sizes["other_status_history"])
 
         self.device_variables_cached = {}
         self.device_variable_fields_cached = {}
@@ -474,19 +474,19 @@ class Device_Attributes(MagicAttributesMixin):
         self.device_model = "Yombo"
         self.status_delayed = {}
         self.status_delayed_calllater = None
-        source = kwargs.get('source', None)
-        if source == 'database':
+        source = kwargs.get("source", None)
+        if source == "database":
             self.is_in_db = True
         else:
             self.is_in_db = False
         self.is_dirty = False
 
         if device["gateway_id"] != self.gateway_id:
-            self.device_commands = deque({}, sizes['other_device_commands'])
-            self.status_history = deque({}, sizes['other_status_history'])
+            self.device_commands = deque({}, sizes["other_device_commands"])
+            self.status_history = deque({}, sizes["other_status_history"])
         else:
-            self.device_commands = deque({}, sizes['local_device_commands'])
-            self.status_history = deque({}, sizes['local_status_history'])
+            self.device_commands = deque({}, sizes["local_device_commands"])
+            self.status_history = deque({}, sizes["local_status_history"])
 
     @inlineCallbacks
     def _init0_(self, device, source):
@@ -501,7 +501,7 @@ class Device_Attributes(MagicAttributesMixin):
         self.device_variables_cached = yield self.device_variables()
         self.device_variable_fields_cached = yield self.device_variable_fields()
         if self.test_device is None or self.test_device is False:
-            self.meta = yield self._SQLDict.get('yombo.lib.device', 'meta_' + self.device_id)
+            self.meta = yield self._SQLDict.get("yombo.lib.device", "meta_" + self.device_id)
         else:
             self.meta = {}
 
@@ -568,55 +568,55 @@ class Device_Attributes(MagicAttributesMixin):
         def clean_device_variables(device_variables):
             variables = deepcopy(device_variables)
             for label, data in variables.items():
-                del data['data']
-                data['values'] = data['values_orig']
-                del data['values_orig']
+                del data["data"]
+                data["values"] = data["values_orig"]
+                del data["values_orig"]
             return variables
 
         return {
-            'gateway_id': self.gateway_id,
-            'area': self.area,
-            'location': self.location,
-            'area_id': self.area_id,
-            'location_id': self.location_id,
-            'area_label': self.area_label,
-            'full_label': self.full_label,
-            'device_id': str(self.device_id),
-            'device_type_id': str(self.device_type_id),
-            'device_type_label': self._DeviceTypes[self.device_type_id].machine_label,
-            'machine_label': str(self.machine_label),
-            'label': str(self.label),
-            'notes': str(self.notes),
-            'description': str(self.description),
-            'statistic_label': str(self.statistic_label),
-            'statistic_type': str(self.statistic_type),
-            'statistic_bucket_size': str(self.statistic_bucket_size),
-            'statistic_lifetime': str(self.statistic_lifetime),
-            'pin_code': "********",
-            'pin_required': int(self.pin_required),
-            'pin_timeout': self.pin_timeout,
-            'intent_allow': int(self.intent_allow),
-            'intent_text': str(self.intent_text),
-            'created_at': int(self.created_at),
-            'updated_at': int(self.updated_at),
-            'device_commands': list(self.device_commands),
-            'status_current': status_current,
-            'status_previous': status_previous,
-            'controllable': self.controllable,
-            'allow_direct_control': self.allow_direct_control,
-            'device_serial': self.device_serial,
-            'device_mfg': self.device_mfg,
-            'device_model': self.device_model,
-            'device_platform': self.PLATFORM,
-            'device_sub_platform': self.SUB_PLATFORM,
-            'device_features': self.FEATURES,
-            'device_variables': clean_device_variables(self.device_variables_cached),
-            'device_variable_fields': self.device_variable_fields_cached,
-            'energy_tracker_device': self.energy_tracker_device,
-            'energy_tracker_source': self.energy_tracker_source,
-            'energy_type': self.energy_type,
-            'energy_map': self.energy_map,
-            'enabled_status': self.enabled_status,
+            "gateway_id": self.gateway_id,
+            "area": self.area,
+            "location": self.location,
+            "area_id": self.area_id,
+            "location_id": self.location_id,
+            "area_label": self.area_label,
+            "full_label": self.full_label,
+            "device_id": str(self.device_id),
+            "device_type_id": str(self.device_type_id),
+            "device_type_label": self._DeviceTypes[self.device_type_id].machine_label,
+            "machine_label": str(self.machine_label),
+            "label": str(self.label),
+            "notes": str(self.notes),
+            "description": str(self.description),
+            "statistic_label": str(self.statistic_label),
+            "statistic_type": str(self.statistic_type),
+            "statistic_bucket_size": str(self.statistic_bucket_size),
+            "statistic_lifetime": str(self.statistic_lifetime),
+            "pin_code": "********",
+            "pin_required": int(self.pin_required),
+            "pin_timeout": self.pin_timeout,
+            "intent_allow": int(self.intent_allow),
+            "intent_text": str(self.intent_text),
+            "created_at": int(self.created_at),
+            "updated_at": int(self.updated_at),
+            "device_commands": list(self.device_commands),
+            "status_current": status_current,
+            "status_previous": status_previous,
+            "controllable": self.controllable,
+            "allow_direct_control": self.allow_direct_control,
+            "device_serial": self.device_serial,
+            "device_mfg": self.device_mfg,
+            "device_model": self.device_model,
+            "device_platform": self.PLATFORM,
+            "device_sub_platform": self.SUB_PLATFORM,
+            "device_features": self.FEATURES,
+            "device_variables": clean_device_variables(self.device_variables_cached),
+            "device_variable_fields": self.device_variable_fields_cached,
+            "energy_tracker_device": self.energy_tracker_device,
+            "energy_tracker_source": self.energy_tracker_source,
+            "energy_type": self.energy_type,
+            "energy_map": self.energy_map,
+            "enabled_status": self.enabled_status,
             }
 
     @inlineCallbacks
@@ -631,7 +631,7 @@ class Device_Attributes(MagicAttributesMixin):
         :return:
         """
         try:
-            yield global_invoke_all('_device_before_edit_',
+            yield global_invoke_all("_device_before_edit_",
                                     called_by=self,
                                     id=self.device_id,
                                     data=device,
@@ -640,110 +640,110 @@ class Device_Attributes(MagicAttributesMixin):
         except Exception as e:
             pass
 
-        if 'device_type_id' in device:
+        if "device_type_id" in device:
             self.device_type_id = device["device_type_id"]
             self.is_dirty = True
-        if 'gateway_id' in device:
+        if "gateway_id" in device:
             self.gateway_id = device["gateway_id"]
             self.is_dirty = True
-        if 'location_id' in device:
+        if "location_id" in device:
             self.location_id = device["location_id"]
             self.is_dirty = True
-        if 'area_id' in device:
+        if "area_id" in device:
             self.area_id = device["area_id"]
             self.is_dirty = True
-        if 'machine_label' in device:
+        if "machine_label" in device:
             self.machine_label = device["machine_label"]
             self.is_dirty = True
-        if 'label' in device:
+        if "label" in device:
             self.label = device["label"]
             self.is_dirty = True
-        if 'description' in device:
+        if "description" in device:
             self.description = device["description"]
             self.is_dirty = True
-        if 'pin_required' in device:
+        if "pin_required" in device:
             self.pin_required = int(device["pin_required"])
             self.is_dirty = True
-        if 'pin_code' in device:
+        if "pin_code" in device:
             self.pin_code = device["pin_code"]
             self.is_dirty = True
-        if 'pin_timeout' in device:
+        if "pin_timeout" in device:
             try:
                 self.pin_timeout = int(device["pin_timeout"])
                 self.is_dirty = True
             except:
                 self.pin_timeout = None
                 self.is_dirty = True
-        if 'intent_allow' in device:
+        if "intent_allow" in device:
             self.intent_allow = device["intent_allow"]
             self.is_dirty = True
-        if 'intent_text' in device:
+        if "intent_text" in device:
             self.intent_text = device["intent_text"]
             self.is_dirty = True
-        if 'statistic_label' in device:
-            self.statistic_label = device["statistic_label"]  # 'myhome.groundfloor.kitchen'
+        if "statistic_label" in device:
+            self.statistic_label = device["statistic_label"]  # "myhome.groundfloor.kitchen"
             self.is_dirty = True
-        if 'statistic_type' in device:
+        if "statistic_type" in device:
             self.statistic_type = device["statistic_type"]
             self.is_dirty = True
-        if 'statistic_bucket_size' in device:
+        if "statistic_bucket_size" in device:
             self.statistic_bucket_size = device["statistic_bucket_size"]
             self.is_dirty = True
-        if 'statistic_lifetime' in device:
+        if "statistic_lifetime" in device:
             self.statistic_lifetime = device["statistic_lifetime"]
             self.is_dirty = True
-        if 'status' in device:
+        if "status" in device:
             self.enabled_status = int(device["status"])
             self.is_dirty = True
-        if 'created_at' in device:
+        if "created_at" in device:
             self.created_at = int(device["created_at"])
             self.is_dirty = True
-        if 'updated_at' in device:
+        if "updated_at" in device:
             self.updated_at = int(device["updated_at"])
             self.is_dirty = True
-        if 'energy_tracker_device' in device:
-            self.energy_tracker_device = device['energy_tracker_device']
+        if "energy_tracker_device" in device:
+            self.energy_tracker_device = device["energy_tracker_device"]
             self.is_dirty = True
-        if 'energy_tracker_source' in device:
-            self.energy_tracker_source = device['energy_tracker_source']
+        if "energy_tracker_source" in device:
+            self.energy_tracker_source = device["energy_tracker_source"]
             self.is_dirty = True
-        if 'energy_type' in device:
-            self.energy_type = device['energy_type']
+        if "energy_type" in device:
+            self.energy_type = device["energy_type"]
             self.is_dirty = True
-        if 'energy_map' in device:
-            if device['energy_map'] is not None:
+        if "energy_map" in device:
+            if device["energy_map"] is not None:
                 # create an energy map from a dictionary
                 energy_map_final = {}
-                if isinstance(device['energy_map'], dict) is False:
-                    device['energy_map'] = {"0.0": 0, "1.0": 0}
+                if isinstance(device["energy_map"], dict) is False:
+                    device["energy_map"] = {"0.0": 0, "1.0": 0}
 
-                for percent, rate in device['energy_map'].items():
-                    energy_map_final[self._Parent._InputTypes.check('percent', percent)] = self._Parent._InputTypes.check('number' , rate)
+                for percent, rate in device["energy_map"].items():
+                    energy_map_final[self._Parent._InputTypes.check("percent", percent)] = self._Parent._InputTypes.check("number" , rate)
                 energy_map_final = OrderedDict(sorted(list(energy_map_final.items()), key=lambda x_y: float(x_y[0])))
                 self.energy_map = energy_map_final
             else:
                 self.energy_map = None
             self.is_dirty = True
-        if 'controllable' in device:
-            self.controllable = device['controllable']
+        if "controllable" in device:
+            self.controllable = device["controllable"]
             self.is_dirty = True
-        if 'allow_direct_control' in device:
-            self.allow_direct_control = device['allow_direct_control']
+        if "allow_direct_control" in device:
+            self.allow_direct_control = device["allow_direct_control"]
             self.is_dirty = True
 
         if source == "database":
             self.is_dirty = False
             save_results = {
-                'status': 'success',
-                'msg': "Device saved.",
-                'device_id': self.device_id
+                "status": "success",
+                "msg": "Device saved.",
+                "device_id": self.device_id
             }
         else:
             save_results = yield self.save(source=source, session=session)
 
         if broadcast in (None, True):
             try:
-                yield global_invoke_all('_device_edited_',
+                yield global_invoke_all("_device_edited_",
                                         called_by=self,
                                         id=self.device_id,
                                         device=self,
@@ -797,7 +797,7 @@ class Device_Attributes(MagicAttributesMixin):
         :return:
         """
         self.device_variables_cached = yield self._Parent._Variables.get_variable_fields_data(
-            group_relation_type='device_type',
+            group_relation_type="device_type",
             group_relation_id=self.device_type_id,
             data_relation_id=self.device_id
         )
@@ -847,12 +847,12 @@ class Device_Attributes(MagicAttributesMixin):
             limit = 40
 
         where = {
-            'device_id': self.device_id,
+            "device_id": self.device_id,
         }
-        records = yield self._Parent._Libraries['LocalDB'].get_device_status(where, limit=limit)
+        records = yield self._Parent._Libraries["LocalDB"].get_device_status(where, limit=limit)
         if len(records) > 0:
             for record in records:
-                self.status_history.append(Device_Status(self._Parent, self, record, source='database'))
+                self.status_history.append(Device_Status(self._Parent, self, record, source="database"))
 
     @inlineCallbacks
     def load_device_commands_history(self, limit=None):
@@ -867,12 +867,12 @@ class Device_Attributes(MagicAttributesMixin):
             limit = 40
 
         where = {
-            'id': self.device_id,
+            "id": self.device_id,
         }
-        records = yield self._Parent._Libraries['LocalDB'].get_device_commands(where, limit=limit)
+        records = yield self._Parent._Libraries["LocalDB"].get_device_commands(where, limit=limit)
         if len(records) > 0:
             for record in records:
-                if record['request_id'] not in self._Parent.device_commands:
+                if record["request_id"] not in self._Parent.device_commands:
                     self._Parent.add_device_command_by_object(Device_Command(record, self, start=False))
 
     def add_device_features(self, features):

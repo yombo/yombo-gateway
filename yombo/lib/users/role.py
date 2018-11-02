@@ -15,7 +15,7 @@ from yombo.core.log import get_logger
 from yombo.mixins.permissionmixin import PermissionMixin
 from yombo.utils import data_pickle
 
-logger = get_logger('library.users.role')
+logger = get_logger("library.users.role")
 
 
 class Role(PermissionMixin):
@@ -55,7 +55,7 @@ class Role(PermissionMixin):
         if machine_label is None:
             raise YomboWarning("Role must have a machine_label.")
         if machine_label in self.available_roles:
-            raise YomboWarning("Role machine_label already exists.: %s" % machine_label)
+            raise YomboWarning(f"Role machine_label already exists.: {machine_label}")
 
         if label is None:
             label = machine_label
@@ -76,10 +76,10 @@ class Role(PermissionMixin):
         if isinstance(permissions, list):
             for perm in permissions:
                 self.add_item_permission(
-                    perm['platform'],
-                    perm['item'],
-                    perm['access'],
-                    perm['action'],
+                    perm["platform"],
+                    perm["item"],
+                    perm["access"],
+                    perm["action"],
                     flush_cache=flush_cache
                 )
         self.save()
@@ -92,12 +92,12 @@ class Role(PermissionMixin):
         if self.source != "user":
             return
         tosave = {
-            'role_id': self.role_id,
-            'label': self.label,
-            'machine_label': self.machine_label,
-            'description': self.description,
-            'saved_permissions': self.item_permissions
+            "role_id": self.role_id,
+            "label": self.label,
+            "machine_label": self.machine_label,
+            "description": self.description,
+            "saved_permissions": self.item_permissions
         }
-        self._Parent._Configs.set('rbac_roles', self.role_id,
+        self._Parent._Configs.set("rbac_roles", self.role_id,
                                   data_pickle(tosave, encoder="msgpack_base64", local=True),
                                   ignore_case=True)

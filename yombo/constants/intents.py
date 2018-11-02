@@ -1,12 +1,12 @@
-INTENT_TURN_ON = 'turn_on'
-INTENT_TURN_OFF = 'turn_off'
-INTENT_TOGGLE = 'toggle'
-INTENT_OPEN_COVER = 'open_cover'
-INTENT_CLOSE_COVER = 'close_cover'
-INTENT_DISABLE = 'enable'
-INTENT_ENABLE = 'enable'
-INTENT_START = 'start'
-INTENT_STOP = 'stop'
+INTENT_TURN_ON = "turn_on"
+INTENT_TURN_OFF = "turn_off"
+INTENT_TOGGLE = "toggle"
+INTENT_OPEN_COVER = "open_cover"
+INTENT_CLOSE_COVER = "close_cover"
+INTENT_DISABLE = "enable"
+INTENT_ENABLE = "enable"
+INTENT_START = "start"
+INTENT_STOP = "stop"
 
-INTENT_DOMAIN_DEVICE = 'device'
-INTENT_DOMAIN_SCENE = 'scene'
+INTENT_DOMAIN_DEVICE = "device"
+INTENT_DOMAIN_SCENE = "scene"

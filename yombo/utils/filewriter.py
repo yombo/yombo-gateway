@@ -65,25 +65,25 @@ class FileWriter:
         try:
             self.filename = filename
         except:
-            raise YomboFileError("filename not set.", 101, '__init__', 'FileWriter')
+            raise YomboFileError("filename not set.", 101, "__init__", "FileWriter")
 
-        self.fileid = kwargs.get('fileid', self.filename)
-        self.make_if_missing = kwargs.get('make_if_missing', True)
+        self.fileid = kwargs.get("fileid", self.filename)
+        self.make_if_missing = kwargs.get("make_if_missing", True)
 
         self.write_queue = []
         try:
             if not os.path.exists(self.filename):
                 if self.make_if_missing is True:  # if file doesn't exist
-                    open(self.filename, 'w').close()  # create it and then close.
+                    open(self.filename, "w").close()  # create it and then close.
                 else:
                     raise YomboFileError("File does not exist, told not cannot create one.",
-                                         103, '__init__', 'FileReader')
+                                         103, "__init__", "FileReader")
 
-            self.fp_in = codecs.open(self.filename, 'a', encoding='utf-8')
+            self.fp_in = codecs.open(self.filename, "a", encoding="utf-8")
         except IOError as e:
             (errno, strerror) = e.args
-            raise YomboFileError("Logreader could not open file for reading. Reason: %s" % strerror,
-                                 104, '__init__', 'FileReader')
+            raise YomboFileError(f"Logreader could not open file for reading. Reason: {strerror}",
+                                 104, "__init__", "FileReader")
 
         self.check_write_queue_running = False
         self.check_write_queue_loop = LoopingCall(self.check_write_queue)

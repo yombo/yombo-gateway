@@ -33,7 +33,7 @@ from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import random_string, dict_has_key, is_true_false
 
-logger = get_logger('library.amqpyomb_handlers.amqpconfigs')
+logger = get_logger("library.amqpyomb_handlers.amqpconfigs")
 
 class AmqpConfigHandler(YomboLibrary):
     """
@@ -132,7 +132,7 @@ class AmqpConfigHandler(YomboLibrary):
         :return:
         """
         if self.__doing_full_configs == True and len(self.__process_queue) == 0:
-            last_complete = self.parent._Configs.get("amqpyombo", 'lastcomplete', None, False)
+            last_complete = self.parent._Configs.get("amqpyombo", "lastcomplete", None, False)
             if last_complete == None:
                 if self.init_startup_count > 5:
                     logger.error("Unable to reach or contact server. If problem persists, check your configs. (Help link soon.)")
@@ -172,20 +172,20 @@ class AmqpConfigHandler(YomboLibrary):
         # logger.info("properties: {properties}", properties=properties)
         # logger.info("headers: {headers}", headers=properties.headers)
 
-        response_type = headers['response_type']
+        response_type = headers["response_type"]
         if response_type not in CONFIG_ITEMS:
-            raise YomboWarning("Configuration item '%s' not configured." % "get_" + response_type)
+            raise YomboWarning(f"Configuration item 'get_{response_type}' not configured.")
         self.__process_queue[random_string(length=10)] = {
-            'msg': body,
-            'headers': headers,
-            'properties': properties,
+            "msg": body,
+            "headers": headers,
+            "properties": properties,
         }
 
         full_response_type = "get_" + response_type
         if full_response_type not in self.__pending_updates:  # Ignore old request items.
             logger.warn("Configuration item not requested, dropping: {response_type}", response_type=response_type)
             return
-        self.__pending_updates[full_response_type]['status'] = 'received'
+        self.__pending_updates[full_response_type]["status"] = "received"
         self.process_config_queue()
 
     @inlineCallbacks
@@ -204,17 +204,16 @@ class AmqpConfigHandler(YomboLibrary):
         if self.processing_queue == False:
             logger.debug("Starting process_config_queue.")
             self.processing_queue = True
-            # print("self.__process_queue: %s" % self.__process_queue)
             for key in list(self.__process_queue):
                 queue = self.__process_queue[key]
                 # print("processing queue item: %s" % queue)
-                # if queue['headers']['config_item'] == 'get_gateway_cluster':
-                # print("msg: %s" % queue['msg'])
+                # if queue["headers"]["config_item"] == "get_gateway_cluster":
+                # print("msg: %s" % queue["msg"])
                 # print("self.__pending_updates: %s" % self.__pending_updates)
-                self.__pending_updates['get_%s' % queue['headers']['response_type']]['status'] = 'processing'
-                yield self.process_config(queue['msg'],
-                                          queue['headers']['response_type'],
-                                          queue['headers']['config_type'],
+                self.__pending_updates[f'get_{queue["headers"]["response_type"]}']["status"] = "processing"
+                yield self.process_config(queue["msg"],
+                                          queue["headers"]["response_type"],
+                                          queue["headers"]["config_type"],
                                           True)
                 del self.__process_queue[key]
             self.processing_queue = False
@@ -235,48 +234,48 @@ class AmqpConfigHandler(YomboLibrary):
         self.processing = True
         # print("processing config.... %s" % config_item)
         # print("processing msg.... %s" % msg)
-        if msg['code'] != 200:
-            logger.warn("Configuration error for '{type}' received an error ({code}): {error}", type=config_item, code=msg['code'], error=msg['message'])
+        if msg["code"] != 200:
+            logger.warn("Configuration error for '{type}' received an error ({code}): {error}", type=config_item, code=msg["code"], error=msg["message"])
             yield self._remove_full_download_dueue("get_" + config_item)
             self.processing = False
             return
 
         if config_item == "gateway_configs":
-            payload = msg['data']
+            payload = msg["data"]
             for section in payload:
-                for key in section['Values']:
-                   self.parent._Configs.set(section['Section'], key['Key'], key['Value'])
+                for key in section["Values"]:
+                   self.parent._Configs.set(section["Section"], key["Key"], key["Value"])
 
         elif config_item == "gateway_dns_name":
-            payload = msg['data']
-            self.parent._Configs.set('dns', 'dns_name', payload['dns_name'])
-            self.parent._Configs.set('dns', 'dns_domain', payload['dns_domain'])
-            self.parent._Configs.set('dns', 'dns_domain_id', payload['dns_domain_id'])
-            self.parent._Configs.set('dns', 'allow_change_at', payload['allow_change_at'])
-            self.parent._Configs.set('dns', 'fqdn', payload['fqdn'])
+            payload = msg["data"]
+            self.parent._Configs.set("dns", "dns_name", payload["dns_name"])
+            self.parent._Configs.set("dns", "dns_domain", payload["dns_domain"])
+            self.parent._Configs.set("dns", "dns_domain_id", payload["dns_domain_id"])
+            self.parent._Configs.set("dns", "allow_change_at", payload["allow_change_at"])
+            self.parent._Configs.set("dns", "fqdn", payload["fqdn"])
 
         elif config_item in CONFIG_ITEMS:
             config_data = CONFIG_ITEMS[config_item]
-            # if config_type == 'full':
-                # logger.info("Truncating table: {table}", table=config_data['table'])
-                # yield self._LocalDB.truncate(config_data['table'])
-                # logger.info("Truncating table: {table}..done", table=config_data['table'])
+            # if config_type == "full":
+                # logger.info("Truncating table: {table}", table=config_data["table"])
+                # yield self._LocalDB.truncate(config_data["table"])
+                # logger.info("Truncating table: {table}..done", table=config_data["table"])
 
-            if msg['data_type'] == 'object':
+            if msg["data_type"] == "object":
                 # print("field remap start object")
-                data = self.field_remap(msg['data'], config_data)
+                data = self.field_remap(msg["data"], config_data)
                 # print("field remap stop")
 #                logger.info("in amqpyombo:process_config ->> config_item: {config_item}", config_item=config_item)
 #                logger.info("amqpyombo::process_config - data: {data}", data=data)
 #                 print("add_update_delete start object")
                 yield self.add_update_delete(msg, data, config_item, config_type, True)
                 # print("fadd_update_delete stop object")
-                # self._Loader.loadedLibraries['devices'].add_update_delete(new_data)
+                # self._Loader.loadedLibraries["devices"].add_update_delete(new_data)
                 self.process_config(data, config_item)
             else:
                 # print("add_update_delete start list")
                 processed_data = []
-                for data in msg['data']:
+                for data in msg["data"]:
                     processed_data.append(self.field_remap(data, config_data))
 #                    logger.info("in amqpyombo:process_config ->> config_item: {config_item}", config_item=config_item)
 #                    logger.info("amqpyombo::process_config - data: {data}", data=data)
@@ -289,41 +288,40 @@ class AmqpConfigHandler(YomboLibrary):
 
     def field_remap(self, data, config_data):
         new_data = {}
-        table_meta = self._LocalDB.db_model[config_data['table']]
+        table_meta = self._LocalDB.db_model[config_data["table"]]
         key = None
         value = None
         try:
             for key, value in data.items(): # we must re-map AMQP names to local names.  Removes ones without a DB column too.
-                if key in config_data['map']:
+                if key in config_data["map"]:
                     # Convert ints and floats.
                     if value is None:
                         pass
-                    elif table_meta[config_data['map'][key]]['type'] == "INTEGER":
+                    elif table_meta[config_data["map"][key]]["type"] == "INTEGER":
                         value = int(value)
-                    elif table_meta[config_data['map'][key]]['type'] == "REAL":
+                    elif table_meta[config_data["map"][key]]["type"] == "REAL":
                         value = float(value)
-                    elif table_meta[config_data['map'][key]]['type'] == "BOOLEAN":
+                    elif table_meta[config_data["map"][key]]["type"] == "BOOLEAN":
                         value = is_true_false(value)
 
-                    if key == 'energy_map':
+                    if key == "energy_map":
                         if isinstance(value, dict):
                             try:
                                 value = json.dumps(value)
                             except Exception as e:
                                 value = '{"0.0":0,"1.0":0}'
-                    new_data[config_data['map'][key]] = value
+                    new_data[config_data["map"][key]] = value
 
                 else:
                     new_data[key] = value
             return new_data
         except Exception as e:
-            print("error in field remap.  Last key: %s" % key)
-            print("input value: %s" % value)
-            print("field remap - config_data =%s" % config_data)
-            print("field remap - data =%s" % data)
-            print("tablemeta: %s" % table_meta)
-
-            logger.error("--------==(Error: Something bad              )==--------")
+            print(f"error in field remap.  Last key: {key}")
+            print(f"input value: {value}")
+            print(f"field remap - config_data = {config_data}")
+            print(f"field remap - data = {data}")
+            print(f"tablemeta: {table_meta}")
+            logger.error("--------==(Error: {e})==--------", e=e)
             logger.error("--------------------------------------------------------")
             logger.error("{error}", error=sys.exc_info())
             logger.error("---------------==(Traceback)==--------------------------")
@@ -331,7 +329,7 @@ class AmqpConfigHandler(YomboLibrary):
             logger.error("--------------------------------------------------------")
 
     # still in progress function. Need to clean up DB calls.
-    # todo: what about updates directly to the library? Just call: config_item = get_config_item('devices')
+    # todo: what about updates directly to the library? Just call: config_item = get_config_item("devices")
     @inlineCallbacks
     def add_update_delete(self, msg, data_items, config_item, config_type, from_amqp_incoming=False):
         """
@@ -346,7 +344,7 @@ class AmqpConfigHandler(YomboLibrary):
         """
         # print("add_update_delete called...%s" % config_item)
         config_data = CONFIG_ITEMS[config_item]
-        current_table = config_data['table']
+        current_table = config_data["table"]
         required_db_keys = []
 
         table_cols = self._LocalDB.db_model[current_table]
@@ -359,21 +357,21 @@ class AmqpConfigHandler(YomboLibrary):
             self.db_completed_ids[current_table] = []
             self.db_delete_ids[current_table] = []
 
-            select_fields = ['id']
-            if 'updated_at' in table_cols:
-                select_fields.append('updated_at')
-            if 'created_at' in table_cols:
-                select_fields.append('created_at')
+            select_fields = ["id"]
+            if "updated_at" in table_cols:
+                select_fields.append("updated_at")
+            if "created_at" in table_cols:
+                select_fields.append("created_at")
             # print(" selecting table: %s  fields: %s" % (current_table, select_fields))
             records = yield self._LocalDB.select(current_table, ", ".join(select_fields))
             for record in records:
-                self.db_existing_data[current_table][record['id']] = record
-            if config_item == 'gateway_modules':
-                module_select_fields = ['id', 'module_id', 'installed_version', 'install_at', 'last_check']
-                records = yield self._LocalDB.select('module_installed', ", ".join(module_select_fields))
-                self.db_existing_data['module_installed'] = {}
+                self.db_existing_data[current_table][record["id"]] = record
+            if config_item == "gateway_modules":
+                module_select_fields = ["id", "module_id", "installed_version", "install_at", "last_check"]
+                records = yield self._LocalDB.select("module_installed", ", ".join(module_select_fields))
+                self.db_existing_data["module_installed"] = {}
                 for record in records:
-                    self.db_existing_data['module_installed'][record['id']] = record
+                    self.db_existing_data["module_installed"][record["id"]] = record
 
         # self.db_existing_data = {}  # used to keep track of items to add, update, or delete
         # self.db_delete_ids = {}  # [table][row_id]
@@ -381,7 +379,7 @@ class AmqpConfigHandler(YomboLibrary):
         # self.db_update_data = {}  # [table][row_id] = Dictionaries
 
         for col, col_data in table_cols.items():
-            if col_data['notnull'] == 1:
+            if col_data["notnull"] == 1:
                 required_db_keys.append(col)
 
         if isinstance(data_items, list) is False:
@@ -395,74 +393,73 @@ class AmqpConfigHandler(YomboLibrary):
                     if key in table_cols:
                         filtered_data[key] = data[key]
 
-                if 'status' in filtered_data:
-                    if filtered_data['status'] == 2:  # delete any nested items...
-                        if config_item == 'gateway_modules':
+                if "status" in filtered_data:
+                    if filtered_data["status"] == 2:  # delete any nested items...
+                        if config_item == "gateway_modules":
                             # print("config_item: %s" % config_item)
                             # print("current_table: %s" % current_table)
                             # print("self.db_existing_data: %s" % self.db_existing_data)
                             # print("filtered data: %s" % filtered_data)
-                            self.item_purged(config_item, filtered_data['id'])
+                            self.item_purged(config_item, filtered_data["id"])
 
-                            if filtered_data['id'] in self.db_existing_data['modules']:
-                            # if filtered_data['id'] in filtered_data['modules']:
-                                self.db_delete_ids['modules'].append(filtered_data['id'])
-                                self.db_completed_ids['modules'].append(filtered_data['id'])
-                            if filtered_data['id'] in self.db_existing_data['module_installed']:
-                                self.db_delete_ids['module_installed'].append(filtered_data['id'])
-                                self.db_completed_ids['module_installed'].append(filtered_data['id'])
-                        elif filtered_data['id'] in self.db_existing_data[current_table]:
-                            self.db_delete_ids[current_table].append(filtered_data['id'])
-                            self.db_completed_ids[current_table].append(filtered_data['id'])
+                            if filtered_data["id"] in self.db_existing_data["modules"]:
+                                self.db_delete_ids["modules"].append(filtered_data["id"])
+                                self.db_completed_ids["modules"].append(filtered_data["id"])
+                            if filtered_data["id"] in self.db_existing_data["module_installed"]:
+                                self.db_delete_ids["module_installed"].append(filtered_data["id"])
+                                self.db_completed_ids["module_installed"].append(filtered_data["id"])
+                        elif filtered_data["id"] in self.db_existing_data[current_table]:
+                            self.db_delete_ids[current_table].append(filtered_data["id"])
+                            self.db_completed_ids[current_table].append(filtered_data["id"])
                         continue
 
                 # check to make sure the record has the required columns.
                 if dict_has_key(filtered_data, required_db_keys) is False:
                     logger.warn("{config_item}: Cannot do anything. Must have these keys: {needs}  Only had these keys: {has}",
                                 config_item=config_item, needs=required_db_keys, has=filtered_data)
-                    self.db_completed_ids[current_table].append(filtered_data['id'])
+                    self.db_completed_ids[current_table].append(filtered_data["id"])
                     continue
 
                 library = None
-                if config_data['library'] is not None:
-                    library = self.parent._Loader.loadedLibraries[config_data['library']]
+                if config_data["library"] is not None:
+                    library = self.parent._Loader.loadedLibraries[config_data["library"]]
 
-                if config_type == 'full':
+                if config_type == "full":
                     records = []
                 else:
-                    records = yield self._LocalDB.get_dbitem_by_id(config_data['dbclass'], filtered_data['id'])
+                    records = yield self._LocalDB.get_dbitem_by_id(config_data["dbclass"], filtered_data["id"])
 
                 # handle any nested items here.
-                if 'device_types' in data:
-                    if len(data['device_types']):
+                if "device_types" in data:
+                    if len(data["device_types"]):
                         newMsg = msg.copy()
-                        newMsg['data'] = data['device_types']
-                        yield self.process_config(newMsg, 'module_device_type')
+                        newMsg["data"] = data["device_types"]
+                        yield self.process_config(newMsg, "module_device_type")
 
-                if 'variable_groups' in data:
-                    if len(data['variable_groups']):
+                if "variable_groups" in data:
+                    if len(data["variable_groups"]):
                         newMsg = msg.copy()
-                        newMsg['data'] = data['variable_groups']
-                        yield self.process_config(newMsg, 'variable_groups')
+                        newMsg["data"] = data["variable_groups"]
+                        yield self.process_config(newMsg, "variable_groups")
 
-                if 'variable_fields' in data:
-                    if len(data['variable_fields']):
+                if "variable_fields" in data:
+                    if len(data["variable_fields"]):
                         newMsg = msg.copy()
-                        newMsg['data'] = data['variable_fields']
-                        yield self.process_config(newMsg, 'variable_fields')
+                        newMsg["data"] = data["variable_fields"]
+                        yield self.process_config(newMsg, "variable_fields")
 
-                if 'variable_data' in data:
-                    if len(data['variable_data']):
+                if "variable_data" in data:
+                    if len(data["variable_data"]):
                         newMsg = msg.copy()
-                        newMsg['data'] = data['variable_data']
-                        yield self.process_config(newMsg, 'variable_data')
+                        newMsg["data"] = data["variable_data"]
+                        yield self.process_config(newMsg, "variable_data")
 
                 # If a new record
-                # print("if filtered_data['id'] (%s) not in self.db_existing_data[current_table] (%s) == 0:
-                if filtered_data['id'] not in self.db_existing_data[current_table]:
-                    if 'status' in filtered_data and filtered_data['status'] == 2: # we don't add deleted items...
-                        if config_data['purgeable']:
-                            self.item_purged(config_item, filtered_data['id'])
+                # print("if filtered_data["id"] (%s) not in self.db_existing_data[current_table] (%s) == 0:
+                if filtered_data["id"] not in self.db_existing_data[current_table]:
+                    if "status" in filtered_data and filtered_data["status"] == 2: # we don"t add deleted items...
+                        if config_data["purgeable"]:
+                            self.item_purged(config_item, filtered_data["id"])
                             continue
 
                     item_to_insert = OrderedDict()
@@ -473,25 +470,25 @@ class AmqpConfigHandler(YomboLibrary):
                             item_to_insert[col] = None
 
                     self.db_insert_data[current_table].append(item_to_insert)
-                    self.db_completed_ids[current_table].append(filtered_data['id'])
-                    if 'added' in config_data['functions']:
-                        klass = getattr(library, config_data['functions']['updated_at'])
-                        klass(data, True)  # True = the library doesn't need to update the database
+                    self.db_completed_ids[current_table].append(filtered_data["id"])
+                    if "added" in config_data["functions"]:
+                        klass = getattr(library, config_data["functions"]["updated_at"])
+                        klass(data, True)  # True = the library doesn"t need to update the database
 
                 # update records
                 else:
-                    # if config_item == 'gateway_modules':
+                    # if config_item == "gateway_modules":
                     #     print("new data: %s" % filtered_data)
-                    #     print("old data: %s" % self.db_existing_data[current_table][filtered_data['id']])
-                    #     print("filtered_data['updated_at']: %s" % filtered_data['updated_at'])
-                    if 'updated_at' in filtered_data:
+                    #     print("old data: %s" % self.db_existing_data[current_table][filtered_data["id"]])
+                    #     print("filtered_data["updated_at"]: %s" % filtered_data["updated_at"])
+                    if "updated_at" in filtered_data:
                         # Only update if records says it's newer...
-                        if filtered_data['updated_at'] == self.db_existing_data[current_table][filtered_data['id']]['updated_at']:
-                            self.db_completed_ids[current_table].append(data['id'])
+                        if filtered_data["updated_at"] == self.db_existing_data[current_table][filtered_data["id"]]["updated_at"]:
+                            self.db_completed_ids[current_table].append(data["id"])
                             continue
-                    elif 'created_at' in filtered_data:
-                        if filtered_data['created_at'] == self.db_existing_data[current_table][filtered_data['id']]['created_at']:
-                            self.db_completed_ids[current_table].append(data['id'])
+                    elif "created_at" in filtered_data:
+                        if filtered_data["created_at"] == self.db_existing_data[current_table][filtered_data["id"]]["created_at"]:
+                            self.db_completed_ids[current_table].append(data["id"])
                             continue
 
                     item_to_update = OrderedDict()
@@ -503,10 +500,10 @@ class AmqpConfigHandler(YomboLibrary):
 
                     # print("updating table: %s" % current_table)
                     self.db_update_data[current_table].append(item_to_update)
-                    self.db_completed_ids[current_table].append(filtered_data['id'])
-                    # self._LocalDB.dbconfig.update(current_table, filtered_data, where=['id = ?', data['id']] )
-                    if 'updated_at' in config_data['functions']:
-                        klass = getattr(library, config_data['functions']['added'])
+                    self.db_completed_ids[current_table].append(filtered_data["id"])
+                    # self._LocalDB.dbconfig.update(current_table, filtered_data, where=["id = ?", data["id"]] )
+                    if "updated_at" in config_data["functions"]:
+                        klass = getattr(library, config_data["functions"]["added"])
                         klass(filtered_data, True)
 
             # print("calling insertmany for config_data %s" % to_save)
@@ -597,17 +594,17 @@ class AmqpConfigHandler(YomboLibrary):
 
         headers = {
             "request_type": "config",
-            "config_item": 'purged_' + config_item,
+            "config_item": f"purged_{config_item}",
         }
 
         request_msg = self.parent.generate_message_request(
-            exchange_name='ysrv.e.gw_config',
-            source='yombo.gateway.lib.amqpyobo',
-            destination='yombo.server.configs',
+            exchange_name="ysrv.e.gw_config",
+            source="yombo.gateway.lib.amqpyobo",
+            destination="yombo.server.configs",
             headers=headers,
             body=body,
         )
-        request_msg['correlation_persistent'] = False
+        request_msg["correlation_persistent"] = False
         self.parent.publish(**request_msg)
 
     def generate_config_request(self, headers=None, body=None, request_type=None):
@@ -619,15 +616,15 @@ class AmqpConfigHandler(YomboLibrary):
         :return:
         """
         request_msg = self.parent.generate_message_request(
-            exchange_name='ysrv.e.gw_config',
-            source='yombo.gateway.lib.amqpyobo',
-            destination='yombo.server.configs',
+            exchange_name="ysrv.e.gw_config",
+            source="yombo.gateway.lib.amqpyobo",
+            destination="yombo.server.configs",
             request_type=request_type,
             headers=headers,
             body=body,
         )
         # logger.debug("response: {request_msg}", request_msg=request_msg)
-        request_msg['correlation_persistent'] = False
+        request_msg["correlation_persistent"] = False
         return request_msg
 
     def _append_full_download_queue(self, table):
@@ -639,8 +636,8 @@ class AmqpConfigHandler(YomboLibrary):
         if table not in self.__pending_updates:
             logger.debug("Adding table to request queue: {table}", table=table)
             self.__pending_updates[table] = {
-                'status': 'requested',
-                'request_at': time(),
+                "status": "requested",
+                "request_at": time(),
             }
 
     @inlineCallbacks
@@ -679,7 +676,7 @@ class AmqpConfigHandler(YomboLibrary):
             for table, records in self.db_update_data.items():
                 if len(records) > 0:
                     # print("%s should be update_many records: %s" % (table, records))
-                    yield self._LocalDB.update_many(table, records, 'id')
+                    yield self._LocalDB.update_many(table, records, "id")
             self.db_update_data = {}
 
             for table, records in self.db_insert_data.items():
@@ -703,7 +700,7 @@ class AmqpConfigHandler(YomboLibrary):
         Called when configuration downloads are complete.
         :return:
         """
-        self.parent._Configs.set("amqpyombo", 'lastcomplete', int(time()))
+        self.parent._Configs.set("amqpyombo", "lastcomplete", int(time()))
         if self.init_defer.called is False:
             self.init_defer.callback(1)  # if we don't check for this, we can't stop!
             # self.parent._Notifications.add(
@@ -714,17 +711,17 @@ class AmqpConfigHandler(YomboLibrary):
         waitingTime = time() - self._full_download_start_at
         logger.debug("Waited {waitingTime} for startup; pending these configurations:", waitingTime=waitingTime)
         count_pending = 0
-        currently_processing = ''
+        currently_processing = ""
         display_waiting_on = []
         for key in list(self.__pending_updates):
             count_pending += 1
-            logger.debug("Config: {config}, Status: {status}", config=key,  status=self.__pending_updates[key]['status'])
-            if self.__pending_updates[key]['status'] == 'processing':
+            logger.debug("Config: {config}, Status: {status}", config=key,  status=self.__pending_updates[key]["status"])
+            if self.__pending_updates[key]["status"] == "processing":
                 currently_processing = key
                 self.check_download_done_calllater.reset(30)
             display_waiting_on.append(key)
 
-        if currently_processing == '':
+        if currently_processing == "":
             logger.info("Waiting for the following items from server: {the_list}", the_list=", ".join(display_waiting_on))
         else:
             logger.info("Processing configuration, {count_pending} of {numer_requested}. Currently processing: {currently_processing}", currently_processing=currently_processing,  count_pending=self.inital_config_items_requested-count_pending, numer_requested=self.inital_config_items_requested)

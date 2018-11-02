@@ -34,213 +34,214 @@ def route_locations(webapp):
             webinterface.add_breadcrumb(request, "/?", "Home")
             webinterface.add_breadcrumb(request, "/locations/index", "Locations")
 
-        @webapp.route('/')
+        @webapp.route("/")
         @require_auth()
         def page_lib_location(webinterface, request, session):
-            return webinterface.redirect(request, '/locations/index')
+            return webinterface.redirect(request, "/locations/index")
 
-        @webapp.route('/index')
+        @webapp.route("/index")
         @require_auth()
         def page_lib_location_index(webinterface, request, session):
             """
             Show an index of modules configured on the Gateway.
             :param webinterface: pointer to the web interface library
             :param request: a Twisted request
-            :param session: User's session information.
+            :param session: User"s session information.
             :return:
             """
-            session.has_access('location', '*', 'view')
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/locations/index.html')
+            session.has_access("location", "*", "view")
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/locations/index.html")
             root_breadcrumb(webinterface, request)
             # print("webinterface._Locations.locations: %s" % webinterface._Locations.locations)
             return page.render(alerts=webinterface.get_alerts(),
                                )
 
-        @webapp.route('/<string:location_id>/details', methods=['GET'])
+        @webapp.route("/<string:location_id>/details", methods=["GET"])
         @require_auth()
         @inlineCallbacks
         def page_lib_location_details_get(webinterface, request, session, location_id):
-            session.has_access('location', location_id, 'view')
+            session.has_access("location", location_id, "view")
             try:
-                DL_results = yield webinterface._YomboAPI.request('GET', '/v1/location/%s' % location_id,
-                                                                  session=session['yomboapi_session'])
+                DL_results = yield webinterface._YomboAPI.request("GET", f"/v1/location/{location_id}",
+                                                                  session=session["yomboapi_session"])
             except YomboWarning as e:
                 print(e)
-                webinterface.add_alert(e.html_message, 'warning')
-                return webinterface.redirect(request, '/locations/index')
+                webinterface.add_alert(e.html_message, "warning")
+                return webinterface.redirect(request, "/locations/index")
 
             page = webinterface.get_template(request,
-                                             webinterface.wi_dir + '/pages/locations/details.html')
+                                             webinterface.wi_dir + "/pages/locations/details.html")
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/locations/%s/details" % DL_results['data']['id'],
-                                        DL_results['data']['label'])
+            webinterface.add_breadcrumb(request, f"/locations/{DL_results['data']['id']}/details",
+                                        DL_results["data"]["label"])
             return page.render(alerts=webinterface.get_alerts(),
-                               location=DL_results['data'],
+                               location=DL_results["data"],
                                )
 
-        @webapp.route('/add', methods=['GET'])
+        @webapp.route("/add", methods=["GET"])
         @require_auth()
         def page_lib_location_add_get(webinterface, request, session):
-            session.has_access('location', '*', 'add')
+            session.has_access("location", "*", "add")
             data = {
-                'location_type': webinterface.request_get_default(request, 'location_type', ""),
-                'machine_label': webinterface.request_get_default(request, 'machine_label', ""),
-                'label': webinterface.request_get_default(request, 'label', ""),
+                "location_type": webinterface.request_get_default(request, "location_type", ""),
+                "machine_label": webinterface.request_get_default(request, "machine_label", ""),
+                "label": webinterface.request_get_default(request, "label", ""),
             }
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/locations/add", "Add")
-            return page_lib_location_form(webinterface, request, session, 'add', data,
+            return page_lib_location_form(webinterface, request, session, "add", data,
                                                "Add Location")
 
-        @webapp.route('/add', methods=['POST'])
+        @webapp.route("/add", methods=["POST"])
         @require_auth()
         @inlineCallbacks
         def page_lib_location_add_post(webinterface, request, session):
-            session.has_access('location', '*', 'add')
+            session.has_access("location", "*", "add")
             data = {
-                'location_type': webinterface.request_get_default(request, 'location_type', ""),
-                'machine_label': webinterface.request_get_default(request, 'machine_label', ""),
-                'label': webinterface.request_get_default(request, 'label', ""),
+                "location_type": webinterface.request_get_default(request, "location_type", ""),
+                "machine_label": webinterface.request_get_default(request, "machine_label", ""),
+                "label": webinterface.request_get_default(request, "label", ""),
             }
 
             results = yield webinterface._Locations.add_location(data)
-            if results['status'] == 'failed':
-                webinterface.add_alert(results['apimsghtml'], 'warning')
-                return page_lib_location_form(webinterface, request, session, 'add', data, "Add Location")
+            if results["status"] == "failed":
+                webinterface.add_alert(results["apimsghtml"], "warning")
+                return page_lib_location_form(webinterface, request, session, "add", data, "Add Location")
 
             msg = {
-                'header': 'Location Added',
-                'label': 'Location added successfully',
-                'description': '<p>The location has been added.<p>Continue to <a href="/locations/index">Locations index</a> or <a href="/locations/%s/details">View new Location</a>.</p>' %
-                               results['location_id'],
+                "header": "Location Added",
+                "label": "Location added successfully",
+                "description":
+                    "<p>The location has been added.<p>Continue to "
+                    f'<a href="/locations/index">Locations index</a> or <a href="/locations/{results["location_id"]}/details">View new Location</a>.</p>',
             }
 
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/display_notice.html")
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/locations/add", "Add")
             return page.render(alerts=webinterface.get_alerts(),
                                msg=msg,
                                )
 
-        @webapp.route('/<string:location_id>/edit', methods=['GET'])
+        @webapp.route("/<string:location_id>/edit", methods=["GET"])
         @require_auth()
         @inlineCallbacks
         def page_lib_location_edit_get(webinterface, request, session, location_id):
-            session.has_access('location', location_id, 'edit')
+            session.has_access("location", location_id, "edit")
             try:
-                DL_results = yield webinterface._YomboAPI.request('GET', '/v1/location/%s' % location_id,
-                                                                  session=session['yomboapi_session'])
+                DL_results = yield webinterface._YomboAPI.request("GET", f"/v1/location/{location_id}",
+                                                                  session=session["yomboapi_session"])
             except YomboWarning as e:
-                webinterface.add_alert(e.html_message, 'warning')
-                return webinterface.redirect(request, '/locations/index')
+                webinterface.add_alert(e.html_message, "warning")
+                return webinterface.redirect(request, "/locations/index")
 
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/locations/%s/details" % DL_results['data']['id'],
-                                        DL_results['data']['label'])
-            webinterface.add_breadcrumb(request, "/locations/%s/edit", "Edit")
+            webinterface.add_breadcrumb(request, f"/locations/{DL_results['data']['id']}/details",
+                                        DL_results["data"]["label"])
+            webinterface.add_breadcrumb(request, f"/locations/{DL_results['data']['id']}/edit", "Edit")
 
             return page_lib_location_form(webinterface,
-                                          request, session, 'edit', DL_results['data'],
-                                          "Edit Location: %s" % DL_results['data']['label'])
+                                          request, session, "edit", DL_results["data"],
+                                          f"Edit Location: {DL_results['data']['label']}")
 
-        @webapp.route('/<string:location_id>/edit', methods=['POST'])
+        @webapp.route("/<string:location_id>/edit", methods=["POST"])
         @require_auth()
         @inlineCallbacks
         def page_lib_location_edit_post(webinterface, request, session, location_id):
-            session.has_access('location', location_id, 'edit')
+            session.has_access("location", location_id, "edit")
             data = {
-                'label': webinterface.request_get_default(request, 'label', ""),
-                'machine_label': webinterface.request_get_default(request, 'machine_label', ""),
-                'description': webinterface.request_get_default(request, 'description', ""),
-                'id': location_id,
+                "label": webinterface.request_get_default(request, "label", ""),
+                "machine_label": webinterface.request_get_default(request, "machine_label", ""),
+                "description": webinterface.request_get_default(request, "description", ""),
+                "id": location_id,
             }
 
             DL_results = yield webinterface._Locations.edit_location(location_id, data)
 
-            if DL_results['status'] == 'failed':
-                webinterface.add_alert(DL_results['apimsghtml'], 'warning')
+            if DL_results["status"] == "failed":
+                webinterface.add_alert(DL_results["apimsghtml"], "warning")
                 root_breadcrumb(webinterface, request)
-                webinterface.add_breadcrumb(request, "/locations/%s/details" % location_id,
-                                            DL_results['data']['label'])
-                webinterface.add_breadcrumb(request, "/locations/%s/edit" % location_id, "Edit")
+                webinterface.add_breadcrumb(request, f"/locations/{location_id}/details",
+                                            DL_results["data"]["label"])
+                webinterface.add_breadcrumb(request, f"/locations/{location_id}/edit", "Edit")
 
 
-                return webinterface.redirect(request, '/locations/index')
+                return webinterface.redirect(request, "/locations/index")
 
             msg = {
-                'header': 'Location Updated',
-                'label': 'Location updated successfully',
-                'description': '<p>The location has been updated.<p>Continue to <a href="/locations/index">Locations index</a> or <a href="/locations/%s/details">View updated Location</a>.</p>' %
-                               DL_results['location_id'],
+                "header": "Location Updated",
+                "label": "Location updated successfully",
+                "description":
+                    f'<p>The location has been updated.<p>Continue to <a href="/locations/index">Locations index</a> or '
+                    f'<a href="/locations/{DL_results["location_id"]}/details">View updated Location</a>.</p>',
             }
 
-            # DL_api_results = yield webinterface._YomboAPI.request('GET', '/v1/location/%s' % location_id)
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/display_notice.html")
             root_breadcrumb(webinterface, request)
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/locations/%s/details" % location_id,
-                                        data['label'])
-            webinterface.add_breadcrumb(request, "/locations/%s/edit", "Edit")
+            webinterface.add_breadcrumb(request, f"/locations/{location_id}/details",
+                                        data["label"])
+            webinterface.add_breadcrumb(request, f"/locations/{location_id}/edit", "Edit")
 
             return page.render(alerts=webinterface.get_alerts(),
                                msg=msg,
                                )
 
         def page_lib_location_form(webinterface, request, session, action_type, location, header_label):
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/locations/form.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/locations/form.html")
             return page.render(alerts=webinterface.get_alerts(),
                                header_label=header_label,
                                location=location,
                                action_type=action_type,
                                )
 
-        @webapp.route('/<string:location_id>/delete', methods=['GET'])
+        @webapp.route("/<string:location_id>/delete", methods=["GET"])
         @require_auth()
         @inlineCallbacks
         def page_lib_location_delete_get(webinterface, request, session, location_id):
-            session.has_access('location', location_id, 'delete')
+            session.has_access("location", location_id, "delete")
             try:
-                DL_results = yield webinterface._YomboAPI.request('GET', '/v1/location/%s' % location_id,
-                                                                  session=session['yomboapi_session'])
+                DL_results = yield webinterface._YomboAPI.request("GET", f"/v1/location/{location_id}",
+                                                                  session=session["yomboapi_session"])
             except YomboWarning as e:
-                webinterface.add_alert(e.html_message, 'warning')
-                return webinterface.redirect(request, '/locations/index')
+                webinterface.add_alert(e.html_message, "warning")
+                return webinterface.redirect(request, "/locations/index")
 
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/locations/remove.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/locations/remove.html")
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/locations/%s/details" % location_id,
-                                        DL_results['data']['label'])
-            webinterface.add_breadcrumb(request, "/locations/%s/delete" % location_id, "Delete")
+            webinterface.add_breadcrumb(request, f"/locations/{location_id}/details",
+                                        DL_results["data"]["label"])
+            webinterface.add_breadcrumb(request, f"/locations/{location_id}/delete", "Delete")
             return page.render(alerts=webinterface.get_alerts(),
-                               location=DL_results['data'],
+                               location=DL_results["data"],
                                )
 
-        @webapp.route('/<string:location_id>/delete', methods=['POST'])
+        @webapp.route("/<string:location_id>/delete", methods=["POST"])
         @require_auth()
         @inlineCallbacks
         def page_lib_location_delete_post(webinterface, request, session, location_id):
-            session.has_access('location', location_id, 'delete')
+            session.has_access("location", location_id, "delete")
             try:
-                confirm = request.args.get('confirm')[0]
+                confirm = request.args.get("confirm")[0]
             except:
-                return webinterface.redirect(request, '/locations/%s/details' % location_id)
+                return webinterface.redirect(request, f"/locations/{location_id}/details")
 
             if confirm != "delete":
-                webinterface.add_alert('Must enter "delete" in the confirmation box to delete the location.', 'warning')
-                return webinterface.redirect(request, '/locations/%s/details' % location_id)
+                webinterface.add_alert("Must enter 'delete' in the confirmation box to delete the location.", "warning")
+                return webinterface.redirect(request, f"/locations/{location_id}/details")
 
             DL_results = yield webinterface._Locations.delete_location(location_id)
 
-            if DL_results['status'] == 'failed':
-                webinterface.add_alert(DL_results['apimsghtml'], 'warning')
-                return webinterface.redirect(request, '/locations/%s/details' % location_id)
+            if DL_results["status"] == "failed":
+                webinterface.add_alert(DL_results["apimsghtml"], "warning")
+                return webinterface.redirect(request, f"/locations/{location_id}/details")
 
             msg = {
-                'header': 'Location Deleted',
-                'label': 'Location deleted successfully',
-                'description': '<p>The location has been deleted.<p><a href="/locations/index">Locations index</a>.</p>',
+                "header": "Location Deleted",
+                "label": "Location deleted successfully",
+                "description": '<p>The location has been deleted.<p><a href="/locations/index">Locations index</a>.</p>',
             }
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/display_notice.html")
             root_breadcrumb(webinterface, request)
 
             return page.render(alerts=webinterface.get_alerts(),

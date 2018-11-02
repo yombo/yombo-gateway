@@ -18,7 +18,7 @@ from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
 from yombo.mixins.yombobasemixin import YomboBaseMixin
 
-logger = get_logger('mixins.rolesmixin')
+logger = get_logger("mixins.rolesmixin")
 
 
 class RolesMixin(YomboBaseMixin):
@@ -59,7 +59,7 @@ class RolesMixin(YomboBaseMixin):
             self.attach_role(role_id, save=False, flush_cache=False)
 
         if flush_cache in (None, True):
-            self._Parent._Cache.flush('role')
+            self._Parent._Cache.flush("role")
         if save in (None, True):
             self.save()
 
@@ -78,8 +78,8 @@ class RolesMixin(YomboBaseMixin):
             self.roles[role_id] = role
 
             if flush_cache in (None, True):
-                self._Parent._Cache.flush('role')
-            if hasattr(self, 'is_dirty'):
+                self._Parent._Cache.flush("role")
+            if hasattr(self, "is_dirty"):
                 self.is_dirty += 10
             if save in (None, True):
                 self.save()
@@ -95,14 +95,14 @@ class RolesMixin(YomboBaseMixin):
         role = self._Parent._Users.get_role(role_id)
         role_id = role.role_id
 
-        if role.label == 'admin' and self._Parent.owner_id == self.user_id:
+        if role.label == "admin" and self._Parent.owner_id == self.user_id:
             return
 
         if role_id in self.roles:
             del self.roles[role_id]
             if flush_cache in (None, True):
-                self._Parent._Cache.flush('role')
-            if hasattr(self, 'is_dirty'):
+                self._Parent._Cache.flush("role")
+            if hasattr(self, "is_dirty"):
                 self.is_dirty += 50
             if save in (None, True):
                 self.save()

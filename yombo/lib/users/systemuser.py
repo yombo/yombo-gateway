@@ -61,15 +61,15 @@ class SystemUser(AuthMixin, PermissionMixin, RolesMixin):
 
     @property
     def roles(self):
-        return ['admin']
+        return ["admin"]
 
     # Local
     def __init__(self, parent):
         super().__init__(parent)
 
         # Auth specific attributes
-        self.auth_type = 'system'
-        self._auth_id = 'yombo_system_account'
+        self.auth_type = "system"
+        self._auth_id = "yombo_system_account"
         self.source = "system"
         self.source_type = "library"
         self.gateway_id = None
@@ -93,13 +93,13 @@ class SystemUser(AuthMixin, PermissionMixin, RolesMixin):
     def asdict(self):
         cur_time = time()
         return {
-            'auth_id': self.auth_id,
-            'auth_type': self.auth_type,
-            'user_id': self.user_id,
-            'last_access_at': cur_time,
-            'created_at': cur_time,
-            'updated_at': cur_time,
-            'auth_data': {},
-            'enabled': True,
-            'is_dirty': False,
+            "auth_id": self.auth_id,
+            "auth_type": self.auth_type,
+            "user_id": self.user_id,
+            "last_access_at": cur_time,
+            "created_at": cur_time,
+            "updated_at": cur_time,
+            "auth_data": {},
+            "enabled": True,
+            "is_dirty": False,
         }

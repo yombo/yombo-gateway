@@ -30,10 +30,10 @@ class URI(Input_Type):
         """Validate an URL."""
         url_in = str(value)
 
-        if urlparse(url_in).scheme in ['http', 'https']:
+        if urlparse(url_in).scheme in ["http", "https"]:
             return vol.Schema(vol.Url())(url_in)
 
-        raise AssertionError('Invalid url')
+        raise AssertionError("Invalid url")
 
 
 class URL(Input_Type):
@@ -44,7 +44,7 @@ class URL(Input_Type):
         """Validate an URL."""
         url_in = str(value)
 
-        if urlparse(url_in).scheme in ['http', 'https']:
+        if urlparse(url_in).scheme in ["http", "https"]:
             return vol.Schema(vol.Url())(url_in)
 
-        raise AssertionError('Invalid url')
+        raise AssertionError("Invalid url")

@@ -9,13 +9,13 @@ class X10_Address(Input_Type):
     """
     Always returns the value provided.
     """
-    regex = re.compile(r'([A-Pa-p]{1})(?:[2-9]|1[0-6]?)$')
+    regex = re.compile(r"([A-Pa-p]{1})(?:[2-9]|1[0-6]?)$")
 
     def validate(self, value, **kwargs):
         if isinstance(value, str) is False:
             raise AssertionError("X10_Address was expecting a string")
         if not self.regex.match(value):
-            raise AssertionError('Invalid X10 Address')
+            raise AssertionError("Invalid X10 Address")
         return value
 
 
@@ -25,13 +25,13 @@ class X10_House(_String):
     """
     ALLOW_NONE = True
 
-    regex = re.compile(r'([A-Pa-p]{1})$')
+    regex = re.compile(r"([A-Pa-p]{1})$")
 
     def validate(self, value, **kwargs):
         if isinstance(value, str) is False:
             raise AssertionError("X10_House was expecting a string")
         if not self.regex.match(value):
-            raise AssertionError('Invalid X10 House')
+            raise AssertionError("Invalid X10 House")
         return value
 
 

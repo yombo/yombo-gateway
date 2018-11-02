@@ -83,7 +83,7 @@ See :ref:`Hooks <hooks>` for details on usage and examples.
         def _unload_(self):
             pass    #the gateway is on final phase of shutdown. Must quit now!
         def ExampleModule_message_subscriptions(self, **kwargs):
-           return ['cmd'] # register to get all CMD messages.
+           return ["cmd"] # register to get all CMD messages.
         def message(self, message):
             pass    #process an incoming message.
 
@@ -140,7 +140,7 @@ class YomboModule(Entity):
         super().__init__()
         self._Entity_type = "yombo_module"
         self._Name = self.__class__.__name__
-        self._FullName = "yombo.gateway.modules.%s" % (self.__class__.__name__)
+        self._FullName = f"yombo.gateway.modules.{self.__class__.__name__}"
 
     def _is_my_device(self, device):
         if device.device_id in self._module_devices_cached and device.gateway_id == self._Devices.gateway_id:
@@ -153,7 +153,7 @@ class YomboModule(Entity):
         Print a string when printing the class.  This will return the cmdUUID so that
         the command can be identified and referenced easily.
         """
-        return "%s:%s" % (self._label, self._module_id)
+        return f"{self._label}.{self._module_id}"
 
     def _init_(self, **kwargs):
         """
@@ -190,21 +190,14 @@ class YomboModule(Entity):
         """
         pass
 
-    # def __repr__(self):
-    #     """
-    #     Print a string when printing the class.  This will return the cmdUUID so that
-    #     the command can be identified and referenced easily.
-    #     """
-    #     return "Yombo Module: %s:%s - Source: %s" % (self._label, self._module_id. self._load_source)
-
     def amqp_incoming(self, headers, **kwargs):
         """
-        Basic routing of incoming AQMP message packagets to a module. Sends requests to 'amqp_incoming_request'
-        and responses to 'amqp_incoming_response'.
+        Basic routing of incoming AQMP message packagets to a module. Sends requests to "amqp_incoming_request"
+        and responses to "amqp_incoming_response".
         """
-        if headers['message_type'] == 'request':
+        if headers["message_type"] == "request":
             self.amqp_incoming_request(headers=headers, **kwargs)
-        if headers['message_type'] == 'response':
+        if headers["message_type"] == "response":
             self.amqp_incoming_response(headers=headers, **kwargs)
 
     def amqp_incoming_request(self, headers, body, **kwargs):
@@ -233,37 +226,37 @@ class YomboModule(Entity):
         devices = {}
         for device_id, device in module_devices.items():
             devices[device_id] = {
-                'device_id': device_id,
-                'label': device.label,
-                'machine_label': device.machine_label,
+                "device_id": device_id,
+                "label": device.label,
+                "machine_label": device.machine_label,
             }
         return {
-            '_Name': self._Name,
-            '_FullName': self._FullName,
-            '_module_id': str(self._module_id),
-            '_module_type': str(self._module_type),
-            '_install_count': self._install_count,
-            '_issue_tracker_link': self._issue_tracker_link,
-            '_label': str(self._label),
-            '_machine_label': str(self._machine_label),
-            '_short_description': str(self._short_description),
-            '_medium_description': str(self._medium_description),
-            '_description': str(self._description),
-            '_see_also': self._see_also,
-            '_doc_link': str(self._doc_link),
-            '_git_link': str(self._git_link),
-            '_repository_link': self._repository_link,
-            '_install_branch': str(self._install_branch),
-            '_prod_branch': str(self._prod_branch),
-            '_dev_branch': str(self._dev_branch),
-            '_prod_version': str(self._prod_version),
-            '_dev_version': str(self._dev_version),
-            '_public': int(self._public),
-            '_status': int(self._status),
-            '_created_at': int(self._created_at),
-            '_updated_at': int(self._updated_at),
-            '_load_source': str(self._load_source),
-            '_device_types': module_device_types,
-            '_module_variables': module_variables,
-            '_module_devices': devices,
+            "_Name": self._Name,
+            "_FullName": self._FullName,
+            "_module_id": str(self._module_id),
+            "_module_type": str(self._module_type),
+            "_install_count": self._install_count,
+            "_issue_tracker_link": self._issue_tracker_link,
+            "_label": str(self._label),
+            "_machine_label": str(self._machine_label),
+            "_short_description": str(self._short_description),
+            "_medium_description": str(self._medium_description),
+            "_description": str(self._description),
+            "_see_also": self._see_also,
+            "_doc_link": str(self._doc_link),
+            "_git_link": str(self._git_link),
+            "_repository_link": self._repository_link,
+            "_install_branch": str(self._install_branch),
+            "_prod_branch": str(self._prod_branch),
+            "_dev_branch": str(self._dev_branch),
+            "_prod_version": str(self._prod_version),
+            "_dev_version": str(self._dev_version),
+            "_public": int(self._public),
+            "_status": int(self._status),
+            "_created_at": int(self._created_at),
+            "_updated_at": int(self._updated_at),
+            "_load_source": str(self._load_source),
+            "_device_types": module_device_types,
+            "_module_variables": module_variables,
+            "_module_devices": devices,
         }

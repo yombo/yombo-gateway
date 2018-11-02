@@ -26,7 +26,7 @@ from yombo.core.log import get_logger
 from yombo.utils import instance_properties
 from ._device_base import Device_Base
 
-logger = get_logger('library.devices.device')
+logger = get_logger("library.devices.device")
 
 
 class Device(Device_Base):
@@ -58,8 +58,8 @@ class Device(Device_Base):
         Return the current mode of operation for the device.
         """
         machine_status_extra = self.machine_status_extra
-        if 'mode' in machine_status_extra.machine_status_extra:
-            return machine_status_extra.machine_status_extra['mode']
+        if "mode" in machine_status_extra.machine_status_extra:
+            return machine_status_extra.machine_status_extra["mode"]
         return None
 
     @property
@@ -76,13 +76,13 @@ class Device(Device_Base):
 
     def generate_human_message(self, machine_status, machine_status_extra):
         human_status = self.generate_human_status(machine_status, machine_status_extra)
-        return "%s is now %s" % (self.area_label, human_status)
+        return f"{self.area_label} is now {human_status}"
 
     def available_status_modes_values(self):
-        return instance_properties(self, startswith_filter='STATUS_MODES_')
+        return instance_properties(self, startswith_filter="STATUS_MODES_")
 
     def available_status_extra_attributes(self):
-        return instance_properties(self, startswith_filter='STATUS_EXTRA_')
+        return instance_properties(self, startswith_filter="STATUS_EXTRA_")
 
     def energy_calc(self, **kwargs):
         """
@@ -102,15 +102,15 @@ class Device(Device_Base):
         #     1: 400,
         # }
 
-        if 'machine_status' in kwargs:
-            machine_status = float(kwargs['machine_status'])
+        if "machine_status" in kwargs:
+            machine_status = float(kwargs["machine_status"])
         else:
-            machine_status = float(self.status_history[0]['machine_status'])
+            machine_status = float(self.status_history[0]["machine_status"])
 
-        if 'machine_status_extra' in kwargs:
-            machine_status_extra = kwargs['machine_status_extra']
+        if "machine_status_extra" in kwargs:
+            machine_status_extra = kwargs["machine_status_extra"]
         else:
-            machine_status_extra = self.status_history[0]['machine_status_extra']
+            machine_status_extra = self.status_history[0]["machine_status_extra"]
 
         # print("energy_calc: machine_status: %s" % machine_status)
         # print("energy_calc: machine_status_extra: %s" % machine_status_extra)
@@ -118,7 +118,7 @@ class Device(Device_Base):
         percent = self.calc_percent(machine_status, machine_status_extra) / 100
         # print("energy_calc: percent: %s" % percent)
 
-        if self.energy_tracker_source != 'calculated':
+        if self.energy_tracker_source != "calculated":
             return [0, self.energy_type]
 
         energy_map = self.energy_map

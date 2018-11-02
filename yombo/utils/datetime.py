@@ -24,18 +24,18 @@ UTC = DEFAULT_TIME_ZONE = pytz.utc  # type: dt.tzinfo
 # All rights reserved.
 # https://github.com/django/django/blob/master/LICENSE
 DATETIME_RE = re.compile(
-    r'(?P<year>\d{4})-(?P<month>\d{1,2})-(?P<day>\d{1,2})'
-    r'[T ](?P<hour>\d{1,2}):(?P<minute>\d{1,2})'
-    r'(?::(?P<second>\d{1,2})(?:\.(?P<microsecond>\d{1,6})\d{0,6})?)?'
-    r'(?P<tzinfo>Z|[+-]\d{2}(?::?\d{2})?)?$'
+    r"(?P<year>\d{4})-(?P<month>\d{1,2})-(?P<day>\d{1,2})"
+    r"[T ](?P<hour>\d{1,2}):(?P<minute>\d{1,2})"
+    r"(?::(?P<second>\d{1,2})(?:\.(?P<microsecond>\d{1,6})\d{0,6})?)?"
+    r"(?P<tzinfo>Z|[+-]\d{2}(?::?\d{2})?)?$"
 )
 
 
 def get_age(time: Any) -> str:
     """
     Get a datetime object or a int() Epoch timestamp and return a
-    pretty string like 'an hour ago', 'Yesterday', '3 months ago',
-    'just now', etc
+    pretty string like "an hour ago", "Yesterday", "3 months ago",
+    "just now", etc
 
     Make sure date is not in the past, or else it won't work.
 
@@ -56,7 +56,7 @@ def get_age(time: Any) -> str:
     day_diff = diff.days
 
     if day_diff < 0:
-        return ''
+        return ""
 
     if day_diff == 0:
         if second_diff < 5:
@@ -114,9 +114,9 @@ def get_age_exact(time: Any) -> str:
     def formatn(number: int, unit: str) -> str:
         """Add "unit" if it's plural."""
         if number == 1:
-            return "1 %s" % unit
+            return f"1 {unit}"
         elif number > 1:
-            return "%d %ss" % (number, unit)
+            return f"{number:d} {unit}s"
 
     # pylint: disable=invalid-sequence-index
     def q_n_r(first: int, second: int) -> Tuple[int, int]:
@@ -139,23 +139,23 @@ def get_age_exact(time: Any) -> str:
 
     year, day = q_n_r(day_diff, 365)
     if year > 0:
-        return formatn(year, 'year')
+        return formatn(year, "year")
 
     month, day = q_n_r(day, 30)
     if month > 0:
-        return formatn(month, 'month')
+        return formatn(month, "month")
     if day > 0:
-        return formatn(day, 'day')
+        return formatn(day, "day")
 
     hour, second = q_n_r(second_diff, 3600)
     if hour > 0:
-        return formatn(hour, 'hour')
+        return formatn(hour, "hour")
 
     minute, second = q_n_r(second, 60)
     if minute > 0:
-        return formatn(minute, 'minute')
+        return formatn(minute, "minute")
 
-    return formatn(second, 'second') if second > 0 else "0 seconds"
+    return formatn(second, "second") if second > 0 else "0 seconds"
 
 def utc_from_timestamp(timestamp: float) -> dt.datetime:
     """
@@ -277,8 +277,8 @@ def time_from_string(time_string: str, source_time=None) -> tuple:
 
     .. code-block:: python
 
-        a_time = self._Times.time_from_string('tomorrow 10pm')
-        a_time = self._Times.time_from_string('1 hour ago')
+        a_time = self._Times.time_from_string("tomorrow 10pm")
+        a_time = self._Times.time_from_string("1 hour ago")
 
     :param time_string: A human time to convert to epoch, considering local timezone.
     :type time_string: str
@@ -306,18 +306,18 @@ def time_from_string(time_string: str, source_time=None) -> tuple:
     elif what == 3:
         # result is a datetime
         output = time_struct
-    return (int(output.strftime('%s')), output)
+    return (int(output.strftime("%s")), output)
 
 
 @static_var("calendar", pdt.Calendar())
 def get_next_time(some_time, max=None):
     """
     This is used when trying to get the next time it's a specific time. If it's passed for today, it
-    prepends 'tomorrow' to the request to get tomorrow's specific time.
+    prepends "tomorrow" to the request to get tomorrow's specific time.
 
     .. code-block:: python
 
-        a_time = self._Times.get_next_time('1:15pm')
+        a_time = self._Times.get_next_time("1:15pm")
 
     :param some_time: A human time to convert to epoch, considering local timezone.
     :type some_time: str
@@ -368,13 +368,13 @@ def day_of_week(year, month, day):
     :rtype: str
     """
     offset = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
-    week = ['Sunday',
-            'Monday',
-            'Tuesday',
-            'Wednesday',
-            'Thursday',
-            'Friday',
-            'Saturday']
+    week = ["Sunday",
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday"]
     afterFeb = 1
     if month > 2: afterFeb = 0
     aux = year - 1700 - afterFeb
@@ -409,30 +409,30 @@ def parse_datetime(dt_str: str) -> dt.datetime:
     This function supports time zone offsets. When the input contains one,
     the output uses a timezone with a fixed offset from UTC.
     Raises ValueError if the input is well formatted but not a valid datetime.
-    Returns None if the input isn't well formatted.
+    Returns None if the input isn"t well formatted.
     """
     match = DATETIME_RE.match(dt_str)
     if not match:
         return None
     kws = match.groupdict()  # type: Dict[str, Any]
-    if kws['microsecond']:
-        kws['microsecond'] = kws['microsecond'].ljust(6, '0')
-    tzinfo_str = kws.pop('tzinfo')
+    if kws["microsecond"]:
+        kws["microsecond"] = kws["microsecond"].ljust(6, "0")
+    tzinfo_str = kws.pop("tzinfo")
 
     tzinfo = None  # type: Optional[dt.tzinfo]
-    if tzinfo_str == 'Z':
+    if tzinfo_str == "Z":
         tzinfo = UTC
     elif tzinfo_str is not None:
         offset_mins = int(tzinfo_str[-2:]) if len(tzinfo_str) > 3 else 0
         offset_hours = int(tzinfo_str[1:3])
         offset = dt.timedelta(hours=offset_hours, minutes=offset_mins)
-        if tzinfo_str[0] == '-':
+        if tzinfo_str[0] == "-":
             offset = -offset
         tzinfo = dt.timezone(offset)
     else:
         tzinfo = None
     kws = {k: int(v) for k, v in kws.items() if v is not None}
-    kws['tzinfo'] = tzinfo
+    kws["tzinfo"] = tzinfo
     return dt.datetime(**kws)
 
 
@@ -449,7 +449,7 @@ def parse_time(time_str):
 
     Return None if invalid.
     """
-    parts = str(time_str).split(':')
+    parts = str(time_str).split(":")
     if len(parts) < 2:
         return None
     try:
@@ -471,6 +471,6 @@ def strptime(string, fmt):
     :return:
     """
     try:
-        return datetime.strptime(string, fmt)
+        return dt.strptime(string, fmt)
     except (ValueError, AttributeError):
         return string  # return input if value cannot be processed.

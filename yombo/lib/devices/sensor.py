@@ -113,7 +113,7 @@ class Thermometer(Device):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.PLATFORM = PLATFORM_THERMOMETER
-        self.temperature_unit = 'c'  # what temperature unit the device works in.
+        self.temperature_unit = "c"  # what temperature unit the device works in.
 
     @property
     def temperature(self):

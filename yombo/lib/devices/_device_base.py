@@ -6,7 +6,7 @@
   For development guides see: `Devices @ Module Development <https://yombo.net/docs/libraries/devices>`_
 
 Base device functions. Should not be directly inherited by other device types, instead
-inherit 'Device' from _device.py.
+inherit "Device" from _device.py.
 
 This device inherits from _device_attributes.
 
@@ -43,13 +43,13 @@ from ._device_attributes import Device_Attributes
 from ._device_command import Device_Command
 from ._device_status import Device_Status
 
-logger = get_logger('library.devices.device')
+logger = get_logger("library.devices.device")
 
 
 class Device_Base(Device_Attributes):
     """
     The base device contains all the core functions for devices. This calls should only be
-    inherited by 'Device' class.
+    inherited by "Device" class.
 
     The primary functions developers should use are:
         * :py:meth:`available_commands <Device.available_commands>` - List available commands for a device.
@@ -86,16 +86,16 @@ class Device_Base(Device_Attributes):
         :type pin: str
         :param request_id: Request ID for tracking. If none given, one will be created_at.
         :type request_id: str
-        :param not_before: An epoch time when the command should be sent. Not to be combined with 'delay'.
+        :param not_before: An epoch time when the command should be sent. Not to be combined with "delay".
         :type not_before: int or float
-        :param delay: How many seconds to delay sending the command. Not to be combined with 'not_before'
+        :param delay: How many seconds to delay sending the command. Not to be combined with "not_before"
         :type delay: int or float
-        :param max_delay: How many second after the 'delay' or 'not_before' can the command be send. This can occur
+        :param max_delay: How many second after the "delay" or "not_before" can the command be send. This can occur
             if the system was stopped when the command was supposed to be send.
         :type max_delay: int or float
         :param auth: An auth instance (with authmixin).
         :type auth: instance
-        :param inputs: A list of dictionaries containing the 'input_type_id' and any supplied 'value'.
+        :param inputs: A list of dictionaries containing the "input_type_id" and any supplied "value".
         :type inputs: dict
         :param not_after: An epoch time when the command should be discarded.
         :type not_after: int or float
@@ -119,9 +119,9 @@ class Device_Base(Device_Attributes):
         if self.is_controllable is False:
                 raise YomboWarning("This device cannot be controlled. Typically because it's an input type device.")
 
-        if 'control_method' not in kwargs:
-            kwargs['control_method'] = 'direct'
-        if self.is_direct_controllable == 0 and kwargs['control_method'] == 'direct':
+        if "control_method" not in kwargs:
+            kwargs["control_method"] = "direct"
+        if self.is_direct_controllable == 0 and kwargs["control_method"] == "direct":
                 raise YomboWarning("This device cannot be directly controlled. Set 'control_method'.")
 
         device_command = {
@@ -134,9 +134,9 @@ class Device_Base(Device_Attributes):
             command = cmd
         else:
             command = self._Parent._Commands.get(cmd)
-        if command.machine_label == 'toggle':
+        if command.machine_label == "toggle":
             command = self.get_toggle_command()
-        device_command['command'] = command
+        device_command["command"] = command
 
         # logger.debug("device::command kwargs: {kwargs}", kwargs=kwargs)
         # logger.debug("device::command requested_by: {requested_by}", requested_by=requested_by)
@@ -148,12 +148,12 @@ class Device_Base(Device_Attributes):
                         label=self.full_label)
         else:
             # This validates access. If invalid raises YomboNoAccess.
-            self._Parent._Users.has_access(auth, 'device', self.device_id, 'control')
+            self._Parent._Users.has_access(auth, "device", self.device_id, "control")
 
         if auth is None:  # future versions will fail already...
-            device_command['auth_id'] = 'Unknown'
+            device_command["auth_id"] = "Unknown"
         else:
-            device_command['auth_id'] = auth.safe_display
+            device_command["auth_id"] = auth.safe_display
 
 
         if COMMAND_COMPONENT_REQUESTING_SOURCE in kwargs:
@@ -167,10 +167,10 @@ class Device_Base(Device_Attributes):
             raise YomboWarning("Invalid command requested for device.", errorno=103)
 
         cur_time = time()
-        device_command['created_at'] = cur_time
+        device_command["created_at"] = cur_time
 
-        persistent_request_id = kwargs.get('persistent_request_id', None)
-        device_command['persistent_request_id'] = persistent_request_id
+        persistent_request_id = kwargs.get("persistent_request_id", None)
+        device_command["persistent_request_id"] = persistent_request_id
 
         if persistent_request_id is not None:  # cancel any previous device requests for this persistent id.
             for search_request_id, search_device_command in self._Parent.device_commands.items():
@@ -178,9 +178,9 @@ class Device_Base(Device_Attributes):
                     search_device_command.cancel(message="This device command was superseded by a new persistent request.")
 
         if request_id is None:
-            request_id = random_string(length=10, char_set='extended')
+            request_id = random_string(length=10, char_set="extended")
 
-        device_command['request_id'] = request_id
+        device_command["request_id"] = request_id
 
         if delay is not None or not_before is not None:  # if we have a delay, make sure we have required items
             if max_delay is None and not_after is None:
@@ -198,19 +198,19 @@ class Device_Base(Device_Attributes):
                         raise YomboWarning("'not_before' time should be epoch second in the future as an int, float, or parsable string.")
                 # if isinstance(not_before, int) or isinstance(not_before, float):
                 if not_before < cur_time:
-                    raise YomboWarning("'not_before' time should be epoch second in the future, not the past. Got: %s" % not_before)
-                device_command['not_before_at'] = not_before
+                    raise YomboWarning(f"'not_before' time should be epoch second in the future, not the past. Got: {not_before}")
+                device_command["not_before_at"] = not_before
 
             elif delay is not None:
                 if isinstance(delay, str):
                     try:
                         delay = float(delay)
                     except:
-                        raise YomboWarning("'delay' time must be an int, float, or parsable string. Got: %s" % delay)
+                        raise YomboWarning(f"'delay' time must be an int, float, or parsable string. Got: {delay}")
                 # if isinstance(not_before, int) or isinstance(not_before, float):
                 if delay < 0:
                     raise YomboWarning("'not_before' time should be epoch second in the future, not the past.")
-                device_command['not_before_at'] = cur_time + delay
+                device_command["not_before_at"] = cur_time + delay
 
             # determine how late the command can be run. This happens is the gateway was turned off
             if not_after is not None:
@@ -220,9 +220,9 @@ class Device_Base(Device_Attributes):
                     except:
                         raise YomboWarning("'not_after' time should be epoch second in the future after not_before as an int, float, or parsable string.")
                 if isinstance(not_after, int) or isinstance(not_after, float):
-                    if not_after < device_command['not_before_at']:
+                    if not_after < device_command["not_before_at"]:
                         raise YomboWarning("'not_after' must occur after 'not_before (or current time + delay)")
-                device_command['not_after_at'] = not_after
+                device_command["not_after_at"] = not_after
             elif max_delay is not None:
                 # todo: try to convert if it's not. Make a util helper for this, occurs a lot!
                 if isinstance(max_delay, str):
@@ -233,9 +233,9 @@ class Device_Base(Device_Attributes):
                 if isinstance(max_delay, int) or isinstance(max_delay, float):
                     if max_delay < 0:
                         raise YomboWarning("'max_delay' must be positive only.")
-                device_command['not_after_at'] = device_command['not_before_at'] + max_delay
+                device_command["not_after_at"] = device_command["not_before_at"] + max_delay
 
-        device_command['params'] = kwargs.get('params', None)
+        device_command["params"] = kwargs.get("params", None)
         if inputs is None:
             inputs = {}
         else:
@@ -244,14 +244,14 @@ class Device_Base(Device_Attributes):
                     inputs[input_label] = self._Parent._DeviceTypes.validate_command_input(self.device_type_id, command.command_id, input_label, input_value)
                 except Exception as e:
                     pass
-        device_command['inputs'] = inputs
+        device_command["inputs"] = inputs
         if callbacks is not None:
-            device_command['callbacks'] = callbacks
+            device_command["callbacks"] = callbacks
 
         self.device_commands.appendleft(request_id)
 
         # print("command source: %s" % device_command[COMMAND_COMPONENT_REQUESTING_SOURCE])
-        # print("command auth_id: %s" % device_command['auth_id'])
+        # print("command auth_id: %s" % device_command["auth_id"])
         #
         self._Parent.add_device_command_by_object(Device_Command(device_command, self._Parent))
 
@@ -264,7 +264,7 @@ class Device_Base(Device_Attributes):
         have implemented this hook can monitor or act on the hook.
 
         When a device changes state, whatever module changes the state of a device, or is responsible for reporting
-        those changes, it *must* call "self._Devices['devicename/deviceid'].set_state()
+        those changes, it *must* call "self._Devices["devicename/deviceid"].set_state()
 
         **Hooks called**:
 
@@ -290,10 +290,10 @@ class Device_Base(Device_Attributes):
         }
         # logger.debug("calling _device_command_, request_id: {request_id}", request_id=device_command.request_id)
         device_command.set_broadcast()
-        results = yield global_invoke_all('_device_command_', **items)
+        results = yield global_invoke_all("_device_command_", **items)
         for component, result in results.items():
             if result is True:
-                device_command.set_received(message="Received by: %s" % component,)
+                device_command.set_received(message=f"Received by: {component}")
         self._Parent._Statistics.increment("lib.devices.commands_sent", anon=True)
 
     def device_command_processing(self, request_id, **kwargs):
@@ -301,19 +301,19 @@ class Device_Base(Device_Attributes):
         A shortcut to calling device_comamnd_sent and device_command_received together.
 
         This will trigger two calls of the same hook "_device_command_status_". Once for status
-        of 'received' and another for 'sent'.
+        of "received" and another for "sent".
 
         :param request_id: The request_id provided by the _device_command_ hook.
         :return:
         """
-        message = kwargs.get('message', None)
-        log_time = kwargs.get('log_time', None)
-        source = kwargs.get('source', None)
+        message = kwargs.get("message", None)
+        log_time = kwargs.get("log_time", None)
+        source = kwargs.get("source", None)
         if request_id in self._Parent.device_commands:
             device_command = self._Parent.device_commands[request_id]
             device_command.set_sent(message=message, sent_at=log_time)
             device_command.set_received(message=message, received_at=log_time)
-            global_invoke_all('_device_command_status_',
+            global_invoke_all("_device_command_status_",
                               called_by=self,
                               device_command=device_command,
                               status=device_command.status,
@@ -331,13 +331,13 @@ class Device_Base(Device_Attributes):
         :param request_id: The request_id provided by the _device_command_ hook.
         :return:
         """
-        message = kwargs.get('message', None)
-        log_time = kwargs.get('log_time', None)
-        source = kwargs.get('source', None)
+        message = kwargs.get("message", None)
+        log_time = kwargs.get("log_time", None)
+        source = kwargs.get("source", None)
         if request_id in self._Parent.device_commands:
             device_command = self._Parent.device_commands[request_id]
             device_command.set_accepted(message=message, accepted_at=log_time)
-            global_invoke_all('_device_command_status_',
+            global_invoke_all("_device_command_status_",
                               called_by=self,
                               device_command=device_command,
                               status=device_command.status,
@@ -355,13 +355,13 @@ class Device_Base(Device_Attributes):
         :param request_id: The request_id provided by the _device_command_ hook.
         :return:
         """
-        message = kwargs.get('message', None)
-        log_time = kwargs.get('log_time', None)
-        source = kwargs.get('source', None)
+        message = kwargs.get("message", None)
+        log_time = kwargs.get("log_time", None)
+        source = kwargs.get("source", None)
         if request_id in self._Parent.device_commands:
             device_command = self._Parent.device_commands[request_id]
             device_command.set_sent(message=message, sent_at=log_time)
-            global_invoke_all('_device_command_status_',
+            global_invoke_all("_device_command_status_",
                               called_by=self,
                               device_command=device_command,
                               status=device_command.status,
@@ -379,13 +379,13 @@ class Device_Base(Device_Attributes):
         :param request_id: The request_id provided by the _device_command_ hook.
         :return:
         """
-        message = kwargs.get('message', None)
-        log_time = kwargs.get('log_time', None)
-        source = kwargs.get('source', None)
+        message = kwargs.get("message", None)
+        log_time = kwargs.get("log_time", None)
+        source = kwargs.get("source", None)
         if request_id in self._Parent.device_commands:
             device_command = self._Parent.device_commands[request_id]
             device_command.set_received(message=message, received_at=log_time)
-            global_invoke_all('_device_command_status_',
+            global_invoke_all("_device_command_status_",
                               called_by=self,
                               device_command=device_command,
                               status=device_command.status,
@@ -404,13 +404,13 @@ class Device_Base(Device_Attributes):
         :param request_id: The request_id provided by the _device_command_ hook.
         :return:
         """
-        message = kwargs.get('message', None)
-        log_time = kwargs.get('log_time', None)
-        source = kwargs.get('source', None)
+        message = kwargs.get("message", None)
+        log_time = kwargs.get("log_time", None)
+        source = kwargs.get("source", None)
         if request_id in self._Parent.device_commands:
             device_command = self._Parent.device_commands[request_id]
             device_command.set_pending(message=message, pending_at=log_time)
-            global_invoke_all('_device_command_status_',
+            global_invoke_all("_device_command_status_",
                               called_by=self,
                               device_command=device_command,
                               status=device_command.status,
@@ -425,21 +425,21 @@ class Device_Base(Device_Attributes):
         """
         Should be called when a the command cannot be completed for whatever reason.
 
-        A status can be provided: send a named parameter of 'message' with any value.
+        A status can be provided: send a named parameter of "message" with any value.
 
         :param request_id: The request_id provided by the _device_command_ hook.
         :return:
         """
-        message = kwargs.get('message', None)
-        log_time = kwargs.get('log_time', None)
-        source = kwargs.get('source', None)
+        message = kwargs.get("message", None)
+        log_time = kwargs.get("log_time", None)
+        source = kwargs.get("source", None)
         if request_id in self._Parent.device_commands:
             device_command = self._Parent.device_commands[request_id]
             device_command.set_failed(message=message, finished_at=log_time)
             if message is not None:
-                logger.warn('Device ({label}) command failed: {message}', label=self.label, message=message,
-                            state='failed')
-            global_invoke_all('_device_command_status_',
+                logger.warn("Device ({label}) command failed: {message}", label=self.label, message=message,
+                            state="failed")
+            global_invoke_all("_device_command_status_",
                               called_by=self,
                               device_command=device_command,
                               status=device_command.status,
@@ -452,21 +452,21 @@ class Device_Base(Device_Attributes):
 
     def device_command_cancel(self, request_id, **kwargs):
         """
-        Cancel a device command request. Cannot guarentee this will happen. Unable to cancel if status is 'done' or
-        'failed'.
+        Cancel a device command request. Cannot guarentee this will happen. Unable to cancel if status is "done" or
+        "failed".
 
         :param request_id: The request_id provided by the _device_command_ hook.
         :return:
         """
-        log_time = kwargs.get('log_time', None)
-        message = kwargs.get('message', None)
-        source = kwargs.get('source', None)
+        log_time = kwargs.get("log_time", None)
+        message = kwargs.get("message", None)
+        source = kwargs.get("source", None)
         if request_id in self._Parent.device_commands:
             device_command = self._Parent.device_commands[request_id]
             device_command.set_canceled(message=message, finished_at=log_time)
             if message is not None:
-                logger.debug('Device ({label}) command failed: {message}', label=self.label, message=message)
-            global_invoke_all('_device_command_status_',
+                logger.debug("Device ({label}) command failed: {message}", label=self.label, message=message)
+            global_invoke_all("_device_command_status_",
                               called_by=self,
                               device_command=device_command,
                               status=device_command.status,
@@ -485,15 +485,15 @@ class Device_Base(Device_Attributes):
         :param request_id: The request_id provided by the _device_command_ hook.
         :return:
         """
-        log_time = kwargs.get('log_time', None)
-        message = kwargs.get('message', None)
-        source = kwargs.get('source', None)
+        log_time = kwargs.get("log_time", None)
+        message = kwargs.get("message", None)
+        source = kwargs.get("source", None)
         if request_id in self._Parent.device_commands:
             device_command = self._Parent.device_commands[request_id]
             device_command.set_delay_expired(message=message, finished_at=log_time)
             if message is not None:
-                logger.debug('Device ({label}) command failed: {message}', label=self.label, message=message)
-            global_invoke_all('_device_command_status_',
+                logger.debug("Device ({label}) command failed: {message}", label=self.label, message=message)
+            global_invoke_all("_device_command_status_",
                               called_by=self,
                               device_command=device_command,
                               status=device_command.status,
@@ -508,18 +508,18 @@ class Device_Base(Device_Attributes):
         """
         Called by any module that has completed processing of a command request.
 
-        A status can be provided: send a named parameter of 'message' with any value.
+        A status can be provided: send a named parameter of "message" with any value.
 
         :param request_id: The request_id provided by the _device_command_ hook.
         :return:
         """
-        message = kwargs.get('message', None)
-        log_time = kwargs.get('log_time', None)
-        source = kwargs.get('source', None)
+        message = kwargs.get("message", None)
+        log_time = kwargs.get("log_time", None)
+        source = kwargs.get("source", None)
         if request_id in self._Parent.device_commands:
             device_command = self._Parent.device_commands[request_id]
             device_command.set_finished(message=message, finished_at=log_time)
-            global_invoke_all('_device_command_status_',
+            global_invoke_all("_device_command_status_",
                               called_by=self,
                               device_command=device_command,
                               status=device_command.status,
@@ -541,7 +541,7 @@ class Device_Base(Device_Attributes):
         :param rightMax:
         :return:
         """
-        # Figure out how 'wide' each range is
+        # Figure out how "wide" each range is
         leftSpan = leftMax - leftMin
         rightSpan = rightMax - rightMin
         # Convert the left range into a 0-1 range (float)
@@ -589,15 +589,15 @@ class Device_Base(Device_Attributes):
         #     if extra_key not in self.MACHINE_STATUS_EXTRA_FIELDS:
         #         del previous_extra[extra_key]
 
-        new_extra = kwargs.get('machine_status_extra', {})
+        new_extra = kwargs.get("machine_status_extra", {})
 
         # filter out new invalid status extra values.
         for extra_key in list(new_extra.keys()):
             if extra_key not in self.MACHINE_STATUS_EXTRA_FIELDS:
                 logger.warn(
-                    "For device '%s', the machine status extra field '%s' was removed on status update. This field"
-                    "is not apart of the approved machine status extra fields. Device type: %s" %
-                    (self.full_label, extra_key, self.device_type.label))
+                    f"For device '{self.full_label}', the machine status extra field '{extra_key}' was removed"
+                    f" on status update. This field is not apart of the approved machine status extra fields. "
+                    f"Device type: {self.device_type.label}")
                 del new_extra[extra_key]
 
         for key, value in previous_extra.items():
@@ -605,7 +605,7 @@ class Device_Base(Device_Attributes):
                 continue
             new_extra[key] = value
 
-        kwargs['machine_status_extra'] = new_extra
+        kwargs["machine_status_extra"] = new_extra
         return kwargs
 
     def generate_human_status(self, machine_status, machine_status_extra):
@@ -613,12 +613,12 @@ class Device_Base(Device_Attributes):
 
     def generate_human_message(self, machine_status, machine_status_extra):
         human_status = self.generate_human_status(machine_status, machine_status_extra)
-        return "%s is now %s" % (self.area_label, human_status)
+        return f"{self.area_label} is now {human_status}"
 
     def set_status_machine_extra(self, **kwargs):
         pass
 
-    def set_status_delayed(self, delay=0.1, **kwargs):
+    def set_status_delayed(self, delay=None, **kwargs):
         """
         Accepts all the arguments of set_status, but delays submitting to set_status. This
         is used by devices that set several attributes separately, but quickly.
@@ -626,6 +626,8 @@ class Device_Base(Device_Attributes):
         :param kwargs:
         :return:
         """
+        if delay is None:
+            delay = 0.1
         if kwargs is None:
             raise ImportError("Must supply status arguments...")
 
@@ -645,8 +647,8 @@ class Device_Base(Device_Attributes):
 
         :return:
         """
-        if 'machine_status' not in self.status_delayed:
-            self.status_delayed['machine_status'] = self.machine_status
+        if "machine_status" not in self.status_delayed:
+            self.status_delayed["machine_status"] = self.machine_status
         self.set_status(**self.status_delayed)
         self.status_delayed.clear()
 
@@ -677,7 +679,7 @@ class Device_Base(Device_Attributes):
         kwargs_delayed, status_id = self._set_status(**kwargs_delayed)
         self.status_delayed = {}
 
-        if 'silent' not in kwargs_delayed and status_id is not None:
+        if "silent" not in kwargs_delayed and status_id is not None:
             self.send_status(**kwargs_delayed)
 
         if self.status_delayed_calllater is not None and self.status_delayed_calllater.active():
@@ -689,12 +691,12 @@ class Device_Base(Device_Attributes):
         :param kwargs: 
         :return: 
         """
-        if 'machine_status' not in kwargs:
+        if "machine_status" not in kwargs:
             raise YomboWarning("set_status was called without a real machine_status!", errorno=120)
         # logger.info("_set_status called...: {kwargs}", kwargs=kwargs)
-        machine_status = kwargs['machine_status']
-        machine_status_extra = kwargs.get('machine_status_extra', {})
-        kwargs['machine_status_extra'] = machine_status_extra
+        machine_status = kwargs["machine_status"]
+        machine_status_extra = kwargs.get("machine_status_extra", {})
+        kwargs["machine_status_extra"] = machine_status_extra
 
         if machine_status == self.machine_status:
             added, removed, modified, same = dict_diff(machine_status_extra, self.machine_status_extra)
@@ -705,16 +707,16 @@ class Device_Base(Device_Attributes):
 
         kwargs[COMMAND_COMPONENT_HUMAN_STATUS] = kwargs.get(COMMAND_COMPONENT_HUMAN_STATUS, self.generate_human_status(machine_status, machine_status_extra))
         kwargs[COMMAND_COMPONENT_HUMAN_MESSAGE] = kwargs.get(COMMAND_COMPONENT_HUMAN_MESSAGE, self.generate_human_message(machine_status, machine_status_extra))
-        uploaded = kwargs.get('uploaded', 0)
-        uploadable = kwargs.get('uploadable', 1)
-        set_at = kwargs.get('set_at', time())
-        if 'gateway_id' not in kwargs:
-            kwargs['gateway_id'] = self.gateway_id
+        uploaded = kwargs.get("uploaded", 0)
+        uploadable = kwargs.get("uploadable", 1)
+        set_at = kwargs.get("set_at", time())
+        if "gateway_id" not in kwargs:
+            kwargs["gateway_id"] = self.gateway_id
 
         request_id = None
         auth_id = "unknown"
         if COMMAND_COMPONENT_REQUEST_ID in kwargs and kwargs[COMMAND_COMPONENT_REQUEST_ID] in self._Parent.device_commands:
-            request_id = kwargs['request_id']
+            request_id = kwargs["request_id"]
             auth_id = self._Parent.device_commands[request_id].auth_id
             kwargs[COMMAND_COMPONENT_REQUESTING_SOURCE] = self._Parent.device_commands[request_id].requesting_source
             kwargs[COMMAND_COMPONENT_COMMAND] = self._Parent.device_commands[request_id].command
@@ -736,7 +738,7 @@ class Device_Base(Device_Attributes):
         kwargs[COMMAND_COMPONENT_AUTH_ID] = auth_id
 
         kwargs[COMMAND_COMPONENT_ENERGY_USAGE], kwargs[COMMAND_COMPONENT_ENERGY_TYPE] = \
-        energy_usage, energy_type = self.energy_calc(command=kwargs['command'],
+        energy_usage, energy_type = self.energy_calc(command=kwargs["command"],
                                                      machine_status=machine_status,
                                                      machine_status_extra=machine_status_extra,
                                                      )
@@ -745,30 +747,34 @@ class Device_Base(Device_Attributes):
             if self.statistic_type.lower() == "datapoint" or self.statistic_type.lower() == "average":
                 statistic_label_slug = self.statistic_label_slug
             if self.statistic_type.lower() == "datapoint":
-                self._Parent._Statistics.datapoint("devices.%s" % statistic_label_slug, machine_status)
+                self._Parent._Statistics.datapoint(f"devices.{statistic_label_slug}", machine_status)
                 if self.energy_type not in (None, "", "none", "None"):
-                    self._Parent._Statistics.datapoint("energy.%s" % statistic_label_slug, energy_usage)
+                    self._Parent._Statistics.datapoint(f"energy.{statistic_label_slug}", energy_usage)
             elif self.statistic_type.lower() == "average":
-                self._Parent._Statistics.averages("devices.%s" % statistic_label_slug, machine_status, int(self.statistic_bucket_size))
+                self._Parent._Statistics.averages(f"devices.{statistic_label_slug}",
+                                                  machine_status,
+                                                  int(self.statistic_bucket_size))
                 if self.energy_type not in (None, "", "none", "None"):
-                    self._Parent._Statistics.averages("energy.%s" % statistic_label_slug, energy_usage, int(self.statistic_bucket_size))
+                    self._Parent._Statistics.averages(f"energy.{statistic_label_slug}",
+                                                      energy_usage,
+                                                      int(self.statistic_bucket_size))
 
         new_status = Device_Status(self._Parent, self, {
-            'command': kwargs['command'],
-            'set_at': set_at,
-            'energy_usage': energy_usage,
-            'energy_type': energy_type,
-            'human_status': kwargs[COMMAND_COMPONENT_HUMAN_STATUS],
-            'human_message': kwargs[COMMAND_COMPONENT_HUMAN_MESSAGE],
-            'machine_status': machine_status,
-            'machine_status_extra': machine_status_extra,
-            'gateway_id': kwargs['gateway_id'],
-            'auth_id': auth_id,
-            'reporting_source': kwargs[COMMAND_COMPONENT_REPORTING_SOURCE],
-            'requesting_source': kwargs[COMMAND_COMPONENT_REQUESTING_SOURCE],
-            'request_id': kwargs[COMMAND_COMPONENT_REQUEST_ID],
-            'uploaded': uploaded,
-            'uploadable': uploadable,
+            "command": kwargs["command"],
+            "set_at": set_at,
+            "energy_usage": energy_usage,
+            "energy_type": energy_type,
+            "human_status": kwargs[COMMAND_COMPONENT_HUMAN_STATUS],
+            "human_message": kwargs[COMMAND_COMPONENT_HUMAN_MESSAGE],
+            "machine_status": machine_status,
+            "machine_status_extra": machine_status_extra,
+            "gateway_id": kwargs["gateway_id"],
+            "auth_id": auth_id,
+            "reporting_source": kwargs[COMMAND_COMPONENT_REPORTING_SOURCE],
+            "requesting_source": kwargs[COMMAND_COMPONENT_REQUESTING_SOURCE],
+            "request_id": kwargs[COMMAND_COMPONENT_REQUEST_ID],
+            "uploaded": uploaded,
+            "uploadable": uploadable,
             }
         )
         self.status_history.appendleft(new_status)
@@ -777,54 +783,54 @@ class Device_Base(Device_Attributes):
         # Yombo doesn't currently have the capacity to collect these....In the future...
         # if self._security_send_device_status() is True:
         #     request_msg = self._Parent._AMQPYombo.generate_message_request(
-        #         exchange_name='ysrv.e.gw_device_status',
-        #         source='yombo.gateway.lib.devices.base_device',
-        #         destination='yombo.server.device_status',
+        #         exchange_name="ysrv.e.gw_device_status",
+        #         source="yombo.gateway.lib.devices.base_device",
+        #         destination="yombo.server.device_status",
         #         body={
-        #             'status_set_at': datetime.fromtimestamp(time()).strftime("%Y-%m-%d %H:%M:%S.%f"),
-        #             'device_id': self.device_id,
-        #             'energy_usage': energy_usage,
-        #             'energy_type': energy_type,
-        #             'human_status': kwargs['human_status'],
-        #             'human_message': kwargs['human_message'],
-        #             'machine_status': machine_status,
-        #             'machine_status_extra': machine_status_extra,
-        #             'user_id': user_id,
-        #             'user_type': user_type,
-        #             'reporting_source': kwargs['reporting_source'],
+        #             "status_set_at": datetime.fromtimestamp(time()).strftime("%Y-%m-%d %H:%M:%S.%f"),
+        #             "device_id": self.device_id,
+        #             "energy_usage": energy_usage,
+        #             "energy_type": energy_type,
+        #             "human_status": kwargs["human_status"],
+        #             "human_message": kwargs["human_message"],
+        #             "machine_status": machine_status,
+        #             "machine_status_extra": machine_status_extra,
+        #             "user_id": user_id,
+        #             "user_type": user_type,
+        #             "reporting_source": kwargs["reporting_source"],
         #         },
-        #         request_type='save_device_status',
+        #         request_type="save_device_status",
         #     )
         #     self._Parent._AMQPYombo.publish(**request_msg)
 
         # Old version, preserved for a few iterations just in case its needed.
         # if self._Parent.mqtt != None:
         #     mqtt_message = {
-        #         'device_id': self.device_id,
-        #         'device_machine_label': self.machine_label,
-        #         'device_label': self.label,
-        #         'machine_status': machine_status,
-        #         'machine_status_extra': machine_status_extra,
-        #         'human_message': human_message,
-        #         'human_status': human_status,
-        #         'time': set_at,
-        #         'gateway_id': kwargs['gateway_id'],
-        #         'reporting_by': kwargs['reporting_source'],
-        #         'reported_by': reported_by,
-        #         'energy_usage': energy_usage,
-        #         'energy_type': energy_type,
+        #         "device_id": self.device_id,
+        #         "device_machine_label": self.machine_label,
+        #         "device_label": self.label,
+        #         "machine_status": machine_status,
+        #         "machine_status_extra": machine_status_extra,
+        #         "human_message": human_message,
+        #         "human_status": human_status,
+        #         "time": set_at,
+        #         "gateway_id": kwargs["gateway_id"],
+        #         "reporting_by": kwargs["reporting_source"],
+        #         "reported_by": reported_by,
+        #         "energy_usage": energy_usage,
+        #         "energy_type": energy_type,
         #     }
         #
         #     if command is not None:
-        #         mqtt_message['command_id'] = command.command_id
-        #         mqtt_message['command_machine_label'] = command.machine_label
+        #         mqtt_message["command_id"] = command.command_id
+        #         mqtt_message["command_machine_label"] = command.machine_label
         #     else:
-        #         mqtt_message['command_id'] = None
-        #         mqtt_message['command_machine_label'] = None
+        #         mqtt_message["command_id"] = None
+        #         mqtt_message["command_machine_label"] = None
         #     self._Parent.mqtt.publish("yombo/devices/%s/status" % self.machine_label, json.dumps(mqtt_message), 1)
         # print("kwargs end of _set_Status: %s" % kwargs)
 
-        return kwargs, new_status['status_id']
+        return kwargs, new_status["status_id"]
 
     def set_status_internal(self, status):
         """
@@ -833,7 +839,7 @@ class Device_Base(Device_Attributes):
         :param status:
         :return:
         """
-        source = status.get('source', None)
+        source = status.get("source", None)
         # print("set_status_internal: source: %s" % source)
         device_status = Device_Status(self._Parent, self, status, source=source)
         # print("set_status_internal: as dict: %s" % device_status.asdict())
@@ -853,16 +859,16 @@ class Device_Base(Device_Attributes):
         command_id = None
         command_label = None
         command_machine_label = None
-        if 'command' in kwargs:
-            command = kwargs['command']
+        if "command" in kwargs:
+            command = kwargs["command"]
             if isinstance(command, str):
                 try:
                     command = self._Parent._Commands[command]
                 except Exception as e:
                     command = None
-        elif 'command_id' in kwargs:
+        elif "command_id" in kwargs:
             try:
-                command = self._Parent._Commands[kwargs['command_id']]
+                command = self._Parent._Commands[kwargs["command_id"]]
             except Exception as e:
                 command = None
         else:
@@ -879,46 +885,46 @@ class Device_Base(Device_Attributes):
             previous_status = None
         device_type = self._Parent._DeviceTypes[self.device_type_id]
 
-        source = kwargs.get('source', None)
+        source = kwargs.get("source", None)
 
         message = {
-            'device': self,
-            'command': command,
-            'request_id': kwargs.get('request_id', None),
-            'gateway_id': kwargs.get('gateway_id', self.gateway_id),
-            'source': source,
-            'event': {
-                'area': self.area,
-                'location': self.location,
-                'area_label': self.area_label,
-                'full_label': self.full_label,
-                'device_id': self.device_id,
-                'device_label': self.label,
-                'device_machine_label': self.machine_label,
-                'device_type_id': self.device_type_id,
-                'device_type_label': device_type.machine_label,
-                'device_type_machine_label': device_type.machine_label,
-                'command_id': command_id,
-                'command_label': command_label,
-                'command_machine_label': command_machine_label,
-                'status_current': self.status_history[0].asdict(),
-                'status_previous': previous_status,
-                'gateway_id': kwargs.get('gateway_id', self.gateway_id),
-                'device_features': self.features,  # lowercase version only shows active features.
-                'auth_id': kwargs['auth_id'],
-                'reporting_source': kwargs['reporting_source'],
+            "device": self,
+            "command": command,
+            "request_id": kwargs.get("request_id", None),
+            "gateway_id": kwargs.get("gateway_id", self.gateway_id),
+            "source": source,
+            "event": {
+                "area": self.area,
+                "location": self.location,
+                "area_label": self.area_label,
+                "full_label": self.full_label,
+                "device_id": self.device_id,
+                "device_label": self.label,
+                "device_machine_label": self.machine_label,
+                "device_type_id": self.device_type_id,
+                "device_type_label": device_type.machine_label,
+                "device_type_machine_label": device_type.machine_label,
+                "command_id": command_id,
+                "command_label": command_label,
+                "command_machine_label": command_machine_label,
+                "status_current": self.status_history[0].asdict(),
+                "status_previous": previous_status,
+                "gateway_id": kwargs.get("gateway_id", self.gateway_id),
+                "device_features": self.features,  # lowercase version only shows active features.
+                "auth_id": kwargs["auth_id"],
+                "reporting_source": kwargs["reporting_source"],
             },
         }
 
         if len(self.status_history) == 1:
-            message['previous_status'] = None
+            message["previous_status"] = None
         else:
-            message['previous_status'] = self.status_history[1]
+            message["previous_status"] = self.status_history[1]
 
-        self._Automation.trigger_monitor('device',
+        self._Automation.trigger_monitor("device",
                                          device=self,
-                                         action='set_status')
-        global_invoke_all('_device_status_',
+                                         action="set_status")
+        global_invoke_all("_device_status_",
                           called_by=self,
                           **message,
                           )
@@ -927,25 +933,25 @@ class Device_Base(Device_Attributes):
         """
         Gets all users that have access to this device.
 
-        :param access_type: If set to 'direct', then gets list of users that are specifically added to this device.
-            if set to 'roles', returns access based on role membership.
+        :param access_type: If set to "direct", then gets list of users that are specifically added to this device.
+            if set to "roles", returns access based on role membership.
         :return:
         """
         if access_type is None:
-            access_type = 'direct'
+            access_type = "direct"
 
-        if access_type == 'direct':
+        if access_type == "direct":
             permissions = {}
             for email, user in self._Parent._Users.users.items():
                 item_permissions = user.item_permissions
-                if 'device' in item_permissions and self.machine_label in item_permissions['device']:
+                if "device" in item_permissions and self.machine_label in item_permissions["device"]:
                     if email not in permissions:
                         permissions[email] = []
-                    for action in item_permissions['device'][self.machine_label]:
+                    for action in item_permissions["device"][self.machine_label]:
                         if action not in permissions[email]:
                             permissions[email].append(action)
             return permissions
-        elif access_type == 'roles':
+        elif access_type == "roles":
             return {}
 
     def remove_delayed(self):
@@ -963,7 +969,7 @@ class Device_Base(Device_Attributes):
         """
         commands = {}
         for request_id, device_command in self._Parent.device_commands.items():
-            if device_command.status == 'delayed' and device_command.device.device_id == self.device_id:
+            if device_command.status == "delayed" and device_command.device.device_id == self.device_id:
                 commands[request_id] = device_command
         return commands
 
@@ -973,7 +979,7 @@ class Device_Base(Device_Attributes):
         for id, DC in device_commands.items():
             if criteria is None:
                 if DC.device.device_id == self.device_id:
-                    if DC.status in ('sent', 'received', 'pending'):
+                    if DC.status in ("sent", "received", "pending"):
                         results[id] = DC
             else:
                 matches = True
@@ -1002,26 +1008,26 @@ class Device_Base(Device_Attributes):
         else:
             commands = {}
             for command_id, data in available_commands.items():
-                commands[command_id] = data['command']
+                commands[command_id] = data["command"]
             attrs = [
                 {
-                    'field': 'command_id',
-                    'value': command_requested,
-                    'limiter': .96,
+                    "field": "command_id",
+                    "value": command_requested,
+                    "limiter": .96,
                 },
                 {
-                    'field': 'label',
-                    'value': command_requested,
-                    'limiter': .89,
+                    "field": "label",
+                    "value": command_requested,
+                    "limiter": .89,
                 },
                 {
-                    'field': 'machine_label',
-                    'value': command_requested,
-                    'limiter': .89,
+                    "field": "machine_label",
+                    "value": command_requested,
+                    "limiter": .89,
                 }
             ]
             try:
-                logger.debug("Get is about to call search...: %s" % command_requested)
+                logger.debug("Get is about to call search...: {command_requested}", command_requested=command_requested)
                 found, key, item, ratio, others = do_search_instance(attrs, commands,
                                                                      self._Parent._Commands.command_search_attributes,
                                                                      limiter=.89,
@@ -1033,7 +1039,7 @@ class Device_Base(Device_Attributes):
                     return False
             except YomboWarning as e:
                 return False
-                # raise KeyError('Searched for %s, but had problems: %s' % (command_requested, e))
+                # raise KeyError("Searched for %s, but had problems: %s" % (command_requested, e))
 
     @inlineCallbacks
     def delete(self, session=None):
@@ -1074,66 +1080,66 @@ class Device_Base(Device_Attributes):
         """
         if self._Parent.gateway_id != self.gateway_id:
             return {
-                'status': 'failed',
-                'msg': "Can only edit local devices.",
-                'device_id': self.device_id
+                "status": "failed",
+                "msg": "Can only edit local devices.",
+                "device_id": self.device_id
             }
 
         if self.is_dirty is False:
             return {
-                'status': 'success',
-                'msg': "Device saved.",
-                'device_id': self.device_id
+                "status": "success",
+                "msg": "Device saved.",
+                "device_id": self.device_id
             }
 
-        if source != 'amqp':
+        if source != "amqp":
             api_data = {
-                'device_type_id': str(self.device_type_id),
-                'machine_label': str(self.machine_label),
-                'label': str(self.label),
-                'description': str(self.description),
-                'location_id': self.location_id,
-                'area_id': self.area_id,
-                'notes': str(self.notes),
-                'pin_code': self.pin_code,
-                'pin_required': int(self.pin_required),
-                'pin_timeout': self.pin_timeout,
-                'statistic_label': str(self.statistic_label),
-                'statistic_lifetime': str(self.statistic_lifetime),
-                'statistic_type': str(self.statistic_type),
-                'statistic_bucket_size': str(self.statistic_bucket_size),
-                'energy_type': self.energy_type,
-                'energy_tracker_source': self.energy_tracker_source,
-                'energy_tracker_device': self.energy_tracker_device,
-                'energy_map': self.energy_map,
-                'controllable': self.controllable,
-                'allow_direct_control': self.allow_direct_control,
-                'status': self.enabled_status,
-                'created_at': int(self.created_at),
-                'updated_at': int(self.updated_at),
+                "device_type_id": str(self.device_type_id),
+                "machine_label": str(self.machine_label),
+                "label": str(self.label),
+                "description": str(self.description),
+                "location_id": self.location_id,
+                "area_id": self.area_id,
+                "notes": str(self.notes),
+                "pin_code": self.pin_code,
+                "pin_required": int(self.pin_required),
+                "pin_timeout": self.pin_timeout,
+                "statistic_label": str(self.statistic_label),
+                "statistic_lifetime": str(self.statistic_lifetime),
+                "statistic_type": str(self.statistic_type),
+                "statistic_bucket_size": str(self.statistic_bucket_size),
+                "energy_type": self.energy_type,
+                "energy_tracker_source": self.energy_tracker_source,
+                "energy_tracker_device": self.energy_tracker_device,
+                "energy_map": self.energy_map,
+                "controllable": self.controllable,
+                "allow_direct_control": self.allow_direct_control,
+                "status": self.enabled_status,
+                "created_at": int(self.created_at),
+                "updated_at": int(self.updated_at),
             }
 
             if isinstance(self.energy_map, dict):
-                api_data['energy_map'] = data_pickle(self.energy_map, 'json')
+                api_data["energy_map"] = data_pickle(self.energy_map, "json")
 
-            api_results = yield self._YomboAPI.request('PATCH',
-                                                       '/v1/device/%s' % self.device_id,
+            api_results = yield self._YomboAPI.request("PATCH",
+                                                       f"/v1/device/{self.device_id}",
                                                        api_data,
                                                        session=session)
-            if api_results['code'] > 299:
+            if api_results["code"] > 299:
                 return {
-                    'status': 'failed',
-                    'msg': "Couldn't edit device",
-                    'apimsg': api_results['content']['message'],
-                    'apimsghtml': api_results['content']['html_message'],
-                    'device_id': self.device_id,
+                    "status": "failed",
+                    "msg": "Couldn't edit device",
+                    "apimsg": api_results["content"]["message"],
+                    "apimsghtml": api_results["content"]["html_message"],
+                    "device_id": self.device_id,
                 }
 
         yield self._Parent._LocalDB.upsert_device(self)
         yield self.device_variables()  # Update device variables cache
 
         return {
-            'status': 'success',
-            'msg': "Device saved.",
-            'device_id': self.device_id
+            "status": "success",
+            "msg": "Device saved.",
+            "device_id": self.device_id
         }

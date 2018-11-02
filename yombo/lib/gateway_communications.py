@@ -41,14 +41,14 @@ from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
 from yombo.utils import random_int, data_pickle, data_unpickle, random_string, sleep
 
-logger = get_logger('library.gateway_communications')
+logger = get_logger("library.gateway_communications")
 
 class Gateway_Communications(YomboLibrary):
     ok_to_publish_updates = False
 
     def _init_(self, **kwargs):
         self.ok_to_publish_updates = False
-        self.gateway_id = self._Configs.get2('core', 'gwid', 'local', False)
+        self.gateway_id = self._Configs.get2("core", "gwid", "local", False)
         self.log_incoming = deque([], 150)
         self.log_outgoing = deque([], 150)
         self.mqtt = None
@@ -72,76 +72,76 @@ class Gateway_Communications(YomboLibrary):
         self.client_default_ws_port = None
         self.client_default_ws_port_ssl = None
 
-        self.client_default_username = 'yombogw_' + self.gateway_id()
+        self.client_default_username = "yombogw_" + self.gateway_id()
         self.client_default_password1 = local_gateway.mqtt_auth
         self.client_default_password2 = local_gateway.mqtt_auth_next
 
-        if self._Loader.operating_mode != 'run':
+        if self._Loader.operating_mode != "run":
             logger.warn("Gateway communications disabled when not in run mode.")
             return
 
         mqtt_hosts_internal = (
-            'i.' + master_gateway.fqdn,
+            "i." + master_gateway.fqdn,
             master_gateway.internal_ipv4,
             )
         mqtt_hosts_external = (
-            'e.' + master_gateway.fqdn,
+            "e." + master_gateway.fqdn,
             master_gateway.external_ipv4
           )
 
         mqtt_ports_internal = (
             {
-                'port': master_gateway.internal_mqtt_le,
-                'type': 'mqtt',
-                'ssl': 'signed',
+                "port": master_gateway.internal_mqtt_le,
+                "type": "mqtt",
+                "ssl": "signed",
             },
             {
-                'port': master_gateway.internal_mqtt_ss,
-                'type': 'mqtt',
-                'ssl': 'unsigned',
+                "port": master_gateway.internal_mqtt_ss,
+                "type": "mqtt",
+                "ssl": "unsigned",
             },
             {
-                'port': master_gateway.internal_mqtt,
-                'type': 'mqtt',
-                'ssl': 'none',
+                "port": master_gateway.internal_mqtt,
+                "type": "mqtt",
+                "ssl": "none",
             },
             {
-                'port': master_gateway.internal_mqtt_ws_le,
-                'type': 'ws',
-                'ssl': 'signed',
+                "port": master_gateway.internal_mqtt_ws_le,
+                "type": "ws",
+                "ssl": "signed",
             },
             {
-                'port': master_gateway.internal_mqtt_ws_ss,
-                'type': 'ws',
-                'ssl': 'unsigned',
+                "port": master_gateway.internal_mqtt_ws_ss,
+                "type": "ws",
+                "ssl": "unsigned",
             },
             {
-                'port': master_gateway.internal_mqtt_ws,
-                'type': 'ws',
-                'ssl': 'none',
+                "port": master_gateway.internal_mqtt_ws,
+                "type": "ws",
+                "ssl": "none",
             },
         )
 
         mqtt_ports_external = (
             {
-                'port': master_gateway.external_mqtt_le,
-                'type': 'mqtt',
-                'ssl': 'signed',
+                "port": master_gateway.external_mqtt_le,
+                "type": "mqtt",
+                "ssl": "signed",
             },
             {
-                'port': master_gateway.external_mqtt_ss,
-                'type': 'mqtt',
-                'ssl': 'unsigned',
+                "port": master_gateway.external_mqtt_ss,
+                "type": "mqtt",
+                "ssl": "unsigned",
             },
             {
-                'port': master_gateway.external_mqtt_ws_le,
-                'type': 'ws',
-                'ssl': 'signed',
+                "port": master_gateway.external_mqtt_ws_le,
+                "type": "ws",
+                "ssl": "signed",
             },
             {
-                'port': master_gateway.external_mqtt_ws_ss,
-                'type': 'ws',
-                'ssl': 'unsigned',
+                "port": master_gateway.external_mqtt_ws_ss,
+                "type": "ws",
+                "ssl": "unsigned",
             },
         )
 
@@ -157,16 +157,16 @@ class Gateway_Communications(YomboLibrary):
             return sock.connect_ex((host, port))
 
         def is_ssl(port_type):
-            if port_type == 'none':
+            if port_type == "none":
                 return False
             return True
 
         # Test if we can connect to local host, for mqtt
         port = master_gateway.internal_mqtt
-        result = test_non_ssl_port('127.0.0.1', port)
+        result = test_non_ssl_port("127.0.0.1", port)
         logger.debug("-  Results: {result}", result=result)
         if result == 0:  # Able to connect to localhost using internal port
-            self.client_default_host = '127.0.0.1'
+            self.client_default_host = "127.0.0.1"
             self.client_default_mqtt_port_internal = port
             self.client_default_mqtt_port_internal_ssl = False
             self.client_default_mqtt_port = port
@@ -174,7 +174,7 @@ class Gateway_Communications(YomboLibrary):
 
             # Test if we can connect to local host, for mqtt
             port = master_gateway.internal_mqtt
-            result = test_non_ssl_port('127.0.0.1', port)
+            result = test_non_ssl_port("127.0.0.1", port)
             logger.debug("-  Results: {result}", result=result)
             if result == 0:  # Able to connect to localhost using internal port
                 self.client_default_mqtt_port_internal = port
@@ -183,14 +183,14 @@ class Gateway_Communications(YomboLibrary):
                 self.client_default_mqtt_port_ssl = False
 
             port = master_gateway.internal_mqtt_le
-            result = test_non_ssl_port('127.0.0.1', port)
+            result = test_non_ssl_port("127.0.0.1", port)
             logger.debug("-  Results: {result}", result=result)
             if result == 0:  # Able to connect to localhost using internal port
                 self.client_default_mqtt_port = port
                 self.client_default_mqtt_port_ssl = True
 
             port = master_gateway.internal_mqtt_ws
-            result = test_non_ssl_port('127.0.0.1', port)
+            result = test_non_ssl_port("127.0.0.1", port)
             logger.debug("-  Results: {result}", result=result)
             if result == 0:  # Able to connect to localhost using internal port
                 self.client_default_ws_port_internal = port
@@ -199,7 +199,7 @@ class Gateway_Communications(YomboLibrary):
                 self.client_default_ws_port_ssl = False
 
             port = master_gateway.internal_mqtt_ws_le
-            result = test_non_ssl_port('127.0.0.1', port)
+            result = test_non_ssl_port("127.0.0.1", port)
             logger.debug("-  Results: {result}", result=result)
             if result == 0:  # Able to connect to localhost using internal port
                 self.client_default_ws_port = port
@@ -212,18 +212,18 @@ class Gateway_Communications(YomboLibrary):
             found_port_mqtt_ssl = None
 
             for port in mqtt_ports_internal:
-                # if port['ssl'] in ('none', 'unsigned'):  # Yes, it's not NoneType
-                results = test_non_ssl_port(host, port['port'])
+                # if port["ssl"] in ("none", "unsigned"):  # Yes, it"s not NoneType
+                results = test_non_ssl_port(host, port["port"])
                 logger.debug("-  Results: {results}", results=results)
                 if results == 0:  # Able to connect to localhost using internal port
-                    if port['type'] == 'ws':
+                    if port["type"] == "ws":
                         if found_port_ws is None:
-                            found_port_ws = port['port']
-                            found_port_ws_ssl = is_ssl(port['ssl'])
-                    elif port['type'] == 'mqtt':
+                            found_port_ws = port["port"]
+                            found_port_ws_ssl = is_ssl(port["ssl"])
+                    elif port["type"] == "mqtt":
                         if found_port_ws is None:
-                            found_port_mqtt = port['port']
-                            found_port_mqtt_ssl = is_ssl(port['ssl'])
+                            found_port_mqtt = port["port"]
+                            found_port_mqtt_ssl = is_ssl(port["ssl"])
 
             if found_port_ws is not None:
                 self.client_default_host = host
@@ -256,35 +256,35 @@ class Gateway_Communications(YomboLibrary):
             logger.warn("Cannot find an open MQTT port to the master gateway.")
 
     def _start_(self, **kwargs):
-        if self._Loader.operating_mode != 'run':
+        if self._Loader.operating_mode != "run":
             return
         self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming,
-                                   client_id='Yombo-gateways-%s' % self.gateway_id())
+                                   client_id=f"Yombo-gateways-{self.gateway_id()}")
         # self.test()  # todo: move to unit tests..  Todo: Create unit tests.. :-)
         # Requests from other gateways
         self.mqtt.subscribe("ybo_req/+/all/#")
         self.mqtt.subscribe("ybo_req/+/cluster/#")
-        self.mqtt.subscribe("ybo_req/+/%s/#" % self.gateway_id())
+        self.mqtt.subscribe(f"ybo_req/+/{self.gateway_id()}/#")
 
         # Data broadcasts or data responses to gateways
         self.mqtt.subscribe("ybo_gw/+/all/#")
         self.mqtt.subscribe("ybo_gw/+/cluster/#")
-        self.mqtt.subscribe("ybo_gw/+/%s/#" % self.gateway_id())
+        self.mqtt.subscribe(f"ybo_gw/+/{self.gateway_id()}/#")
 
         # Requests from IoT items. Each gateway will subscribe to this, but it will be
         # responsible to knowing if to response or act on the request.
         self.mqtt.subscribe("yombo/#")
 
     def _started_(self, **kwargs):
-        if self._Loader.operating_mode != 'run':
+        if self._Loader.operating_mode != "run":
             return
-        self.publish_data('gw', "all", "lib/gateway/online", "")
+        self.publish_data("gw", "all", "lib/gateway/online", "")
         reactor.callLater(3, self.send_all_info, set_ok_to_publish_updates=True)
 
         if self.is_master is True:
-            ping_interval = self._Configs.get('mqtt', 'ping_interval_master', 20, False)
+            ping_interval = self._Configs.get("mqtt", "ping_interval_master", 20, False)
         else:
-            ping_interval = self._Configs.get('mqtt', 'ping_interval_members', 60, False)
+            ping_interval = self._Configs.get("mqtt", "ping_interval_members", 60, False)
 
         self.ping_gateways_loop = LoopingCall(self.ping_gateways)
         # self.ping_gateways_loop.start(random_int(ping_interval, .1), False)
@@ -294,11 +294,11 @@ class Gateway_Communications(YomboLibrary):
         """
         Cleans up any pending deferreds.
         """
-        if self._Loader.operating_mode != 'run':
+        if self._Loader.operating_mode != "run":
             return
-        if hasattr(self, 'mqtt'):
+        if hasattr(self, "mqtt"):
             if self.mqtt is not None:
-                self.publish_data('gw', "all", "lib/gateway/offline", "")
+                self.publish_data("gw", "all", "lib/gateway/offline", "")
                 yield sleep(0.05)
 
     def ping_gateways(self):
@@ -308,30 +308,30 @@ class Gateway_Communications(YomboLibrary):
         :return:
         """
         for gateway_id, gateway in self.gateways.items():
-            if gateway_id in ('local', 'all', 'cluster') or len(gateway_id) < 13:
+            if gateway_id in ("local", "all", "cluster") or len(gateway_id) < 13:
                 continue
             current_time = time()
-            message = {'time': current_time}
-            request_id = self.publish_data('req', gateway_id, "system/ping", message)
+            message = {"time": current_time}
+            request_id = self.publish_data("req", gateway_id, "system/ping", message)
             self.gateways[gateway_id].ping_request_id = request_id
             self.gateways[gateway_id].ping_request_at = current_time
 
     def _atoms_set_(self, **kwargs):
         """
-        Publish a new atom, only if it's from ourselves.
+        Publish a new atom, only if it"s from ourselves.
 
         :param kwargs:
         :return:
         """
         if self.ok_to_publish_updates is False:
             return
-        if 'source' in kwargs and kwargs['source'] == 'gateway_coms':
+        if "source" in kwargs and kwargs["source"] == "gateway_coms":
             return
-        if kwargs['gateway_id'] != self.gateway_id():
+        if kwargs["gateway_id"] != self.gateway_id():
             return
 
-        atom = {kwargs['key']: kwargs['value_full']}
-        self.publish_data('gw', 'all', "lib/atoms", atom)
+        atom = {kwargs["key"]: kwargs["value_full"]}
+        self.publish_data("gw", "all", "lib/atoms", atom)
 
     def _device_command_(self, **kwargs):
         """
@@ -344,17 +344,17 @@ class Gateway_Communications(YomboLibrary):
         if self.ok_to_publish_updates is False:
             return
 
-        device_command = kwargs['device_command'].asdict()
-        if device_command['source_gateway_id'] != self.gateway_id():
+        device_command = kwargs["device_command"].asdict()
+        if device_command["source_gateway_id"] != self.gateway_id():
             return
 
         message = {
-            'state': 'new',
-            'device_command': device_command
+            "state": "new",
+            "device_command": device_command
         }
 
         topic = "lib/device_command"
-        self.publish_data('gw', 'all', topic, message)
+        self.publish_data("gw", "all", topic, message)
 
     def _device_command_status_(self, **kwargs):
         """
@@ -365,24 +365,24 @@ class Gateway_Communications(YomboLibrary):
         """
         if self.ok_to_publish_updates is False:
             return
-        if 'source' in kwargs and kwargs['source'] == 'gateway_coms':
+        if "source" in kwargs and kwargs["source"] == "gateway_coms":
             return
 
-        device_command = kwargs['device_command']
+        device_command = kwargs["device_command"]
         if device_command.source_gateway_id != self.gateway_id():
             return
 
         history = device_command.last_history()
         message = {
             device_command.request_id: {
-                'request_id': kwargs['device_command'].request_id,
-                'log_time': history['time'],
-                'status': history['status'],
-                'message': history['msg'],
+                "request_id": kwargs["device_command"].request_id,
+                "log_time": history["time"],
+                "status": history["status"],
+                "message": history["msg"],
             }
         }
 
-        self.publish_data('gw', 'all', "lib/device_command_status", message)
+        self.publish_data("gw", "all", "lib/device_command_status", message)
 
     def _device_status_(self, **kwargs):
         """
@@ -393,29 +393,29 @@ class Gateway_Communications(YomboLibrary):
         """
         if self.ok_to_publish_updates is False:
             return
-        source = kwargs.get('source', None)
-        if source == 'gateway_coms':
+        source = kwargs.get("source", None)
+        if source == "gateway_coms":
             return
-        device = kwargs['device']
+        device = kwargs["device"]
         device_id = device.device_id
 
         if self.gateway_id() != device.gateway_id:
             return
 
         topic = "lib/device_status"
-        self.publish_data('gw', 'all', topic, device.status_all.asdict())
+        self.publish_data("gw", "all", topic, device.status_all.asdict())
 
     def _notification_add_(self, **kwargs):
         """
-        Publish a new notification, if it's from ourselves.
+        Publish a new notification, if it"s from ourselves.
 
         :param kwargs:
         """
-        # print("_device_status_: %s" % kwargs['command'])
+        # print("_device_status_: %s" % kwargs["command"])
         if self.ok_to_publish_updates is False:
             return
 
-        notice = kwargs['notification']
+        notice = kwargs["notification"]
         if notice.local is True:
             return
 
@@ -424,13 +424,13 @@ class Gateway_Communications(YomboLibrary):
             return
 
         message = {
-            'action': 'add',
-            'notice': kwargs['event'],
+            "action": "add",
+            "notice": kwargs["event"],
         }
 
         topic = "lib/notification/" + notice.notification_id
         # print("sending _device_status_: %s -> %s" % (topic, message))
-        # self.publish_data('gw', 'all', topic, message)
+        # self.publish_data("gw", "all", topic, message)
 
     def _notification_delete_(self, **kwargs):
         """
@@ -439,11 +439,11 @@ class Gateway_Communications(YomboLibrary):
         :param kwargs:
         :return:
         """
-        # print("_device_status_: %s" % kwargs['command'])
+        # print("_device_status_: %s" % kwargs["command"])
         if self.ok_to_publish_updates is False:
             return
 
-        notice = kwargs['notification']
+        notice = kwargs["notification"]
         if notice.local is True:
             return
 
@@ -452,13 +452,13 @@ class Gateway_Communications(YomboLibrary):
             return
 
         message = {
-            'action': 'delete',
-            'notice': kwargs['event'],
+            "action": "delete",
+            "notice": kwargs["event"],
         }
 
         topic = "lib/notification/" + notice.notification_id
         # print("sending _device_status_: %s -> %s" % (topic, message))
-        # self.publish_data('gw', 'all', topic, message)
+        # self.publish_data("gw", "all", topic, message)
 
     def _states_set_(self, **kwargs):
         """
@@ -469,32 +469,32 @@ class Gateway_Communications(YomboLibrary):
         """
         if self.ok_to_publish_updates is False:
             return
-        if 'source' in kwargs and kwargs['source'] == "gateway_coms":
+        if "source" in kwargs and kwargs["source"] == "gateway_coms":
             return
-        gateway_id = kwargs['gateway_id']
-        if gateway_id != self.gateway_id() and gateway_id not in ('global', 'cluster'):
+        gateway_id = kwargs["gateway_id"]
+        if gateway_id != self.gateway_id() and gateway_id not in ("global", "cluster"):
             return
 
-        message = deepcopy(kwargs['value_full'])
-        message['key'] = kwargs['key']
+        message = deepcopy(kwargs["value_full"])
+        message["key"] = kwargs["key"]
 
-        state = {kwargs['key']: kwargs['value_full']}
-        self.publish_data('gw', 'all', "lib/states", state)
+        state = {kwargs["key"]: kwargs["value_full"]}
+        self.publish_data("gw", "all", "lib/states", state)
 
     @inlineCallbacks
     def mqtt_incoming(self, topic, raw_message, qos, retain):
         # ybo_req/src_gwid/dest_gwid|all/lib/devices/get - payload is blank - get all device information
         try:
-            message = data_unpickle(raw_message, 'json')
-            message['time_received'] = time()
+            message = data_unpickle(raw_message, "json")
+            message["time_received"] = time()
         except Exception:
             return
-        topic_parts = topic.split('/', 10)
+        topic_parts = topic.split("/", 10)
 
         if topic_parts[0] == "to_yombo":
             return self.mqtt_incoming_to_yombo(topic_parts, message)
 
-        # required_keys = ('payload', 'time_sent', 'source_id', 'destination_id', 'message_id')
+        # required_keys = ("payload", "time_sent", "source_id", "destination_id", "message_id")
         # if all(required in message for required in required_keys) is False:
         #     logger.info("MQTT Gateway is dropping message, missing a required field.")
         #     return
@@ -505,7 +505,7 @@ class Gateway_Communications(YomboLibrary):
         if topic_parts[1] == self.gateway_id():
             logger.debug("discarding message that I sent.")
             return
-        if topic_parts[2] not in (self.gateway_id(), 'all', 'cluster'):
+        if topic_parts[2] not in (self.gateway_id(), "all", "cluster"):
             logger.debug("MQTT message doesn't list us as a target, dropping")
             return
 
@@ -514,12 +514,12 @@ class Gateway_Communications(YomboLibrary):
         if topic_parts[1] in self._Gateways.gateways:
             self._Gateways.gateways[topic_parts[1]].last_scene = time()
             self._Gateways.gateways[topic_parts[1]].last_communications.append({
-                'time': time(),
-                'direction': 'received',
-                'topic': topic,
+                "time": time(),
+                "direction": "received",
+                "topic": topic,
             })
 
-        self.log_incoming.append({'received': time(), 'topic': topic, 'message': message})
+        self.log_incoming.append({"received": time(), "topic": topic, "message": message})
 
         if len(message) == 0 or message is None:
             logger.warn("Empty payloads for inter gateway coms are not allowed!")
@@ -557,13 +557,13 @@ class Gateway_Communications(YomboLibrary):
                              command=command_search)
                 return False
 
-            pin_code = message.get('pin_code', None)
-            delay = message.get('delay', None)
-            max_delay = message.get('max_delay', None)
-            not_before = message.get('not_before', None)
-            not_after = message.get('not_after', None)
-            inputs = message.get('inputs', None)
-            idempotence = message.get('idempotence', None)
+            pin_code = message.get("pin_code", None)
+            delay = message.get("delay", None)
+            max_delay = message.get("max_delay", None)
+            not_before = message.get("not_before", None)
+            not_after = message.get("not_after", None)
+            inputs = message.get("inputs", None)
+            idempotence = message.get("idempotence", None)
             try:
                 device.command(
                     cmd=command,
@@ -584,7 +584,7 @@ class Gateway_Communications(YomboLibrary):
 
     @inlineCallbacks
     def mqtt_incomming_request(self, topics, message):
-        # ybo_req/src_gwid/dest_gwid|all/lib/devices/get - 'request_id' can be in the payload section of the message.
+        # ybo_req/src_gwid/dest_gwid|all/lib/devices/get - "request_id" can be in the payload section of the message.
         # ybo_req/src_gwid/dest_gwid|all/lib/devices/update/device_id - payload is full device, including meta and state
         # ybo_req/src_gwid/dest_gwid|all/lib/states/get - payload is blank
         # ybo_req/src_gwid/dest_gwid|all/lib/states/get/section/option - payload is blank
@@ -604,11 +604,11 @@ class Gateway_Communications(YomboLibrary):
         else:
             opt2 = None
 
-        if component_type not in ('lib', 'module', 'system'):
+        if component_type not in ("lib", "module", "system"):
             logger.info("Gateway COMS received invalid component type: {component_type}", component_type=component_type)
             return False
 
-        if component_type == 'module':
+        if component_type == "module":
             try:
                 module = self._Modules[component_name]
             except Exception:
@@ -622,27 +622,27 @@ class Gateway_Communications(YomboLibrary):
                             module=component_name)
                 return False
 
-        elif component_type == 'lib':
+        elif component_type == "lib":
             # return_topic = source_id + "/" + component_type + "/"+ component_name
-            if opt1 == 'get':
-                if 'item_request_id' in message['payload']:
-                    item_request_id = message['item_request_id']
+            if opt1 == "get":
+                if "item_request_id" in message["payload"]:
+                    item_request_id = message["item_request_id"]
                 else:
                     item_request_id = None
 
-                if component_name == 'atoms':
+                if component_name == "atoms":
                     self.send_atoms(destination_id=source_id, atom_id=item_request_id)
-                elif component_name == 'device_status':
+                elif component_name == "device_status":
                     self.send_device_status(destination_id=source_id, device_id=item_request_id)
-                elif component_name == 'device_commands':
+                elif component_name == "device_commands":
                     self.send_device_commands(destination_id=source_id, device_command_id=item_request_id)
-                elif component_name == 'states':
+                elif component_name == "states":
                     self.send_states(destination_id=source_id, state_id=item_request_id)
 
-        elif component_type == 'system':
-            if component_name == 'ping':
-                message = {'response_id': message['message_id'], 'gateway_id': self.gateway_id(), 'time': time()}
-                self.publish_data('gw', source_id, 'system/ping', message)
+        elif component_type == "system":
+            if component_name == "ping":
+                message = {"response_id": message["message_id"], "gateway_id": self.gateway_id(), "time": time()}
+                self.publish_data("gw", source_id, "system/ping", message)
 
         return True
 
@@ -663,7 +663,7 @@ class Gateway_Communications(YomboLibrary):
         else:
             opt2 = None
 
-        if component_type == 'module':
+        if component_type == "module":
             try:
                 module = self._Modules[component_name]
             except Exception as e:
@@ -674,42 +674,42 @@ class Gateway_Communications(YomboLibrary):
             except Exception as e:
                 logger.info("Received inter-gateway MQTT coms for module {module}, but module doesn't have function '_inter_gateway_mqtt_' Dropping.", module=component_name)
                 return False
-        elif component_type == 'lib':
+        elif component_type == "lib":
             try:
-                if component_name == 'atoms':
-                    for name, value in message['payload'].items():
+                if component_name == "atoms":
+                    for name, value in message["payload"].items():
                         self._Atoms.set_from_gateway_communications(name, value, self)
-                elif component_name == 'device_command':
+                elif component_name == "device_command":
                     self.incoming_data_device_command(source_mqtt_id, message)
-                elif component_name == 'device_command_status':
+                elif component_name == "device_command_status":
                     self.incoming_data_device_command_status(source_mqtt_id, message)
-                elif component_name == 'device_status':
+                elif component_name == "device_status":
                     self.incoming_data_device_status(source_mqtt_id, message)
-                elif component_name == 'notification':
+                elif component_name == "notification":
                     self.incoming_data_notification(source_mqtt_id, message)
-                elif component_name == 'states':
-                    for name, value in message['payload'].items():
+                elif component_name == "states":
+                    for name, value in message["payload"].items():
                         self._States.set_from_gateway_communications(name, value, self)
-                elif component_name == 'gateway':
-                    if opt1 == 'online':
-                        self._Gateways.gateways[source_mqtt_id].com_status = 'online'
+                elif component_name == "gateway":
+                    if opt1 == "online":
+                        self._Gateways.gateways[source_mqtt_id].com_status = "online"
                         reactor.callLater(random_int(2, .8), self.send_all_info, destination_id=source_mqtt_id)
-                    elif opt1 == 'offline':
-                        self._Gateways.gateways[source_mqtt_id].com_status = 'offline'
+                    elif opt1 == "offline":
+                        self._Gateways.gateways[source_mqtt_id].com_status = "offline"
             except Exception as e:  # catch anything here...so can display details.
                 logger.error("---------------==(Traceback)==--------------------------")
                 logger.error("{trace}", trace=traceback.format_exc())
                 logger.error("--------------------------------------------------------")
-        elif component_type == 'system':
-            if component_name == 'ping':
-                if 'gateway_id' in message['payload']:
-                    gateway_id = message['payload']['gateway_id']
-                    response_id = message['payload']['response_id']
+        elif component_type == "system":
+            if component_name == "ping":
+                if "gateway_id" in message["payload"]:
+                    gateway_id = message["payload"]["gateway_id"]
+                    response_id = message["payload"]["response_id"]
                     gateway = self._Gateways.gateways[gateway_id]
                     if gateway_id in self._Gateways.gateways and gateway.ping_request_id == response_id:
-                        gateway.ping_roundtrip = round((message['time_received'] - gateway.ping_request_at) * 100)
-                        gateway.ping_response_at = message['time_received']
-                        gateway.ping_time_offset = message['time_received'] - message['payload']['time']
+                        gateway.ping_roundtrip = round((message["time_received"] - gateway.ping_request_at) * 100)
+                        gateway.ping_response_at = message["time_received"]
+                        gateway.ping_time_offset = message["time_received"] - message["payload"]["time"]
         return True
 
     def incoming_data_device_command(self, source_mqtt_id, message):
@@ -721,25 +721,25 @@ class Gateway_Communications(YomboLibrary):
         :return:
         """
         # print("got device_commands")
-        payload = message['payload']
+        payload = message["payload"]
 
         def do_device_command(parent, device_command):
-            device = parent._Devices.get(device_command['device_id'])
+            device = parent._Devices.get(device_command["device_id"])
             if device.gateway_id != parent.gateway_id() and parent.is_master() is not True:  # if we are not a master, we don't care!
                 # print("do_device_command..skipping due to not local gateway and not a master: %s" % parent.is_master())
-                # print("dropping device command..  dest gw: %s" % device_command['gateway_id'])
+                # print("dropping device command..  dest gw: %s" % device_command["gateway_id"])
                 # print("dropping device command..  self.gateway_id: %s" % self.gateway_id)
                 return False
-            device_command['broadcast_at'] = None
-            device_command['device'] = device
-            device_command['source_gateway_id'] = source_mqtt_id
+            device_command["broadcast_at"] = None
+            device_command["device"] = device
+            device_command["source_gateway_id"] = source_mqtt_id
             parent._Devices.add_device_command(device_command)
 
-        if isinstance(payload['device_command'], list):
-            for device_command in payload['device_command']:
+        if isinstance(payload["device_command"], list):
+            for device_command in payload["device_command"]:
                 do_device_command(device_command)
         else:
-            do_device_command(self, payload['device_command'])
+            do_device_command(self, payload["device_command"])
         return True
 
     def incoming_data_device_command_status(self, source_mqtt_id, message):
@@ -749,18 +749,18 @@ class Gateway_Communications(YomboLibrary):
         :param message:
         :return:
         """
-        payload = message['payload']
+        payload = message["payload"]
 
         for request_id, data in payload.items():
             if request_id not in self._Devices.device_commands:
-                msg = {'request_id': request_id}
-                self.publish_data('req', source_mqtt_id, 'lib/device_commands', msg)
+                msg = {"request_id": request_id}
+                self.publish_data("req", source_mqtt_id, "lib/device_commands", msg)
             else:
                 self._Devices.update_device_command(
                     request_id,
-                    data['status'],
-                    data['message'],
-                    data['log_time'],
+                    data["status"],
+                    data["message"],
+                    data["log_time"],
                     source_mqtt_id,
                 )
         return True
@@ -775,8 +775,8 @@ class Gateway_Communications(YomboLibrary):
         :return:
         """
         return True
-        payload = message['payload']
-        payload['status_source'] = 'gateway_coms'
+        payload = message["payload"]
+        payload["status_source"] = "gateway_coms"
 
     def incoming_data_device_status(self, source_mqtt_id, message):
         """
@@ -785,13 +785,13 @@ class Gateway_Communications(YomboLibrary):
         :param message:
         :return:
         """
-        for device_id, status in message['payload'].items():
+        for device_id, status in message["payload"].items():
             if device_id not in self._Devices:
                 logger.info("MQTT Received device status for a device that doesn't exist, dropping: {device_id}",
                             device_id=device_id)
                 continue
             device = self._Devices[device_id]
-            status['source'] = 'gateway_coms'
+            status["source"] = "gateway_coms"
             device.set_status_internal(status)
         return True
 
@@ -804,35 +804,35 @@ class Gateway_Communications(YomboLibrary):
         :return:
         """
         if destination_id is None:
-            destination_id = 'all'
+            destination_id = "all"
         message_id = random_string(length=20)
         message = {
-            'payload': payload,
-            'time_sent': time(),
-            'source_type': 'gateway',
-            'source_id': self.gateway_id(),
-            'destination_id': destination_id,
-            'message_id': message_id
+            "payload": payload,
+            "time_sent": time(),
+            "source_type": "gateway",
+            "source_id": self.gateway_id(),
+            "destination_id": destination_id,
+            "message_id": message_id
         }
-        return message_id, message, data_pickle(message, 'json')
+        return message_id, message, data_pickle(message, "json")
 
     def publish_data(self, msg_type, destination_id, topic, dict_message):
-        final_topic = 'ybo_%s/%s/%s/%s' % (msg_type, self.gateway_id(), destination_id, topic)
+        final_topic = f"ybo_{msg_type}/{self.gateway_id()}/{destination_id}/{topic}"
         message_id, message, outgoing_data = self.encode_message(dict_message)
-        self.log_outgoing.append({'sent': time(), 'topic': final_topic, 'message': message})
+        self.log_outgoing.append({"sent": time(), "topic": final_topic, "message": message})
         self.mqtt.publish(final_topic, outgoing_data)
 
         logger.debug("gateways publish data: {topic} {data}", topic=final_topic, data=outgoing_data)
         self._Gateways.gateways[self.gateway_id()].last_communications.append({
-            'time': time(),
-            'direction': 'sent',
-            'topic': final_topic,
+            "time": time(),
+            "direction": "sent",
+            "topic": final_topic,
         })
         if destination_id in self._Gateways.gateways:
             self._Gateways.gateways[destination_id].last_communications.append({
-                'time': time(),
-                'direction': 'sent',
-                'topic': final_topic,
+                "time": time(),
+                "direction": "sent",
+                "topic": final_topic,
             })
 
         return message_id
@@ -854,15 +854,15 @@ class Gateway_Communications(YomboLibrary):
 
     def send_atoms(self, destination_id=None, atom_id=None):
         return_gw = self.get_return_destination(destination_id)
-        if atom_id is None or atom_id == '#':
-            self.publish_data('gw', return_gw, 'lib/atoms', self._Atoms.get('#', full=True))
+        if atom_id is None or atom_id == "#":
+            self.publish_data("gw", return_gw, "lib/atoms", self._Atoms.get("#", full=True))
         else:
             atom = {atom_id: self._Atoms.get(atom_id, full=True)}
-            self.publish_data('gw', return_gw, 'lib/atoms', atom)
+            self.publish_data("gw", return_gw, "lib/atoms", atom)
 
     def send_device_commands(self, destination_id=None, device_command_id=None):
         return_gw = self.get_return_destination(destination_id)
-        if return_gw == 'all' and device_command_id is None:
+        if return_gw == "all" and device_command_id is None:
             logger.debug("device commands request must have device_command_id or return gateway id.")
             return
         if device_command_id is None:
@@ -870,7 +870,7 @@ class Gateway_Communications(YomboLibrary):
         elif device_command_id in self._Devices.device_commands:
             if self._Devices.device_commands[device_command_id].gateway_id == self.gateway_id():
                 found_device_commands = {device_command_id: self._Devices.device_commands[device_command_id].asdict()}
-        self.publish_data('gw', return_gw, "lib/device_commands", found_device_commands)
+        self.publish_data("gw", return_gw, "lib/device_commands", found_device_commands)
 
     def send_device_status(self, destination_id=None, device_id=None):
         gateway_id = self.gateway_id()
@@ -887,24 +887,24 @@ class Gateway_Communications(YomboLibrary):
                 if device.gateway_id == gateway_id or device.status != 1:
                     return
                 message[device_id] = device.status_all.asdict()
-        self.publish_data('gw', return_gw, 'lib/device_status', message)
+        self.publish_data("gw", return_gw, "lib/device_status", message)
 
     def send_states(self, destination_id=None, state_id=None):
         return_gw = self.get_return_destination(destination_id)
-        if state_id is None or state_id == '#':
-            self.publish_data('gw', return_gw, 'lib/states', self._States.get('#', full=True))
+        if state_id is None or state_id == "#":
+            self.publish_data("gw", return_gw, "lib/states", self._States.get("#", full=True))
         else:
             state = {state_id: self._Atoms.get(state_id, full=True)}
-            self.publish_data('gw', return_gw, 'lib/states', state)
+            self.publish_data("gw", return_gw, "lib/states", state)
 
     def get_return_destination(self, destination_id=None):
-        if destination_id is None or destination_id is '':
-            return 'all'
+        if destination_id is None or destination_id is "":
+            return "all"
         return destination_id
 
     def test(self):
         self.mqtt_test_connection = self.new(self.server_listen_ip,
-            self.server_listen_port, 'yombo', self.default_client_mqtt_password1, False,
+            self.server_listen_port, "yombo", self.default_client_mqtt_password1, False,
             self.test_mqtt_in, self.test_on_connect )
 
         self.mqtt_test_connection.subscribe("yombo/#")
@@ -918,7 +918,7 @@ class Gateway_Communications(YomboLibrary):
 
     def test_send_data(self):
         print("mqtt sending test package")
-        self.mqtt_test_connection.publish("yombo/devices/asdf/asdf", 'open')
+        self.mqtt_test_connection.publish("yombo/devices/asdf/asdf", "open")
 
     def test_mqtt_in(self, topic, payload, qos, retain):
-        print("i got this: %s / %s" % (topic, payload))
+        print(f"i got this: {topic} / {payload}")

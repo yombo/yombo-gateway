@@ -59,9 +59,9 @@ class Fan(Device):
         :param kwargs:
         :return:
         """
-        if 'inputs' not in kwargs:
-            kwargs['inputs'] = {}
-        kwargs['inputs'][INPUT_SPEED] = speed
+        if "inputs" not in kwargs:
+            kwargs["inputs"] = {}
+        kwargs["inputs"][INPUT_SPEED] = speed
         if self.check_set_speed(speed) is False:
             raise YomboWarning("Fan speed is invalid.")
         return self.command(COMMAND_SET_SPEED, **kwargs)
@@ -158,8 +158,8 @@ class Fan(Device):
 
     def toggle(self, **kwargs):
         if self.status_history[0].machine_status == 0:
-            if 'previous_on_speed' in self.meta:
-                return self.command(COMMAND_ON, inputs={INPUT_SPEED: self.meta['previous_on_speed']})
+            if "previous_on_speed" in self.meta:
+                return self.command(COMMAND_ON, inputs={INPUT_SPEED: self.meta["previous_on_speed"]})
             else:
                 return self.command(COMMAND_ON, inputs={INPUT_SPEED: 3})
         else:
@@ -177,7 +177,7 @@ class Fan(Device):
         if speed in self.FAN_SPEED_NAME_TO_INT:
             return self.FAN_SPEED_NAME_TO_INT[speed]
         else:
-            raise KeyError('Unknown fan speed: %s' % speed)
+            raise KeyError(f"Unknown fan speed: {speed}")
 
     def check_set_speed(self, speed):
         if speed in (SPEED_OFF, SPEED_LOW, SPEED_MEDIUM, SPEED_HIGH):
@@ -205,9 +205,9 @@ class Fan(Device):
         :param kwargs:
         :return:
         """
-        if 'inputs' not in kwargs:
-            kwargs['inputs'] = {}
-        kwargs['inputs'][INPUT_DIRECTION] = direction
+        if "inputs" not in kwargs:
+            kwargs["inputs"] = {}
+        kwargs["inputs"][INPUT_DIRECTION] = direction
         if self.check_set_direction(direction) is False:
             raise YomboWarning(_("ui::alerts::devices::invalid_fan_direction", "Invalid fan direction."))
         return self.command(COMMAND_SET_DIRECTION, **kwargs)

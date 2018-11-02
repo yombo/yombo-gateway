@@ -55,7 +55,7 @@ class YomboFormatter(Formatter):
 
 class Localize(YomboLibrary):
     """
-    Provides internaltionalization and localization where possible.  Default language is 'en' (English). System and
+    Provides internaltionalization and localization where possible.  Default language is "en" (English). System and
     debug messages are never translated.
     """
     def __str__(self):
@@ -67,36 +67,36 @@ class Localize(YomboLibrary):
         return "Yombo localization and translation library"
 
     def _init_(self, **kwargs):
-        self.working_dir = settings.arguments['working_dir']
-        self.default_lang = self._Configs.get2('localize', 'default_lang', self.get_system_language(), False)
+        self.working_dir = settings.arguments["working_dir"]
+        self.default_lang = self._Configs.get2("localize", "default_lang", self.get_system_language(), False)
 
         try:
-            hashes = self._Configs.get('localize', 'hashes')
+            hashes = self._Configs.get("localize", "hashes")
         except:
-            self.hashes = {'en': None}
+            self.hashes = {"en": None}
         else:
             self.hashes = json.loads(hashes)
 
-        if 'en' not in self.hashes:
-            self.hashes['en'] = None
+        if "en" not in self.hashes:
+            self.hashes["en"] = None
 
         self.localization_degrees = self._Configs.get2("localization", "degrees", "f")
 
         self.files = {}
 
-        self.locale_save_folder = "%s/locale/po/" % self.working_dir
+        self.locale_save_folder = f"{self.working_dir}/locale/po/"
         self.translator = self.get_translator()
-        builtins.__dict__['_'] = self.handle_translate
+        builtins.__dict__["_"] = self.handle_translate
 
     def display_temperature(self, in_temp, in_type=None, out_type=None, out_decimals=None):
         """
         Simply converts a one temperature from another. Assumes incoming is the system standard of
-        'c' for celcius and defaults to convert the output to the gateway defined system
-        default of either 'c' or 'f'.
+        "c" for celcius and defaults to convert the output to the gateway defined system
+        default of either "c" or "f".
 
         :param in_temp: input temperature to consider
         :type in_temp: int, float
-        :param in_type: Output temp type. C or F. Default is 'c'.
+        :param in_type: Output temp type. C or F. Default is "c".
         :type out_type: str
         :param out_type: Output temp type. C or F. Default is the system defined value.
         :type in_type: str
@@ -105,7 +105,7 @@ class Localize(YomboLibrary):
         :return:
         """
         if in_type is None:
-            in_type = 'c'
+            in_type = "c"
         else:
             in_type = in_type[0].lower()
 
@@ -117,14 +117,14 @@ class Localize(YomboLibrary):
         if out_type == in_type:
             return in_temp
 
-        converter = '%s_%s' % (in_type, out_type)
+        converter = f"{in_type}_{out_type}"
         out_temp = unit_convert(converter, in_temp)
 
         if out_decimals is None:
-            return {'value': out_temp, 'type': out_type}
+            return {"value": out_temp, "type": out_type}
         return {
-            'value': "{0:.{1}f}".format(out_temp, out_decimals),
-            'type': out_type,
+            "value": "{0:.{1}f}".format(out_temp, out_decimals),
+            "type": out_type,
            }
 
     def bytes2human(self, size, precision=2):
@@ -136,7 +136,7 @@ class Localize(YomboLibrary):
         :param precision:
         :return:
         """
-        suffixes = ['B', 'KB', 'MB', 'GB', 'TB']
+        suffixes = ["B", "KB", "MB", "GB", "TB"]
         suffixIndex = 0
         while size > 1024 and suffixIndex < 4:
             suffixIndex += 1  # increment the index of the suffix
@@ -163,26 +163,26 @@ class Localize(YomboLibrary):
                     if path.exists(the_directory):
                         self.parse_directory(the_directory)
             except Exception as e:
-                logger.warn("Unable list module local files: %s" % e)
+                logger.warn("Unable list module local files: {e}", e=e)
 
             # always check english. If it gets updated, we need to update them all!
-            hash_obj = sha224(open(self.files['en'][0], 'rb').read())
+            hash_obj = sha224(open(self.files["en"][0], "rb").read())
 
-            for fname in self.files['en'][1:]:
-                hash_obj.update(open(fname, 'rb').read())
+            for fname in self.files["en"][1:]:
+                hash_obj.update(open(fname, "rb").read())
             checksum = hash_obj.hexdigest()
 
-            if checksum != self.hashes['en']:
+            if checksum != self.hashes["en"]:
                 self.hashes = {}
 
             # Generate/update locale file hashes. If anything changed, add to languages_to_update
             for lang, files in self.files.items():
-                hash_obj = sha224(open(files[0], 'rb').read())
+                hash_obj = sha224(open(files[0], "rb").read())
                 for fname in files[1:]:
-                    hash_obj.update(open(fname, 'rb').read())
+                    hash_obj.update(open(fname, "rb").read())
                 checksum = hash_obj.hexdigest()
                 if lang in self.hashes:
-                    if path.exists(self.working_dir + '/locale/po/' + lang + '/LC_MESSAGES/yombo.mo') is False:
+                    if path.exists(self.working_dir + "/locale/po/" + lang + "/LC_MESSAGES/yombo.mo") is False:
                         languages_to_update[lang] = True
                         continue
                     if checksum == self.hashes[lang]:
@@ -196,7 +196,7 @@ class Localize(YomboLibrary):
             if self.default_lang() is not None:
                 if self.default_lang() not in self.files:
                     self.default_lang(set=None)
-                    language = self.default_lang().split('_')[0]
+                    language = self.default_lang().split("_")[0]
                     if language in self.files:
                         self.default_lang(set=language)
             # If no default lang, try the system language.
@@ -205,57 +205,57 @@ class Localize(YomboLibrary):
                 if language in self.files:
                     self.default_lang(set=language)
                 else:
-                    language = language.split('_')[0]
+                    language = language.split("_")[0]
                     if language in self.files:
                         self.default_lang(set=language)
 
             # If still no language, we will use english.
             if self.default_lang() is None:
-                self.default_lang(set='en')
+                self.default_lang(set="en")
 
             # English is the base of all language files. If English needs updating, we update the default too.
-            if 'en' in languages_to_update and self.default_lang() not in languages_to_update:
+            if "en" in languages_to_update and self.default_lang() not in languages_to_update:
                 languages_to_update[self.default_lang()] = True
 
-            # Always do english language updates first, it's the base of all.
-            if 'en' in languages_to_update:
-                self.update_language_files('en')
-                del languages_to_update['en']
+            # Always do english language updates first, it"s the base of all.
+            if "en" in languages_to_update:
+                self.update_language_files("en")
+                del languages_to_update["en"]
 
             # Add the default language to the stack.
             if self.default_lang() in languages_to_update:
                 self.update_language_files(self.default_lang())
                 del languages_to_update[self.default_lang()]
 
-            # self.default_lang() = 'es' # some testing...
-            self._States['localize.default_language'] = self.default_lang()
+            # self.default_lang() = "es" # some testing...
+            self._States["localize.default_language"] = self.default_lang()
 
             for lang, files in languages_to_update.items():
                 self.update_language_files(lang)
 
             # Save the updated hash into the configuration for next time.
-            self._Configs.set('localize', 'hashes', json.dumps(self.hashes, separators=(',',':')))
+            self._Configs.set("localize", "hashes", json.dumps(self.hashes, separators=(",",":")))
 
             gettext._translations.clear()
             self.translator = self.get_translator()
-            builtins.__dict__['_'] = self.handle_translate
+            builtins.__dict__["_"] = self.handle_translate
 
-        except Exception as e: # if problem with translation, at least return msgid...
-            logger.error("Unable to load translations. Getting null one. Reason: %s" % e)
+        except Exception as e:  # if problem with translation, at least return msgid...
+            logger.error("Unable to load translations. Getting null one. Reason: {e}", e=e)
             logger.error("--------------------------------------------------------")
             logger.error("{error}", error=sys.exc_info())
             logger.error("---------------==(Traceback)==--------------------------")
             logger.error("{trace}", trace=traceback.print_exc(file=sys.stdout))
             logger.error("--------------------------------------------------------")
             self.translator = self.get_translator(get_null=True)
-            builtins.__dict__['_'] = self.handle_translate
+            builtins.__dict__["_"] = self.handle_translate
 
     def get_system_language(self):
         """
         Returns the system language.
         :return:
         """
-        for item in ('LANGUAGE', 'LC_ALL', 'LC_MESSAGES', 'LANG'):
+        for item in ("LANGUAGE", "LC_ALL", "LC_MESSAGES", "LANG"):
             if item in environ:
                 try:
                     return environ.get(item).split(".")[0]
@@ -270,13 +270,13 @@ class Localize(YomboLibrary):
             if self.default_lang() not in languages:
                 languages.append(
                     self.default_lang())  # toss in the gateway default language, which may be the system lang
-            if 'en' not in languages:
-                languages.append('en')  # if all else fails, show english.
+            if "en" not in languages:
+                languages.append("en")  # if all else fails, show english.
         logger.debug("locale_files path: {path}", path=self.locale_save_folder)
         try:
-            return gettext.translation('yombo', self.locale_save_folder, languages)
-        except Exception as e: # if problem with translation, at least return msgid...
-            logger.warn("Ignore this if first running Yombo. Unable to load translations: %s" % e)
+            return gettext.translation("yombo", self.locale_save_folder, languages)
+        except Exception as e:  # if problem with translation, at least return msgid...
+            logger.warn("Ignore this if first running Yombo. Unable to load translations: {e}", e=e)
         return gettext.NullTranslations()
 
     def handle_translate(self, msgid, default_text=None, translator=None, **kwargs):
@@ -297,21 +297,17 @@ class Localize(YomboLibrary):
         :return:
         """
         logger.debug("Localize combining files for language: {language}", language=language)
-        output_folder = self.working_dir + '/locale/po/' + language + '/LC_MESSAGES'
+        output_folder = self.working_dir + "/locale/po/" + language + "/LC_MESSAGES"
 
         if not path.exists(output_folder):
             makedirs(output_folder)
 
         # merge files
-        with open(output_folder + '/yombo.po', 'w') as outfile:
-            # outfile.write("# BEGIN Combining files (%s) for locale: %s\n" % (strftime("%Y-%m-%d %H:%M:%S", gmtime()), language) )
+        with open(output_folder + "/yombo.po", "w") as outfile:
             for fname in self.files[language]:
-                # outfile.write("# BEGIN File: %s\n" % fname)
                 with open(fname) as infile:
                     outfile.write(infile.read())
-                # outfile.write("\n# END File: %s\n\n" % fname)
-            # outfile.write("# END Combining files for locale: %s\n" % language)
-        po_lang = polib.pofile(output_folder + '/yombo.po')
+        po_lang = polib.pofile(output_folder + "/yombo.po")
         po_lang.save_as_mofile(output_folder + "/yombo.mo")
 
     def parse_directory(self, directory, has_header=False):
@@ -325,9 +321,9 @@ class Localize(YomboLibrary):
         for filename in listdir(directory):
             if filename.endswith(".po") is False:
                 continue
-            filepart = filename.split('.')
+            filepart = filename.split(".")
             filepart = filepart[0]
-            locale = filepart.split('_')
+            locale = filepart.split("_")
             if len(locale) == 0 or len(locale) > 2:
                 logger.warn("Bad language_country code split. Must be <ISO 639 lang code>_<ISO 3166 REGION CODE (optional)>: {{locale}}, file: {filename}",
                             locale=locale[0], filename=filename)
@@ -403,15 +399,15 @@ class Localize(YomboLibrary):
         for language in languages:
             lang = language.split(";")
             lang = lang[0].strip()
-            lang_parts = lang.split('-')
+            lang_parts = lang.split("-")
             if lang not in locales:
                 locales.append(lang.replace("-", "_"))
             if lang_parts[0] not in locales:
                 locales.append(lang_parts[0])
         if self.default_lang() not in locales:
             locales.append(self.default_lang())  # toss in the gateway default language, which may be the system lang
-        if 'en' not in locales:
-            locales.append('en')  # if all else fails, show english.
+        if "en" not in locales:
+            locales.append("en")  # if all else fails, show english.
         return locales
 
     @inlineCallbacks
@@ -420,9 +416,9 @@ class Localize(YomboLibrary):
             locale = self.default_lang()
 
         if locale not in self.files:
-            raise YomboWarning("Invalid locale for locale_to_dict: %s" % locale)
+            raise YomboWarning(f"Invalid locale for locale_to_dict: {locale}")
 
-        po_file = "%s%s/LC_MESSAGES/yombo.po" % (self.locale_save_folder, locale)
+        po_file = f"{self.locale_save_folder}{locale}/LC_MESSAGES/yombo.po"
         data = yield read_file(po_file, convert_to_unicode=True)
         tuples = re.findall(r'msgid "(.+)"\nmsgstr "(.+)"', data)
 

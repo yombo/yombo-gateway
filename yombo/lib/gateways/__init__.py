@@ -27,7 +27,8 @@ from yombo.lib.gateways.gateway import Gateway
 from yombo.utils import do_search_instance, global_invoke_all
 from yombo.utils.decorators import deprecated
 
-logger = get_logger('library.gateways')
+logger = get_logger("library.gateways")
+
 
 class Gateways(YomboLibrary):
     """
@@ -78,11 +79,11 @@ class Gateways(YomboLibrary):
 
         Checks to if a provided gateway ID or machine_label exists.
 
-            >>> if '0kas02j1zss349k1' in self._Gateways:
+            >>> if "0kas02j1zss349k1" in self._Gateways:
 
         or:
 
-            >>> if 'some_gateway_name' in self._Gateways:
+            >>> if "some_gateway_name" in self._Gateways:
 
         :raises YomboWarning: Raised when request is malformed.
         :raises KeyError: Raised when request is not found.
@@ -103,11 +104,11 @@ class Gateways(YomboLibrary):
 
         Attempts to find the device requested using a couple of methods.
 
-            >>> gateway = self._Gateways['0kas02j1zss349k1']  #by uuid
+            >>> gateway = self._Gateways["0kas02j1zss349k1"]  #by uuid
 
         or:
 
-            >>> gateway = self._Gateways['alpnum']  #by name
+            >>> gateway = self._Gateways["alpnum"]  #by name
 
         :raises YomboWarning: Raised when request is malformed.
         :raises KeyError: Raised when request is not found.
@@ -189,45 +190,45 @@ class Gateways(YomboLibrary):
         self.is_master = self._Configs.is_master
         self.master_gateway_id = self._Configs.master_gateway_id
 
-        self.gateway_search_attributes = ['gateway_id', 'gateway_id', 'label', 'machine_label', 'status']
-        if self._Loader.operating_mode != 'run':
+        self.gateway_search_attributes = ["gateway_id", "gateway_id", "label", "machine_label", "status"]
+        if self._Loader.operating_mode != "run":
             self.import_gateway({
-                'id': 'local',
-                'is_master': True,
-                'master_gateway_id': '',
-                'machine_label': 'local',
-                'label': 'Local',
-                'description': 'Local',
-                'fqdn': '127.0.0.1',
-                'version': VERSION,
+                "id": "local",
+                "is_master": True,
+                "master_gateway_id": "",
+                "machine_label": "local",
+                "label": "Local",
+                "description": "Local",
+                "fqdn": "127.0.0.1",
+                "version": VERSION,
             })
         self.import_gateway({
-            'id': 'cluster',
-            'is_master': False,
-            'master_gateway_id': '',
-            'machine_label': 'cluster',
-            'label': 'Cluster',
-            'description': 'All gateways in a cluster.',
-            'fqdn': '127.0.0.1',
-            'version': VERSION,
+            "id": "cluster",
+            "is_master": False,
+            "master_gateway_id": "",
+            "machine_label": "cluster",
+            "label": "Cluster",
+            "description": "All gateways in a cluster.",
+            "fqdn": "127.0.0.1",
+            "version": VERSION,
         })
         yield self._load_gateways_from_database()
 
     def _start_(self, **kwargs):
         self.library_phase = 3
-        if self._Loader.operating_mode != 'run':
+        if self._Loader.operating_mode != "run":
             return
 
     def _started_(self, **kwargs):
         self.library_phase = 4
-        if self._Loader.operating_mode != 'run':
+        if self._Loader.operating_mode != "run":
             return
 
     def _stop_(self, **kwargs):
         """
         Cleans up any pending deferreds.
         """
-        if hasattr(self, 'load_deferred'):
+        if hasattr(self, "load_deferred"):
             if self.load_deferred is not None and self.load_deferred.called is False:
                 self.load_deferred.callback(1)  # if we don't check for this, we can't stop!
 
@@ -250,10 +251,10 @@ class Gateways(YomboLibrary):
 
         **Hooks called**:
 
-        * _gateway_before_load_ : If added, sends gateway dictionary as 'gateway'
-        * _gateway_before_update_ : If updated, sends gateway dictionary as 'gateway'
-        * _gateway_loaded_ : If added, send the gateway instance as 'gateway'
-        * _gateway_updated_ : If updated, send the gateway instance as 'gateway'
+        * _gateway_before_load_ : If added, sends gateway dictionary as "gateway"
+        * _gateway_before_update_ : If updated, sends gateway dictionary as "gateway"
+        * _gateway_loaded_ : If added, send the gateway instance as "gateway"
+        * _gateway_updated_ : If updated, send the gateway instance as "gateway"
 
         :param gateway: A dictionary of items required to either setup a new gateway or update an existing one.
         :type input: dict
@@ -265,32 +266,32 @@ class Gateways(YomboLibrary):
 
         gateway_id = gateway["id"]
         if gateway_id == self.gateway_id():
-            gateway['version'] = VERSION
-        global_invoke_all('_gateways_before_import_',
+            gateway["version"] = VERSION
+        global_invoke_all("_gateways_before_import_",
                           called_by=self,
                           gateway_id=gateway_id,
                           gateway=gateway,
                           )
         if gateway_id not in self.gateways:
-            global_invoke_all('_gateway_before_load_',
+            global_invoke_all("_gateway_before_load_",
                               called_by=self,
                               gateway_id=gateway_id,
                               gateway=gateway,
                               )
             self.gateways[gateway_id] = Gateway(self, gateway)
-            global_invoke_all('_gateway_loaded_',
+            global_invoke_all("_gateway_loaded_",
                               called_by=self,
                               gateway_id=gateway_id,
                               gateway=self.gateways[gateway_id],
                               )
         elif gateway_id not in self.gateways:
-            global_invoke_all('_gateway_before_update_',
+            global_invoke_all("_gateway_before_update_",
                               called_by=self,
                               gateway_id=gateway_id,
                               gateway=self.gateways[gateway_id],
                               )
             self.gateways[gateway_id].update_attributes(gateway)
-            global_invoke_all('_gateway_updated_',
+            global_invoke_all("_gateway_updated_",
                               called_by=self,
                               gateway_id=gateway_id,
                               gateway=self.gateways[gateway_id],
@@ -326,13 +327,13 @@ class Gateways(YomboLibrary):
 
         .. note::
 
-           Can use the built in methods below or use get_meta/get to include 'gateway_type' limiter:
+           Can use the built in methods below or use get_meta/get to include "gateway_type" limiter:
 
-            >>> self._Gateways['13ase45']
+            >>> self._Gateways["13ase45"]
 
         or:
 
-            >>> self._Gateways['numeric']
+            >>> self._Gateways["numeric"]
 
         :raises YomboWarning: For invalid requests.
         :raises KeyError: When item requested cannot be found.
@@ -364,19 +365,19 @@ class Gateways(YomboLibrary):
         else:
             attrs = [
                 {
-                    'field': 'gateway_id',
-                    'value': gateway_requested,
-                    'limiter': limiter,
+                    "field": "gateway_id",
+                    "value": gateway_requested,
+                    "limiter": limiter,
                 },
                 {
-                    'field': 'machine_label',
-                    'value': gateway_requested,
-                    'limiter': limiter,
+                    "field": "machine_label",
+                    "value": gateway_requested,
+                    "limiter": limiter,
                 },
                 {
-                    'field': 'label',
-                    'value': gateway_requested,
-                    'limiter': limiter,
+                    "field": "label",
+                    "value": gateway_requested,
+                    "limiter": limiter,
                 }
             ]
             try:
@@ -389,9 +390,9 @@ class Gateways(YomboLibrary):
                 # logger.debug("found gateway by search: others: {others}", others=others)
                 if found:
                     return item
-                raise KeyError("Gateway not found: %s" % gateway_requested)
+                raise KeyError(f"Gateway not found: {gateway_requested}")
             except YomboWarning as e:
-                raise KeyError('Searched for %s, but had problems: %s' % (gateway_requested, e))
+                raise KeyError(f"Searched for {gateway_requested}, but had problems: {e}")
 
     def get(self, gateway_requested, limiter=None, status=None):
         """
@@ -402,11 +403,11 @@ class Gateways(YomboLibrary):
            Modules shouldn't use this function. Use the built in reference to
            find devices:
 
-            >>> self._Gateways['13ase45']
+            >>> self._Gateways["13ase45"]
 
         or:
 
-            >>> self._Gateways['numeric']
+            >>> self._Gateways["numeric"]
 
         :raises YomboWarning: For invalid requests.
         :raises KeyError: When item requested cannot be found.
@@ -451,48 +452,48 @@ class Gateways(YomboLibrary):
         :param kwargs:
         :return:
         """
-        if 'gateway_id' not in api_data:
-            api_data['gateway_id'] = self.gateway_id()
+        if "gateway_id" not in api_data:
+            api_data["gateway_id"] = self.gateway_id()
 
-        if api_data['machine_label'].lower() == 'cluster':
+        if api_data["machine_label"].lower() == "cluster":
             return {
-                'status': 'failed',
-                'msg': "Couldn't add gateway: machine_label cannot be 'cluster' or 'all'",
-                'apimsg': "Couldn't add gateway: machine_label cannot be 'cluster' or 'all'",
-                'apimsghtml': "Couldn't add gateway: machine_label cannot be 'cluster' or 'all'",
+                "status": "failed",
+                "msg": "Couldn't add gateway: machine_label cannot be 'cluster' or 'all'",
+                "apimsg": "Couldn't add gateway: machine_label cannot be 'cluster' or 'all'",
+                "apimsghtml": "Couldn't add gateway: machine_label cannot be 'cluster' or 'all'",
             }
-        if api_data['label'].lower() == 'cluster':
+        if api_data["label"].lower() == "cluster":
             return {
-                'status': 'failed',
-                'msg': "Couldn't add gateway: label cannot be 'cluster' or 'all'",
-                'apimsg': "Couldn't add gateway: label cannot be 'cluster' or 'all'",
-                'apimsghtml': "Couldn't add gateway: label cannot be 'cluster' or 'all'",
+                "status": "failed",
+                "msg": "Couldn't add gateway: label cannot be 'cluster' or 'all'",
+                "apimsg": "Couldn't add gateway: label cannot be 'cluster' or 'all'",
+                "apimsghtml": "Couldn't add gateway: label cannot be 'cluster' or 'all'",
             }
-        if source != 'amqp':
+        if source != "amqp":
             try:
-                if 'session' in kwargs:
-                    session = kwargs['session']
+                if "session" in kwargs:
+                    session = kwargs["session"]
                 else:
                     session = None
 
-                gateway_results = yield self._YomboAPI.request('POST', '/v1/gateway',
+                gateway_results = yield self._YomboAPI.request("POST", "/v1/gateway",
                                                                api_data,
                                                                session=session)
             except YomboWarning as e:
                 return {
-                    'status': 'failed',
-                    'msg': "Couldn't add gateway: %s" % e.message,
-                    'apimsg': "Couldn't add gateway: %s" % e.message,
-                    'apimsghtml': "Couldn't add gateway: %s" % e.html_message,
+                    "status": "failed",
+                    "msg": f"Couldn't add gateway: {e.message}",
+                    "apimsg": f"Couldn't add gateway: {e.message}",
+                    "apimsghtml": f"Couldn't add gateway: {e.html_message}",
                 }
-            gateway_id = gateway_results['data']['id']
+            gateway_id = gateway_results["data"]["id"]
 
-        new_gateway = gateway_results['data']
+        new_gateway = gateway_results["data"]
         self.import_gateway(new_gateway)
         return {
-            'status': 'success',
-            'msg': "Gateway added.",
-            'gateway_id': gateway_id,
+            "status": "success",
+            "msg": "Gateway added.",
+            "gateway_id": gateway_id,
         }
 
     @inlineCallbacks
@@ -504,35 +505,36 @@ class Gateways(YomboLibrary):
         :param kwargs:
         :return:
         """
-        if api_data['machine_label'].lower() == 'cluster':
+        if api_data["machine_label"].lower() == "cluster":
             return {
-                'status': 'failed',
-                'msg': "Couldn't add gateway: machine_label cannot be 'cluster' or 'all'",
-                'apimsg': "Couldn't add gateway: machine_label cannot be 'cluster' or 'all'",
-                'apimsghtml': "Couldn't add gateway: machine_label cannot be 'cluster' or 'all'",
+                "status": "failed",
+                "msg": "Couldn't add gateway: machine_label cannot be 'cluster' or 'all'",
+                "apimsg": "Couldn't add gateway: machine_label cannot be 'cluster' or 'all'",
+                "apimsghtml": "Couldn't add gateway: machine_label cannot be 'cluster' or 'all'",
             }
-        if api_data['label'].lower() == 'cluster':
+        if api_data["label"].lower() == "cluster":
             return {
-                'status': 'failed',
-                'msg': "Couldn't add gateway: label cannot be 'cluster' or 'all'",
-                'apimsg': "Couldn't add gateway: label cannot be 'cluster' or 'all'",
-                'apimsghtml': "Couldn't add gateway: label cannot be 'cluster' or 'all'",
+                "status": "failed",
+                "msg": "Couldn't add gateway: label cannot be 'cluster' or 'all'",
+                "apimsg": "Couldn't add gateway: label cannot be 'cluster' or 'all'",
+                "apimsghtml": "Couldn't add gateway: label cannot be 'cluster' or 'all'",
             }
         try:
-            if 'session' in kwargs:
-                session = kwargs['session']
+            if "session" in kwargs:
+                session = kwargs["session"]
             else:
                 session = None
 
-            gateway_results = yield self._YomboAPI.request('PATCH', '/v1/gateway/%s' % (gateway_id),
+            gateway_results = yield self._YomboAPI.request("PATCH",
+                                                           f"/v1/gateway/{gateway_id}",
                                                            api_data,
                                                            session=session)
         except YomboWarning as e:
             return {
-                'status': 'failed',
-                'msg': "Couldn't edit gateway: %s" % e.message,
-                'apimsg': "Couldn't edit gateway: %s" % e.message,
-                'apimsghtml': "Couldn't edit gateway: %s" % e.html_message,
+                "status": "failed",
+                "msg": f"Couldn't edit gateway: {e.message}",
+                "apimsg": f"Couldn't edit gateway: {e.message}",
+                "apimsghtml": f"Couldn't edit gateway: {e.html_message}",
             }
 
         gateway = self.gateways[gateway_id]
@@ -541,9 +543,9 @@ class Gateways(YomboLibrary):
             gateway.save_to_db()
 
         return {
-            'status': 'success',
-            'msg': "Device type edited.",
-            'gateway_id': gateway_results['data']['id'],
+            "status": "success",
+            "msg": "Device type edited.",
+            "gateway_id": gateway_results["data"]["id"],
         }
 
     @inlineCallbacks
@@ -556,25 +558,26 @@ class Gateways(YomboLibrary):
         :return:
         """
         try:
-            if 'session' in kwargs:
-                session = kwargs['session']
+            if "session" in kwargs:
+                session = kwargs["session"]
             else:
                 session = None
 
-            yield self._YomboAPI.request('DELETE', '/v1/gateway/%s' % gateway_id,
+            yield self._YomboAPI.request("DELETE",
+                                         f"/v1/gateway/{gateway_id}",
                                          session=session)
         except YomboWarning as e:
             return {
-                'status': 'failed',
-                'msg': "Couldn't delete gateway: %s" % e.message,
-                'apimsg': "Couldn't delete gateway: %s" % e.message,
-                'apimsghtml': "Couldn't delete gateway: %s" % e.html_message,
+                "status": "failed",
+                "msg": f"Couldn't delete gateway: {e.message}",
+                "apimsg": f"Couldn't delete gateway: {e.message}",
+                "apimsghtml": f"Couldn't delete gateway: {e.html_message}",
             }
 
         return {
-            'status': 'success',
-            'msg': "Gateway deleted.",
-            'gateway_id': gateway_id,
+            "status": "success",
+            "msg": "Gateway deleted.",
+            "gateway_id": gateway_id,
         }
 
     @inlineCallbacks
@@ -587,30 +590,31 @@ class Gateways(YomboLibrary):
         :return:
         """
         api_data = {
-            'status': 1,
+            "status": 1,
         }
 
         try:
-            if 'session' in kwargs:
-                session = kwargs['session']
+            if "session" in kwargs:
+                session = kwargs["session"]
             else:
                 session = None
 
-            yield self._YomboAPI.request('PATCH', '/v1/gateway/%s' % gateway_id,
+            yield self._YomboAPI.request("PATCH",
+                                         f"/v1/gateway/{gateway_id}|",
                                          api_data,
                                          session=session)
         except YomboWarning as e:
             return {
-                'status': 'failed',
-                'msg': "Couldn't enable gateway: %s" % e.message,
-                'apimsg': "Couldn't enable gateway: %s" % e.message,
-                'apimsghtml': "Couldn't enable gateway: %s" % e.html_message,
+                "status": "failed",
+                "msg": f"Couldn't enable gateway: {e.message}|",
+                "apimsg": f"Couldn't enable gateway: {e.message}",
+                "apimsghtml": f"Couldn't enable gateway: {e.html_message}",
             }
 
         return {
-            'status': 'success',
-            'msg': "Gateway enabled.",
-            'gateway_id': gateway_id,
+            "status": "success",
+            "msg": "Gateway enabled.",
+            "gateway_id": gateway_id,
         }
 
     @inlineCallbacks
@@ -623,30 +627,31 @@ class Gateways(YomboLibrary):
         :return:
         """
         api_data = {
-            'status': 0,
+            "status": 0,
         }
 
         try:
-            if 'session' in kwargs:
-                session = kwargs['session']
+            if "session" in kwargs:
+                session = kwargs["session"]
             else:
                 session = None
 
-            yield self._YomboAPI.request('PATCH', '/v1/gateway/%s' % gateway_id,
+            yield self._YomboAPI.request("PATCH",
+                                         f"/v1/gateway/{gateway_id}",
                                          api_data,
                                          session=session)
         except YomboWarning as e:
             return {
-                'status': 'failed',
-                'msg': "Couldn't disable gateway: %s" % e.message,
-                'apimsg': "Couldn't disable gateway: %s" % e.message,
-                'apimsghtml': "Couldn't disable gateway: %s" % e.html_message,
+                "status": "failed",
+                "msg": f"Couldn't disable gateway: {e.message}",
+                "apimsg": f"Couldn't disable gateway: {e.message}",
+                "apimsghtml": f"Couldn't disable gateway: {e.html_message}",
             }
 
         return {
-            'status': 'success',
-            'msg': "Gateway disabled.",
-            'gateway_id': gateway_id,
+            "status": "success",
+            "msg": "Gateway disabled.",
+            "gateway_id": gateway_id,
         }
 
     def full_list_gateways(self):
@@ -656,7 +661,7 @@ class Gateways(YomboLibrary):
         """
         items = []
         for gateway_id, gateway in self.gateways.items():
-            if gateway.machine_label in ('cluster', 'all'):
+            if gateway.machine_label in ("cluster", "all"):
                 continue
             items.append(gateway.asdict())
         return items

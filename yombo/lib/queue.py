@@ -30,7 +30,7 @@ from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 import collections
 
-logger = get_logger('library.queue')
+logger = get_logger("library.queue")
 
 class Queue(YomboLibrary):
     """
@@ -85,7 +85,7 @@ class Queue(YomboLibrary):
         Create a new queue. Returns the queue itself so that various operations can be
         performed such as pause, resume, stop, etc.
 
-        :param name: A unique name for the queue. Usually: 'module.modulename.queuename'
+        :param name: A unique name for the queue. Usually: "module.modulename.queuename"
         :type name: str
         :param worker_callback: The callback to call when it's time to do work.
         :type worker_callback: callable

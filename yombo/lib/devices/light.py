@@ -51,9 +51,9 @@ class Light(Device):
         else:
             command = COMMAND_ON
 
-        if 'inputs' not in kwargs:
-            kwargs['inputs'] = {}
-        kwargs['inputs'][INPUT_BRIGHTNESS] = brightness
+        if "inputs" not in kwargs:
+            kwargs["inputs"] = {}
+        kwargs["inputs"][INPUT_BRIGHTNESS] = brightness
         return self.command(command, **kwargs)
 
     def set_percent(self, percent, **kwargs):
@@ -80,10 +80,10 @@ class Light(Device):
         :return:
         """
         command = COMMAND_ON
-        if 'inputs' not in kwargs:
-            kwargs['inputs'] = {}
+        if "inputs" not in kwargs:
+            kwargs["inputs"] = {}
 
-        kwargs['inputs'][ATR_RGB_COLOR] = rgb
+        kwargs["inputs"][ATR_RGB_COLOR] = rgb
         return self.command(command, **kwargs)
 
     @property
@@ -94,7 +94,7 @@ class Light(Device):
     def brightness(self):
         """
         Return the brightness of this light. Returns a range between 0 and 100, converts based on the
-        'number_of_steps'.
+        "number_of_steps".
         """
         if len(self.status_history) > 0:
             machine_status_extra = self.status_history[0].machine_status_extra
@@ -108,7 +108,7 @@ class Light(Device):
     def percent(self):
         """
         Return the brightness as a percent for this light. Returns a range between 0 and 100, converts based on the
-        'number_of_steps'.
+        "number_of_steps".
         """
         if len(self.status_history) > 0:
             machine_status_extra = self.status_history[0].machine_status_extra
@@ -248,11 +248,11 @@ class Light(Device):
         return self.command(COMMAND_OFF, **kwargs)
 
     def generate_human_status(self, machine_status, machine_status_extra):
-        return str(self.calc_percent(machine_status, machine_status_extra)) + '%'
+        return str(self.calc_percent(machine_status, machine_status_extra)) + "%"
 
     def generate_human_message(self, machine_status, machine_status_extra):
-        return "%s is now %s%%" % (self.area_label,
-                                   self.calc_percent(machine_status, machine_status_extra))
+        return f"{self.area_label} is now {self.calc_percent(machine_status, machine_status_extra)}%"
+
 
 class Color_Light(Light):
     """

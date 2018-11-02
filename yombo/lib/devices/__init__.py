@@ -30,23 +30,23 @@ To send a command to a device is simple.
 
    # Lets turn on every device this module manages.
    for device in self._Devices:
-       self.Devices[device].command(cmd='off')
+       self.Devices[device].command(cmd="off")
 
    # Lets turn off every every device, using a very specific command id.
    for device in self._Devices:
-       self.Devices[device].command(cmd='js83j9s913')  # Made up id, but can be same as off
+       self.Devices[device].command(cmd="js83j9s913")  # Made up id, but can be same as off
 
    # Turn off the christmas tree.
-   self._Devices.command('christmas tree', 'off')
+   self._Devices.command("christmas tree", "off")
 
    # Get devices by device type:
-   deviceList = self._Devices.search(device_type='x10_appliance')  # Can search on any device attribute
+   deviceList = self._Devices.search(device_type="x10_appliance")  # Can search on any device attribute
 
    # Turn on all x10 lights off (regardless of house / unit code)
-   allX10Lamps = self._DeviceTypes.devices_by_device_type('x10_light')
+   allX10Lamps = self._DeviceTypes.devices_by_device_type("x10_light")
    # Turn off all x10 lamps
    for lamp in allX10Lamps:
-       lamp.command('off')
+       lamp.command("off")
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
@@ -80,7 +80,7 @@ from yombo.utils import global_invoke_all, search_instance, do_search_instance, 
 from ._device import Device
 from ._device_command import Device_Command
 
-logger = get_logger('library.devices')
+logger = get_logger("library.devices")
 
 
 class Devices(YomboLibrary):
@@ -100,11 +100,11 @@ class Devices(YomboLibrary):
 
         Checks to if a provided device label, device machine label, or device id exists.
 
-            >>> if '137ab129da9318' in self._Devices:  #by id
+            >>> if "137ab129da9318" in self._Devices:  #by id
 
         or:
 
-            >>> if 'living room light' in self._Devices:  #by label
+            >>> if "living room light" in self._Devices:  #by label
 
         :raises YomboWarning: Raised when request is malformed.
         :param device_requested: The device ID or label to search for.
@@ -125,11 +125,11 @@ class Devices(YomboLibrary):
 
         Finds the device requested by device label, device machine label, or device id exists.
 
-            >>> my_light = self._Devices['137ab129da9318']  #by id
+            >>> my_light = self._Devices["137ab129da9318"]  #by id
 
         or:
 
-            >>> my_light = self._Devices['living room light']  #by name
+            >>> my_light = self._Devices["living room light"]  #by name
 
         :raises YomboWarning: Raised when request is malformed.
         :raises KeyError: Raised when request is not found.
@@ -208,7 +208,7 @@ class Devices(YomboLibrary):
 
     def sorted(self, key=None):
         """
-        Returns an OrderedDict, sorted by 'key'. The key can be any attribute within the device object, such as
+        Returns an OrderedDict, sorted by "key". The key can be any attribute within the device object, such as
         label, area_label, etc.
 
         :param key: Attribute contained in a device to sort by, default: area_label
@@ -217,7 +217,7 @@ class Devices(YomboLibrary):
         :rtype: OrderedDict
         """
         if key is None:
-            key = 'area_label'
+            key = "area_label"
         return OrderedDict(sorted(iter(self.devices.items()), key=lambda i: getattr(i[1], key)))
 
     @inlineCallbacks
@@ -226,8 +226,8 @@ class Devices(YomboLibrary):
         Sets up basic attributes.
         """
         self.devices = {}
-        self.device_search_attributes = ['device_id', 'device_type_id', 'machine_label', 'label',
-            'area_label_lower', 'full_label_lower', 'area_label', 'full_label', 'description']
+        self.device_search_attributes = ["device_id", "device_type_id", "machine_label", "label",
+            "area_label_lower", "full_label_lower", "area_label", "full_label", "description"]
 
         self.gateway_id = self._Configs.get("core", "gwid", "local", False)
         self.is_master = self._Configs.get("core", "is_master", "local", False)
@@ -244,7 +244,7 @@ class Devices(YomboLibrary):
         self.processing_commands = False
 
         self.mqtt = None
-        self.all_energy_usage = yield self._SQLDict.get('yombo.lib.device', 'all_energy_usage')
+        self.all_energy_usage = yield self._SQLDict.get("yombo.lib.device", "all_energy_usage")
         self.all_energy_usage_calllater = None
 
     @inlineCallbacks
@@ -257,9 +257,9 @@ class Devices(YomboLibrary):
         """
         yield self._load_devices_from_database()
         yield self._load_device_commands()
-        if self._States['loader.operating_mode'] == 'run':
-            self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming, client_id='Yombo-devices-%s' %
-                                                                                            self.gateway_id)
+        if self._States["loader.operating_mode"] == "run":
+            self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming,
+                                       client_id=f"Yombo-devices-{self.gateway_id}")
 
 
     def _started_(self, **kwargs):
@@ -269,7 +269,7 @@ class Devices(YomboLibrary):
 
         :return: 
         """
-        if self._States['loader.operating_mode'] == 'run':
+        if self._States["loader.operating_mode"] == "run":
             self.mqtt.subscribe("yombo/devices/+/get")
             self.mqtt.subscribe("yombo/devices/+/cmd")
 
@@ -304,11 +304,11 @@ class Devices(YomboLibrary):
         """
         self.processing_commands = True
         for command, request in self.startup_queue.items():
-            self.command(request['device_id'],
-                         request['command_id'],
-                         not_before=request['not_before'],
-                         max_delay=request['max_delay'],
-                         **request['kwargs'])
+            self.command(request["device_id"],
+                         request["command_id"],
+                         not_before=request["not_before"],
+                         max_delay=request["max_delay"],
+                         **request["kwargs"])
         self.startup_queue.clear()
 
     def _device_status_(self, **kwargs):
@@ -339,16 +339,16 @@ class Devices(YomboLibrary):
             ENERGY_NOISE: 0,
         }
         all_energy_usage = {
-            'total': deepcopy(usage_types),
+            "total": deepcopy(usage_types),
         }
 
         for device_id, device in self.devices.items():
             status_all = device.status_all
-            if status_all['fake_data'] is True:
+            if status_all["fake_data"] is True:
                 continue
-            if status_all['energy_type'] not in ENERGY_TYPES or status_all['energy_type'] == "none":
+            if status_all["energy_type"] not in ENERGY_TYPES or status_all["energy_type"] == "none":
                 continue
-            energy_usage = status_all['energy_usage']
+            energy_usage = status_all["energy_usage"]
             if isinstance(energy_usage, int) or isinstance(energy_usage, float):
                 usage = energy_usage
             elif isinstance(energy_usage, Number):
@@ -359,8 +359,8 @@ class Devices(YomboLibrary):
             location_label = location_id.machine_label
             if location_label not in all_energy_usage:
                 all_energy_usage[location_label] = deepcopy(usage_types)
-            all_energy_usage[location_label][status_all['energy_type']] += usage
-            all_energy_usage['total'][status_all['energy_type']] += usage
+            all_energy_usage[location_label][status_all["energy_type"]] += usage
+            all_energy_usage["total"][status_all["energy_type"]] += usage
 
         logger.debug("All energy usage: {all_energy_usage}", all_energy_usage=all_energy_usage)
 
@@ -370,42 +370,42 @@ class Devices(YomboLibrary):
                         all_energy_usage[location][ENERGY_ELECTRIC] != self.all_energy_usage[location][ENERGY_ELECTRIC]:
                     # print("EU: setting eletrcic: %s %s" % (location_label, all_energy_usage[location][ENERGY_ELECTRIC]))
                     self._Statistics.datapoint(
-                        "energy.%s.electric" % location_label,
+                        f"energy.{location_label}.electric",
                         round(all_energy_usage[location][ENERGY_ELECTRIC])
                     )
                 if ENERGY_GAS in self.all_energy_usage[location] and \
                         all_energy_usage[location][ENERGY_GAS] != self.all_energy_usage[location][ENERGY_GAS]:
                         self._Statistics.datapoint(
-                            "energy.%s.electric" % location_label,
+                            f"energy.{location_label}.gas",
                             round(all_energy_usage[location][ENERGY_GAS], 3)
                         )
                 if ENERGY_WATER in self.all_energy_usage[location] and \
                         all_energy_usage[location][ENERGY_WATER] != self.all_energy_usage[location][ENERGY_WATER]:
                         self._Statistics.datapoint(
-                            "energy.%s.electric" % location_label,
+                            f"energy.{location_label}.water",
                             round(all_energy_usage[location][ENERGY_WATER], 3)
                         )
                 if ENERGY_NOISE in self.all_energy_usage[location] and \
                         all_energy_usage[location][ENERGY_NOISE] != self.all_energy_usage[location][ENERGY_NOISE]:
                         self._Statistics.datapoint(
-                            "energy.%s.electric" % location_label,
+                            f"energy.{location_label}.noise",
                             round(all_energy_usage[location][ENERGY_NOISE], 1)
                         )
             else:
                 self._Statistics.datapoint(
-                    "energy.%s.electric" % location_label,
+                    f"energy.{location_label}.electric",
                     round(all_energy_usage[location][ENERGY_ELECTRIC])
                 )
                 self._Statistics.datapoint(
-                    "energy.%s.electric" % location_label,
+                    f"energy.{location_label}.gas",
                     round(all_energy_usage[location][ENERGY_GAS], 3)
                 )
                 self._Statistics.datapoint(
-                    "energy.%s.electric" % location_label,
+                    f"energy.{location_label}.water",
                     round(all_energy_usage[location][ENERGY_WATER], 3)
                 )
                 self._Statistics.datapoint(
-                    "energy.%s.electric" % location_label,
+                    f"energy.{location_label}.noise",
                     round(all_energy_usage[location][ENERGY_NOISE], 1)
                 )
         self.all_energy_usage = deepcopy(all_energy_usage)
@@ -422,17 +422,17 @@ class Devices(YomboLibrary):
         if len(devices) > 0:
             for record in devices:
                 record = record.__dict__
-                if record['energy_map'] is None:
-                    record['energy_map'] = {"0.0":0, "1.0":0}
-                # record['energy_map'] = json.loads(str(record['energy_map']))
+                if record["energy_map"] is None:
+                    record["energy_map"] = {"0.0": 0, "1.0": 0}
+                # record["energy_map"] = json.loads(str(record["energy_map"]))
                 new_map = {}
-                for key, value in record['energy_map'].items():
+                for key, value in record["energy_map"].items():
                     new_map[float(key)] = float(value)
-                record['energy_map'] = new_map
+                record["energy_map"] = new_map
                 logger.debug("Loading device: {record}", record=record)
-                device_id = yield self.import_device(record, source='database')
+                device_id = yield self.import_device(record, source="database")
                 try:
-                    global_invoke_all('_device_imported_',
+                    global_invoke_all("_device_imported_",
                                       called_by=self,
                                       id=device_id,
                                       device=self.devices[device_id],
@@ -447,8 +447,8 @@ class Devices(YomboLibrary):
 
         **Hooks called**:
 
-        * _device_before_update_ : If updated, sends device dictionary as 'device'
-        * _device_updated_ : If updated, send the device instance as 'device'
+        * _device_before_update_ : If updated, sends device dictionary as "device"
+        * _device_updated_ : If updated, send the device instance as "device"
 
         :param device: A dictionary of items required to either setup a new device or update an existing one.
         :type device: dict
@@ -463,18 +463,17 @@ class Devices(YomboLibrary):
 
         device_id = device["id"]
         if device_id not in self.devices:
-            import_state = 'new'
-            device_type = self._DeviceTypes[device['device_type_id']]
+            device_type = self._DeviceTypes[device["device_type_id"]]
 
             if device_type.platform is None or device_type.platform == "":
-                device_type.platform = 'device'
+                device_type.platform = "device"
             class_names = device_type.platform.lower()
 
             class_names = "".join(class_names.split())  # we don't like spaces
-            class_names = class_names.split(',')
+            class_names = class_names.split(",")
 
             # logger.info("Loading device ({device}), platforms: {platforms}",
-            #             device=device['label'],
+            #             device=device["label"],
             #             platforms=class_names)
 
             klass = None
@@ -484,12 +483,13 @@ class Devices(YomboLibrary):
                     break
 
             if klass is None:
-                klass = self._DeviceTypes.platforms['device']
-                logger.warn("Using base device class for device '{label}' cannot find any of these requested classes: {class_names}",
-                            label=device['label'],
-                            class_names=class_names)
+                klass = self._DeviceTypes.platforms["device"]
+                logger.warn(
+                    "Using base device class for device '{label}' cannot find any of these requested classes: {class_names}",
+                    label=device["label"],
+                    class_names=class_names)
 
-            global_invoke_all('_device_before_import_',
+            global_invoke_all("_device_before_import_",
                               called_by=self,
                               id=device_id,
                               data=device,
@@ -517,7 +517,7 @@ class Devices(YomboLibrary):
             d.callback(1)
             yield d
             try:
-                global_invoke_all('_device_imported_',
+                global_invoke_all("_device_imported_",
                                   called_by=self,
                                   id=device_id,
                                   device=self.devices[device_id],
@@ -525,7 +525,6 @@ class Devices(YomboLibrary):
             except YomboHookStopProcessing as e:
                 pass
         else:
-            import_state = 'update'
             self.devices[device_id].update_attributes(device, source)
         return device_id
 
@@ -540,15 +539,15 @@ class Devices(YomboLibrary):
         :return:
         """
         where = {
-            'created_at': [time() - 60*60*24, '>'],
+            "created_at": [time() - 60*60*24, ">"],
         }
         device_commands = yield self._LocalDB.get_device_commands(where)
         for device_command in device_commands:
-            if device_command['device_id'] not in self.devices:
-                logger.warn("Seems a device id we were tracking is gone..{id}", id=device_command['device_id'])
+            if device_command["device_id"] not in self.devices:
+                logger.warn("Seems a device id we were tracking is gone..{id}", id=device_command["device_id"])
                 continue
 
-            self.device_commands[device_command['request_id']] = Device_Command(device_command, self, start=False)
+            self.device_commands[device_command["request_id"]] = Device_Command(device_command, self, start=False)
         return None
 
     def add_device_command_by_object(self, device_command):
@@ -569,8 +568,8 @@ class Devices(YomboLibrary):
         :param called_from_mqtt_coms:
         :return:
         """
-        self.device_commands[device_command['request_id']] = Device_Command(device_command, self, start=True)
-        self.device_commands.move_to_end(device_command['request_id'], last=False)  # move to the front.
+        self.device_commands[device_command["request_id"]] = Device_Command(device_command, self, start=True)
+        self.device_commands.move_to_end(device_command["request_id"], last=False)  # move to the front.
 
     def update_device_command(self, request_id, status, message=None, log_time=None, gateway_id=None):
         """
@@ -633,21 +632,21 @@ class Devices(YomboLibrary):
         :type pin: str
         :param request_id: Request ID for tracking. If none given, one will be created.
         :type request_id: str
-        :param delay: How many seconds to delay sending the command. Not to be combined with 'not_before'
+        :param delay: How many seconds to delay sending the command. Not to be combined with "not_before"
         :type delay: int or float
-        :param not_before: An epoch time when the command should be sent. Not to be combined with 'delay'.
+        :param not_before: An epoch time when the command should be sent. Not to be combined with "delay".
         :type not_before: int or float
-        :param max_delay: How many second after the 'delay' or 'not_before' can the command be send. This can occur
+        :param max_delay: How many second after the "delay" or "not_before" can the command be send. This can occur
             if the system was stopped when the command was supposed to be send.
         :type max_delay: int or float
-        :param inputs: A list of dictionaries containing the 'input_type_id' and any supplied 'value'.
+        :param inputs: A list of dictionaries containing the "input_type_id" and any supplied "value".
         :type input: list of dictionaries
         :param kwargs: Any additional named arguments will be sent to the module for processing.
         :type kwargs: named arguments
         :return: The request id.
         :rtype: str
         """
-        kwargs['requesting_source'] = generate_source_string()
+        kwargs["requesting_source"] = generate_source_string()
         return self.get(device).command(cmd, **kwargs)
 
     def mqtt_incoming(self, topic, payload, qos, retain):
@@ -670,17 +669,17 @@ class Devices(YomboLibrary):
         """
         #  0       1       2       3        4
         # yombo/devices/DEVICEID/get|cmd/option
-        parts = topic.split('/', 10)
+        parts = topic.split("/", 10)
         logger.info("Yombo Devices got this: {topic} : {parts}", topic=topic, parts=parts)
         payload = payload.strip()
-        content_type = 'string'
+        content_type = "string"
         try:
             payload = json.loads(payload)
-            content_type = 'json'
+            content_type = "json"
         except Exception as e:
             try:
                 payload = msgpack.loads(payload)
-                content_type = 'msgpack'
+                content_type = "msgpack"
             except Exception as e:
                 pass
 
@@ -688,45 +687,48 @@ class Devices(YomboLibrary):
             device_label = self.get(parts[2].replace("_", " "))
             device = self.get(device_label)
         except KeyError as e:
-            logger.info("Received MQTT request for a device that doesn't exist: %s" % parts[2])
+            logger.info("Received MQTT request for a device that doesn't exist: {part}", part=parts[2])
             return
 
-        if parts[3] == 'get':
+        if parts[3] == "get":
             status = device.status_all
 
             if len(parts) == 5:
-                if payload == 'all':
-                    self.mqtt.publish('yombo/devices/%s/status' % device.machine_label, json.dumps(device.status_all))
+                if payload == "all":
+                    self.mqtt.publish(f"yombo/devices/{device.machine_label}/status",
+                                      json.dumps(device.status_all))
                 elif payload in status:
-                    self.mqtt.publish('yombo/devices/%s/status/%s' % (device.machine_label, payload), str(getattr(payload, status)))
+                    self.mqtt.publish(f"yombo/devices/{device.machine_label}/status/{payload}",
+                                      str(getattr(payload, status)))
             else:
-                self.mqtt.publish('yombo/devices/%s/status' % device.machine_label,
+                self.mqtt.publish(f"yombo/devices/{device.machine_label}/status",
                                   json.dumps(device.status_all))
 
-        elif parts[3] == 'cmd':
+        elif parts[3] == "cmd":
             try:
                 device.command(cmd=parts[4])
             except Exception as e:
-                logger.warn("Device received invalid command request for command: %s  Reason: %s" % (parts[4], e))
+                logger.warn("Device received invalid command request for command: {command} Reason: {reason}",
+                            command=parts[4], reason=e)
 
             if len(parts) == 6:
                 status = device.status_all
-                if parts[4] == 'all':
-                    self.mqtt.publish('yombo/devices/%s/status' % device.machine_label,
+                if parts[4] == "all":
+                    self.mqtt.publish(f"yombo/devices/{device.machine_label}/status",
                                       json.dumps(device.status_all))
                 elif payload in status:
-                    self.mqtt.publish('yombo/devices/%s/status/%s' % (device.machine_label, payload),
-                                      str(getattr(payload, status)))
+                    self.mqtt.publish(f"yombo/devices/{device.machine_label}/status/{payload}",
+                                      getattr(payload, status))
             else:
-                self.mqtt.publish('yombo/devices/%s/status' % device.machine_label,
+                self.mqtt.publish(f"yombo/devices/{device.machine_label}/status",
                                   json.dumps(device.status_all))
 
     def device_user_access(self, device_id, access_type=None):
         """
         Gets all users that have access to this device.
 
-        :param access_type: If set to 'direct', then gets list of users that are specifically added to this device.
-            if set to 'roles', returns access based on role membership.
+        :param access_type: If set to "direct", then gets list of users that are specifically added to this device.
+            if set to "roles", returns access based on role membership.
         :return:
         """
         device = self.get(device_id)
@@ -741,10 +743,10 @@ class Devices(YomboLibrary):
         :return: 
         """
         if field is None:
-            field = 'machine_label'
+            field = "machine_label"
 
         if field not in self.device_search_attributes:
-            raise YomboWarning('Invalid field for device attribute: %s' % field)
+            raise YomboWarning(f"Invalid field for device attribute: {field}")
 
         devices = []
         for device_id, device in self.devices.items():
@@ -754,13 +756,13 @@ class Devices(YomboLibrary):
     def full_list_devices(self, gateway_id=None):
         """
         Return a list of dictionaries representing all known devices. Can be restricted to
-        a single gateway by supplying a gateway_id, use 'local' for the local gateway.
+        a single gateway by supplying a gateway_id, use "local" for the local gateway.
 
-        :param gateway_id: Filter selecting to a specific gateway. Use 'local' for the local gateway.
+        :param gateway_id: Filter selecting to a specific gateway. Use "local" for the local gateway.
         :type gateway_id: string
         :return:
         """
-        if gateway_id == 'local':
+        if gateway_id == "local":
             gateway_id = self.gateway_id
 
         devices = []
@@ -778,11 +780,11 @@ class Devices(YomboLibrary):
            Modules shouldn't use this function. Use the built in reference to
            find devices:
            
-            >>> self._Devices['8w3h4sa']
+            >>> self._Devices["8w3h4sa"]
         
         or:
         
-            >>> self._Devices['porch light']
+            >>> self._Devices["porch light"]
 
         :raises YomboWarning: For invalid requests.
         :raises KeyError: When item requested cannot be found.
@@ -814,48 +816,48 @@ class Devices(YomboLibrary):
         if device_requested in self.devices:
             item = self.devices[device_requested]
             if status is not None and item.status != status:
-                raise KeyError("Requested device found, but has invalid status: %s" % item.status)
+                raise KeyError(f"Requested device found, but has invalid status: {item.status}")
             return item
         else:
             attrs = [
                 {
-                    'field': 'device_id',
-                    'value': device_requested,
-                    'limiter': limiter,
+                    "field": "device_id",
+                    "value": device_requested,
+                    "limiter": limiter,
                 },
                 {
-                    'field': 'machine_label',
-                    'value': device_requested,
-                    'limiter': limiter,
+                    "field": "machine_label",
+                    "value": device_requested,
+                    "limiter": limiter,
                 },
                 {
-                    'field': 'label',
-                    'value': device_requested,
-                    'limiter': limiter,
+                    "field": "label",
+                    "value": device_requested,
+                    "limiter": limiter,
                 },
                 {
-                    'field': 'area_label',
-                    'value': device_requested,
-                    'limiter': limiter,
+                    "field": "area_label",
+                    "value": device_requested,
+                    "limiter": limiter,
                 },
                 {
-                    'field': 'full_label',
-                    'value': device_requested,
-                    'limiter': limiter,
+                    "field": "full_label",
+                    "value": device_requested,
+                    "limiter": limiter,
                 },
                 {
-                    'field': 'area_label_lower',
-                    'value': device_requested,
-                    'limiter': limiter,
+                    "field": "area_label_lower",
+                    "value": device_requested,
+                    "limiter": limiter,
                 },
                 {
-                    'field': 'full_label_lower',
-                    'value': device_requested,
-                    'limiter': limiter,
+                    "field": "full_label_lower",
+                    "value": device_requested,
+                    "limiter": limiter,
                 },
             ]
             try:
-                # logger.debug("Get is about to call search...: %s" % device_requested)
+                # logger.debug(f"Get is about to call search...: {device_requested}")
                 found, key, item, ratio, others = do_search_instance(attrs,
                                                                      self.devices,
                                                                      self.device_search_attributes,
@@ -867,9 +869,9 @@ class Devices(YomboLibrary):
                     return self.devices[key]
                 else:
                     # logger.info("others ({others})", others=others)
-                    raise KeyError("Device not found: %s" % device_requested)
+                    raise KeyError(f"Device not found: {device_requested}")
             except YomboWarning as e:
-                raise KeyError('Searched for %s, but had problems: %s' % (device_requested, e))
+                raise KeyError(f"Searched for {device_requested}, but had problems: {e}")
 
     def search(self, _limiter=None, _operation=None, **kwargs):
         """
@@ -898,78 +900,78 @@ class Devices(YomboLibrary):
         """
         results = None
         # logger.info("Add new device.  Data: {data}", data=data)
-        if 'gateway_id' not in api_data:
-            api_data['gateway_id'] = self.gateway_id
+        if "gateway_id" not in api_data:
+            api_data["gateway_id"] = self.gateway_id
 
         try:
             for key, value in api_data.items():
                 if value == "":
                     api_data[key] = None
-                elif key in ['statistic_lifetime', 'pin_timeout']:
+                elif key in ["statistic_lifetime", "pin_timeout"]:
                     if api_data[key] is None or (isinstance(value, str) and value.lower() == "none"):
                         del api_data[key]
                     else:
                         api_data[key] = int(value)
         except Exception as e:
             return {
-                'status': 'failed',
-                'msg': "Couldn't add device due to value mismatches.",
-                'apimsg': e,
-                'apimsghtml': e,
-                'device_id': None,
-                'data': None,
+                "status": "failed",
+                "msg": "Couldn't add device due to value mismatches.",
+                "apimsg": e,
+                "apimsghtml": e,
+                "device_id": None,
+                "data": None,
             }
 
         try:
-            global_invoke_all('_device_before_add_',
+            global_invoke_all("_device_before_add_",
                               called_by=self,
                               data=api_data,
                               stoponerror=True,
                               )
         except YomboHookStopProcessing as e:
-            raise YomboWarning("Adding device was halted by '%s', reason: %s" % (e.name, e.message))
+            raise YomboWarning(f"Adding device was halted by '{e.name}', reason: {e.message}")
 
-        if source != 'amqp':
+        if source != "amqp":
             logger.debug("POSTING device. api data: {api_data}", api_data=api_data)
             try:
-                if 'session' in kwargs:
-                    session = kwargs['session']
+                if "session" in kwargs:
+                    session = kwargs["session"]
                 else:
                     session = None
 
-                device_results = yield self._YomboAPI.request('POST', '/v1/device',
+                device_results = yield self._YomboAPI.request("POST", "/v1/device",
                                                               api_data,
                                                               session=session)
             except YomboWarning as e:
                 return {
-                    'status': 'failed',
-                    'msg': "Couldn't add device: %s" % e.message,
-                    'apimsg': "Couldn't add device: %s" % e.message,
-                    'apimsghtml': "Couldn't add device: %s" % e.html_message,
+                    "status": "failed",
+                    f"msg": "Couldn't add device: {e.message}",
+                    f"apimsg": f"Couldn't add device: {e.message}",
+                    f"apimsghtml": f"Couldn't add device: {e.html_message}",
                 }
             logger.debug("add new device results: {device_results}", device_results=device_results)
-            if 'variable_data' in api_data and len(api_data['variable_data']) > 0:
-                variable_results = yield self.set_device_variables(device_results['data']['id'],
-                                                                   api_data['variable_data'],
-                                                                   'add',
+            if "variable_data" in api_data and len(api_data["variable_data"]) > 0:
+                variable_results = yield self.set_device_variables(device_results["data"]["id"],
+                                                                   api_data["variable_data"],
+                                                                   "add",
                                                                    source,
                                                                    session=session)
-                if variable_results['code'] > 299:
+                if variable_results["code"] > 299:
                     results = {
-                        'status': 'failed',
-                        'msg': "Device saved, but had problems with saving variables: %s" % variable_results['msg'],
-                        'apimsg': variable_results['apimsg'],
-                        'apimsghtml': variable_results['apimsghtml'],
-                        'device_id': device_results['data']['id'],
-                        'data': device_results['data'],
+                        "status": "failed",
+                        "msg": f"Device saved, but had problems with saving variables: {variable_results['msg']}",
+                        "apimsg": variable_results["apimsg"],
+                        "apimsghtml": variable_results["apimsghtml"],
+                        "device_id": device_results["data"]["id"],
+                        "data": device_results["data"],
                     }
 
-            device_id = device_results['data']['id']
-            new_device = device_results['data']
-            new_device['created'] = new_device['created_at']
-            new_device['updated'] = new_device['updated_at']
+            device_id = device_results["data"]["id"]
+            new_device = device_results["data"]
+            new_device["created"] = new_device["created_at"]
+            new_device["updated"] = new_device["updated_at"]
         else:
-            device_id = api_data['id']
+            device_id = api_data["id"]
             new_device = api_data
 
         logger.debug("device add results: {device_results}", device_results=device_results)
@@ -977,7 +979,7 @@ class Devices(YomboLibrary):
         self.import_device(new_device, source)
 
         try:
-            yield global_invoke_all('_device_added_',
+            yield global_invoke_all("_device_added_",
                                     called_by=self,
                                     id=device_id,
                                     device=self.devices[device_id],
@@ -987,12 +989,12 @@ class Devices(YomboLibrary):
 
         if results is None:
             return {
-                'status': 'success',
-                'msg': "Device added",
-                'apimsg':  "Device added",
-                'apimsghtml':  "Device added",
-                'device_id': device_id,
-                'data': new_device,
+                "status": "success",
+                "msg": "Device added",
+                "apimsg":  "Device added",
+                "apimsghtml":  "Device added",
+                "device_id": device_id,
+                "data": new_device,
             }
 
     @inlineCallbacks
@@ -1001,53 +1003,53 @@ class Devices(YomboLibrary):
             for data_id, value in data.items():
                 if value == "":
                     continue
-                if data_id.startswith('new_'):
+                if data_id.startswith("new_"):
                     post_data = {
-                        'gateway_id': self.gateway_id,
-                        'field_id': field_id,
-                        'relation_id': device_id,
-                        'relation_type': 'device',
-                        'data_weight': 0,
-                        'data': value,
+                        "gateway_id": self.gateway_id,
+                        "field_id": field_id,
+                        "relation_id": device_id,
+                        "relation_type": "device",
+                        "data_weight": 0,
+                        "data": value,
                     }
                     try:
-                        var_data_results = yield self._YomboAPI.request('POST', '/v1/variable/data',
+                        var_data_results = yield self._YomboAPI.request("POST", "/v1/variable/data",
                                                                         post_data,
                                                                         session=session)
                     except YomboWarning as e:
                         return {
-                            'status': 'failed',
-                            'msg': "Couldn't add device variables: %s" % e.message,
-                            'apimsg': "Couldn't add device variables: %s" % e.message,
-                            'apimsghtml': "Couldn't add device variables: %s" % e.html_message,
+                            "status": "failed",
+                            "msg": f"Couldn't add device variables: {e.message}",
+                            "apimsg": f"Couldn't add device variables: {e.message}",
+                            "apimsghtml": f"Couldn't add device variables: {e.html_message}",
                         }
-                    data = var_data_results['data']
-                    self._LocalDB.add_variable_data(var_data_results['data'])
+                    data = var_data_results["data"]
+                    self._LocalDB.add_variable_data(var_data_results["data"])
                 else:
                     post_data = {
-                        'data_weight': 0,
-                        'data': value,
+                        "data_weight": 0,
+                        "data": value,
                     }
                     try:
                         var_data_results = yield self._YomboAPI.request(
-                            'PATCH',
-                            '/v1/variable/data/%s' % data_id,
+                            "PATCH",
+                            f"/v1/variable/data/{data_id}",
                             post_data,
                             session=session
                         )
                     except YomboWarning as e:
                         return {
-                            'status': 'failed',
-                            'msg': "Couldn't edit device variables: %s" % e.message,
-                            'apimsg': "Couldn't edit device variables: %s" % e.message,
-                            'apimsghtml': "Couldn't edit device variables: %s" % e.html_message,
+                            "status": "failed",
+                            "msg": f"Couldn't edit device variables: {e.message}",
+                            "apimsg": f"Couldn't edit device variables: {e.message}",
+                            "apimsghtml": f"Couldn't edit device variables: {e.html_message}",
                         }
                     self._LocalDB.edit_variable_data(data_id, value)
 
         if device_id in self.devices:  # Load device variable cache
             yield self.devices[device_id].device_variables()
         try:
-            global_invoke_all('_device_variables_updated_',
+            global_invoke_all("_device_variables_updated_",
                               called_by=self,
                               id=device_id,
                               device=self.devices[device_id],
@@ -1056,11 +1058,11 @@ class Devices(YomboLibrary):
             pass
 
         return {
-            'status': 'success',
-            'code': var_data_results['code'],
-            'msg': "Device variable added.",
-            'variable_id': var_data_results['data']['id'],
-            'data': var_data_results['data'],
+            "status": "success",
+            "code": var_data_results["code"],
+            "msg": "Device variable added.",
+            "variable_id": var_data_results["data"]["id"],
+            "data": var_data_results["data"],
         }
 
     @inlineCallbacks
@@ -1076,15 +1078,15 @@ class Devices(YomboLibrary):
         """
         logger.info("edit_device data: {data}", data=data)
         if device_id not in self.devices:
-            raise YomboWarning("device_id doesn't exist. Nothing to edit.", 300, 'edit_device', 'Devices')
+            raise YomboWarning("device_id doesn't exist. Nothing to edit.", 300, "edit_device", "Devices")
 
         device = self.devices.get(device_id)
         results = yield device.update_attributes(data, source=source)
         if results is None:
             return {
-                'status': 'success',
-                'msg': "Device saved.",
-                'device_id': self.device_id
+                "status": "success",
+                "msg": "Device saved.",
+                "device_id": self.device_id
             }
         return results
 
@@ -1097,15 +1099,15 @@ class Devices(YomboLibrary):
         :return:
         """
         if device_id not in self.devices:
-            raise YomboWarning("device_id doesn't exist. Nothing to delete.", 300, 'enable_device', 'Devices')
+            raise YomboWarning("device_id doesn't exist. Nothing to delete.", 300, "enable_device", "Devices")
 
         device = self.devices.get(device_id)
-        if 'session' in kwargs:
-            session = kwargs['session']
+        if "session" in kwargs:
+            session = kwargs["session"]
         else:
             session = None
 
-        results = yield device.update_attributes({'status': 1}, source=source, session=session)
+        results = yield device.update_attributes({"status": 1}, source=source, session=session)
         return results
 
     @inlineCallbacks
@@ -1117,14 +1119,14 @@ class Devices(YomboLibrary):
         :return:
         """
         if device_id not in self.devices:
-            raise YomboWarning("device_id doesn't exist. Nothing to delete.", 300, 'disable_device', 'Devices')
+            raise YomboWarning("device_id doesn't exist. Nothing to delete.", 300, "disable_device", "Devices")
         device = self.devices.get(device_id)
-        if 'session' in kwargs:
-            session = kwargs['session']
+        if "session" in kwargs:
+            session = kwargs["session"]
         else:
             session = None
 
-        results = yield device.update_attributes({'status': 0}, source=source, session=session)
+        results = yield device.update_attributes({"status": 0}, source=source, session=session)
         return results
 
     @inlineCallbacks
@@ -1137,13 +1139,10 @@ class Devices(YomboLibrary):
         :param timeout:
         :return:
         """
-        print("wait for command to finish..starting.")
         if request_id not in self.device_commands:
-            print("wait for command to finish..done")
             return True
         device_command = self.device_commands[request_id]
         waiting = True
-        # print("pending commands: %s" % self.device_commands)
         waited_time = 0
         while(waiting):
             status_id = device_command.status_id
@@ -1151,7 +1150,6 @@ class Devices(YomboLibrary):
                 return True
             if status_id > 100:
                 return False
-            print("wait for command to finish..waiting..")
             yield sleep(0.05)
             waited_time += 0.05
             if waited_time > timeout:

@@ -78,15 +78,15 @@ class Interval(IntervalBase):
 
     def split(self, coord):
         if self._start >= coord or self._end <= coord:
-            raise ValueError("split coordinate must lie in [{}, {}) interval, but has value of {}" \
-                             .format(self._start, self._end, coord))
+            raise ValueError(
+                f"split coordinate must lie in [{self._start}, {self._end}) interval, but has value of {coord}")
         first_part = self._part * ((coord - self._start) / self.size)
         second_part = self._part - first_part
         return (Interval(self._start, coord, self._value, first_part, self._fake),
                 Interval(coord, self._end, self._value, second_part, self._fake))
 
     def __repr__(self):
-        return "[{}, {}]({}, {}, {})".format(self._start, self._end, self._value, self._part, self._fake)
+        return f"[{self._start}, {self._end}]({self._value}, {self._part}, {self._fake})"
 
 
 class Point(IntervalBase):
@@ -121,4 +121,4 @@ class Point(IntervalBase):
         return self
 
     def __repr__(self):
-        return "[{}, {}]".format(self._coord, self._value)
+        return f"[{self._coord}, {self._value}]"

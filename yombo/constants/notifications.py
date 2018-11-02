@@ -8,4 +8,3 @@ PRIORITY_LOW = "low"
 PRIORITY_MEDIUM = "medium"
 PRIORITY_HIGH = "high"
 PRIORITY_CRITICAL = "critical"
-

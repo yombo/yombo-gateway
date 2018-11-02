@@ -14,7 +14,7 @@ from yombo.mixins.permissionmixin import PermissionMixin
 from yombo.mixins.rolesmixin import RolesMixin
 from yombo.utils import data_pickle, data_unpickle
 
-logger = get_logger('library.users.user')
+logger = get_logger("library.users.user")
 
 
 class User(AuthMixin, PermissionMixin, RolesMixin):
@@ -27,10 +27,10 @@ class User(AuthMixin, PermissionMixin, RolesMixin):
 
     @property
     def display(self):
-        return "%s <%s>" % (self.name, self.email)
+        return f"self.name <self.email>"
 
     def __str__(self):
-        return "%s <%s>" % (self.name, self.email)
+        return f"self.name <self.email>"
 
     def __init__(self, parent, data={}, flush_cache=None):
         """
@@ -45,34 +45,34 @@ class User(AuthMixin, PermissionMixin, RolesMixin):
         # Auth specific attributes
 
         # Local attributes
-        self._user_id: str = data['id']
-        self.email: str = data['email']
-        self.name: str = data['name']
-        self.access_code_digits: int = data['access_code_digits']
-        self.access_code_string: str = data['access_code_string']
+        self._user_id: str = data["id"]
+        self.email: str = data["email"]
+        self.name: str = data["name"]
+        self.access_code_digits: int = data["access_code_digits"]
+        self.access_code_string: str = data["access_code_string"]
 
         # Load roles and item permissions.
-        rbac_raw = self._Parent._Configs.get('rbac_user_roles', self.user_id, None, False, ignore_case=True)
+        rbac_raw = self._Parent._Configs.get("rbac_user_roles", self.user_id, None, False, ignore_case=True)
         if rbac_raw is None:
             rbac = {}
         else:
-            rbac = data_unpickle(rbac_raw, encoder='msgpack_base64')
+            rbac = data_unpickle(rbac_raw, encoder="msgpack_base64")
 
-        if 'roles' in rbac:
-            roles = rbac['roles']
+        if "roles" in rbac:
+            roles = rbac["roles"]
             if len(roles) > 0:
                 for role in roles:
                     try:
                         self.attach_role(role, save=False, flush_cache=False)
                     except KeyError:
-                        logger.warn("Cannot find role for user, removing from user: %s" % role)
+                        logger.warn("Cannot find role for user, removing from user: {role}", role=role)
                         # Don't have to actually do anything, it won't be added, so it can't be saved. :-)
 
         if flush_cache in (None, True):
-            self._Parent._Cache.flush(tags=('user', 'role'))
+            self._Parent._Cache.flush(tags=("user", "role"))
 
-        if 'item_permissions' in rbac:
-            self.item_permissions = rbac['item_permissions']
+        if "item_permissions" in rbac:
+            self.item_permissions = rbac["item_permissions"]
         self.save()
 
     def has_access(self, platform, item, action, raise_error=None):
@@ -93,12 +93,12 @@ class User(AuthMixin, PermissionMixin, RolesMixin):
         :return:
         """
         tosave = {
-            'roles': list(self.roles),
-            'item_permissions': self.item_permissions
+            "roles": list(self.roles),
+            "item_permissions": self.item_permissions
         }
-        self._Parent._Configs.set('rbac_user_roles', self.user_id,
+        self._Parent._Configs.set("rbac_user_roles", self.user_id,
                                   data_pickle(tosave, encoder="msgpack_base64", local=True),
                                   ignore_case=True)
 
     def __repr__(self):
-        return '<User %s>' % self._user_id
+        return f"<User {self._user_id}>"

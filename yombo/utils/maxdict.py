@@ -9,12 +9,13 @@ Allows for creation of a dictionary with a maximum size.
 
    from yombo.utils.maxdict import MaxDict
 
-   items = MaxDict(200, {'mom' : 'Jane', 'dad' : 'Joe'}) # Can accept a dictionary to get started.
-   items['brother'] = 'Jeff'   # add an additional entry.
-load_notifications
+   items = MaxDict(200, {"mom" : "Jane", "dad" : "Joe"}) # Can accept a dictionary to get started.
+   items["brother"] = "Jeff"   # add an additional entry.
+
+
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2015-2015 by Yombo.
+:copyright: Copyright 2015-2017 by Yombo.
 :license: LICENSE for details.
 """
 # Import python libraries

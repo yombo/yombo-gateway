@@ -16,7 +16,7 @@ from time import time
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
 
-logger = get_logger('library.users.yombobasemixin')
+logger = get_logger("library.users.yombobasemixin")
 
 
 class YomboBaseMixin(object):

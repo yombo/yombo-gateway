@@ -29,7 +29,7 @@ from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 
-logger = get_logger('library.devices')
+logger = get_logger("library.devices")
 
 
 class Variables(YomboLibrary):
@@ -52,7 +52,7 @@ class Variables(YomboLibrary):
         """
         self.load_deferred = None  # Prevents loader from moving on past _load_ until we are done.
 
-        self.gateway_id = self._Configs.get('core', 'gwid', 'local', False)
+        self.gateway_id = self._Configs.get("core", "gwid", "local", False)
 
     @inlineCallbacks
     def get_variable_data(self, data_relation_type=None, data_relation_id=None, **kwargs):
@@ -60,7 +60,7 @@ class Variables(YomboLibrary):
         Gets available variable data for a given device_id or module_id. Any additional named arguments
         will be used as key/value pairs in the where statement.
 
-        :param data_relation_type: Either 'module' or 'device'.
+        :param data_relation_type: Either "module" or "device".
         :type data_relation_type: str
         :param data_relation_id: The id of the module or device to find.
         :type data_relation_id: str
@@ -68,9 +68,9 @@ class Variables(YomboLibrary):
         :rtype: list
         """
         if data_relation_type is not None:
-            kwargs['data_relation_type'] = data_relation_type
+            kwargs["data_relation_type"] = data_relation_type
         if data_relation_id is not None:
-            kwargs['data_relation_id'] = data_relation_id
+            kwargs["data_relation_id"] = data_relation_id
 
         results = yield self._LocalDB.get_variable_data(**kwargs)
         return results
@@ -87,7 +87,7 @@ class Variables(YomboLibrary):
         :rtype: list
         """
         if group_id is not None:
-            kwargs['group_id'] = group_id
+            kwargs["group_id"] = group_id
         results = yield self._LocalDB.get_variable_fields(**kwargs)
         return results
 
@@ -108,7 +108,7 @@ class Variables(YomboLibrary):
         Gets available variable groups for a given module_id or device_type_id. Any additional named arguments
         will be used as key/value pairs in the where statement.
 
-        :param group_relation_type: Either 'module' or 'device'.
+        :param group_relation_type: Either "module" or "device".
         :type group_relation_type: str
         :param relation_id: The id of the module or device to find.
         :type relation_id: str
@@ -116,9 +116,9 @@ class Variables(YomboLibrary):
         :rtype: list
         """
         if group_relation_type is not None:
-            kwargs['group_relation_type'] = group_relation_type
+            kwargs["group_relation_type"] = group_relation_type
         if group_relation_id is not None:
-            kwargs['group_relation_id'] = group_relation_id
+            kwargs["group_relation_id"] = group_relation_id
 
         results = yield self._LocalDB.get_variable_groups(**kwargs)
         return results
@@ -165,11 +165,11 @@ class Variables(YomboLibrary):
                                                                 group_relation_id=group_relation_id)
         if variable_data is not None:
             for group in groups:
-                fields = group['fields']
+                fields = group["fields"]
                 for field in fields:
-                    if group['id'] in variable_data:
-                        if field['id'] in variable_data[group['id']]:
-                            groups[group['id']][field['id']] = variable_data[group['id']][field['id']]
+                    if group["id"] in variable_data:
+                        if field["id"] in variable_data[group["id"]]:
+                            groups[group["id"]][field["id"]] = variable_data[group["id"]][field["id"]]
         return groups
 
     @inlineCallbacks
@@ -197,22 +197,22 @@ class Variables(YomboLibrary):
         """
         for field_name, field in fields:
             if field_name in new_data_items:
-                new_data = new_data_items['field_name']
+                new_data = new_data_items["field_name"]
                 # print("new_data: %s" % new_data)
-                if field['id'] in new_data:
-                    field['id']['value'] = new_data[field['id']]
+                if field["id"] in new_data:
+                    field["id"]["value"] = new_data[field["id"]]
                 else:
-                    field[field['id']] = {
-                        'id': field['id'],
-                        'value': new_data[field['id']],
+                    field[field["id"]] = {
+                        "id": field["id"],
+                        "value": new_data[field["id"]],
                     }
 
-                # for data in field['data']:
-                #     if data['name']
+                # for data in field["data"]:
+                #     if data["name"]
 
-            field['values'] = []
-            for data_id, data in field['data'].items():
-                field['values'].append(data['value'])
+            field["values"] = []
+            for data_id, data in field["data"].items():
+                field["values"].append(data["value"])
 
     @inlineCallbacks
     def merge_variable_groups_fields_data_data(self, groups, new_data_items, relation_type = None):
@@ -226,47 +226,47 @@ class Variables(YomboLibrary):
         # print("merge_variable_data. Groups: %s" % groups)
         # print("merge_variable_data. new_data_items: %s" % new_data_items)
         for group_name, group in groups.items():
-            for field_name, field in group['fields'].items():
+            for field_name, field in group["fields"].items():
                 # print("111 field %s" % field )
                 # print("111 field_name %s" % field )
                 found_field_id = None
                 found_field_key = None
                 if field_name in new_data_items:
-                    found_field_id = field['id']
+                    found_field_id = field["id"]
                     found_field_key = field_name
-                elif field['id'] in new_data_items:
-                    found_field_id = field['id']
-                    found_field_key = field['id']
+                elif field["id"] in new_data_items:
+                    found_field_id = field["id"]
+                    found_field_key = field["id"]
                 if found_field_id is not None:
                     new_data_item = new_data_items[found_field_key]
                     # print("222 new_data: %s" % new_data_item)
-                    # print("222 field['id']: %s" % field['id'])
+                    # print("222 field["id"]: %s" % field["id"])
                     for data_id, data in new_data_item.items():
                         data_items = {
-                            'id': data_id,
-                            'relation_id': None,
-                            'relation_type': relation_type,
-                            'weight': 0,
-                            'created_at': time(),
-                            'updated_at': time(),
+                            "id": data_id,
+                            "relation_id": None,
+                            "relation_type": relation_type,
+                            "weight": 0,
+                            "created_at": time(),
+                            "updated_at": time(),
                         }
                         # print("zzzzz")
                         if data is not None:
-                            data_items['value'] = yield self._GPG.decrypt(data)
-                            data_items['value_display'] = yield self._GPG.display_encrypted(data)
+                            data_items["value"] = yield self._GPG.decrypt(data)
+                            data_items["value_display"] = yield self._GPG.display_encrypted(data)
                         else:
-                            data_items['value'] = None
-                            data_items['value_display'] = ""
+                            data_items["value"] = None
+                            data_items["value_display"] = ""
 
-                        data_items['value_orig'] = data
+                        data_items["value_orig"] = data
                         # print("zzzzz 10")
-                        groups[group_name]['fields'][field_name]['data'][data_id] = data_items
+                        groups[group_name]["fields"][field_name]["data"][data_id] = data_items
                         # print("zzzzz 11")
-                        groups[group_name]['fields'][field_name]['values'].append(data_items['value'])
+                        groups[group_name]["fields"][field_name]["values"].append(data_items["value"])
                         # print("zzzzz 12")
-                        groups[group_name]['fields'][field_name]['values_display'].append(data_items['value_display'])
+                        groups[group_name]["fields"][field_name]["values_display"].append(data_items["value_display"])
                         # print("zzzzz 13")
-                        groups[group_name]['fields'][field_name]['values_orig'].append(data_items['value_orig'])
+                        groups[group_name]["fields"][field_name]["values_orig"].append(data_items["value_orig"])
 
                         # print("newdata: %s" % data_items)
 
@@ -298,17 +298,17 @@ class Variables(YomboLibrary):
                 final_value = ""
                 if isinstance(value, dict):
                     # print("processing from dict..")
-                    if value['input'] == '-----ENCRYPTED DATA-----':
-                        # print("encry: %s" % value['orig'].startswith('-----BEGIN PGP MESSAGE-----'))
-                        # print("encry: %s" % value['orig'])
-                        if value['orig'].startswith('-----BEGIN PGP MESSAGE-----') is False:
+                    if value["input"] == "-----ENCRYPTED DATA-----":
+                        # print("encry: %s" % value["orig"].startswith("-----BEGIN PGP MESSAGE-----"))
+                        # print("encry: %s" % value["orig"])
+                        if value["orig"].startswith("-----BEGIN PGP MESSAGE-----") is False:
                             raise YomboWarning("Invalid variable data.")
                         else:
-                            # print("final_value: value['orig']")
-                            final_value = value['orig']
+                            # print("final_value: value["orig"]")
+                            final_value = value["orig"]
                     else:
-                        # print("final_value: value['input']")
-                        final_value = value['input']
+                        # print("final_value: value["input"]")
+                        final_value = value["input"]
                 else:
                     # print("processing else")
                     final_value = value
@@ -329,33 +329,33 @@ class Variables(YomboLibrary):
         :return:
         """
         try:
-            if 'session' in kwargs:
-                session = kwargs['session']
+            if "session" in kwargs:
+                session = kwargs["session"]
             else:
                 return {
-                    'status': 'failed',
-                    'msg': "Couldn't add variable group: User session missing.",
-                    'apimsg': "Couldn't add variable group: User session missing.",
-                    'apimsghtml': "Couldn't add variable group: User session missing.",
+                    "status": "failed",
+                    "msg": "Couldn't add variable group: User session missing.",
+                    "apimsg": "Couldn't add variable group: User session missing.",
+                    "apimsghtml": "Couldn't add variable group: User session missing.",
                 }
 
-            var_results = yield self._YomboAPI.request('POST', '/v1/variable/group',
+            var_results = yield self._YomboAPI.request("POST", "/v1/variable/group",
                                                        data,
                                                        session=session)
         except YomboWarning as e:
             return {
-                'status': 'failed',
-                'msg': "Couldn't add variable group: %s" % e.message,
-                'apimsg': "Couldn't add variable group: %s" % e.message,
-                'apimsghtml': "Couldn't add variable group: %s" % e.html_message,
+                "status": "failed",
+                "msg": f"Couldn't add variable group: {e.message}",
+                "apimsg": f"Couldn't add variable group: {e.message}",
+                "apimsghtml": f"Couldn't add variable group: {e.html_message}",
             }
         # print("group edit results: %s" % group_results)
         # print("var_results: %s" % var_results)
 
         return {
-            'status': 'success',
-            'msg': "Variable group added.",
-            'group_id': var_results['data']['id'],
+            "status": "success",
+            "msg": "Variable group added.",
+            "group_id": var_results["data"]["id"],
         }
 
     @inlineCallbacks
@@ -368,32 +368,32 @@ class Variables(YomboLibrary):
         :return:
         """
         try:
-            if 'session' in kwargs:
-                session = kwargs['session']
+            if "session" in kwargs:
+                session = kwargs["session"]
             else:
                 return {
-                    'status': 'failed',
-                    'msg': "Couldn't edit variable group: User session missing.",
-                    'apimsg': "Couldn't edit variable group: User session missing.",
-                    'apimsghtml': "Couldn't edit variable group: User session missing.",
+                    "status": "failed",
+                    "msg": "Couldn't edit variable group: User session missing.",
+                    "apimsg": "Couldn't edit variable group: User session missing.",
+                    "apimsghtml": "Couldn't edit variable group: User session missing.",
                 }
-            yield self._YomboAPI.request('PATCH', '/v1/variable/group/%s' % (group_id),
+            yield self._YomboAPI.request("PATCH", f"/v1/variable/group/{group_id}",
                                          data,
                                          session=session)
         except YomboWarning as e:
             return {
-                'status': 'failed',
-                'msg': "Couldn't edit variable group: %s" % e.message,
-                'apimsg': "Couldn't edit variable group: %s" % e.message,
-                'apimsghtml': "Couldn't edit variable group: %s" % e.html_message,
+                "status": "failed",
+                "msg": f"Couldn't edit variable group: {e.message}",
+                "apimsg": f"Couldn't edit variable group: {e.message}",
+                "apimsghtml": f"Couldn't edit variable group: {e.html_message}",
             }
 
         # print("group edit results: %s" % group_results)
 
         return {
-            'status': 'success',
-            'msg': "Variable group edited.",
-            'group_id': group_id,
+            "status": "success",
+            "msg": "Variable group edited.",
+            "group_id": group_id,
         }
 
     @inlineCallbacks
@@ -406,30 +406,30 @@ class Variables(YomboLibrary):
         :return:
         """
         try:
-            if 'session' in kwargs:
-                session = kwargs['session']
+            if "session" in kwargs:
+                session = kwargs["session"]
             else:
                 return {
-                    'status': 'failed',
-                    'msg': "Couldn't delete variable group: User session missing.",
-                    'apimsg': "Couldn't delete variable group: User session missing.",
-                    'apimsghtml': "Couldn't delete variable group: User session missing.",
+                    "status": "failed",
+                    "msg": "Couldn't delete variable group: User session missing.",
+                    "apimsg": "Couldn't delete variable group: User session missing.",
+                    "apimsghtml": "Couldn't delete variable group: User session missing.",
                 }
 
-            yield self._YomboAPI.request('DELETE', '/v1/variable/group/%s' % group_id,
+            yield self._YomboAPI.request("DELETE", f"/v1/variable/group/{group_id}",
                                          session=session)
         except YomboWarning as e:
             return {
-                'status': 'failed',
-                'msg': "Couldn't delete variable group: %s" % e.message,
-                'apimsg': "Couldn't delete variable group: %s" % e.message,
-                'apimsghtml': "Couldn't delete variable group: %s" % e.html_message,
+                "status": "failed",
+                "msg": f"Couldn't delete variable group: {e.message}",
+                "apimsg": f"Couldn't delete variable group: {e.message}",
+                "apimsghtml": f"Couldn't delete variable group: {e.html_message}",
             }
 
         return {
-            'status': 'success',
-            'msg': "Variable group deleted.",
-            'group_id': group_id,
+            "status": "success",
+            "msg": "Variable group deleted.",
+            "group_id": group_id,
         }
 
 
@@ -443,35 +443,35 @@ class Variables(YomboLibrary):
         :return:
         """
         api_data = {
-            'status': 1,
+            "status": 1,
         }
 
         try:
-            if 'session' in kwargs:
-                session = kwargs['session']
+            if "session" in kwargs:
+                session = kwargs["session"]
             else:
                 return {
-                    'status': 'failed',
-                    'msg': "Couldn't enable variable group: User session missing.",
-                    'apimsg': "Couldn't enable variable group: User session missing.",
-                    'apimsghtml': "Couldn't enable variable group: User session missing.",
+                    "status": "failed",
+                    "msg": "Couldn't enable variable group: User session missing.",
+                    "apimsg": "Couldn't enable variable group: User session missing.",
+                    "apimsghtml": "Couldn't enable variable group: User session missing.",
                 }
 
-            yield self._YomboAPI.request('PATCH', '/v1/variable/group/%s' % group_id,
+            yield self._YomboAPI.request("PATCH", f"/v1/variable/group/{group_id}",
                                          api_data,
                                          session=session)
         except YomboWarning as e:
             return {
-                'status': 'failed',
-                'msg': "Couldn't enable variable group: %s" % e.message,
-                'apimsg': "Couldn't enable variable group: %s" % e.message,
-                'apimsghtml': "Couldn't enable variable group: %s" % e.html_message,
+                "status": "failed",
+                "msg": f"Couldn't enable variable group: {e.message}",
+                "apimsg": f"Couldn't enable variable group: {e.message}",
+                "apimsghtml": f"Couldn't enable variable group: {e.html_message}",
             }
 
         return {
-            'status': 'success',
-            'msg': "Variable group enabled.",
-            'group_id': group_id,
+            "status": "success",
+            "msg": "Variable group enabled.",
+            "group_id": group_id,
         }
 
     @inlineCallbacks
@@ -484,35 +484,35 @@ class Variables(YomboLibrary):
         :return:
         """
         api_data = {
-            'status': 0,
+            "status": 0,
         }
 
         try:
-            if 'session' in kwargs:
-                session = kwargs['session']
+            if "session" in kwargs:
+                session = kwargs["session"]
             else:
                 return {
-                    'status': 'failed',
-                    'msg': "Couldn't disable variable group: User session missing.",
-                    'apimsg': "Couldn't disable variable group: User session missing.",
-                    'apimsghtml': "Couldn't disable variable group: User session missing.",
+                    "status": "failed",
+                    "msg": "Couldn't disable variable group: User session missing.",
+                    "apimsg": "Couldn't disable variable group: User session missing.",
+                    "apimsghtml": "Couldn't disable variable group: User session missing.",
                 }
 
-            yield self._YomboAPI.request('PATCH', '/v1/variable/group/%s' % group_id,
+            yield self._YomboAPI.request("PATCH", f'/v1/variable/group/{group_id}',
                                          api_data,
                                          session=session)
         except YomboWarning as e:
             return {
-                'status': 'failed',
-                'msg': "Couldn't disable variable group: %s" % e.message,
-                'apimsg': "Couldn't disable variable group: %s" % e.message,
-                'apimsghtml': "Couldn't disable variable group: %s" % e.html_message,
+                "status": "failed",
+                "msg": f"Couldn't disable variable group: {e.message}",
+                "apimsg": f"Couldn't disable variable group: {e.message}",
+                "apimsghtml": f"Couldn't disable variable group: {e.html_message}",
             }
 
         return {
-            'status': 'success',
-            'msg': "Variable group disabled.",
-            'group_id': group_id,
+            "status": "success",
+            "msg": "Variable group disabled.",
+            "group_id": group_id,
         }
 
     @inlineCallbacks
@@ -525,33 +525,33 @@ class Variables(YomboLibrary):
         :return:
         """
         try:
-            if 'session' in kwargs:
-                session = kwargs['session']
+            if "session" in kwargs:
+                session = kwargs["session"]
             else:
                 return {
-                    'status': 'failed',
-                    'msg': "Couldn't add variable field: User session missing.",
-                    'apimsg': "Couldn't add variable field: User session missing.",
-                    'apimsghtml': "Couldn't add variable field: User session missing.",
+                    "status": "failed",
+                    "msg": "Couldn't add variable field: User session missing.",
+                    "apimsg": "Couldn't add variable field: User session missing.",
+                    "apimsghtml": "Couldn't add variable field: User session missing.",
                 }
 
-            var_results = yield self._YomboAPI.request('POST', '/v1/variable/field',
+            var_results = yield self._YomboAPI.request("POST", "/v1/variable/field",
                                                        data,
                                                        session=session)
         except YomboWarning as e:
             return {
-                'status': 'failed',
-                'msg': "Couldn't add variable field: %s" % e.message,
-                'apimsg': "Couldn't add variable field: %s" % e.message,
-                'apimsghtml': "Couldn't add variable field: %s" % e.html_message,
+                "status": "failed",
+                "msg": f"Couldn't add variable field: {e.message}",
+                "apimsg": f"Couldn't add variable field: {e.message}",
+                "apimsghtml": f"Couldn't add variable field: {e.html_message}",
             }
         # print("field edit results: %s" % field_results)
         # print("var_results: %s" % var_results)
 
         return {
-            'status': 'success',
-            'msg': "Variable field added.",
-            'field_id': var_results['data']['id'],
+            "status": "success",
+            "msg": "Variable field added.",
+            "field_id": var_results["data"]["id"],
         }
 
     @inlineCallbacks
@@ -564,33 +564,33 @@ class Variables(YomboLibrary):
         :return:
         """
         try:
-            if 'session' in kwargs:
-                session = kwargs['session']
+            if "session" in kwargs:
+                session = kwargs["session"]
             else:
                 return {
-                    'status': 'failed',
-                    'msg': "Couldn't edit variable field: User session missing.",
-                    'apimsg': "Couldn't edit variable field: User session missing.",
-                    'apimsghtml': "Couldn't edit variable field: User session missing.",
+                    "status": "failed",
+                    "msg": "Couldn't edit variable field: User session missing.",
+                    "apimsg": "Couldn't edit variable field: User session missing.",
+                    "apimsghtml": "Couldn't edit variable field: User session missing.",
                 }
 
-            yield self._YomboAPI.request('PATCH', '/v1/variable/field/%s' % (field_id),
+            yield self._YomboAPI.request("PATCH", f"/v1/variable/field/{field_id}",
                                          data,
                                          session=session)
         except YomboWarning as e:
             return {
-                'status': 'failed',
-                'msg': "Couldn't edit variable field: %s" % e.message,
-                'apimsg': "Couldn't edit variable field: %s" % e.message,
-                'apimsghtml': "Couldn't edit variable field: %s" % e.html_message,
+                "status": "failed",
+                "msg": f"Couldn't edit variable field: {e.message}",
+                "apimsg": f"Couldn't edit variable field: {e.message}",
+                "apimsghtml": f"Couldn't edit variable field: {e.html_message}",
             }
 
         # print("field edit results: %s" % field_results)
 
         return {
-            'status': 'success',
-            'msg': "Variable field edited.",
-            'field_id': field_id,
+            "status": "success",
+            "msg": "Variable field edited.",
+            "field_id": field_id,
         }
 
     @inlineCallbacks
@@ -603,30 +603,30 @@ class Variables(YomboLibrary):
         :return:
         """
         try:
-            if 'session' in kwargs:
-                session = kwargs['session']
+            if "session" in kwargs:
+                session = kwargs["session"]
             else:
                 return {
-                    'status': 'failed',
-                    'msg': "Couldn't delete variable field: User session missing.",
-                    'apimsg': "Couldn't delete variable field: User session missing.",
-                    'apimsghtml': "Couldn't delete variable field: User session missing.",
+                    "status": "failed",
+                    "msg": "Couldn't delete variable field: User session missing.",
+                    "apimsg": "Couldn't delete variable field: User session missing.",
+                    "apimsghtml": "Couldn't delete variable field: User session missing.",
                 }
 
-            yield self._YomboAPI.request('DELETE', '/v1/variable/field/%s' % field_id,
+            yield self._YomboAPI.request("DELETE", f"/v1/variable/field/{field_id}",
                                          session=session)
         except YomboWarning as e:
             return {
-                'status': 'failed',
-                'msg': "Couldn't delete variable field: %s" % e.message,
-                'apimsg': "Couldn't delete variable field: %s" % e.message,
-                'apimsghtml': "Couldn't delete variable field: %s" % e.html_message,
+                "status": "failed",
+                "msg": f"Couldn't delete variable field: {e.message}",
+                "apimsg": f"Couldn't delete variable field: {e.message}",
+                "apimsghtml": f"Couldn't delete variable field: {e.html_message}",
             }
 
         return {
-            'status': 'success',
-            'msg': "Variable field deleted.",
-            'field_id': field_id,
+            "status": "success",
+            "msg": "Variable field deleted.",
+            "field_id": field_id,
         }
 
 
@@ -640,35 +640,35 @@ class Variables(YomboLibrary):
         :return:
         """
         api_data = {
-            'status': 1,
+            "status": 1,
         }
 
         try:
-            if 'session' in kwargs:
-                session = kwargs['session']
+            if "session" in kwargs:
+                session = kwargs["session"]
             else:
                 return {
-                    'status': 'failed',
-                    'msg': "Couldn't enable variable field: User session missing.",
-                    'apimsg': "Couldn't enable variable field: User session missing.",
-                    'apimsghtml': "Couldn't enable variable field: User session missing.",
+                    "status": "failed",
+                    "msg": "Couldn't enable variable field: User session missing.",
+                    "apimsg": "Couldn't enable variable field: User session missing.",
+                    "apimsghtml": "Couldn't enable variable field: User session missing.",
                 }
 
-            yield self._YomboAPI.request('PATCH', '/v1/variable/field/%s' % field_id,
+            yield self._YomboAPI.request("PATCH", f"/v1/variable/field/{field_id}",
                                          api_data,
                                          session=session)
         except YomboWarning as e:
             return {
-                'status': 'failed',
-                'msg': "Couldn't enable variable field: %s" % e.message,
-                'apimsg': "Couldn't enable variable field: %s" % e.message,
-                'apimsghtml': "Couldn't enable variable field: %s" % e.html_message,
+                "status": "failed",
+                "msg": f"Couldn't enable variable field: {e.message}",
+                "apimsg": f"Couldn't enable variable field: {e.message}",
+                "apimsghtml": f"Couldn't enable variable field: {e.html_message}",
             }
 
         return {
-            'status': 'success',
-            'msg': "Variable field enabled.",
-            'field_id': field_id,
+            "status": "success",
+            "msg": "Variable field enabled.",
+            "field_id": field_id,
         }
 
     @inlineCallbacks
@@ -681,33 +681,33 @@ class Variables(YomboLibrary):
         :return:
         """
         api_data = {
-            'status': 0,
+            "status": 0,
         }
 
         try:
-            if 'session' in kwargs:
-                session = kwargs['session']
+            if "session" in kwargs:
+                session = kwargs["session"]
             else:
                 return {
-                    'status': 'failed',
-                    'msg': "Couldn't disable variable field: User session missing.",
-                    'apimsg': "Couldn't disable variable field: User session missing.",
-                    'apimsghtml': "Couldn't disable variable field: User session missing.",
+                    "status": "failed",
+                    "msg": "Couldn't disable variable field: User session missing.",
+                    "apimsg": "Couldn't disable variable field: User session missing.",
+                    "apimsghtml": "Couldn't disable variable field: User session missing.",
                 }
 
-            yield self._YomboAPI.request('PATCH', '/v1/variable/field/%s' % field_id,
+            yield self._YomboAPI.request("PATCH", f"/v1/variable/field/{field_id}",
                                          api_data,
                                          session=session)
         except YomboWarning as e:
             return {
-                'status': 'failed',
-                'msg': "Couldn't disable variable field: %s" % e.message,
-                'apimsg': "Couldn't disable variable field: %s" % e.message,
-                'apimsghtml': "Couldn't disable variable field: %s" % e.html_message,
+                "status": "failed",
+                "msg": f"Couldn't disable variable field: {e.message}",
+                "apimsg": f"Couldn't disable variable field: {e.message}",
+                "apimsghtml": f"Couldn't disable variable field: {e.html_message}",
             }
 
         return {
-            'status': 'success',
-            'msg': "Variable field disabled.",
-            'field_id': field_id,
+            "status": "success",
+            "msg": "Variable field disabled.",
+            "field_id": field_id,
         }

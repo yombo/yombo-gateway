@@ -15,7 +15,7 @@ import yombo.utils.datetime as dt
 
 TIME_PERIOD_ERROR = "offset {} should be format 'HH:MM' or 'HH:MM:SS'"
 # typing typevar
-T = TypeVar('T')
+T = TypeVar("T")
 
 #####################################################
 # Basic types
@@ -23,21 +23,21 @@ def boolean(value: Any) -> bool:
     """Validate and coerce a boolean value."""
     if isinstance(value, str):
         value = value.lower()
-        if value in ('1', 'true', 'yes', 'on', 'enable'):
+        if value in ("1", "true", "yes", "on", "enable"):
             return True
-        if value in ('0', 'false', 'no', 'off', 'disable'):
+        if value in ("0", "false", "no", "off", "disable"):
             return False
-        raise vol.Invalid('invalid boolean value {}'.format(value))
+        raise vol.Invalid(f"invalid boolean value {value}")
     elif isinstance(value, bool):
         return value
-    raise vol.Invalid("invalid boolean value {}".format(value))
+    raise vol.Invalid(f"invalid boolean value {value}")
 
 
 def string(value: Any) -> str:
     """Coerce value to string, except for None."""
     if value is not None:
         return str(value)
-    raise vol.Invalid('string value is None')
+    raise vol.Invalid("string value is None")
 
 
 def ensure_list(value: Union[T, Sequence[T]]) -> Sequence[T]:
@@ -80,12 +80,12 @@ def has_at_least_one_key(*keys: str) -> Callable:
     def validate(obj: Dict) -> Dict:
         """Test keys exist in dict."""
         if not isinstance(obj, dict):
-            raise vol.Invalid('expected dictionary')
+            raise vol.Invalid("expected dictionary")
 
         for k in obj.keys():
             if k in keys:
                 return obj
-        raise vol.Invalid('must contain one of {}.'.format(', '.join(keys)))
+        raise vol.Invalid(f"must contain one of {', '.join(keys)}.")
 
     return validate
 
@@ -95,12 +95,12 @@ def has_at_least_one_key_value(*items: list) -> Callable:
     def validate(obj: Dict) -> Dict:
         """Test (key,value) exist in dict."""
         if not isinstance(obj, dict):
-            raise vol.Invalid('expected dictionary')
+            raise vol.Invalid("expected dictionary")
 
         for item in obj.items():
             if item in items:
                 return obj
-        raise vol.Invalid('must contain one of {}.'.format(str(items)))
+        raise vol.Invalid(f"must contain one of {str(items)}.")
 
     return validate
 
@@ -113,32 +113,32 @@ def is_device(value):
         os.stat(value)
         return str(value)
     except OSError:
-        raise vol.Invalid('No device at {} found'.format(value))
+        raise vol.Invalid(f"No device at {value} found")
 
 
 def is_dir(value: Any) -> str:
     """Validate that the value is an existing dir."""
     if value is None:
-        raise vol.Invalid('not a directory')
+        raise vol.Invalid("not a directory")
     dir_in = os.path.expanduser(str(value))
 
     if not os.path.isdir(dir_in):
-        raise vol.Invalid('not a directory')
+        raise vol.Invalid("not a directory")
     if not os.access(dir_in, os.R_OK):
-        raise vol.Invalid('directory not readable')
+        raise vol.Invalid("directory not readable")
     return dir_in
 
 
 def is_file(value: Any) -> str:
     """Validate that the value is an existing file."""
     if value is None:
-        raise vol.Invalid('None is not file')
+        raise vol.Invalid("None is not file")
     file_in = os.path.expanduser(str(value))
 
     if not os.path.isfile(file_in):
-        raise vol.Invalid('not a file')
+        raise vol.Invalid("not a file")
     if not os.access(file_in, os.R_OK):
-        raise vol.Invalid('file not readable')
+        raise vol.Invalid("file not readable")
     return file_in
 
 
@@ -154,14 +154,14 @@ def time_zone(value):
 
 time_period_dict = vol.All(
     dict, vol.Schema({
-        'days': vol.Coerce(int),
-        'hours': vol.Coerce(int),
-        'minutes': vol.Coerce(int),
-        'seconds': vol.Coerce(int),
-        'milliseconds': vol.Coerce(int),
+        "days": vol.Coerce(int),
+        "hours": vol.Coerce(int),
+        "minutes": vol.Coerce(int),
+        "seconds": vol.Coerce(int),
+        "milliseconds": vol.Coerce(int),
     }),
-    has_at_least_one_key('days', 'hours', 'minutes',
-                         'seconds', 'milliseconds'),
+    has_at_least_one_key("days", "hours", "minutes",
+                         "seconds", "milliseconds"),
     lambda value: timedelta(**value))
 
 
@@ -173,10 +173,10 @@ def time(value) -> time_sys:
     try:
         time_val = dt.parse_time(value)
     except TypeError:
-        raise vol.Invalid('Not a parseable type')
+        raise vol.Invalid("Not a parseable type")
 
     if time_val is None:
-        raise vol.Invalid('Invalid time specified: {}'.format(value))
+        raise vol.Invalid(f"Invalid time specified: {value}")
 
     return time_val
 
@@ -189,7 +189,7 @@ def date(value) -> date_sys:
     try:
         date_val = dt.parse_date(value)
     except TypeError:
-        raise vol.Invalid('Not a parseable type')
+        raise vol.Invalid("Not a parseable type")
 
     if date_val is None:
         raise vol.Invalid("Could not parse date")
@@ -200,19 +200,19 @@ def date(value) -> date_sys:
 def time_period_str(value: str) -> timedelta:
     """Validate and transform time offset."""
     if isinstance(value, int):
-        raise vol.Invalid('Make sure you wrap time values in quotes')
+        raise vol.Invalid("Make sure you wrap time values in quotes")
     elif not isinstance(value, str):
         raise vol.Invalid(TIME_PERIOD_ERROR.format(value))
 
     negative_offset = False
-    if value.startswith('-'):
+    if value.startswith("-"):
         negative_offset = True
         value = value[1:]
-    elif value.startswith('+'):
+    elif value.startswith("+"):
         value = value[1:]
 
     try:
-        parsed = [int(x) for x in value.split(':')]
+        parsed = [int(x) for x in value.split(":")]
     except ValueError:
         raise vol.Invalid(TIME_PERIOD_ERROR.format(value))
 
@@ -237,7 +237,7 @@ def time_period_seconds(value: Union[int, str]) -> timedelta:
     try:
         return timedelta(seconds=int(value))
     except (ValueError, TypeError):
-        raise vol.Invalid('Expected seconds, got {}'.format(value))
+        raise vol.Invalid(f"Expected seconds, got {value}")
 
 
 time_period = vol.Any(time_period_str, time_period_seconds, timedelta,
@@ -264,9 +264,9 @@ def id_string(string, min=4, max=100):
 def template(value):
     """Validate a jinja2 template."""
     if value is None:
-        raise vol.Invalid('template value is None')
+        raise vol.Invalid("template value is None")
     elif isinstance(value, str) is False:
-        raise vol.Invalid('template value should be a string')
+        raise vol.Invalid("template value should be a string")
 
     value = JinjaTemplate(str(value))
 
@@ -274,12 +274,12 @@ def template(value):
         value.ensure_valid()
         return value
     except YomboWarning as e:
-        raise vol.Invalid('invalid template ({})'.format(e))
+        raise vol.Invalid(f"invalid template ({e})")
 
 
 def url(url_in, protocols=None):
     if protocols is None:
-        protocols = ['http', 'https', 'sftp', 'ftp']
+        protocols = ["http", "https", "sftp", "ftp"]
 
     if urlparse(url_in).scheme in protocols:
         try:

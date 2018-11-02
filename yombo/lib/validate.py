@@ -37,19 +37,19 @@ from yombo.constants import \
 import yombo.utils.datetime as dt
 import yombo.utils.validators as val
 
-logger = get_logger('library.validate')
+logger = get_logger("library.validate")
 
 # typing typevar
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 TIME_PERIOD_ERROR = "offset {} should be format 'HH:MM' or 'HH:MM:SS'"
 
-RE_SANITIZE_FILENAME = re.compile(r'(~|\.\.|/|\\)')
-RE_SANITIZE_PATH = re.compile(r'(~|\.(\.)+)')
-RE_SLUGIFY = re.compile(r'[^a-z0-9_]+')
+RE_SANITIZE_FILENAME = re.compile(r"(~|\.\.|/|\\)")
+RE_SANITIZE_PATH = re.compile(r"(~|\.(\.)+)")
+RE_SLUGIFY = re.compile(r"[^a-z0-9_]+")
 TBL_SLUGIFY = {
-    ord('ß'): 'ss'
+    ord("ß"): "ss"
 }
 
 
@@ -179,7 +179,7 @@ class Validate(YomboLibrary):
         try:
             return timedelta(seconds=int(value))
         except (ValueError, TypeError):
-            raise YomboInvalidValidation('Expected seconds, got {}'.format(value))
+            raise YomboInvalidValidation(f"Expected seconds, got {value}")
 
 
     #####################################################
@@ -215,12 +215,12 @@ class Validate(YomboLibrary):
     def positive_timedelta(self, value: timedelta) -> timedelta:
         """Validate timedelta is positive."""
         if value < timedelta(0):
-            raise YomboInvalidValidation('Time period should be positive')
+            raise YomboInvalidValidation("Time period should be positive")
         return value
 
     def _slugify(self, text: str) -> str:
         """Slugify a given text."""
-        text = normalize('NFKD', text)
+        text = normalize("NFKD", text)
         text = text.lower()
         text = text.replace(" ", "_")
         text = text.translate(TBL_SLUGIFY)
@@ -230,32 +230,32 @@ class Validate(YomboLibrary):
     def slug(self, value):
         """Validate value is a valid slug (aka: machine_label)"""
         if value is None:
-            raise YomboInvalidValidation('Slug should not be None')
+            raise YomboInvalidValidation("Slug should not be None")
         value = str(value)
         slg = self._slugify(value)
         if value == slg:
             return value
-        raise YomboInvalidValidation('invalid slug {} (try {})'.format(value, slg))
+        raise YomboInvalidValidation(f"invalid slug {value} (try {slg})")
 
     def slugify(self, value):
         """Coerce a value to a slug."""
         # print("going to try to slugify: %s" % value)
         if value is None:
-            raise YomboInvalidValidation('Slug should not be None')
+            raise YomboInvalidValidation("Slug should not be None")
         slg = self._slugify(str(value))
         if slg:
             return slg
         # print("can't make slug: %s" % slg)
-        raise YomboInvalidValidation('Unable to slugify {}'.format(value))
+        raise YomboInvalidValidation(f"Unable to slugify {value}")
 
     def temperature_unit(self, value) -> str:
         """Validate and transform temperature unit."""
         value = str(value).upper()
-        if value == 'C':
+        if value == "C":
             return TEMP_CELSIUS
-        elif value == 'F':
+        elif value == "F":
             return TEMP_FAHRENHEIT
-        raise YomboInvalidValidation('invalid temperature unit (expected C or F)')
+        raise YomboInvalidValidation("invalid temperature unit (expected C or F)")
 
     unit_system = vol.All(vol.Lower, vol.Any(MISC_UNIT_SYSTEM_METRIC,
                                              MISC_UNIT_SYSTEM_IMPERIAL))
@@ -265,7 +265,7 @@ class Validate(YomboLibrary):
         try:
             return dt.time_from_string(value)[0]
         except Exception:
-            raise YomboInvalidValidation('YomboInvalidValidation time specified: {}'.format(value))
+            raise YomboInvalidValidation(f"YomboInvalidValidation time specified: {value}")
 
     def datetime(self, value):
         """Validate datetime."""
@@ -275,15 +275,15 @@ class Validate(YomboLibrary):
         try:
             return dt.time_from_string(value)[0]
         except Exception:
-            raise YomboInvalidValidation('YomboInvalidValidation datetime specified: {}'.format(value))
+            raise YomboInvalidValidation(f"YomboInvalidValidation datetime specified: {value}")
 
     def time_zone(self, value):
         """Validate timezone."""
         if dt.get_time_zone(value) is not None:
             return value
         raise YomboInvalidValidation(
-            'YomboInvalidValidation time zone passed in. Valid options can be found here: '
-            'http://en.wikipedia.org/wiki/List_of_tz_database_time_zones')
+            "YomboInvalidValidation time zone passed in. Valid options can be found here: "
+            "http://en.wikipedia.org/wiki/List_of_tz_database_time_zones")
 
     weekdays = vol.All(ensure_list, [vol.In(WEEKDAYS)])
 
@@ -299,16 +299,16 @@ class Validate(YomboLibrary):
                 float_value = float(value)
                 if float_value > 0.0:
                     return float_value
-                raise YomboInvalidValidation('YomboInvalidValidation socket timeout value.'
-                                  ' float > 0.0 required.')
-            except Exception as _:
-                raise YomboInvalidValidation('YomboInvalidValidation socket timeout: {err}'.format(err=_))
+                raise YomboInvalidValidation("YomboInvalidValidation socket timeout value."
+                                  " float > 0.0 required.")
+            except Exception as e:
+                raise YomboInvalidValidation(f"YomboInvalidValidation socket timeout: {e}")
 
     def x10_address(value):
         """Validate an x10 address."""
-        regex = re.compile(r'([A-Pa-p]{1})(?:[2-9]|1[0-6]?)$')
+        regex = re.compile(r"([A-Pa-p]{1})(?:[2-9]|1[0-6]?)$")
         if not regex.match(value):
-            raise YomboInvalidValidation('YomboInvalidValidation X10 Address')
+            raise YomboInvalidValidation("YomboInvalidValidation X10 Address")
         return str(value).lower()
 
     def ensure_list(self, value: Union[T, Sequence[T]]) -> Sequence[T]:
@@ -320,14 +320,14 @@ class Validate(YomboLibrary):
     def ensure_list_csv(self, value: Any) -> Sequence:
         """Ensure that input is a list or make one from comma-separated string."""
         if isinstance(value, str):
-            return [member.strip() for member in value.split(',')]
+            return [member.strip() for member in value.split(",")]
         return self.ensure_list(value)
 
     def string(value: Any) -> str:
         """Coerce value to string, except for None."""
         if value is not None:
             return str(value)
-        raise vol.YomboInvalidValidation('string value is None')
+        raise vol.YomboInvalidValidation("string value is None")
 
     def is_json(self, value):
         """
@@ -363,10 +363,9 @@ class Validate(YomboLibrary):
         def validator(value):
             """Test dependencies."""
             if not isinstance(value, dict):
-                raise YomboInvalidValidation('key dependencies require a dict')
+                raise YomboInvalidValidation("key dependencies require a dict")
             if key in value and dependency not in value:
-                raise YomboInvalidValidation('dependency violation - key "{}" requires '
-                              'key "{}" to exist'.format(key, dependency))
+                raise YomboInvalidValidation(f'dependency violation - key "{key}" requires key "{dependency}" to exist')
 
             return value
 

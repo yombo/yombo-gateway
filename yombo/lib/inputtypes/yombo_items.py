@@ -7,10 +7,11 @@ will return the id of the item unless either:
 
 """
 import inspect
+
 from yombo.lib.inputtypes.input_type import Input_Type
-
-
 from yombo.lib.commands import Command
+
+
 class Yombo_Command(Input_Type):
 
     def validate(self, value, get_object=None, **kwargs):
@@ -73,7 +74,7 @@ class Yombo_Device(Input_Type):
             else:
                 return the_item.device_id
         except Exception as e:
-            raise AssertionError("Value is not a valid yombo device (%s)." % e)
+            raise AssertionError(f"Value is not a valid yombo device ({e}).")
 
 
 from yombo.core.module import YomboModule

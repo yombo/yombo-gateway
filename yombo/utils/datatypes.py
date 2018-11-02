@@ -9,17 +9,17 @@ from yombo.utils import is_true_false
 
 def determine_variable_type(input):
     if isinstance(input, int):
-        return 'int'
+        return "int"
     elif isinstance(input, str):
-        return 'str'
+        return "str"
     elif isinstance(input, list):
-        return 'list'
+        return "list"
     elif isinstance(input, dict):
-        return 'dict'
+        return "dict"
     elif isinstance(input, float):
-        return 'int'
-    elif isinstance(input, dec):
-        return 'int'
+        return "int"
+    elif isinstance(input, Decimal):
+        return "int"
 
 def coerce_value(value, value_type):
     """
@@ -31,13 +31,13 @@ def coerce_value(value, value_type):
     """
     if value_type is None:
         return value
-    if value_type.lower() in ('str', 'string'):
+    if value_type.lower() in ("str", "string"):
         return str(value)
-    elif value_type.lower() in ('int', 'integer', 'epoch', 'number'):
+    elif value_type.lower() in ("int", "integer", "epoch", "number"):
         return int(value)
-    elif value_type.lower() == 'float':
+    elif value_type.lower() == "float":
         return float(value)
-    elif value_type.lower() in ('bool', 'boolean'):
+    elif value_type.lower() in ("bool", "boolean"):
         return is_true_false(value)
     else:
         return value
@@ -46,13 +46,13 @@ def magnitude(value):
     """
     From: https://gist.github.com/pyrtsa/10009826
 
-    Decimal magnitude of abs(value) as int, or float('-inf') if value == 0.
+    Decimal magnitude of abs(value) as int, or float("-inf") if value == 0.
     Example:
 
         >>> [magnitude(x) for x in [1.314234123412345678e-9, 124.355, -1000, 0]]
         [-9, 2, 3, -inf]
     """
-    return int(math.floor(math.log10(abs(value)))) if value else float('-inf')
+    return int(math.floor(math.log10(abs(value)))) if value else float("-inf")
 
 
 def approximate(value, digits=4):
@@ -63,7 +63,7 @@ def approximate(value, digits=4):
     leading number.
 
         >>> [approx(x) for x in [1.314234123412345678e-9, 124.355, -1000, 0]]
-        [Decimal('1.3142E-9'), Decimal('124.36'), Decimal('-1000.0'), Decimal('0')]
+        [Decimal("1.3142E-9"), Decimal("124.36"), Decimal("-1000.0"), Decimal("0")]
     """
     if not isinstance(value, Decimal):
         value = Decimal(value)
@@ -79,6 +79,6 @@ def decstring(x):
     notation. Example:
 
         >>> [decstring(x) for x in [1.314234123412345678e-9, 124.355, -1000, 0]]
-        ['0.0000000013142341234123457', '124.355', '-1000', '0']
+        ["0.0000000013142341234123457", "124.355", "-1000", "0"]
     """
-    return format(Decimal(str(x)), 'f')
+    return format(Decimal(str(x)), "f")

@@ -18,17 +18,17 @@ logger = get_logger("library.webinterface.route_devices")
 
 def route_webinterface_logs(webapp):
     with webapp.subroute("/webinterface_logs") as webapp:
-        @webapp.route('/')
+        @webapp.route("/")
         @require_auth()
         def page_webinterface_logs(webinterface, request, session):
-            session.has_access('weblogs', '*', 'view', raise_error=True)
-            return webinterface.redirect(request, '/webinterface_logs/index')
+            session.has_access("weblogs", "*", "view", raise_error=True)
+            return webinterface.redirect(request, "/webinterface_logs/index")
 
-        @webapp.route('/index')
+        @webapp.route("/index")
         @require_auth()
         def page_webinterface_logs_index(webinterface, request, session):
-            session.has_access('weblogs', '*', 'view', raise_error=True)
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/webinterface_logs/index.html')
+            session.has_access("weblogs", "*", "view", raise_error=True)
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/webinterface_logs/index.html")
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/webinterface_logs/index", "Webinterface Logs")
             return page.render(

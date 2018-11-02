@@ -26,7 +26,7 @@ from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 
-logger = get_logger('library.amqpyomb_handlers.amqpcontrol')
+logger = get_logger("library.amqpyomb_handlers.amqpcontrol")
 
 
 class AmqpControlHandler(YomboLibrary):
@@ -44,7 +44,7 @@ class AmqpControlHandler(YomboLibrary):
         self._Devices = self.parent._Devices
 
     def amqp_incoming_request(self, headers, body, **kwargs):
-        request_type = headers['request_type']
+        request_type = headers["request_type"]
         if request_type == "control":
             self.process_request_control(headers, **kwargs)
         else:
@@ -54,13 +54,13 @@ class AmqpControlHandler(YomboLibrary):
 
     def process_request_control(self, deliver, properties, headers, body, **kwargs):
         logger.warn("recieved device-command request: {body}", body=body)
-        request = body['request']
-        print("Process control: %s" % request)
-        device_id = request['device']['id']
+        request = body["request"]
+        print(f"Process control: {request}")
+        device_id = request["device"]["id"]
 
         if device_id in self._Devices:
-            device = self._Devices[request['device']['id']]
-            device.command(request['command']['id'])
+            device = self._Devices[request["device"]["id"]]
+            device.command(request["command"]["id"])
 
     def _stop_(self):
         pass

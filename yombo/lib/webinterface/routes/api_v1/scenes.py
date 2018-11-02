@@ -1,18 +1,20 @@
 from yombo.lib.webinterface.auth import require_auth
 from yombo.utils import is_none
 
+
 def route_api_v1_scene(webapp):
     with webapp.subroute("/api/v1") as webapp:
 
-        @webapp.route('/scene/device_inputs', methods=['GET'])
+        @webapp.route("/scene/device_inputs", methods=["GET"])
         @require_auth(api=True)
         def apiv1_scenes_device_inputs_index(webinterface, request, session):
-            session.has_access('scene', '*', 'view', raise_error=True)
+            session.has_access("scene", "*", "view", raise_error=True)
+
             def local_error(message):
-                return "<tr><td colspan=4>%s</td><tr>\n" % message
+                return f"<tr><td colspan=4>{message}</td><tr>\n"
 
             try:
-                scene_id = request.args.get('scene_id')[0]
+                scene_id = request.args.get("scene_id")[0]
             except Exception:
                 return local_error("The 'scene_id' is required.")
             try:
@@ -20,7 +22,7 @@ def route_api_v1_scene(webapp):
             except Exception:
                 return local_error("The 'scene_id' cannot be found.")
 
-            action_id = is_none(request.args.get('action_id', [None])[0])
+            action_id = is_none(request.args.get("action_id", [None])[0])
             if action_id is None:
                 action_details = None
             else:
@@ -30,7 +32,7 @@ def route_api_v1_scene(webapp):
                     return local_error("The 'itemid' cannot be found.")
 
             try:
-                device_machine_label = request.args.get('device_machine_label')[0]
+                device_machine_label = request.args.get("device_machine_label")[0]
             except Exception:
                 return local_error("The 'device_machine_label' is required.")
             try:
@@ -39,7 +41,7 @@ def route_api_v1_scene(webapp):
                 return local_error("The 'deviceid' cannot be found.")
 
             try:
-                command_machine_label = request.args.get('command_machine_label')[0]
+                command_machine_label = request.args.get("command_machine_label")[0]
             except Exception:
                 return local_error("The 'command_machine_label' is required.")
             try:
@@ -51,9 +53,9 @@ def route_api_v1_scene(webapp):
 
             if command.command_id not in available_commands:
                 return local_error("Command ID is not valid for this device.")
-            inputs = available_commands[command.command_id]['inputs']
+            inputs = available_commands[command.command_id]["inputs"]
 
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/scenes/form_device_inputs.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/scenes/form_device_inputs.html")
             return page.render(
                 alerts=webinterface.get_alerts(),
                 inputs=inputs,

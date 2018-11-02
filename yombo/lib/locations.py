@@ -28,7 +28,7 @@ from yombo.core.log import get_logger
 from yombo.mixins.yombobasemixin import YomboBaseMixin
 from yombo.utils import search_instance, do_search_instance, global_invoke_all
 
-logger = get_logger('library.locations')
+logger = get_logger("library.locations")
 
 class Locations(YomboLibrary):
     """
@@ -60,12 +60,12 @@ class Locations(YomboLibrary):
         """
         Checks to if a provided location ID or machine_label exists.
 
-            >>> if '0kas02j1zss349k1' in self._Locations:
-            >>> if 'area:0kas02j1zss349k1' in self._Locations:
+            >>> if "0kas02j1zss349k1" in self._Locations:
+            >>> if "area:0kas02j1zss349k1" in self._Locations:
 
         or:
 
-            >>> if 'some_location_name' in self.Locations:
+            >>> if "some_location_name" in self.Locations:
 
         :raises YomboWarning: Raised when request is malformed.
         :raises KeyError: Raised when request is not found.
@@ -84,12 +84,12 @@ class Locations(YomboLibrary):
         """
         Attempts to find the location requested using a couple of methods.
 
-            >>> location = self.Locations['0kas02j1zss349k1']  # by id
-            >>> location = self.Locations['area:0kas02j1zss349k1']  # include location type
+            >>> location = self.Locations["0kas02j1zss349k1"]  # by id
+            >>> location = self.Locations["area:0kas02j1zss349k1"]  # include location type
 
         or:
 
-            >>> location = self.Locations['alpnum']  #by name
+            >>> location = self.Locations["alpnum"]  #by name
 
         :raises YomboWarning: Raised when request is malformed.
         :raises KeyError: Raised when request is not found.
@@ -166,81 +166,80 @@ class Locations(YomboLibrary):
         """
         self._started = False
         self.locations = {}
-        self.location_search_attributes = ['location_id', 'label', 'machine_label']
+        self.location_search_attributes = ["location_id", "label", "machine_label"]
 
         yield self._load_locations_from_database()
 
         detected_location_info = self._Configs.detected_location_info
-        if detected_location_info['ip'] is not None:
-            self._States.set('detected_location.source', detected_location_info['source'],
-                             value_type='string', source=self)
-            self._States.set('detected_location.ip', detected_location_info['ip'],
-                             value_type='string', source=self)
-            self._States.set('detected_location.country_code', detected_location_info['country_code'],
-                             value_type='string', source=self)
-            self._States.set('detected_location.country_name', detected_location_info['country_name'],
-                             value_type='string', source=self)
-            self._States.set('detected_location.region_code', detected_location_info['region_code'],
-                             value_type='string', source=self)
-            self._States.set('detected_location.region_name', detected_location_info['region_name'],
-                             value_type='string', source=self)
-            self._States.set('detected_location.city', detected_location_info['city'],
-                             value_type='string', source=self)
-            self._States.set('detected_location.zip_code', detected_location_info['zip_code'],
-                             value_type='string', source=self)
-            self._States.set('detected_location.time_zone', detected_location_info['time_zone'],
-                             value_type='string', source=self)
-            self._States.set('detected_location.latitude', detected_location_info['latitude'],
-                             value_type='float', source=self)
-            self._States.set('detected_location.longitude', detected_location_info['longitude'],
-                             value_type='float', source=self)
-            self._States.set('detected_location.elevation', detected_location_info['elevation'],
-                             value_type='int', source=self)
-            self._States.set('detected_location.isp', detected_location_info['isp'],
-                             value_type='string', source=self)
-            self._States.set('detected_location.use_metric', detected_location_info['use_metric'],
-                             value_type='bool', source=self)
+        if detected_location_info["ip"] is not None:
+            self._States.set("detected_location.source", detected_location_info["source"],
+                             value_type="string", source=self)
+            self._States.set("detected_location.ip", detected_location_info["ip"],
+                             value_type="string", source=self)
+            self._States.set("detected_location.country_code", detected_location_info["country_code"],
+                             value_type="string", source=self)
+            self._States.set("detected_location.country_name", detected_location_info["country_name"],
+                             value_type="string", source=self)
+            self._States.set("detected_location.region_code", detected_location_info["region_code"],
+                             value_type="string", source=self)
+            self._States.set("detected_location.region_name", detected_location_info["region_name"],
+                             value_type="string", source=self)
+            self._States.set("detected_location.city", detected_location_info["city"],
+                             value_type="string", source=self)
+            self._States.set("detected_location.zip_code", detected_location_info["zip_code"],
+                             value_type="string", source=self)
+            self._States.set("detected_location.time_zone", detected_location_info["time_zone"],
+                             value_type="string", source=self)
+            self._States.set("detected_location.latitude", detected_location_info["latitude"],
+                             value_type="float", source=self)
+            self._States.set("detected_location.longitude", detected_location_info["longitude"],
+                             value_type="float", source=self)
+            self._States.set("detected_location.elevation", detected_location_info["elevation"],
+                             value_type="int", source=self)
+            self._States.set("detected_location.isp", detected_location_info["isp"],
+                             value_type="string", source=self)
+            self._States.set("detected_location.use_metric", detected_location_info["use_metric"],
+                             value_type="bool", source=self)
 
             data = {
-                'latitude': float(self._Configs.get('location', 'latitude', detected_location_info['latitude'], False)),
-                'longitude': float(self._Configs.get('location', 'longitude', detected_location_info['longitude'], False)),
-                'elevation': int(self._Configs.get('location', 'elevation', detected_location_info['elevation'], False)),
-                'city': str(self._Configs.get('location', 'city', detected_location_info['city'], False)),
-                'country_code': str(self._Configs.get('location', 'country_code',  detected_location_info['country_code'], False)),
-                'country_name': str(self._Configs.get('location', 'country_name', detected_location_info['country_name'], False)),
-                'region_code': str(self._Configs.get('location', 'region_code', detected_location_info['region_code'], False)),
-                'region_name': str(self._Configs.get('location', 'region_name', detected_location_info['region_name'], False)),
-                'time_zone': str(self._Configs.get('location', 'time_zone', detected_location_info['time_zone'], False)),
-                'zip_code': str(self._Configs.get('location', 'zip_code', detected_location_info['zip_code'], False)),
+                "latitude": float(self._Configs.get("location", "latitude", detected_location_info["latitude"], False)),
+                "longitude": float(self._Configs.get("location", "longitude", detected_location_info["longitude"], False)),
+                "elevation": int(self._Configs.get("location", "elevation", detected_location_info["elevation"], False)),
+                "city": str(self._Configs.get("location", "city", detected_location_info["city"], False)),
+                "country_code": str(self._Configs.get("location", "country_code",  detected_location_info["country_code"], False)),
+                "country_name": str(self._Configs.get("location", "country_name", detected_location_info["country_name"], False)),
+                "region_code": str(self._Configs.get("location", "region_code", detected_location_info["region_code"], False)),
+                "region_name": str(self._Configs.get("location", "region_name", detected_location_info["region_name"], False)),
+                "time_zone": str(self._Configs.get("location", "time_zone", detected_location_info["time_zone"], False)),
+                "zip_code": str(self._Configs.get("location", "zip_code", detected_location_info["zip_code"], False)),
             }
             for label, value in data.items():
-                if value in (None, '', 'None'):
-                    self._Configs.set('location', label, detected_location_info[label])
+                if value in (None, "", "None"):
+                    self._Configs.set("location", label, detected_location_info[label])
 
-            if self._Configs.get('location', 'searchbox', None, False) in (None, '', 'None'):
-                searchbox = "%s, %s, %s" % (detected_location_info['city'],
-                                          detected_location_info['region_code'],
-                                          detected_location_info['country_code'])
-                self._Configs.set('location', 'searchbox', searchbox)
+            if self._Configs.get("location", "searchbox", None, False) in (None, "", "None"):
+                searchbox = f"{detected_location_info['city']}, {detected_location_info['region_code']}, " \
+                            f"{detected_location_info['country_code']}"
+                self._Configs.set("location", "searchbox", searchbox)
         else:
-            self._States.set('detected_location.source', None, source=self)
-            self._States.set('detected_location.ip', None, source=self)
-            self._States.set('detected_location.country_code', None, source=self)
-            self._States.set('detected_location.country_name', None, source=self)
-            self._States.set('detected_location.region_code', None, source=self)
-            self._States.set('detected_location.region_name', None, source=self)
-            self._States.set('detected_location.city', None, source=self)
-            self._States.set('detected_location.zip_code', None, source=self)
-            self._States.set('detected_location.time_zone', None, source=self)
-            self._States.set('detected_location.latitude', None, source=self)
-            self._States.set('detected_location.longitude', None, source=self)
-            self._States.set('detected_location.isp', None, source=self)
-            self._States.set('detected_location.elevation', 800, value_type='int', source=self)
-            self._States.set('detected_location.use_metric', True, value_type='bool', source=self)
+            self._States.set("detected_location.source", None, source=self)
+            self._States.set("detected_location.ip", None, source=self)
+            self._States.set("detected_location.country_code", None, source=self)
+            self._States.set("detected_location.country_name", None, source=self)
+            self._States.set("detected_location.region_code", None, source=self)
+            self._States.set("detected_location.region_name", None, source=self)
+            self._States.set("detected_location.city", None, source=self)
+            self._States.set("detected_location.zip_code", None, source=self)
+            self._States.set("detected_location.time_zone", None, source=self)
+            self._States.set("detected_location.latitude", None, source=self)
+            self._States.set("detected_location.longitude", None, source=self)
+            self._States.set("detected_location.isp", None, source=self)
+            self._States.set("detected_location.elevation", 800, value_type="int", source=self)
+            self._States.set("detected_location.use_metric", True, value_type="bool", source=self)
 
         # Gateway logical location.  House, bedroom, etc.
-        self.gateway_location_id = self._Configs.get2('location', 'location_id', self.get_default('location'), True)
-        self.gateway_area_id = self._Configs.get2('location', 'area_id', self.get_default('area'), True)
+        self.gateway_location_id = self._Configs.get2("location", "location_id", self.get_default("location"), True)
+        self.gateway_area_id = self._Configs.get2("location", "area_id", self.get_default("area"), True)
 
     def _start_(self, **kwargs):
         self._started = True
@@ -258,24 +257,24 @@ class Locations(YomboLibrary):
         for location in locations:
             self.import_location(location.__dict__)
 
-        # Have 'none' site location and area locations as defaults.
-        self.locations['area_none'] = Location(self, {
-            'id': 'area_none',
-            'location_type': 'area',
-            'machine_label': 'none',
-            'label': 'None',
-            'description': "Default when no 'area' location is assigned.",
-            'updated_at': int(time()),
-            'created_at': int(time()),
+        # Have "none" site location and area locations as defaults.
+        self.locations["area_none"] = Location(self, {
+            "id": "area_none",
+            "location_type": "area",
+            "machine_label": "none",
+            "label": "None",
+            "description": "Default when no 'area' location is assigned.",
+            "updated_at": int(time()),
+            "created_at": int(time()),
         })
-        self.locations['location_none'] = Location(self, {
-            'id': 'location_none',
-            'location_type': 'location',
-            'machine_label': 'none',
-            'label': 'None',
-            'description': "Default when no 'location' location is assigned.",
-            'updated_at': int(time()),
-            'created_at': int(time()),
+        self.locations["location_none"] = Location(self, {
+            "id": "location_none",
+            "location_type": "location",
+            "machine_label": "none",
+            "label": "None",
+            "description": "Default when no 'location' location is assigned.",
+            "updated_at": int(time()),
+            "created_at": int(time()),
         })
 
     def import_location(self, location, test_location=False):
@@ -284,10 +283,10 @@ class Locations(YomboLibrary):
 
         **Hooks called**:
 
-        * _location_before_load_ : If added, sends location dictionary as 'location'
-        * _location_before_update_ : If updated, sends location dictionary as 'location'
-        * _location_loaded_ : If added, send the location instance as 'location'
-        * _location_updated_ : If updated, send the location instance as 'location'
+        * _location_before_load_ : If added, sends location dictionary as "location"
+        * _location_before_update_ : If updated, sends location dictionary as "location"
+        * _location_loaded_ : If added, send the location instance as "location"
+        * _location_updated_ : If updated, send the location instance as "location"
 
         :param location: A dictionary of items required to either setup a new location or update an existing one.
         :type input: dict
@@ -300,21 +299,21 @@ class Locations(YomboLibrary):
         location_id = location["id"]
         # Stop here if not in run mode.
         if self._started is True:
-            global_invoke_all('_locations_before_import_',
+            global_invoke_all("_locations_before_import_",
                               called_by=self,
                               location_id=location_id,
                               location=location,
                               )
         if location_id not in self.locations:
             if self._started is True:
-                global_invoke_all('_location_before_load_',
+                global_invoke_all("_location_before_load_",
                               called_by=self,
                               location_id=location_id,
                               location=location,
                               )
             self.locations[location_id] = Location(self, location)
             if self._started is True:
-                global_invoke_all('_location_loaded_',
+                global_invoke_all("_location_loaded_",
                               called_by=self,
                               location_id=location_id,
                               location=self.locations[location_id],
@@ -322,43 +321,43 @@ class Locations(YomboLibrary):
 
         elif location_id not in self.locations:
             if self._started is True:
-                global_invoke_all('_location_before_update_',
+                global_invoke_all("_location_before_update_",
                               called_by=self,
                               location_id=location_id,
                               location=self.locations[location_id],
                               )
             self.locations[location_id].update_attributes(location)
             if self._started is True:
-                global_invoke_all('_location_updated_',
+                global_invoke_all("_location_updated_",
                               called_by=self,
                               location_id=location_id,
                               location=self.locations[location_id],
                               )
         if self._started is True:
-            global_invoke_all('_locations_imported_',
+            global_invoke_all("_locations_imported_",
                           called_by=self,
                           location_id=location_id,
                           location=location,
                           )
 
     def area_label(self,
-                   area_id: dict(type=str, help="Area ID (location) to use for prepending to label"),
-                   label: dict(type=str, help="Label to prepend Area to.")
-                   ) -> dict(type=str, help="The result of:  area + label"):
+                   area_id: {'type': str, 'help': "Area ID (location) to use for prepending to label"},
+                   label: {'type': str, 'help': "Label to prepend Area to."}
+                   ) -> {'type': str, 'help': "The result of:  area + label"}:
         """
         Adds an area label to a provided string (label).
         """
         if area_id in self.locations:
             area_label = self.locations[area_id].label
             if area_label.lower() != "none" and area_label is not None:
-                return "%s %s" % (area_label, label)
+                return f"{area_label} {label}"
         return label
 
     def full_label(self,
-                   location_id: dict(type=str, help="Location ID to use for prepending to label"),
-                   area_id: dict(type=str, help="Area ID (location) to use for prepending to label"),
-                   label: dict(type=str, help="Label to prepend Location and Area to.")
-                   ) -> dict(type=str, help="The result of:  location + area + label"):
+                   location_id: {'type': str, 'help': "Location ID to use for prepending to label"},
+                   area_id: {'type': str, 'help': "Area ID (location) to use for prepending to label"},
+                   label: {'type': str, 'help': "Label to prepend Location and Area to."}
+                   ) -> {'type': str, 'help': "The result of:  location + area + label"}:
         """
         Adds location and area to a provided string (label).
         """
@@ -371,8 +370,8 @@ class Locations(YomboLibrary):
         if area_id in self.locations:
             area_label = self.locations[area_id].label
             if area_label.lower() != "none" and area_label is not None:
-                return "%s %s %s" % (output, area_label, label)
-        return "%s %s" % (output, label)
+                return f"{output} {area_label} {label}"
+        return f"{output} {label}"
 
     def get_all(self):
         """
@@ -384,19 +383,19 @@ class Locations(YomboLibrary):
     def get_default(self, location_type):
         """
         Get a default location. This only work when there is only one other location other than None. Returns
-        'none' location if there are multiple.
+        "none" location if there are multiple.
 
         :param location_type:
         :return:
         """
-        if location_type not in ('area', 'location'):
-            raise YomboWarning("Unknown location_type: %s" % location_type)
+        if location_type not in ("area", "location"):
+            raise YomboWarning(f"Unknown location_type: {location_type}")
 
         found_id = None
         for location_id, location in self.locations.items():
             if location.location_type != location_type:
                 continue
-            if found_id is None or location.machine_label != 'none':
+            if found_id is None or location.machine_label != "none":
                 found_id = location_id
 
         if found_id is None:
@@ -413,15 +412,15 @@ class Locations(YomboLibrary):
            Modules can also simply treat this library as a dictionary to lookup items, however, this will search
            any location type.
 
-            >>> self.Locations['13ase45']
+            >>> self.Locations["13ase45"]
 
         or:
 
-            >>> self.Locations['numeric']
+            >>> self.Locations["numeric"]
 
         To specify a location type, use this format for the string:   location_type:location_id
 
-            >>> self.Locations['area:13ase45']
+            >>> self.Locations["area:13ase45"]
 
         :raises YomboWarning: For invalid requests.
         :raises KeyError: When item requested cannot be found.
@@ -441,7 +440,7 @@ class Locations(YomboLibrary):
             limiter = .10
 
         if ":" in location_requested:
-            location_type, location_requested = location_requested.split(':', 1)
+            location_type, location_requested = location_requested.split(":", 1)
 
         if location_requested in self.locations:
             item = self.locations[location_requested]
@@ -449,23 +448,23 @@ class Locations(YomboLibrary):
         else:
             attrs = [
                 {
-                    'field': 'location_id',
-                    'value': location_requested,
-                    'limiter': limiter,
+                    "field": "location_id",
+                    "value": location_requested,
+                    "limiter": limiter,
                 },
                 {
-                    'field': 'machine_label',
-                    'value': location_requested,
-                    'limiter': limiter,
+                    "field": "machine_label",
+                    "value": location_requested,
+                    "limiter": limiter,
                 },
                 {
-                    'field': 'label',
-                    'value': location_requested,
-                    'limiter': limiter,
+                    "field": "label",
+                    "value": location_requested,
+                    "limiter": limiter,
                 }
             ]
             try:
-                logger.debug("Get is about to call search...: %s" % location_requested)
+                logger.debug("Get is about to call search...: {location_requested}", location_requested=location_requested)
                 # found, key, item, ratio, others = self._search(attrs, operation="highest")
                 found, key, item, ratio, others = do_search_instance(attrs, self.locations,
                                                                      self.location_search_attributes,
@@ -474,14 +473,14 @@ class Locations(YomboLibrary):
                 logger.debug("found location by search: others: {others}", others=others)
                 if location_type is not None:
                     for other in others:
-                        if other['value'].location_type == location_type and other['ratio'] > limiter:
-                            return other['value']
+                        if other["value"].location_type == location_type and other["ratio"] > limiter:
+                            return other["value"]
                 else:
                     if found:
                         return item
-                raise KeyError("Location not found: %s" % location_requested)
+                raise KeyError(f"Location not found: {location_requested}")
             except YomboWarning as e:
-                raise KeyError('Searched for %s, but had problems: %s' % (location_requested, e))
+                raise KeyError(f"Searched for {location_requested}, but had problems: {e}")
 
     def search(self, _limiter=None, _operation=None, **kwargs):
         """
@@ -507,32 +506,32 @@ class Locations(YomboLibrary):
         :return:
         """
         try:
-            if 'session' in kwargs:
-                session = kwargs['session']
+            if "session" in kwargs:
+                session = kwargs["session"]
             else:
                 session = None
 
-            location_results = yield self._YomboAPI.request('POST', '/v1/location',
+            location_results = yield self._YomboAPI.request("POST", "/v1/location",
                                                             data,
                                                             session=session)
         except YomboWarning as e:
             return {
-                'status': 'failed',
-                'msg': "Couldn't add location: %s" % e.message,
-                'apimsg': "Couldn't add location: %s" % e.message,
-                'apimsghtml': "Couldn't add location: %s" % e.html_message,
+                "status": "failed",
+                "msg": f"Couldn't add location: {e.message}",
+                "apimsg": f"Couldn't add location: {e.message}",
+                "apimsghtml": f"Couldn't add location: {e.html_message}",
             }
 
-        data['id'] = location_results['data']['id']
-        data['updated_at'] = time()
-        data['created_at'] = time()
+        data["id"] = location_results["data"]["id"]
+        data["updated_at"] = time()
+        data["created_at"] = time()
         self._LocalDB.insert_locations(data)
         self.import_location(data)
 
         return {
-            'status': 'success',
-            'msg': "Location type added.",
-            'location_id': location_results['data']['id'],
+            "status": "success",
+            "msg": "Location type added.",
+            "location_id": location_results["data"]["id"],
         }
 
     @inlineCallbacks
@@ -544,45 +543,45 @@ class Locations(YomboLibrary):
         :param kwargs:
         :return:
         """
-        if data['machine_label'] == 'none':
+        if data["machine_label"] == "none":
             return {
-                'status': 'failed',
-                'msg': "Cannot edit default locations.",
-                'apimsg': "Cannot edit default locations.",
-                'apimsghtml': "Cannot edit default locations.",
+                "status": "failed",
+                "msg": "Cannot edit default locations.",
+                "apimsg": "Cannot edit default locations.",
+                "apimsghtml": "Cannot edit default locations.",
             }
 
         try:
-            if 'session' in kwargs:
-                session = kwargs['session']
+            if "session" in kwargs:
+                session = kwargs["session"]
             else:
                 session = None
 
-            location_results = yield self._YomboAPI.request('PATCH', '/v1/location/%s' % (location_id),
+            location_results = yield self._YomboAPI.request("PATCH", f"/v1/location/{location_id}",
                                                             data,
                                                             session=session)
         except YomboWarning as e:
             return {
-                'status': 'failed',
-                'msg': "Couldn't edit location: %s" % e.message,
-                'apimsg': "Couldn't edit location: %s" % e.message,
-                'apimsghtml': "Couldn't edit location: %s" % e.html_message,
+                "status": "failed",
+                "msg": f"Couldn't edit location: {e.message}",
+                "apimsg": f"Couldn't edit location: {e.message}",
+                "apimsghtml": f"Couldn't edit location: {e.html_message}",
             }
 
         if location_id in self.locations:
             self.locations[location_id].update_attributes(data)
             self.locations[location_id].save_to_db()
 
-        global_invoke_all('_locations_updated_',
+        global_invoke_all("_locations_updated_",
                           called_by=self,
                           location_id=location_id,
                           location=self.locations[location_id],
                           )
 
         return {
-            'status': 'success',
-            'msg': "Device type edited.",
-            'location_id': location_results['data']['id'],
+            "status": "success",
+            "msg": "Device type edited.",
+            "location_id": location_results["data"]["id"],
         }
 
     @inlineCallbacks
@@ -595,34 +594,34 @@ class Locations(YomboLibrary):
         :return:
         """
         location = self.get(location_id)
-        if location['machine_label'] == 'none':
+        if location["machine_label"] == "none":
             return {
-                'status': 'failed',
-                'msg': "Cannot delete default locations.",
-                'apimsg': "Cannot delete default locations.",
-                'apimsghtml': "Cannot delete default locations.",
+                "status": "failed",
+                "msg": "Cannot delete default locations.",
+                "apimsg": "Cannot delete default locations.",
+                "apimsghtml": "Cannot delete default locations.",
             }
 
         try:
-            if 'session' in kwargs:
-                session = kwargs['session']
+            if "session" in kwargs:
+                session = kwargs["session"]
             else:
                 session = None
 
-            yield self._YomboAPI.request('DELETE', '/v1/location/%s' % location.location_id,
+            yield self._YomboAPI.request("DELETE", f"/v1/location/{location.location_id}",
                                          session=session)
         except YomboWarning as e:
             return {
-                'status': 'failed',
-                'msg': "Couldn't delete location: %s" % e.message,
-                'apimsg': "Couldn't delete location: %s" % e.message,
-                'apimsghtml': "Couldn't delete location: %s" % e.html_message,
+                "status": "failed",
+                "msg": f"Couldn't delete location: {e.message}",
+                "apimsg": f"Couldn't delete location: {e.message}",
+                "apimsghtml": f"Couldn't delete location: {e.html_message}",
             }
 
         if location_id in self.locations:
             del self.locations[location_id]
 
-        global_invoke_all('_locations_deleted_',
+        global_invoke_all("_locations_deleted_",
                           called_by=self,
                           location_id=location_id,
                           location=self.locations[location_id],
@@ -630,9 +629,9 @@ class Locations(YomboLibrary):
 
         self._LocalDB.delete_locations(location_id)
         return {
-            'status': 'success',
-            'msg': "Location deleted.",
-            'location_id': location_id,
+            "status": "success",
+            "msg": "Location deleted.",
+            "location_id": location_id,
         }
 
 
@@ -659,7 +658,7 @@ class Location(YomboBaseMixin):
         # logger.debug("Location info: {location}", location=location)
 
         #: str: ID for the location.
-        self.location_id = location['id']
+        self.location_id = location["id"]
 
         # below are configure in update_attributes()
         #: str: Type of location, one of: area, location
@@ -679,20 +678,21 @@ class Location(YomboBaseMixin):
         :param location: 
         :return: 
         """
-        if 'location_type' in location:
-            if location['location_type'].lower() not in ('area', 'location', 'none'):
-                raise YomboWarning("location_type must be one of: area, location.  Received: %s" % location['location_type'])
-            self.location_type = location['location_type'].lower()
-        if 'machine_label' in location:
-            self.machine_label = location['machine_label']
-        if 'label' in location:
-            self.label = location['label']
-        if 'description' in location:
-            self.description = location['description']
-        if 'created_at' in location:
-            self.created_at = location['created_at']
-        if 'updated_at' in location:
-            self.updated_at = location['updated_at']
+        if "location_type" in location:
+            if location["location_type"].lower() not in ("area", "location", "none"):
+                raise YomboWarning(
+                    f"location_type must be one of: area, location.  Received: {location['location_type']}")
+            self.location_type = location["location_type"].lower()
+        if "machine_label" in location:
+            self.machine_label = location["machine_label"]
+        if "label" in location:
+            self.label = location["label"]
+        if "description" in location:
+            self.description = location["description"]
+        if "created_at" in location:
+            self.created_at = location["created_at"]
+        if "updated_at" in location:
+            self.updated_at = location["updated_at"]
 
     def save_to_db(self):
         self._Parent._LocalDB.update_locations(self)
@@ -709,11 +709,11 @@ class Location(YomboBaseMixin):
     #     Export location variables as a dictionary.
     #     """
     #     return {
-    #         'location_id': str(self.location_id),
-    #         'location_type': str(self.location_type),
-    #         'machine_label': str(self.machine_label),
-    #         'label': str(self.label),
-    #         'description': int(self.description),
-    #         'created_at': int(self.created_at),
-    #         'updated_at': str(self.updated_at),
+    #         "location_id": str(self.location_id),
+    #         "location_type": str(self.location_type),
+    #         "machine_label": str(self.machine_label),
+    #         "label": str(self.label),
+    #         "description": int(self.description),
+    #         "created_at": int(self.created_at),
+    #         "updated_at": str(self.updated_at),
     #     }

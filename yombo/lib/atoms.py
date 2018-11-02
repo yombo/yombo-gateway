@@ -21,8 +21,8 @@ For dynamically changing data, use :py:mod:`States <yombo.lib.states>`.
 
 .. code-block:: python
 
-   if self._Atom['os'] != None:
-       logger.debug("Running on operating system: {operatingsystem}", operatingsystem=self._Atom['os'])
+   if self._Atom["os"] != None:
+       logger.debug("Running on operating system: {operatingsystem}", operatingsystem=self._Atom["os"])
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
@@ -54,80 +54,80 @@ from yombo.core.log import get_logger
 import yombo.utils
 import yombo.utils.converters as converters
 
-SUPPORTED_DISTS = platform._supported_dists + ('arch', 'mageia', 'meego', 'vmware', 'bluewhite64',
-                     'slamd64', 'ovs', 'system', 'mint', 'oracle')
+SUPPORTED_DISTS = platform._supported_dists + ("arch", "mageia", "meego", "vmware", "bluewhite64",
+                     "slamd64", "ovs", "system", "mint", "oracle")
 logger = get_logger("library.atoms")
 
-_REPLACE_LINUX_RE = re.compile(r'linux', re.IGNORECASE)
+_REPLACE_LINUX_RE = re.compile(r"linux", re.IGNORECASE)
 
 _MAP_OS_NAME = {
-    'redhatente': 'RedHat',
-    'gentoobase': 'Gentoo',
-    'archarm': 'Arch ARM',
-    'arch': 'Arch',
-    'debian': 'Debian',
-    'debiangnu/': 'Debian',
-    'raspbiangn': 'Raspbian',
-    'fedoraremi': 'Fedora',
-    'amazonami': 'Amazon',
-    'alt': 'ALT',
-    'enterprise': 'OEL',
-    'oracleserv': 'OEL',
-    'cloudserve': 'CloudLinux',
-    'pidora': 'Fedora',
-    'scientific': 'ScientificLinux',
-    'synology': 'Synology',
-    'nilrt': 'NILinuxRT',
-    'manjaro': 'Manjaro',
-    'antergos': 'Antergos',
-    'sles': 'SUSE',
+    "redhatente": "RedHat",
+    "gentoobase": "Gentoo",
+    "archarm": "Arch ARM",
+    "arch": "Arch",
+    "debian": "Debian",
+    "debiangnu/": "Debian",
+    "raspbiangn": "Raspbian",
+    "fedoraremi": "Fedora",
+    "amazonami": "Amazon",
+    "alt": "ALT",
+    "enterprise": "OEL",
+    "oracleserv": "OEL",
+    "cloudserve": "CloudLinux",
+    "pidora": "Fedora",
+    "scientific": "ScientificLinux",
+    "synology": "Synology",
+    "nilrt": "NILinuxRT",
+    "manjaro": "Manjaro",
+    "antergos": "Antergos",
+    "sles": "SUSE",
 }
 
 _MAP_OS_FAMILY = {
-    'ALT': 'RedHat',
-    'Amazon': 'RedHat',
-    'Antergos': 'Arch',
-    'Arch ARM': 'Arch',
-    'Bluewhite64': 'Bluewhite',
-    'CentOS': 'RedHat',
-    'CloudLinux': 'RedHat',
-    'Devuan': 'Debian',
-    'ESXi': 'VMWare',
-    'Fedora': 'RedHat',
-    'GCEL': 'Debian',
-    'GoOSe': 'RedHat',
-    'Linaro': 'Debian',
-    'Mandrake': 'Mandriva',
-    'Manjaro': 'Arch',
-    'Mint': 'Debian',
-    'NILinuxRT': 'NILinuxRT',
-    'OpenIndiana': 'Solaris',
-    'OpenIndiana Development': 'Solaris',
-    'OpenSolaris': 'Solaris',
-    'OpenSolaris Development': 'Solaris',
-    'OEL': 'RedHat',
-    'OVS': 'RedHat',
-    'Raspbian': 'Debian',
-    'Scientific': 'RedHat',
-    'ScientificLinux': 'RedHat',
-    'Slamd64': 'Slackware',
-    'SLED': 'Suse',
-    'SLES': 'Suse',
-    'SmartOS': 'Solaris',
-    'Solaris': 'Solaris',
-    'SUSE': 'Suse',
-    'SUSE Enterprise Server': 'Suse',
-    'SUSE  Enterprise Server': 'Suse',
-    'Trisquel': 'Debian',
-    'Ubuntu': 'Debian',
-    'VMWareESX': 'VMWare',
-    'XCP': 'RedHat',
-    'XenServer': 'RedHat',
-    'antiX': 'Debian',
-    'elementary OS': 'Debian',
-    'openSUSE': 'Suse',
-    'openSUSE Leap': 'Suse',
-    'openSUSE Tumbleweed': 'Suse',
+    "ALT": "RedHat",
+    "Amazon": "RedHat",
+    "Antergos": "Arch",
+    "Arch ARM": "Arch",
+    "Bluewhite64": "Bluewhite",
+    "CentOS": "RedHat",
+    "CloudLinux": "RedHat",
+    "Devuan": "Debian",
+    "ESXi": "VMWare",
+    "Fedora": "RedHat",
+    "GCEL": "Debian",
+    "GoOSe": "RedHat",
+    "Linaro": "Debian",
+    "Mandrake": "Mandriva",
+    "Manjaro": "Arch",
+    "Mint": "Debian",
+    "NILinuxRT": "NILinuxRT",
+    "OpenIndiana": "Solaris",
+    "OpenIndiana Development": "Solaris",
+    "OpenSolaris": "Solaris",
+    "OpenSolaris Development": "Solaris",
+    "OEL": "RedHat",
+    "OVS": "RedHat",
+    "Raspbian": "Debian",
+    "Scientific": "RedHat",
+    "ScientificLinux": "RedHat",
+    "Slamd64": "Slackware",
+    "SLED": "Suse",
+    "SLES": "Suse",
+    "SmartOS": "Solaris",
+    "Solaris": "Solaris",
+    "SUSE": "Suse",
+    "SUSE Enterprise Server": "Suse",
+    "SUSE  Enterprise Server": "Suse",
+    "Trisquel": "Debian",
+    "Ubuntu": "Debian",
+    "VMWareESX": "VMWare",
+    "XCP": "RedHat",
+    "XenServer": "RedHat",
+    "antiX": "Debian",
+    "elementary OS": "Debian",
+    "openSUSE": "Suse",
+    "openSUSE Leap": "Suse",
+    "openSUSE Tumbleweed": "Suse",
 }
 
 
@@ -139,8 +139,8 @@ class Atoms(YomboLibrary):
         """
         Checks to if a provided atom exists.
 
-            >>> if 'cpu.count' in self._Atoms:
-            >>>    print("The system has {0} cpus. ".format(self._Atoms['cpu.count']))
+            >>> if "cpu.count" in self._Atoms:
+            >>>    print("The system has {0} cpus. ".format(self._Atoms["cpu.count"]))
 
         :raises YomboWarning: Raised when request is malformed.
         :param atom_requested: The atom key to search for.
@@ -158,7 +158,7 @@ class Atoms(YomboLibrary):
         """
         Attempts to find the atom requested.
 
-            >>> system_cpus = self._Atoms['cpu.count']
+            >>> system_cpus = self._Atoms["cpu.count"]
 
         :raises YomboWarning: Raised when request is malformed.
         :raises KeyError: Raised when request is not found.
@@ -173,7 +173,7 @@ class Atoms(YomboLibrary):
         """
         Sets an atom value..
 
-            >>> system_cpus = self._Atoms['cpu.count'] = 4
+            >>> system_cpus = self._Atoms["cpu.count"] = 4
 
         :raises YomboWarning: Raised when request is malformed.
         :param atom_requested: The atom key to replace the value for.
@@ -271,23 +271,23 @@ class Atoms(YomboLibrary):
         :return: None
         """
         self.library_state = 1
-        # self.gateway_id = 'local'
-        self.gateway_id = self._Configs.get('core', 'gwid', 'local', False)
+        # self.gateway_id = "local"
+        self.gateway_id = self._Configs.get("core", "gwid", "local", False)
         self._loaded = False
         self.atoms = {self.gateway_id: {}}
-        # if 'local' not in self.atoms:
-        #     self.atoms['local'] = {}
+        # if "local" not in self.atoms:
+        #     self.atoms["local"] = {}
         self.os_data()
 
         self.triggers = {}
-        # self._Automation = self._Libraries['automation']
-        self.set('working_dir', settings.arguments['working_dir'], source=self)
-        self.set('app_dir', settings.arguments['app_dir'], source=self)
+        # self._Automation = self._Libraries["automation"]
+        self.set("working_dir", settings.arguments["working_dir"], source=self)
+        self.set("app_dir", settings.arguments["app_dir"], source=self)
 
     def _load_(self, **kwargs):
         self._loaded = True
         self.library_state = 2
-        self.set('running_since', time(), source=self)
+        self.set("running_since", time(), source=self)
         self._loaded = True
 
     def _start_(self, **kwargs):
@@ -317,13 +317,13 @@ class Atoms(YomboLibrary):
         :rtype: float
         """
         if key in self.atoms:
-            return self.atoms[key]['updated_at']
+            return self.atoms[key]["updated_at"]
         else:
-            raise KeyError("Cannot get state time: %s not found" % key)
+            raise KeyError(f"Cannot get state time: {key} not found")
 
     def get_copy(self, gateway_id=None):
         """
-        Shouldn't really be used. Just returns a _copy_ of all the atoms.
+        Shouldn"t really be used. Just returns a _copy_ of all the atoms.
 
         :return: A dictionary containing all atoms.
         :rtype: dict
@@ -345,12 +345,12 @@ class Atoms(YomboLibrary):
         :return: Value of the atom
         :rtype: mixed
         """
-        # logger.debug('atoms:get: {atom_requested}', atom_requested=atom_requested)
+        # logger.debug("atoms:get: {atom_requested}", atom_requested=atom_requested)
         if gateway_id is None:
             gateway_id = self.gateway_id
 
         self._Statistics.increment("lib.atoms.get", bucket_size=15, anon=True)
-        search_chars = ['#', '+']
+        search_chars = ["#", "+"]
         if any(s in atom_requested for s in search_chars):
             if gateway_id not in self.atoms:
                 return {}
@@ -359,21 +359,21 @@ class Atoms(YomboLibrary):
                 values = {}
                 for item in results:
                     if human is True:
-                        values[item] = self.atoms[gateway_id][item]['value_human']
+                        values[item] = self.atoms[gateway_id][item]["value_human"]
                     elif full is True:
                         values[item] = self.atoms[gateway_id][item]
                     else:
-                        values[item] = self.atoms[gateway_id][item]['value']
+                        values[item] = self.atoms[gateway_id][item]["value"]
                 return values
             else:
-                raise KeyError("Searched for atom, none found: %s" % atom_requested)
+                raise KeyError(f"Searched for atom, none found: {atom_requested}")
 
         if human is True:
-            return self.atoms[gateway_id][atom_requested]['value_human']
+            return self.atoms[gateway_id][atom_requested]["value_human"]
         elif full is True:
             return self.atoms[gateway_id][atom_requested]
         else:
-            return self.atoms[gateway_id][atom_requested]['value']
+            return self.atoms[gateway_id][atom_requested]["value"]
 
     @inlineCallbacks
     def set(self, key, value, value_type=None, gateway_id=None, human_value=None, source=None):
@@ -382,7 +382,7 @@ class Atoms(YomboLibrary):
 
         **Hooks called**:
 
-        * _atoms_set_ : Sends kwargs 'key', and 'value'. *key* is the name of the atom being set and *value* is
+        * _atoms_set_ : Sends kwargs "key", and "value". *key* is the name of the atom being set and *value* is
           the new value to set.
 
         :raises YomboWarning: Raised when request is malformed.
@@ -403,48 +403,48 @@ class Atoms(YomboLibrary):
         """
         if gateway_id is None:
             gateway_id = self.gateway_id
-        # logger.debug('atoms:set: {gateway_id}: {key} = {value}', gateway_id=gateway_id, key=key, value=value)
+        # logger.debug("atoms:set: {gateway_id}: {key} = {value}", gateway_id=gateway_id, key=key, value=value)
 
         if gateway_id not in self.atoms:
             self.atoms[gateway_id] = {}
 
         source_type, source_label = yombo.utils.get_yombo_instance_type(source)
 
-        search_chars = ['#', '+']
+        search_chars = ["#", "+"]
         if any(s in key for s in search_chars):
             raise YomboWarning("state keys cannot have # or + in them, reserved for searching.")
 
         if key in self.atoms[gateway_id]:
             is_new = False
             # If state is already set to value, we don't do anything.
-            self.atoms[gateway_id][key]['updated_at'] = int(round(time()))
+            self.atoms[gateway_id][key]["updated_at"] = int(round(time()))
             if human_value is not None:
-                self.atoms[gateway_id][key]['value_human'] = human_value
-            if self.atoms[gateway_id][key]['value'] == value:
+                self.atoms[gateway_id][key]["value_human"] = human_value
+            if self.atoms[gateway_id][key]["value"] == value:
                 return
             self._Statistics.increment("lib.atoms.set.update", bucket_size=60, anon=True)
         else:
             is_new = True
             self.atoms[gateway_id][key] = {
-                'gateway_id': gateway_id,
-                'created_at': int(time()),
-                'updated_at': int(time()),
+                "gateway_id": gateway_id,
+                "created_at": int(time()),
+                "updated_at": int(time()),
             }
             self._Statistics.increment("lib.atoms.set.new", bucket_size=60, anon=True)
 
-        self.atoms[gateway_id][key]['source'] = source_label
+        self.atoms[gateway_id][key]["source"] = source_label
 
-        self.atoms[gateway_id][key]['value'] = value
+        self.atoms[gateway_id][key]["value"] = value
         if is_new is True or value_type is not None:
-            self.atoms[gateway_id][key]['value_type'] = value_type
+            self.atoms[gateway_id][key]["value_type"] = value_type
 
         if human_value is not None:
-            self.atoms[gateway_id][key]['value_human'] = human_value
+            self.atoms[gateway_id][key]["value_human"] = human_value
         else:
-            self.atoms[gateway_id][key]['value_human'] = self.convert_to_human(value, value_type)
+            self.atoms[gateway_id][key]["value_human"] = self.convert_to_human(value, value_type)
 
         # Call any hooks
-        yield yombo.utils.global_invoke_all('_atoms_set_',
+        yield yombo.utils.global_invoke_all("_atoms_set_",
                                             called_by=self,
                                             key=key,
                                             value=value,
@@ -463,27 +463,27 @@ class Atoms(YomboLibrary):
         :param values:
         :return:
         """
-        gateway_id = data['gateway_id']
+        gateway_id = data["gateway_id"]
         if gateway_id == self.gateway_id:
             return
         if gateway_id not in self.atoms:
             self.atoms[gateway_id] = {}
         source_type, source_label = yombo.utils.get_yombo_instance_type(source)
-        self.atoms[data['gateway_id']][key] = {
-            'gateway_id': data['gateway_id'],
-            'value': data['value'],
-            'value_human': data['value_human'],
-            'value_type': data['value_type'],
-            'source': source_label,
-            'created_at': data['created_at'],
-            'updated_at': data['updated_at'],
+        self.atoms[data["gateway_id"]][key] = {
+            "gateway_id": data["gateway_id"],
+            "value": data["value"],
+            "value_human": data["value_human"],
+            "value_type": data["value_type"],
+            "source": source_label,
+            "created_at": data["created_at"],
+            "updated_at": data["updated_at"],
         }
 
-        yield yombo.utils.global_invoke_all('_atoms_set_',
+        yield yombo.utils.global_invoke_all("_atoms_set_",
                                             called_by=self,
                                             key=key,
-                                            value=data['value'],
-                                            value_type=data['value_type'],
+                                            value=data["value"],
+                                            value_type=data["value_type"],
                                             value_full=self.atoms[gateway_id][key],
                                             gateway_id=gateway_id,
                                             source=source,
@@ -497,14 +497,14 @@ class Atoms(YomboLibrary):
         :param value_type:
         :return:
         """
-        if value_type == 'bool':
+        if value_type == "bool":
             results = yombo.utils.is_true_false(value)
             if results is not None:
                 return results
             else:
                 return value
 
-        elif value_type == 'epoch':
+        elif value_type == "epoch":
             return converters.epoch_to_string(value)
         else:
             return value
@@ -516,65 +516,65 @@ class Atoms(YomboLibrary):
         :return: None
         """
         atoms = {}
-        atoms['pid'] = os.getpid()
-        (atoms['kernel'], atoms['system.name'], atoms['kernel.release'], version,
-         atoms['cpu.arch'], _) = platform.uname()
-        atoms['python.version'] = platform.python_version()
-        atoms['python.build'] = platform.python_build()[0]
-        atoms['cpu.count'] = 0
-        atoms['mem.total'] = 0
-        atoms['mem.sizing'] = 'medium'
-        atoms['os.family'] = 'Unknown'
+        atoms["pid"] = os.getpid()
+        (atoms["kernel"], atoms["system.name"], atoms["kernel.release"], version,
+         atoms["cpu.arch"], _) = platform.uname()
+        atoms["python.version"] = platform.python_version()
+        atoms["python.build"] = platform.python_build()[0]
+        atoms["cpu.count"] = 0
+        atoms["mem.total"] = 0
+        atoms["mem.sizing"] = "medium"
+        atoms["os.family"] = "Unknown"
         if HAS_PSUTIL:
-            atoms['cpu.count'] = psutil.cpu_count()
+            atoms["cpu.count"] = psutil.cpu_count()
             memory = psutil.virtual_memory()
-            atoms['mem.total'] = memory.total
+            atoms["mem.total"] = memory.total
         if memory.total < 261939712:
-            atoms['mem.sizing'] = 'x_small'
+            atoms["mem.sizing"] = "x_small"
         elif memory.total < 523879424:
-            atoms['mem.sizing'] = 'small'
+            atoms["mem.sizing"] = "small"
         elif memory.total < 1047758848:
-            atoms['mem.sizing'] = 'medium'
+            atoms["mem.sizing"] = "medium"
         elif memory.total < 2095517696:
-            atoms['mem.sizing'] = 'large'
+            atoms["mem.sizing"] = "large"
         elif memory.total < 4191035392:
-            atoms['mem.sizing'] = 'x_large'
+            atoms["mem.sizing"] = "x_large"
         else:
-            atoms['mem.sizing'] = 'xx_large'
+            atoms["mem.sizing"] = "xx_large"
 
         if yombo.utils.is_windows():
-            atoms['os'] = 'Windows'
-            atoms['os.family'] = 'Windows'
+            atoms["os"] = "Windows"
+            atoms["os.family"] = "Windows"
         elif yombo.utils.is_linux():
-            atoms['os'] = 'Linux'
-            atoms['os.family'] = 'Linux'
+            atoms["os"] = "Linux"
+            atoms["os.family"] = "Linux"
 
             (osname, osrelease, oscodename) = \
-                [x.strip('"').strip("'") for x in
+                [x.strip(""").strip(""") for x in
                  # distro.linux_distribution(full_distribution_name=False)
                  platform.linux_distribution(supported_dists=SUPPORTED_DISTS)]
 
-            if 'os.fullname' not in atoms:
-                atoms['os.fullname'] = osname.strip()
-            if 'os.release' not in atoms:
-                atoms['os.release'] = osrelease.strip()
-            atoms['os.codename'] = oscodename.strip()
+            if "os.fullname" not in atoms:
+                atoms["os.fullname"] = osname.strip()
+            if "os.release" not in atoms:
+                atoms["os.release"] = osrelease.strip()
+            atoms["os.codename"] = oscodename.strip()
 
-            distroname = _REPLACE_LINUX_RE.sub('', atoms['os.fullname']).strip()
+            distroname = _REPLACE_LINUX_RE.sub("", atoms["os.fullname"]).strip()
             # return the first ten characters with no spaces, lowercased
-            shortname = distroname.replace(' ', '').lower()[:10]
+            shortname = distroname.replace(" ", "").lower()[:10]
             # this maps the long names from the /etc/DISTRO-release files to the
             # traditional short names that Salt has used.
-            atoms['os'] = _MAP_OS_NAME.get(shortname, distroname)
+            atoms["os"] = _MAP_OS_NAME.get(shortname, distroname)
 
-        elif atoms['kernel'] == 'Darwin':
-            atoms['os'] = 'Mac'
-            atoms['os.family'] = 'Darwin'
-        elif atoms['kernel'] == 'SunOS':
-            atoms['os'] = 'SunOS'
-            atoms['os.family'] = 'Solaris'
+        elif atoms["kernel"] == "Darwin":
+            atoms["os"] = "Mac"
+            atoms["os.family"] = "Darwin"
+        elif atoms["kernel"] == "SunOS":
+            atoms["os"] = "SunOS"
+            atoms["os.family"] = "Solaris"
         else:
-            atoms['os'] = atoms['kernel']
+            atoms["os"] = atoms["kernel"]
 
         for name, value in atoms.items():
             self.set(name, value, source=self)

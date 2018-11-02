@@ -19,15 +19,15 @@ Implements MQTT. It does 2 things:
        # to anther MQTT server. Otherwise, use the default local one.
        self.my_mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming)  # Create a new connection to the embedded MQTT server.
 
-       # Subscribe to all topics of 'foor/bar/topic' and send them to:  self.mqtt_incoming
-       self.my_mqtt.subscribe('foo/bar/topic')
-       d = self.my_mqtt.publish('for/bar/topic/status', 'on')  # publish a message  # returns a deferred. Can be used to
+       # Subscribe to all topics of "foor/bar/topic" and send them to:  self.mqtt_incoming
+       self.my_mqtt.subscribe("foo/bar/topic")
+       d = self.my_mqtt.publish("for/bar/topic/status", "on")  # publish a message  # returns a deferred. Can be used to
        # stack more commands or do something after the message has been published.
 
 
    def mqtt_incoming(self, topic, payload, qos, retain):
-       print("topic: %s" % topic)
-       print("message: %s" % message)
+       print(f"topic: {topic}")
+       print(f"message: {message}"_
 
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
@@ -66,7 +66,7 @@ from yombo.lib.webinterface.auth import require_auth, run_first
 from yombo.utils import random_string, sleep
 from yombo.constants import CONTENT_TYPE_TEXT_PLAIN
 
-logger = get_logger('library.mqtt')
+logger = get_logger("library.mqtt")
 
 
 class MQTT(YomboLibrary):
@@ -82,12 +82,12 @@ class MQTT(YomboLibrary):
         :return:
         """
         self.client_connections = {}
-        self.mosquitto_enabled = self._Configs.get('mqtt', 'mosquitto_enabled', False)
+        self.mosquitto_enabled = self._Configs.get("mqtt", "mosquitto_enabled", False)
         self.mosquitto_config_file = "/etc/mosquitto/yombo/yombo.conf"
-        self.client_enabled = self._Configs.get('mqtt', 'client_enabled', True)
-        self.server_enabled = self._Configs.get('mqtt', 'server_enabled', True)
-        self.server_max_connections = self._Configs.get('mqtt', 'server_max_connections', 1000)
-        self.server_timeout_disconnect_delay = self._Configs.get('mqtt', 'server_timeout_disconnect_delay', 2)
+        self.client_enabled = self._Configs.get("mqtt", "client_enabled", True)
+        self.server_enabled = self._Configs.get("mqtt", "server_enabled", True)
+        self.server_max_connections = self._Configs.get("mqtt", "server_max_connections", 1000)
+        self.server_timeout_disconnect_delay = self._Configs.get("mqtt", "server_timeout_disconnect_delay", 2)
         self.gateway_id = self._Configs.gateway_id
         self.is_master = self._Configs.is_master
         self.master_gateway_id = self._Configs.master_gateway_id
@@ -98,13 +98,13 @@ class MQTT(YomboLibrary):
         local_gateway = self._Gateways.master
         master_gateway = self._Gateways.master
         if self.is_master():
-            self.server_listen_port = self._Configs.get('mqtt', 'server_listen_port', 1883)
-            self.server_listen_port_ss_ssl = self._Configs.get('mqtt', 'server_listen_port_ss_ssl', 1884)
-            self.server_listen_port_le_ssl = self._Configs.get('mqtt', 'server_listen_port_le_ssl', 8883)
-            self.server_listen_port_websockets = self._Configs.get('mqtt', 'server_listen_port_websockets', 8081)
-            self.server_listen_port_websockets_ss_ssl = self._Configs.get('mqtt', 'server_listen_port_websockets_ss_ssl', 8444)
-            self.server_listen_port_websockets_le_ssl = self._Configs.get('mqtt', 'server_listen_port_websockets_le_ssl', 8445)
-            self.server_allow_anonymous = self._Configs.get('mqtt', 'server_allow_anonymous', False)
+            self.server_listen_port = self._Configs.get("mqtt", "server_listen_port", 1883)
+            self.server_listen_port_ss_ssl = self._Configs.get("mqtt", "server_listen_port_ss_ssl", 1884)
+            self.server_listen_port_le_ssl = self._Configs.get("mqtt", "server_listen_port_le_ssl", 8883)
+            self.server_listen_port_websockets = self._Configs.get("mqtt", "server_listen_port_websockets", 8081)
+            self.server_listen_port_websockets_ss_ssl = self._Configs.get("mqtt", "server_listen_port_websockets_ss_ssl", 8444)
+            self.server_listen_port_websockets_le_ssl = self._Configs.get("mqtt", "server_listen_port_websockets_le_ssl", 8445)
+            self.server_allow_anonymous = self._Configs.get("mqtt", "server_allow_anonymous", False)
         else:
             self.server_listen_port = 0
             self.server_listen_port_ss_ssl = 0
@@ -127,110 +127,110 @@ class MQTT(YomboLibrary):
             if self.mosquitto_enabled is True:
                 logger.info("Disabling mosquitto MQTT broker.")
                 try:
-                    yield getProcessOutput("sudo", ['systemctl', 'disable', 'mosquitto.service'])
+                    yield getProcessOutput("sudo", ["systemctl", "disable", "mosquitto.service"])
                 except Exception as e:
                     logger.warn("Error while trying to disable mosquitto (mqtt) service: {e}", e=e)
                 yield self.start_mqtt_broker()
                 logger.info("Sleeping for 2 seconds while MQTT broker stops.")
-                self._Configs.set('mqtt', 'mosquitto_enabled', False)
+                self._Configs.set("mqtt", "mosquitto_enabled", False)
                 self.mosquitto_enabled = False
                 yield sleep(2)
             return
 
-        ssl_self_signed = self._SSLCerts.get('selfsigned')
-        ssl_lib_webinterface = self._SSLCerts.get('lib_webinterface')
+        ssl_self_signed = self._SSLCerts.get("selfsigned")
+        ssl_lib_webinterface = self._SSLCerts.get("lib_webinterface")
 
         mosquitto_config = [
-            'allow_anonymous false',
-            'user mosquitto',
-            'persistent_client_expiration 4h',
-            'max_connections 512',
-            '',
+            "allow_anonymous false",
+            "user mosquitto",
+            "persistent_client_expiration 4h",
+            "max_connections 512",
+            "",
         ]
         if self.server_listen_port > 0:
             mosquitto_config.extend([
-                '#',
-                '# Insecure listen MQTT port',
-                '#',
-                "port %s" % self.server_listen_port,
-                ''
+                "#",
+                "# Insecure listen MQTT port",
+                "#",
+                f"port {self.server_listen_port}",
+                ""
             ])
 
         if self.server_listen_port_ss_ssl > 0:
             mosquitto_config.extend([
-                '#',
-                '# Self-signed cert for mqtt',
-                '#',
-                'listener %s' % self.server_listen_port_ss_ssl,
-                'certfile %s' % ssl_self_signed['cert_file'],
-                'keyfile %s' % ssl_self_signed['key_file'],
-                'ciphers ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA:ECDHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA:ECDHE-ECDSA-DES-CBC3-SHA:ECDHE-RSA-DES-CBC3-SHA:EDH-RSA-DES-CBC3-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:DES-CBC3-SHA:!DSS',
-                'tls_version tlsv1.2',
-                'protocol mqtt',
-                '',
+                "#",
+                "# Self-signed cert for mqtt",
+                "#",
+                f"listener {self.server_listen_port_ss_ssl}",
+                f"certfile {ssl_self_signed['cert_file']}",
+                f"keyfile {ssl_self_signed['key_file']}",
+                "ciphers ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA:ECDHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA:ECDHE-ECDSA-DES-CBC3-SHA:ECDHE-RSA-DES-CBC3-SHA:EDH-RSA-DES-CBC3-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:DES-CBC3-SHA:!DSS",
+                "tls_version tlsv1.2",
+                "protocol mqtt",
+                "",
             ])
 
-        if self.server_listen_port_le_ssl > 0 and ssl_lib_webinterface['self_signed'] is False:
+        if self.server_listen_port_le_ssl > 0 and ssl_lib_webinterface["self_signed"] is False:
             mosquitto_config.extend([
-                '#',
-                '# Lets encrypt signed cert for mqtt',
-                '#',
-                'listener %s' % self.server_listen_port_le_ssl,
-                'cafile %s' % ssl_lib_webinterface['chain_file'],
-                'certfile %s' % ssl_lib_webinterface['cert_file'],
-                'keyfile %s' % ssl_lib_webinterface['key_file'],
-                'ciphers ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA:ECDHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA:ECDHE-ECDSA-DES-CBC3-SHA:ECDHE-RSA-DES-CBC3-SHA:EDH-RSA-DES-CBC3-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:DES-CBC3-SHA:!DSS',
-                'tls_version tlsv1.2',
-                'protocol mqtt',
-                '',
+                "#",
+                "# Lets encrypt signed cert for mqtt",
+                "#",
+                f"listener {self.server_listen_port_le_ssl}",
+                f"cafile {ssl_lib_webinterface['chain_file']}",
+                f"certfile {ssl_lib_webinterface['cert_file']}",
+                f"keyfile {ssl_lib_webinterface['key_file']}",
+                "ciphers ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA:ECDHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA:ECDHE-ECDSA-DES-CBC3-SHA:ECDHE-RSA-DES-CBC3-SHA:EDH-RSA-DES-CBC3-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:DES-CBC3-SHA:!DSS",
+                "tls_version tlsv1.2",
+                "protocol mqtt",
+                "",
             ])
 
         if self.server_listen_port_websockets > 0:
             mosquitto_config.extend([
-                '#',
-                '# Unecrypted websockets',
-                '#',
-                'listener %s' % self.server_listen_port_websockets,
-                'protocol websockets',
-                'max_connections 512',
-                '',
+                "#",
+                "# Unecrypted websockets",
+                "#",
+                f"listener {self.server_listen_port_websockets}",
+                "protocol websockets",
+                "max_connections 512",
+                "",
             ])
 
         if self.server_listen_port_websockets_ss_ssl > 0:
             mosquitto_config.extend([
-                '#',
-                '# Self-signed cert for websockets',
-                '#',
-                'listener %s' % self.server_listen_port_websockets_ss_ssl,
-                'certfile %s' % ssl_self_signed['cert_file'],
-                'keyfile %s' % ssl_self_signed['key_file'],
-                'ciphers ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA:ECDHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA:ECDHE-ECDSA-DES-CBC3-SHA:ECDHE-RSA-DES-CBC3-SHA:EDH-RSA-DES-CBC3-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:DES-CBC3-SHA:!DSS',
-                'tls_version tlsv1.2',
-                'protocol websockets',
-                '',
+                "#",
+                "# Self-signed cert for websockets",
+                "#",
+                f"listener {self.server_listen_port_websockets_ss_ssl}",
+                f"certfile {ssl_self_signed['cert_file']}",
+                f"keyfile {ssl_self_signed['key_file']}",
+                "ciphers ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA:ECDHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA:ECDHE-ECDSA-DES-CBC3-SHA:ECDHE-RSA-DES-CBC3-SHA:EDH-RSA-DES-CBC3-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:DES-CBC3-SHA:!DSS",
+                "tls_version tlsv1.2",
+                "protocol websockets",
+                "",
             ])
 
-        if self.server_listen_port_websockets_le_ssl > 0 and  ssl_lib_webinterface['self_signed'] is False:
+        if self.server_listen_port_websockets_le_ssl > 0 and  ssl_lib_webinterface["self_signed"] is False:
             mosquitto_config.extend([
-                '#',
-                '# Lets encrypt signed cert for websockets',
-                '#',
-                'listener %s' % self.server_listen_port_websockets_le_ssl,
-                'cafile %s' % ssl_lib_webinterface['chain_file'],
-                'certfile %s' % ssl_lib_webinterface['cert_file'],
-                'keyfile %s' % ssl_lib_webinterface['key_file'],
-                'ciphers ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA:ECDHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA:ECDHE-ECDSA-DES-CBC3-SHA:ECDHE-RSA-DES-CBC3-SHA:EDH-RSA-DES-CBC3-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:DES-CBC3-SHA:!DSS',
-                'tls_version tlsv1.2',
-                'protocol websockets',
-                '',
+                "#",
+                "# Lets encrypt signed cert for websockets",
+                "#",
+                f"listener {self.server_listen_port_websockets_le_ssl}",
+                f"cafile {ssl_lib_webinterface['chain_file']}",
+                f"certfile {ssl_lib_webinterface['cert_file']}",
+                f"keyfile {ssl_lib_webinterface['key_file']}",
+                "ciphers ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA:ECDHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA:ECDHE-ECDSA-DES-CBC3-SHA:ECDHE-RSA-DES-CBC3-SHA:EDH-RSA-DES-CBC3-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:DES-CBC3-SHA:!DSS",
+                "tls_version tlsv1.2",
+                "protocol websockets",
+                "",
             ])
 
-        if ssl_lib_webinterface['self_signed'] is False:
+        if ssl_lib_webinterface["self_signed"] is False:
             self.server_listen_port_websockets_le_ssl = self.server_listen_port_websockets_ss_ssl
 
-        mosquitto_config_filepointer = open(self.mosquitto_config_file, 'w')
+        mosquitto_config_filepointer = open(self.mosquitto_config_file, "w")
         print("# File automatically generated by Yombo Gateway. Edits will be lost.", file=mosquitto_config_filepointer)
-        print("# Created  %s" % f"{datetime.now():%Y-%m-%d %H%M%S}", file=mosquitto_config_filepointer)
+        print(f"# Created  {f'{datetime.now():%Y-%m-%d %H%M%S}'}", file=mosquitto_config_filepointer)
         print("#", file=mosquitto_config_filepointer)
         print("# HTTP Auth plugin...", file=mosquitto_config_filepointer)
         print("auth_plugin /usr/local/src/yombo/mosquitto-auth-plug/auth-plug.so", file=mosquitto_config_filepointer)
@@ -239,8 +239,8 @@ class MQTT(YomboLibrary):
         print("auth_opt_acl_cacheseconds 600", file=mosquitto_config_filepointer)
         print("auth_opt_auth_cacheseconds 30", file=mosquitto_config_filepointer)
         print("auth_opt_http_ip 127.0.0.1", file=mosquitto_config_filepointer)
-        webinterface_port = self._Configs.get('webinterface', 'nonsecure_port', fallback=8080)
-        print("auth_opt_http_port %s" % webinterface_port, file=mosquitto_config_filepointer)
+        webinterface_port = self._Configs.get("webinterface", "nonsecure_port", fallback=8080)
+        print(f"auth_opt_http_port {webinterface_port}", file=mosquitto_config_filepointer)
         print("auth_opt_http_getuser_uri /api/v1/mqtt/auth/user", file=mosquitto_config_filepointer)
         print("auth_opt_http_superuser_uri /api/v1/mqtt/auth/superuser", file=mosquitto_config_filepointer)
         print("auth_opt_http_aclcheck_uri /api/v1/mqtt/auth/acl", file=mosquitto_config_filepointer)
@@ -254,10 +254,10 @@ class MQTT(YomboLibrary):
         if self.mosquitto_enabled is False:
             logger.info("Enabling mosquitto MQTT broker.")
             try:
-                yield getProcessOutput("sudo", ['systemctl', 'enable', 'mosquitto.service'])
+                yield getProcessOutput("sudo", ["systemctl", "enable", "mosquitto.service"])
             except Exception as e:
                 logger.warn("Error while trying to enable mosquitto (mqtt) service: {e}", e=e)
-            self._Configs.set('mqtt', 'mosquitto_enabled', True)
+            self._Configs.set("mqtt", "mosquitto_enabled", True)
             self.mosquitto_enabled = True
 
         yield self.check_mqtt_broker_running()
@@ -272,22 +272,22 @@ class MQTT(YomboLibrary):
     @inlineCallbacks
     def _unload_(self, **kwargs):
         logger.debug("shutting down mqtt clients...")
-        if hasattr(self, 'client_connections'):
+        if hasattr(self, "client_connections"):
             for client_id, client in self.client_connections.items():
-                logger.debug("in loop to try to stop mqtt client: %s" % client_id)
+                logger.debug("in loop to try to stop mqtt client: {client_id}", client_id=client_id)
                 try:
-                    logger.debug("telling client to say goodbye... %s" % client_id)
+                    logger.debug(f"telling client to say goodbye... {client_id}")
                     client.factory.stopTrying(
 
-                    )  # Tell reconnecting factory to don't attempt connecting after disconnect.
+                    )  # Tell reconnecting factory to don"t attempt connecting after disconnect.
                     client.factory.protocol.disconnect()
                     client.factory.protocol.close()
                 except:
                     pass
             yield sleep(0.1)
 
-        if hasattr(self, '_States'):
-            if self._States['loader.operating_mode'] == 'run' and self.mqtt_server is not None:
+        if hasattr(self, "_States"):
+            if self._States["loader.operating_mode"] == "run" and self.mqtt_server is not None:
                 self.mqtt_server.shutdown()
 
     @inlineCallbacks
@@ -303,7 +303,7 @@ class MQTT(YomboLibrary):
             return None
 
         # print("process results: %s" % process_results)
-        if b'mosquitto' in process_results:
+        if b"mosquitto" in process_results:
             self.mosquitto_running = True
             return True
         else:
@@ -318,7 +318,7 @@ class MQTT(YomboLibrary):
         """
         logger.warn("starting mosquitto service.")
         try:
-            yield getProcessOutput("sudo", ['systemctl', 'start', 'mosquitto.service'])
+            yield getProcessOutput("sudo", ["systemctl", "start", "mosquitto.service"])
         except Exception as e:
             logger.warn("Error while trying to start mosquitto (mqtt) service: {e}", e=e)
         yield sleep(0.5)
@@ -333,7 +333,7 @@ class MQTT(YomboLibrary):
         """
         logger.warn("stopping mosquitto service.")
         try:
-            yield getProcessOutput("sudo", ['systemctl', 'stop', 'mosquitto.service'])
+            yield getProcessOutput("sudo", ["systemctl", "stop", "mosquitto.service"])
         except Exception as e:
             logger.warn("Error while trying to stop mosquitto (mqtt) service: {e}", e=e)
         yield sleep(0.5)
@@ -347,42 +347,42 @@ class MQTT(YomboLibrary):
         :param kwargs:
         :return:
         """
-        if hasattr(self, '_States') and self._States['loader.operating_mode'] == 'run':
+        if hasattr(self, "_States") and self._States["loader.operating_mode"] == "run":
             if self.client_enabled:
                 return {
-                    'nav_side': [
+                    "nav_side": [
                         {
-                            'label1': 'System',
-                            'label2': 'MQTT Listen',
-                            'priority1': 6000,  # Even with a value, 'Tools' is already defined and will be ignored.
-                            'priority2': 20000,
-                            'icon': 'fa fa-wrench fa-fw',
-                            'url': '/system/mqtt-listen',
-                            'tooltip': '',
-                            'opmode': 'run',
+                            "label1": "System",
+                            "label2": "MQTT Listen",
+                            "priority1": 6000,  # Even with a value, "Tools" is already defined and will be ignored.
+                            "priority2": 20000,
+                            "icon": "fa fa-wrench fa-fw",
+                            "url": "/system/mqtt-listen",
+                            "tooltip": "",
+                            "opmode": "run",
                         },
                         {
-                            'label1': 'System',
-                            'label2': 'MQTT Log',
-                            'priority1': 6000,  # Even with a value, 'Tools' is already defined and will be ignored.
-                            'priority2': 20100,
-                            'icon': 'fa fa-wrench fa-fw',
-                            'url': '/system/mqtt-log',
-                            'tooltip': '',
-                            'opmode': 'run',
+                            "label1": "System",
+                            "label2": "MQTT Log",
+                            "priority1": 6000,  # Even with a value, "Tools" is already defined and will be ignored.
+                            "priority2": 20100,
+                            "icon": "fa fa-wrench fa-fw",
+                            "url": "/system/mqtt-log",
+                            "tooltip": "",
+                            "opmode": "run",
                         },
                         {
-                            'label1': 'System',
-                            'label2': 'MQTT Publish',
-                            'priority1': 6000,  # Even with a value, 'Tools' is already defined and will be ignored.
-                            'priority2': 20200,
-                            'icon': 'fa fa-wrench fa-fw',
-                            'url': '/system/mqtt-publish',
-                            'tooltip': '',
-                            'opmode': 'run',
+                            "label1": "System",
+                            "label2": "MQTT Publish",
+                            "priority1": 6000,  # Even with a value, "Tools" is already defined and will be ignored.
+                            "priority2": 20200,
+                            "icon": "fa fa-wrench fa-fw",
+                            "url": "/system/mqtt-publish",
+                            "tooltip": "",
+                            "opmode": "run",
                         },
                     ],
-                    'routes': [
+                    "routes": [
                         self.web_interface_routes,
                    ],
                 }
@@ -392,7 +392,7 @@ class MQTT(YomboLibrary):
         Adds routes to the webinterface module. Normally, a module will store any template files within the module,
         but for this example, we will store the templates within the webinterface module.
 
-        :param webapp: A pointer to the webapp, it's used to setup routes.
+        :param webapp: A pointer to the webapp, it"s used to setup routes.
         :return:
         """
         with webapp.subroute("/") as webapp:
@@ -400,16 +400,16 @@ class MQTT(YomboLibrary):
             @webapp.route("/system/mqtt-listen")
             @require_auth()
             def page_system_mqtt_listen(webinterface, request, session):
-                session.has_access('system_options', '*', 'mqtt')
-                page = webinterface.webapp.templates.get_template(webinterface.wi_dir + '/pages/mqtt/listen.html')
+                session.has_access("system_options", "*", "mqtt")
+                page = webinterface.webapp.templates.get_template(webinterface.wi_dir + "/pages/mqtt/listen.html")
                 return page.render(alerts=webinterface.get_alerts(),
                                    session=session)
 
             @webapp.route("/system/mqtt-log")
             @require_auth()
             def page_system_mqtt_log(webinterface, request, session):
-                session.has_access('system_options', '*', 'mqtt')
-                page = webinterface.webapp.templates.get_template(webinterface.wi_dir + '/pages/mqtt/log.html')
+                session.has_access("system_options", "*", "mqtt")
+                page = webinterface.webapp.templates.get_template(webinterface.wi_dir + "/pages/mqtt/log.html")
                 return page.render(alerts=webinterface.get_alerts(),
                                    log_outgoing=self._GatewayComs.log_outgoing,
                                    log_incoming=self._GatewayComs.log_incoming,
@@ -418,8 +418,8 @@ class MQTT(YomboLibrary):
             @webapp.route("/system/mqtt-publish")
             @require_auth()
             def page_system_mqtt_publish(webinterface, request, session):
-                session.has_access('system_options', '*', 'mqtt')
-                page = webinterface.webapp.templates.get_template(webinterface.wi_dir + '/pages/mqtt/publish.html')
+                session.has_access("system_options", "*", "mqtt")
+                page = webinterface.webapp.templates.get_template(webinterface.wi_dir + "/pages/mqtt/publish.html")
                 return page.render(alerts=webinterface.get_alerts())
 
             @webapp.route("/api/v1/mqtt")
@@ -427,64 +427,64 @@ class MQTT(YomboLibrary):
             @inlineCallbacks
             def api_v1_mqtt(webinterface, request, session):
                 # print("/api/v1/mqtt: %s" % request)
-                session.has_access('system_options', '*', 'mqtt')
-                topic = request.args.get('topic')[0]  # please do some validation!!
-                message = request.args.get('message')[0]  # please do some validation!!
-                qos = int(request.args.get('qos')[0])  # please do some validation!!
+                session.has_access("system_options", "*", "mqtt")
+                topic = request.args.get("topic")[0]  # please do some validation!!
+                message = request.args.get("message")[0]  # please do some validation!!
+                qos = int(request.args.get("qos")[0])  # please do some validation!!
 
                 try:
                     yield self.mqtt_local_client.publish(topic, message, qos)
-                    results = {'status': 200, 'message': 'MQTT message sent successfully.'}
+                    results = {"status": 200, "message": "MQTT message sent successfully."}
                     return json.dumps(results)
                 except Exception as e:
-                    results = {'status': 500, 'message': 'MQTT message count not be sent.'}
+                    results = {"status": 500, "message": "MQTT message count not be sent."}
                     return json.dumps(results)
 
             def split_username(username):
-                username_parts = username.split('_', 4)
+                username_parts = username.split("_", 4)
                 if len(username_parts) < 2:
-                    raise YomboWarning("MQTT username should have at least 2 parts: %s" % username_parts)
+                    raise YomboWarning(f"MQTT username should have at least 2 parts: {username_parts}")
 
                 if username_parts[0].isalnum() and username_parts[1].isalnum():
                     user = {
-                        'type': username_parts[0],
-                        'username': username_parts[1],
+                        "type": username_parts[0],
+                        "username": username_parts[1],
                     }
                 else:
                     logger.warn("MQTT username has invalid characters: {user}", user=username)
                     raise YomboWarning("MQTT username has invalid characters")
                 return user
 
-            @webapp.route("/api/v1/mqtt/auth/user", methods=['POST', 'GET'])
+            @webapp.route("/api/v1/mqtt/auth/user", methods=["POST", "GET"])
             @run_first()
             @inlineCallbacks
             def api_v1_mqtt_auth_user(webinterface, request, session):
-                request.setHeader('Content-Type', CONTENT_TYPE_TEXT_PLAIN)
+                request.setHeader("Content-Type", CONTENT_TYPE_TEXT_PLAIN)
                 response_code = 403
 
-                username = webinterface.request_get_default(request, 'username', "")
-                password = webinterface.request_get_default(request, 'password', "")
+                username = webinterface.request_get_default(request, "username", "")
+                password = webinterface.request_get_default(request, "password", "")
 
                 user = split_username(username)
-                user_id = user['username']
+                user_id = user["username"]
                 logger.debug("mqtt username: {args}", args=request.args)
-                if user['type'] == 'yombogw':
+                if user["type"] == "yombogw":
                     if user_id in self._Gateways.gateways:
                         gateway = self._Gateways.gateways[user_id]
                         if password in (gateway.mqtt_auth, gateway.mqtt_auth_prev, gateway.mqtt_auth_next):
                             response_code = 200
 
-                elif user['type'] == AUTH_TYPE_WEBSESSION:
+                elif user["type"] == AUTH_TYPE_WEBSESSION:
                     try:
-                        session = yield self._WebSessions.get_session_by_id(user['username'])
+                        session = yield self._WebSessions.get_session_by_id(user["username"])
                         if session.enable is True:
                             response_code = 200
                     except YomboWarning:
                         pass
 
-                elif user['type'] == AUTH_TYPE_AUTHKEY:
+                elif user["type"] == AUTH_TYPE_AUTHKEY:
                     try:
-                        session = self._AuthKeys.get_session_by_id(user['username'])
+                        session = self._AuthKeys.get_session_by_id(user["username"])
                     except YomboWarning:
                         yield maybeDeferred(request.setResponseCode, response_code)
                         return
@@ -494,37 +494,37 @@ class MQTT(YomboLibrary):
                 yield maybeDeferred(request.setResponseCode, response_code)
                 return
 
-            @webapp.route("/api/v1/mqtt/auth/superuser", methods=['POST'])
+            @webapp.route("/api/v1/mqtt/auth/superuser", methods=["POST"])
             @run_first()
             def api_v1_mqtt_auth_superuser(webinterface, request, session):
                 # print("/api/v1/mqtt/auth/superuser: %s" % request)
                 response_code = 403
                 logger.debug("mqtt superuser: {args}", args=request.args)
-                username = webinterface.request_get_default(request, 'username', "")
+                username = webinterface.request_get_default(request, "username", "")
 
                 user = split_username(username)
-                if user['type'] == 'yombogw':
+                if user["type"] == "yombogw":
                     response_code = 200
 
-                request.setHeader('Content-Type', CONTENT_TYPE_TEXT_PLAIN)
+                request.setHeader("Content-Type", CONTENT_TYPE_TEXT_PLAIN)
                 request.setResponseCode(response_code)
                 return
 
-            @webapp.route("/api/v1/mqtt/auth/acl", methods=['POST'])
+            @webapp.route("/api/v1/mqtt/auth/acl", methods=["POST"])
             @run_first()
             def api_v1_mqtt_auth_acl(webinterface, request, session):
                 # print("/api/v1/mqtt/auth/acl: %s" % request)
                 response_code = 403
                 logger.debug("mqtt acl: {args}", args=request.args)
 
-                username = webinterface.request_get_default(request, 'username', "")
-                topic = webinterface.request_get_default(request, 'topic', "")
-                acc = webinterface.request_get_default(request, 'acc', "")
+                username = webinterface.request_get_default(request, "username", "")
+                topic = webinterface.request_get_default(request, "topic", "")
+                acc = webinterface.request_get_default(request, "acc", "")
                 # acc: 1 = read only, 2 is read-write
 
                 # user = split_username(username)
                 response_code = 200
-                request.setHeader('Content-Type', CONTENT_TYPE_TEXT_PLAIN)
+                request.setHeader("Content-Type", CONTENT_TYPE_TEXT_PLAIN)
                 request.setResponseCode(response_code)
                 return
 
@@ -539,7 +539,7 @@ class MQTT(YomboLibrary):
 
         .. code-block:: python
 
-           self.my_mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming, client_id='my_client_name')
+           self.my_mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming, client_id="my_client_name")
            self.mqtt.subscribe("yombo/devices/+/get")  # subscribe to a topic. + is a wilcard for a single section.
 
         :param on_connect_callback: Callback to a method when the MQTT connection is up. Used for notifications or status updates.
@@ -550,19 +550,19 @@ class MQTT(YomboLibrary):
         :param ssl: Use SSL. Default is False. It's recommended to use SSL when connecting to a remote server.
         :return:
         """
-        if not self.client_enabled or hasattr(self, '_States') is False:
+        if not self.client_enabled or hasattr(self, "_States") is False:
             logger.warn("MQTT Clients Disabled. Not allowed to connect.")
             return
 
-        if self._States['loader.operating_mode'] != 'run':
+        if self._States["loader.operating_mode"] != "run":
             logger.warn("MQTT Disabled when not in run mode.")
             return
 
         if client_id is None:
-            client_id = "Yombo-%s-unknown-%s" % (self.gateway_id(), random_string(length=10))
+            client_id = f"Yombo-{self.gateway_id()}-unknown-{random_string(length=10)}"
         if client_id in self.client_connections:
-            logger.warn("client_id must be unique. Got: %s" % client_id)
-            raise YomboWarning ("client_id must be unique. Got: %s" % client_id, 'MQTT::new', 'mqtt')
+            logger.warn(f"client_id must be unique. Got: {client_id}")
+            raise YomboWarning (f"client_id must be unique. Got: {client_id}", "MQTT::new", "mqtt")
 
         if server_hostname is None:
             if self._GatewayComs.client_default_host is None:
@@ -587,11 +587,11 @@ class MQTT(YomboLibrary):
 
         if mqtt_incoming_callback is not None:
             if isinstance(mqtt_incoming_callback, Callable) is False:
-                raise YomboWarning("If mqtt_incoming_callback is set, it must be be callable.", 200, 'new', 'Devices')
+                raise YomboWarning("If mqtt_incoming_callback is set, it must be be callable.", 200, "new", "Devices")
 
         if mqtt_connected_callback is not None:
             if isinstance(mqtt_connected_callback, Callable) is False:
-                raise YomboWarning("If mqtt_connected_callback is set, it must be be callable.", 201, 'new', 'Devices')
+                raise YomboWarning("If mqtt_connected_callback is set, it must be be callable.", 201, "new", "Devices")
 
         # print("mqtt: %s:%s" % (username, password))
         self.client_connections[client_id] = MQTTClient(self, client_id, server_hostname, server_port, username,
@@ -606,7 +606,7 @@ class MQTTClient(object):
 
     .. code-block:: python
 
-       self.my_mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming, client_id='my_client_name')
+       self.my_mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming, client_id="my_client_name")
        self.mqtt.subscribe("yombo/devices/+/get")  # subscribe to a topic. + is a wilcard for a single section.
     """
     def __init__(self, mqtt_library, client_id, server_hostname, server_port, username=None, password=None,
@@ -669,9 +669,9 @@ class MQTTClient(object):
         self.factory.will_retain = will_retain
         self.factory.version = version
         self.factory.keepalive = keepalive
-        self.queue = self._Parent._Queue.new('library.mqtt.%s' % client_id, self.process_queue)  # test calls to things that don't return deferred
+        self.queue = self._Parent._Queue.new(f"library.mqtt.{client_id}", self.process_queue)  # test calls to things that don't return deferred
         self.queue.pause()  # pause this, and will resume it when we are connected.
-        self.republish_queue = OrderedDict({})  # for items that are marked 'retain', this these will be replayed on reconnect.
+        self.republish_queue = OrderedDict({})  # for items that are marked "retain", this these will be replayed on reconnect.
         self.topics_subscribed = {}  # a list of topics this client subscribes too.
         self.processing_republish_queue = False
         try:
@@ -687,19 +687,19 @@ class MQTTClient(object):
         """
         Publish a message.
 
-        :param topic: 'yombo/devices/bedroom_light/command'
-        :param message: string - Like 'on'
+        :param topic: "yombo/devices/bedroom_light/command"
+        :param message: string - Like "on"
         :param qos: 0, 1, or 2. Default is 0.
         :return:
         """
         job = {
-            'type': 'publish',
-            'topic': topic,
-            'message': message,
-            'qos': qos,
-            'retain': retain,
-            'priority': priority,
-            'published': False,
+            "type": "publish",
+            "topic": topic,
+            "message": message,
+            "qos": qos,
+            "retain": retain,
+            "priority": priority,
+            "published": False,
         }
         if republish is None or republish is True:
             self.republish_queue[random_string()] = job
@@ -710,18 +710,18 @@ class MQTTClient(object):
     # @inlineCallbacks
     def subscribe(self, topic, qos=1, priority=-2, republish=None):
         """
-        Subscribe to a topic. Inlucde the topic like 'yombo/myfunky/something'
+        Subscribe to a topic. Inlucde the topic like "yombo/myfunky/something"
         :param topic: string or list of strings to subscribe to.
         :param callback: a point to a function to be called when data arrives.
         :param qos: See MQTT doco for information. We handle duplicates, no need for qos 2.
         :return:
         """
         job = {
-            'type': 'subscribe',
-            'topic': topic,
-            'qos': qos,
-            'priority': priority,
-            'published': False,
+            "type": "subscribe",
+            "topic": topic,
+            "qos": qos,
+            "priority": priority,
+            "published": False,
         }
         if republish is None or republish is True:
             job_id = random_string()
@@ -742,11 +742,11 @@ class MQTTClient(object):
             del self.topics_subscribed[topic]
 
         job = {
-            'type': 'unsubscribe',
-            'topic': topic,
-            'qos': qos,
-            'priority': priority,
-            'published': False,
+            "type": "unsubscribe",
+            "topic": topic,
+            "qos": qos,
+            "priority": priority,
+            "published": False,
         }
         self.queue.put(job, priority=priority)
 
@@ -767,22 +767,22 @@ class MQTTClient(object):
     def dispatch_job_queue(self):
         if self.connected is True:
             for job_id, job_info in self.republish_queue.items():
-                if self.republish_queue[job_id]['published'] is False:
-                    self.republish_queue[job_id]['published'] = True
+                if self.republish_queue[job_id]["published"] is False:
+                    self.republish_queue[job_id]["published"] = True
                     if self.queue.stopped is False:
-                        self.queue.put(job_info, priority=job_info['priority'])
+                        self.queue.put(job_info, priority=job_info["priority"])
 
     @inlineCallbacks
     def process_queue(self, job):
         logger.debug("process_queue. job: {job}", job=job)
-        if job['type'] == 'subscribe':
-            yield self.factory.protocol.subscribe(job['topic'], job['qos'])
-        elif job['type'] == 'unsubscribe':
-            yield self.factory.protocol.unsubscribe(job['topic'])
-        elif job['type'] == 'publish':
-            yield self.factory.protocol.publish(job['topic'], job['message'], qos=job['qos'], retain=job['retain'])
+        if job["type"] == "subscribe":
+            yield self.factory.protocol.subscribe(job["topic"], job["qos"])
+        elif job["type"] == "unsubscribe":
+            yield self.factory.protocol.unsubscribe(job["topic"])
+        elif job["type"] == "publish":
+            yield self.factory.protocol.publish(job["topic"], job["message"], qos=job["qos"], retain=job["retain"])
         else:
-            logger.warn("process_queue received unknown job request: %s" % job)
+            logger.warn("process_queue received unknown job request: {job}", job=job)
 
     def mqtt_incoming(self, topic, payload, qos, dup, retain, mqtt_msg_id):
         """
@@ -807,8 +807,8 @@ class MQTTClient(object):
                     return
             self.mqtt_incoming_callback(topic, payload, qos, retain)
         else:
-            raise YomboWarning("Recieved MQTT message, but no callback defined, no where to send.", 'direct_incoming',
-                               'mqtt')
+            raise YomboWarning("Recieved MQTT message, but no callback defined, no where to send.", "direct_incoming",
+                               "mqtt")
 
     def client_connectionLost(self, reason):
         """
@@ -820,7 +820,7 @@ class MQTTClient(object):
         logger.info("Lost connection to MQTT Broker: {reason}", reason=str(reason))
         self.connected = False
         for job_id, job in self.republish_queue.items():
-            self.republish_queue[job_id]['published'] = False
+            self.republish_queue[job_id]["published"] = False
 
         if self.mqtt_connection_lost_callback:
             self.mqtt_connection_lost_callback()
@@ -880,7 +880,7 @@ class MQTTTYomboFactory(MQTTFactory):
     #
     # def clientConnectionFailed(self, connector, reason):
     #     logger.info("MQTTTYomboFactory clientConnectionFailed. Reason: {reason}", reason=reason)
-    #     # self.AMQPClient.disconnected('failed')
+    #     # self.AMQPClient.disconnected("failed")
     #     protocol.ReconnectingClientFactory.clientConnectionFailed(self, connector, reason)
 
 class MQTTServer(protocol.ProcessProtocol):

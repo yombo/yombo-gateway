@@ -19,7 +19,6 @@ def new_db_file(Registry, **kwargs):
     yield create_table_schema_version(Registry)
     yield create_table_auth_keys(Registry)
     yield create_table_events(Registry)
-    # yield create_table_event_types(Registry)
     yield create_table_categories(Registry)
     yield create_table_commands(Registry)
     yield create_table_crontab(Registry)
@@ -73,7 +72,7 @@ def downgrade(Registry, **kwargs):
 @inlineCallbacks
 def create_table_schema_version(Registry, **kwargs):
     """ Handles version tracking for the database schema """
-    yield Registry.DBPOOL.runQuery('CREATE TABLE schema_version(table_name TEXT NOT NULL, version INTEGER NOT NULL, PRIMARY KEY(table_name))')
+    yield Registry.DBPOOL.runQuery("CREATE TABLE schema_version(table_name TEXT NOT NULL, version INTEGER NOT NULL, PRIMARY KEY(table_name))")
     yield Registry.DBPOOL.runQuery('INSERT INTO schema_version(table_name, version) VALUES ("core", 1)')
 
 @inlineCallbacks
@@ -93,8 +92,8 @@ def create_table_auth_keys(Registry, **kwargs):
         `updated_at`      INTEGER NOT NULL,
         PRIMARY KEY(id));"""
     yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('auth_keys', 'created_at'))
-    yield Registry.DBPOOL.runQuery(create_index('auth_keys', 'updated_at'))
+    yield Registry.DBPOOL.runQuery(create_index("auth_keys", "created_at"))
+    yield Registry.DBPOOL.runQuery(create_index("auth_keys", "updated_at"))
 
 
 @inlineCallbacks
@@ -112,7 +111,7 @@ def create_table_categories(Registry, **kwargs):
         `updated_at`    INTEGER NOT NULL,
         PRIMARY KEY(id) );"""
     yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('categories', 'id', unique=True))
+    yield Registry.DBPOOL.runQuery(create_index("categories", "id", unique=True))
     # yield Registry.DBPOOL.runQuery("CREATE UNIQUE INDEX IF NOT EXISTS categoires_type_machine_label_IDX ON categories (machine_label, category_type)")
 
 
@@ -132,9 +131,9 @@ def create_table_commands(Registry, **kwargs):
         `updated_at`    INTEGER NOT NULL,
         PRIMARY KEY(id) );"""
     yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('commands', 'id', unique=True))
-    yield Registry.DBPOOL.runQuery(create_index('commands', 'machine_label', unique=True))
-    yield Registry.DBPOOL.runQuery(create_index('commands', 'voice_cmd'))
+    yield Registry.DBPOOL.runQuery(create_index("commands", "id", unique=True))
+    yield Registry.DBPOOL.runQuery(create_index("commands", "machine_label", unique=True))
+    yield Registry.DBPOOL.runQuery(create_index("commands", "voice_cmd"))
 
 
 @inlineCallbacks
@@ -173,9 +172,9 @@ def create_table_devices(Registry, **kwargs):
 /*     FOREIGN KEY(device_type_id) REFERENCES artist(device_types) */
      PRIMARY KEY(id));"""
     yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('devices', 'id', unique=True))
-    yield Registry.DBPOOL.runQuery(create_index('devices', 'device_type_id'))
-    yield Registry.DBPOOL.runQuery(create_index('devices', 'gateway_id'))
+    yield Registry.DBPOOL.runQuery(create_index("devices", "id", unique=True))
+    yield Registry.DBPOOL.runQuery(create_index("devices", "device_type_id"))
+    yield Registry.DBPOOL.runQuery(create_index("devices", "gateway_id"))
 
 
 @inlineCallbacks
@@ -200,7 +199,7 @@ def create_table_device_command_inputs(Registry, **kwargs):
         `created_at`     INTEGER NOT NULL,
         UNIQUE (device_type_id, command_id, input_type_id) ON CONFLICT IGNORE);"""
     yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('device_command_inputs', 'device_type_id'))
+    yield Registry.DBPOOL.runQuery(create_index("device_command_inputs", "device_type_id"))
 
 
 @inlineCallbacks
@@ -233,10 +232,10 @@ def create_table_device_commands(Registry, **kwargs):
         `uploadable`        INTEGER NOT NULL DEFAULT 0 /* For security, only items marked as 1 can be sent externally */
         );"""
     yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('device_commands', 'request_id', unique=True))
+    yield Registry.DBPOOL.runQuery(create_index("device_commands", "request_id", unique=True))
     # yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS device_command_id_nottimes_idx ON device_command (device_id, not_before_at, not_after_at)")
-    yield Registry.DBPOOL.runQuery(create_index('device_commands', 'finished_at'))
-    # yield Registry.DBPOOL.runQuery(create_index('device_status', 'status'))
+    yield Registry.DBPOOL.runQuery(create_index("device_commands", "finished_at"))
+    # yield Registry.DBPOOL.runQuery(create_index("device_status", "status"))
 
 
 @inlineCallbacks
@@ -257,7 +256,7 @@ def create_table_crontab(Registry, **kwargs):
         `updated_at`   FLOAT
         );"""
     yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('crontab', 'id', unique=True))
+    yield Registry.DBPOOL.runQuery(create_index("crontab", "id", unique=True))
 
 
 @inlineCallbacks
@@ -283,9 +282,9 @@ def create_table_device_status(Registry, **kwargs):
         `uploadable`           INTEGER NOT NULL DEFAULT 0 /* For security, only items marked as 1 can be sent externally */
         );"""
     yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('device_status', 'status_id', unique=True))
-    yield Registry.DBPOOL.runQuery(create_index('device_status', 'device_id'))
-    yield Registry.DBPOOL.runQuery(create_index('device_status', 'uploaded'))
+    yield Registry.DBPOOL.runQuery(create_index("device_status", "status_id", unique=True))
+    yield Registry.DBPOOL.runQuery(create_index("device_status", "device_id"))
+    yield Registry.DBPOOL.runQuery(create_index("device_status", "uploaded"))
 
 
 @inlineCallbacks
@@ -309,8 +308,8 @@ def create_table_device_types(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(table)
 #    yield Registry.DBPOOL.runQuery("CREATE UNIQUE INDEX IF NOT EXISTS device_types_machine_label_idx ON device_types (machine_label) ON CONFLICT IGNORE")
 #    yield Registry.DBPOOL.runQuery("CREATE UNIQUE INDEX IF NOT EXISTS device_types_label_idx ON device_types (label) ON CONFLICT IGNORE")
-    yield Registry.DBPOOL.runQuery(create_index('device_types', 'id', unique=True))
-    yield Registry.DBPOOL.runQuery(create_index('device_types', 'machine_label', unique=True))
+    yield Registry.DBPOOL.runQuery(create_index("device_types", "id", unique=True))
+    yield Registry.DBPOOL.runQuery(create_index("device_types", "machine_label", unique=True))
 
 
 @inlineCallbacks
@@ -323,8 +322,8 @@ def create_table_device_type_commands(Registry, **kwargs):
         `created_at`     INTEGER NOT NULL,
         UNIQUE (device_type_id, command_id) ON CONFLICT IGNORE);"""
     yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('device_type_commands', 'device_type_id'))
-    # yield Registry.DBPOOL.runQuery(create_index('command_device_types', 'command_id'))
+    yield Registry.DBPOOL.runQuery(create_index("device_type_commands", "device_type_id"))
+    # yield Registry.DBPOOL.runQuery(create_index("command_device_types", "command_id"))
     #    yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS command_device_types_command_id_device_type_id_IDX ON command_device_types (command_id, device_type_id)")
 
 
@@ -353,7 +352,7 @@ def create_table_events(Registry, **kwargs):
         `created_at`    INTEGER NOT NULL);"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS event_type_idx ON events (event_type, event_subtype)")
-    yield Registry.DBPOOL.runQuery(create_index('events', 'created_at'))
+    yield Registry.DBPOOL.runQuery(create_index("events", "created_at"))
 
 @inlineCallbacks
 def create_table_gateways(Registry, **kwargs):
@@ -395,7 +394,7 @@ def create_table_gateways(Registry, **kwargs):
             `updated_at`            INTEGER NOT NULL,
          PRIMARY KEY(id));"""
     yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('gateways', 'id', unique=True))
+    yield Registry.DBPOOL.runQuery(create_index("gateways", "id", unique=True))
 
 
 @inlineCallbacks
@@ -423,8 +422,8 @@ def create_table_gpg_keys(Registry, **kwargs):
         `created_at`    INTEGER NOT NULL
         );"""
     yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('gpg_keys', 'keyid'))
-    # yield Registry.DBPOOL.runQuery(create_index('gpg_keys', 'fingerprint'))
+    yield Registry.DBPOOL.runQuery(create_index("gpg_keys", "keyid"))
+    # yield Registry.DBPOOL.runQuery(create_index("gpg_keys", "fingerprint"))
 
 
 @inlineCallbacks
@@ -461,7 +460,7 @@ def create_table_locations(Registry, **kwargs):
         `updated_at`     INTEGER NOT NULL,
         `created_at`     INTEGER NOT NULL);"""
     yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('locations', 'id'))
+    yield Registry.DBPOOL.runQuery(create_index("locations", "id"))
     yield Registry.DBPOOL.runQuery("CREATE UNIQUE INDEX IF NOT EXISTS locations_machinelabel_idx ON locations (location_type, machine_label)")
     yield Registry.DBPOOL.runQuery("CREATE UNIQUE INDEX IF NOT EXISTS locations_label_idx ON locations (location_type, label)")
 
@@ -497,7 +496,7 @@ def create_table_modules(Registry, **kwargs):
         `updated_at`         INTEGER NOT NULL,
         PRIMARY KEY(id));"""
     yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('modules', 'machine_label'))
+    yield Registry.DBPOOL.runQuery(create_index("modules", "machine_label"))
 
 
 @inlineCallbacks
@@ -511,7 +510,7 @@ def create_table_module_device_types(Registry, **kwargs):
         UNIQUE (module_id, device_type_id) ON CONFLICT IGNORE);"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery("CREATE UNIQUE INDEX IF NOT EXISTS module_device_types_module_dt_id_idx ON module_device_types (module_id, device_type_id)")
-    # yield Registry.DBPOOL.runQuery(create_index('command_device_types', 'command_id'))
+    # yield Registry.DBPOOL.runQuery(create_index("command_device_types", "command_id"))
     #    yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS command_device_types_command_id_device_type_id_IDX ON command_device_types (command_id, device_type_id)")
 
 
@@ -525,7 +524,7 @@ def create_table_module_installed(Registry, **kwargs):
         `install_at`      INTEGER NOT NULL,
         `last_check`        INTEGER NOT NULL);"""
     yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('module_installed', 'module_id'))
+    yield Registry.DBPOOL.runQuery(create_index("module_installed", "module_id"))
 
 
 @inlineCallbacks
@@ -547,8 +546,8 @@ def create_table_nodes(Registry, **kwargs):
         `updated_at`        INTEGER NOT NULL,
         `created_at`        INTEGER NOT NULL );"""
     yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('nodes', 'id'))
-    yield Registry.DBPOOL.runQuery(create_index('nodes', 'parent_id'))
+    yield Registry.DBPOOL.runQuery(create_index("nodes", "id"))
+    yield Registry.DBPOOL.runQuery(create_index("nodes", "parent_id"))
 
 
 @inlineCallbacks
@@ -573,7 +572,7 @@ def create_table_notifications(Registry, **kwargs):
         `expire_at`               INTEGER, /* timestamp when msg should expire */
         `created_at`              INTEGER NOT NULL);"""
     yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('notifications', 'id'))
+    yield Registry.DBPOOL.runQuery(create_index("notifications", "id"))
 
 
 @inlineCallbacks
@@ -587,8 +586,8 @@ def create_table_sqldict(Registry, **kwargs):
         `created_at` INTEGER NOT NULL,
         `updated_at` INTEGER NOT NULL);"""
     yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('sqldict', 'dict_name'))
-    yield Registry.DBPOOL.runQuery(create_index('sqldict', 'component'))
+    yield Registry.DBPOOL.runQuery(create_index("sqldict", "dict_name"))
+    yield Registry.DBPOOL.runQuery(create_index("sqldict", "component"))
 
 
 @inlineCallbacks
@@ -605,7 +604,7 @@ def create_table_states(Registry, **kwargs):
         `updated_at`  INTEGER NOT NULL);"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS name_gateway_id_IDX ON states (name, gateway_id)")
-    yield Registry.DBPOOL.runQuery(create_index('states', 'created_at'))
+    yield Registry.DBPOOL.runQuery(create_index("states", "created_at"))
 
 
 @inlineCallbacks
@@ -625,7 +624,7 @@ def create_table_statistics(Registry, **kwargs):
         `finished`            INTEGER NOT NULL DEFAULT 0,
         `updated_at`          INTEGER NOT NULL);"""
     yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('statistics', 'bucket_type'))
+    yield Registry.DBPOOL.runQuery(create_index("statistics", "bucket_type"))
     yield Registry.DBPOOL.runQuery("CREATE UNIQUE INDEX IF NOT EXISTS table_b_t_IDX ON statistics (bucket_name, bucket_type, bucket_time)")
     yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS table_t_n_t_IDX ON statistics (finished, uploaded, anon)")
 
@@ -645,7 +644,7 @@ def create_table_tasks(Registry, **kwargs):
         `created_at`     INTEGER NOT NULL
         );"""
     yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('tasks', 'id'))
+    yield Registry.DBPOOL.runQuery(create_index("tasks", "id"))
 
 
 @inlineCallbacks
@@ -660,8 +659,8 @@ def create_table_users(Registry, **kwargs):
         `updated_at`         INTEGER NOT NULL,
         `created_at`         INTEGER NOT NULL );"""
     yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('users', 'id', unique=True))
-    yield Registry.DBPOOL.runQuery(create_index('users', 'email'))
+    yield Registry.DBPOOL.runQuery(create_index("users", "id", unique=True))
+    yield Registry.DBPOOL.runQuery(create_index("users", "email"))
 
 
 @inlineCallbacks
@@ -678,8 +677,8 @@ def create_table_webinterface_sessions(Registry, **kwargs):
         `updated_at`     INTEGER NOT NULL,
         PRIMARY KEY(id));"""
     yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('webinterface_sessions', 'id'))
-    yield Registry.DBPOOL.runQuery(create_index('webinterface_sessions', 'last_access_at'))
+    yield Registry.DBPOOL.runQuery(create_index("webinterface_sessions", "id"))
+    yield Registry.DBPOOL.runQuery(create_index("webinterface_sessions", "last_access_at"))
 
 
 @inlineCallbacks
@@ -745,7 +744,7 @@ def create_table_variable_fields(Registry, **kwargs):
         `updated_at`          INTEGER NOT NULL,
         `created_at`          INTEGER NOT NULL);"""
     yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('variable_fields', 'group_id'))
+    yield Registry.DBPOOL.runQuery(create_index("variable_fields", "group_id"))
     #    yield Registry.DBPOOL.runQuery("CREATE UNIQUE INDEX IF NOT EXISTS device_types_machine_label_idx ON device_types (machine_label) ON CONFLICT IGNORE")
 
 

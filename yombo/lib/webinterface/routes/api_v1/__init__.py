@@ -8,9 +8,9 @@ def args_to_dict(arguments):
     results = {}
     for argument, value in arguments.items():
         value = value[0]
-        if '[' in argument:
-            name = argument[0:argument.find('[')]
-            sub_name = argument[argument.find('[')+1 : argument.find(']')]
+        if "[" in argument:
+            name = argument[0:argument.find("[")]
+            sub_name = argument[argument.find("[")+1 : argument.find("]")]
             if name == sub_name:
                 sub_name = None
         else:
@@ -38,7 +38,7 @@ def return_json(request, payload, code=None):
     :param payload:
     :return:
     """
-    request.setHeader('Content-Type', CONTENT_TYPE_JSON)
+    request.setHeader("Content-Type", CONTENT_TYPE_JSON)
     if code is None:
         code = 200
     request.setResponseCode(code)
@@ -48,7 +48,7 @@ def return_json(request, payload, code=None):
 
 
 def return_good(request, message=None, payload=None, comments=None, code=None):
-    request.setHeader('Content-Type', CONTENT_TYPE_JSON)
+    request.setHeader("Content-Type", CONTENT_TYPE_JSON)
     if comments is None:
         comments = {}
     if code is None:
@@ -59,15 +59,15 @@ def return_good(request, message=None, payload=None, comments=None, code=None):
     if message is None:
         message = "OK"
     return json.dumps({
-        'code': code,
-        'message': message,
-        'comments': comments,
-        'payload': payload,
+        "code": code,
+        "message": message,
+        "comments": comments,
+        "payload": payload,
     })
 
 
 def return_not_found(request, message=None, code=None, comments=None):
-    request.setHeader('Content-Type', CONTENT_TYPE_JSON)
+    request.setHeader("Content-Type", CONTENT_TYPE_JSON)
     if comments is None:
         comments = {}
     if code is None:
@@ -76,14 +76,14 @@ def return_not_found(request, message=None, code=None, comments=None):
     if message is None:
         message = "Not found"
     return json.dumps({
-        'code': code,
-        'message': message,
-        'comments': comments,
+        "code": code,
+        "message": message,
+        "comments": comments,
     })
 
 
 def return_error(request, message=None, code=None, comments=None):
-    request.setHeader('Content-Type', CONTENT_TYPE_JSON)
+    request.setHeader("Content-Type", CONTENT_TYPE_JSON)
     if comments is None:
         comments = {}
     if code is None:
@@ -92,14 +92,14 @@ def return_error(request, message=None, code=None, comments=None):
     if message is None:
         message = "System error"
     return json.dumps({
-        'code': code,
-        'message': message,
-        'comments': comments,
+        "code": code,
+        "message": message,
+        "comments": comments,
     })
 
 
 def return_unauthorized(request, message=None, code=None, comments=None):
-    request.setHeader('Content-Type', CONTENT_TYPE_JSON)
+    request.setHeader("Content-Type", CONTENT_TYPE_JSON)
     if comments is None:
         comments = {}
     if code is None:
@@ -108,9 +108,9 @@ def return_unauthorized(request, message=None, code=None, comments=None):
     if message is None:
         message = "Not authorized"
     return json.dumps({
-        'code': code,
-        'message': message,
-        'comments': comments,
-        'redirect': "/?",
+        "code": code,
+        "message": message,
+        "comments": comments,
+        "redirect": "/?",
     })
 

@@ -9,6 +9,7 @@ from struct import pack as struct_pack, unpack as struct_unpack
 
 from yombo.utils.decorators import cached
 
+
 @cached(600)
 def get_local_network_info(ethernet_name = None):
     """
@@ -17,48 +18,48 @@ def get_local_network_info(ethernet_name = None):
     :return:
     """
     ifaces = netifaces.interfaces()
-    # => ['lo', 'eth0', 'eth1']
+    # => ["lo", "eth0", "eth1"]
 
     if ethernet_name is not None:
         myiface = ethernet_name
     else:
         gws = netifaces.gateways()
-        myiface = gws['default'][netifaces.AF_INET][1]
+        myiface = gws["default"][netifaces.AF_INET][1]
 
     gws = netifaces.gateways()
-    gateway_v4 = list(gws['default'].values())[0][0]
+    gateway_v4 = list(gws["default"].values())[0][0]
 
     addrs = netifaces.ifaddresses(myiface)
-    # {2: [{'addr': '192.168.1.150',
-    #             'broadcast': '192.168.1.255',
-    #             'netmask': '255.255.255.0'}],
-    #   10: [{'addr': 'fe80::21a:4bff:fe54:a246%eth0',
-    #                'netmask': 'ffff:ffff:ffff:ffff::'}],
-    #   17: [{'addr': '00:1a:4b:54:a2:46', 'broadcast': 'ff:ff:ff:ff:ff:ff'}]}
+    # {2: [{"addr": "192.168.1.150",
+    #             "broadcast": "192.168.1.255",
+    #             "netmask": "255.255.255.0"}],
+    #   10: [{"addr": "fe80::21a:4bff:fe54:a246%eth0",
+    #                "netmask": "ffff:ffff:ffff:ffff::"}],
+    #   17: [{"addr": "00:1a:4b:54:a2:46", "broadcast": "ff:ff:ff:ff:ff:ff"}]}
 
     # Get ipv4 stuff
     ipinfo = addrs[socket.AF_INET][0]
-    address_v4 = ipinfo['addr']
-    netmask_v4 = ipinfo['netmask']
+    address_v4 = ipinfo["addr"]
+    netmask_v4 = ipinfo["netmask"]
     # Create ip object and get
-    cidr_v4 = netaddr.IPNetwork('%s/%s' % (address_v4, netmask_v4))
-    # => IPNetwork('192.168.1.150/24')
+    cidr_v4 = netaddr.IPNetwork(f"{address_v4}/{netmask_v4}")
+    # => IPNetwork("192.168.1.150/24")
     network_v4 = cidr_v4.network
 
     ipinfo = addrs[socket.AF_INET6][0]
-    address_v6 = ipinfo['addr'].split('%')[0]
-    netmask_v6 = ipinfo['netmask']
+    address_v6 = ipinfo["addr"].split("%")[0]
+    netmask_v6 = ipinfo["netmask"]
     # Create ip object and get
-    # cidr_v6 = netaddr.IPNetwork('%s/%s' % (address_v6, netmask_v6))
-    # => IPNetwork('192.168.1.150/24')
+    # cidr_v6 = netaddr.IPNetwork("%s/%s" % (address_v6, netmask_v6))
+    # => IPNetwork("192.168.1.150/24")
     # network_v6 = cidr_v6.network
 
-    # => IPAddress('192.168.1.0')
-    return {'ipv4':
-                {'address': str(address_v4), 'netmask': str(netmask_v4), 'cidr': str(cidr_v4),
-                 'network': str(network_v4), 'gateway': str(gateway_v4)},
-            'ipv6':
-                {'address': str(address_v6), 'netmask': str(netmask_v6), 'gateway': str("")},
+    # => IPAddress("192.168.1.0")
+    return {"ipv4":
+                {"address": str(address_v4), "netmask": str(netmask_v4), "cidr": str(cidr_v4),
+                 "network": str(network_v4), "gateway": str(gateway_v4)},
+            "ipv6":
+                {"address": str(address_v6), "netmask": str(netmask_v6), "gateway": str("")},
             }
 
 
@@ -66,12 +67,12 @@ def get_local_network_info(ethernet_name = None):
 def ip_addres_in_local_network(ip_address):
     local_network = get_local_network_info()
     try:
-        if ip_address_in_network(ip_address, local_network['ipv4']['cidr']):
+        if ip_address_in_network(ip_address, local_network["ipv4"]["cidr"]):
             return True
     except:
         pass
     try:
-        if ip_address_in_network(ip_address, local_network['ipv6']['cidr']):
+        if ip_address_in_network(ip_address, local_network["ipv6"]["cidr"]):
             return True
     except:
         pass
@@ -141,7 +142,7 @@ def subnetwork_to_ip_range(subnetwork):
     """
 
     try:
-        fragments = subnetwork.split('/')
+        fragments = subnetwork.split("/")
         network_prefix = fragments[0]
         netmask_len = int(fragments[1])
 

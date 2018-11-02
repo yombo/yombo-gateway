@@ -5,7 +5,7 @@ Base input type validator.
 import types
 
 from yombo.core.log import get_logger
-logger = get_logger('library.inputtypes.validator')
+logger = get_logger("library.inputtypes.validator")
 
 class Input_Type(object):
     """
@@ -41,12 +41,12 @@ class Input_Type(object):
         logger.debug("input_type info: {input_type}", input_type=input_type)
 
         self._Parent = parent
-        self.input_type_id = input_type['id']
-        self.machine_label = input_type['machine_label']
+        self.input_type_id = input_type["id"]
+        self.machine_label = input_type["machine_label"]
 
         # below are configure in update_attributes()
         self.category_id = None
-        self.platform = 'all'
+        self.platform = "all"
         self.label = None
         self.machine_label = None
         self.description = None
@@ -72,25 +72,25 @@ class Input_Type(object):
         :param input_type: 
         :return: 
         """
-        if 'category_id' in input_type:
-            self.category_id = input_type['category_id']
-        if 'label' in input_type:
-            self.label = input_type['label']
-        if 'machine_label' in input_type:
-            self.machine_label = input_type['machine_label']
-        if 'description' in input_type:
-            self.description = input_type['description']
-        if 'always_load' in input_type:
-            self.always_load = input_type['always_load']
-        if 'status' in input_type:
-            self.status = input_type['status']
-        if 'public' in input_type:
-            self.public = input_type['public']
-        if 'created' in input_type:
-            self.created = input_type['created']
-        if 'updated' in input_type:
-            self.updated = input_type['updated']
-        if 'platform' in input_type:
+        if "category_id" in input_type:
+            self.category_id = input_type["category_id"]
+        if "label" in input_type:
+            self.label = input_type["label"]
+        if "machine_label" in input_type:
+            self.machine_label = input_type["machine_label"]
+        if "description" in input_type:
+            self.description = input_type["description"]
+        if "always_load" in input_type:
+            self.always_load = input_type["always_load"]
+        if "status" in input_type:
+            self.status = input_type["status"]
+        if "public" in input_type:
+            self.public = input_type["public"]
+        if "created" in input_type:
+            self.created = input_type["created"]
+        if "updated" in input_type:
+            self.updated = input_type["updated"]
+        if "platform" in input_type:
             if input_type["platform"] is None or input_type["platform"] == "":
                 self.platform = "all"
             else:
@@ -108,17 +108,17 @@ class Input_Type(object):
         Export input type variables as a dictionary.
         """
         return {
-            'input_type_id': str(self.input_type_id),
-            'category_id': str(self.category_id),
-            'machine_label': str(self.machine_label),
-            'label': str(self.label),
-            'description': str(self.description),
-            'input_regex': str(self.input_regex),
-            'always_load': str(self.always_load),
-            'public': int(self.public),
-            'status': int(self.status),
-            'created': int(self.created),
-            'updated': int(self.updated),
+            "input_type_id": str(self.input_type_id),
+            "category_id": str(self.category_id),
+            "machine_label": str(self.machine_label),
+            "label": str(self.label),
+            "description": str(self.description),
+            "input_regex": str(self.input_regex),
+            "always_load": str(self.always_load),
+            "public": int(self.public),
+            "status": int(self.status),
+            "created": int(self.created),
+            "updated": int(self.updated),
         }
 
     def pre_validate(self, value, **kwargs):
@@ -126,24 +126,24 @@ class Input_Type(object):
 
     def validate(self, value, **kwargs):
         if value is None:
-            if self.ALLOW_NULL is False and 'allow_none' not in kwargs:
-                if 'default' in kwargs:
-                    return kwargs['default']
+            if self.ALLOW_NULL is False and "allow_none" not in kwargs:
+                if "default" in kwargs:
+                    return kwargs["default"]
                 raise AssertionError("NoneType not allowed")
         if value is "":
-            if self.ALLOW_BLANK is False and 'allow_blank' not in kwargs:
+            if self.ALLOW_BLANK is False and "allow_blank" not in kwargs:
                 raise AssertionError("Blank (non-None) not allowed")
 
         return value
 
     def check_min_max(self, value, **kwargs):
-        if 'min' in kwargs and kwargs['min'] is not None:
-            min = int(kwargs['min'])
+        if "min" in kwargs and kwargs["min"] is not None:
+            min = int(kwargs["min"])
         else:
             min = self.MIN
 
-        if 'max' in kwargs and kwargs['max'] is not None:
-            max = int(kwargs['max'])
+        if "max" in kwargs and kwargs["max"] is not None:
+            max = int(kwargs["max"])
         else:
             max = self.MAX
 
@@ -156,6 +156,6 @@ class Input_Type(object):
                 raise AssertionError("Value is too long.")
         else:
             if min is not None and value < min:
-                raise AssertionError("Value too low. Min: %s" % min)
+                raise AssertionError(f"Value too low. Min: {min}")
             if max is not None and value > max:
-                raise AssertionError("Value too high. Max: %s" % max)
+                raise AssertionError(f"Value too high. Max: {max}")

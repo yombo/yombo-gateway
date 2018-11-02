@@ -30,19 +30,19 @@ from yombo.core.log import get_logger
 from yombo.utils import search_instance, do_search_instance, global_invoke_all
 import collections
 from functools import reduce
-logger = get_logger('library.inputtypes')
+logger = get_logger("library.inputtypes")
 
 BASE_INPUT_TYPE_PLATFORMS = {
-    'yombo.lib.inputtypes.automation_addresses': ['X10_Address', 'X10_House', 'X10_Unit', 'Insteon_Address'],
-    'yombo.lib.inputtypes.basic_addresses': ['Email', 'YomboUsername', 'URI', 'URL'],
-    'yombo.lib.inputtypes.basic_types': ['_Any', '_Bool', '_Checkbox', '_Float', 'Filename', '_Integer', '_None',
-                                         'Number', 'Password', 'Percent', '_String'],
-    'yombo.lib.inputtypes.ip_address': ['IP_Address', 'IP_Address_Public', 'IP_Address_Private', 'IPv4_Address',
-                                        'IPv4_Address_Public', 'IPv4_Address_Private', 'IPv6_Address',
-                                        'IPv6_Address_Public', 'IPv6_Address_Private'],
-    'yombo.lib.inputtypes.latin_alphabet': ['Latin_Alphabet', 'Latin_Alphanumeric'],
-    'yombo.lib.inputtypes.yombo_items': ['Yombo_Command', 'Yombo_Device_Type', 'Yombo_Module',
-                                         'Yombo_Device'],
+    "yombo.lib.inputtypes.automation_addresses": ["X10_Address", "X10_House", "X10_Unit", "Insteon_Address"],
+    "yombo.lib.inputtypes.basic_addresses": ["Email", "YomboUsername", "URI", "URL"],
+    "yombo.lib.inputtypes.basic_types": ["_Any", "_Bool", "_Checkbox", "_Float", "Filename", "_Integer", "_None",
+                                         "Number", "Password", "Percent", "_String"],
+    "yombo.lib.inputtypes.ip_address": ["IP_Address", "IP_Address_Public", "IP_Address_Private", "IPv4_Address",
+                                        "IPv4_Address_Public", "IPv4_Address_Private", "IPv6_Address",
+                                        "IPv6_Address_Public", "IPv6_Address_Private"],
+    "yombo.lib.inputtypes.latin_alphabet": ["Latin_Alphabet", "Latin_Alphanumeric"],
+    "yombo.lib.inputtypes.yombo_items": ["Yombo_Command", "Yombo_Device_Type", "Yombo_Module",
+                                         "Yombo_Device"],
 }
 
 class InputTypes(YomboLibrary):
@@ -59,11 +59,11 @@ class InputTypes(YomboLibrary):
 
         Checks to if a provided input type ID, label, or machine_label exists.
 
-            >>> if '0kas02j1zss349k1' in self._InputTypes:
+            >>> if "0kas02j1zss349k1" in self._InputTypes:
 
         or:
 
-            >>> if 'living room light' in self._InputTypes:
+            >>> if "living room light" in self._InputTypes:
 
         :raises YomboWarning: Raised when request is malformed.
         :raises KeyError: Raised when request is not found.
@@ -85,11 +85,11 @@ class InputTypes(YomboLibrary):
 
         Attempts to find the input type requested using a couple of methods.
 
-            >>> input_type = self._InputTypes['0kas02j1zss349k1']  #by uuid
+            >>> input_type = self._InputTypes["0kas02j1zss349k1"]  #by uuid
 
         or:
 
-            >>> input_type = self._InputTypes['alpnum']  #by name
+            >>> input_type = self._InputTypes["alpnum"]  #by name
 
         :raises YomboWarning: Raised when request is malformed.
         :raises KeyError: Raised when request is not found.
@@ -172,8 +172,8 @@ class InputTypes(YomboLibrary):
         Load() stage.
         """
         self.input_types = {}
-        self.input_type_search_attributes = ['input_type_id', 'category_id', 'label', 'machine_label', 'description',
-            'status', 'always_load', 'public']
+        self.input_type_search_attributes = ["input_type_id", "category_id", "label", "machine_label", "description",
+            "status", "always_load", "public"]
 
         self.platforms = {}
         self.load_platforms(BASE_INPUT_TYPE_PLATFORMS)
@@ -204,14 +204,14 @@ class InputTypes(YomboLibrary):
         validators_loaded = []
 
         for input_type in input_types:
-            if input_type['machine_label'] in self.platforms:
-                self.import_input_types(input_type, self.platforms[input_type['machine_label']])
-                if input_type['machine_label'] not in validators_loaded:
-                    validators_loaded.append(input_type['machine_label'])
+            if input_type["machine_label"] in self.platforms:
+                self.import_input_types(input_type, self.platforms[input_type["machine_label"]])
+                if input_type["machine_label"] not in validators_loaded:
+                    validators_loaded.append(input_type["machine_label"])
             else:
                 # print("111: %s" % input_type)
-                logger.warn("Input Type '{label}' doesn't have a validator.", label=input_type['machine_label'])
-                self.import_input_types(input_type, self.platforms['any'])
+                logger.warn("Input Type '{label}' doesn't have a validator.", label=input_type["machine_label"])
+                self.import_input_types(input_type, self.platforms["any"])
 
         # now create any input_types for validators where we don't have a DB item - rare
         # print("!!!!!!!!!!!!!!!!!!!!!!!!!!  now loading missing validators....")
@@ -221,15 +221,15 @@ class InputTypes(YomboLibrary):
                 continue
             logger.debug("Validator is being loaded without db entry: {validator_name}", validator_name=validator_name)
             input_type = {
-                'id': validator_name,
-                'label': validator_name,
-                'machine_label': validator_name,
-                'description': validator_name,
-                'always_load': 1,
-                'status': 1,
-                'public': 0,
-                'created_at': time(),
-                'updated_at': time(),
+                "id": validator_name,
+                "label": validator_name,
+                "machine_label": validator_name,
+                "description": validator_name,
+                "always_load": 1,
+                "status": 1,
+                "public": 0,
+                "created_at": time(),
+                "updated_at": time(),
             }
             self.import_input_types(input_type, klass)
 
@@ -243,11 +243,11 @@ class InputTypes(YomboLibrary):
         for path, items in platforms.items():
             for item in items:
                 item_key = item.lower()
-                if item_key.startswith('_'):
+                if item_key.startswith("_"):
                     item_key = item_key[1:]
 
                 module_root = __import__(path, globals(), locals(), [], 0)
-                module_tail = reduce(lambda p1, p2: getattr(p1, p2), [module_root, ] + path.split('.')[1:])
+                module_tail = reduce(lambda p1, p2: getattr(p1, p2), [module_root, ] + path.split(".")[1:])
                 klass = getattr(module_tail, item)
                 if not isinstance(klass, collections.Callable):
                     logger.warn("Unable to load input type platform '{name}', it's not callable.", name=item)
@@ -260,10 +260,10 @@ class InputTypes(YomboLibrary):
 
         **Hooks called**:
 
-        * _input_type_before_load_ : If added, sends input type dictionary as 'input_type'
-        * _input_type_before_update_ : If updated, sends input type dictionary as 'input_type'
-        * _input_type_loaded_ : If added, send the input type instance as 'input_type'
-        * _input_type_updated_ : If updated, send the input type instance as 'input_type'
+        * _input_type_before_load_ : If added, sends input type dictionary as "input_type"
+        * _input_type_before_update_ : If updated, sends input type dictionary as "input_type"
+        * _input_type_loaded_ : If added, send the input type instance as "input_type"
+        * _input_type_updated_ : If updated, send the input type instance as "input_type"
 
         :param input_type: A dictionary of items required to either setup a new input type or update an existing one.
         :type input: dict
@@ -276,16 +276,16 @@ class InputTypes(YomboLibrary):
             # print("importing path: %s" % validator_data)
             self.input_types[input_type_id] = klass(self, input_type)
 
-            # global_invoke_all('_input_type_loaded_',
-            #               **{'input_type': self.input_types[input_type_id]})
+            # global_invoke_all("_input_type_loaded_",
+            #               **{"input_type": self.input_types[input_type_id]})
         elif input_type_id not in self.input_types:
-            global_invoke_all('_input_type_before_update_',
+            global_invoke_all("_input_type_before_update_",
                               called_by=self,
                               id=input_type_id,
                               input_type=self.input_types[input_type_id],
                               )
             self.input_types[input_type_id].update_attributes(input_type)
-            global_invoke_all('_input_type_updated_',
+            global_invoke_all("_input_type_updated_",
                               called_by=self,
                               id=input_type_id,
                               input_type=self.input_types[input_type_id],
@@ -312,11 +312,11 @@ class InputTypes(YomboLibrary):
            Modules shouldn't use this function. Use the built in reference to
            find input types:
 
-            >>> self._InputTypes['13ase45']
+            >>> self._InputTypes["13ase45"]
 
         or:
 
-            >>> self._InputTypes['numeric']
+            >>> self._InputTypes["numeric"]
 
         :raises YomboWarning: For invalid requests.
         :raises KeyError: When item requested cannot be found.
@@ -345,19 +345,19 @@ class InputTypes(YomboLibrary):
         else:
             attrs = [
                 {
-                    'field': 'input_type_id',
-                    'value': input_type_requested,
-                    'limiter': limiter,
+                    "field": "input_type_id",
+                    "value": input_type_requested,
+                    "limiter": limiter,
                 },
                 {
-                    'field': 'label',
-                    'value': input_type_requested,
-                    'limiter': limiter,
+                    "field": "label",
+                    "value": input_type_requested,
+                    "limiter": limiter,
                 },
                 {
-                    'field': 'machine_label',
-                    'value': input_type_requested,
-                    'limiter': limiter,
+                    "field": "machine_label",
+                    "value": input_type_requested,
+                    "limiter": limiter,
                 }
             ]
             try:
@@ -373,7 +373,7 @@ class InputTypes(YomboLibrary):
                 else:
                     raise KeyError("Input type not found: %s" % input_type_requested)
             except YomboWarning as e:
-                raise KeyError('Searched for %s, but had problems: %s' % (input_type_requested, e))
+                raise KeyError("Searched for %s, but had problems: %s" % (input_type_requested, e))
 
     def search(self, _limiter=None, _operation=None, **kwargs):
         """
@@ -403,46 +403,46 @@ class InputTypes(YomboLibrary):
             for key in list(data.keys()):
                 if data[key] == "":
                     data[key] = None
-                elif key in ['status']:
+                elif key in ["status"]:
                     if data[key] is None or (isinstance(data[key], str) and data[key].lower() == "none"):
                         del data[key]
                     else:
                         data[key] = int(data[key])
         except Exception as e:
             return {
-                'status': 'failed',
-                'msg': "Couldn't add input type device",
-                'apimsg': e,
-                'apimsghtml': e,
-                'device_id': '',
+                "status": "failed",
+                "msg": "Couldn't add input type device",
+                "apimsg": e,
+                "apimsghtml": e,
+                "device_id": "",
             }
 
         try:
-            if 'session' in kwargs:
-                session = kwargs['session']
+            if "session" in kwargs:
+                session = kwargs["session"]
             else:
                 return {
-                    'status': 'failed',
-                    'msg': "Couldn't add input type: User session missing.",
-                    'apimsg': "Couldn't add input type: User session missing.",
-                    'apimsghtml': "Couldn't add input type: User session missing.",
+                    "status": "failed",
+                    "msg": "Couldn't add input type: User session missing.",
+                    "apimsg": "Couldn't add input type: User session missing.",
+                    "apimsghtml": "Couldn't add input type: User session missing.",
                 }
-            input_type_results = yield self._YomboAPI.request('POST', '/v1/input_type',
+            input_type_results = yield self._YomboAPI.request("POST", "/v1/input_type",
                                                               data,
                                                               session=session)
         except YomboWarning as e:
             return {
-                'status': 'failed',
-                'msg': "Couldn't add input type: %s" % e.message,
-                'apimsg': "Couldn't add input type: %s" % e.message,
-                'apimsghtml': "Couldn't add input type: %s" % e.html_message,
+                "status": "failed",
+                "msg": f"Couldn't add input type: {e.message}",
+                "apimsg": f"Couldn't add input type: {e.message}",
+                "apimsghtml": f"Couldn't add input type: {e.html_message}",
             }
         # print("dt_results: %s" % input_type_results)
 
         return {
-            'status': 'success',
-            'msg': "Input type added.",
-            'input_type_id': input_type_results['data']['id'],
+            "status": "success",
+            "msg": "Input type added.",
+            "input_type_id": input_type_results["data"]["id"],
         }
 
     @inlineCallbacks
@@ -458,47 +458,48 @@ class InputTypes(YomboLibrary):
             for key in list(data.keys()):
                 if data[key] == "":
                     data[key] = None
-                elif key in ['status']:
+                elif key in ["status"]:
                     if data[key] is None or (isinstance(data[key], str) and data[key].lower() == "none"):
                         del data[key]
                     else:
                         data[key] = int(data[key])
         except Exception as e:
             return {
-                'status': 'failed',
-                'msg': "Couldn't edit input type device",
-                'apimsg': e,
-                'apimsghtml': e,
-                'device_id': '',
+                "status": "failed",
+                "msg": "Couldn't edit input type device",
+                "apimsg": e,
+                "apimsghtml": e,
+                "device_id": "",
             }
 
         try:
-            if 'session' in kwargs:
-                session = kwargs['session']
+            if "session" in kwargs:
+                session = kwargs["session"]
             else:
                 return {
-                    'status': 'failed',
-                    'msg': "Couldn't edit input type: User session missing.",
-                    'apimsg': "Couldn't edit input type: User session missing.",
-                    'apimsghtml': "Couldn't edit input type: User session missing.",
+                    "status": "failed",
+                    "msg": "Couldn't edit input type: User session missing.",
+                    "apimsg": "Couldn't edit input type: User session missing.",
+                    "apimsghtml": "Couldn't edit input type: User session missing.",
                 }
 
-            input_type_results = yield self._YomboAPI.request('PATCH', '/v1/input_type/%s' % (input_type_id),
+            input_type_results = yield self._YomboAPI.request("PATCH",
+                                                              f"/v1/input_type/input_type_id",
                                                               data,
                                                               session=session)
         except YomboWarning as e:
             return {
-                'status': 'failed',
-                'msg': "Couldn't edit input type: %s" % e.message,
-                'apimsg': "Couldn't edit input type: %s" % e.message,
-                'apimsghtml': "Couldn't edit input type: %s" % e.html_message,
+                "status": "failed",
+                "msg": f"Couldn't edit input type: {e.message}",
+                "apimsg": f"Couldn't edit input type: {e.message}",
+                "apimsghtml": f"Couldn't edit input type: {e.html_message}",
             }
         # print("module edit results: %s" % module_results)
 
         return {
-            'status': 'success',
-            'msg': "Input type edited.",
-            'input_type_id': input_type_results['data']['id'],
+            "status": "success",
+            "msg": "Input type edited.",
+            "input_type_id": input_type_results["data"]["id"],
         }
 
     @inlineCallbacks
@@ -511,30 +512,31 @@ class InputTypes(YomboLibrary):
         :return:
         """
         try:
-            if 'session' in kwargs:
-                session = kwargs['session']
+            if "session" in kwargs:
+                session = kwargs["session"]
             else:
                 return {
-                    'status': 'failed',
-                    'msg': "Couldn't delete input type: User session missing.",
-                    'apimsg': "Couldn't delete input type: User session missing.",
-                    'apimsghtml': "Couldn't delete input type: User session missing.",
+                    "status": "failed",
+                    "msg": "Couldn't delete input type: User session missing.",
+                    "apimsg": "Couldn't delete input type: User session missing.",
+                    "apimsghtml": "Couldn't delete input type: User session missing.",
                 }
 
-            yield self._YomboAPI.request('DELETE', '/v1/input_type/%s' % input_type_id,
+            yield self._YomboAPI.request("DELETE",
+                                         f"/v1/input_type/{input_type_id}",
                                          session=session)
         except YomboWarning as e:
             return {
-                'status': 'failed',
-                'msg': "Couldn't delete input type: %s" % e.message,
-                'apimsg': "Couldn't delete input type: %s" % e.message,
-                'apimsghtml': "Couldn't delete input type: %s" % e.html_message,
+                "status": "failed",
+                "msg": f"Couldn't delete input type: {e.message}",
+                "apimsg": f"Couldn't delete input type: {e.message}",
+                "apimsghtml": f"Couldn't delete input type: {e.html_message}",
             }
 
         return {
-            'status': 'success',
-            'msg': "Input type deleted.",
-            'input_type_id': input_type_id,
+            "status": "success",
+            "msg": "Input type deleted.",
+            "input_type_id": input_type_id,
         }
 
     @inlineCallbacks
@@ -548,35 +550,36 @@ class InputTypes(YomboLibrary):
         """
         #        print "enabling input_type: %s" % input_type_id
         api_data = {
-            'status': 1,
+            "status": 1,
         }
 
         try:
-            if 'session' in kwargs:
-                session = kwargs['session']
+            if "session" in kwargs:
+                session = kwargs["session"]
             else:
                 return {
-                    'status': 'failed',
-                    'msg': "Couldn't enable input type: User session missing.",
-                    'apimsg': "Couldn't enable input type: User session missing.",
-                    'apimsghtml': "Couldn't enable input type: User session missing.",
+                    "status": "failed",
+                    "msg": "Couldn't enable input type: User session missing.",
+                    "apimsg": "Couldn't enable input type: User session missing.",
+                    "apimsghtml": "Couldn't enable input type: User session missing.",
                 }
 
-            yield self._YomboAPI.request('PATCH', '/v1/input_type/%s' % input_type_id,
+            yield self._YomboAPI.request("PATCH",
+                                         f"/v1/input_type/{input_type_id}",
                                          api_data,
                                          session=session)
         except YomboWarning as e:
             return {
-                'status': 'failed',
-                'msg': "Couldn't enable input type: %s" % e.message,
-                'apimsg': "Couldn't enable input type: %s" % e.message,
-                'apimsghtml': "Couldn't enable input type: %s" % e.html_message,
+                "status": "failed",
+                "msg": f"Couldn't enable input type: {e.message}",
+                "apimsg": f"Couldn't enable input type: {e.message}",
+                "apimsghtml": f"Couldn't enable input type: {e.html_message}",
             }
 
         return {
-            'status': 'success',
-            'msg': "Input type enabled.",
-            'input_type_id': input_type_id,
+            "status": "success",
+            "msg": "Input type enabled.",
+            "input_type_id": input_type_id,
         }
 
     @inlineCallbacks
@@ -590,36 +593,37 @@ class InputTypes(YomboLibrary):
         """
 #        print "disabling input_type: %s" % input_type_id
         api_data = {
-            'status': 0,
+            "status": 0,
         }
 
         try:
-            if 'session' in kwargs:
-                session = kwargs['session']
+            if "session" in kwargs:
+                session = kwargs["session"]
             else:
                 return {
-                    'status': 'failed',
-                    'msg': "Couldn't disable input type: User session missing.",
-                    'apimsg': "Couldn't disable input type: User session missing.",
-                    'apimsghtml': "Couldn't disable input type: User session missing.",
+                    "status": "failed",
+                    "msg": "Couldn't disable input type: User session missing.",
+                    "apimsg": "Couldn't disable input type: User session missing.",
+                    "apimsghtml": "Couldn't disable input type: User session missing.",
                 }
 
-            yield self._YomboAPI.request('PATCH', '/v1/input_type/%s' % input_type_id,
+            yield self._YomboAPI.request("PATCH",
+                                         f"/v1/input_type/{input_type_id}",
                                          api_data,
                                          session=session)
         except YomboWarning as e:
             return {
-                'status': 'failed',
-                'msg': "Couldn't disable input type: %s" % e.message,
-                'apimsg': "Couldn't disable input type: %s" % e.message,
-                'apimsghtml': "Couldn't disable input type: %s" % e.html_message,
+                "status": "failed",
+                "msg": f"Couldn't disable input type: {e.message}",
+                "apimsg": f"Couldn't disable input type: {e.message}",
+                "apimsghtml": f"Couldn't disable input type: {e.html_message}",
             }
         # print("disable input_type results: %s" % input_type_results)
 
         return {
-            'status': 'success',
-            'msg': "Input type disabled.",
-            'input_type_id': input_type_id,
+            "status": "success",
+            "msg": "Input type disabled.",
+            "input_type_id": input_type_id,
         }
 
 

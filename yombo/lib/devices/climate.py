@@ -53,7 +53,7 @@ class Climate(Device):
         self.MACHINE_STATUS_EXTRA_FIELDS[STATUS_EXTRA_TEMPERATURE] = True
         self.MACHINE_STATUS_EXTRA_FIELDS[STATUS_EXTRA_MODE] = True
 
-        self.temperature_unit = 'c'  # what temperature unit the device works in. Either 'c' or 'f'.
+        self.temperature_unit = "c"  # what temperature unit the device works in. Either "c" or "f".
 
     @property
     def current_mode(self):
@@ -132,7 +132,7 @@ class Climate(Device):
         """Return the supported step of target temperature."""
         if len(self.status_history) > 0:
             status_current = self.machine_status_extra[0]
-            if 'target_temp_step' in status_current:
+            if "target_temp_step" in status_current:
                 return status_current[FEATURE_TARGET_TEMPERATURE_STEP]
         return None
 
@@ -141,7 +141,7 @@ class Climate(Device):
         """Return the highbound target temperature we try to reach."""
         if len(self.status_history) > 0:
             status_current = self.machine_status_extra[0]
-            if 'target_temp_high' in status_current:
+            if "target_temp_high" in status_current:
                 return status_current[FEATURE_TARGET_TEMPERATURE_HIGH]
         return None
 
@@ -150,7 +150,7 @@ class Climate(Device):
         """Return the lowbound target temperature we try to reach."""
         if len(self.status_history) > 0:
             status_current = self.machine_status_extra[0]
-            if 'target_temp_low' in status_current:
+            if "target_temp_low" in status_current:
                 return status_current[FEATURE_TARGET_TEMPERATURE_LOW]
         return None
 
@@ -200,13 +200,13 @@ class Climate(Device):
     @property
     def min_temp(self):
         """Return the minimum temperature."""
-        return self._Localize.display_temperature(7, 'c', self.temperature_unit)
+        return self._Localize.display_temperature(7, "c", self.temperature_unit)
 
     @property
     def max_temp(self):
         """Return the maximum temp
         erature."""
-        return self._Localize.display_temperature(35, 'c', self.temperature_unit)
+        return self._Localize.display_temperature(35, "c", self.temperature_unit)
 
     @property
     def min_humidity(self):
@@ -262,10 +262,10 @@ class Climate(Device):
         return False
 
     def turn_on(self, **kwargs):
-        return self.command('on', **kwargs)
+        return self.command("on", **kwargs)
 
     def turn_off(self, **kwargs):
-        return self.command('off', **kwargs)
+        return self.command("off", **kwargs)
 
     def asdict(self):
         """
@@ -274,25 +274,25 @@ class Climate(Device):
         :return:
         """
         results = super().asdict()
-        results['current_mode'] = self.current_mode
-        results['current_humidity'] = self.current_humidity
-        results['target_humidity'] = self.target_humidity
-        results['modes_available'] = self.modes_available
-        results['current_temperature'] = self.current_temperature
-        results['target_temperature'] = self.target_temperature
-        results['target_temperature_range'] = self.target_temperature_range
-        results['target_temperature_step'] = self.target_temperature_step
-        results['target_temperature_high'] = self.target_temperature_high
-        results['target_temperature_low'] = self.target_temperature_low
-        results['is_away_mode_on'] = self.is_away_mode_on
-        results['current_hold_mode'] = self.current_hold_mode
-        results['is_aux_heat_on'] = self.is_aux_heat_on
-        results['current_fan_mode'] = self.current_fan_mode
-        results['fan_list'] = self.fan_list
-        results['current_swing_mode'] = self.current_swing_mode
-        results['swing_list'] = self.swing_list
-        results['min_temp'] = self.min_temp
-        results['max_temp'] = self.max_temp
-        results['min_humidity'] = self.min_humidity
-        results['max_humidity'] = self.max_humidity
+        results["current_mode"] = self.current_mode
+        results["current_humidity"] = self.current_humidity
+        results["target_humidity"] = self.target_humidity
+        results["modes_available"] = self.modes_available
+        results["current_temperature"] = self.current_temperature
+        results["target_temperature"] = self.target_temperature
+        results["target_temperature_range"] = self.target_temperature_range
+        results["target_temperature_step"] = self.target_temperature_step
+        results["target_temperature_high"] = self.target_temperature_high
+        results["target_temperature_low"] = self.target_temperature_low
+        results["is_away_mode_on"] = self.is_away_mode_on
+        results["current_hold_mode"] = self.current_hold_mode
+        results["is_aux_heat_on"] = self.is_aux_heat_on
+        results["current_fan_mode"] = self.current_fan_mode
+        results["fan_list"] = self.fan_list
+        results["current_swing_mode"] = self.current_swing_mode
+        results["swing_list"] = self.swing_list
+        results["min_temp"] = self.min_temp
+        results["max_temp"] = self.max_temp
+        results["min_humidity"] = self.min_humidity
+        results["max_humidity"] = self.max_humidity
         return results

@@ -31,32 +31,32 @@ def route_discovery(webapp):
             webinterface.add_breadcrumb(request, "/?", "Home")
             webinterface.add_breadcrumb(request, "/discovery/index", "Discovery")
 
-        @webapp.route('/')
+        @webapp.route("/")
         @require_auth()
         def page_discovery(webinterface, request, session):
-            session.has_access('device', '*', 'view')
-            return webinterface.redirect(request, '/discovery/index')
+            session.has_access("device", "*", "view")
+            return webinterface.redirect(request, "/discovery/index")
 
-        @webapp.route('/index')
+        @webapp.route("/index")
         @require_auth()
         def page_discovery_index(webinterface, request, session):
-            session.has_access('device', '*', 'view')
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/discovery/index.html')
+            session.has_access("device", "*", "view")
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/discovery/index.html")
             root_breadcrumb(webinterface, request)
             return page.render(
                 alerts=webinterface.get_alerts(),
                 discovery=webinterface._Discovery.discovered,
             )
 
-        @webapp.route('/<string:device_id>/details')
+        @webapp.route("/<string:device_id>/details")
         @require_auth()
         def page_discovery_details(webinterface, request, session, device_id):
-            session.has_access('device', device_id, 'view')
+            session.has_access("device", device_id, "view")
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/discovery/details/%s" % device_id, "Device Details")
+            webinterface.add_breadcrumb(request, f"/discovery/details/{device_id}", "Device Details")
             discovered_device = webinterface._Discovery[device_id]
             yombo_device = discovered_device.yombo_device
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/discovery/details.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/discovery/details.html")
             return page.render(
                 alerts=webinterface.get_alerts(),
                 discovered_device=discovered_device,

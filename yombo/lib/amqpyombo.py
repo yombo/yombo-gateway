@@ -55,7 +55,7 @@ from yombo.lib.amqpyomb_handlers.amqpcontrol import AmqpControlHandler
 from yombo.lib.amqpyomb_handlers.amqpconfigs import AmqpConfigHandler
 from yombo.lib.amqpyomb_handlers.amqpsystem import AmqpSystemHandler
 
-logger = get_logger('library.amqpyombo')
+logger = get_logger("library.amqpyombo")
 
 PROTOCOL_VERSION = 5  # Which version of the yombo protocol we have implemented.
 PREFETCH_COUNT = 5  # Determine how many messages should be received/inflight before yombo servers
@@ -67,11 +67,11 @@ class AMQPYombo(YomboLibrary):
     """
     @property
     def connected(self):
-        return self._States.get('amqp.amqpyombo.state')
+        return self._States.get("amqp.amqpyombo.state")
 
     @connected.setter
     def connected(self, val):
-        return self._States.set('amqp.amqpyombo.state', val, value_type='bool', source=self)
+        return self._States.set("amqp.amqpyombo.state", val, value_type="bool", source=self)
 
     def __str__(self):
         """
@@ -87,7 +87,7 @@ class AMQPYombo(YomboLibrary):
 
         :return:
         """
-        self.user_id = "gw_" + self._Configs.get('core', 'gwid', 'local', False)
+        self.user_id = "gw_" + self._Configs.get("core", "gwid", "local", False)
         self.amqp_loginid = self.user_id + "_" + self._Configs.get("core", "gwuuid")
         self.request_configs = False
         self.controlHandler = AmqpControlHandler(self)
@@ -98,13 +98,13 @@ class AMQPYombo(YomboLibrary):
         self.master_gateway_id = self._Configs.master_gateway_id
 
         self.amqpyombo_options = {   # Stores data from sub-modules
-            'connected': [],
-            'disconnected': [self.configHandler.disconnected, ],
-            'routing': {
-                'config': [self.configHandler.amqp_incoming, ],
-                'control': [self.controlHandler.amqp_incoming, ],
-                'system': [self.systemHandler.amqp_incoming, ],
-                'sslcerts': [self._SSLCerts.amqp_incoming, ],
+            "connected": [],
+            "disconnected": [self.configHandler.disconnected, ],
+            "routing": {
+                "config": [self.configHandler.amqp_incoming, ],
+                "control": [self.controlHandler.amqp_incoming, ],
+                "system": [self.systemHandler.amqp_incoming, ],
+                "sslcerts": [self._SSLCerts.amqp_incoming, ],
             },
         }
 
@@ -119,17 +119,17 @@ class AMQPYombo(YomboLibrary):
 
     @inlineCallbacks
     def _load_(self, **kwargs):
-        results = yield global_invoke_all('_amqpyombo_options_', called_by=self)
+        results = yield global_invoke_all("_amqpyombo_options_", called_by=self)
         for component_name, data in results.items():
-            if 'connected' in data:
-                self.amqpyombo_options['connected'].append(data['connected'])
-            if 'disconnected' in data:
-                self.amqpyombo_options['disconnected'].append(data['disconnected'])
-            if 'routing' in data:
-                for key, the_callback in data['gateway_routing'].items():
-                    if key not in self.amqpyombo_options['gateway_routing']:
-                        self.amqpyombo_options['gateway_routing'][key] = []
-                    self.amqpyombo_options['gateway_routing'][key].append(the_callback)
+            if "connected" in data:
+                self.amqpyombo_options["connected"].append(data["connected"])
+            if "disconnected" in data:
+                self.amqpyombo_options["disconnected"].append(data["disconnected"])
+            if "routing" in data:
+                for key, the_callback in data["gateway_routing"].items():
+                    if key not in self.amqpyombo_options["gateway_routing"]:
+                        self.amqpyombo_options["gateway_routing"][key] = []
+                    self.amqpyombo_options["gateway_routing"][key].append(the_callback)
 
     def _stop_(self, **kwargs):
         """
@@ -159,10 +159,10 @@ class AMQPYombo(YomboLibrary):
         else:
             already_have_amqp = True
 
-        environment = self._Configs.get('server', 'environment', "production", False)
-        if self._Configs.get("amqpyombo", 'hostname', "", False) != "":
-            amqp_host = self._Configs.get("amqpyombo", 'hostname')
-            amqp_port = self._Configs.get("amqpyombo", 'port', 5671, False)
+        environment = self._Configs.get("server", "environment", "production", False)
+        if self._Configs.get("amqpyombo", "hostname", "", False) != "":
+            amqp_host = self._Configs.get("amqpyombo", "hostname")
+            amqp_port = self._Configs.get("amqpyombo", "port", 5671, False)
         else:
             amqp_port = 5671
             if environment == "production":
@@ -178,10 +178,10 @@ class AMQPYombo(YomboLibrary):
         if self.amqp is None:
             self.amqp = yield self._AMQP.new(hostname=amqp_host,
                                              port=amqp_port,
-                                             virtual_host='yombo',
+                                             virtual_host="yombo",
                                              username=self.amqp_loginid,
                                              password=self._Configs.get("core", "gwhash"),
-                                             client_id='amqpyombo',
+                                             client_id="amqpyombo",
                                              prefetch_count=PREFETCH_COUNT,
                                              connected_callback=self.amqp_connected,
                                              disconnected_callback=self.amqp_disconnected,
@@ -203,14 +203,14 @@ class AMQPYombo(YomboLibrary):
 
         :return:
         """
-        if self._Loader.operating_mode != 'run':
+        if self._Loader.operating_mode != "run":
             return
         requestmsg = self.generate_message_request(
-            exchange_name='ysrv.e.gw_system',
-            source='yombo.gateway.lib.amqpyombo',
-            destination='yombo.server.gw_system',
+            exchange_name="ysrv.e.gw_system",
+            source="yombo.gateway.lib.amqpyombo",
+            destination="yombo.server.gw_system",
             request_type="disconnect",
-            headers={'request_type': 'disconnect,'},
+            headers={"request_type": "disconnect,"},
         )
 
         self.publish(**requestmsg)
@@ -224,7 +224,7 @@ class AMQPYombo(YomboLibrary):
         :return:
         """
         self.connected = True
-        for the_callback in self.amqpyombo_options['connected']:
+        for the_callback in self.amqpyombo_options["connected"]:
             the_callback()
 
         if self.send_local_information_loop is None:
@@ -251,7 +251,7 @@ class AMQPYombo(YomboLibrary):
             return
 
         self.connected = False
-        for the_callback in self.amqpyombo_options['disconnected']:
+        for the_callback in self.amqpyombo_options["disconnected"]:
             the_callback()
         if self.send_local_information_loop is not None and self.send_local_information_loop.running:
             self.send_local_information_loop.stop()
@@ -294,15 +294,15 @@ class AMQPYombo(YomboLibrary):
             "external_mqtt_ws_ss": self._Configs.get("mqtt", "server_listen_port_websockets_ss_ssl"),
         }
         if full is True:
-            body['is_master'] = self.is_master()
-            body['master_gateway'] = self.master_gateway_id()
+            body["is_master"] = self.is_master()
+            body["master_gateway"] = self.master_gateway_id()
 
             # logger.info("sending local information: {body}", body=body)
 
         requestmsg = self.generate_message_request(
-            exchange_name='ysrv.e.gw_system',
-            source='yombo.gateway.lib.amqpyombo',
-            destination='yombo.server.gw_system',
+            exchange_name="ysrv.e.gw_system",
+            source="yombo.gateway.lib.amqpyombo",
+            destination="yombo.server.gw_system",
             body=body,
             request_type="connected",
             callback=self.receive_local_information,
@@ -313,8 +313,8 @@ class AMQPYombo(YomboLibrary):
                                   send_message_meta=None, receied_message_meta=None, **kwargs):
         if self.request_configs is False:  # this is where we start requesting information - after we have sent out info.
             self.request_configs = True
-            if 'owner_id' in body:
-                self._Configs.set("core", "owner_id", body['owner_id'])
+            if "owner_id" in body:
+                self._Configs.set("core", "owner_id", body["owner_id"])
 
             return self.configHandler.connected()
 
@@ -326,64 +326,64 @@ class AMQPYombo(YomboLibrary):
         :param queue:
         :return:
         """
-        if not hasattr(properties, 'user_id') or properties.user_id is None:
+        if not hasattr(properties, "user_id") or properties.user_id is None:
             self._Statistics.increment("lib.amqpyombo.received.discarded.nouserid", bucket_size=15, anon=True)
             raise YomboWarning("user_id missing.")
-        if not hasattr(properties, 'content_type') or properties.content_type is None:
+        if not hasattr(properties, "content_type") or properties.content_type is None:
             self._Statistics.increment("lib.amqpyombo.received.discarded.content_type_missing", bucket_size=15,
                                        anon=True)
             raise YomboWarning("content_type missing.")
-        if not hasattr(properties, 'content_encoding') or properties.content_encoding is None:
+        if not hasattr(properties, "content_encoding") or properties.content_encoding is None:
             self._Statistics.increment("lib.amqpyombo.received.discarded.content_encoding_missing", bucket_size=15,
                                        anon=True)
             raise YomboWarning("content_encoding missing.")
-        if properties.content_encoding != 'text' and properties.content_encoding != 'zlib':
+        if properties.content_encoding != "text" and properties.content_encoding != "zlib":
             self._Statistics.increment("lib.amqpyombo.received.discarded.content_encoding_invalid", bucket_size=15,
                                        anon=True)
             raise YomboWarning("Content Encoding must be either  'text' or 'zlib'. Got: " + properties.content_encoding)
         if properties.content_type != CONTENT_TYPE_TEXT_PLAIN and properties.content_type != CONTENT_TYPE_MSGPACK and properties.content_type != CONTENT_TYPE_JSON:
             self._Statistics.increment("lib.amqpyombo.received.discarded.content_type_invalid", bucket_size=15,
                                        anon=True)
-            logger.warn('Error with contentType!')
+            logger.warn("Error with contentType!")
             raise YomboWarning(
                 "Content type must be 'application/msgpack', 'application/json' or 'text/plain'. Got: " + properties.content_type)
 
         received_message_meta = {}
-        received_message_meta['content_encoding'] = properties.content_encoding
-        received_message_meta['content_type'] = properties.content_type
-        if properties.content_encoding == 'zlib':
+        received_message_meta["content_encoding"] = properties.content_encoding
+        received_message_meta["content_type"] = properties.content_type
+        if properties.content_encoding == "zlib":
             compressed_size = len(msg)
             msg = zlib.decompress(msg)
             uncompressed_size = len(msg)
             # logger.info(
             #     "Message sizes: msg_size_compressed = {compressed}, non-compressed = {uncompressed}, percent: {percent}",
             #     compressed=beforeZlib, uncompressed=afterZlib, percent=abs(percentage(beforeZlib, afterZlib)-1))
-            received_message_meta['payload_size'] = uncompressed_size
-            received_message_meta['compressed_size'] = compressed_size
-            received_message_meta['compression_percent'] = abs((compressed_size / uncompressed_size) - 1)*100
+            received_message_meta["payload_size"] = uncompressed_size
+            received_message_meta["compressed_size"] = compressed_size
+            received_message_meta["compression_percent"] = abs((compressed_size / uncompressed_size) - 1)*100
         else:
-            received_message_meta['payload_size'] = len(msg)
-            received_message_meta['compressed_size'] = len(msg)
-            received_message_meta['compression_percent'] = None
+            received_message_meta["payload_size"] = len(msg)
+            received_message_meta["compressed_size"] = len(msg)
+            received_message_meta["compression_percent"] = None
 
         if properties.content_type == CONTENT_TYPE_JSON:
             if self._Validate.is_json(msg):
                 msg = bytes_to_unicode(json.loads(msg))
             else:
-                raise YomboWarning("Receive msg reported json, but isn't: %s" % msg)
+                raise YomboWarning(f"Receive msg reported json, but isn't: {msg}")
         elif properties.content_type == CONTENT_TYPE_MSGPACK:
             if self._Validate.is_msgpack(msg):
                 msg = bytes_to_unicode(msgpack.loads(msg))
                 # print("msg: %s" % type(msg))
                 # print("msg: %s" % msg['headers'])
             else:
-                raise YomboWarning("Received msg reported msgpack, but isn't: %s" % msg)
+                raise YomboWarning(f"Received msg reported msgpack, but isn't: {msg}")
 
         # todo: Validate signatures/encryption here!
         return {
-            'headers': msg['headers'],
-            'body': msg['body'],
-            'received_message_meta': received_message_meta,
+            "headers": msg["headers"],
+            "body": msg["body"],
+            "received_message_meta": received_message_meta,
         }
 
     @inlineCallbacks
@@ -395,23 +395,23 @@ class AMQPYombo(YomboLibrary):
         logger.debug("Received incoming message: {headers}", body=headers)
         logger.debug("Received incoming message: {body}", body=body)
         ## Valiate that we have the required headers
-        if 'message_type' not in headers:
+        if "message_type" not in headers:
             raise YomboWarning("Discarding request message, header 'message_type' is missing.")
-        if 'gateway_routing' not in headers:
+        if "gateway_routing" not in headers:
             raise YomboWarning("Discarding request message, header 'gateway_routing' is missing.")
-        if headers['message_type'] == 'request':
-            if 'request_type' not in headers:
+        if headers["message_type"] == "request":
+            if "request_type" not in headers:
                 raise YomboWarning("Discarding request message, header 'request_type' is missing.")
-        if headers['message_type'] == 'response':
-            if 'response_type' not in headers:
+        if headers["message_type"] == "response":
+            if "response_type" not in headers:
                 raise YomboWarning("Discarding request message, header 'response_type' is missing.")
 
         # Now, route the message. If it's a yombo message, send it to your AQMPYombo for delivery
-        if correlation_info is not None and correlation_info['callback'] is not None and \
-                        isinstance(correlation_info['callback'], collections.Callable) is True:
+        if correlation_info is not None and correlation_info["callback"] is not None and \
+                        isinstance(correlation_info["callback"], collections.Callable) is True:
             logger.debug("calling message callback, not incoming queue callback")
             sent = maybeDeferred(
-                correlation_info['callback'],
+                correlation_info["callback"],
                 body=body,
                 properties=properties,
                 headers=headers,
@@ -426,11 +426,11 @@ class AMQPYombo(YomboLibrary):
         # Lastly, send it to the callback defined by the hooks returned.
         else:
             # print("amqp_incoming..correlation info: %s" % correlation_info)
-            routing = headers['gateway_routing']
+            routing = headers["gateway_routing"]
             # print("amqp_incoming..routing to amqpyombo_options callback: %s" % routing)
             # print("amqp_incoming...details: %s" % self.amqpyombo_options['routing'])
-            if routing in self.amqpyombo_options['routing']:
-                for the_callback in self.amqpyombo_options['routing'][routing]:
+            if routing in self.amqpyombo_options["routing"]:
+                for the_callback in self.amqpyombo_options["routing"][routing]:
                     # print("about to call callback: %s" % the_callback)
                     sent = maybeDeferred(
                         the_callback,
@@ -449,7 +449,7 @@ class AMQPYombo(YomboLibrary):
                                  correlation_id=None, message_type=None, response_type=None,
                                  data_type=None, route=None, gateway_routing=None,
                                  previous_properties=None, previous_headers=None):
-        if self._Loader.operating_mode != 'run':
+        if self._Loader.operating_mode != "run":
             return {}
         if previous_properties is None:
             raise YomboWarning("generate_message_response() requires 'previous_properties' argument.")
@@ -459,12 +459,12 @@ class AMQPYombo(YomboLibrary):
         if message_type is None:
             message_type = "response"
 
-        if 'correlation_id' in previous_headers and previous_headers['correlation_id'] is not None and \
-            previous_headers['correlation_id'][0:2] != "xx_":
-            reply_to = previous_headers['correlation_id']
+        if "correlation_id" in previous_headers and previous_headers["correlation_id"] is not None and \
+            previous_headers["correlation_id"][0:2] != "xx_":
+            reply_to = previous_headers["correlation_id"]
             if headers is None:
                 headers = {}
-            headers['reply_to'] = reply_to
+            headers["reply_to"] = reply_to
 
         response_msg = self.generate_message(exchange_name=exchange_name,
                                              source=source,
@@ -480,7 +480,7 @@ class AMQPYombo(YomboLibrary):
                                              gateway_routing=gateway_routing,
                                              )
         if response_type is not None:
-            response_msg['body']['headers']['response_type'] = response_type
+            response_msg["body"]["headers"]["response_type"] = response_type
 
         return response_msg
 
@@ -488,7 +488,7 @@ class AMQPYombo(YomboLibrary):
                                  headers=None, body=None, routing_key=None, callback=None,
                                  correlation_id=None, message_type=None, request_type=None,
                                  data_type=None, route=None, gateway_routing=None):
-        if self._Loader.operating_mode != 'run':
+        if self._Loader.operating_mode != "run":
             return {}
 
         if message_type is None:
@@ -508,7 +508,7 @@ class AMQPYombo(YomboLibrary):
                                             gateway_routing=gateway_routing,
                                             )
         if request_type is not None:
-            request_msg['body']['headers']['request_type'] = request_type
+            request_msg["body"]["headers"]["request_type"] = request_type
 
         return request_msg
 
@@ -562,11 +562,11 @@ class AMQPYombo(YomboLibrary):
         :return: A dictionary that can be directly returned to Yombo SErvers via AMQP
         :rtype: dict
         """
-        if self._Loader.operating_mode != 'run':
+        if self._Loader.operating_mode != "run":
             return {}
 
         if routing_key is None:
-            routing_key = '*'
+            routing_key = "*"
 
         if body is None:
             body = {}
@@ -576,11 +576,11 @@ class AMQPYombo(YomboLibrary):
 
         if data_type is None:
             if isinstance(body, list):
-                data_type = 'objects'
+                data_type = "objects"
             elif isinstance(body, str):
-                data_type = 'string'
+                data_type = "string"
             else:
-                data_type = 'object'
+                data_type = "object"
 
         if route is None:
             route = ["yombo.gw.amqpyombo:" + self.user_id]
@@ -615,45 +615,45 @@ class AMQPYombo(YomboLibrary):
                 },
             },
             "meta": {
-                'finalized_for_sending': False,
-                'msg_created_at': msg_created_at,
+                "finalized_for_sending": False,
+                "msg_created_at": msg_created_at,
             },
         }
 
         if gateway_routing is not None:
-            request_msg['body']['headers']['gateway_routing'] = gateway_routing
+            request_msg["body"]["headers"]["gateway_routing"] = gateway_routing
         if isinstance(headers, dict):
-            request_msg['body']['headers'].update(headers)
+            request_msg["body"]["headers"].update(headers)
 
         if callback is not None:
-            request_msg['callback'] = callback
+            request_msg["callback"] = callback
             if correlation_id is None:
-                request_msg['body']['headers']['correlation_id'] = random_string(length=24)
+                request_msg["body"]["headers"]["correlation_id"] = random_string(length=24)
 
         if reply_to is not None:
-            request_msg['body']['headers']['reply_to'] = reply_to
+            request_msg["body"]["headers"]["reply_to"] = reply_to
 
         return request_msg
 
     def finalize_message(self, message):
-        if 'correlation_id' in message['body']['headers']:
-            message['properties']['correlation_id'] = message['body']['headers']['correlation_id']
-        if 'reply_to' in message['body']['headers']:
-            message['properties']['reply_to'] = message['body']['headers']['reply_to']
+        if "correlation_id" in message["body"]["headers"]:
+            message["properties"]["correlation_id"] = message["body"]["headers"]["correlation_id"]
+        if "reply_to" in message["body"]["headers"]:
+            message["properties"]["reply_to"] = message["body"]["headers"]["reply_to"]
         # print("finalize message: %s" % message)
-        message['body'] = msgpack.dumps(message['body'])
+        message["body"] = msgpack.dumps(message["body"])
 
         # Lets test if we can compress. Set headers as needed.
-        if len(message['body']) > 800:
-            beforeZlib = len(message['body'])
-            message['body'] = zlib.compress(message['body'], 5)  # 5 appears to be the best speed/compression ratio - MSchwenk
-            afterZlib = len(message['body'])
-            message['meta']['compression_percent'] = percentage(afterZlib, beforeZlib)
+        if len(message["body"]) > 800:
+            beforeZlib = len(message["body"])
+            message["body"] = zlib.compress(message["body"], 5)  # 5 appears to be the best speed/compression ratio - MSchwenk
+            afterZlib = len(message["body"])
+            message["meta"]["compression_percent"] = percentage(afterZlib, beforeZlib)
 
-            message['properties']['content_encoding'] = "zlib"
+            message["properties"]["content_encoding"] = "zlib"
         else:
-            message['properties']['content_encoding'] = 'text'
-        message['meta']['finalized_for_sending'] = True
+            message["properties"]["content_encoding"] = "text"
+        message["meta"]["finalized_for_sending"] = True
         return message
 
     def publish(self, **kwargs):
@@ -662,15 +662,15 @@ class AMQPYombo(YomboLibrary):
         create the message.
         :return:
         """
-        if self._Loader.operating_mode != 'run':
+        if self._Loader.operating_mode != "run":
             return
 
         logger.debug("about to publish: {kwargs}", kwargs=kwargs)
-        if kwargs['meta']['finalized_for_sending'] is False:
+        if kwargs["meta"]["finalized_for_sending"] is False:
             kwargs = self.finalize_message(kwargs)
         if "callback" in kwargs:
-            if 'correlation_id' not in kwargs['properties']:
-                kwargs['properties']['correlation_id'] = random_string()
+            if "correlation_id" not in kwargs["properties"]:
+                kwargs["properties"]["correlation_id"] = random_string()
 
         self.amqp.publish(**kwargs)
 

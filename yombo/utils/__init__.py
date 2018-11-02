@@ -3,7 +3,7 @@ Various utilities used to perform common functions to help speed development.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2016-2017 by Yombo.
+:copyright: Copyright 2016-2018 by Yombo.
 :license: See LICENSE for details.
 """
 # Import python libraries
@@ -84,7 +84,7 @@ def generate_source_string(gateway_id=None, offset=None):
 
     The offset is used to determine how far back in the call stack it should look. For example,
     if this function was called within yombo.lib.module.somemodule and want to get the method
-    that directly called it, use offset '1'.  If the previous caller is desired, use 2, etc.
+    that directly called it, use offset "1".  If the previous caller is desired, use 2, etc.
 
     :param gateway_id:
     :param offset:
@@ -96,18 +96,14 @@ def generate_source_string(gateway_id=None, offset=None):
     offset = offset + 1
     callingframe = sys._getframe(offset)
     mod = inspect.getmodule(callingframe)
-    if 'self' in callingframe.f_locals:
-        results = "F:%s C:%s M:%s" % \
-                                  (mod.__name__,
-                                   callingframe.f_locals['self'].__class__.__name__,
-                                   callingframe.f_code.co_name)
+    if "self" in callingframe.f_locals:
+        results = f"F:{mod.__name__} C:{callingframe.f_locals['self'].__class__.__name__} " \
+                  f"M:{callingframe.f_code.co_name}"
     else:
-        results = "F:%s M:%s" % \
-                                  (mod.__name__,
-                                   callingframe.f_code.co_name)
+        results = f"F:{mod.__name__} M:{callingframe.f_code.co_name}"
 
     if gateway_id is not None:
-        return "G:%s %s" % (gateway_id, results)
+        return f"G:{gateway_id} {results}"
     return results
 
 
@@ -119,11 +115,11 @@ def get_yombo_instance_type(value):
     :return:
     """
     if isinstance(value, YomboLibrary):
-        return 'library', value._FullName
+        return "library", value._FullName
     elif isinstance(value, YomboModule):
-        return 'module', value._FullName
+        return "module", value._FullName
     elif isinstance(value, str):
-        return 'unknwon', value
+        return "unknown", value
     return None, None
 
 
@@ -161,7 +157,7 @@ def get_python_package_info(required_package_name, install=None, events_queue=No
     if install is None:
         install = True
 
-    conditions = ('==', '<=', '>=')
+    conditions = ("==", "<=", ">=")
     if any(s in required_package_name for s in conditions) is False:
         logger.warn("Invalid python requirement line: {package_name}", package_name=required_package_name)
         raise YomboWarning("python requirement must specify a version or version with wildcard.")
@@ -173,9 +169,9 @@ def get_python_package_info(required_package_name, install=None, events_queue=No
         pkg_info = pkg_resources.get_distribution(required_package_name)
     except pkg_resources.DistributionNotFound as e:
         if events_queue is not None:
-            events_queue.append(['pip', 'not_found', (str(required_package_name)), time()])
+            events_queue.append(["pip", "not_found", (str(required_package_name)), time()])
         else:
-            _Yombo._Events.new('pip', 'not_found', (str(required_package_name)))
+            _Yombo._Events.new("pip", "not_found", (str(required_package_name)))
         logger.info("Python package {required_package} is missing.",
                     required_package=required_package_name,
                     )
@@ -189,10 +185,10 @@ def get_python_package_info(required_package_name, install=None, events_queue=No
                     wanted=str(requirement.specifier),
                     )
         if events_queue is not None:
-            events_queue.append(['pip', 'update_needed',
+            events_queue.append(["pip", "update_needed",
                                  (package_name, str(pkg_info.version), str(requirement.specifier)), time()])
         else:
-            _Yombo._Events.new('pip', 'update_needed',
+            _Yombo._Events.new("pip", "update_needed",
                                (package_name, str(pkg_info.version), str(requirement.specifier)))
         if install is False:
             return pkg_info
@@ -211,13 +207,13 @@ def get_python_package_info(required_package_name, install=None, events_queue=No
                     name=pkg_info.project_name, version=pkg_info.version)
 
         if events_queue is not None:
-            events_queue.append(['pip', 'installed',
+            events_queue.append(["pip", "installed",
                                  (str(pkg_info.project_name), str(pkg_info.version), duration), time()])
         else:
-            _Yombo._Events.new('pip', 'installed', (str(pkg_info.project_name), str(pkg_info.version), duration))
+            _Yombo._Events.new("pip", "installed", (str(pkg_info.project_name), str(pkg_info.version), duration))
         return pkg_info
     except pkg_resources.DistributionNotFound as e:
-        raise YomboWarning("Unable to upgrade package: %s", e)
+        raise YomboWarning(f"Unable to upgrade package: {e}")
     return None
 
 
@@ -225,8 +221,8 @@ def get_python_package_info(required_package_name, install=None, events_queue=No
 def install_python_package(package_name):
     def update_pip_module(module_name):
         try:
-            logger.info("About to install/upgrade python package: %s" % module_name)
-            out = check_output(['pip3', 'install', '-U', module_name])
+            logger.info("About to install/upgrade python package: {module_name}", module_name=module_name)
+            out = check_output(["pip3", "install", "-U", module_name])
             t = 0, out
         except CalledProcessError as e:
             t = e.returncode, e.message
@@ -245,9 +241,9 @@ def install_python_package(package_name):
 # def get_mdns(hostname):
 #     import dns.resolver
 #     myRes = dns.resolver.Resolver()
-#     myRes.nameservers = ['224.0.0.251']  # mdns multicast address
+#     myRes.nameservers = ["224.0.0.251"]  # mdns multicast address
 #     myRes.port = 5353  # mdns port
-#     a = myRes.query('hostname.local', 'A')
+#     a = myRes.query("hostname.local", "A")
 #     return a[0].to_text()
 
 
@@ -260,7 +256,7 @@ def read_file(filename, convert_to_unicode=None):
     :return:
     """
     def getFile(read_filename):
-        f = open(read_filename, 'r')
+        f = open(read_filename, "r")
         data = f.read()
         f.close()
         return data
@@ -273,18 +269,18 @@ def read_file(filename, convert_to_unicode=None):
 
 def save_file(filename, content, mode=None):
     """
-    A quick function to save data to a file. Defaults to overwrite, us mode 'a' to append.
+    A quick function to save data to a file. Defaults to overwrite, us mode "a" to append.
 
     Don't use this for saving large files.
 
     :param filename: Full path to save to.
     :param content: Content to save.
-    :param mode: File open mode, default to 'w'.
+    :param mode: File open mode, default to "w".
     :return:
     """
     def writeFile(filename, content, mode):
         if mode is None:
-            mode = 'w'
+            mode = "w"
         with open(filename, mode) as f:
             fd = f.fileno()
             setNonBlocking(fd)
@@ -310,8 +306,8 @@ def delete_file(filename):
 
 @inlineCallbacks
 def memory_usage():
-    usage = yield read_file('/proc/self/status', convert_to_unicode=True)
-    return int(re.search(r'^VmRSS:\s+(\d+) kb$', usage, flags=re.IGNORECASE|re.MULTILINE).group(1))
+    usage = yield read_file("/proc/self/status", convert_to_unicode=True)
+    return int(re.search(r"^VmRSS:\s+(\d+) kb$", usage, flags=re.IGNORECASE|re.MULTILINE).group(1))
 
 
 def get_nested_dict(data_dict, map_list):
@@ -334,9 +330,9 @@ def set_nested_dict(dic, keys, value):
     From:https://stackoverflow.com/questions/14692690/access-nested-dictionary-items-via-a-list-of-keys
 
     >>> d = {}
-    >>> set_nested_dict(d, ['computer', 'folder', 'file'], 'yombo.txt')
+    >>> set_nested_dict(d, ["computer", "folder", "file"], "yombo.txt")
     >>> d
-    {'computer': {'folder': {'file': 'yombo.txt'}}}
+    {"computer": {"folder": {"file": "yombo.txt"}}}
 
     :param dic:
     :param keys:
@@ -388,37 +384,37 @@ def data_pickle(data, encoder=None, zip=None, local=None):
 
     if encoder is None:
         if has_zip:
-            encoder = 'msgpack_base85_zip'
+            encoder = "msgpack_base85_zip"
         else:
-            encoder = 'msgpack_base85'
+            encoder = "msgpack_base85"
 
-    if 'json' in encoder and 'msgack' in encoder:
+    if "json" in encoder and "msgack" in encoder:
         raise YomboWarning("Pickle data can only have json or msgpack, not both.")
-    if 'base64' in encoder and 'base85' in encoder:
+    if "base64" in encoder and "base85" in encoder:
         raise YomboWarning("Pickle data can only have base64 or base85, not both.")
 
-    if 'json' in encoder:
+    if "json" in encoder:
         try:
-            data = json.dumps(data, separators=(',', ':'))
+            data = json.dumps(data, separators=(",", ":"))
         except Exception as e:
-            raise YomboWarning("Error encoding json: %s" % e)
-    elif 'msgpack' in encoder:
+            raise YomboWarning(f"Error encoding json: {e}")
+    elif "msgpack" in encoder:
         try:
             data = msgpack.packb(data)
         except Exception as e:
-            raise YomboWarning("Error encoding msgpack: %s" % e)
+            raise YomboWarning(f"Error encoding msgpack: {e}")
 
-    if 'zip' in encoder:
+    if "zip" in encoder:
         try:
             data = zlib.compress(data, zip)
         except Exception as e:
-            raise YomboWarning("Error encoding msgpack_base85_zip: %s" % e)
+            raise YomboWarning(f"Error encoding msgpack_base85_zip: {e}")
 
-    if 'base64' in encoder:
+    if "base64" in encoder:
         data = bytes_to_unicode(base64.b64encode(data))
         if local is True:
             data = data.rstrip("=")
-    elif 'base85' in encoder:
+    elif "base85" in encoder:
         data = bytes_to_unicode(base64.b85encode(data))
 
     return data
@@ -440,9 +436,9 @@ def data_unpickle(data, encoder=None, zip=None):
 
     if encoder is None:
         # if zip_level is True or isinstance(zip_level, int):
-        #     encoder = 'msgpack_base85_zip'
+        #     encoder = "msgpack_base85_zip"
         # else:
-        encoder = 'msgpack_base85'
+        encoder = "msgpack_base85"
 
     # Sometimes empty dictionaries are encoded...  This is a simple shortcut.
     if encoder == "msgpack_base85_zip" and data == "cwTD&004mifd":
@@ -450,15 +446,15 @@ def data_unpickle(data, encoder=None, zip=None):
     elif encoder == "msgpack_base85" and data == "fB":
         return {}
 
-    if 'json' in encoder and 'msgack' in encoder:
+    if "json" in encoder and "msgack" in encoder:
         raise YomboWarning("Unpickle data can only have json or msgpack, not both.")
-    if 'base64' in encoder and 'base85' in encoder:
+    if "base64" in encoder and "base85" in encoder:
         raise YomboWarning("Unpickle data can only have base64 or base85, not both.")
 
-    if 'base64' in encoder:
+    if "base64" in encoder:
         data = data + "=" * (-len(data) % 4)
         data = base64.b64decode(data)
-    elif 'base85' in encoder:
+    elif "base85" in encoder:
         data = base64.b85decode(data)
 
     try:
@@ -466,16 +462,16 @@ def data_unpickle(data, encoder=None, zip=None):
     except Exception as e:
         pass
 
-    if 'json' in encoder:
+    if "json" in encoder:
         try:
             data = bytes_to_unicode(json.loads(data))
         except Exception as e:
-            raise YomboWarning("Error encoding json: %s" % e)
-    elif 'msgpack' in encoder:
+            raise YomboWarning(f"Error encoding json: {e}")
+    elif "msgpack" in encoder:
         try:
             data = bytes_to_unicode(msgpack.unpackb(data))
         except Exception as e:
-            raise YomboWarning("Error encoding msgpack: %s" % e)
+            raise YomboWarning(f"Error encoding msgpack: {e}")
 
     return data
 
@@ -491,7 +487,7 @@ def instance_properties(obj, startswith_filter=None, endwith_filter=None):
     pr = {}
     for name in dir(obj):
         value = getattr(obj, name)
-        if not name.startswith('__') and not inspect.ismethod(value):
+        if not name.startswith("__") and not inspect.ismethod(value):
             if startswith_filter is not None:
                 if name.startswith(startswith_filter) is False:
                     continue
@@ -506,22 +502,22 @@ def pattern_search(look_for, items):
     """
     Allows searching thru a list of items (a dict or list). For example, a list of:
 
-    ['yombo.status.hello', 'yombo.status.bye', 'visitor.livingroom.hello']
+    ["yombo.status.hello", "yombo.status.bye", "visitor.livingroom.hello"]
 
     You can search using #'s for wildcards consuming ay number of spaces between or +'s
     as a wildcard for only on work.  For example, a search of "#.hello" would result in:
 
-    ['yombo.status.hello', 'visitor.livingroom.hello']
+    ["yombo.status.hello", "visitor.livingroom.hello"]
 
     While a search of "yombo.status.+" would result in:
 
-    ['yombo.status.hello', 'yombo.status.bye']
+    ["yombo.status.hello", "yombo.status.bye"]
 
     :param look_for:
     :param items:
     :return:
     """
-    regex = re.compile(look_for.replace('#', '.*').replace('$', '\$').replace('+', '[/\$\s\w\d]+'))
+    regex = re.compile(look_for.replace("#", ".*").replace("$", "\$").replace("+", "[/\$\s\w\d]+"))
     out_list = []
     if isinstance(items, dict):
         for item, data in items.items():
@@ -536,7 +532,7 @@ def pattern_search(look_for, items):
     return out_list
 
 
-def split(the_string, delimiter=','):
+def split(the_string, delimiter=","):
     """
     Pass in a string, and get back a list. This also ignore white spaces padding the delimiter.
 
@@ -552,7 +548,7 @@ def clean_kwargs(**kwargs):
     Returns a dictionary without any keys starting with "__" (double underscore).
     """
     data = {}
-    start = kwargs.get('start', '__')
+    start = kwargs.get("start", "__")
     for key, val in kwargs.items():
         if not key.startswith(start):
             data[key] = val
@@ -561,10 +557,10 @@ def clean_kwargs(**kwargs):
 
 def clean_dict(dictionary, **kwargs):
     """
-    Returns a dictionary without any keys starting with kwargs['start'] (default '_' underscore).
+    Returns a dictionary without any keys starting with kwargs["start"] (default "_" underscore).
     """
     data = {}
-    start = kwargs.get('start', '_')
+    start = kwargs.get("start", "_")
     for key, val in dictionary.items():
         if not key.startswith(start):
             data[key] = val
@@ -624,8 +620,8 @@ def dict_has_key(dictionary, keys):
     .. code-block:: python
 
        from yombo.utils import dict_has_key
-       a_dictionary = {'identity': {'location': {'state': 'California'}}}
-       a_list = ['identity', 'location', 'state']
+       a_dictionary = {"identity": {"location": {"state": "California"}}}
+       a_list = ["identity", "location", "state"]
        has_state = dict_has_key(a_dictionary, a_list)
        #has_state is now: True
 
@@ -670,9 +666,9 @@ def dict_has_value(dictionary, keys, value):
     .. code-block:: python
 
        from yombo.utils import dict_has_value
-       a_dictionary = {'identity': {'location': {'state': 'California'}}}
-       a_list = ['identity', 'location', 'state']
-       has_california = dict_has_value(a_dictionary, a_list, 'California')
+       a_dictionary = {"identity": {"location": {"state": "California"}}}
+       a_list = ["identity", "location", "state"]
+       has_california = dict_has_value(a_dictionary, a_list, "California")
        #has_california is now: True
 
     :param dictionary: A dictionary to check
@@ -707,9 +703,9 @@ def dict_set_value(dictionary, keys, value):
 
        from yombo.utils import dict_set_value
        a_dictionary = {}
-       a_list = ['identity', 'location', 'state']
-       dict_set_value(a_dictionary, a_list, 'California')
-       #a_dictionary now: {'identity': {'location': {'state': 'California'}}}
+       a_list = ["identity", "location", "state"]
+       dict_set_value(a_dictionary, a_list, "California")
+       #a_dictionary now: {"identity": {"location": {"state": "California"}}}
 
     :param dictionary: A dictionary to update
     :type dictionary: dict
@@ -734,10 +730,10 @@ def dict_get_value(dictionary, keys):
     .. code-block:: python
 
        from yombo.utils import dict_get_value
-       a_dictionary  = {'identity': {'location': {'state': 'California'}}}
-       a_list = ['identity', 'location', 'state']
+       a_dictionary  = {"identity": {"location": {"state": "California"}}}
+       a_list = ["identity", "location", "state"]
        value = dict_get_value(a_dictionary, a_list)
-       #value = 'California'
+       #value = "California"
 
     :param dictionary: A dictionary to update
     :type dictionary: dict
@@ -760,15 +756,15 @@ def dict_merge(original, changes):
     .. code-block:: python
 
         my_information = {
-            'name': 'Mitch'
-            'phone: {
-                'mobile': '4155551212'
+            "name": "Mitch"
+            "phone: {
+                "mobile": "4155551212"
             }
         }
 
         updated_information = {
-            'phone': {
-                'home': '4155552121'
+            "phone": {
+                "home": "4155552121"
             }
         }
 
@@ -779,10 +775,10 @@ def dict_merge(original, changes):
     .. code-block:: none
 
         {
-            'name': 'Mitch'
-            'phone: {
-                'mobile': '4155551212',
-                'home': '4155552121'
+            "name": "Mitch"
+            "phone: {
+                "mobile": "4155551212",
+                "home": "4155552121"
             }
         }
     """
@@ -888,9 +884,9 @@ def search_instance(arguments, haystack, allowed_keys, limiter, operation):
         if attr in allowed_keys:
             attrs.append(
                 {
-                    'field': attr,
-                    'value': value,
-                    'limiter': limiter,
+                    "field": attr,
+                    "value": value,
+                    "limiter": limiter,
                 }
             )
 
@@ -924,8 +920,8 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operati
             raise YomboWarning("Attribute items must be dictionaries")
         if all(k in ("field", "value") for k in attr):
             raise YomboWarning("Attribute dictionary doesn't have required keys.")
-        if attr['field'] not in allowed_keys:
-            raise YomboWarning("Field is not a valid searchable item: %s" % attr['field'])
+        if attr["field"] not in allowed_keys:
+            raise YomboWarning(f"Field is not a valid searchable item: {attr['field']}")
         if "limiter" not in attr:
             attr["limiter"] = .90
         else:
@@ -954,28 +950,28 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operati
             if getattr(item, status_field) != status_value:
                 continue
         for attr in attributes:
-            stringDiff.set_seq1(str(attr['value']))
+            stringDiff.set_seq1(str(attr["value"]))
             # try:
-            stringDiff.set_seq2(str(getattr(item, attr['field'])))
+            stringDiff.set_seq2(str(getattr(item, attr["field"])))
             # except TypeError:
-            #     continue  # might get here, even though it's not a string. Catch it!
+            #     continue  # might get here, even though it"s not a string. Catch it!
             ratio = stringDiff.ratio()
 
             if operation == "any":
-                if ratio > attr['limiter']:
-                    key_list.append({'key': item_id, 'value': item, 'ratio': ratio})
+                if ratio > attr["limiter"]:
+                    key_list.append({"key": item_id, "value": item, "ratio": ratio})
                     # item[item_id] = item
             else:
                 # if this is the best ratio so far - save it and the value
                 if ratio > best_ratio:
                     best_ratio = ratio
-                    best_limiter = attr['limiter']
+                    best_limiter = attr["limiter"]
                     best_key = item_id
                     best_match = item
 
-                key_list.append({'key': item_id, 'value': item, 'ratio': ratio})
+                key_list.append({"key": item_id, "value": item, "ratio": ratio})
 
-    sorted_list = sorted(key_list, key=lambda k: k['ratio'], reverse=True)
+    sorted_list = sorted(key_list, key=lambda k: k["ratio"], reverse=True)
 
 
     if operation == "any":
@@ -989,7 +985,7 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operati
         return_list = []
         if best_ratio >= best_limiter:  # if we have one match, only return a list of matches.
             for item in sorted_list:
-                if item['ratio'] >= limiter:
+                if item["ratio"] >= limiter:
                     return_list.append(item)
                     # return (
                     #     best_ratio >= best_limiter,  # the part that does the actual check.
@@ -1033,18 +1029,18 @@ def random_string(**kwargs):
     :return: A random string that contains choices from `letters`.
     :rtype: string
     """
-    length = kwargs.get('length', 32)
+    length = kwargs.get("length", 32)
     letters = None
-    if 'char_set' in kwargs:
-        char_set = kwargs['char_set']
-        if char_set == 'extended':
+    if "char_set" in kwargs:
+        char_set = kwargs["char_set"]
+        if char_set == "extended":
             letters = "abcdefghijklmnopqrstuvwxyABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!%()*-;<=>^-{}~"
         else:
-            letters = kwargs['char_set']
+            letters = kwargs["char_set"]
     else:
-        letters = kwargs.get('letters', None)
+        letters = kwargs.get("letters", None)
 
-    if not hasattr(random_string, 'randomStuff'):
+    if not hasattr(random_string, "randomStuff"):
         random_string.randomStuff = random.SystemRandom()
 
     if letters is None:
@@ -1088,19 +1084,21 @@ def excerpt(value, length=None):
     return value
 
 
-def make_link(link, link_text, target=None):
-    if link == '' or link is None or link.lower() == "None":
+def make_link(link, link_text, target=None, options=None):
+    if options is None:
+        options = ""
+    if link == "" or link is None or link.lower() == "None":
         return "None"
     if target is None:
         target = "_self"
-    return '<a href="%s" target="%s">%s</a>' % (link, target, link_text)
+    return f'<a href="{link}" target="{target}" {options}>{link_text}</a>'
 
 
 def format_markdown(input_text, formatting=None):
-    if formatting == 'restructured' or formatting is None:
-        return publish_parts(input_text, writer_name='html')['html_body']
-    elif formatting == 'markdown':
-        return markdown.markdown(input_text, extensions=['markdown.extensions.nl2br', 'markdown.extensions.codehilite'])
+    if formatting == "restructured" or formatting is None:
+        return publish_parts(input_text, writer_name="html")["html_body"]
+    elif formatting == "markdown":
+        return markdown.markdown(input_text, extensions=["markdown.extensions.nl2br", "markdown.extensions.codehilite"])
     return input_text
 
 
@@ -1140,8 +1138,8 @@ def global_invoke_all(hook, **kwargs):
     :param kwargs: kwargs to send to the function.
     :return: a dictionary of results.
     """
-    lib_results = yield get_component('yombo.gateway.lib.loader').library_invoke_all(hook, True, **kwargs)
-    modules_results = yield get_component('yombo.gateway.lib.modules').module_invoke_all(hook, True, **kwargs)
+    lib_results = yield get_component("yombo.gateway.lib.loader").library_invoke_all(hook, True, **kwargs)
+    modules_results = yield get_component("yombo.gateway.lib.modules").module_invoke_all(hook, True, **kwargs)
     return dict_merge(modules_results, lib_results)
 
 
@@ -1155,7 +1153,7 @@ def global_invoke_libraries(hook, **kwargs):
     :param kwargs: kwargs to send to the function.
     :return: a dictionary of results.
     """
-    lib_results = yield get_component('yombo.gateway.lib.loader').library_invoke_all(hook, True, **kwargs)
+    lib_results = yield get_component("yombo.gateway.lib.loader").library_invoke_all(hook, True, **kwargs)
     return lib_results
 
 
@@ -1169,14 +1167,14 @@ def global_invoke_modules(hook, **kwargs):
     :param kwargs: kwargs to send to the function.
     :return: a dictionary of results.
     """
-    modules_results = yield get_component('yombo.gateway.lib.modules').module_invoke_all(hook, True, **kwargs)
+    modules_results = yield get_component("yombo.gateway.lib.modules").module_invoke_all(hook, True, **kwargs)
     return modules_results
 
 
 def get_public_gw_id():
-    configs = get_component('yombo.gateway.lib.configuration')
+    configs = get_component("yombo.gateway.lib.configuration")
     try:
-        gwid = configs.get('core', 'gwid')[0:6] + ":" + configs.get('core', 'gwuuid')[0:5]
+        gwid = configs.get("core", "gwid")[0:6] + ":" + configs.get("core", "gwuuid")[0:5]
         return gwid
     except:
         return "unknown"
@@ -1196,7 +1194,7 @@ def get_component(name):
     :return: Pointer to requested library or module.
     :rtype: Object reference
     """
-    if not hasattr(get_component, 'components'):
+    if not hasattr(get_component, "components"):
         from yombo.lib.loader import get_the_loaded_components
         get_component.components = get_the_loaded_components()
     try:
@@ -1209,16 +1207,16 @@ def is_string_bool(value=None):
     """
     Returns a True/False/None based on the string. If nothing is found, "YomboWarning" is raised.
     Returns a boolean value representing the "truth" of the value passed. Returns true if the string
-    provided is 'true/True/trUE, etc'.
+    provided is "true/True/trUE, etc".
 
     :param value: String of either "true" or "false" (case insensitive), returns bool or raises YomboWarning.
     """
     if isinstance(value, str):
-        if str(value).lower() == 'true':
+        if str(value).lower() == "true":
             return True
-        elif str(value).lower() == 'false':
+        elif str(value).lower() == "false":
             return False
-        elif str(value).lower() == 'none':
+        elif str(value).lower() == "none":
             return None
         else:
             raise YomboWarning("String is not true, false, or none.")
@@ -1286,7 +1284,7 @@ def is_one_zero(value):
 
 def is_none(value):
     """
-    Returns None type if the input is None type, or a string saying "none". If it's not, will return the input.
+    Returns None type if the input is None type, or a string saying "none". If it"s not, will return the input.
 
     :param value:
     :return:
@@ -1301,7 +1299,7 @@ def is_none(value):
 
 def forgiving_float(value):
     """
-    Primarily used for templates as a filter. Tries to convert input to a float. Doesn't die if it fails.
+    Primarily used for templates as a filter. Tries to convert input to a float. Doesn"t die if it fails.
 
     :param value:
     :return:
@@ -1399,7 +1397,7 @@ def sleep(secs):
        def myFunction(self):
            logger.info("About to sleep.")
            yield sleep(5.4) # sleep 5.4 seconds.
-           logger.info("I'm refreshed.")
+           logger.info("I"m refreshed.")
 
     :param secs: Number of seconds (whole or partial) to sleep for.
     :type secs: int of float
@@ -1407,7 +1405,7 @@ def sleep(secs):
     return deferLater(reactor, secs, lambda: None)
 
 
-def hashid_encode(input_value, min_length=2, salt='', alphabet='ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvxyz234'):
+def hashid_encode(input_value, min_length=2, salt="", alphabet="ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvxyz234"):
     """
     Encodes an int and returns a string. This typically shortens the length and is great for
     showing users a better representation of a large int - if they don't care about the actual value.
@@ -1422,7 +1420,7 @@ def hashid_encode(input_value, min_length=2, salt='', alphabet='ABCDEFGHJKMNPQRS
     return hashid.encode(input_value)
 
 
-def hashid_decode(input_value, min_length=2, salt='', alphabet='ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvxyz234'):
+def hashid_decode(input_value, min_length=2, salt="", alphabet="ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvxyz234"):
     hashid = Hashids(salt, min_length, alphabet)
     return hashid.decode(input_value)
 
@@ -1432,7 +1430,7 @@ def is_freebsd():
     """
     Returns if the host is freebsd or not
     """
-    return sys.platform.startswith('freebsd')
+    return sys.platform.startswith("freebsd")
 
 
 @memoize_
@@ -1440,7 +1438,7 @@ def is_linux():
     """
     Returns if the host is linus or not
     """
-    return sys.platform.startswith('linux')
+    return sys.platform.startswith("linux")
 
 
 @memoize_
@@ -1448,7 +1446,7 @@ def is_windows():
     """
     Returns if the host is windows or not
     """
-    return sys.platform.startswith('win')
+    return sys.platform.startswith("win")
 
 
 @memoize_
@@ -1456,4 +1454,4 @@ def is_sunos():
     """
     Returns if the host is sunos or not
     """
-    return sys.platform.startswith('sunos')
+    return sys.platform.startswith("sunos")

@@ -17,17 +17,17 @@ from yombo.utils import data_unpickle
 # These URLS are used to fetch IP Address information. There is a primary and 2 backup methods to get what we need.
 
 # Max mind provides the most information and is easiest to consume.
-MAXMIND_API = 'https://www.maxmind.com/geoip/v2.0/city_isp_org/{0}'
+MAXMIND_API = "https://www.maxmind.com/geoip/v2.0/city_isp_org/{0}"
 
 # Provides limited information, but has still has what we need.
-IPAPI_API = 'http://ip-api.com/json'
+IPAPI_API = "http://ip-api.com/json"
 
 # IP Stack proves what we need, however, we need an IP address.
-IPIFY_API = 'https://api.ipify.org'  # get out ip address
-IPSTACK_API = 'https://ipstack.com/ipstack_api.php?ip={0}'  # get more details about the IP
+IPIFY_API = "https://api.ipify.org"  # get out ip address
+IPSTACK_API = "https://ipstack.com/ipstack_api.php?ip={0}"  # get more details about the IP
 
 # Used to get out elevation. Returns 800 feet if none is found.
-ELEVATION_URL = 'http://maps.googleapis.com/maps/api/elevation/json'
+ELEVATION_URL = "http://maps.googleapis.com/maps/api/elevation/json"
 
 # Constants from https://github.com/maurycyp/vincenty
 # Earth ellipsoid according to WGS 84
@@ -54,24 +54,24 @@ def detect_location_info():
 
     if data is None:
         data = {
-            'ip': None,
-            'country_code': None,
-            'country_name': None,
-            'region_code': None,
-            'region_name': None,
-            'city': None,
-            'zip_code': None,
-            'time_zone': None,
-            'latitude': None,
-            'longitude': None,
-            'isp': None,
-            'elevation': None,
-            'use_metric': True,
+            "ip": None,
+            "country_code": None,
+            "country_name": None,
+            "region_code": None,
+            "region_name": None,
+            "city": None,
+            "zip_code": None,
+            "time_zone": None,
+            "latitude": None,
+            "longitude": None,
+            "isp": None,
+            "elevation": None,
+            "use_metric": True,
         }
     else:
-        data['use_metric'] = data['country_code'] not in ('US', 'MM', 'LR')
+        data["use_metric"] = data["country_code"] not in ("US", "MM", "LR")
 
-    data['elevation'] = yield elevation(data['latitude'], data['longitude'])
+    data["elevation"] = yield elevation(data["latitude"], data["longitude"])
 
     return data
 
@@ -161,29 +161,29 @@ def vincenty(point1: Tuple[float, float], point2: Tuple[float, float],
 def _get_maxmind(location: str = None) -> Optional[Dict[str, Any]]:
     """Query maxmind for location data."""
     if location is None:
-        location = 'me'
+        location = "me"
 
     url = MAXMIND_API.format(location)
     try:
-        response = yield treq.get(url, timeout=5, params={'demo': 1})
+        response = yield treq.get(url, timeout=5, params={"demo": 1})
     except Exception as e:
         return None
     content = yield treq.content(response)
-    raw_info = data_unpickle(content, 'json')
+    raw_info = data_unpickle(content, "json")
 
     return {
-        'source': 'maxmind',
-        'ip': raw_info.get('traits').get('ip_address'),
-        'country_code': raw_info.get('country', {}).get('iso_code'),
-        'country_name': raw_info.get('country', {}).get('names', {}).get('en'),
-        'region_code': raw_info.get('subdivisions', [{}])[0].get('iso_code'),
-        'region_name': raw_info.get('subdivisions', [{}])[0].get('names', {}).get('en'),
-        'city': raw_info.get('city', {}).get('names', {}).get('en'),
-        'zip_code': raw_info.get('postal', {}).get('code'),
-        'time_zone': raw_info.get('location').get('time_zone'),
-        'latitude': float(raw_info.get('location').get('latitude')),
-        'longitude': float(raw_info.get('location').get('longitude')),
-        'isp': raw_info.get('traits').get('isp'),
+        "source": "maxmind",
+        "ip": raw_info.get("traits").get("ip_address"),
+        "country_code": raw_info.get("country", {}).get("iso_code"),
+        "country_name": raw_info.get("country", {}).get("names", {}).get("en"),
+        "region_code": raw_info.get("subdivisions", [{}])[0].get("iso_code"),
+        "region_name": raw_info.get("subdivisions", [{}])[0].get("names", {}).get("en"),
+        "city": raw_info.get("city", {}).get("names", {}).get("en"),
+        "zip_code": raw_info.get("postal", {}).get("code"),
+        "time_zone": raw_info.get("location").get("time_zone"),
+        "latitude": float(raw_info.get("location").get("latitude")),
+        "longitude": float(raw_info.get("location").get("longitude")),
+        "isp": raw_info.get("traits").get("isp"),
     }
 
 
@@ -195,21 +195,21 @@ def _get_ip_api() -> Optional[Dict[str, Any]]:
     except Exception:
         return None
     content = yield treq.content(response)
-    raw_info = data_unpickle(content, 'json')
+    raw_info = data_unpickle(content, "json")
 
     return {
-        'source': 'ip_api',
-        'ip': raw_info.get('query'),
-        'country_code': raw_info.get('countryCode'),
-        'country_name': raw_info.get('country'),
-        'region_code': raw_info.get('region'),
-        'region_name': raw_info.get('regionName'),
-        'city': raw_info.get('city'),
-        'zip_code': raw_info.get('zip'),
-        'time_zone': raw_info.get('timezone'),
-        'latitude': float(raw_info.get('lat')),
-        'longitude': float(raw_info.get('lon')),
-        'isp': raw_info.get('isp'),
+        "source": "ip_api",
+        "ip": raw_info.get("query"),
+        "country_code": raw_info.get("countryCode"),
+        "country_name": raw_info.get("country"),
+        "region_code": raw_info.get("region"),
+        "region_name": raw_info.get("regionName"),
+        "city": raw_info.get("city"),
+        "zip_code": raw_info.get("zip"),
+        "time_zone": raw_info.get("timezone"),
+        "latitude": float(raw_info.get("lat")),
+        "longitude": float(raw_info.get("lon")),
+        "isp": raw_info.get("isp"),
     }
 
 
@@ -228,21 +228,21 @@ def _get_using_ipify_ipstack():
     except Exception:
         return None
     content = yield treq.content(response)
-    raw_info = data_unpickle(content, 'json')
+    raw_info = data_unpickle(content, "json")
 
     return {
-        'source': 'ipify_ipstack',
-        'ip': raw_info.get('query'),
-        'country_code': raw_info.get('country_code'),
-        'country_name': raw_info.get('country_name'),
-        'region_code': raw_info.get('region_code'),
-        'region_name': raw_info.get('region_name'),
-        'city': raw_info.get('city'),
-        'zip_code': raw_info.get('zip'),
-        'time_zone': raw_info.get('time_zone', {}).get('id'),
-        'latitude': float(raw_info.get('latitude')),
-        'longitude': float(raw_info.get('longitude')),
-        'isp': raw_info.get('connection', {}).get('isp'),
+        "source": "ipify_ipstack",
+        "ip": raw_info.get("query"),
+        "country_code": raw_info.get("country_code"),
+        "country_name": raw_info.get("country_name"),
+        "region_code": raw_info.get("region_code"),
+        "region_name": raw_info.get("region_name"),
+        "city": raw_info.get("city"),
+        "zip_code": raw_info.get("zip"),
+        "time_zone": raw_info.get("time_zone", {}).get("id"),
+        "latitude": float(raw_info.get("latitude")),
+        "longitude": float(raw_info.get("longitude")),
+        "isp": raw_info.get("connection", {}).get("isp"),
     }
 
 
@@ -253,8 +253,8 @@ def elevation(latitude, longitude):
         response = yield treq.get(
             ELEVATION_URL,
             params={
-                'locations': '{},{}'.format(latitude, longitude),
-                'sensor': 'false',
+                "locations": "{},{}".format(latitude, longitude),
+                "sensor": "false",
             },
             timeout=10)
     except Exception:
@@ -264,10 +264,10 @@ def elevation(latitude, longitude):
         return 800
 
     content = yield treq.content(response)
-    raw_info = data_unpickle(content, 'json')
+    raw_info = data_unpickle(content, "json")
 
     try:
-        return int(float(raw_info['results'][0]['elevation']))
+        return int(float(raw_info["results"][0]["elevation"]))
     except (ValueError, KeyError, IndexError):
         return 800
 

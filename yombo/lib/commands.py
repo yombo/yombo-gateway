@@ -27,7 +27,7 @@ from yombo.utils import search_instance, do_search_instance, global_invoke_all
 from yombo.utils.fuzzysearch import FuzzySearch
 from yombo.utils.decorators import cached
 
-logger = get_logger('library.commands')
+logger = get_logger("library.commands")
 
 class Commands(YomboLibrary):
     """
@@ -44,11 +44,11 @@ class Commands(YomboLibrary):
 
         Checks to if a provided command id, label, or machine_label exists.
 
-            >>> if '137ab129da9318' in self._Commands:
+            >>> if "137ab129da9318" in self._Commands:
 
         or:
 
-            >>> if 'living room light' in self._Commands:
+            >>> if "living room light" in self._Commands:
 
         :raises YomboWarning: Raised when request is malformed.
         :param command_requested: The command ID, label, or machine_label to search for.
@@ -71,11 +71,11 @@ class Commands(YomboLibrary):
 
         Attempts to find the device requested using a couple of methods.
 
-            >>> off_cmd = self._Commands['137ab129da9318']  #by id
+            >>> off_cmd = self._Commands["137ab129da9318"]  #by id
 
         or:
 
-            >>> off_cmd = self._Commands['Off']  #by label & machine_label
+            >>> off_cmd = self._Commands["Off"]  #by label & machine_label
 
         :raises YomboWarning: Raised when request is malformed.
         :raises KeyError: Raised when request is not found.
@@ -161,8 +161,8 @@ class Commands(YomboLibrary):
         self.load_deferred = None  # Prevents loader from moving on past _start_ until we are done.
         self.commands = {}
         self.__yombocommandsByVoice = FuzzySearch(None, .92)
-        self.command_search_attributes = ['command_id', 'label', 'machine_label', 'description', 'always_load',
-            'voice_cmd', 'cmd', 'status']
+        self.command_search_attributes = ["command_id", "label", "machine_label", "description", "always_load",
+            "voice_cmd", "cmd", "status"]
 
     def _load_(self, **kwargs):
         """
@@ -210,10 +210,10 @@ class Commands(YomboLibrary):
 
         **Hooks called**:
 
-        * _command_before_load_ : If added, sends command dictionary as 'command'
-        * _command_before_update_ : If updated, sends command dictionary as 'command'
-        * _command_loaded_ : If added, send the command instance as 'command'
-        * _command_updated_ : If updated, send the command instance as 'command'
+        * _command_before_load_ : If added, sends command dictionary as "command"
+        * _command_before_update_ : If updated, sends command dictionary as "command"
+        * _command_loaded_ : If added, send the command instance as "command"
+        * _command_updated_ : If updated, send the command instance as "command"
 
         :param device: A dictionary of items required to either setup a new command or update an existing one.
         :type device: dict
@@ -224,14 +224,14 @@ class Commands(YomboLibrary):
         logger.debug("command: {command}", command=command)
         command_id = command["id"]
 
-        yield global_invoke_all('_command_before_import_',
+        yield global_invoke_all("_command_before_import_",
                                 called_by=self,
                                 command_id=command_id,
                                 command=command,
                                 )
         if command_id not in self.commands:
             try:
-                yield global_invoke_all('_command_before_load_',
+                yield global_invoke_all("_command_before_load_",
                                         called_by=self,
                                         command_id=command_id,
                                         command=command,
@@ -240,7 +240,7 @@ class Commands(YomboLibrary):
                 pass
             self.commands[command_id] = Command(command)
             try:
-                yield global_invoke_all('_command_loaded_',
+                yield global_invoke_all("_command_loaded_",
                                         called_by=self,
                                         command_id=command_id,
                                         command=self.commands[command_id],
@@ -249,7 +249,7 @@ class Commands(YomboLibrary):
                 pass
         elif command_id in self.commands:
             try:
-                yield global_invoke_all('_command_before_update_',
+                yield global_invoke_all("_command_before_update_",
                                         called_by=self,
                                         command_id=command_id,
                                         command=self.commands[command_id],
@@ -259,7 +259,7 @@ class Commands(YomboLibrary):
 
             self.commands[command_id].update_attributes(command)
             try:
-                yield global_invoke_all('_command_updated_',
+                yield global_invoke_all("_command_updated_",
                                         called_by=self,
                                         command_id=command_id,
                                         command=self.commands[command_id],
@@ -267,8 +267,8 @@ class Commands(YomboLibrary):
             except Exception as e:
                 pass
 
-        if command['voice_cmd'] is not None:
-            self.__yombocommandsByVoice[command['voice_cmd']] = self.commands[command_id]
+        if command["voice_cmd"] is not None:
+            self.__yombocommandsByVoice[command["voice_cmd"]] = self.commands[command_id]
 
         # if test_command:
         #     return self.commands[command_id]
@@ -283,11 +283,11 @@ class Commands(YomboLibrary):
            Modules shouldn't use this function. Use the built in reference to
            find commands:
 
-            >>> self._Commands['sz45q3423']
+            >>> self._Commands["sz45q3423"]
 
         or:
 
-            >>> self._Commands['on']
+            >>> self._Commands["on"]
 
         :raises YomboWarning: For invalid requests.
         :raises KeyError: When item requested cannot be found.
@@ -321,24 +321,24 @@ class Commands(YomboLibrary):
         if command_requested in self.commands:
             item = self.commands[command_requested]
             if status is not None and item.status != status:
-                raise KeyError("Requested command found, but has invalid status: %s" % item.status)
+                raise KeyError(f"Requested command found, but has invalid status: {item.status}")
             return item
         else:
             attrs = [
                 {
-                    'field': 'command_id',
-                    'value': command_requested,
-                    'limiter': limiter,
+                    "field": "command_id",
+                    "value": command_requested,
+                    "limiter": limiter,
                 },
                 {
-                    'field': 'label',
-                    'value': command_requested,
-                    'limiter': limiter,
+                    "field": "label",
+                    "value": command_requested,
+                    "limiter": limiter,
                 },
                 {
-                    'field': 'machine_label',
-                    'value': command_requested,
-                    'limiter': limiter,
+                    "field": "machine_label",
+                    "value": command_requested,
+                    "limiter": limiter,
                 }
             ]
             try:
@@ -346,7 +346,7 @@ class Commands(YomboLibrary):
                     commands = command_list
                 else:
                     commands = self.commands
-                logger.debug("Get is about to call search...: %s" % command_requested)
+                logger.debug("Get is about to call search...: {command_requested}", command_requested=command_requested)
                 found, key, item, ratio, others = do_search_instance(attrs, commands,
                                                                      self.command_search_attributes,
                                                                      limiter=limiter,
@@ -355,9 +355,9 @@ class Commands(YomboLibrary):
                 if found:
                     return item
                 else:
-                    raise KeyError("Command not found: %s" % command_requested)
+                    raise KeyError(f"Command not found: {command_requested}")
             except YomboWarning as e:
-                raise KeyError('Searched for %s, but had problems: %s' % (command_requested, e))
+                raise KeyError(f"Searched for {command_requested}, but had problems: {e}")
 
     def search(self, _limiter=None, _operation=None, **kwargs):
         """
@@ -377,7 +377,7 @@ class Commands(YomboLibrary):
     def get_commands_by_voice(self):
         """
         This function shouldn't be used by modules. Internal use only. For modules,
-        use: `self._Commands['on']` to search by name.
+        use: `self._Commands["on"]` to search by name.
 
         :return: Pointer to array of all devices.
         :rtype: dict
@@ -422,32 +422,32 @@ class Commands(YomboLibrary):
         :rtype: dict
         """
         try:
-            if 'session' in kwargs:
-                session = kwargs['session']
+            if "session" in kwargs:
+                session = kwargs["session"]
             else:
                 return {
-                    'status': 'failed',
-                    'msg': "Couldn't add command: User session missing.",
-                    'apimsg': "Couldn't add command: User session missing.",
-                    'apimsghtml': "Couldn't add command: User session missing.",
+                    "status": "failed",
+                    "msg": "Couldn't add command: User session missing.",
+                    "apimsg": "Couldn't add command: User session missing.",
+                    "apimsghtml": "Couldn't add command: User session missing.",
                 }
-            command_results = yield self._YomboAPI.request('POST', '/v1/command',
+            command_results = yield self._YomboAPI.request("POST", "/v1/command",
                                                            data,
                                                            session=session)
         except YomboWarning as e:
             return {
-                'status': 'failed',
-                'msg': "Couldn't add command: %s" % e.message,
-                'apimsg': "Couldn't add command: %s" % e.message,
-                'apimsghtml': "Couldn't add command: %s" % e.html_message,
+                "status": "failed",
+                "msg": f"Couldn't add command: {e.message}",
+                "apimsg": f"Couldn't add command: {e.message}",
+                "apimsghtml": f"Couldn't add command: {e.html_message}",
             }
 
         # print("command edit results: %s" % command_results)
 
         return {
-            'status': 'success',
-            'msg': "Command added.",
-            'data': command_results['data'],
+            "status": "success",
+            "msg": "Command added.",
+            "data": command_results["data"],
         }
 
     @inlineCallbacks
@@ -463,32 +463,32 @@ class Commands(YomboLibrary):
         :rtype: dict
         """
         try:
-            if 'session' in kwargs:
-                session = kwargs['session']
+            if "session" in kwargs:
+                session = kwargs["session"]
             else:
                 return {
-                    'status': 'failed',
-                    'msg': "Couldn't edit command: User session missing.",
-                    'apimsg': "Couldn't edit command: User session missing.",
-                    'apimsghtml': "Couldn't edit command: User session missing.",
+                    "status": "failed",
+                    "msg": "Couldn't edit command: User session missing.",
+                    "apimsg": "Couldn't edit command: User session missing.",
+                    "apimsghtml": "Couldn't edit command: User session missing.",
                 }
-            command_results = yield self._YomboAPI.request('PATCH', '/v1/command/%s' % (command_id),
+            command_results = yield self._YomboAPI.request("PATCH", f"/v1/command/{command_id}",
                                                            data,
                                                            session=session)
         except YomboWarning as e:
             return {
-                'status': 'failed',
-                'msg': "Couldn't edit command: %s" % e.message,
-                'apimsg': "Couldn't edit command: %s" % e.message,
-                'apimsghtml': "Couldn't edit command: %s" % e.html_message,
+                "status": "failed",
+                "msg": f"Couldn't edit command: {e.message}",
+                "apimsg": f"Couldn't edit command: {e.message}",
+                "apimsghtml": f"Couldn't edit command: {e.html_message}",
             }
 
         # print("command edit results: %s" % command_results)
 
         return {
-            'status': 'success',
-            'msg': "Command edited.",
-            'data': command_results['data'],
+            "status": "success",
+            "msg": "Command edited.",
+            "data": command_results["data"],
         }
 
     @inlineCallbacks
@@ -504,31 +504,31 @@ class Commands(YomboLibrary):
         :rtype: dict
         """
         try:
-            if 'session' in kwargs:
-                session = kwargs['session']
+            if "session" in kwargs:
+                session = kwargs["session"]
             else:
                 return {
-                    'status': 'failed',
-                    'msg': "Couldn't delete command: User session missing.",
-                    'apimsg': "Couldn't delete command: User session missing.",
-                    'apimsghtml': "Couldn't delete command: User session missing.",
+                    "status": "failed",
+                    "msg": "Couldn't delete command: User session missing.",
+                    "apimsg": "Couldn't delete command: User session missing.",
+                    "apimsghtml": "Couldn't delete command: User session missing.",
                 }
 
-            command_results = yield self._YomboAPI.request('DELETE',
-                                                           '/v1/command/%s' % command_id,
+            command_results = yield self._YomboAPI.request("DELETE",
+                                                           f"/v1/command/{command_id}",
                                                            session=session)
         except YomboWarning as e:
             return {
-                'status': 'failed',
-                'msg': "Couldn't delete command: %s" % e.message,
-                'apimsg': "Couldn't delete command: %s" % e.message,
-                'apimsghtml': "Couldn't delete command: %s" % e.html_message,
+                "status": "failed",
+                "msg": f"Couldn't delete command: {e.message}",
+                "apimsg": f"Couldn't delete command: {e.message}",
+                "apimsghtml": f"Couldn't delete command: {e.html_message}",
             }
 
         return {
-            'status': 'success',
-            'msg': "Command deleted.",
-            'data': command_results['data'],
+            "status": "success",
+            "msg": "Command deleted.",
+            "data": command_results["data"],
         }
 
     @inlineCallbacks
@@ -544,36 +544,36 @@ class Commands(YomboLibrary):
         :rtype: dict
         """
         api_data = {
-            'status': 1,
+            "status": 1,
         }
 
         try:
-            if 'session' in kwargs:
-                session = kwargs['session']
+            if "session" in kwargs:
+                session = kwargs["session"]
             else:
                 return {
-                    'status': 'failed',
-                    'msg': "Couldn't enable command: User session missing.",
-                    'apimsg': "Couldn't enable command: User session missing.",
-                    'apimsghtml': "Couldn't enable command: User session missing.",
+                    "status": "failed",
+                    "msg": "Couldn't enable command: User session missing.",
+                    "apimsg": "Couldn't enable command: User session missing.",
+                    "apimsghtml": "Couldn't enable command: User session missing.",
                 }
 
-            command_results = yield self._YomboAPI.request('PATCH',
-                                                           '/v1/command/%s' % command_id,
+            command_results = yield self._YomboAPI.request("PATCH",
+                                                           f"/v1/command/{command_id}",
                                                            api_data,
                                                            session=session)
         except YomboWarning as e:
             return {
-                'status': 'failed',
-                'msg': "Couldn't enable command: %s" % e.message,
-                'apimsg': "Couldn't enable command: %s" % e.message,
-                'apimsghtml': "Couldn't enable command: %s" % e.html_message,
+                "status": "failed",
+                "msg": f"Couldn't enable command: {e.message}",
+                "apimsg": f"Couldn't enable command: {e.message}",
+                "apimsghtml": f"Couldn't enable command: {e.html_message}",
             }
 
         return {
-            'status': 'success',
-            'msg': "Command enabled.",
-            'data': command_results['data'],
+            "status": "success",
+            "msg": "Command enabled.",
+            "data": command_results["data"],
         }
 
     @inlineCallbacks
@@ -589,36 +589,36 @@ class Commands(YomboLibrary):
         :rtype: dict
         """
         api_data = {
-            'status': 0,
+            "status": 0,
         }
 
         try:
-            if 'session' in kwargs:
-                session = kwargs['session']
+            if "session" in kwargs:
+                session = kwargs["session"]
             else:
                 return {
-                    'status': 'failed',
-                    'msg': "Couldn't disable command: User session missing.",
-                    'apimsg': "Couldn't disable command: User session missing.",
-                    'apimsghtml': "Couldn't disable command: User session missing.",
+                    "status": "failed",
+                    "msg": "Couldn't disable command: User session missing.",
+                    "apimsg": "Couldn't disable command: User session missing.",
+                    "apimsghtml": "Couldn't disable command: User session missing.",
                 }
 
-            command_results = yield self._YomboAPI.request('PATCH',
-                                                           '/v1/command/%s' % command_id,
+            command_results = yield self._YomboAPI.request("PATCH",
+                                                           f"/v1/command/{command_id}",
                                                            api_data,
                                                            session=session)
         except YomboWarning as e:
             return {
-                'status': 'failed',
-                'msg': "Couldn't disable command: %s" % e.message,
-                'apimsg': "Couldn't disable command: %s" % e.message,
-                'apimsghtml': "Couldn't disable command: %s" % e.html_message,
+                "status": "failed",
+                "msg": f"Couldn't disable command: {e.message}",
+                "apimsg": f"Couldn't disable command: {e.message}",
+                "apimsghtml": f"Couldn't disable command: {e.html_message}",
             }
 
         return {
-            'status': 'success',
-            'msg': "Command disabled.",
-            'data': command_results['data'],
+            "status": "success",
+            "msg": "Command disabled.",
+            "data": command_results["data"],
         }
 
     def full_list_commands(self):
@@ -648,8 +648,8 @@ class Command:
         """
         logger.debug("command info: {command}", command=command)
 
-        self.command_id = command['id']
-        self.cmd = command['machine_label']
+        self.command_id = command["id"]
+        self.cmd = command["machine_label"]
         self.machine_label = self.cmd
 
         # the below are setup during update_attributes()
@@ -673,14 +673,14 @@ class Command:
         :type command: dict
         :return: None
         """
-        self.label = command['label']
-        self.description = command['description']
-        self.voice_cmd = command['voice_cmd']
-        self.always_load = command['always_load']
-        self.public = command['public']
-        self.status = command['status']
-        self.created_at = command['created_at']
-        self.updated_at = command['updated_at']
+        self.label = command["label"]
+        self.description = command["description"]
+        self.voice_cmd = command["voice_cmd"]
+        self.always_load = command["always_load"]
+        self.public = command["public"]
+        self.status = command["status"]
+        self.created_at = command["created_at"]
+        self.updated_at = command["updated_at"]
 
     def __str__(self):
         """
@@ -697,17 +697,17 @@ class Command:
         Export command variables as a dictionary.
         """
         return {
-            'command_id': str(self.command_id),
-            'always_load': str(self.always_load),
-            'voice_cmd': str(self.voice_cmd),
-            'cmd': str(self.cmd),  # AKA machineLabel
-            'label': str(self.label),
-            'machine_label': str(self.machine_label),
-            'description': str(self.description),
-            'public': int(self.public),
-            'status': int(self.status),
-            'created_at': int(self.created_at),
-            'updated_at': int(self.updated_at),
+            "command_id": str(self.command_id),
+            "always_load": str(self.always_load),
+            "voice_cmd": str(self.voice_cmd),
+            "cmd": str(self.cmd),  # AKA machineLabel
+            "label": str(self.label),
+            "machine_label": str(self.machine_label),
+            "description": str(self.description),
+            "public": int(self.public),
+            "status": int(self.status),
+            "created_at": int(self.created_at),
+            "updated_at": int(self.updated_at),
         }
 
     def __repl__(self):
@@ -718,15 +718,15 @@ class Command:
         :rtype: dict
         """
         return {
-            'command_id': str(self.command_id),
-            'always_load': str(self.always_load),
-            'voice_cmd': str(self.voice_cmd),
-            'cmd': str(self.cmd),  # AKA machineLabel
-            'label': str(self.label),
-            'machine_label': str(self.machine_label),
-            'description': str(self.description),
-            'public': int(self.public),
-            'status': int(self.status),
-            'created_at': int(self.created_at),
-            'updated_at': int(self.updated_at),
+            "command_id": str(self.command_id),
+            "always_load": str(self.always_load),
+            "voice_cmd": str(self.voice_cmd),
+            "cmd": str(self.cmd),  # AKA machineLabel
+            "label": str(self.label),
+            "machine_label": str(self.machine_label),
+            "description": str(self.description),
+            "public": int(self.public),
+            "status": int(self.status),
+            "created_at": int(self.created_at),
+            "updated_at": int(self.updated_at),
         }

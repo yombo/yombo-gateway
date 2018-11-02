@@ -23,7 +23,7 @@ Examples:
    self._CronTab.new(self.myFunction)
 
    # */2 * * * *  # call every other minute)
-   myArgs=('arg1', 'arg2')
+   myArgs=("arg1", "arg2")
    self._CronTab.new(self.myFunction, min=range(0, 59, 2), args=myArgs)  # use range and specify a step
    # The range just creates a list of minutes. You can also just pass a list of numbers.
 
@@ -72,7 +72,7 @@ from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import search_instance, do_search_instance, generate_source_string, random_string
 
-logger = get_logger('library.crontab')
+logger = get_logger("library.crontab")
 
 
 # Some utility classes / functions first
@@ -85,7 +85,7 @@ allMatch = AllMatch()
 
 
 def conv_to_set(obj):  # Allow single integer to be provided
-    if isinstance(obj, str) and obj == '*': # return AllMatch
+    if isinstance(obj, str) and obj == "*": # return AllMatch
         return conv_to_set(AllMatch) 
     if isinstance(obj, int):
         return set([obj])  # Single item
@@ -109,11 +109,11 @@ class CronTab(YomboLibrary):
 
         Checks to if a provided cron task id, label, or machine_label exists.
 
-            >>> if '129da137ab9318' in self._CronTab:
+            >>> if "129da137ab9318" in self._CronTab:
 
         or:
 
-            >>> if 'module.mymodule.mycron' in self._CronTab:
+            >>> if "module.mymodule.mycron" in self._CronTab:
 
         :raises YomboWarning: Raised when request is malformed.
         :param cron_task_requested: The cron task ID, label, or machine_label to search for.
@@ -136,11 +136,11 @@ class CronTab(YomboLibrary):
 
         Attempts to find the device requested using a couple of methods.
 
-            >>> off_cmd = self._CronTab['129da137ab9318']  #by id
+            >>> off_cmd = self._CronTab["129da137ab9318"]  #by id
 
         or:
 
-            >>> off_cmd = self._CronTab['module.mymodule.mycron']  #by label & machine_label
+            >>> off_cmd = self._CronTab["module.mymodule.mycron"]  #by label & machine_label
 
         :raises YomboWarning: Raised when request is malformed.
         :raises KeyError: Raised when request is not found.
@@ -218,7 +218,7 @@ class CronTab(YomboLibrary):
         """
         self.gateway_id = self._Configs.get2("core", "gwid", "local", False)
         self.cron_tasks = {}
-        self.cron_task_search_attributes = ['cron_id', 'label', 'enabled']
+        self.cron_task_search_attributes = ["cron_id", "label", "enabled"]
         self.check_cron_tabs_loop = None  # a simple loop that checks all cron tabs to see if they need to run.
         self.check_cron_tabs_loop = LoopingCall(self.check_cron_tabs)
 
@@ -227,8 +227,8 @@ class CronTab(YomboLibrary):
         Start the looping call to check for cron every minute.
         """
         now = datetime.now()
-        cron_next_minute =  now - timedelta(seconds = now.second - 61)  # we always run cron near the top of the minute
-        cron_start = float(cron_next_minute.strftime('%s.%f')) - float(now.strftime('%s.%f')) - 0.2
+        cron_next_minute =  now - timedelta(seconds=now.second - 61)  # we always run cron near the top of the minute
+        cron_start = float(cron_next_minute.strftime("%s.%f")) - float(now.strftime("%s.%f")) - 0.2
 
         reactor.callLater(cron_start, self.start_cron_loop)
 
@@ -256,18 +256,18 @@ class CronTab(YomboLibrary):
 
     def get(self, cron_task_requested=None, limiter=None, status=None):
         """
-        Looks for a cron task by it's id and label.
+        Looks for a cron task by it"s id and label.
 
         .. note::
 
-           Modules shouldn't use this function. Use the built in reference to
+           Modules shouldn"t use this function. Use the built in reference to
            find cron tasks:
 
-            >>> self._CronTab['129da137ab9318']
+            >>> self._CronTab["129da137ab9318"]
 
         or:
 
-            >>> self._CronTab['module.mymodule.mycron']
+            >>> self._CronTab["module.mymodule.mycron"]
 
         :raises YomboWarning: For invalid requests.
         :raises KeyError: When item requested cannot be found.
@@ -294,19 +294,19 @@ class CronTab(YomboLibrary):
         if cron_task_requested in self.cron_tasks:
             item = self.cron_tasks[cron_task_requested]
             if status is not None and item.status != status:
-                raise KeyError("Requested cron tab found, but has invalid status: %s" % item.status)
+                raise KeyError(f"Requested cron tab found, but has invalid status: {item.status}")
             return item
         else:
             attrs = [
                 {
-                    'field': 'cron_id',
-                    'value': cron_task_requested,
-                    'limiter': limiter,
+                    "field": "cron_id",
+                    "value": cron_task_requested,
+                    "limiter": limiter,
                 },
                 {
-                    'field': 'label',
-                    'value': cron_task_requested,
-                    'limiter': limiter,
+                    "field": "label",
+                    "value": cron_task_requested,
+                    "limiter": limiter,
                 }
             ]
             try:
@@ -319,9 +319,9 @@ class CronTab(YomboLibrary):
                 if found:
                     return item
                 else:
-                    raise KeyError("Cron tab not found: %s" % cron_task_requested)
+                    raise KeyError(f"Cron tab not found: {cron_task_requested}")
             except YomboWarning as e:
-                raise KeyError('Searched for %s, but had problems: %s' % (cron_task_requested, e))
+                raise KeyError(f"Searched for {cron_task_requested}, but had problems: {e}")
 
     def search(self, _limiter=None, _operation=None, **kwargs):
         """
@@ -339,7 +339,7 @@ class CronTab(YomboLibrary):
                                _operation)
 
     def new(self, crontab_callback, min=allMatch, hour=allMatch, day=allMatch,
-            month=allMatch, dow=allMatch, label='', enabled=True, args=(),
+            month=allMatch, dow=allMatch, label="", enabled=True, args=(),
             kwargs={}, source=None, gateway_id=None):
         """
         Add a new :class:`CronTask`.
@@ -366,7 +366,7 @@ class CronTab(YomboLibrary):
         :type kwargs: Dict of arguments
         """
         if source is None:
-            source = 'system'
+            source = "system"
         if gateway_id is None:
             gateway_id = self.gateway_id()
 
@@ -380,13 +380,13 @@ class CronTab(YomboLibrary):
         """
         Removes a CronTask. Accepts either cron id or cron name.
 
-        To remove a cron (note, it's a method not a dictionary):
+        To remove a cron (note, it"s a method not a dictionary):
         
-            >>> self._CronTab.remove('7s453hhxl3')  #by cron id
+            >>> self._CronTab.remove("7s453hhxl3")  #by cron id
 
         or::
 
-            >>> self._CronTab.remove('module.YomboBot.MyCron')  #by label
+            >>> self._CronTab.remove("module.YomboBot.MyCron")  #by label
 
         :raises YomboCronTabError: Raised when cron job cannot be found.
         :param cron_task_requested: The cron task id or cron label
@@ -400,10 +400,10 @@ class CronTab(YomboLibrary):
         """
         Enable a CronTask. Accepts either cron id or cron name.
 
-        To enable a cron (note, it's a method not a dictionary):
-            >>> self._CronTab.enable('7s453hhxl3')  #by cron id
+        To enable a cron (note, it"s a method not a dictionary):
+            >>> self._CronTab.enable("7s453hhxl3")  #by cron id
         or::
-            >>> self._CronTab.enable('module.YomboBot.MyCron')  #by label
+            >>> self._CronTab.enable("module.YomboBot.MyCron")  #by label
 
         :raises YomboCronTabError: Raised when cron job cannot be found.
         :param cron_task_requested: The cron task id or label
@@ -417,9 +417,9 @@ class CronTab(YomboLibrary):
         Disable a CronTask. Accepts either cron id or cron name.
 
         To disable a cron (note, it's a method not a dictionary):
-            >>> self._CronTab.disable('7s453hhxl3')  #by cron id
+            >>> self._CronTab.disable("7s453hhxl3")  #by cron id
         or::
-            >>> self._CronTab.disable('module.YomboBot.MyCron')  #by label
+            >>> self._CronTab.disable("module.YomboBot.MyCron")  #by label
 
         :param cron_task_requested: The cron task id or label
         :type cron_task_requested: string
@@ -432,9 +432,9 @@ class CronTab(YomboLibrary):
         Get the status of a cron task. Accepts either cron id or cron name.
 
         To disable a cron (note, it's a method not a dictionary):
-            >>> self._CronTab.disable('7s453hhxl3')  #by cron id
+            >>> self._CronTab.disable("7s453hhxl3")  #by cron id
         or::
-            >>> self._CronTab.disable('module.YomboBot.MyCron')  #by name
+            >>> self._CronTab.disable("module.YomboBot.MyCron")  #by name
 
         :param cron_task_requested: The cron task id or label
         :type cron_task_requested: string
@@ -446,10 +446,10 @@ class CronTab(YomboLibrary):
         """
         Runs a CronTask now. Accepts either cron id or cron name.
 
-        To run a cron (note, it's a method not a dictionary):
-            >>> self._CronTab.run_now('7s453hhxl3')  #by cron id
+        To run a cron (note, it"s a method not a dictionary):
+            >>> self._CronTab.run_now("7s453hhxl3")  #by cron id
         or::
-            >>> self._CronTab.run_now('module.YomboBot.MyCron')  #by name
+            >>> self._CronTab.run_now("module.YomboBot.MyCron")  #by name
 
         :param cron_task_requested: The cron task id or label
         :type cron_task_requested: string
@@ -462,7 +462,7 @@ class CronTab(YomboLibrary):
         Set job label. Accepts either cron id or cron name.
 
         To set a label for a cron job:
-            >>> self._CronTab.set_label('7s453hhxl3', 'modules.mymodule.mycrontask')  #by cron label
+            >>> self._CronTab.set_label("7s453hhxl3", "modules.mymodule.mycrontask")  #by cron label
 
         :raises YomboCronTabError: Raised when cron job cannot be found.
         :param cron_task_requested: The cron task id
@@ -473,15 +473,15 @@ class CronTab(YomboLibrary):
         crontask = self.get(cron_task_requested)
         crontask.label = label
 
-    def run_at(self, crontab_callback, timestring, label='', args=(), kwargs={}):
+    def run_at(self, crontab_callback, timestring, label="", args=(), kwargs={}):
         """
         Helper function for CronTab.new(), should not be called externally.
 
-        Acceptable format for 'timestring' value.
+        Acceptable format for "timestring" value.
 
-        * 'HH:MM' (24 hour). EG: 21:10 (9:10pm)
-        * 'h:mAM' EG: 1:14pm, 6:30am
-        * 'h:m AM' EG: 1:14 pm, 6:30 am
+        * "HH:MM" (24 hour). EG: 21:10 (9:10pm)
+        * "h:mAM" EG: 1:14pm, 6:30am
+        * "h:m AM" EG: 1:14 pm, 6:30 am
 
         :param crontab_callback: Function to call
         :type crontab_callback: Reference to function
@@ -499,12 +499,12 @@ class CronTab(YomboLibrary):
         dateObj = None
         try: # hh:mm
             try:
-                dateObj = datetime.strptime(timestring, '%I:%M%p')
+                dateObj = datetime.strptime(timestring, "%I:%M%p")
             except:
                 try:
-                    dateObj = datetime.strptime(timestring, '%I:%M %p')
+                    dateObj = datetime.strptime(timestring, "%I:%M %p")
                 except:
-                    dateObj = datetime.strptime(timestring, '%H:%M')
+                    dateObj = datetime.strptime(timestring, "%H:%M")
             return self.new(crontab_callback, dateObj.minute, dateObj.hour, label=label,
                    args=args, kwargs=kwargs)
         except:
@@ -517,7 +517,7 @@ class CronTask(object):
     """
     def __init__(self, parent,
                        crontab_callback, min=allMatch, hour=allMatch, day=allMatch,
-                       month=allMatch, dow=allMatch, label='',
+                       month=allMatch, dow=allMatch, label="",
                        enabled=True, crontab_library=None, args=(), kwargs={},
                        cron_id=None, source=None, gateway_id=None):
         """

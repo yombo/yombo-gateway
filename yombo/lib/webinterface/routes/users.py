@@ -33,63 +33,63 @@ def route_users(webapp):
             webinterface.add_breadcrumb(request, "/?", "Home")
             webinterface.add_breadcrumb(request, "/users/index", "Users")
 
-        @webapp.route('/')
+        @webapp.route("/")
         @require_auth()
         def page_users(webinterface, request, session):
-            session.has_access('user', '*', 'view', raise_error=True)
-            return webinterface.redirect(request, '/users/index')
+            session.has_access("user", "*", "view", raise_error=True)
+            return webinterface.redirect(request, "/users/index")
 
-        @webapp.route('/index')
+        @webapp.route("/index")
         @require_auth()
         def page_users_index(webinterface, request, session):
-            session.has_access('user', '*', 'view', raise_error=True)
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/users/index.html')
+            session.has_access("user", "*", "view", raise_error=True)
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/users/index.html")
             root_breadcrumb(webinterface, request)
             return page.render(
                 alerts=webinterface.get_alerts(),
             )
 
-        @webapp.route('/<string:user_requested>/details', methods=['GET'])
+        @webapp.route("/<string:user_requested>/details", methods=["GET"])
         @require_auth()
         def page_users_details_get(webinterface, request, session, user_requested):
-            session.has_access('user', user_requested, 'view', raise_error=True)
+            session.has_access("user", user_requested, "view", raise_error=True)
             try:
                 user = webinterface._Users.get(user_requested)
             except KeyError:
-                webinterface.add_alert('Requested user not found.', 'warning')
-                return webinterface.redirect(request, '/users')
+                webinterface.add_alert("Requested user not found.", "warning")
+                return webinterface.redirect(request, "/users")
 
             return return_user_details(webinterface, request, session, user)
 
 
-        @webapp.route('/<string:user_requested>/details', methods=['POST'])
+        @webapp.route("/<string:user_requested>/details", methods=["POST"])
         @require_auth(access_path="module_amazonalexa:manage", access_action="view")
         def page_users_details_post(webinterface, request, session, user_requested):
-            session.has_access('user', user_requested, 'view', raise_error=True)
-            session.has_access('user', user_requested, 'edit', raise_error=True)
+            session.has_access("user", user_requested, "view", raise_error=True)
+            session.has_access("user", user_requested, "edit", raise_error=True)
             try:
-                role_label = request.args.get('role_label')[0]
+                role_label = request.args.get("role_label")[0]
             except KeyError:
-                webinterface.add_alert('Invalid request.', 'warning')
-                return webinterface.redirect(request, '/users/%s/details' % user_requested)
+                webinterface.add_alert("Invalid request.", "warning")
+                return webinterface.redirect(request, f"/users/{user_requested}/details")
 
             try:
                 user = webinterface._Users.get(user_requested)
             except KeyError:
-                webinterface.add_alert('Requested user not found.', 'warning')
-                return webinterface.redirect(request, '/users/index')
+                webinterface.add_alert("Requested user not found.", "warning")
+                return webinterface.redirect(request, "/users/index")
 
             try:
                 user.attach_role(role_label)
             except YomboWarning as e:
-                webinterface.add_alert('Error adding role: %s' % e)
+                webinterface.add_alert(f"Error adding role: {e}")
                 return return_user_details(webinterface, request, session, user)
-            webinterface.add_alert('Role added to user.')
+            webinterface.add_alert("Role added to user.")
 
             return return_user_details(webinterface, request, session, user)
 
         def return_user_details(webinterface, request, session, user):
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/users/details.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/users/details.html")
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/users/someuser/details", user.name)
             return page.render(
@@ -98,54 +98,54 @@ def route_users(webapp):
                 session=session,
             )
 
-        @webapp.route('/<string:user_requested>/unattach_role/<string:role_id>', methods=['GET'])
+        @webapp.route("/<string:user_requested>/unattach_role/<string:role_id>", methods=["GET"])
         @require_auth()
         def page_users_unattach_role_get(webinterface, request, session, user_requested, role_id):
-            session.has_access('user', user_requested, 'view', raise_error=True)
-            session.has_access('user', user_requested, 'edit', raise_error=True)
+            session.has_access("user", user_requested, "view", raise_error=True)
+            session.has_access("user", user_requested, "edit", raise_error=True)
             try:
                 user = webinterface._Users.get(user_requested)
             except KeyError:
-                webinterface.add_alert('Requested user not found.', 'warning')
-                return webinterface.redirect(request, '/users')
+                webinterface.add_alert("Requested user not found.", "warning")
+                return webinterface.redirect(request, "/users")
             try:
                 user.unattach_role(role_id)
             except KeyError:
-                webinterface.add_alert('Cannot find role')
+                webinterface.add_alert("Cannot find role")
                 return return_user_details(webinterface, request, session, user)
             except YomboWarning as e:
-                webinterface.add_alert('Error removing role: %s' % e)
+                webinterface.add_alert(f"Error removing role: {e}")
                 return return_user_details(webinterface, request, session, user)
 
-            webinterface.add_alert('Role removed from user.')
-            return webinterface.redirect(request, '/users/%s/details' % user.user_id)
+            webinterface.add_alert("Role removed from user.")
+            return webinterface.redirect(request, f"/users/{user.user_id}/details")
 
-        @webapp.route('/<string:user_requested>/add_item_permission', methods=['POST'])
+        @webapp.route("/<string:user_requested>/add_item_permission", methods=["POST"])
         @require_auth()
         def page_users_add_item_permission_post(webinterface, request, session, user_requested):
-            session.has_access('user', '*', 'edit', raise_error=True)
+            session.has_access("user", "*", "edit", raise_error=True)
             try:
                 user = webinterface._Users.get(user_requested)
             except KeyError:
-                webinterface.add_alert('Requested user not found.', 'warning')
-                return webinterface.redirect(request, '/users')
+                webinterface.add_alert("Requested user not found.", "warning")
+                return webinterface.redirect(request, "/users")
 
             try:
-                platform = request.args.get('platform')[0]
+                platform = request.args.get("platform")[0]
             except KeyError:
-                webinterface.add_alert('Invalid request, platform is missing.', 'warning')
-                return webinterface.redirect(request, '/users/index' % user_requested)
+                webinterface.add_alert("Invalid request, platform is missing.", "warning")
+                return webinterface.redirect(request, f"/users/index")
 
             try:
-                item = request.args.get('item')[0]
+                item = request.args.get("item")[0]
             except KeyError:
-                webinterface.add_alert('Invalid request, item is missing.', 'warning')
-                return webinterface.redirect(request, '/users/index' % user_requested)
+                webinterface.add_alert("Invalid request, item is missing.", "warning")
+                return webinterface.redirect(request, f"/users/index")
 
             newactions = {}
             for action, values in request.args.items():
-                if action.startswith('allow_') or action.startswith('deny_'):
-                    details = action.split('_', 2)
+                if action.startswith("allow_") or action.startswith("deny_"):
+                    details = action.split("_", 2)
                     if details[0] not in newactions:
                         newactions[details[0]] = []
                     newactions[details[0]].append(details[1])
@@ -154,80 +154,80 @@ def route_users(webapp):
                 for access, actions in newactions.items():
                     user.add_item_permission(platform, item, access, actions)
             except YomboWarning as e:
-                webinterface.add_alert('Error adding device actions: %s' % e)
+                webinterface.add_alert(f"Error adding device actions: {e}")
 
-            return webinterface.redirect(request, '/users/%s/details' % user.user_id)
+            return webinterface.redirect(request, f"/users/{user.user_id}/details")
 
-        @webapp.route('/<string:user_requested>/remove_item_permission/<string:platform>/<string:item_id>', methods=['GET'])
+        @webapp.route("/<string:user_requested>/remove_item_permission/<string:platform>/<string:item_id>", methods=["GET"])
         @require_auth()
         def page_users_remove_item_permission_get(webinterface, request, session, user_requested, platform, item_id):
-            session.has_access('user', '*', 'edit', raise_error=True)
+            session.has_access("user", "*", "edit", raise_error=True)
             try:
                 user = webinterface._Users.get(user_requested)
             except KeyError:
-                webinterface.add_alert('Requested user not found.', 'warning')
-                return webinterface.redirect(request, '/users')
+                webinterface.add_alert("Requested user not found.", "warning")
+                return webinterface.redirect(request, "/users")
 
             try:
                 user.remove_item_permission(platform, item_id)
             except YomboWarning as e:
-                webinterface.add_alert('Error removing device actions: %s' % e)
+                webinterface.add_alert(f"Error removing device actions: {e}")
 
-            return webinterface.redirect(request, '/users/%s/details' % user.user_id)
+            return webinterface.redirect(request, f"/users/{user.user_id}/details")
 
-        @webapp.route('/<string:user_requested>/remove_item_permission/<string:platform>/<string:item_id>/<string:access>/<string:action>', methods=['GET'])
+        @webapp.route("/<string:user_requested>/remove_item_permission/<string:platform>/<string:item_id>/<string:access>/<string:action>", methods=["GET"])
         @require_auth()
         def page_users_remove_item_permission_action_get(webinterface, request, session, user_requested, platform,
                                                          item_id, access, action):
-            session.has_access('user', '*', 'edit', raise_error=True)
+            session.has_access("user", "*", "edit", raise_error=True)
             try:
                 user = webinterface._Users.get(user_requested)
             except KeyError:
-                webinterface.add_alert('Requested user not found.', 'warning')
-                return webinterface.redirect(request, '/users')
+                webinterface.add_alert("Requested user not found.", "warning")
+                return webinterface.redirect(request, "/users")
 
             try:
                 user.remove_item_permission(platform, item_id, access, action)
             except YomboWarning as e:
-                webinterface.add_alert('Error removing device actions: %s' % e)
+                webinterface.add_alert(f"Error removing device actions: {e}")
 
-            return webinterface.redirect(request, '/users/%s/details' % user.user_id)
+            return webinterface.redirect(request, f"/users/{user.user_id}/details")
 
-        @webapp.route('/add', methods=['GET'])
+        @webapp.route("/add", methods=["GET"])
         @require_auth()
         def page_users_add_get(webinterface, request, session):
-            session.has_access('user', '*', 'add', raise_error=True)
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/users/add.html')
+            session.has_access("user", "*", "add", raise_error=True)
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/users/add.html")
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/users/add", "Add User")
             return page.render(
                 alerts=webinterface.get_alerts(),
             )
 
-        @webapp.route('/add', methods=['POST'])
+        @webapp.route("/add", methods=["POST"])
         @require_auth()
         @inlineCallbacks
         def page_users_add_post(webinterface, request, session):
-            session.has_access('user', '*', 'add', raise_error=True)
+            session.has_access("user", "*", "add", raise_error=True)
             try:
-                user_requested = request.args.get('user_requested')[0]
+                user_requested = request.args.get("user_requested")[0]
             except KeyError:
-                webinterface.add_alert('Invalid request.', 'warning')
-                return webinterface.redirect(request, '/users/index' % user_requested)
+                webinterface.add_alert("Invalid request.", "warning")
+                return webinterface.redirect(request, "/users/index")
 
             try:
                 webinterface._Users.get(user_requested)
             except KeyError:
                 pass
             else:
-                webinterface.add_alert('User already belongs to gateway.', 'warning')
-                return webinterface.redirect(request, '/users/index')
+                webinterface.add_alert("User already belongs to gateway.", "warning")
+                return webinterface.redirect(request, "/users/index")
 
             try:
                 search_results = yield webinterface._Users.api_search_user(user_requested)
             except YomboWarning as e:
-                webinterface.add_alert("User not found: %s" % user_requested)
-                page = webinterface.get_template(request, webinterface.wi_dir + '/pages/users/add.html')
+                webinterface.add_alert(f"User not found: {user_requested}")
+                page = webinterface.get_template(request, webinterface.wi_dir + "/pages/users/add.html")
                 root_breadcrumb(webinterface, request)
                 webinterface.add_breadcrumb(request, "/users/add", "Add User")
                 return page.render(
@@ -236,12 +236,12 @@ def route_users(webapp):
                 )
 
             try:
-                add_results = yield webinterface._Users.add_user(search_results['id'],
-                                                                 session['yomboapi_session'])
+                add_results = yield webinterface._Users.add_user(search_results["id"],
+                                                                 session["yomboapi_session"])
             except YomboWarning as e:
-                print("page_users_add_post error details: %s" % e.details)
+                # print(f"page_users_add_post error details: {e.details}")
                 webinterface.add_alert(e.html_message)
-                page = webinterface.get_template(request, webinterface.wi_dir + '/pages/users/add.html')
+                page = webinterface.get_template(request, webinterface.wi_dir + "/pages/users/add.html")
                 root_breadcrumb(webinterface, request)
                 webinterface.add_breadcrumb(request, "/users/add", "Add User")
                 return page.render(
@@ -249,56 +249,56 @@ def route_users(webapp):
                     last_search=user_requested,
                 )
             webinterface.add_alert("User added")
-            return webinterface.redirect(request, '/users/%s/details' % user_requested)
+            return webinterface.redirect(request, f"/users/{user_requested}/details")
 
-        @webapp.route('/<string:user_id>/remove', methods=['GET'])
+        @webapp.route("/<string:user_id>/remove", methods=["GET"])
         @require_auth()
         def page_users_remove_get(webinterface, request, session, user_id):
-            session.has_access('user', user_id, 'delete', raise_error=True)
+            session.has_access("user", user_id, "delete", raise_error=True)
             try:
                 user = webinterface._Users.get(user_id)
             except KeyError:
-                webinterface.add_alert('Requested user not found.', 'warning')
-                return webinterface.redirect(request, '/users')
+                webinterface.add_alert("Requested user not found.", "warning")
+                return webinterface.redirect(request, "/users")
 
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/users/remove.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/users/remove.html")
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/users/%s/details" % user.user_id, user.email)
-            webinterface.add_breadcrumb(request, "/users/%s/remove" % user.user_id, "Remove")
+            webinterface.add_breadcrumb(request, f"/users/{user.user_id}/details", user.email)
+            webinterface.add_breadcrumb(request, f"/users/{user.user_id}/remove", "Remove")
             return page.render(alerts=webinterface.get_alerts(),
                                user=user,
                                )
 
-        @webapp.route('/<string:user_id>/remove', methods=['POST'])
+        @webapp.route("/<string:user_id>/remove", methods=["POST"])
         @require_auth()
         @inlineCallbacks
         def page_users_remove_post(webinterface, request, session, user_id):
-            session.has_access('user', user_id, 'delete', raise_error=True)
+            session.has_access("user", user_id, "delete", raise_error=True)
             try:
                 user = webinterface._Users.get(user_id)
             except KeyError:
-                webinterface.add_alert('Requested user not found.', 'warning')
-                return webinterface.redirect(request, '/users')
+                webinterface.add_alert("Requested user not found.", "warning")
+                return webinterface.redirect(request, "/users")
 
-            confirm = request.args.get('confirm')[0]
+            confirm = request.args.get("confirm")[0]
             if confirm != "remove":
-                page = webinterface.get_template(request, webinterface.wi_dir + '/pages/users/remove.html')
-                webinterface.add_alert('Must enter "disable" in the confirmation box to remove the module.', 'warning')
+                page = webinterface.get_template(request, webinterface.wi_dir + "/pages/users/remove.html")
+                webinterface.add_alert("Must enter 'disable' in the confirmation box to remove the module.", "warning")
                 return page.render(alerts=webinterface.get_alerts(),
                                    user=user,
                                    )
 
             try:
-                results = yield webinterface._Users.remove_user(user.user_id, session=session['yomboapi_session'])
+                results = yield webinterface._Users.remove_user(user.user_id, session=session["yomboapi_session"])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message)
-                page = webinterface.get_template(request, webinterface.wi_dir + '/pages/users/remove.html')
+                page = webinterface.get_template(request, webinterface.wi_dir + "/pages/users/remove.html")
                 root_breadcrumb(webinterface, request)
-                webinterface.add_breadcrumb(request, "/users/%s/details" % user.user_id, user.email)
-                webinterface.add_breadcrumb(request, "/users/%s/remove" % user.user_id, "Remove")
+                webinterface.add_breadcrumb(request, f"/users/{user.user_id}/details", user.email)
+                webinterface.add_breadcrumb(request, f"/users/{user.user_id}/remove", "Remove")
                 return page.render(alerts=webinterface.get_alerts(),
                                    user=user,
                                    )
 
             webinterface.add_alert("User removed")
-            return webinterface.redirect(request, '/users/index')
+            return webinterface.redirect(request, "/users/index")

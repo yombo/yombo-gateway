@@ -11,508 +11,522 @@ def route_devtools_config_modules(webapp):
             webinterface.add_breadcrumb(request, "/devtools/config/", "Config Tools")
             webinterface.add_breadcrumb(request, "/devtools/config/modules/index", "Modules", True)
 
-        @webapp.route('/config/modules/index')
+        @webapp.route("/config/modules/index")
         @require_auth()
         def page_devtools_modules_index(webinterface, request, session):
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/devtools/config/modules/index.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/devtools/config/modules/index.html")
             root_breadcrumb(webinterface, request)
             return page.render(alerts=webinterface.get_alerts(),
                                )
 
-        @webapp.route('/config/modules/<string:module_id>/details', methods=['GET'])
+        @webapp.route("/config/modules/<string:module_id>/details", methods=["GET"])
         @require_auth()
         @inlineCallbacks
         def page_devtools_modules_details_get(webinterface, request, session, module_id):
             try:
-                module_results = yield webinterface._YomboAPI.request('GET',
-                                                                      '/v1/module/%s?_expand=device_types' % module_id,
-                                                                      session=session['yomboapi_session'])
+                module_results = yield webinterface._YomboAPI.request("GET",
+                                                                      f"/v1/module/{module_id}?_expand=device_types",
+                                                                      session=session["yomboapi_session"])
             except YomboWarning as e:
-                webinterface.add_alert(e.html_message, 'warning')
-                return webinterface.redirect(request, '/devtools/config/modules/index')
+                webinterface.add_alert(e.html_message, "warning")
+                return webinterface.redirect(request, "/devtools/config/modules/index")
 
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/devtools/config/modules/details.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/devtools/config/modules/details.html")
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/devtools/config/modules/%s/details" % module_id,
-                                        module_results['data']['label'])
+            webinterface.add_breadcrumb(request, "/devtools/config/modules/{module_id}/details",
+                                        module_results["data"]["label"])
             return page.render(alerts=webinterface.get_alerts(),
-                                    module=module_results['data'],
+                                    module=module_results["data"],
                                     )
 
-        @webapp.route('/config/modules/<string:module_id>/delete', methods=['GET'])
+        @webapp.route("/config/modules/<string:module_id>/delete", methods=["GET"])
         @require_auth()
         @inlineCallbacks
         def page_devtools_modules_delete_get(webinterface, request, session, module_id):
             try:
-                module_results = yield webinterface._YomboAPI.request('GET',
-                                                                      '/v1/module/%s' % module_id,
-                                                                      session=session['yomboapi_session'])
+                module_results = yield webinterface._YomboAPI.request("GET",
+                                                                      f"/v1/module/{module_id}",
+                                                                      session=session["yomboapi_session"])
             except YomboWarning as e:
-                webinterface.add_alert(e.html_message, 'warning')
-                return webinterface.redirect(request, '/devtools/config/modules/index')
+                webinterface.add_alert(e.html_message, "warning")
+                return webinterface.redirect(request, "/devtools/config/modules/index")
 
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/devtools/config/modules/delete.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/devtools/config/modules/delete.html")
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/devtools/config/modules/%s/details" % module_id,
-                                        module_results['data']['label'])
-            webinterface.add_breadcrumb(request, "/devtools/config/modules/%s/delete" % module_id, "Delete")
+            webinterface.add_breadcrumb(request, f"/devtools/config/modules/{module_id}/details",
+                                        module_results["data"]["label"])
+            webinterface.add_breadcrumb(request, f"/devtools/config/modules/{module_id}/delete", "Delete")
             return page.render(alerts=webinterface.get_alerts(),
-                                    module=module_results['data'],
+                                    module=module_results["data"],
                                     )
 
-        @webapp.route('/config/modules/<string:module_id>/delete', methods=['POST'])
+        @webapp.route("/config/modules/<string:module_id>/delete", methods=["POST"])
         @require_auth()
         @inlineCallbacks
         def page_devtools_modules_delete_post(webinterface, request, session, module_id):
             try:
-                confirm = request.args.get('confirm')[0]
+                confirm = request.args.get("confirm")[0]
             except:
-                return webinterface.redirect(request, '/devtools/config/modules/%s/details' % module_id)
+                return webinterface.redirect(request, f"/devtools/config/modules/{module_id}/details")
 
             if confirm != "delete":
-                webinterface.add_alert('Must enter "delete" in the confirmation box to delete the module.', 'warning')
-                return webinterface.redirect(request, '/devtools/config/modules/%s/details' % module_id)
+                webinterface.add_alert("Must enter 'delete' in the confirmation box to delete the module.", "warning")
+                return webinterface.redirect(request, f"/devtools/config/modules/{module_id}/details")
 
             module_results = yield webinterface._Modules.dev_module_delete(module_id,
-                                                                           session=session['yomboapi_session'])
+                                                                           session=session["yomboapi_session"])
 
-            if module_results['status'] == 'failed':
-                webinterface.add_alert(module_results['apimsghtml'], 'warning')
-                return webinterface.redirect(request, '/devtools/config/modules/%s/details' % module_id)
+            if module_results["status"] == "failed":
+                webinterface.add_alert(module_results["apimsghtml"], "warning")
+                return webinterface.redirect(request, f"/devtools/config/modules/{module_id}/details")
 
             msg = {
-                'header': 'Module Deleted',
-                'label': 'Module deleted successfully',
-                'description': '<p>The module has been deleted.</p><p>Continue to <a href="/devtools/config/modules/index">modules index</a> or <a href="/devtools/config/modules/%s/details">view the module</a>.</p>' % module_id,
+                "header": "Module Deleted",
+                "label": "Module deleted successfully",
+                "description":
+                    "<p>The module has been deleted.</p><p>Continue to "
+                    '<a href="/devtools/config/modules/index">modules index</a> or '
+                    f'<a href="/devtools/config/modules/{module_id}/details">view the module</a>.</p>',
             }
 
             try:
-                module_api_results = yield webinterface._YomboAPI.request('GET',
-                                                                          '/v1/module/%s' % module_id,
-                                                                          session=session['yomboapi_session'])
+                module_api_results = yield webinterface._YomboAPI.request("GET",
+                                                                          f"/v1/module/{module_id}",
+                                                                          session=session["yomboapi_session"])
             except YomboWarning as e:
-                webinterface.add_alert(e.html_message, 'warning')
-                return webinterface.redirect(request, '/devtools/config/modules/index')
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
+                webinterface.add_alert(e.html_message, "warning")
+                return webinterface.redirect(request, "/devtools/config/modules/index")
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/display_notice.html")
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/devtools/config/modules/%s/details" % module_id,
-                                        module_api_results['data']['label'])
-            webinterface.add_breadcrumb(request, "/devtools/config/modules/%s/delete" % module_id, "Delete")
+            webinterface.add_breadcrumb(request, f"/devtools/config/modules/{module_id}/details",
+                                        module_api_results["data"]["label"])
+            webinterface.add_breadcrumb(request, f"/devtools/config/modules/{module_id}/delete", "Delete")
 
             return page.render(alerts=webinterface.get_alerts(),
                                     msg=msg,
                                     )
 
-        @webapp.route('/config/modules/<string:module_id>/disable', methods=['GET'])
+        @webapp.route("/config/modules/<string:module_id>/disable", methods=["GET"])
         @require_auth()
         @inlineCallbacks
         def page_devtools_modules_disable_get(webinterface, request, session, module_id):
             try:
-                module_results = yield webinterface._YomboAPI.request('GET',
-                                                                      '/v1/module/%s' % module_id,
-                                                                      session=session['yomboapi_session'])
+                module_results = yield webinterface._YomboAPI.request("GET",
+                                                                      f"/v1/module/{module_id}",
+                                                                      session=session["yomboapi_session"])
             except YomboWarning as e:
-                webinterface.add_alert(e.html_message, 'warning')
-                return webinterface.redirect(request, '/devtools/config/modules/index')
+                webinterface.add_alert(e.html_message, "warning")
+                return webinterface.redirect(request, "/devtools/config/modules/index")
 
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/devtools/config/modules/disable.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/devtools/config/modules/disable.html")
             return page.render(alerts=webinterface.get_alerts(),
-                                    module=module_results['data'],
+                                    module=module_results["data"],
                                     )
 
-        @webapp.route('/config/modules/<string:module_id>/disable', methods=['POST'])
+        @webapp.route("/config/modules/<string:module_id>/disable", methods=["POST"])
         @require_auth()
         @inlineCallbacks
         def page_devtools_modules_disable_post(webinterface, request, session, module_id):
             try:
-                confirm = request.args.get('confirm')[0]
+                confirm = request.args.get("confirm")[0]
             except:
-                return webinterface.redirect(request, '/devtools/config/modules/%s/details' % module_id)
+                return webinterface.redirect(request, f"/devtools/config/modules/{module_id}/details")
 
             if confirm != "disable":
-                webinterface.add_alert('Must enter "disable" in the confirmation box to disable the module.', 'warning')
-                return webinterface.redirect(request, '/devtools/config/modules/%s/details' % module_id)
+                webinterface.add_alert("Must enter 'disable' in the confirmation box to disable the module.", "warning")
+                return webinterface.redirect(request, f"/devtools/config/modules/{module_id}/details")
 
             results = yield webinterface._Modules.dev_module_disable(module_id,
-                                                                     session=session['yomboapi_session'])
+                                                                     session=session["yomboapi_session"])
 
-            if results['status'] == 'failed':
-                webinterface.add_alert(results['apimsghtml'], 'warning')
-                return webinterface.redirect(request, '/devtools/config/modules/%s/details' % module_id)
+            if results["status"] == "failed":
+                webinterface.add_alert(results["apimsghtml"], "warning")
+                return webinterface.redirect(request, f"/devtools/config/modules/{module_id}/details")
 
             msg = {
-                'header': 'Module Disabled',
-                'label': 'Module disabled successfully',
-                'description': '<p>The module has been disabled.</p><p>Continue to <a href="/devtools/config/modules/index">modules index</a> or <a href="/devtools/config/modules/%s/details">view the module</a>.</p>' % module_id,
+                "header": "Module Disabled",
+                "label": "Module disabled successfully",
+                "description":
+                    "<p>The module has been disabled.</p><p>Continue to "
+                    '<a href="/devtools/config/modules/index">modules index</a> or '
+                    f'<a href="/devtools/config/modules/{module_id}/details">view the module</a>.</p>',
             }
 
             try:
-                module_results = yield webinterface._YomboAPI.request('GET',
-                                                                      '/v1/module/%s' % module_id,
-                                                                      session=session['yomboapi_session'])
+                module_results = yield webinterface._YomboAPI.request("GET",
+                                                                      f"/v1/module/{module_id}",
+                                                                      session=session["yomboapi_session"])
             except YomboWarning as e:
-                webinterface.add_alert(e.html_message, 'warning')
-                return webinterface.redirect(request, '/devtools/config/modules/index')
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
+                webinterface.add_alert(e.html_message, "warning")
+                return webinterface.redirect(request, "/devtools/config/modules/index")
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/display_notice.html")
             root_breadcrumb(webinterface, request)
 
-            webinterface.add_breadcrumb(request, "/devtools/config/modules/%s/details" % module_id,
-                                        module_results['data']['label'])
-            webinterface.add_breadcrumb(request, "/devtools/config/modules/%s/disable" % module_id, "Disable")
+            webinterface.add_breadcrumb(request, f"/devtools/config/modules/{module_id}/details",
+                                        module_results["data"]["label"])
+            webinterface.add_breadcrumb(request, f"/devtools/config/modules/{module_id}/disable", "Disable")
 
             return page.render(alerts=webinterface.get_alerts(),
                                     msg=msg,
                                     )
 
-        @webapp.route('/config/modules/<string:module_id>/enable', methods=['GET'])
+        @webapp.route("/config/modules/<string:module_id>/enable", methods=["GET"])
         @require_auth()
         @inlineCallbacks
         def page_devtools_modules_enable_get(webinterface, request, session, module_id):
             try:
-                module_results = yield webinterface._YomboAPI.request('GET',
-                                                                      '/v1/module/%s' % module_id,
-                                                                      session=session['yomboapi_session'])
+                module_results = yield webinterface._YomboAPI.request("GET",
+                                                                      f"/v1/module/{module_id}",
+                                                                      session=session["yomboapi_session"])
             except YomboWarning as e:
-                webinterface.add_alert(e.html_message, 'warning')
-                return webinterface.redirect(request, '/devtools/config/modules/index')
+                webinterface.add_alert(e.html_message, "warning")
+                return webinterface.redirect(request, "/devtools/config/modules/index")
 
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/devtools/config/modules/enable.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/devtools/config/modules/enable.html")
             return page.render(alerts=webinterface.get_alerts(),
-                                    module=module_results['data'],
+                                    module=module_results["data"],
                                     )
 
-        @webapp.route('/config/modules/<string:module_id>/enable', methods=['POST'])
+        @webapp.route("/config/modules/<string:module_id>/enable", methods=["POST"])
         @require_auth()
         @inlineCallbacks
         def page_devtools_modules_enable_post(webinterface, request, session, module_id):
             try:
-                confirm = request.args.get('confirm')[0]
+                confirm = request.args.get("confirm")[0]
             except:
-                return webinterface.redirect(request, '/devtools/config/modules/%s/details' % module_id)
+                return webinterface.redirect(request, f"/devtools/config/modules/{module_id}/details")
 
             if confirm != "enable":
-                webinterface.add_alert('Must enter "enable" in the confirmation box to enable the module.', 'warning')
-                return webinterface.redirect(request, '/devtools/config/modules/%s/details' % module_id)
+                webinterface.add_alert("Must enter 'enable' in the confirmation box to enable the module.", "warning")
+                return webinterface.redirect(request, f"/devtools/config/modules/{module_id}/details")
 
             results = yield webinterface._Modules.dev_module_enable(module_id,
-                                                                    session=session['yomboapi_session'])
+                                                                    session=session["yomboapi_session"])
 
-            if results['status'] == 'failed':
-                webinterface.add_alert(results['apimsghtml'], 'warning')
-                return webinterface.redirect(request, '/devtools/config/modules/%s/details' % module_id)
+            if results["status"] == "failed":
+                webinterface.add_alert(results["apimsghtml"], "warning")
+                return webinterface.redirect(request, f"/devtools/config/modules/{module_id}/details")
 
             msg = {
-                'header': 'Module Enabled',
-                'label': 'Module enabled successfully',
-                'description': '<p>The module has been enabled.</p><p>Continue to <a href="/devtools/config/modules/index">modules index</a> or <a href="/devtools/config/modules/%s/details">view the module</a>.</p>' % module_id,
+                "header": "Module Enabled",
+                "label": "Module enabled successfully",
+                "description":
+                    "<p>The module has been enabled.</p><p>Continue to "
+                    '<a href="/devtools/config/modules/index">modules index</a> or '
+                    f'<a href="/devtools/config/modules/{module_id}/details">view the module</a>.</p>',
             }
 
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/display_notice.html")
             return page.render(alerts=webinterface.get_alerts(),
                                     msg=msg,
                                     )
 
-        @webapp.route('/config/modules/add', methods=['GET'])
+        @webapp.route("/config/modules/add", methods=["GET"])
         @require_auth()
         def page_devtools_modules_add_get(webinterface, request, session):
             data = {
-                'module_type': webinterface.request_get_default(request, 'module_type', ""),
-                'label': webinterface.request_get_default(request, 'label', ""),
-                'machine_label': webinterface.request_get_default(request, 'machine_label', ""),
-                'description': webinterface.request_get_default(request, 'description', ""),
-                'short_description': webinterface.request_get_default(request, 'short_description', ""),
-                'medium_description': webinterface.request_get_default(request, 'medium_description', ""),
-                'repository_link': webinterface.request_get_default(request, 'repository_link', ""),
-                'issue_tracker_link': webinterface.request_get_default(request, 'issue_tracker_link', ""),
-                'doc_link': webinterface.request_get_default(request, 'doc_link', ""),
-                'git_link': webinterface.request_get_default(request, 'git_link', ""),
-                'prod_branch': webinterface.request_get_default(request, 'prod_branch', ""),
-                'dev_branch': webinterface.request_get_default(request, 'dev_branch', ""),
-                'status': int(webinterface.request_get_default(request, 'status', 1)),
-                'public': int(webinterface.request_get_default(request, 'public', 0)),
+                "module_type": webinterface.request_get_default(request, "module_type", ""),
+                "label": webinterface.request_get_default(request, "label", ""),
+                "machine_label": webinterface.request_get_default(request, "machine_label", ""),
+                "description": webinterface.request_get_default(request, "description", ""),
+                "short_description": webinterface.request_get_default(request, "short_description", ""),
+                "medium_description": webinterface.request_get_default(request, "medium_description", ""),
+                "repository_link": webinterface.request_get_default(request, "repository_link", ""),
+                "issue_tracker_link": webinterface.request_get_default(request, "issue_tracker_link", ""),
+                "doc_link": webinterface.request_get_default(request, "doc_link", ""),
+                "git_link": webinterface.request_get_default(request, "git_link", ""),
+                "prod_branch": webinterface.request_get_default(request, "prod_branch", ""),
+                "dev_branch": webinterface.request_get_default(request, "dev_branch", ""),
+                "status": int(webinterface.request_get_default(request, "status", 1)),
+                "public": int(webinterface.request_get_default(request, "public", 0)),
             }
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/devtools/config/modules/add", "Add Module")
             return page_devtools_modules_form(webinterface, request, session, data, "add", "Add Module")
 
-        @webapp.route('/config/modules/add', methods=['POST'])
+        @webapp.route("/config/modules/add", methods=["POST"])
         @require_auth()
         @inlineCallbacks
         def page_devtools_modules_add_post(webinterface, request, session):
             data = {
-                'module_type': request.args.get('module_type')[0],
-                'label': request.args.get('label')[0],
-                'machine_label': request.args.get('machine_label')[0],
-                'description': request.args.get('description')[0],
-                'short_description': request.args.get('short_description')[0],
-                'medium_description': request.args.get('medium_description')[0],
-                'repository_link': request.args.get('repository_link')[0],
-                'issue_tracker_link': request.args.get('issue_tracker_link')[0],
-                'doc_link': request.args.get('doc_link')[0],
-                'git_link': request.args.get('git_link')[0],
-                'prod_branch': request.args.get('prod_branch')[0],
-                'dev_branch': request.args.get('dev_branch')[0],
-                'public': int(request.args.get('public')[0]),
-                'status': int(request.args.get('status')[0]),
+                "module_type": request.args.get("module_type")[0],
+                "label": request.args.get("label")[0],
+                "machine_label": request.args.get("machine_label")[0],
+                "description": request.args.get("description")[0],
+                "short_description": request.args.get("short_description")[0],
+                "medium_description": request.args.get("medium_description")[0],
+                "repository_link": request.args.get("repository_link")[0],
+                "issue_tracker_link": request.args.get("issue_tracker_link")[0],
+                "doc_link": request.args.get("doc_link")[0],
+                "git_link": request.args.get("git_link")[0],
+                "prod_branch": request.args.get("prod_branch")[0],
+                "dev_branch": request.args.get("dev_branch")[0],
+                "public": int(request.args.get("public")[0]),
+                "status": int(request.args.get("status")[0]),
             }
 
             results = yield webinterface._Modules.dev_module_add(data,
-                                                                 session=session['yomboapi_session'])
+                                                                 session=session["yomboapi_session"])
 
-            if results['status'] == 'failed':
-                webinterface.add_alert(results['apimsghtml'], 'warning')
+            if results["status"] == "failed":
+                webinterface.add_alert(results["apimsghtml"], "warning")
                 return page_devtools_modules_form(webinterface, request, session, data, "add", "Add Module")
 
             msg = {
-                'header': 'Module Added',
-                'label': 'Module added successfully',
-                'description': '<p>The module has been added. If you have requested this module to be made public, please allow a few days for Yombo to perform a code review of your repository.</p><p>Continue to <a href="/devtools/config/modules/index">modules index</a></p>',
+                "header": "Module Added",
+                "label": "Module added successfully",
+                "description": "<p>The module has been added. If you have requested this module to be made public, "
+                               "please allow a few days for Yombo to perform a code review of your repository.</p>"
+                               '<p>Continue to <a href="/devtools/config/modules/index">modules index</a></p>',
             }
 
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/display_notice.html")
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/devtools/config/modules/add", "Add Module")
             return page.render(alerts=webinterface.get_alerts(),
                                     msg=msg,
                                     )
 
-        @webapp.route('/config/modules/<string:module_id>/edit', methods=['GET'])
+        @webapp.route("/config/modules/<string:module_id>/edit", methods=["GET"])
         @require_auth()
         @inlineCallbacks
         def page_devtools_modules_edit_get(webinterface, request, session, module_id):
             try:
-                module_results = yield webinterface._YomboAPI.request('GET',
-                                                                      '/v1/module/%s' % module_id,
-                                                                      session=session['yomboapi_session'])
+                module_results = yield webinterface._YomboAPI.request("GET",
+                                                                      f"/v1/module/{module_id}",
+                                                                      session=session["yomboapi_session"])
             except YomboWarning as e:
-                webinterface.add_alert(e.html_message, 'warning')
-                return webinterface.redirect(request, '/devtools/config/modules/index')
+                webinterface.add_alert(e.html_message, "warning")
+                return webinterface.redirect(request, "/devtools/config/modules/index")
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/devtools/config/modules/%s/details" % module_id,
-                                        module_results['data']['label'])
-            webinterface.add_breadcrumb(request, "/devtools/config/modules/%s/edit" % module_id, "Edit")
+            webinterface.add_breadcrumb(request, f"/devtools/config/modules/{module_id}/details",
+                                        module_results["data"]["label"])
+            webinterface.add_breadcrumb(request, f"/devtools/config/modules/{module_id}/edit", "Edit")
 
-            return page_devtools_modules_form(webinterface, request, session, module_results['data'], "edit",
-                                                   "Edit Module: %s" % module_results['data']['label'])
+            return page_devtools_modules_form(webinterface, request, session, module_results["data"], "edit",
+                                              f"Edit Module: {module_results['data']['label']}")
 
-        @webapp.route('/config/modules/<string:module_id>/edit', methods=['POST'])
+        @webapp.route("/config/modules/<string:module_id>/edit", methods=["POST"])
         @require_auth()
         @inlineCallbacks
         def page_devtools_modules_edit_post(webinterface, request, session, module_id):
             try:
-                results = yield webinterface._YomboAPI.request('GET',
-                                                               '/v1/module/%s' % module_id,
-                                                               session=session['yomboapi_session'])
+                results = yield webinterface._YomboAPI.request("GET",
+                                                               f"/v1/module/{module_id}",
+                                                               session=session["yomboapi_session"])
             except YomboWarning as e:
-                webinterface.add_alert(e.html_message, 'warning')
-                return webinterface.redirect(request, '/devtools/config/modules/index')
+                webinterface.add_alert(e.html_message, "warning")
+                return webinterface.redirect(request, "/devtools/config/modules/index")
 
             data = {
-                # 'module_type': request.args.get('module_type')[0],
-                'label': request.args.get('label')[0],
-                # 'machine_label': request.args.get('machine_label')[0],
-                'description': request.args.get('description', [''])[0],
-                'short_description': request.args.get('short_description', [''])[0],
-                'medium_description': request.args.get('medium_description', [''])[0],
-                'repository_link': request.args.get('repository_link', [''])[0],
-                'issue_tracker_link': request.args.get('issue_tracker_link', [''])[0],
-                'doc_link': request.args.get('doc_link', [''])[0],
-                'git_link': request.args.get('git_link', [''])[0],
-                'prod_branch': request.args.get('prod_branch', [''])[0],
-                'dev_branch': request.args.get('dev_branch', [''])[0],
-                #                'variable_data': json_output['vars'],
-                'public': int(request.args.get('public', [0])[0]),
-                'status': int(request.args.get('status', [1])[0]),
+                # "module_type": request.args.get("module_type")[0],
+                "label": request.args.get("label")[0],
+                # "machine_label": request.args.get("machine_label")[0],
+                "description": request.args.get("description", [""])[0],
+                "short_description": request.args.get("short_description", [""])[0],
+                "medium_description": request.args.get("medium_description", [""])[0],
+                "repository_link": request.args.get("repository_link", [""])[0],
+                "issue_tracker_link": request.args.get("issue_tracker_link", [""])[0],
+                "doc_link": request.args.get("doc_link", [""])[0],
+                "git_link": request.args.get("git_link", [""])[0],
+                "prod_branch": request.args.get("prod_branch", [""])[0],
+                "dev_branch": request.args.get("dev_branch", [""])[0],
+                #                "variable_data": json_output["vars"],
+                "public": int(request.args.get("public", [0])[0]),
+                "status": int(request.args.get("status", [1])[0]),
             }
 
             results = yield webinterface._Modules.dev_module_edit(module_id,
                                                                   data,
-                                                                  session=session['yomboapi_session'])
+                                                                  session=session["yomboapi_session"])
 
-            data['module_type'] = request.args.get('module_type')[0]
-            data['machine_label'] = request.args.get('machine_label')[0]
+            data["module_type"] = request.args.get("module_type")[0]
+            data["machine_label"] = request.args.get("machine_label")[0]
 
-            if results['status'] == 'failed':
-                webinterface.add_alert(results['apimsghtml'], 'warning')
+            if results["status"] == "failed":
+                webinterface.add_alert(results["apimsghtml"], "warning")
                 return page_devtools_modules_form(webinterface, request, session, data, "edit",
-                                                       "Edit Module: %s" % data['label'])
+                                                  f"Edit Module: {data['label']}")
 
             msg = {
-                'header': 'Module Updated',
-                'label': 'Module updated successfully',
-                'description': '<p>The module has been updated. If you have requested this module to be made public, please allow a few days for Yombo to perform a code review of your repository.</p><p>Continue to <a href="/devtools/config/modules/index">modules index</a></p>',
+                "header": "Module Updated",
+                "label": "Module updated successfully",
+                "description":
+                    "<p>The module has been updated. If you have requested this module to be made public, please "
+                    "allow a few days for Yombo to perform a code review of your repository.</p><p>Continue to "
+                    '<a href="/devtools/config/modules/index">modules index</a></p>',
             }
 
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/display_notice.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/display_notice.html")
             return page.render(alerts=webinterface.get_alerts(),
                                     msg=msg,
                                     )
 
         def page_devtools_modules_form(webinterface, request, session, module, display_type, header_label):
-            page = webinterface.get_template(request, webinterface.wi_dir + '/pages/devtools/config/modules/form.html')
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/devtools/config/modules/form.html")
             return page.render(alerts=webinterface.get_alerts(),
                                header_label=header_label,
                                module=module,
                                display_type=display_type
                                )
 
-        @webapp.route('/config/modules/<string:module_id>/device_types/index', methods=['GET'])
+        @webapp.route("/config/modules/<string:module_id>/device_types/index", methods=["GET"])
         @require_auth()
         @inlineCallbacks
         def page_devtools_modules_device_types_index_get(webinterface, request, session, module_id):
             try:
-                module_results = yield webinterface._YomboAPI.request('GET',
-                                                                      '/v1/module/%s' % module_id,
-                                                                      session=session['yomboapi_session'])
+                module_results = yield webinterface._YomboAPI.request("GET",
+                                                                      f"/v1/module/{module_id}",
+                                                                      session=session["yomboapi_session"])
             except YomboWarning as e:
-                webinterface.add_alert(e.html_message, 'warning')
-                return webinterface.redirect(request, '/devtools/config/modules/index')
+                webinterface.add_alert(e.html_message, "warning")
+                return webinterface.redirect(request, "/devtools/config/modules/index")
 
             page = webinterface.get_template(request,
-                                             webinterface.wi_dir + '/pages/devtools/config/modules/devicetype_index.html')
+                                             webinterface.wi_dir + "/pages/devtools/config/modules/devicetype_index.html")
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/devtools/config/modules/%s/details" % module_id,
-                                        module_results['data']['label'])
-            webinterface.add_breadcrumb(request, "/devtools/config/modules/%s/details" % module_id,
+            webinterface.add_breadcrumb(request, f"/devtools/config/modules/{module_id}/details",
+                                        module_results["data"]["label"])
+            webinterface.add_breadcrumb(request, f"/devtools/config/modules/{module_id}/details",
                                         "Associate Device Type")
             return page.render(alerts=webinterface.get_alerts(),
-                                    module=module_results['content']['response']['module'],
+                                    module=module_results["content"]["response"]["module"],
                                     )
 
-        @webapp.route('/config/modules/<string:module_id>/device_types/<string:device_type_id>/add', methods=['GET'])
+        @webapp.route("/config/modules/<string:module_id>/device_types/<string:device_type_id>/add", methods=["GET"])
         @require_auth()
         @inlineCallbacks
         def page_devtools_modules_device_types_add_get(webinterface, request, session, module_id, device_type_id):
             try:
-                module_results = yield webinterface._YomboAPI.request('GET',
-                                                                      '/v1/module/%s' % module_id,
-                                                                      session=session['yomboapi_session'])
+                module_results = yield webinterface._YomboAPI.request("GET",
+                                                                      f"/v1/module/{module_id}",
+                                                                      session=session["yomboapi_session"])
             except YomboWarning as e:
-                webinterface.add_alert(e.html_message, 'warning')
-                return webinterface.redirect(request, '/devtools/config/modules/index')
+                webinterface.add_alert(e.html_message, "warning")
+                return webinterface.redirect(request, "/devtools/config/modules/index")
 
             try:
-                device_type_results = yield webinterface._YomboAPI.request('GET',
-                                                                           '/v1/device_type/%s' % device_type_id,
-                                                                           session=session['yomboapi_session'])
+                device_type_results = yield webinterface._YomboAPI.request("GET",
+                                                                           f"/v1/device_type/{device_type_id}",
+                                                                           session=session["yomboapi_session"])
             except YomboWarning as e:
-                webinterface.add_alert(e.html_message, 'warning')
-                return webinterface.redirect(request, '/devtools/config/modules/index')
+                webinterface.add_alert(e.html_message, "warning")
+                return webinterface.redirect(request, "/devtools/config/modules/index")
 
             page = webinterface.get_template(request,
-                                             webinterface.wi_dir + '/pages/devtools/config/modules/devicetype_add.html')
+                                             webinterface.wi_dir + "/pages/devtools/config/modules/devicetype_add.html")
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/devtools/config/modules/%s/details" % module_id,
-                                        module_results['data']['label'])
-            webinterface.add_breadcrumb(request, "/devtools/config/modules/%s/details" % module_id,
+            webinterface.add_breadcrumb(request, f"/devtools/config/modules/{module_id}/details",
+                                        module_results["data"]["label"])
+            webinterface.add_breadcrumb(request, f"/devtools/config/modules/{module_id}/details",
                                         "Associate Device Type")
             return page.render(alerts=webinterface.get_alerts(),
-                                    module=module_results['data'],
-                                    device_type=device_type_results['data'],
+                                    module=module_results["data"],
+                                    device_type=device_type_results["data"],
                                     )
 
-        @webapp.route('/config/modules/<string:module_id>/device_types/<string:device_type_id>/add', methods=['POST'])
+        @webapp.route("/config/modules/<string:module_id>/device_types/<string:device_type_id>/add", methods=["POST"])
         @require_auth()
         @inlineCallbacks
         def page_devtools_modules_device_types_add_post(webinterface, request, session, module_id, device_type_id):
             try:
-                confirm = request.args.get('confirm')[0]
+                confirm = request.args.get("confirm")[0]
             except:
-                return webinterface.redirect(request, '/devtools/config/modules/%s/device_types/%s/add' % (
-                    module_id, device_type_id))
+                return webinterface.redirect(request,
+                                             f"/devtools/config/modules/{module_id}/device_types/{device_type_id}/add")
 
             if confirm != "add":
-                webinterface.add_alert('Must enter "add" in the confirmation box to add device type to module.',
-                                       'warning')
-                return webinterface.redirect(request, '/devtools/config/modules/%s/details' % module_id)
+                webinterface.add_alert("Must enter 'add' in the confirmation box to add device type to module.",
+                                       "warning")
+                return webinterface.redirect(request, f"/devtools/config/modules/{module_id}/details")
 
             results = yield webinterface._Modules.dev_module_device_type_add(module_id,
                                                                              device_type_id,
-                                                                             session=session['yomboapi_session'])
+                                                                             session=session["yomboapi_session"])
 
-            if results['status'] == 'failed':
-                webinterface.add_alert(results['apimsghtml'], 'warning')
-                return webinterface.redirect(request, '/devtools/config/modules/%s/details' % module_id)
+            if results["status"] == "failed":
+                webinterface.add_alert(results["apimsghtml"], "warning")
+                return webinterface.redirect(request, f"/devtools/config/modules/{module_id}/details")
 
-            webinterface.add_alert("Device Type added to module.", 'warning')
-            return webinterface.redirect(request, '/devtools/config/modules/%s/details' % module_id)
+            webinterface.add_alert("Device Type added to module.", "warning")
+            return webinterface.redirect(request, f"/devtools/config/modules/{module_id}/details")
 
-        @webapp.route('/config/modules/<string:module_id>/device_types/<string:device_type_id>/remove', methods=['GET'])
+        @webapp.route("/config/modules/<string:module_id>/device_types/<string:device_type_id>/remove", methods=["GET"])
         @require_auth()
         @inlineCallbacks
         def page_devtools_modules_device_types_remove_get(webinterface, request, session, module_id, device_type_id):
             try:
-                module_results = yield webinterface._YomboAPI.request('GET',
-                                                                      '/v1/module/%s' % module_id,
-                                                                      session=session['yomboapi_session'])
+                module_results = yield webinterface._YomboAPI.request("GET",
+                                                                      f"/v1/module/{module_id}",
+                                                                      session=session["yomboapi_session"])
             except YomboWarning as e:
-                webinterface.add_alert(e.html_message, 'warning')
-                return webinterface.redirect(request, '/devtools/config/modules/index')
+                webinterface.add_alert(e.html_message, "warning")
+                return webinterface.redirect(request, "/devtools/config/modules/index")
 
-            device_type_results = yield webinterface._YomboAPI.request('GET',
-                                                                       '/v1/device_type/%s' % device_type_id,
-                                                                       session=session['yomboapi_session'])
-            if device_type_results['code'] > 299:
-                webinterface.add_alert(device_type_results['content']['html_message'], 'warning')
-                return webinterface.redirect(request, '/devtools/config/modules/%s/details' % module_id)
+            device_type_results = yield webinterface._YomboAPI.request("GET",
+                                                                       f"/v1/device_type/{device_type_id}",
+                                                                       session=session["yomboapi_session"])
+            if device_type_results["code"] > 299:
+                webinterface.add_alert(device_type_results["content"]["html_message"], "warning")
+                return webinterface.redirect(request, f"/devtools/config/modules/{module_id}/details")
 
             page = webinterface.get_template(request,
-                                             webinterface.wi_dir + '/pages/devtools/config/modules/devicetype_remove.html')
+                                             webinterface.wi_dir + "/pages/devtools/config/modules/devicetype_remove.html")
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/devtools/config/modules/%s/details" % module_id,
-                                        module_results['data']['label'])
-            webinterface.add_breadcrumb(request, "/devtools/config/modules/%s/details" % module_id,
+            webinterface.add_breadcrumb(request, f"/devtools/config/modules/{module_id}/details",
+                                        module_results["data"]["label"])
+            webinterface.add_breadcrumb(request, f"/devtools/config/modules/{module_id}/details",
                                         "Remove Device Type")
             return page.render(alerts=webinterface.get_alerts(),
-                                    module=module_results['data'],
-                                    device_type=device_type_results['data'],
+                                    module=module_results["data"],
+                                    device_type=device_type_results["data"],
                                     )
 
-        @webapp.route('/config/modules/<string:module_id>/device_types/<string:device_type_id>/remove',
-                      methods=['POST'])
+        @webapp.route("/config/modules/<string:module_id>/device_types/<string:device_type_id>/remove",
+                      methods=["POST"])
         @require_auth()
         @inlineCallbacks
         def page_devtools_modules_device_types_remove_post(webinterface, request, session, module_id, device_type_id):
             try:
-                confirm = request.args.get('confirm')[0]
+                confirm = request.args.get("confirm")[0]
             except:
-                return webinterface.redirect(request, '/devtools/config/modules/%s/device_types/%s/add' % (
-                    module_id, device_type_id))
+                return webinterface.redirect(request,
+                                             f"/devtools/config/modules/{module_id}/device_types/{device_type_id}/add")
 
             if confirm != "remove":
-                webinterface.add_alert('Must enter "remove" in the confirmation box to remove device type from module.',
-                                       'warning')
-                return webinterface.redirect(request, '/devtools/config/modules/%s/details' % module_id)
+                webinterface.add_alert("Must enter 'remove' in the confirmation box to remove device type from module.",
+                                       "warning")
+                return webinterface.redirect(request, f"/devtools/config/modules/{module_id}/details")
 
             results = yield webinterface._Modules.dev_module_device_type_remove(module_id,
                                                                                 device_type_id,
-                                                                                session=session['yomboapi_session'])
+                                                                                session=session["yomboapi_session"])
 
-            if results['status'] == 'failed':
-                webinterface.add_alert(results['apimsghtml'], 'warning')
-                return webinterface.redirect(request, '/devtools/config/modules/%s/details' % module_id)
+            if results["status"] == "failed":
+                webinterface.add_alert(results["apimsghtml"], "warning")
+                return webinterface.redirect(request, f"/devtools/config/modules/{module_id}/details")
 
-            webinterface.add_alert("Device Type removed from module.", 'warning')
-            return webinterface.redirect(request, '/devtools/config/modules/%s/details' % module_id)
+            webinterface.add_alert("Device Type removed from module.", "warning")
+            return webinterface.redirect(request, f"/devtools/config/modules/{module_id}/details")
 
-        @webapp.route('/config/modules/<string:module_id>/variables', methods=['GET'])
+        @webapp.route("/config/modules/<string:module_id>/variables", methods=["GET"])
         @require_auth()
         @inlineCallbacks
         def page_devtools_modules_variables_get(webinterface, request, session, module_id):
             try:
-                module_results = yield webinterface._YomboAPI.request('GET',
-                                                                      '/v1/module/%s' % module_id,
-                                                                      session=session['yomboapi_session'])
+                module_results = yield webinterface._YomboAPI.request("GET",
+                                                                      f"/v1/module/{module_id}",
+                                                                      session=session["yomboapi_session"])
             except YomboWarning as e:
-                webinterface.add_alert(e.html_message, 'warning')
-                return webinterface.redirect(request, '/devtools/config/modules/index')
+                webinterface.add_alert(e.html_message, "warning")
+                return webinterface.redirect(request, "/devtools/config/modules/index")
 
             page = webinterface.get_template(request,
-                                             webinterface.wi_dir + '/pages/devtools/config/modules/variable_details.html')
+                                             webinterface.wi_dir + "/pages/devtools/config/modules/variable_details.html")
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/devtools/config/modules/%s/details" % module_id,
-                                        module_results['data']['label'])
-            webinterface.add_breadcrumb(request, "/devtools/config/modules/%s/variables" % module_id, "Variables")
+            webinterface.add_breadcrumb(request, f"/devtools/config/modules/{module_id}/details",
+                                        module_results["data"]["label"])
+            webinterface.add_breadcrumb(request, f"/devtools/config/modules/{module_id}/variables", "Variables")
             return page.render(alerts=webinterface.get_alerts(),
-                                    module=module_results['data'],
+                                    module=module_results["data"],
                                     )
