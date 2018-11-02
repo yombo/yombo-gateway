@@ -17,15 +17,28 @@ def route_configs(webapp):
 
         @webapp.route("/basic", methods=["GET"])
         @require_auth()
+        @inlineCallbacks
         def page_configs_basic_get(webinterface, request, session):
             session.has_access("system_setting", "*", "view")
             configs = webinterface._Configs.get("*", "*")
+            try:
+                master_gateways_results = yield webinterface._YomboAPI.request(
+                    "GET",
+                    "/v1/gateway?_filters[is_master]=1",
+                    session=session["yomboapi_session"])
+            except YomboWarning as e:
+                webinterface.add_alert(e.html_message, "warning")
+                return webinterface.redirect(request, "/?")
+
+            master_gateways = sorted(master_gateways_results["data"], key=lambda k: k['label'])
 
             page = webinterface.get_template(request, webinterface.wi_dir + "/pages/configs/basic.html")
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/configs/basic", "Basic Configs")
             return page.render(alerts=webinterface.get_alerts(),
                                config=configs,
+                               master_gateways=master_gateways,
+                               master_gateway_id=webinterface.master_gateway_id,
                                )
 
         @webapp.route("/basic", methods=["POST"])
@@ -49,11 +62,41 @@ def route_configs(webapp):
             except:
                 valid_submit = False
                 webinterface.add_alert("Master gateway not selected.")
+
             try:
-                gateway = webinterface._Gateways[submitted_master_gateway_id]
-            except:
+                master_gateways_results = yield webinterface._YomboAPI.request(
+                    "GET",
+                    "/v1/gateway?_filters[is_master]=1",
+                    session=session["yomboapi_session"])
+            except YomboWarning as e:
+                webinterface.add_alert(e.html_message, "warning")
+                return webinterface.redirect(request, "/?")
+            new_master = None
+            if submitted_master_gateway_id == webinterface.gateway_id():
+                new_master = True
+            else:
+                for gateway in master_gateways_results["data"]:
+                    if gateway['id'] == submitted_master_gateway_id:
+                        new_master = True
+                        break
+
+            if new_master is None:
                 valid_submit = False
                 webinterface.add_alert("Invalid master gateway selection, selection doesn't exist.")
+            else:
+                webinterface._Notifications.add({
+                   "title": "Restart Required",
+                    "message": 'Master gateway has been changed. A system <strong>'
+                               '<a  class="confirm-restart" href="#" title="Restart Yombo Gateway">restart is required</a>'
+                               '</strong> to take affect.',
+                    "source": "Web Interface",
+                    "persist": False,
+                    "priority": "high",
+                    "always_show": True,
+                    "always_show_allow_clear": False,
+                    "id": "reboot_required",
+                    "local": True,
+                    })
 
             try:
                 submitted_core_description = request.args.get("core_description")[0]
