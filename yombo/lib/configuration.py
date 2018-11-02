@@ -224,14 +224,14 @@ class Configuration(YomboLibrary):
         self.loading_yombo_ini = True
         if settings.yombo_ini is False:
             self._Loader.operating_mode = "first_run"
-
-        for section, options in settings.yombo_ini.items():
-            for option, value in options.items():
-                try:
-                    value = yield self._GPG.decrypt(value)
-                except:
-                    pass
-                self.set(section, option, value, ignore_case=True)
+        else:
+            for section, options in settings.yombo_ini.items():
+                for option, value in options.items():
+                    try:
+                        value = yield self._GPG.decrypt(value)
+                    except:
+                        pass
+                    self.set(section, option, value, ignore_case=True)
 
         logger.debug("done parsing yombo.ini. Now about to parse yombo.ini.info.")
         try:
