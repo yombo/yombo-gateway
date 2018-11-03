@@ -14,7 +14,6 @@ on another gateway that is apart of the cluster.
 :license: LICENSE for details.
 """
 # Import python libraries
-from collections import OrderedDict
 from copy import deepcopy
 import msgpack
 import traceback
@@ -168,7 +167,7 @@ class Scenes(YomboLibrary, object):
                 "note": " Advanced logic control",
             },
         }
-        self.gateway_id = self._Configs.get2("core", "gwid", "local", False)
+        self.gateway_id = self._Configs.gateway_id
 
     def _load_(self, **kwargs):
         """
@@ -177,6 +176,15 @@ class Scenes(YomboLibrary, object):
         :return:
         """
         self.scenes = self._Nodes.search({"node_type": "scene"})
+        gateway_id = self.gateway_id()
+        # First, clean out other gateways....
+        for scene_id in list(self.scenes.keys()):
+            scene = self.scenes[scene_id]
+            if "gateway_id" in scene.data["config"]:
+                if scene.data["config"]["gateway_id"] != gateway_id:
+                    del self.scenes[scene_id]
+            else:
+                scene.data["config"]["gateway_id"] = gateway_id
 
         for scene_id, scene in self.scenes.items():
             if scene.status == 0:
@@ -245,6 +253,55 @@ class Scenes(YomboLibrary, object):
                 }
                 self.scene_types_extra[action["platform"].lower()] = action
 
+    # @inlineCallbacks
+    # def set_from_gateway_communications(self, scene):
+    #     """
+    #     Used by the gateway coms (mqtt) system to set scene values.
+    #     :param key:
+    #     :param data:
+    #     :return:
+    #     """
+    #     gateway_id = data["gateway_id"]
+    #     if gateway_id == self.gateway_id:
+    #         return
+    #     if gateway_id not in self.states:
+    #         self.states[gateway_id] = {}
+    #     source_type, source_label = get_yombo_instance_type(source)
+    #
+    #     self.states[data["gateway_id"]][key] = {
+    #         "gateway_id": data["gateway_id"],
+    #         "value": data["value"],
+    #         "value_human": data["value_human"],
+    #         "value_type": data["value_type"],
+    #         "live": False,
+    #         "source": source_label,
+    #         "created_at": data["created_at"],
+    #         "updated_at": data["updated_at"],
+    #     }
+    #
+    #     self._Automation.trigger_monitor("state",
+    #                                      key=key,
+    #                                      value=data["value"],
+    #                                      value_type=data["value_type"],
+    #                                      value_full=self.states[gateway_id][key],
+    #                                      action="set",
+    #                                      gateway_id=gateway_id,
+    #                                      source=source,
+    #                                      source_label=source_label,
+    #                                      )
+    #
+    #     # Call any hooks
+    #     yield global_invoke_all("_states_set_",
+    #                             called_by=self,
+    #                             key=key,
+    #                             value=data["value"],
+    #                             value_type=data["value_type"],
+    #                             value_full=self.states[gateway_id][key],
+    #                             gateway_id=gateway_id,
+    #                             source=source,
+    #                             source_label=source_label,
+    #                             )
+
     def scene_user_access(self, scene_id, access_type=None):
         """
         Gets all users that have access to this scene.
@@ -279,7 +336,7 @@ class Scenes(YomboLibrary, object):
         :param url_type:
         :return:
         """
-        return OrderedDict(sorted(self.scene_types_urls.items(), key=lambda x: x))
+        return dict(sorted(self.scene_types_urls.items(), key=lambda x: x))
 
     def get_scene_type_column_data(self, scene, action):
         """
@@ -293,11 +350,12 @@ class Scenes(YomboLibrary, object):
         if action_type in self.scene_types_extra:
             return self.scene_types_extra[action_type]["render_table_column_callback"](scene, action)
 
-    def get(self, requested_scene=None):
+    def get(self, requested_scene=None, gateway_id=None):
         """
         Return the requested scene, if it's found.
 
-        :param requested_scene:
+        :param requested_scene: The scene ID or machine_label of the scene to return.
+        :param gateway_id: The gateway_id to restrict results to.
         :return:
         """
         if isinstance(requested_scene, Node):
@@ -307,7 +365,14 @@ class Scenes(YomboLibrary, object):
                 raise YomboWarning("Must submit a node type of scene if submitting an instance")
 
         if requested_scene is None:
-            return OrderedDict(sorted(self.scenes.items(), key=lambda x: x[1].label))
+            if gateway_id is None:
+                gateway_id = self.gateway_id()
+            outgoing = {}
+            for scene_id, scene in self.scenes.items():
+                if scene.data["config"]["gateway_id"] == gateway_id:
+                    outgoing[scene_id] = scene
+            return dict(sorted(outgoing.items(), key=lambda x: x[1].label))
+
         if requested_scene in self.scenes:
             return self.scenes[requested_scene]
         for temp_scene_id, scene in self.scenes.items():
@@ -325,7 +390,7 @@ class Scenes(YomboLibrary, object):
         """
         scene = self.get(scene_id)
         if action_id is None:
-            return OrderedDict(sorted(scene.data["actions"].items(), key=lambda x: x[1]["weight"]))
+            return dict(sorted(scene.data["actions"].items(), key=lambda x: x[1]["weight"]))
         else:
             try:
                 return scene.data["actions"][action_id]
@@ -428,8 +493,8 @@ class Scenes(YomboLibrary, object):
         data = {
             "actions": {},
             "config": {
+                "description": description,
                 "enabled": is_true_false(status),
-                "description": description
             },
         }
         new_scene = yield self._Nodes.create(label=label,
@@ -542,7 +607,7 @@ class Scenes(YomboLibrary, object):
             return
         scene = self.get(scene_id)
         actions = deepcopy(scene.data["actions"])
-        ordered_actions = OrderedDict(sorted(actions.items(), key=lambda x: x[1]["weight"]))
+        ordered_actions = dict(sorted(actions.items(), key=lambda x: x[1]["weight"]))
         weight = 10
         for action_id, action in ordered_actions.items():
             self.scenes[scene_id].data["actions"][action_id]["weight"] = weight
@@ -922,10 +987,6 @@ class Scenes(YomboLibrary, object):
 
         def enable(node, session):
             results = node._Scene.enable(node._node_id)
-            return results
-
-        def disable(node, session):
-            results = node._Scene.disable(node._node_id)
             return results
 
         def start(node):
