@@ -42,10 +42,10 @@
 <!-- MQTT Websocket -->
 <script type="text/javascript" src="/static/js/mqttws31.min.js"></script>
 <script type="text/javascript">
-    var host = window.location.hostname;
+    var host = "{{_gatewaycoms.client_default_host}}";
     var port = {{_gatewaycoms.client_default_ws_port}};
     var topic = '#';
-    var useTLS = true;
+    var useTLS = {{_gatewaycoms.client_default_ws_ssl|lower}};
     var cleansession = true;
     var reconnectTimeout = 2000;
 
@@ -67,7 +67,7 @@
                 useSSL: useTLS,
                 cleanSession: cleansession,
                 onSuccess: onConnect,
-                userName : "{{session.auth_type}}_{{session.auth_id}}s",
+                userName : "{{session.auth_type}}_{{session.auth_id_long}}",
                 password : "none",
                 onFailure: function (message) {
                     console.log(JSON.stringify(message, null, 2));

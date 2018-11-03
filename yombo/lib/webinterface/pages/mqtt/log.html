@@ -34,14 +34,16 @@
                         </thead>
                         <tbody>{% for entry in log_incoming %}
                              <tr>
-                                <td>{{ entry.message.time_sent|epoch_to_string(milliseconds=True) }}<br> <br>
+                                <td>{{ entry.message.body.time_sent|epoch_to_string(milliseconds=True) }}<br> <br>
                                     {{ entry.received|epoch_to_string(milliseconds=True) }}</td>
                                  <td><strong>Topic:</strong>{{ entry.topic }}<br>
-                                 <strong>Message ID:</strong>{{ entry.message.message_id }}<br>
-                                 <strong>Source ID:</strong>{{ entry.message.source_id }}<br>
-                                 <strong>Destination ID:</strong>{{ entry.message.destination_id }}<br>
+                                 <strong>Message ID:</strong>{{ entry.message.body.message_id }}<br>
+                                 <strong>Source ID:</strong>{{ entry.message.body.source_id }}<br>
+                                 <strong>Destination ID:</strong>{{ entry.message.body.destination_id }}<br>
+                                 <strong>Component Type:</strong>{{ entry.message.body.component_type }}<br>
+                                 <strong>Component Name:</strong>{{ entry.message.body.component_name }}<br>
                                      <strong>Payload:</strong><br>
-                                     <pre class="prettyprint lang-js">{{ entry.message.payload|json_human }}</pre><br>
+                                     <pre class="prettyprint lang-js">{{ entry.message.body.payload|json_human }}</pre><br>
                                  </td>
                              </tr>{% endfor %}
                         </tbody>
@@ -61,11 +63,13 @@
                              <tr>
                                 <td>{{ entry.sent|epoch_to_string }}</td>
                                  <td><strong>Topic:</strong>{{ entry.topic }}<br>
-                                 <strong>Message ID:</strong>{{ entry.message.message_id }}<br>
-                                 <strong>Source ID:</strong>{{ entry.message.source_id }}<br>
-                                 <strong>Destination ID:</strong>{{ entry.message.destination_id }}<br>
+                                 <strong>Message ID:</strong>{{ entry.message.body.message_id }}<br>
+                                 <strong>Source ID:</strong>{{ entry.message.body.source_id }}<br>
+                                 <strong>Destination ID:</strong>{{ entry.message.body.destination_id }}<br>
+                                 <strong>Component Type:</strong>{{ entry.message.body.component_type }}<br>
+                                 <strong>Component Name:</strong>{{ entry.message.body.component_name }}<br>
                                      <strong>Payload:</strong><br>
-                                     <pre class="prettyprint lang-js">{{ entry.message.payload|json_human }}</pre><br>
+                                     <pre class="prettyprint lang-js">{{ entry.message.body.payload|json_human }}</pre><br>
                              </tr>{% endfor %}
                         </tbody>
                     </table>

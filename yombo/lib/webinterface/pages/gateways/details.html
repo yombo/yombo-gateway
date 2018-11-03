@@ -30,8 +30,6 @@
                                 {{ gateway.description }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Status: </label><br>
                                 {{ _(gateway.status|status_to_string) }}<br>
-                                <label style="margin-top: 15px; margin-bottom: 0px">Communication Status: </label><br>
-                                {{ gateway.com_status|capitalize }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Last Scene: </label><br>
                                 {{ gateway.last_scene|epoch_to_string }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Is Master: </label><br>
@@ -60,9 +58,13 @@
                             </div>
                             <!-- /.panel-heading -->
                             <div class="panel-body">
-                                <label style="margin-top: 0px; margin-bottom: 0px">Ping delay:</label><br>
-                                {{ gateway.ping_roundtrip }} milliseconds ({{ gateway.ping_response_at|epoch_get_age}})<br>
-                                <label style="margin-top: 15px; margin-bottom: 15px">Clock difference</label><br>
+                                <label style="margin-top: 0px; margin-bottom: 0px">Last ping response:</label><br>
+                                {{ gateway.ping_response_at|epoch_to_string }}  ({{ gateway.ping_response_at|epoch_get_age}})<br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">Round trip ping:</label><br>
+                                {{ gateway.ping_roundtrip }} milliseconds<br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">Communication Status: </label><br>
+                                {{ gateway.com_status|capitalize }}<br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">Clock difference</label><br>
                                 {{ gateway.ping_time_offset }} seconds <br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Internal IP: (IPv4 / IPv6)</label><br>
                                 {{ gateway.internal_ipv4 }} / {{ gateway.internal_ipv6 }}<br>
