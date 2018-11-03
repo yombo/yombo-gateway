@@ -21,7 +21,7 @@ exactness can be fine tuned using a percent value from .99 - .10, the default 75
                                #if we lowered the requirement to 90%, it would find it.
    catch YomboFuzzySearchError, e:  #e contains a bunch of attributes that are useful.
            momName = e.value   #Use the highest value that was found.
-   print momName               #this will output Jane
+   print(momName)              #this will output Jane
    
    We can also specifically call the search function
    momName = items.search("mum", .50)

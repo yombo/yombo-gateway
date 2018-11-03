@@ -43,8 +43,8 @@ class cached(object):
 
         from yombo.utils.decorators import cached
 
-        print fib(35) # Without decorator, will take a little bit of time.
-        print fib(35) # With decorator, will be nearly instant - even on first call for a fib.
+        print(fib(35)) # Without decorator, will take a little bit of time.
+        print(fib(35)) # With decorator, will be nearly instant - even on first call for a fib.
 
         @cached(5) # memoize for 5 seconds
         def fib(x):
@@ -150,8 +150,8 @@ def memoize_(func):
 
         from yombo.utils.decorators import memoize_
 
-        print fib(35) # Without decorator, will take a little bit of time.
-        print fib(35) # With decorator, will be nearly instant - even on first call for a fib.
+        print(fib(35)) # Without decorator, will take a little bit of time.
+        print(fib(35)) # With decorator, will be nearly instant - even on first call for a fib.
 
         @memoize_
         def fib(x):

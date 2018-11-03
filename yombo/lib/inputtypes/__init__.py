@@ -548,7 +548,6 @@ class InputTypes(YomboLibrary):
         :param kwargs:
         :return:
         """
-        #        print "enabling input_type: %s" % input_type_id
         api_data = {
             "status": 1,
         }
@@ -591,7 +590,6 @@ class InputTypes(YomboLibrary):
         :param kwargs:
         :return:
         """
-#        print "disabling input_type: %s" % input_type_id
         api_data = {
             "status": 0,
         }

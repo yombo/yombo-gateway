@@ -768,7 +768,7 @@ def dict_merge(original, changes):
             }
         }
 
-        print dict_merge(my_information, updated_information)
+        print(dict_merge(my_information, updated_information))
 
     # Output:
 

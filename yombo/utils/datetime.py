@@ -50,7 +50,6 @@ def get_age(time: Any) -> str:
     elif isinstance(time, dt.datetime):
         diff = now - time
     elif not time:
-        # print "using current time..."
         diff = now - now
     second_diff = diff.seconds
     day_diff = diff.days
@@ -131,7 +130,6 @@ def get_age_exact(time: Any) -> str:
     elif isinstance(time, dt.datetime):
         diff = now - time
     elif not time:
-        # print "using current time..."
         diff = now - now
 
     second_diff = diff.seconds

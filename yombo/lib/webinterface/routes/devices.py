@@ -590,7 +590,6 @@ def route_devices(webapp):
             session.has_access("device_command", "*", "view")
 
             page = webinterface.get_template(request, webinterface.wi_dir + "/pages/devices/device_commands.html")
-            # print "delayed queue active: %s" % webinterface._Devices.delay_queue_active
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/info", "Info")
             webinterface.add_breadcrumb(request, "/devices/delayed_commands", "Device Commands")
@@ -604,7 +603,6 @@ def route_devices(webapp):
             session.has_access("device_command", device_command_id, "view")
 
             page = webinterface.get_template(request, webinterface.wi_dir + "/pages/devices/device_command_details.html")
-            # print "delayed queue active: %s" % webinterface._Devices.delay_queue_active
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/info", "Info")
             webinterface.add_breadcrumb(request, "/devices/device_commands", "Device Commands")
