@@ -467,7 +467,7 @@ class MQTT(YomboLibrary):
 
                 user = split_username(username)
                 user_id = user["username"]
-                logger.debug("mqtt username: {args}", args=request.args)
+                logger.info("mqtt user: {user}", user=user)
                 if user["type"] == "yombogw":
                     if user_id in self._Gateways.gateways:
                         gateway = self._Gateways.gateways[user_id]
@@ -477,20 +477,19 @@ class MQTT(YomboLibrary):
                 elif user["type"] == AUTH_TYPE_WEBSESSION:
                     try:
                         session = yield self._WebSessions.get_session_by_id(user["username"])
-                        if session.enable is True:
+                        if session.check_valid():
                             response_code = 200
-                    except YomboWarning:
+                    except YomboWarning as e:
                         pass
 
                 elif user["type"] == AUTH_TYPE_AUTHKEY:
                     try:
                         session = self._AuthKeys.get_session_by_id(user["username"])
+                        if session.check_valid():
+                            response_code = 200
                     except YomboWarning:
-                        yield maybeDeferred(request.setResponseCode, response_code)
-                        return
+                        pass
 
-                if session.check_valid():
-                    response_code = 200
                 yield maybeDeferred(request.setResponseCode, response_code)
                 return
 
@@ -571,11 +570,10 @@ class MQTT(YomboLibrary):
             server_hostname = self._GatewayComs.client_default_host
 
         if ssl is None:
-            ssl = self._GatewayComs.client_default_mqtt_port_internal_ssl
+            ssl = self._GatewayComs.client_default_ssl
 
         if server_port is None:
-#            server_port = self._GatewayComs.client_default_ws_port_internal
-            server_port = self._GatewayComs.client_default_mqtt_port_internal
+            server_port = self._GatewayComs.client_default_port
 
         if username is None:
             username = self._GatewayComs.client_default_username
