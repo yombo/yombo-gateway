@@ -140,6 +140,14 @@ class AuthMixin(YomboBaseMixin):
     def auth_id(self, val):
         self._set_auth_id(val)
 
+    @property
+    def auth_id_long(self):
+        return self._auth_id
+
+    @auth_id_long.setter
+    def auth_id_long(self, val):
+        pass
+
     def _set_auth_id(self, val):
         self._auth_id = val
 
@@ -291,7 +299,7 @@ class AuthMixin(YomboBaseMixin):
         self.save()
 
     def asdict(self):
-        return {
+        results = {
             "auth_id": self.auth_id,
             "auth_type": self.auth_type,
             "user_id": self.user_id,
@@ -302,3 +310,8 @@ class AuthMixin(YomboBaseMixin):
             "enabled": self.enabled,
             "is_dirty": self.is_dirty,
         }
+
+        if hasattr(self, "_user_id"):
+            results['user_id'] = self._user_id
+        else:
+            results['user_id'] = None

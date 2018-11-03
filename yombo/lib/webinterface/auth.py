@@ -16,28 +16,6 @@ from yombo.utils.networking import ip_addres_in_local_network
 logger = get_logger("library.webinterface.auth")
 
 
-def get_session(roles=None, *args, **kwargs):
-    """
-    Decorator that attempts to get the user's session. Returns none if user doesn't have
-    a session.
-
-    :param roles:
-    :param args:
-    :param kwargs:
-    :return:
-    """
-    def call(f, *args, **kwargs):
-        return f(*args, **kwargs)
-
-    def deco(f):
-        @wraps(f)
-        def wrapped_f(webinterface, request, *a, **kw):
-            session = yield webinterface._WebSessions.load(request)
-            return call(f, webinterface, request, session, *a, **kw)
-        return wrapped_f
-    return deco
-
-
 def update_request(webinterface, request):
     """
     Modifies the request to add "received_cookies in unicode. Also, adds a "args"

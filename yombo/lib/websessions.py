@@ -109,7 +109,10 @@ class WebSessions(YomboLibrary):
         })
         self.clean_sessions_loop = LoopingCall(self.clean_sessions)
         self.clean_sessions_loop.start(random_int(30, .2), False)  # Every hour-ish. Save to disk, or remove from memory.
-        self.get_session_by_id_cache = self._Cache.ttl(name="lib.websessions.get_session_by_id_cache", ttl=120, tags=("websession", "user"))
+        self.get_session_by_id_cache = {}  # temporary until full bootup.
+
+    def _start_(self, **kwargs):
+        self.get_session_by_id_cache = self._Cache.ttl(name="lib.websessions.get_session_by_id_cache", ttl=30, tags=("websession", "user"))
 
     @inlineCallbacks
     def _stop_(self, **kwargs):
@@ -186,7 +189,6 @@ class WebSessions(YomboLibrary):
         :param session_id: The requested session id
         :return: session
         """
-        cache_id = sha256_compact(session_id)
         def raise_error(message):
             """
             Sets the cache and raises an error.
@@ -194,41 +196,46 @@ class WebSessions(YomboLibrary):
             :param message:
             :return:
             """
-            self.get_session_by_id_cache[cache_id] = message + " (cached)"
+            self.get_session_by_id_cache[compact_id] = message + " (cached)"
             raise YomboWarning(message)
 
         if session_id is None:
             raise_error("Session id is not valid.")
+        if self.validate_session_id(session_id) is False:
+            raise_error("Invalid session id.")
 
-        if cache_id in self.get_session_by_id_cache:
-            cache = self.get_session_by_id_cache[cache_id]
+        compact_id = sha256_compact(session_id)
+
+        if compact_id in self.get_session_by_id_cache:
+            cache = self.get_session_by_id_cache[compact_id]
             if isinstance(cache, str):
                 raise YomboWarning(cache)
             else:
-                return self.get_session_by_id_cache[cache_id]
+                return self.get_session_by_id_cache[compact_id]
+
         if session_id == "LOGOFF":
             raise_error("Session has been logged off.")
-        if self.validate_session_id(session_id) is False:
-            raise_error("Invalid session id.")
-        if session_id in self.active_sessions:
-            if self.active_sessions[session_id].check_valid(auth_id_missing_ok=True) is True:
-                self.get_session_by_id_cache[cache_id] = self.active_sessions[session_id]
-                return self.active_sessions[session_id]
+        if compact_id in self.active_sessions:
+            if self.active_sessions[compact_id].check_valid(auth_id_missing_ok=True) is True:
+                self.get_session_by_id_cache[compact_id] = self.active_sessions[compact_id]
+                return self.active_sessions[compact_id]
             else:
                 raise_error("Session is no longer valid.")
         else:
             try:
-                db_session = yield self._LocalDB.get_web_session(session_id)
-                db_session["id"] = session_id
+                db_session = yield self._LocalDB.get_web_session(compact_id)
+                # db_session["id"] = session_id
             except Exception as e:
                 raise_error(f"Cannot find session id: {e}")
             try:
                 db_session["user"] = self._Users.get(db_session["user_id"])
             except KeyError as e:
                 raise_error("User in session wasn't found.")
-            self.active_sessions[session_id] = AuthWebsession(self, db_session, load_source="database")
-            if self.active_sessions[session_id].enabled is True:
-                return self.active_sessions[session_id]
+            self.active_sessions[compact_id] = AuthWebsession(self, db_session, load_source="database")
+            self.active_sessions[compact_id].auth_id_long = session_id
+
+            if self.active_sessions[compact_id].enabled is True:
+                return self.active_sessions[compact_id]
             else:
                 raise_error("Session is no longer valid.")
         raise_error("Unknown session lookup error.")
@@ -245,34 +252,6 @@ class WebSessions(YomboLibrary):
         else:
             return host
 
-    @inlineCallbacks
-    def load(self, request):
-        """
-        Loads the session information based on the request. If cookie doesn't exist, it will create a new cookie and
-        start the session.
-
-        :param request: All the cookies that were sent in.
-        :return:
-        """
-        # logger.debug("load session: {request}", request=request)
-        cookie_session_name = self.config.cookie_session_name
-        cookies = request.received_cookies
-        has_session = yield self.has_session(request)
-        # logger.debug("has session: {has_session}", has_session=has_session)
-        if has_session is False:
-            return False
-        session_id = cookies[cookie_session_name]
-        if session_id == "LOGOFF":
-            return False
-
-        if self.validate_session_id(session_id) is False:
-            logger.info("Invalid session id found.")
-            return False
-        if session_id in self.active_sessions:
-            return self.active_sessions[session_id]
-        else:
-            return False
-
     @ratelimits(calls=15, period=60)
     def create_from_web_request(self, request=None, data=None):
         """
@@ -288,15 +267,19 @@ class WebSessions(YomboLibrary):
         if "auth_data" not in data:
             data["auth_data"] = {}
 
-        data["id"] = random_string(length=randint(60, 70))
+        session_id = random_string(length=randint(60, 70))
+        compact_id = sha256_compact(session_id)
+
+        data["id"] = compact_id
 
         if request is not None:
-            request.addCookie(self.config.cookie_session_name, data["id"], domain=self.get_cookie_domain(request),
+            request.addCookie(self.config.cookie_session_name, session_id, domain=self.get_cookie_domain(request),
                               path=self.config.cookie_path, max_age=self.config.max_session,
                               secure=self.config.secure, httpOnly=self.config.httponly)
 
-        self.active_sessions[data["id"]] = AuthWebsession(self, data)
-        return self.active_sessions[data["id"]]
+        self.active_sessions[compact_id] = AuthWebsession(self, data)
+        self.active_sessions[compact_id].auth_id_long = session_id
+        return self.active_sessions[compact_id]
 
     def set(self, request, name, value):
         """
@@ -399,6 +382,21 @@ class AuthWebsession(UserMixin, AuthMixin):
         """"""
         return self.check_valid()
 
+    # Override AuthMixin
+    @property
+    def enabled(self):
+        """"""
+        return self.check_valid()
+
+    # Override AuthMixin
+    @property
+    def auth_id_long(self):
+        return self._auth_id_long
+
+    @auth_id_long.setter
+    def auth_id_long(self, val):
+        self._auth_id_long = val
+
     # Local
     def __init__(self, parent, record, load_source=None):
         super().__init__(parent, load_source=load_source)
@@ -406,7 +404,7 @@ class AuthWebsession(UserMixin, AuthMixin):
         # Auth specific attributes
         self.auth_type = AUTH_TYPE_WEBSESSION
         self._auth_id = record["id"]
-        self.session_id = record["id"]
+        self._auth_id_long = None
         self.source = "websessions"
         self.source_type = "library"
         self.gateway_id = record["gateway_id"]
@@ -415,6 +413,7 @@ class AuthWebsession(UserMixin, AuthMixin):
         self.auth_at = None
         self.auth_pin = None
         self.auth_pin_at = None
+        self._user = None
 
         # Attempt to set _user based on user_id
         if "user" in record:

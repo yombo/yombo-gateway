@@ -8,7 +8,7 @@ from twisted.internet.defer import inlineCallbacks
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
-from yombo.utils import data_pickle, data_unpickle, sha224_compact
+from yombo.utils import data_pickle, data_unpickle
 from yombo.utils.datatypes import coerce_value
 
 from yombo.lib.localdb import Sessions
@@ -35,21 +35,15 @@ class DB_Websessions(object):
                 "updated_at": data.updated_at,
             }
         if session_id is None:
-            new_id = None
-        else:
-            new_id = sha224_compact(session_id)[0:15]
-        if new_id is None:
             records = yield Sessions.all()
-            if len(records) == 0:
-                raise YomboWarning(f"Session not found in deep storage: {new_id}", errorno=23398)
             output = []
             for record in records:
                 output.append(parse_record(record))
             return output
         else:
-            record = yield Sessions.find(new_id)
+            record = yield Sessions.find(session_id)
             if record is None:
-                raise YomboWarning(f"Session not found in deep storage: {new_id}", errorno=23231)
+                raise YomboWarning(f"Session not found in deep storage: {session_id}", errorno=23231)
             return parse_record(record)
 
     @inlineCallbacks
@@ -62,13 +56,8 @@ class DB_Websessions(object):
             "created_by": session.created_by,
         })
 
-        if session.session_id is None:
-            new_id = None
-        else:
-            new_id = sha224_compact(session.session_id)[0:15]
-
         args = {
-            "id": new_id,
+            "id": session.auth_id,
             "enabled": coerce_value(session.enabled, "int"),
             "gateway_id": session.gateway_id,
             "auth_data": save_data,
@@ -90,11 +79,6 @@ class DB_Websessions(object):
             "created_by": session.created_by,
         })
 
-        if session.session_id is None:
-            new_id = None
-        else:
-            new_id = sha224_compact(session.session_id)[0:15]
-
         args = {
             "enabled": coerce_value(session.enabled, "int"),
             "auth_data": save_data,
@@ -102,9 +86,8 @@ class DB_Websessions(object):
             "last_access_at": session.last_access_at,
             "updated_at": session.updated_at,
             }
-        yield self.dbconfig.update("webinterface_sessions", args, where=["id = ?", new_id])
+        yield self.dbconfig.update("webinterface_sessions", args, where=["id = ?", session.auth_id])
 
     @inlineCallbacks
     def delete_web_session(self, session_id):
-        new_id = sha224_compact(session_id)[0:15]
-        yield self.dbconfig.delete("webinterface_sessions", where=["id = ?", new_id])
+        yield self.dbconfig.delete("webinterface_sessions", where=["id = ?", session_id])
