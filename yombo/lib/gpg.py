@@ -827,7 +827,7 @@ class GPG(YomboLibrary):
                         return bytes_to_unicode(output.data)
                 raise YomboWarning("No more GPG keys to try.")
             except Exception as e:
-                raise YomboWarning("Unable to decrypt string. Reason: {e}", e)
+                raise YomboWarning(f"Unable to decrypt string. Reason: {e}")
         return in_text
 
     def _gpg_decrypt(self, data, passphrase):
