@@ -19,6 +19,7 @@ import voluptuous as vol
 
 from twisted.internet.defer import inlineCallbacks
 
+from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
 from yombo.lib.webinterface.auth import require_auth
 import yombo.utils.validators as val
@@ -42,6 +43,15 @@ def route_authkeys(webapp):
         def root_breadcrumb(webinterface, request):
             webinterface.add_breadcrumb(request, "/?", "Home")
             webinterface.add_breadcrumb(request, "/authkeys/index", "Auth Keys")
+
+        def return_authkey_details(webinterface, request, session, auth_key):
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/authkeys/details.html")
+            root_breadcrumb(webinterface, request)
+            webinterface.add_breadcrumb(request, f"/authkeys/{auth_key.auth_id}/details",
+                                        auth_key.label)
+            return page.render(alerts=webinterface.get_alerts(),
+                               authkey=auth_key,
+                               )
 
         @webapp.route("/")
         @require_auth()
@@ -75,19 +85,41 @@ def route_authkeys(webapp):
                 webinterface.add_alert("You don't have access to edit this.", "warning")
                 return webinterface.redirect(request, "/authkeys/index")
 
-            auth_key = webinterface._AuthKeys.get(authkey_id)
-            if auth_key is None:
+            try:
+                auth_key = webinterface._AuthKeys.get(authkey_id)
+            except KeyError:
                 webinterface.add_alert("Invalid Auth Key id.", "warning")
                 return webinterface.redirect(request, "/authkeys/index")
 
-            page = webinterface.get_template(request,
-                                             webinterface.wi_dir + "/pages/authkeys/details.html")
-            root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, f"/authkeys/{authkey_id}/details",
-                                        auth_key.label)
-            return page.render(alerts=webinterface.get_alerts(),
-                               authkey=auth_key,
-                               )
+            return return_authkey_details(webinterface, request, session, auth_key)
+
+        @webapp.route("/<string:authkey_id>/details", methods=["POST"])
+        @require_auth(access_path="module_amazonalexa:manage", access_action="view")
+        def page_lib_authkey_details_post(webinterface, request, session, authkey_id):
+            if session.has_access("authkey", authkey_id, "view", raise_error=False) is False:
+                webinterface.add_alert("You don't have access to edit this.", "warning")
+                return webinterface.redirect(request, "/authkeys/index")
+
+            try:
+                auth_key = webinterface._AuthKeys.get(authkey_id)
+            except KeyError:
+                webinterface.add_alert("Invalid Auth Key id.", "warning")
+                return webinterface.redirect(request, "/authkeys/index")
+
+            try:
+                role_label = request.args.get("role_label")[0]
+            except KeyError:
+                webinterface.add_alert("Invalid role to add.", "warning")
+                return webinterface.redirect(request, f"/authkeys/{authkey_id}/details")
+
+            try:
+                auth_key.attach_role(role_label)
+            except YomboWarning as e:
+                webinterface.add_alert(f"Error adding role: {e}")
+                return return_authkey_details(webinterface, request, session, auth_key)
+
+            webinterface.add_alert("Role added to authkey.")
+            return return_authkey_details(webinterface, request, session, auth_key)
 
         @webapp.route("/add", methods=["GET"])
         @require_auth()
@@ -126,10 +158,16 @@ def route_authkeys(webapp):
                 "enabled": webinterface.request_get_default(request, "enabled", True),
             }
 
-            auth_key = yield webinterface._AuthKeys.create(
-                label=data["label"],
-                description=data["description"],
-            )
+            try:
+                auth_key = yield webinterface._AuthKeys.create(
+                    label=data["label"],
+                    description=data["description"],
+                    created_by=session.auth_id,
+                    created_by_type=session.auth_type_id,
+                )
+            except YomboWarning as e:
+                webinterface.add_alert(f"Unable to add Auth Key: {e}", "warning")
+                return page_lib_authkey_form(webinterface, request, session, "add", data, "Add Location")
 
             if auth_key is None:
                 webinterface.add_alert("Unable to add Auth Key, unknown reason. Sorry I'm not more helpful.",
@@ -160,9 +198,10 @@ def route_authkeys(webapp):
                 webinterface.add_alert("You don't have access to edit this.", "warning")
                 return webinterface.redirect(request, "/authkeys/index")
 
-            auth_key = webinterface._AuthKeys.get(authkey_id)
-            if auth_key is None:
-                webinterface.add_alert(f"Invalid Auth Key id: {authkey_id}", "warning")
+            try:
+                auth_key = webinterface._AuthKeys.get(authkey_id)
+            except KeyError:
+                webinterface.add_alert("Invalid Auth Key id.", "warning")
                 return webinterface.redirect(request, "/authkeys/index")
 
             if auth_key.created_by_type != "user":
@@ -186,9 +225,10 @@ def route_authkeys(webapp):
                 webinterface.add_alert("You don't have access to edit this.", "warning")
                 return webinterface.redirect(request, "/authkeys/index")
 
-            auth_key = webinterface._AuthKeys.get(authkey_id)
-            if auth_key is None:
-                webinterface.add_alert(f"Invalid Auth Key id: {authkey_id}", "warning")
+            try:
+                auth_key = webinterface._AuthKeys.get(authkey_id)
+            except KeyError:
+                webinterface.add_alert("Invalid Auth Key id.", "warning")
                 return webinterface.redirect(request, "/authkeys/index")
 
             if auth_key.created_by_type != "user":
@@ -236,9 +276,10 @@ def route_authkeys(webapp):
                 webinterface.add_alert("You don't have access to delete this.", "warning")
                 return webinterface.redirect(request, f"/authkeys/{authkey_id}/details")
 
-            auth_key = webinterface._AuthKeys.get(authkey_id)
-            if auth_key is None:
-                webinterface.add_alert(f"Invalid Auth Key id: {authkey_id}", "warning")
+            try:
+                auth_key = webinterface._AuthKeys.get(authkey_id)
+            except KeyError:
+                webinterface.add_alert("Invalid Auth Key id.", "warning")
                 return webinterface.redirect(request, "/authkeys/index")
 
             if auth_key.created_by_type != "user":
@@ -264,9 +305,10 @@ def route_authkeys(webapp):
                 webinterface.add_alert("You don't have access to delete this.", "warning")
                 return webinterface.redirect(request, f"/authkeys/{authkey_id}/details")
 
-            auth_key = webinterface._AuthKeys.get(authkey_id)
-            if auth_key is None:
-                webinterface.add_alert(f"Invalid Auth Key id: {authkey_id}", "warning")
+            try:
+                auth_key = webinterface._AuthKeys.get(authkey_id)
+            except KeyError:
+                webinterface.add_alert("Invalid Auth Key id.", "warning")
                 return webinterface.redirect(request, "/authkeys/index")
 
             if auth_key.created_by_type != "user":
@@ -305,9 +347,10 @@ def route_authkeys(webapp):
                 webinterface.add_alert("You don't have access to edit this.", "warning")
                 return webinterface.redirect(request, f"/authkeys/{authkey_id}/details")
 
-            auth_key = webinterface._AuthKeys.get(authkey_id)
-            if auth_key is None:
-                webinterface.add_alert(f"Invalid Auth Key id: {authkey_id}", "warning")
+            try:
+                auth_key = webinterface._AuthKeys.get(authkey_id)
+            except KeyError:
+                webinterface.add_alert("Invalid Auth Key id.", "warning")
                 return webinterface.redirect(request, "/authkeys/index")
 
             if auth_key.created_by_type != "user":
@@ -333,9 +376,10 @@ def route_authkeys(webapp):
                 webinterface.add_alert("You don't have access to edit this.", "warning")
                 return webinterface.redirect(request, f"/authkeys/{authkey_id}/details")
 
-            auth_key = webinterface._AuthKeys.get(authkey_id)
-            if auth_key is None:
-                webinterface.add_alert(f"Invalid Auth Key id: {authkey_id}", "warning")
+            try:
+                auth_key = webinterface._AuthKeys.get(authkey_id)
+            except KeyError:
+                webinterface.add_alert("Invalid Auth Key id.", "warning")
                 return webinterface.redirect(request, "/authkeys/index")
 
             if auth_key.created_by_type != "user":

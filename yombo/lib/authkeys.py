@@ -167,7 +167,8 @@ class AuthKeys(YomboLibrary):
             raise YomboWarning("Auth Key is no longer enabled.")
         return session
 
-    def create(self, label, description=None, roles=None, auth_data=None, enabled=None, created_by=None):
+    def create(self, label, description=None, roles=None, auth_data=None, enabled=None, created_by=None,
+               created_by_type=None, source=None):
         """
         Creates a new session.
 
@@ -185,6 +186,12 @@ class AuthKeys(YomboLibrary):
             enabled = True
         if roles is None:
             roles = []
+        if created_by is None:
+            raise YomboWarning("created_by is required.")
+        if created_by_type is None:
+            raise YomboWarning("created_by_type is required.")
+        if source is None:
+            source = "user"
 
         auth_id = random_string(length=randint(45, 50))
 
@@ -196,9 +203,11 @@ class AuthKeys(YomboLibrary):
             "enabled": enabled,
             "roles": roles,
             "created_by": created_by,
+            "created_by_type": created_by_type,
         }
 
-        self.active_auth_keys[auth_id] = AuthKey(self, data)
+        print(f"createing key: {data}")
+        self.active_auth_keys[auth_id] = AuthKey(self, data, load_source="create")
         return self.active_auth_keys[auth_id]
 
     def delete(self, auth_id):
@@ -284,6 +293,7 @@ class AuthKey(AuthMixin, PermissionMixin, RolesMixin):
 
         # Auth specific attributes
         self.auth_type = AUTH_TYPE_AUTHKEY
+        self.auth_type_id = AUTH_TYPE_AUTHKEY
         self._auth_id = record["auth_id"]
         self.source = "authkey"
         self.source_type = "library"
@@ -315,6 +325,10 @@ class AuthKey(AuthMixin, PermissionMixin, RolesMixin):
             self.description = record["description"]
         if "last_access_at" in record:
             self.last_access_at = record["last_access_at"]
+        if "created_by" in record:
+            self.created_by = record["created_by"]
+        if "created_by_type" in record:
+            self.created_by_type = record["created_by_type"]
         if "created_at" in record:
             self.created_at = record["created_at"]
         if "updated_at" in record:

@@ -34,7 +34,8 @@
                     <div class="panel panel-default">
                         <div class="panel-heading">
                             <h3>Details</h3>
-                            <label>Auth Key: &nbsp; {{authkey.auth_id}}</label>
+                            <label>Auth Key: <button type="button" id="auth_id_button">Click to reveal auth key</button>
+                                <span id="auth_id">{{authkey.auth_id}}</span></label>
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
@@ -44,6 +45,10 @@
                             {{ authkey.description }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Is Enabled: </label><br>
                             {{ authkey.enabled }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Created By: </label><br>
+                            {{ _users.get(authkey.created_by).display|e }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Created Type: </label><br>
+                            {{ authkey.created_by_type }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Last Access: </label><br>
                             {{ authkey.last_access_at|epoch_to_string }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Updated: </label><br>
@@ -185,6 +190,18 @@
       $("#new_role_label").text(rolesList[$(this).val()]['label']);
       $("#new_role_description").text(rolesList[$(this).val()]['description']);
       enableRoleSubmitBtn();
+    });
+
+    $(document).ready(function(){
+        console.log("hello");
+        $("#auth_id").hide();
+        console.log("hell2o");
+        var t;
+        $("#auth_id_button").click(function(){
+            $(this).hide();
+            $("#auth_id").show();
+            console.log("hell3o");
+        });
     });
 </script>
 {% endblock %}
