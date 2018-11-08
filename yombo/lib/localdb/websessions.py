@@ -12,7 +12,7 @@ from yombo.utils import data_pickle, data_unpickle
 from yombo.utils.datatypes import coerce_value
 
 from yombo.lib.localdb import Sessions
-logger = get_logger("library.localdb.variables")
+logger = get_logger("library.localdb.websessions")
 
 
 class DB_Websessions(object):
@@ -48,6 +48,7 @@ class DB_Websessions(object):
 
     @inlineCallbacks
     def save_web_session(self, session):
+        logger.debug("save_web_session: session.auth_id: {auth_id}", auth_id=session._auth_id)
         save_data = data_pickle({
             "auth_data": session.auth_data,
             "auth_at": session.auth_at,
@@ -57,7 +58,7 @@ class DB_Websessions(object):
         })
 
         args = {
-            "id": session.auth_id,
+            "id": session._auth_id,
             "enabled": coerce_value(session.enabled, "int"),
             "gateway_id": session.gateway_id,
             "auth_data": save_data,
@@ -70,6 +71,7 @@ class DB_Websessions(object):
 
     @inlineCallbacks
     def update_web_session(self, session):
+        logger.debug("update_web_session: session.auth_id: {auth_id}", auth_id=session._auth_id)
         save_data = data_pickle({
             "auth_data": session.auth_data,
             "auth_type": session.auth_type,
@@ -78,7 +80,6 @@ class DB_Websessions(object):
             "auth_pin_at": session.auth_pin_at,
             "created_by": session.created_by,
         })
-
         args = {
             "enabled": coerce_value(session.enabled, "int"),
             "auth_data": save_data,
@@ -86,7 +87,7 @@ class DB_Websessions(object):
             "last_access_at": session.last_access_at,
             "updated_at": session.updated_at,
             }
-        yield self.dbconfig.update("webinterface_sessions", args, where=["id = ?", session.auth_id])
+        yield self.dbconfig.update("webinterface_sessions", args, where=["id = ?", session._auth_id])
 
     @inlineCallbacks
     def delete_web_session(self, session_id):

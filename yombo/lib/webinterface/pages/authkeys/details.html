@@ -46,7 +46,11 @@
                             <label style="margin-top: 15px; margin-bottom: 0px">Is Enabled: </label><br>
                             {{ authkey.enabled }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Created By: </label><br>
-                            {{ _users.get(authkey.created_by).display|e }}<br>
+                            {%- if authkey.created_by_type == "user" %}
+                                {{ _users.get(authkey.created_by).display|e }}<br>
+                            {%- else %}
+                                {{authkey.created_by_type}} -> {{authkey.created_by}}<br>
+                            {%- endif %}
                             <label style="margin-top: 15px; margin-bottom: 0px">Created Type: </label><br>
                             {{ authkey.created_by_type }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Last Access: </label><br>

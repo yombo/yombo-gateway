@@ -74,7 +74,7 @@ def route_authkeys(webapp):
             page = webinterface.get_template(request, webinterface.wi_dir + "/pages/authkeys/index.html")
             root_breadcrumb(webinterface, request)
             return page.render(alerts=webinterface.get_alerts(),
-                               authkeys=webinterface._AuthKeys.active_auth_keys,
+                               authkeys=webinterface._AuthKeys.authkeys,
                                )
 
         @webapp.route("/<string:authkey_id>/details", methods=["GET"])
@@ -146,7 +146,6 @@ def route_authkeys(webapp):
 
         @webapp.route("/add", methods=["POST"])
         @require_auth()
-        @inlineCallbacks
         def page_lib_authkey_add_post(webinterface, request, session):
             if session.has_access("authkey", "*", "add", raise_error=False) is False:
                 webinterface.add_alert("You don't have access to add this item.", "warning")
@@ -159,11 +158,12 @@ def route_authkeys(webapp):
             }
 
             try:
-                auth_key = yield webinterface._AuthKeys.create(
-                    label=data["label"],
-                    description=data["description"],
-                    created_by=session.auth_id,
-                    created_by_type=session.auth_type_id,
+                auth_key = webinterface._AuthKeys.add_authkey({
+                    "label": data["label"],
+                    "description": data["description"],
+                    "created_by": session.auth_id,
+                    "created_by_type": session.auth_type_id,
+                    }
                 )
             except YomboWarning as e:
                 webinterface.add_alert(f"Unable to add Auth Key: {e}", "warning")

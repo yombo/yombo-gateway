@@ -216,14 +216,6 @@ class VariableGroupFieldView(DBObject):
 class VariableGroupFieldDataView(DBObject):
     TABLENAME = "variable_group_field_data_view"
 
-# class Variable(DBObject):
-#     TABLENAME="variables"
-#     BELONGSTO = ["devices", "modules"]
-
-
-class AuthKeys(DBObject):
-    TABLENAME = "auth_keys"
-
 
 class Sessions(DBObject):
     TABLENAME = "webinterface_sessions"
@@ -259,7 +251,6 @@ for item in TEMP_MODULE_CLASSES:
 del TEMP_MODULE_CLASSES
 
 from yombo.lib.localdb._tools import DB_Tools
-from yombo.lib.localdb.authkeys import DB_Authkeys
 from yombo.lib.localdb.devices import DB_Devices
 from yombo.lib.localdb.devicetypes import DB_DeviceTypes
 from yombo.lib.localdb.events import DB_Events
@@ -270,7 +261,7 @@ from yombo.lib.localdb.variables import DB_Variables
 from yombo.lib.localdb.websessions import DB_Websessions
 
 
-class LocalDB(YomboLibrary, DB_Authkeys, DB_Tools, DB_Devices, DB_DeviceTypes, DB_Events, DB_Nodes, DB_States,
+class LocalDB(YomboLibrary, DB_Tools, DB_Devices, DB_DeviceTypes, DB_Events, DB_Nodes, DB_States,
               DB_Statistics, DB_Variables, DB_Websessions):
     """
     Manages all database interactions.

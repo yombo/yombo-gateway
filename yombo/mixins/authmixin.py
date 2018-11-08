@@ -134,6 +134,8 @@ class AuthMixin(YomboBaseMixin):
 
     @property
     def auth_id(self):
+        if hasattr(self, "user_id"):
+            return self.user_id
         return self._auth_id
 
     @auth_id.setter
@@ -302,7 +304,6 @@ class AuthMixin(YomboBaseMixin):
         results = {
             "auth_id": self.auth_id,
             "auth_type": self.auth_type,
-            "user_id": self.user_id,
             "last_access_at": self.last_access_at,
             "created_at": self.created_at,
             "updated_at": self.updated_at,

@@ -460,7 +460,7 @@ class Users(YomboLibrary):
             platform_items = self._Atoms.atoms
         elif platform == AUTH_PLATFORM_AUTHKEY:
             platform_actions = self.auth_platforms[AUTH_PLATFORM_AUTHKEY]["actions"]
-            platform_items = self._AuthKeys.active_auth_keys
+            platform_items = self._AuthKeys.authkeys
             platform_label_attr = "label"
         elif platform == AUTH_PLATFORM_AUTOMATION:
             platform_actions = self.auth_platforms[AUTH_PLATFORM_AUTOMATION]["actions"]
@@ -782,7 +782,12 @@ class Users(YomboLibrary):
             return self.return_access(self.has_access_cache[cache_id], auth, platform, item, action, cache_id,
                                       raise_error)
 
-        platform_data = self.get_platform_item(platform, item)
+        try:
+            platform_data = self.get_platform_item(platform, item)
+        except Exception as e:  # Catch things like keyerrors, or whatever error.
+            logger.info("Access blocked: {e}", e=e)
+            return self.return_access(False, auth, platform, item, action, cache_id, raise_error)
+
         platform_item = platform_data["platform_item"]
         platform_item_label = platform_data["platform_item_label"]
         platform_actions = platform_data["platform_actions"]
@@ -797,13 +802,13 @@ class Users(YomboLibrary):
         # Admins have full access.
         if auth.has_role("admin"):
             self.has_access_cache[cache_id] = True
-            return self.return_access(True, auth, platform, item, action, raise_error)
+            return self.return_access(True, auth, platform, item, action, cache_id, raise_error)
 
         temp_result = None
 
         # Check if a specific item has a special access listed
-        platform_allowed, platform_from_wild = self.has_access_scan_item_permissions(auth.item_permissions, platform, action, platform_item,
-                                             platform_item_label)
+        platform_allowed, platform_from_wild = self.has_access_scan_item_permissions(
+            auth.item_permissions, platform, action, platform_item, platform_item_label)
         # print("user item permission results: %s - %s" % (platform_allowed, platform_from_wild))
         if isinstance(platform_allowed, bool):
             return self.return_access(platform_allowed, auth, platform, item, action, cache_id, raise_error)
