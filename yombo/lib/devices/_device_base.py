@@ -16,7 +16,6 @@ This device inherits from _device_attributes.
 :license: LICENSE for details.
 """
 # Import python libraries
-import json
 from collections import OrderedDict
 from time import time
 
@@ -46,7 +45,7 @@ from ._device_status import Device_Status
 logger = get_logger("library.devices.device")
 
 
-class Device_Base(Device_Attributes):
+class Device_Base(object):
     """
     The base device contains all the core functions for devices. This calls should only be
     inherited by "Device" class.
