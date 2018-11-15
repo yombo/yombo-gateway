@@ -294,7 +294,10 @@ class Automation(YomboLibrary):
                                              gateway_id=gateway_id,
                                              called_by="_started_")
                     except Exception as e:
-                        logger.warn("Error calling trigger_monitor: {e}", e=e)
+                        logger.error("---------------==(Traceback)==--------------------------")
+                        logger.error("Error: {e}", e=e)
+                        logger.error("{trace}", trace=traceback.format_exc())
+                        logger.error("--------------------------------------------------------")
 
         logger.debug("System started, DONE iterating rules and look for 'run_on_start' is True.")
 
@@ -681,13 +684,14 @@ class Automation(YomboLibrary):
                         logger.debug("Scheduling state rule to run: {label}", label=rule.label)
                         reactor.callLater(0.001, self.run_rule, rule_id, template_variables, **kwargs)
                         continue
-
+                    trigger_value = deepcopy(trigger["value"])
                     if value_type == "string":
                         value = coerce_value(kwargs["value"], "string")
-
+                        trigger_value = coerce_value(trigger_value, "string")
                     elif value_type == "integer":
                         try:
                             value = coerce_value(kwargs["value"], "int")
+                            trigger_value = coerce_value(trigger_value, "int")
                         except Exception:
                             logger.info("Trigger monitor couldn't force state value to int.")
                             continue
@@ -695,24 +699,26 @@ class Automation(YomboLibrary):
                     elif value_type == "float":
                         try:
                             value = coerce_value(kwargs["value"], "float")
+                            trigger_value = coerce_value(trigger_value, "float")
                         except Exception:
                             logger.info("Trigger monitor couldn't force state value to float.")
                             continue
 
                     elif value_type == "boolean":
                         try:
-                            value = coerce_value(kwargs["value"], "bool")
+                            value = coerce_value(is_true_false(kwargs["value"]), "bool")
+                            trigger_value = coerce_value(is_true_false(trigger_value), "bool")
                         except Exception:
                             logger.info("Trigger monitor couldn't force state value to bool.")
                             continue
 
-                    if trigger["value"] == value:
-                        reactor.callLater(0.001, self.run_rule, rule_id, template_variables,
-                                          called_by="trigger_monitor", **kwargs)
-                        continue
+                    # print(f"autoamtion trigger check: {trigger_value} = {value}")
+                    if trigger_value == value:
+                        reactor.callLater(0.001, self.run_rule,
+                                          rule_id, template_variables, **kwargs)
 
     @inlineCallbacks
-    def run_rule(self, rule_id, template_variables = None, **kwargs):
+    def run_rule(self, rule_id, template_variables=None, **kwargs):
         """
         Called when a rule should fire.
 
