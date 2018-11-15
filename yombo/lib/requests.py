@@ -24,16 +24,21 @@ import treq
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks
+from twisted.internet.error import ConnectionRefusedError, ConnectError
 
 # Import Yombo libraries
 from yombo.constants import VERSION
+from yombo.constants.requests import HEADER_AUTHORIZATION, HEADER_CONTENT_TYPE, HEADER_USER_AGENT, HEADER_X_API_KEY
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import bytes_to_unicode
+from yombo.utils.caseinsensitivedict import CaseInsensitiveDict
+
 from yombo.constants import CONTENT_TYPE_JSON, CONTENT_TYPE_MSGPACK
 
 logger = get_logger("library.requests")
+
 
 class Requests(YomboLibrary):
 
@@ -47,10 +52,10 @@ class Requests(YomboLibrary):
 
     def make_headers(self, session, session_type):
         headers = {
-            "Content-Type": self.contentType,
-            "Authorization": f"Yombo-Gateway-{VERSION}",
-            "x-api-key": self.api_key,
-            "User-Agent": f"yombo-gateway-{VERSION}",
+            HEADER_CONTENT_TYPE: self.contentType,
+            HEADER_AUTHORIZATION: f"Yombo-Gateway-{VERSION}",
+            HEADER_X_API_KEY: self.api_key,
+            HEADER_USER_AGENT: f"yombo-gateway-{VERSION}",
         }
         if session is not None:
             headers["Authorization"] = f"{session_type} {session}"
@@ -70,7 +75,7 @@ class Requests(YomboLibrary):
 
         It returns a dictionary with these keys:
            * content - The processed content. Convert JSON and msgpack to a dictionary.
-           * raw_content - The raw content from server, only passed through bytes to unicode.
+           * content_raw - The raw content from server, only passed through bytes to unicode.
            * response - Raw treq response, with "all_headers" injected; which is a cleaned up headers version of
              response.headers.
            * content_type - NOT related to HTTP headers. This will be either "dict" if it's a dictionary, or "string".
@@ -99,14 +104,22 @@ class Requests(YomboLibrary):
         """
         logger.debug("Request receive: {method} : {url}", method=method, url=url)
         method = method.upper()
-        response = yield treq.request(method, url, **kwargs)
+        try:
+            response = yield treq.request(method, url, **kwargs)
+        except ConnectionRefusedError as e:
+            raise YomboWarning(f"Connection was refused to '{url}': {e}")
+        except ConnectError as e:
+            raise YomboWarning(f"Error connecting to '{url}': {e}")
+
         content_type, content, content_raw = yield self.process_response(response)
         return {
             "content": content,
             "content_raw": content_raw,
             "response": response,
             "content_type": content_type,
+            "content_type": content_type,
             "request": response.request.original,
+            "headers": response.all_headers,
         }
 
     def clean_headers(self, response, update_response=None):
@@ -116,7 +129,7 @@ class Requests(YomboLibrary):
         :param response:
         :return:
         """
-        all_headers = {}
+        all_headers = CaseInsensitiveDict()
         raw_headers = bytes_to_unicode(response.headers._rawHeaders)
         for key, value in raw_headers.items():
             all_headers[key.lower()] = value
@@ -137,9 +150,11 @@ class Requests(YomboLibrary):
         :return:
         """
         raw_content = yield treq.content(response)
+        content = raw_content
         headers = self.clean_headers(response, True)
-        content_type = headers["content-type"][0]
-        if content_type == CONTENT_TYPE_JSON:
+
+        content_type = headers[HEADER_CONTENT_TYPE][0]
+        if content_type == HEADER_CONTENT_TYPE:
             try:
                 content = yield treq.json_content(response)
                 content_type = "dict"
@@ -162,5 +177,5 @@ class Requests(YomboLibrary):
                     content = msgpack.loads(raw_content)
                     content_type = "dict"
                 except Exception:
-                    pass
+                    content = raw_content
         return content_type, bytes_to_unicode(content), raw_content
