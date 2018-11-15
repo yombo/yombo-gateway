@@ -27,10 +27,10 @@ class User(AuthMixin, PermissionMixin, RolesMixin):
 
     @property
     def display(self):
-        return f"self.name <self.email>"
+        return f"{self.name} <{self.email}>"
 
     def __str__(self):
-        return f"self.name <self.email>"
+        return f"{self.name} <{self.email}>"
 
     def __init__(self, parent, data={}, flush_cache=None):
         """
