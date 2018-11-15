@@ -241,10 +241,8 @@ class States(YomboLibrary, object):
 
     @inlineCallbacks
     def load_states(self):
-        print("print state...load States...")
         states = yield self._LocalDB.get_states()
         for state in states:
-            print(f"load states: {state}")
             if state["gateway_id"] not in self.states:
                 self.states[state["gateway_id"]] = {}
             if state["name"] not in self.states[state["gateway_id"]]:
@@ -447,13 +445,9 @@ class States(YomboLibrary, object):
                          state=key, resource=e.by_who)
             return None
 
-        if key == "is.day":
-            print(f"states has is.day....{value}")
         if key in self.states[gateway_id]:
             is_new = False
-            print(f"state key: {key} - {self.states[gateway_id][key]['value']} == {value}")
             if self.states[gateway_id][key]["value"] == value:
-                print("skipping state set...")
                 return
             self._Statistics.increment("lib.states.set.update", bucket_size=60, anon=True)
         else:
@@ -527,7 +521,6 @@ class States(YomboLibrary, object):
         while True:
             try:
                 key, data = self.db_save_states_data.popleft()
-                # print("Saving state to database: %s, %s" % (key, data))
                 if data["live"] is True:
                     live = 1
                 else:
