@@ -1,5 +1,4 @@
 from functools import wraps
-import json
 from ratelimit import RateLimitException
 from time import time
 import traceback
