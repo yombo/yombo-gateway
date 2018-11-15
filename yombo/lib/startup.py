@@ -22,6 +22,7 @@ mode.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/startup.html>`_
 """
 # Import twisted libraries
+from twisted.internet import threads
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.task import LoopingCall
 
@@ -30,9 +31,10 @@ from yombo.core.exceptions import YomboWarning, YomboRestart
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 
-from yombo.utils import sleep
+from yombo.utils import sleep, search_for_executable
 
 logger = get_logger("library.startup")
+
 
 class Startup(YomboLibrary):
     """
@@ -126,6 +128,13 @@ class Startup(YomboLibrary):
         else:
             self._Loader.operating_mode = operating_mode
         yield self._GPG._init_from_startup_()
+
+    @inlineCallbacks
+    def _load_(self, **kwargs):
+        results = yield threads.deferToThread(search_for_executable, 'ffmpeg')
+        self._Atoms.set("ffmpeg_bin", results, source=self)
+        results = yield threads.deferToThread(search_for_executable, 'ffprobe')
+        self._Atoms.set("ffprobe_bin", results, source=self)
 
     @inlineCallbacks
     def search_for_valid_sessions(self, items_needed):
