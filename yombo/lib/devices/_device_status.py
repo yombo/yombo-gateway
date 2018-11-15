@@ -15,7 +15,6 @@ The device status class manages a single status entry for a device.
 :license: LICENSE for details.
 """
 # Import python libraries
-#from collections import OrderedDict
 from time import time
 
 # Import twisted libraries

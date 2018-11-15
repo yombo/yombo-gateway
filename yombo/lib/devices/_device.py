@@ -24,12 +24,13 @@ from yombo.constants.commands import (COMMAND_TOGGLE, COMMAND_OPEN, COMMAND_ON, 
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
 from yombo.utils import instance_properties
+from ._device_attributes import Device_Attributes
 from ._device_base import Device_Base
 
 logger = get_logger("library.devices.device")
 
 
-class Device(Device_Base):
+class Device(Device_Attributes, Device_Base):
     """
     The parent to all child device types.
     """

@@ -5,9 +5,9 @@
 
   For development guides see: `Devices @ Module Development <https://yombo.net/docs/libraries/devices>`_
 
-This is the root of the device class. It's responsible for all attributes and bootstrapping.
+All possible device attributes and tools to manage those attributes.
 
-This class in inherited by _device_base, which is inherited by _device.
+This class in inherited by _device.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
@@ -20,7 +20,7 @@ from copy import deepcopy
 from time import time
 
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks
+from twisted.internet.defer import inlineCallbacks, maybeDeferred, Deferred
 
 # Yombo Constants
 from yombo.constants.features import (FEATURE_ALL_OFF, FEATURE_ALL_ON, FEATURE_PINGABLE, FEATURE_POLLABLE,
@@ -186,7 +186,7 @@ class Device_Attributes(MagicAttributesMixin):
     @property
     def machine_status(self):
         """
-        Get the current machine status for a device.
+        Get the current machine status for a device. This is an alias for 'status' property.
 
         :return:
         """
@@ -195,7 +195,7 @@ class Device_Attributes(MagicAttributesMixin):
     @property
     def human_status(self):
         """
-        Get the current human status..
+        Get the current human status.
 
         :return:
         """
@@ -272,6 +272,11 @@ class Device_Attributes(MagicAttributesMixin):
 
     @property
     def is_direct_controllable(self):
+        """
+        Return true if this device can be directly controlled. This is usally True, except for instances
+        like relays that control garage doors, etc.
+        :return:
+        """
         if self.has_device_feature(FEATURE_CONTROLLABLE) and \
                     self.has_device_feature(FEATURE_ALLOW_DIRECT_CONTROL) and \
                     is_true_false(self.allow_direct_control) and \
@@ -281,6 +286,10 @@ class Device_Attributes(MagicAttributesMixin):
 
     @property
     def is_controllable(self):
+        """
+        Returns True if the device can be controlled. This will be False for input type devices, like motion sensors.
+        :return:
+        """
         if self.has_device_feature(FEATURE_ALLOW_DIRECT_CONTROL) and \
                     is_true_false(self.controllable):
             return True
@@ -288,6 +297,11 @@ class Device_Attributes(MagicAttributesMixin):
 
     @property
     def is_allowed_in_scenes(self):
+        """
+        True if device is allowed to be used in scenes or automation rules.
+
+        :return:
+        """
         if self.has_device_feature(FEATURE_ALLOW_IN_SCENES) and self.is_controllable:
             return True
         return False
@@ -299,13 +313,9 @@ class Device_Attributes(MagicAttributesMixin):
 
         If the machine_status is 0, returns. Otherwise returns 100.
         """
-        print("USING DEFAULTY PERCENT!!")
         if len(self.status_history) > 0:
             machine_status = self.status_history[0].machine_status
-            if machine_status == 0:
-                return 0
-            else:
-                return 100
+            return self.calc_percent(machine_status, self.machine_status_extra)
         return 0
 
     def calc_percent(self, machine_status, machine_status_extra):
@@ -314,6 +324,8 @@ class Device_Attributes(MagicAttributesMixin):
         """
         if machine_status == 0:
             return 0
+        elif machine_status <= 1:
+            return round(machine_status*100)
         else:
             return 100
 
@@ -408,30 +420,30 @@ class Device_Attributes(MagicAttributesMixin):
             self.test_device = test_device
 
         memory_sizing = {
-            "x_small": {"other_device_commands": 2,  #less then 256mb
-                           "other_status_history": 2,
-                           "local_device_commands": 5,
-                           "local_status_history": 5},
-            "small": {"other_device_commands": 5,  #About 512mb
-                           "other_status_history": 5,
-                           "local_device_commands": 25,
-                           "local_status_history": 25},
-            "medium": {"other_device_commands": 25,  # About 1024mb
-                      "other_status_history": 25,
-                      "local_device_commands": 75,
-                      "local_status_history": 75},
-            "large": {"other_device_commands": 50,  # About 2048mb
-                       "other_status_history": 50,
-                       "local_device_commands": 125,
-                       "local_status_history": 125},
-            "x_large": {"other_device_commands": 100,  # About 4092mb
-                      "other_status_history": 100,
-                      "local_device_commands": 250,
-                      "local_status_history": 250},
-            "xx_large": {"other_device_commands": 200,  # About 8000mb
-                        "other_status_history": 200,
-                        "local_device_commands": 500,
-                        "local_status_history": 500},
+            "x_small": {"other_device_commands": 2,  #less then 512mb
+                        "other_status_history": 2,
+                        "local_device_commands": 5,
+                        "local_status_history": 5},
+            "small": {"other_device_commands": 5,  #About 1024mb
+                      "other_status_history": 5,
+                      "local_device_commands": 25,
+                      "local_status_history": 25},
+            "medium": {"other_device_commands": 25,  # About 2048mb
+                       "other_status_history": 25,
+                       "local_device_commands": 75,
+                       "local_status_history": 75},
+            "large": {"other_device_commands": 50,  # About 4096mb
+                      "other_status_history": 50,
+                      "local_device_commands": 125,
+                      "local_status_history": 125},
+            "x_large": {"other_device_commands": 100,  # About 8192mb
+                        "other_status_history": 100,
+                        "local_device_commands": 250,
+                        "local_status_history": 250},
+            "xx_large": {"other_device_commands": 200,  # More than 8192mb
+                         "other_status_history": 200,
+                         "local_device_commands": 500,
+                         "local_status_history": 500},
         }
 
         sizes = memory_sizing[self._Parent._Atoms["mem.sizing"]]
@@ -489,7 +501,7 @@ class Device_Attributes(MagicAttributesMixin):
             self.status_history = deque({}, sizes["local_status_history"])
 
     @inlineCallbacks
-    def _init0_(self, device, source):
+    def _system_init_(self, device, source):
         """
         Performs items that require deferreds. This is for system use only.
 
@@ -498,8 +510,8 @@ class Device_Attributes(MagicAttributesMixin):
         yield self.update_attributes(device, source=source, broadcast=False)
 
         yield self.device_variables()
-        self.device_variables_cached = yield self.device_variables()
-        self.device_variable_fields_cached = yield self.device_variable_fields()
+
+        yield self.device_variable_fields()
         if self.test_device is None or self.test_device is False:
             self.meta = yield self._SQLDict.get("yombo.lib.device", "meta_" + self.device_id)
         else:
@@ -516,13 +528,13 @@ class Device_Attributes(MagicAttributesMixin):
 
     def _init_(self, **kwargs):
         """
-        Used by devices to run their init. This is called after the system _init0_ is called.
+        Used by devices to run their init.
 
         :return:
         """
         pass
 
-    def _start0_(self, **kwargs):
+    def _load_(self, **kwargs):
         """
         This is called by the devices library when a new device is loaded for system use only.
 
@@ -550,6 +562,18 @@ class Device_Attributes(MagicAttributesMixin):
         """
         for status in self.status_history:
             status.save_to_db()
+
+    def _reload_(self, **kwargs):
+        """
+        Called when a device is edited and should be reloaded.
+
+        The device can update itself if possible, or the controlling module can do it using the
+        the hook '_device_edited_'.
+
+        :param kwargs:
+        :return:
+        """
+        pass
 
     def asdict(self):
         """
@@ -595,8 +619,8 @@ class Device_Attributes(MagicAttributesMixin):
             "pin_code": "********",
             "pin_required": int(self.pin_required),
             "pin_timeout": self.pin_timeout,
-            "intent_allow": int(self.intent_allow),
-            "intent_text": str(self.intent_text),
+            "intent_allow": int(self.intent_allow) if self.intent_allow is not None else 1,
+            "intent_text": str(self.intent_text) if self.intent_text is not None else self.area_label,
             "created_at": int(self.created_at),
             "updated_at": int(self.updated_at),
             "device_commands": list(self.device_commands),
@@ -741,6 +765,13 @@ class Device_Attributes(MagicAttributesMixin):
         else:
             save_results = yield self.save(source=source, session=session)
 
+        if "variable_data" in device:
+            yield self._Parent.set_device_variables(self.device_id, device["variable_data"], session=session)
+
+        yield self.device_variables()  #refresh the cache
+        yield self.device_variable_fields()  #refresh the cache
+        yield self.device_variables()  #refresh the cache
+
         if broadcast in (None, True):
             try:
                 yield global_invoke_all("_device_edited_",
@@ -750,6 +781,16 @@ class Device_Attributes(MagicAttributesMixin):
                                         )
             except:
                 pass
+
+            def device_reload_failure(failure):
+                logger.info("Got failure while calling device reload '{label}': {failure}",
+                            failure=failure, label=self.full_label)
+            d = Deferred()
+            d.addCallback(lambda ignored: maybeDeferred(self._reload_))
+            d.addErrback(device_reload_failure)
+            d.callback(1)
+            yield d
+
         return save_results
 
     def has_device_feature(self, feature_name, value=None):
@@ -927,22 +968,22 @@ class Device_Attributes(MagicAttributesMixin):
         elif isinstance(fields, str):
             self.MACHINE_STATUS_EXTRA_FIELDS[fields] = True
 
-    def remove_machine_status_fields(self, fields):
+    def remove_machine_status_fields(self, features):
         """
         Removes features from a device. Accepts a list or a string for a single item.
 
-        :param fields: A list of features to remove from device.
+        :param features: A list of features to remove from device.
         :return:
         """
-        def remove_field(fields):
-            if feature in self.FEATURES:
+        def remove_field(field):
+            if field in self.FEATURES:
                 del self.FEATURES[feature]
 
-        if isinstance(fields, list):
-            for field in fields:
-                remove_field(field)
-        elif isinstance(fields, dict):
-            for field, value in fields:
-                remove_field(field)
-        elif isinstance(fields, str):
-            remove_field(fields)
+        if isinstance(features, list):
+            for feature in features:
+                remove_field(feature)
+        elif isinstance(features, dict):
+            for feature, value in features:
+                remove_field(feature)
+        elif isinstance(features, str):
+            remove_field(features)
