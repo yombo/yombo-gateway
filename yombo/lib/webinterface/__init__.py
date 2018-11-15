@@ -22,7 +22,6 @@ from hashlib import sha256
 import jinja2
 import json
 from klein import Klein
-from OpenSSL import crypto
 from operator import itemgetter
 from os import path, listdir, mkdir
 import shutil
@@ -49,6 +48,7 @@ import yombo.utils.datetime as dt_util
 from yombo.lib.webinterface.auth import require_auth_pin, require_auth, run_first
 
 from yombo.lib.webinterface.routes.api_v1.automation import route_api_v1_automation
+from yombo.lib.webinterface.routes.api_v1.camera import route_api_v1_camera
 from yombo.lib.webinterface.routes.api_v1.command import route_api_v1_command
 from yombo.lib.webinterface.routes.api_v1.device import route_api_v1_device
 from yombo.lib.webinterface.routes.api_v1.device_command import route_api_v1_device_command
@@ -256,6 +256,7 @@ class WebInterface(YomboLibrary):
 
         # Load API routes
         route_api_v1_automation(self.webapp)
+        route_api_v1_camera(self.webapp)
         route_api_v1_command(self.webapp)
         route_api_v1_device(self.webapp)
         route_api_v1_device_command(self.webapp)
@@ -386,6 +387,7 @@ class WebInterface(YomboLibrary):
         self.webapp.templates.globals["_users"] = self._Users
         self.webapp.templates.globals["_queue"] = self._Queue
         self.webapp.templates.globals["_scenes"] = self._Scenes
+        self.webapp.templates.globals["_requests"] = self._Requests
         self.webapp.templates.globals["_sqldict"] = self._SQLDict
         self.webapp.templates.globals["_sslcerts"] = self._SSLCerts
         self.webapp.templates.globals["_states"] = self._States
