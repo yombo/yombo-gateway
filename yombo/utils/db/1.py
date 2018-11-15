@@ -600,8 +600,7 @@ def create_table_states(Registry, **kwargs):
         `value_type`  TEXT,
         `value`       INTEGER,
         `live`        INTEGER NOT NULL,
-        `created_at`  INTEGER NOT NULL,
-        `updated_at`  INTEGER NOT NULL);"""
+        `created_at`  INTEGER NOT NULL);"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS name_gateway_id_IDX ON states (name, gateway_id)")
     yield Registry.DBPOOL.runQuery(create_index("states", "created_at"))

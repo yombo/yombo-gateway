@@ -25,16 +25,14 @@ class DB_States(object):
         :return:
         """
         if name is not None:
-            extra_where = f"AND name = {name}"
+            extra_where = f"WHERE name = {name}"
         else:
             extra_where = ""
 
-        sql = """SELECT name, gateway_id, value, value_type, live, created_at, updated_at
-    FROM states s1
-    WHERE created_at = (SELECT MAX(created_at) from states s2 where s1.id = s2.id)
+        sql = """SELECT name, gateway_id, value, value_type, live, max(created_at)
+    FROM states
     %s
-    AND created_at > %s
-    GROUP BY name""" % (extra_where, str(int(time()) - 60 * 60 * 24 * 60))
+    GROUP BY name, gateway_id""" % extra_where
         states = yield Registry.DBPOOL.runQuery(sql)
         results = []
         for state in states:
@@ -45,7 +43,6 @@ class DB_States(object):
                 "value_type": state[3],
                 "live": state[4],
                 "created_at": state[5],
-                "updated_at": state[6],
             })
         return results
 
@@ -122,7 +119,6 @@ class DB_States(object):
             value_type=values["value_type"],
             live=live,
             created_at=values["created_at"],
-            updated_at=values["updated_at"],
         ).save()
 
     @inlineCallbacks

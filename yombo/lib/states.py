@@ -241,8 +241,10 @@ class States(YomboLibrary, object):
 
     @inlineCallbacks
     def load_states(self):
+        print("print state...load States...")
         states = yield self._LocalDB.get_states()
         for state in states:
+            print(f"load states: {state}")
             if state["gateway_id"] not in self.states:
                 self.states[state["gateway_id"]] = {}
             if state["name"] not in self.states[state["gateway_id"]]:
@@ -253,7 +255,6 @@ class States(YomboLibrary, object):
                     "value_type": state["value_type"],
                     "live": state["live"],
                     "created_at": state["created_at"],
-                    "updated_at": state["updated_at"],
                 }
 
     @inlineCallbacks
@@ -446,11 +447,13 @@ class States(YomboLibrary, object):
                          state=key, resource=e.by_who)
             return None
 
+        if key == "is.day":
+            print(f"states has is.day....{value}")
         if key in self.states[gateway_id]:
             is_new = False
-            self.states[gateway_id][key]["updated_at"] = int(round(time()))
-
+            print(f"state key: {key} - {self.states[gateway_id][key]['value']} == {value}")
             if self.states[gateway_id][key]["value"] == value:
+                print("skipping state set...")
                 return
             self._Statistics.increment("lib.states.set.update", bucket_size=60, anon=True)
         else:
@@ -459,7 +462,6 @@ class States(YomboLibrary, object):
             self.states[gateway_id][key] = {
                 "gateway_id": gateway_id,
                 "created_at": int(time()),
-                "updated_at": int(time()),
                 "live": False,
             }
             self._Statistics.increment("lib.states.set.new", bucket_size=60, anon=True)
@@ -510,7 +512,7 @@ class States(YomboLibrary, object):
                                 source_label=source_label,
                                 )
 
-        if gateway_id == self.gateway_id or gateway_id == "cluster":
+        if (gateway_id == self.gateway_id or gateway_id == "cluster") and gateway_id != "local":
             self.db_save_states_data.append([key, deepcopy( self.states[gateway_id][key])])
 
     @inlineCallbacks
@@ -538,7 +540,6 @@ class States(YomboLibrary, object):
                 od["value_type"] = data["value_type"]
                 od["live"] = live
                 od["created_at"] = data["created_at"]
-                od["updated_at"] = data["updated_at"]
                 to_save.append(od)
             except IndexError:
                 break
@@ -568,7 +569,6 @@ class States(YomboLibrary, object):
             "live": False,
             "source": source_label,
             "created_at": data["created_at"],
-            "updated_at": data["updated_at"],
         }
 
         self._Automation.trigger_monitor("state",
