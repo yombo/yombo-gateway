@@ -529,18 +529,22 @@ class Atoms(YomboLibrary):
             atoms["cpu.count"] = psutil.cpu_count()
             memory = psutil.virtual_memory()
             atoms["mem.total"] = memory.total
-        if memory.total < 261939712:
+        if memory.total < 134217728:
+            atoms["mem.sizing"] = "xx_small"
+        elif memory.total < 550502400:
             atoms["mem.sizing"] = "x_small"
-        elif memory.total < 523879424:
+        elif memory.total < 1101004800:
             atoms["mem.sizing"] = "small"
-        elif memory.total < 1047758848:
+        elif memory.total < 2202009600:
             atoms["mem.sizing"] = "medium"
-        elif memory.total < 2095517696:
+        elif memory.total < 4404019200:
             atoms["mem.sizing"] = "large"
-        elif memory.total < 4191035392:
+        elif memory.total < 8808038400:
             atoms["mem.sizing"] = "x_large"
-        else:
+        elif memory.total < 17616076800:
             atoms["mem.sizing"] = "xx_large"
+        else:
+            atoms["mem.sizing"] = "xxx_large"
 
         if yombo.utils.is_windows():
             atoms["os"] = "Windows"
