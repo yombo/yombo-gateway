@@ -169,7 +169,6 @@ class Notifications(YomboLibrary):
                     }
                 )
 
-
     def _stop_(self, **kwargs):
         if self.init_deferred is not None and self.init_deferred.called is False:
             self.init_deferred.callback(1)  # if we don't check for this, we can't stop!

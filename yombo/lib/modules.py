@@ -582,6 +582,7 @@ class Modules(YomboLibrary):
                         if possible_file_name == "_input_types":
                             self._InputTypes.platforms[name.lower()] = klass
                 except Exception as e:
+                    logger.debug("Unable to import magic file {file_path}, reason: {e}", file_path=file_path, e=e)
                     pass
 
     def module_invoke_failure(self, failure, module_name, hook_name):
