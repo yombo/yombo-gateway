@@ -506,11 +506,11 @@ class Devices(YomboLibrary):
                 logger.error("--------------------------------------------------------")
 
             d = Deferred()
-            d.addCallback(lambda ignored: maybeDeferred(self.devices[device_id]._init0_, device, source=source))
+            d.addCallback(lambda ignored: maybeDeferred(self.devices[device_id]._system_init_, device, source=source))
             d.addErrback(self.import_device_failure, self.devices[device_id])
             d.addCallback(lambda ignored: maybeDeferred(self.devices[device_id]._init_))
             d.addErrback(self.import_device_failure, self.devices[device_id])
-            d.addCallback(lambda ignored: maybeDeferred(self.devices[device_id]._start0_))
+            d.addCallback(lambda ignored: maybeDeferred(self.devices[device_id]._load_))
             d.addErrback(self.import_device_failure, self.devices[device_id])
             d.addCallback(lambda ignored: maybeDeferred(self.devices[device_id]._start_))
             d.addErrback(self.import_device_failure, self.devices[device_id])
@@ -939,6 +939,12 @@ class Devices(YomboLibrary):
                 else:
                     session = None
 
+                if "variable_data" in api_data and len(api_data["variable_data"]) > 0:
+                    variable_data = api_data["variable_data"]
+                    del api_data["variable_data"]
+                else:
+                    variable_data = None
+
                 device_results = yield self._YomboAPI.request("POST", "/v1/device",
                                                               api_data,
                                                               session=session)
@@ -949,10 +955,10 @@ class Devices(YomboLibrary):
                     f"apimsg": f"Couldn't add device: {e.message}",
                     f"apimsghtml": f"Couldn't add device: {e.html_message}",
                 }
-            logger.debug("add new device results: {device_results}", device_results=device_results)
-            if "variable_data" in api_data and len(api_data["variable_data"]) > 0:
+            logger.info("add new device results: {device_results}", device_results=device_results)
+            if variable_data is not None:
                 variable_results = yield self.set_device_variables(device_results["data"]["id"],
-                                                                   api_data["variable_data"],
+                                                                   variable_data,
                                                                    "add",
                                                                    source,
                                                                    session=session)
@@ -998,7 +1004,8 @@ class Devices(YomboLibrary):
             }
 
     @inlineCallbacks
-    def set_device_variables(self, device_id, variables, action_type=None, source=None, session=None):
+    def set_device_variables(self, device_id, variables, session=None):
+        print("saving device variables....")
         for field_id, data in variables.items():
             for data_id, value in data.items():
                 if value == "":
