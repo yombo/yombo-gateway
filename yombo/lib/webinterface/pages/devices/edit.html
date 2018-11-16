@@ -118,9 +118,9 @@
                 <br>
                 <div class="input-group">
                     <select class="selectpicker show-tick" tabindex="9" name="status" id="status" placeholder="Mark device as enabled, disabled, or deleted.">
-                        <option value="enabled"{% if device.enabled_status == 1 %} selected{% endif %} data-subtext="Works normally">Enabled</option>
-                        <option value="disabled"{% if device.enabled_status == 0 %} selected{% endif %} data-subtext="Device unusable">Disabled</option>
-                        <option value="deleted"{% if device.enabled_status == 2 %} selected{% endif %} data-subtext="Queue for deletion">Deleted</option>
+                        <option value="1"{% if device.status == 1 %} selected{% endif %} data-subtext="Works normally">Enabled</option>
+                        <option value="0"{% if device.status == 0 %} selected{% endif %} data-subtext="Device unusable">Disabled</option>
+                        <option value="2"{% if device.status == 2 %} selected{% endif %} data-subtext="Queue for deletion">Deleted</option>
                     </select>
                 </div>
             </div>
@@ -236,8 +236,8 @@
                 <br>
                 <div class="input-group">
                     <select class="selectpicker show-tick" tabindex="20" name="pin_required" id="pin_required" placeholder="Is a pin required to change status?">
-                        <option value="enabled"{% if device.pin_required|yes_no == "Yes" %} selected{% endif %} data-subtext="Contro REQUIRES a pin.">Enabled</option>
-                        <option value="disabled"{% if device.pin_required|yes_no == "No" %} selected{% endif %} data-subtext="Control requires no pin.">Disabled</option>
+                        <option value="1"{% if device.pin_required|yes_no == "Yes" %} selected{% endif %} data-subtext="Contro REQUIRES a pin.">Enabled</option>
+                        <option value="0"{% if device.pin_required|yes_no == "No" %} selected{% endif %} data-subtext="Control requires no pin.">Disabled</option>
                     </select>
                 </div>
                 <label style="margin-top: 20px; margin-bottom: 0px">Pin Code: </label>

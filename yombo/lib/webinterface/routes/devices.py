@@ -190,8 +190,8 @@ def route_devices(webapp):
 
                 if results["status"] == "success":
                     msg = {
-                        "header":"Device Added",
-                        "label":"Device added successfully",
+                        "header": "Device Added",
+                        "label": "Device added successfully",
                         "description": "",
                     }
 
@@ -218,7 +218,7 @@ def route_devices(webapp):
                 group_relation_id=device_type_id,
             )
 
-            if device["variable_data"] is not None:
+            if variable_data is not None:
                 device_variables = yield webinterface._Variables.merge_variable_groups_fields_data_data(
                     device_variables,
                     json_output.get("vars", {})
@@ -263,7 +263,7 @@ def route_devices(webapp):
         @webapp.route("/<string:device_id>/delete", methods=["GET"])
         @require_auth()
         def page_device_delete_get(webinterface, request, session, device_id):
-            session.has_access("device", device_id, "delete")
+            session.has_access("device", device_id, "remove")
 
             try:
                 device = webinterface._Devices[device_id]
@@ -285,7 +285,7 @@ def route_devices(webapp):
         @require_auth()
         @inlineCallbacks
         def page_device_delete_post(webinterface, request, session, device_id):
-            session.has_access("device", device_id, "delete")
+            session.has_access("device", device_id, "remove")
 
             try:
                 device = webinterface._Devices[device_id]
@@ -457,28 +457,30 @@ def route_devices(webapp):
             device = webinterface._Devices.devices[device_id]
             device_id = device.device_id
 
-            status = request.args.get("status")[0]
-            if status == "disabled":
-                status = 0
-            elif status == "enabled":
-                status = 1
-            elif status == "deleted":
-                status = 2
+            if "json_output" in request.args:
+                json_output = request.args.get("json_output", [{}])[0]
+                json_output = json.loads(json_output)
+                if "first_time" in json_output:
+                    ok_to_save = False
             else:
-                webinterface.add_alert("Device status was set to an illegal value.", "warning")
-                return webinterface.redirect(request, f"/devices/{device_id}/edit")
+                json_output = {}
+                ok_to_save = False
 
-            pin_required = request.args.get("pin_required")[0]
-            if pin_required == "disabled":
-                pin_required = 0
-            elif pin_required == "enabled":
+
+            try:
+                status = int(json_output.get("status", 0))
+            except Exception as e:
                 pin_required = 1
-                if request.args.get("pin_code")[0] == "":
-                    webinterface.add_alert("Device requires a pin code, but none was set.", "warning")
-                    return webinterface.redirect(request, f"/devices/{device_id}/edit")
-            else:
-                webinterface.add_alert("Device pin required was set to an illegal value.", "warning")
-                return webinterface.redirect(request, f"/devices/{device_id}/edit")
+
+            try:
+                pin_required = int(json_output.get("pin_required", 0))
+                if pin_required == 1:
+                    if request.args.get("pin_code")[0] == "":
+                        webinterface.add_alert("Device requires a pin code, but none was set.", "warning")
+                        return webinterface.redirect(request, f"/devices/{device_id}/edit")
+            except Exception as e:
+                logger.warn("Processing 'pin_required': {e}", e=e)
+                pin_required = 0
 
             start_percent = request.args.get("start_percent")
             energy_usage = request.args.get("energy_usage")

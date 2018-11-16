@@ -192,8 +192,8 @@
                                 <br>
                                 <div class="input-group">
                                     <select class="selectpicker show-tick" tabindex="7" name="pin_required" id="pin_required" placeholder="Is a pin required to change status?">
-                                        <option value="enabled"{% if device.pin_required|yes_no == "Yes" %} selected{% endif %} data-subtext="Contro REQUIRES a pin.">Enabled</option>
-                                        <option value="disabled"{% if device.pin_required|yes_no == "No" %} selected{% endif %} data-subtext="Control requires no pin.">Disabled</option>
+                                        <option value="1"{% if device.pin_required|yes_no == "Yes" %} selected{% endif %} data-subtext="Contro REQUIRES a pin.">Enabled</option>
+                                        <option value="0"{% if device.pin_required|yes_no == "No" %} selected{% endif %} data-subtext="Control requires no pin.">Disabled</option>
                                     </select>
                                 </div>
                                 <label style="margin-top: 20px; margin-bottom: 0px">Pin Code: </label>

@@ -148,7 +148,7 @@
                             {{ _locations[device.location_id].label }} -> {{ _locations[device.area_id].label }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Description: </label><br>
                             {{ device.description }}<br>
-                            <label style="margin-top: 15px; margin-bottom: 0px">Status: </label><br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Status: {{device.enabled_status}}</label><br>
                             {{ _(device.enabled_status|status_to_string) }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Pin Required // Pin Code: </label><br>
                             {{ device.pin_required|yes_no }} // {{ device.pin_code }} <br>
