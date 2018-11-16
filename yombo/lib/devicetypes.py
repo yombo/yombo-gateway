@@ -20,6 +20,8 @@ This library keeps track of what modules can access what device types, and what 
 """
 from collections import OrderedDict
 import inspect
+import os
+from pyclbr import readmodule
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks
@@ -33,22 +35,6 @@ import collections
 from functools import reduce
 
 logger = get_logger("library.devicetypes")
-
-BASE_DEVICE_TYPE_PLATFORMS = {
-    "yombo.lib.devices._device": ["Device"],
-    "yombo.lib.devices.alarm": ["Alarm"],
-    "yombo.lib.devices.camera": ["Camera"],
-    "yombo.lib.devices.climate": ["Climate"],
-    "yombo.lib.devices.cover": ["Cover", "Door", "Garage_Door", "Window"],
-    "yombo.lib.devices.fan": ["Fan"],
-    "yombo.lib.devices.light": ["Light", "Color_Light"],
-    "yombo.lib.devices.lock": ["Lock"],
-    "yombo.lib.devices.mediaplayer": ["Media_Player"],
-    "yombo.lib.devices.scene": ["Scene"],
-    "yombo.lib.devices.sensor": ["Sensor", "Binary_Sensor", "Thermometer"],
-    "yombo.lib.devices.switch": ["Switch", "Relay", "Appliance"],
-    "yombo.lib.devices.tv": ["TV"],
-}
 
 
 class DeviceTypes(YomboLibrary):
@@ -180,7 +166,6 @@ class DeviceTypes(YomboLibrary):
         Sets up basic attributes.
         """
         self.gateway_id = self._Configs.get("core", "gwid", "local", False)
-        # self.load_deferred = None  # Prevents loader from moving on past _load_ until we are done.
         self.device_types = {}
         self.device_type_search_attributes = ["device_type_id", "input_type_id", "category_id", "label", "machine_label", "description",
             "status", "always_load", "public"]
@@ -193,18 +178,34 @@ class DeviceTypes(YomboLibrary):
         
         :return: 
         """
-        yield self._load_device_types_from_database()
-        self.load_platforms(BASE_DEVICE_TYPE_PLATFORMS)
-        # platforms = yield global_invoke_all("_device_platforms_", called_by=self)
-        # for component, item in platforms.items():
-        #     self.load_platforms(item)
+        # Search the devices directory for devicetypes (I know, wrong location) and
+        # generate a list of all default device types.
+        device_type_platforms = {"yombo.lib.devices._device": ["Device"]}
+        working_dir = self._Atoms.get("app_dir")
+        files = os.listdir(f"{working_dir}/yombo/lib/devices")
+        for file in files:
+            if file.startswith("_") or file.endswith(".py") is False:
+                continue
+            file_parts = file.split(".", 2)
+            filename = file_parts[0]
 
-    # def _stop_(self, **kwargs):
-    #     """
-    #     Cleans up any pending deferreds.
-    #     """
-    #     if self.load_deferred is not None and self.load_deferred.called is False:
-    #         self.load_deferred.callback(1)  # if we don't check for this, we can't stop!
+            try:
+                file_path = f"yombo.lib.devices.{filename}"
+                possible_file = __import__(file_path, globals(), locals(), [], 0)
+                module_tail = reduce(lambda p1, p2: getattr(p1, p2),
+                                     [possible_file, ] + file_path.split(".")[1:])
+                classes = readmodule(file_path)
+                for name, file_class_name in classes.items():
+                    if file_path not in device_type_platforms:
+                        device_type_platforms[file_path] = []
+                    device_type_platforms[file_path].append(name)
+            except Exception as e:
+                logger.debug("Unable to import magic file {file_path}, reason: {e}", file_path=file_path, e=e)
+                pass
+
+        yield self._load_device_types_from_database()
+        self.load_platforms(device_type_platforms)
+
 
     def sorted(self, key=None):
         """
