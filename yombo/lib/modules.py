@@ -219,8 +219,10 @@ class Modules(YomboLibrary):
 
     @inlineCallbacks
     def init_modules(self):
+        self._Loader.run_phase = "modules_pre_init"
         yield self._Loader.library_invoke_all("_modules_pre_init_", called_by=self)
         logger.debug("starting modules::init....")
+        self._Loader.run_phase = "modules_init"
         yield self.module_init_invoke()  # Call "_init_" of modules
         yield self._Loader.library_invoke_all("_modules_inited_", called_by=self)
 
@@ -251,24 +253,29 @@ class Modules(YomboLibrary):
 
         # Pre-Load
         logger.debug("starting modules::pre-load....")
+        self._Loader.run_phase = "modules_preload"
         yield self.module_invoke_all("_preload_yombo_internal_", called_by=self, allow_disable=True)
         yield self.module_invoke_all("_preload_", called_by=self, allow_disable=True)
         yield self._Loader.library_invoke_all("_modules_preloaded_", called_by=self)
         # Load
+        self._Loader.run_phase = "modules_load"
         yield self.module_invoke_all("_load_yombo_internal_", called_by=self, allow_disable=True)
         yield self.module_invoke_all("_load_", called_by=self, allow_disable=True)
         yield self._Loader.library_invoke_all("_modules_loaded_", called_by=self)
 
         # Pre-Start
+        self._Loader.run_phase = "modules_prestart"
         yield self.module_invoke_all("_prestart_yombo_internal_", called_by=self, allow_disable=True)
         yield self.module_invoke_all("_prestart_", called_by=self, allow_disable=True)
         yield self._Loader.library_invoke_all("_modules_prestarted_", called_by=self)
 
         # Start
+        self._Loader.run_phase = "modules_start"
         yield self.module_invoke_all("_start_yombo_internal_", called_by=self, allow_disable=True)
         yield self.module_invoke_all("_start_", called_by=self, allow_disable=True)
         yield self._Loader.library_invoke_all("_modules_started_", called_by=self)
 
+        self._Loader.run_phase = "modules_started"
         yield self.module_invoke_all("_started_yombo_internal_", called_by=self, allow_disable=True)
         yield self.module_invoke_all("_started_", called_by=self, allow_disable=True)
         yield self._Loader.library_invoke_all("_modules_start_finished_", called_by=self)
@@ -288,10 +295,13 @@ class Modules(YomboLibrary):
         :return:
         """
         yield self._Loader.library_invoke_all("_modules_stop_", called_by=self)
+        self._Loader.run_phase = "modules_stop"
         yield self.module_invoke_all("_stop_")
         yield self._Loader.library_invoke_all("_modules_stopped_", called_by=self)
 
         yield self._Loader.library_invoke_all("_modules_unload_", called_by=self)
+
+        self._Loader.run_phase = "modules_unload"
         for module_id in self.modules.keys():
             module = self.modules[module_id]
             if int(module._status) != 1:

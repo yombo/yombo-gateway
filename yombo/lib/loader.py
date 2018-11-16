@@ -152,16 +152,26 @@ HARD_UNLOAD["LocalDB"] = {"operating_mode": "all"}
 
 RUN_PHASE = {
     "system_init": 0,
-    "libraries_import": 100,
-    "libraries_init": 200,
-    "modules_import": 300,
-    "libraries_load": 400,
-    "modules_init": 500,
-    "libraries_start": 600,
-    "modules_start": 700,
-    "modules_started": 800,
-    "libraries_started": 900,
-    "shutdown": 1000,
+    "libraries_import": 200,
+    "libraries_init": 400,
+    "modules_import": 600,
+    "libraries_load": 800,
+    "modules_pre_init": 1000,
+    "modules_init": 1200,
+    "libraries_start": 1400,
+    "modules_preload": 1600,
+    "modules_load": 1600,
+    "modules_prestart": 1800,
+    "modules_start": 2000,
+    "modules_started": 2200,
+    "libraries_started": 2400,
+    "system_started": 2600,
+    "gateway_running": 2800,
+    "shutdown": 5000,
+    "modules_stop": 5200,
+    "modules_unload": 5400,
+    "libraries_stop": 5600,
+    "libraries_unload": 5800,
 }
 
 class Loader(YomboLibrary, object):
@@ -310,7 +320,7 @@ class Loader(YomboLibrary, object):
 
         self._moduleLibrary = self.loadedLibraries["modules"]
 
-        self.run_phase = "modules_init"
+        # Sets run phase to modules_pre_init and then modules_init'
         yield self._moduleLibrary.init_modules()
 
         self.run_phase = "libraries_start"
@@ -326,9 +336,7 @@ class Loader(YomboLibrary, object):
                 HARD_LOAD[name]["_start_"] = False
             self._log_loader("debug", name, "library", "_start_", "Finished call to _start_.")
 
-        self.run_phase = "modules_start"
         yield self._moduleLibrary.load_modules()  #includes load & start
-        self.run_phase = "modules_started"
 
         self.run_phase = "libraries_started"
         for name, config in HARD_LOAD.items():
@@ -342,6 +350,7 @@ class Loader(YomboLibrary, object):
             else:
                 HARD_LOAD[name]["_started_"] = False
 
+        self.run_phase = "system_started"
         for name, config in HARD_LOAD.items():
             if self.sigint:
                 return
@@ -367,6 +376,7 @@ class Loader(YomboLibrary, object):
             created_at=event.pop()
             self.loadedLibraries["events"].new(*event, created_at=created_at)
         self.startup_events_queue = None
+        self.run_phase = "gateway_running"
         logger.info("Yombo Gateway started.")
 
     @inlineCallbacks
@@ -754,11 +764,13 @@ class Loader(YomboLibrary, object):
         Only called when server is doing shutdown. Stops controller, server control and server data..
         """
         logger.debug("Stopping libraries: {stuff}", stuff=HARD_UNLOAD)
+        self.run_phase = "libraries_stop"
         for name, config in HARD_UNLOAD.items():
             if self.check_operating_mode(config["operating_mode"]):
                 logger.debug("stopping: {name}", name=name)
                 yield self.library_invoke(name, "_stop_", called_by=self)
 
+        self.run_phase = "libraries_unload"
         for name, config in HARD_UNLOAD.items():
             if self.check_operating_mode(config["operating_mode"]):
                 logger.debug("_unload_: {name}", name=name)
