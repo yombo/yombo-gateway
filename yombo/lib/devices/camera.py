@@ -55,6 +55,8 @@ class Camera(Device):
         self._port = None
         self._username = None
         self._password = None
+        self._request_auth = None
+
         # self.MACHINE_STATUS_EXTRA_FIELDS["mode"] = ["idle", "streaming", "recording"]
 
     def toggle(self):

@@ -470,7 +470,7 @@ class Device_Attributes(MagicAttributesMixin):
         self.statistic_type = None
         self.statistic_bucket_size = None
         self.statistic_lifetime = None
-        self.enabled_status = None  # not to be confused for device state. see status_history
+        self.enabled_status = 1  # not to be confused for device state. see status_history
         self.created_at = None
         self.updated_at = None
         self.energy_tracker_device = None
@@ -486,8 +486,8 @@ class Device_Attributes(MagicAttributesMixin):
         self.device_model = "Yombo"
         self.status_delayed = {}
         self.status_delayed_calllater = None
-        source = kwargs.get("source", None)
-        if source == "database":
+        self.source = kwargs.get("source", "database")
+        if self.source == "database":
             self.is_in_db = True
         else:
             self.is_in_db = False
@@ -642,6 +642,36 @@ class Device_Attributes(MagicAttributesMixin):
             "energy_map": self.energy_map,
             "enabled_status": self.enabled_status,
             }
+
+
+    def asdict_short(self):
+        """
+        Returns a dictionary that can be used to create children devices.
+        """
+        return {
+            "gateway_id": self.gateway_id,
+            "area_id": self.area_id,
+            "location_id": self.location_id,
+            "device_id": str(self.device_id),
+            "device_type_id": str(self.device_type_id),
+            "machine_label": str(self.machine_label),
+            "label": str(self.label),
+            "notes": str(self.notes),
+            "description": str(self.description),
+            "statistic_label": str(self.statistic_label),
+            "statistic_type": str(self.statistic_type),
+            "statistic_bucket_size": str(self.statistic_bucket_size),
+            "statistic_lifetime": str(self.statistic_lifetime),
+            "pin_code": self.pin_code,
+            "pin_required": int(self.pin_required),
+            "pin_timeout": self.pin_timeout,
+            "intent_allow": int(self.intent_allow) if self.intent_allow is not None else 1,
+            "intent_text": str(self.intent_text) if self.intent_text is not None else self.area_label,
+            "controllable": self.controllable,
+            "allow_direct_control": self.allow_direct_control,
+            "status": self.enabled_status,
+
+        }
 
     @inlineCallbacks
     def update_attributes(self, device, source=None, session=None, broadcast=None):

@@ -261,7 +261,6 @@ class Devices(YomboLibrary):
             self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming,
                                        client_id=f"Yombo-devices-{self.gateway_id}")
 
-
     def _started_(self, **kwargs):
         """
         Sets up the looping call to cleanup device commands. Also, subscribes to
@@ -430,12 +429,12 @@ class Devices(YomboLibrary):
                     new_map[float(key)] = float(value)
                 record["energy_map"] = new_map
                 logger.debug("Loading device: {record}", record=record)
-                device_id = yield self.import_device(record, source="database")
+                new_device = yield self.import_device(record, source="database")
                 try:
                     global_invoke_all("_device_imported_",
                                       called_by=self,
-                                      id=device_id,
-                                      device=self.devices[device_id],
+                                      id=new_device.device_id,
+                                      device=new_device,
                                       )
                 except YomboHookStopProcessing as e:
                     pass
@@ -459,8 +458,6 @@ class Devices(YomboLibrary):
         if test_device is None:
             test_device = False
 
-        # logger.debug("loading device into memory: {device}", device=device)
-
         device_id = device["id"]
         if device_id not in self.devices:
             device_type = self._DeviceTypes[device["device_type_id"]]
@@ -473,7 +470,7 @@ class Devices(YomboLibrary):
             class_names = class_names.split(",")
 
             # logger.info("Loading device ({device}), platforms: {platforms}",
-            #             device=device["label"],
+            #             device=device,
             #             platforms=class_names)
 
             klass = None
@@ -526,11 +523,33 @@ class Devices(YomboLibrary):
                 pass
         else:
             self.devices[device_id].update_attributes(device, source)
-        return device_id
+        return self.devices[device_id]
 
     def import_device_failure(self, failure, device):
         logger.error("Got failure while creating device instance for '{label}': {failure}", failure=failure,
                      label=device['label'])
+
+    @inlineCallbacks
+    def create_child_device(self, existing, label, machine_label, device_type, description=None):
+        # create a child device based on a provided device.
+        if description is None:
+            description = f"Child of: {existing.full_label}"
+        new_data = existing.asdict_short()
+        device_type_found = self._DeviceTypes.get(device_type)
+        new_data.update({
+            "device_id": f"{existing.device_id}{machine_label}",
+            "id": f"{existing.device_id}{machine_label}",
+            "label": f"{existing.label} - {label}",
+            "machine_label": f"{existing.machine_label}_{machine_label}",
+            "description": description,
+            "device_type_id": f"{device_type_found.device_type_id}",
+            "statistic_label": f"{existing.statistic_label}.{machine_label}",
+            "created_at": time(),
+            "updated_at": time(),
+        })
+        print("creating child device: %s" % new_data)
+        new_device = yield self.import_device(new_data, source="child")
+        return new_device
 
     @inlineCallbacks
     def _load_device_commands(self):

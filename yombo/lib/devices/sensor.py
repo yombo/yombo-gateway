@@ -6,7 +6,7 @@ from yombo.constants.features import (FEATURE_NUMBER_OF_STEPS, FEATURE_ALL_ON, F
                                       FEATURE_ALLOW_DIRECT_CONTROL)
 from yombo.constants.commands import COMMAND_HIGH, COMMAND_LOW
 from yombo.constants.platforms import (PLATFORM_BASE_SENSOR, PLATFORM_SENSOR, PLATFORM_BINARY_SENSOR,
-    PLATFORM_THERMOMETER)
+                                       PLATFORM_MOTION_SENSOR, PLATFORM_NOISE_SENSOR, PLATFORM_THERMOMETER)
 
 from yombo.lib.devices._device import Device
 
@@ -105,6 +105,25 @@ class Binary_Sensor(Sensor):
         elif self.machine_status == 0:
             return True
         return None
+
+
+class Motion_Sensor(Binary_Sensor):
+    """
+    A binary sensory, that's for motion.
+    """
+    def _init_(self):
+        super()._init_()
+        self.PLATFORM = PLATFORM_MOTION_SENSOR
+
+
+class Noise_Sensor(Binary_Sensor):
+    """
+    A binary sensor that's for noise.
+    """
+    def _init_(self):
+        super()._init_()
+        self.PLATFORM = PLATFORM_NOISE_SENSOR
+
 
 class Thermometer(Device):
     """

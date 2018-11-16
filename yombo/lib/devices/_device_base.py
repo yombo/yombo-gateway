@@ -1077,10 +1077,20 @@ class Device_Base(object):
 
         :return:
         """
+        if source is None:
+            source = self.source
+
         if self._Parent.gateway_id != self.gateway_id:
             return {
                 "status": "failed",
                 "msg": "Can only edit local devices.",
+                "device_id": self.device_id
+            }
+
+        if self.source != "database":
+            return {
+                "status": "failed",
+                "msg": "Can only edit database loaded devices.",
                 "device_id": self.device_id
             }
 
