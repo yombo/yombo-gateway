@@ -13,7 +13,6 @@ try:
 except ImportError:
     # fcntl is not available on windows
     HAS_FCNTL = False
-import json
 
 import base64
 from difflib import SequenceMatcher
@@ -22,20 +21,22 @@ from hashlib import sha256, sha224
 import importlib
 import inspect
 import jinja2
+import json
 import markdown
 import math
 import msgpack
 import os
-from packaging.version import Version as pkg_version
 from packaging.requirements import Requirement as pkg_requirement
 import pkg_resources
 import random
 import re
 import string
+import socket
 from subprocess import check_output, CalledProcessError
 import sys
 from time import time
 import textwrap
+from urllib.parse import urlparse
 import zlib
 
 from twisted.internet import reactor, threads
@@ -57,6 +58,86 @@ import yombo.ext.base62 as base62
 
 logger = None  # This is set by the set_twisted_logger function.
 _Yombo = None  # Set by setup_yombo_references()
+
+
+@inlineCallbacks
+def test_url_listening(url):
+    """
+    Tries to check if a server is listening at the URL. Returns True/False, or YomboWarning if port number was
+    not provided. In the URL.
+
+    :param url:
+    :return:
+    """
+    parts = urlparse(url)
+    scheme = parts.scheme
+    host = parts.netloc
+    if scheme is None or host is None:
+        raise SyntaxWarning("Invalid URL format.")
+
+    port = parts.port
+    if port is None:  # Try to guess port number
+        if scheme == "ftp":
+            port = 21
+        elif scheme == "ssh":
+            port = 22
+        elif scheme == "telnet":
+            port = 23
+        elif scheme == "smtp":
+            port = 25
+        elif scheme == "tfpt":
+            port = 69
+        elif scheme == "http":
+            port = 80
+        elif scheme == "https":
+            port = 443
+
+    if port is None:
+        raise YomboWarning("Port number not found.")
+    results = yield test_port_listening(host, port)
+    return results
+
+
+@inlineCallbacks
+def test_port_listening(host, port):
+    """
+    Returns a deferred whose result will be True/False.
+
+    Tests if port is open on the host.
+
+    :param host:
+    :param port:
+    :return:
+    """
+    results = yield threads.deferToThread(host, port)
+    return results
+
+def _test_port_listening(host, port):
+    """
+    Should only be called by it's parent 'test_port_listening' due to blocking.
+    :return:
+    """
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    logger.debug("# Test non ssl host - port: {host} - {port}", host=host, port=port)
+    return sock.connect_ex((host, port)) == 0
+
+
+def search_for_executable(executable):
+    """
+    Searches the user's path for an executable.
+
+    This is blocking, this should be called in a thread using threads.deferToThread()
+
+    :param executable: string - Name of program to find.
+    :return: string - path and file
+    """
+    path = os.environ['PATH']
+    paths = path.split(os.pathsep)
+    for p in paths:
+        f = os.path.join(p, executable)
+        if os.path.isfile(f):
+            return f
+    return None
 
 
 def setup_yombo_references(loader):
