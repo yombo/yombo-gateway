@@ -29,6 +29,7 @@ from twisted.internet.defer import inlineCallbacks
 from twisted.internet import reactor
 
 # Import Yombo libraries
+from yombo.classes.dictobject import DictObject
 from yombo.constants import AUTH_TYPE_WEBSESSION
 from yombo.core.library import YomboLibrary
 from yombo.core.exceptions import YomboWarning
@@ -36,7 +37,6 @@ from yombo.core.log import get_logger
 from yombo.mixins.authmixin import AuthMixin
 from yombo.mixins.usermixin import UserMixin
 from yombo.utils import random_string, random_int, sha224_compact
-from classes.dictobject import DictObject
 
 logger = get_logger("library.websessions")
 
