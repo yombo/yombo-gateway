@@ -53,7 +53,7 @@
                                      <tr>
                                          <td><a href="/states/{{state.gateway_id}}/{{ state_name }}/details">{{ state_name }}</a></td>
                                          <td>{{ state['value_human'] }}</td>
-                                         <td>{{ state['updated_at']|epoch_to_string }}</td>
+                                         <td data-order="{{state['created_at']}}">{{ state['created_at']|epoch_to_string }}</td>
                                          <td>{% if _('states:::' + state_name) != 'states:::' + state_name %}{{ _('states:::' + state_name) }} {% endif %}</td>
                                      </tr>{% endfor %}
                                 </tbody>
@@ -74,7 +74,7 @@
                                      <tr>
                                          <td><a href="/states/{{state.gateway_id}}/{{ state_name }}/details">{{ state_name }}</a></td>
                                          <td>{{ state['value_human'] }}</td>
-                                         <td>{{ state['updated_at']|epoch_to_string }}</td>
+                                         <td data-order="{{state['created_at']}}">{{ state['created_at']|epoch_to_string }}</td>
                                          <td>{% if _('states:::' + state_name) != 'states:::' + state_name %}{{ _('states:::' + state_name) }} {% endif %}</td>
                                      </tr>{% endfor %} {% endfor %}
                                 </tbody>
@@ -97,7 +97,7 @@
                                          <td>{{ _gateways[state['gateway_id']].label }}</td>
                                          <td><a href="/states/{{state.gateway_id}}/{{ state_name }}/details">{{ state_name }}</a></td>
                                          <td>{{ state['value_human'] }}</td>
-                                         <td>{{ state['updated_at']|epoch_to_string }}</td>
+                                         <td data-order="{{state['created_at']}}">{{ state['created_at']|epoch_to_string }}</td>
                                          <td>{% if _('states:::' + state_name) != 'states:::' + state_name %}{{ _('states:::' + state_name) }} {% endif %}</td>
                                      </tr>{% endfor %} {% endfor %}
                                 </tbody>
