@@ -10,7 +10,7 @@ def args_to_dict(arguments):
         value = value[0]
         if "[" in argument:
             name = argument[0:argument.find("[")]
-            sub_name = argument[argument.find("[")+1 : argument.find("]")]
+            sub_name = argument[argument.find("[")+1: argument.find("]")]
             if name == sub_name:
                 sub_name = None
         else:
