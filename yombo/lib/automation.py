@@ -258,48 +258,57 @@ class Automation(YomboLibrary):
         # device_triggered = []
         # states_triggered = []
 
-        logger.debug("System started, about to iterate rules and look for 'run_on_start' is True.")
+        logger.debug("_started_: System started, about to iterate rules and look for 'run_on_start' is True.")
         for rule_id, rule in self.rules.items():
-            logger.debug("Checking rule '{label}' has runstart. Type: {rule_type}",
+            logger.debug("_started_: Checking rule '{label}' has runstart. Type: {rule_type}",
                          label=rule.label, rule_type=rule.data['trigger'])
             run_on_start = rule.data["config"]["run_on_start"]
-            if run_on_start is True:
-                trigger = rule.data["trigger"]
-                trigger_type = trigger["trigger_type"]
-                if trigger_type == "device":
-                    device = self.get_device(trigger["device_machine_label"])
-                    if trigger_type in self.startup_items_checked and \
-                            device.device_id in self.startup_items_checked[trigger_type]:
-                        continue
+            if run_on_start is not True:
+                continue
 
-                    self.trigger_monitor("device",
+            trigger = rule.data["trigger"]
+            trigger_type = trigger["trigger_type"]
+            logger.debug("_started_: Trigger type: {trigger_type}", trigger_type=trigger_type)
+            if trigger_type == "device":
+                device = self.get_device(trigger["device_machine_label"])
+                if trigger_type in self.startup_items_checked and \
+                        device.device_id in self.startup_items_checked[trigger_type]:
+                    continue
+
+                self.trigger_monitor("device",
+                                     _run_on_start=True,
+                                     device=device,
+                                     action="set_status")
+
+            elif trigger_type == "state":
+                state = trigger["name"]
+                logger.debug("_started_: State: name: {state}", state=state)
+                logger.debug("_started_: State: self.startup_items_checked: {startup_items_checked}",
+                             startup_items_checked=self.startup_items_checked)
+
+                if trigger_type in self.startup_items_checked and \
+                        state in self.startup_items_checked[trigger_type]:
+                    logger.debug("_started_: State skipping...{state}", state=state)
+                    continue
+
+                gateway_id = trigger["gateway_id"]
+                try:
+                    logger.debug("_started_: State is about to 'trigger_monitor'")
+                    self.trigger_monitor("state",
                                          _run_on_start=True,
-                                         device=device,
-                                         action="set_status")
+                                         key=state,
+                                         value=self._States.get(state, gateway_id=gateway_id),
+                                         value_full=self._States.get(state, full=True, gateway_id=gateway_id),
+                                         action="set",
+                                         gateway_id=gateway_id,
+                                         called_by="_started_")
+                except Exception as e:
+                    logger.error("---------------==(Traceback)==--------------------------")
+                    logger.error("Error: {e}", e=e)
+                    logger.error("{trace}", trace=traceback.format_exc())
+                    logger.error("--------------------------------------------------------")
 
-                elif trigger_type == "state":
-                    state = trigger["name"]
-                    if trigger_type in self.startup_items_checked and \
-                            state in self.startup_items_checked[trigger_type]:
-                        continue
-
-                    gateway_id = trigger["gateway_id"]
-                    try:
-                        self.trigger_monitor("state",
-                                             _run_on_start=True,
-                                             key=state,
-                                             value=self._States.get(state, gateway_id=gateway_id),
-                                             value_full=self._States.get(state, full=True, gateway_id=gateway_id),
-                                             action="set",
-                                             gateway_id=gateway_id,
-                                             called_by="_started_")
-                    except Exception as e:
-                        logger.error("---------------==(Traceback)==--------------------------")
-                        logger.error("Error: {e}", e=e)
-                        logger.error("{trace}", trace=traceback.format_exc())
-                        logger.error("--------------------------------------------------------")
-
-        logger.debug("System started, DONE iterating rules and look for 'run_on_start' is True.")
+        logger.debug("_started_: System started, DONE iterating rules and look for 'run_on_start' is True.")
 
     def automation_user_access(self, rule_id, access_type=None):
         """
@@ -630,6 +639,11 @@ class Automation(YomboLibrary):
         :param kwargs:
         :return:
         """
+        if hasattr(self, '_Loader') is False:
+            return
+        run_phase_name, run_phase_int = self._Loader.run_phase
+        if run_phase_int < 1400:  # 'modules_preload' is when we start processing automation triggers.
+            return
         if trigger_type not in self.startup_items_checked:
             self.startup_items_checked[trigger_type] = []
         if "called_by" not in kwargs:
@@ -680,10 +694,9 @@ class Automation(YomboLibrary):
                     continue
                 if trigger["name"] == name and trigger["gateway_id"] == gateway_id:
                     value_type = trigger["value_type"]
-                    if trigger["value"] == "" or trigger["value"] is None:
-                        logger.debug("Scheduling state rule to run: {label}", label=rule.label)
-                        reactor.callLater(0.001, self.run_rule, rule_id, template_variables, **kwargs)
-                        continue
+                    # if trigger["value"] == "" or trigger["value"] is None:
+                    #     reactor.callLater(0.001, self.run_rule, rule_id, template_variables, **kwargs)
+                    #     continue
                     trigger_value = deepcopy(trigger["value"])
                     if value_type == "string":
                         value = coerce_value(kwargs["value"], "string")
@@ -712,8 +725,8 @@ class Automation(YomboLibrary):
                             logger.info("Trigger monitor couldn't force state value to bool.")
                             continue
 
-                    # print(f"autoamtion trigger check: {trigger_value} = {value}")
-                    if trigger_value == value:
+                    if value_type == "any" or trigger_value == value:
+                        logger.info("Scheduling state rule to run: {label}", label=rule.label)
                         reactor.callLater(0.001, self.run_rule,
                                           rule_id, template_variables, **kwargs)
 
@@ -1046,6 +1059,8 @@ class Automation(YomboLibrary):
                     value = coerce_value(kwargs["value"], "bool")
                 except Exception:
                     raise YomboWarning("Could not force matching value to request value type of bool.")
+            else:
+                value = ""
 
             rule.data["trigger"] = {
                 "trigger_type": "state",
