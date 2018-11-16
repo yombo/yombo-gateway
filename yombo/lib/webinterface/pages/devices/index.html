@@ -83,7 +83,7 @@
                                         <th>Name</th><th>Location</th><th>Area</th><th>Description</th><th>Device Type</th><th>Device Status</th><th>Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody>{% for device_id, device in _devices.items() if device.enabled_status == 1
+                                <tbody>{% for device_id, device in _devices.devices.items() if device.enabled_status == 1
                                             and device.gateway_id == _local_gateway.gateway_id
                                             and device.device_id in item_keys
                                         %}
