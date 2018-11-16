@@ -7,7 +7,7 @@ A dictionary that can be access as either an object or dictionary, it's seed is 
 
 .. code-block:: python
 
-   from yombo.utils.dictobject import DictObject
+   from yombo.classes.dictobject import DictObject
 
    items = LookupDict({"mom" : "Jane", "dad" : "Joe"}) # Can accept a dictionary to get started.
    result = items.mom  # Jane

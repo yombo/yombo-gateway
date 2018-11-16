@@ -31,8 +31,8 @@ from twisted.internet import reactor
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import bytes_to_unicode, do_search_instance, global_invoke_all, data_unpickle, data_pickle
-from yombo.utils.triggerdict import TriggerDict
+from yombo.utils import bytes_to_unicode, do_search_instance, global_invoke_all, data_pickle
+from yombo.classes.triggerdict import TriggerDict
 
 logger = get_logger("library.nodes")
 

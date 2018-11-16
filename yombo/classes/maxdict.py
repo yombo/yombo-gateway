@@ -7,7 +7,7 @@ Allows for creation of a dictionary with a maximum size.
 
 .. code-block:: python
 
-   from yombo.utils.maxdict import MaxDict
+   from yombo.classes.maxdict import MaxDict
 
    items = MaxDict(200, {"mom" : "Jane", "dad" : "Joe"}) # Can accept a dictionary to get started.
    items["brother"] = "Jeff"   # add an additional entry.

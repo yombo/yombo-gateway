@@ -45,7 +45,7 @@ from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import (save_file, read_file, global_invoke_all, random_int, unicode_to_bytes,
                          bytes_to_unicode, sha256_compact)
-from yombo.utils.dictobject import DictObject
+from classes.dictobject import DictObject
 
 from .sslcert import SSLCert
 

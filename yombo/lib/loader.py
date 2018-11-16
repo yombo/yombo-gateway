@@ -43,8 +43,7 @@ from collections import OrderedDict, Callable
 import os.path
 from random import randint
 from re import search as ReSearch
-from subprocess import check_output, CalledProcessError
-from time import time
+from subprocess import check_output
 import traceback
 
 # Import twisted libraries
@@ -56,7 +55,7 @@ client._HTTP11ClientFactory.noisy = False
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboCritical, YomboWarning, YomboHookStopProcessing
-from yombo.utils.fuzzysearch import FuzzySearch
+from yombo.classes.fuzzysearch import FuzzySearch
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 import yombo.utils

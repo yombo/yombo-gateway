@@ -36,7 +36,7 @@ from yombo.core.log import get_logger
 from yombo.mixins.authmixin import AuthMixin
 from yombo.mixins.usermixin import UserMixin
 from yombo.utils import random_string, random_int, sha224_compact
-from yombo.utils.dictobject import DictObject
+from classes.dictobject import DictObject
 
 logger = get_logger("library.websessions")
 

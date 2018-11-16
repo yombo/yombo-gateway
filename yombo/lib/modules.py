@@ -37,9 +37,9 @@ from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 import yombo.core.settings as settings
 from yombo.utils import (search_instance, do_search_instance, dict_merge, read_file, bytes_to_unicode,
-    get_python_package_info, global_invoke_all)
+                         global_invoke_all)
 
-from yombo.utils.maxdict import MaxDict
+from yombo.classes.maxdict import MaxDict
 import collections
 
 

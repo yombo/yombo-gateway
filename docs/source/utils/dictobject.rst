@@ -2,12 +2,12 @@
 
 .. _dictobject:
 
-.. currentmodule:: yombo.utils.dictobject
+.. currentmodule:: yombo.classes.dictobject
 
 ==========================================
-DictObject (yombo.core.dictobject)
+DictObject (yombo.classes.dictobject)
 ==========================================
-.. automodule:: yombo.utils.dictobject
+.. automodule:: yombo.classes.dictobject
 
 DictObject Class
 ---------------------------

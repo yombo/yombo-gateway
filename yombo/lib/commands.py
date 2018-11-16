@@ -24,7 +24,7 @@ from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import search_instance, do_search_instance, global_invoke_all
-from yombo.utils.fuzzysearch import FuzzySearch
+from yombo.classes.fuzzysearch import FuzzySearch
 from yombo.utils.decorators import cached
 
 logger = get_logger("library.commands")

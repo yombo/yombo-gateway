@@ -10,7 +10,7 @@ exactness can be fine tuned using a percent value from .99 - .10, the default 75
 
 .. code-block:: python
 
-   from yombo.utils.fuzzysearch import FuzzySearch
+   from yombo.classes.fuzzysearch import FuzzySearch
     
    items = FuzzySearch({"mom" : "Jane", "dad" : "Joe"}, .95) # Lets be strict, much match 95%
    items["brother"] = "Jeff"  # add an additional entry.

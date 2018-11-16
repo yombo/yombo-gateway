@@ -8,7 +8,7 @@ changes.
 
 .. code-block:: python
 
-   from yombo.utils.triggerdict import TriggerDict
+   from yombo.classes.triggerdict import TriggerDict
 
    # Set a callback to be called whenever the dictionary changes.
    items = TriggerDict(200, {"mom" : "Jane", "dad" : "Joe"}, callback=self.somefunction)

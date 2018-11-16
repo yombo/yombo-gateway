@@ -7,6 +7,7 @@ from decimal import Decimal
 
 from yombo.utils import is_true_false
 
+
 def determine_variable_type(input):
     if isinstance(input, int):
         return "int"
@@ -20,6 +21,7 @@ def determine_variable_type(input):
         return "int"
     elif isinstance(input, Decimal):
         return "int"
+
 
 def coerce_value(value, value_type):
     """

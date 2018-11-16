@@ -33,9 +33,9 @@ from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import bytes_to_unicode
-from yombo.utils.caseinsensitivedict import CaseInsensitiveDict
+from yombo.classes.caseinsensitivedict import CaseInsensitiveDict
 
-from yombo.constants import CONTENT_TYPE_JSON, CONTENT_TYPE_MSGPACK
+from yombo.constants import CONTENT_TYPE_MSGPACK
 
 logger = get_logger("library.requests")
 

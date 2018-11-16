@@ -5,7 +5,7 @@ A dictionary whose keys are not case sensitive.
 
 .. code-block:: python
 
-   from yombo.utils.caseinsensitivedict import CaseInsensitiveDict
+   from yombo.classes.caseinsensitivedict import CaseInsensitiveDict
 
    items = CaseInsensitiveDict({"mOm" : "Jane", "DaD" : "Joe"}) # Can accept a dictionary to get started.
    result = items["mom"]  # Jane
