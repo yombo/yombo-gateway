@@ -119,21 +119,6 @@ class FFmpegSensorBase(YBOFFmpeg):
         # print("setting _sensor_high_trip_count to 0, final.")
         self._sensor_high_trip_count = 0
 
-
-    # def output_receiver(self, data):
-    #     """
-    #     Takes in raw data, collects it, and only sends complete lines to "process_output"
-    # 
-    #     :param data:
-    #     :return:
-    #     """
-    #     out_buffer = self.out_buffer + bytes_to_unicode(data)  # append to existing text
-    #     lines = out_buffer.splitlines()         # split the lines up.
-    #     self.out_buffer = lines.pop()           # return the last bits to wait for another time.
-    # 
-    #     for line in lines:  # for each line, now return to callback.
-    #         self.process_output(line.decode("utf-8"))
-
     def process_output(self, data):
         """
         Any results from FFmpeg standard output will be sent here. This method must be overridden by a child.
@@ -315,9 +300,9 @@ class SensorMotion(FFmpegSensorBase):
             self._low_timeout = low_timeout
 
         if source_type is not None:
-            if source_type.lower() in ("stll", "image", "jpeg"):
+            if source_type.lower() in ("still", "image", "jpeg"):
                 self._source_type = "image"
-            elif source_type.loweR() in ("movie", "video"):
+            elif source_type.lower() in ("movie", "video"):
                 self._source_type = "video"
             else:
                 raise YomboWarning("Invalid source_type, must one of: image or video")
