@@ -68,7 +68,7 @@
                             ') }}
                             <br>
                             <div class="input-group">
-                                <select tabindex="4" data-header="Select a category" data-live-search="true" data-size="10" class="selectpicker show-tick form-control" name="category_id" id="category_id">
+                                <select tabindex="4" data-header="Select a category" data-live-search="true" data-size="10" class="selectpicker show-tick" name="category_id" id="category_id">
                                     {% for category in categories if not category.id == category.parent_id -%}
 
                                     <option value="{{ category.id }}"{% if device_type.category_id == category.id %} selected{% endif %}>{{category.label}}</option>
