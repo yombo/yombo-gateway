@@ -726,7 +726,7 @@ class Automation(YomboLibrary):
                             continue
 
                     if value_type == "any" or trigger_value == value:
-                        logger.info("Scheduling state rule to run: {label}", label=rule.label)
+                        logger.debug("Scheduling state rule to run: {label}", label=rule.label)
                         reactor.callLater(0.001, self.run_rule,
                                           rule_id, template_variables, **kwargs)
 
