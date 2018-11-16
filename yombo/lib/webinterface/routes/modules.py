@@ -68,7 +68,7 @@ def route_modules(webapp):
         @require_auth()
         @inlineCallbacks
         def page_modules_details_from_server(webinterface, request, session, module_id):
-            session.has_access("module", module_id, "view")
+            session.has_access("module", "*", "add", raise_error=True)
             try:
                 module_results = yield webinterface._YomboAPI.request("GET", f"/v1/module/{module_id}",
                                                                       session=session["yomboapi_session"])

@@ -63,7 +63,8 @@ def route_devtools_config_variables(webapp):
                 webinterface.add_alert(e.html_message, "warning")
                 return webinterface.redirect(request, "/devtools/config/modules/index")
 
-            parent = yield variable_group_breadcrumbs(webinterface, request, session, group_results["data"]["relation_id"],
+            parent = yield variable_group_breadcrumbs(webinterface, request, session,
+                                                      group_results["data"]["relation_id"],
                                                       group_results["data"]["relation_type"])
             webinterface.add_breadcrumb(request,
                                         f"/devtools/config/variables/group/{group_results['data']['id']}/details",

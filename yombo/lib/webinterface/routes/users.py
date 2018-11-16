@@ -70,7 +70,7 @@ def route_users(webapp):
             try:
                 role_label = request.args.get("role_label")[0]
             except KeyError:
-                webinterface.add_alert("Invalid request.", "warning")
+                webinterface.add_alert("Invalid role label to add.", "warning")
                 return webinterface.redirect(request, f"/users/{user_requested}/details")
 
             try:
@@ -84,8 +84,8 @@ def route_users(webapp):
             except YomboWarning as e:
                 webinterface.add_alert(f"Error adding role: {e}")
                 return return_user_details(webinterface, request, session, user)
-            webinterface.add_alert("Role added to user.")
 
+            webinterface.add_alert("Role added to user.")
             return return_user_details(webinterface, request, session, user)
 
         def return_user_details(webinterface, request, session, user):
