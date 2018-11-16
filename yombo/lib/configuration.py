@@ -126,7 +126,12 @@ class Configuration(YomboLibrary):
             "auth_session": {
                 "encrypt": True
             },
-        }
+        },
+        "rbac_authkeys": {
+            "*": {
+                "encrypt": True
+            },
+        },
     }  # Collected details from libs and modules about configurations
 
     def __contains__(self, configuration_requested):
@@ -493,12 +498,19 @@ class Configuration(YomboLibrary):
             try:
                 for item, data in options.items():
                     if section in self.configs_details:
+                        item_key = None
                         if item in self.configs_details[section]:
-                            if "encrypt" in self.configs_details[section][item]:
-                                try:
-                                    data = yield self._GPG.encrypt(data)
-                                except YomboWarning as e:
-                                    logger.info("Tried to encrypt a yombo.ini value, but gpg not ready. Saving cleartext.")
+                            item_key = item
+                        if "*" in self.configs_details[section]:
+                            item_key = "*"
+                        if item_key is not None:
+                            if "encrypt" in self.configs_details[section][item_key]:
+                                if self.configs_details[section][item_key]['encrypt'] is True:
+                                    try:
+                                        data = yield self._GPG.encrypt(data)
+                                    except YomboWarning as e:
+                                        logger.info("Tried to encrypt a yombo.ini value, but gpg not ready. Saving cleartext.")
+
                     i18n_label = _(f"config::config_item::{section}::{item}", "Well Mr Hippo, that didn't work. Now what?")
                     if i18n_label != "Well Mr Hippo, that didn't work. Now what?":
                         description = f"{section}->{item}: {i18n_label}"
@@ -509,8 +521,12 @@ class Configuration(YomboLibrary):
                     temp = str(data).split("\n")
                     temp = "\n\t".join(temp)
                     contents += f"{item} = {temp}\n"
-            except Exception as E:
-                logger.warn("Caught error in saving ini file: {e}", e=E)
+            except Exception as e:
+                logger.error("---------==( Error with config encryt)==----------------")
+                logger.error("{e}", e=e)
+                logger.error("{trace}", trace=traceback.format_exc())
+                logger.error("--------------------------------------------------------")
+                logger.warn("Caught error in saving ini file: {e}", e=e)
             contents += "\n"
         return contents
 
