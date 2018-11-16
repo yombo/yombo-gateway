@@ -19,10 +19,8 @@ web.py is in the public domain; it can be used for whatever purpose with absolut
 :license: LICENSE for details.
 """
 # Import python libraries
-import os
 from time import time
 from random import randint
-import hashlib
 from ratelimit import limits as ratelimits
 
 # Import twisted libraries
@@ -37,7 +35,7 @@ from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
 from yombo.mixins.authmixin import AuthMixin
 from yombo.mixins.usermixin import UserMixin
-from yombo.utils import random_string, random_int, sha256_compact
+from yombo.utils import random_string, random_int, sha224_compact
 from yombo.utils.dictobject import DictObject
 
 logger = get_logger("library.websessions")
@@ -92,8 +90,8 @@ class WebSessions(YomboLibrary):
 
     def _init_(self, **kwargs):
         self.gateway_id = self._Configs.get("core", "gwid", "local", False)
-        cookie_id= self._Configs.get("webinterface", "cookie_id",
-                                            sha256_compact(random_string(length=randint(200, 1000))))
+        cookie_id = self._Configs.get("webinterface", "cookie_id",
+                                      sha224_compact(random_string(length=randint(500, 1000))))
 
         self.config = DictObject({
             "cookie_session_name": "yombo_" + cookie_id,
@@ -139,6 +137,7 @@ class WebSessions(YomboLibrary):
         cookie_session_name = self.config.cookie_session_name
         cookies = request.received_cookies
         if cookie_session_name in cookies:
+            logger.debug("Closing session: {cookie_session_name}", cookie_session_name=cookie_session_name)
             request.addCookie(cookie_session_name, "LOGOFF", domain=self.get_cookie_domain(request),
                           path=self.config.cookie_path, expires="Thu, 01 Jan 1970 00:00:00 GMT",
                           secure=self.config.secure, httpOnly=self.config.httponly)
@@ -165,6 +164,8 @@ class WebSessions(YomboLibrary):
         :param request: The request instance.
         :return: bool
         """
+        logger.debug("get_session_from_request: {request}", request=request)
+
         session_id = None
         if request is not None:
             cookie_session_name = self.config.cookie_session_name
@@ -174,6 +175,7 @@ class WebSessions(YomboLibrary):
             else:
                 raise YomboWarning("Session cookie not found.")
 
+        logger.debug("get_session_from_request: Found session_id: {session_id}", session_id=session_id)
         if session_id is None:
             raise YomboWarning("Session id is not valid.")
 
@@ -189,6 +191,7 @@ class WebSessions(YomboLibrary):
         :param session_id: The requested session id
         :return: session
         """
+        logger.debug("get_session_by_id: session_id: {session_id}", session_id=session_id)
         def raise_error(message):
             """
             Sets the cache and raises an error.
@@ -204,7 +207,8 @@ class WebSessions(YomboLibrary):
         if self.validate_session_id(session_id) is False:
             raise_error("Invalid session id.")
 
-        compact_id = sha256_compact(session_id)
+        compact_id = sha224_compact(session_id)
+        logger.debug("get_session_by_id: compact_id: {compact_id}", compact_id=compact_id)
 
         if compact_id in self.get_session_by_id_cache:
             cache = self.get_session_by_id_cache[compact_id]
@@ -268,7 +272,7 @@ class WebSessions(YomboLibrary):
             data["auth_data"] = {}
 
         session_id = random_string(length=randint(60, 70))
-        compact_id = sha256_compact(session_id)
+        compact_id = sha224_compact(session_id)
 
         data["id"] = compact_id
 
@@ -349,11 +353,24 @@ class WebSessions(YomboLibrary):
             if session.is_dirty >= 200 or force_save is True or session.last_access_at < int(time() - (60*30)):
                 if session.in_db:
                     logger.debug("clean_sessions - syncing web session to DB: {id}", id=session_id)
-                    yield self._LocalDB.update_web_session(session)
+                    # print(f"clean_session: update_web_session: {self._LocalDB.update_web_session}")
+                    try:
+                        yield self._LocalDB.update_web_session(session)
+                    except Exception as e:
+                        logger.warn("Error saving web sessions: {e}", e=e)
+                        continue
+                    # print("clean_session: update_web_session: done")
                     session.is_dirty = 0
                 elif session.user_id is not None:
-                    logger.debug("clean_sessions - adding web session to DB: {id}", id=session_id)
-                    yield self._LocalDB.save_web_session(session)
+                    logger.debug("clean_sessions - adding web session to DB: session_id: {id}", id=session_id)
+                    logger.debug("clean_sessions - adding web session to DB: _auth_id: {id}", id=session._auth_id)
+                    logger.debug("clean_sessions - adding web session to DB: _auth_id_long: {id}", id=session._auth_id_long)
+                    try:
+                        yield self._LocalDB.save_web_session(session)
+                    except Exception as e:
+                        logger.warn("Error saving web sessions: {e}", e=e)
+                        continue
+                    # print("clean_session: save_web_session: done")
                     session.in_db = True
                     session.is_dirty = 0
                 if session.last_access_at < int(time() - (60*60*24)):
@@ -403,8 +420,9 @@ class AuthWebsession(UserMixin, AuthMixin):
 
         # Auth specific attributes
         self.auth_type = AUTH_TYPE_WEBSESSION
+        self.auth_type_id = 'user'
         self._auth_id = record["id"]
-        self._auth_id_long = None
+        self._auth_id_long = None  # will eventually be populated by a web request. Usually near creation time.
         self.source = "websessions"
         self.source_type = "library"
         self.gateway_id = record["gateway_id"]
@@ -422,7 +440,7 @@ class AuthWebsession(UserMixin, AuthMixin):
             try:
                 self._user = self._Parent._Users.get(record["user_id"])
             except:
-                raise YomboWarning("User_id not found, cannot full create websession.")
+                raise YomboWarning("User_id not found, cannot fully create websession.")
 
         self.auth_data.update({
             "yomboapi_session": None,
