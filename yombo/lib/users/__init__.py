@@ -466,6 +466,10 @@ class Users(YomboLibrary):
             platform_actions = self.auth_platforms[AUTH_PLATFORM_AUTOMATION]["actions"]
             platform_items = self._Automation.rules
             platform_label_attr = "machine_label"
+        elif platform == AUTH_PLATFORM_CALLLATER:
+            platform_actions = self.auth_platforms[AUTH_PLATFORM_CALLLATER]["actions"]
+            platform_items = self._Calllater.calllater
+            platform_label_attr = "description"
         elif platform == AUTH_PLATFORM_DEVICE:
             platform_actions = self.auth_platforms[AUTH_PLATFORM_DEVICE]["actions"]
             platform_items = self._Devices.devices
@@ -520,6 +524,10 @@ class Users(YomboLibrary):
         elif platform == AUTH_PLATFORM_SYSTEM_OPTION:
             platform_actions = self.auth_platforms[AUTH_PLATFORM_SYSTEM_OPTION]["actions"]
             platform_items = {}
+        # elif platform == AUTH_PLATFORM_TASKS:
+        #     platform_actions = self.auth_platforms[AUTH_PLATFORM_TASKS]["actions"]
+        #     platform_items = self._Tasks.users
+        #     platform_label_attr = "email"
         elif platform == AUTH_PLATFORM_USER:
             platform_actions = self.auth_platforms[AUTH_PLATFORM_USER]["actions"]
             platform_items = self._Users.users
@@ -560,6 +568,11 @@ class Users(YomboLibrary):
             platform_item_id = item
             platform_item_label = platform_item.machine_label
             platform_label_attr = "machine_label"
+        elif platform == AUTH_PLATFORM_CALLLATER:
+            platform_item = self._Calllater.get(item)
+            platform_item_id = item
+            platform_item_label = platform_item.description
+            platform_label_attr = "description"
         elif platform == AUTH_PLATFORM_CRONTAB:
             platform_item = self._CronTab.get(item)
             platform_item_id = platform_item.cron_id

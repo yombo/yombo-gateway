@@ -644,6 +644,8 @@ class Modules(YomboLibrary):
             module._Atoms = self._Loader.loadedLibraries["atoms"]
             module._AuthKeys = self._Loader.loadedLibraries["authkeys"]
             module._Automation = self._Loader.loadedLibraries["automation"]
+            module._Cache = self._Loader.loadedLibraries["cache"]
+            module._Calllater = self._Loader.loadedLibraries["calllater"]
             module._Commands = self._Loader.loadedLibraries["commands"]
             module._Configs = self._Loader.loadedLibraries["configuration"]
             module._CronTab = self._Loader.loadedLibraries["crontab"]

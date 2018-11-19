@@ -81,6 +81,7 @@ from yombo.lib.webinterface.routes.automation.pause import route_automation_paus
 from yombo.lib.webinterface.routes.automation.scene import route_automation_scene
 from yombo.lib.webinterface.routes.automation.state import route_automation_state
 from yombo.lib.webinterface.routes.automation.template import route_automation_template
+from yombo.lib.webinterface.routes.calllater import route_calllater
 from yombo.lib.webinterface.routes.configs import route_configs
 from yombo.lib.webinterface.routes.crontab import route_crontabs
 from yombo.lib.webinterface.routes.debug import route_debug
@@ -290,6 +291,7 @@ class WebInterface(YomboLibrary):
         route_automation_scene(self.webapp)
         route_automation_state(self.webapp)
         route_automation_template(self.webapp)
+        route_calllater(self.webapp)
         route_configs(self.webapp)
         route_crontabs(self.webapp)
         route_debug(self.webapp)
@@ -365,6 +367,8 @@ class WebInterface(YomboLibrary):
         self.webapp.templates.globals["_authkeys"] = self._AuthKeys
         self.webapp.templates.globals["_atoms"] = self._Atoms
         self.webapp.templates.globals["_automation"] = self._Automation
+        self.webapp.templates.globals["_cache"] = self._Cache
+        self.webapp.templates.globals["_calllater"] = self._Calllater
         self.webapp.templates.globals["_commands"] = self._Commands
         self.webapp.templates.globals["_configs"] = self._Configs
         self.webapp.templates.globals["_crontab"] = self._CronTab
@@ -396,6 +400,7 @@ class WebInterface(YomboLibrary):
         self.webapp.templates.globals["_times"] = self._Times
         self.webapp.templates.globals["_variables"] = self._Variables
         self.webapp.templates.globals["_validate"] = self._Validate
+        self.webapp.templates.globals["py_time_time"] = time
         self.webapp.templates.globals["misc_wi_data"] = self.misc_wi_data
         self.webapp.templates.globals["webinterface"] = self
 

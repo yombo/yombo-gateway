@@ -23,6 +23,8 @@ class MagicAttributesMixin(object):
         self._Atoms = parent._Loader.loadedLibraries["atoms"]
         self._AuthKeys = parent._Loader.loadedLibraries["authkeys"]
         self._Automation = parent._Loader.loadedLibraries["automation"]
+        self._Cache = parent._Loader.loadedLibraries["cache"]
+        self._Calllater = parent._Loader.loadedLibraries["callater"]
         self._Commands = parent._Loader.loadedLibraries["commands"]
         self._Configs = parent._Loader.loadedLibraries["configuration"]
         self._CronTab = parent._Loader.loadedLibraries["crontab"]

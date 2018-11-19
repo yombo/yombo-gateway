@@ -64,6 +64,7 @@ logger = get_logger("library.loader")
 
 HARD_LOAD = OrderedDict()
 HARD_LOAD["Events"] = {"operating_mode": "all"}
+HARD_LOAD["Calllater"] = {"operating_mode": "all"}
 HARD_LOAD["Cache"] = {"operating_mode": "all"}
 HARD_LOAD["Validate"] = {"operating_mode": "all"}
 HARD_LOAD["Locations"] = {"operating_mode": "all"}
@@ -496,6 +497,7 @@ class Loader(YomboLibrary, object):
             library._AuthKeys = self.loadedLibraries["authkeys"]
             library._Automation = self.loadedLibraries["automation"]
             library._Cache = self.loadedLibraries["cache"]
+            library._Calllater = self.loadedLibraries["calllater"]
             library._Commands = self.loadedLibraries["commands"]
             library._Configs = self.loadedLibraries["configuration"]
             library._CronTab = self.loadedLibraries["crontab"]

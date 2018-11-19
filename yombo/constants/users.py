@@ -5,6 +5,7 @@ Constants for users library.
 AUTH_PLATFORM_ATOM = "atom"
 AUTH_PLATFORM_AUTHKEY = "authkey"
 AUTH_PLATFORM_AUTOMATION = "automation"
+AUTH_PLATFORM_CALLLATER = "calllater"
 AUTH_PLATFORM_CRONTAB = "crontab"
 AUTH_PLATFORM_DEBUG = "debug"
 AUTH_PLATFORM_DEVICE = "device"
@@ -22,6 +23,7 @@ AUTH_PLATFORM_STATE = "state"
 AUTH_PLATFORM_STATISTIC = "statistic"
 AUTH_PLATFORM_SYSTEM_SETTING = "system_setting"
 AUTH_PLATFORM_SYSTEM_OPTION = "system_options"
+AUTH_PLATFORM_TASKS = "tasks"
 AUTH_PLATFORM_USER = "user"
 AUTH_PLATFORM_WEBSESSION = "websession"
 AUTH_PLATFORM_WEBLOGS = "weblogs"
@@ -32,6 +34,7 @@ ITEMIZED_AUTH_PLATFORMS = AUTH_PLATFORM_AUTOMATION, AUTH_PLATFORM_DEVICE, AUTH_P
 ACTIONS_ATOM = ("view", "edit", "enable", "disable")
 ACTIONS_AUTHKEY = ("add", "view", "edit", "enable", "disable", "remove")
 ACTIONS_AUTOMATION = ("add", "view", "edit", "start", "stop", "enable", "disable", "remove")
+ACTIONS_CALLLATER = ("view",)
 ACTIONS_CRONTAB = ("add", "view", "edit", "enable", "disable")
 ACTIONS_DEBUG = ("cache", "view", "commands", "device_types", "libraries", "modules", "nodes", "sslcerts", "statistics",
                  "requirements", "crontab", "locales", "event_types")
@@ -50,6 +53,7 @@ ACTIONS_STATE = ("view",)
 ACTIONS_STATISTIC = ("view",)
 ACTIONS_SYSTEM_SETTING = ("view", "edit")
 ACTIONS_SYSTEM_OPTION = ("view", "backup", "control", "status", "stream", "mqtt")
+ACTIONS_TASKS = ("view",)
 ACTIONS_USER = ("add", "view", "edit", "remove")
 ACTIONS_WEBLOGS = ("view",)
 ACTIONS_WEBSESSION = ("view",)
@@ -59,6 +63,7 @@ AUTH_PLATFORMS = {
     AUTH_PLATFORM_ATOM: {"actions": ACTIONS_ATOM},
     AUTH_PLATFORM_AUTHKEY: {"actions": ACTIONS_AUTHKEY},
     AUTH_PLATFORM_AUTOMATION: {"actions": ACTIONS_AUTOMATION},
+    AUTH_PLATFORM_CALLLATER: {"actions": ACTIONS_CALLLATER},
     AUTH_PLATFORM_CRONTAB: {"actions": ACTIONS_CRONTAB},
     AUTH_PLATFORM_DEBUG: {"actions": ACTIONS_DEBUG},
     AUTH_PLATFORM_DEVICE: {"actions": ACTIONS_DEVICE},
@@ -76,12 +81,12 @@ AUTH_PLATFORMS = {
     AUTH_PLATFORM_STATISTIC: {"actions": ACTIONS_STATISTIC},
     AUTH_PLATFORM_SYSTEM_SETTING: {"actions": ACTIONS_SYSTEM_SETTING},
     AUTH_PLATFORM_SYSTEM_OPTION: {"actions": ACTIONS_SYSTEM_OPTION},
+    AUTH_PLATFORM_TASKS: {"actions": ACTIONS_TASKS},
     AUTH_PLATFORM_USER: {"actions": ACTIONS_USER},
     AUTH_PLATFORM_WEBLOGS: {"actions": ACTIONS_WEBLOGS},
     AUTH_PLATFORM_WEBSESSION: {"actions": ACTIONS_WEBSESSION},
     AUTH_PLATFORM_WILDCARD: {"actions": ACTIONS_WILDCARD},
 }
-AUTH_PLATFORM_INTENT
 
 SYSTEM_ROLES = {
     "admin": {
@@ -103,7 +108,9 @@ SYSTEM_ROLES = {
     },
     "general_users": {
         "label": "General Users",
-        "description": "Given to most users so they can control all devices. Specific devices can be blocked at the device level. This role also grants views to states, atoms, and other low level items.",
+        "description": "Given to most users so they can control all devices. "
+                       "Specific devices can be blocked at the device level. "
+                       "This role also grants views to states, atoms, and other low level items.",
         "permissions": [
             {
                 "platform": AUTH_PLATFORM_ATOM,
@@ -427,6 +434,18 @@ SYSTEM_ROLES = {
                 "platform": AUTH_PLATFORM_AUTOMATION,
                 "item": "*",
                 "action": "*",
+                "access": "allow",
+            }
+        ]
+    },
+    "calllater_view": {
+        "label": "Call later - View call later items",
+        "description": "Allow user to the view call later items.",
+        "permissions": [
+            {
+                "platform": AUTH_PLATFORM_CALLLATER,
+                "item": "*",
+                "action": "view",
                 "access": "allow",
             }
         ]
@@ -1105,7 +1124,8 @@ SYSTEM_ROLES = {
     },
     "system_option_stream": {
         "label": "System option - stream",
-        "description": "Allow to connection to the system event stream. This permits live access to nearly any system even change.",
+        "description": "Allow to connection to the system event stream. "
+                       "This permits live access to nearly any system even change.",
         "permissions": [
             {
                 "platform": AUTH_PLATFORM_SYSTEM_OPTION,
@@ -1147,6 +1167,18 @@ SYSTEM_ROLES = {
                 "platform": AUTH_PLATFORM_SYSTEM_SETTING,
                 "item": "*",
                 "action": "edit",
+                "access": "allow",
+            }
+        ]
+    },
+    "tasks_view": {
+        "label": "Tasks - View Tasks",
+        "description": "Allow user to view tasks.",
+        "permissions": [
+            {
+                "platform": AUTH_PLATFORM_TASKS,
+                "item": "*",
+                "action": "view",
                 "access": "allow",
             }
         ]
