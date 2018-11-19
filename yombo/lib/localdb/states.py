@@ -92,6 +92,7 @@ class DB_States(object):
 
         where = {
             "name": name,
+            "gateway_id": gateway_id,
         }
         sql_where = dictToWhere(where)
 

@@ -455,27 +455,29 @@ class States(YomboLibrary, object):
             is_new = True
             self.states[gateway_id][key] = {
                 "gateway_id": gateway_id,
-                "created_at": int(time()),
                 "live": False,
             }
             self._Statistics.increment("lib.states.set.new", bucket_size=60, anon=True)
 
         self.states[gateway_id][key]["source"] = source_label
         self.states[gateway_id][key]["value"] = value
+        self.states[gateway_id][key]["created_at"] = int(time())
         self.states[gateway_id][key]["callback"] = callback
         self.states[gateway_id][key]["arguments"] = arguments
         if value_type is None:
-            value_type = "str"
+            value_type_fixed = "str"
         elif value_type.lower() in ("bool", "boolean"):
-            value_type = "bool"
+            value_type_fixed = "bool"
         elif value_type.lower() in ("str", "string"):
-            value_type = "str"
+            value_type_fixed = "str"
         elif value_type.lower() in ("int", "integer"):
-            value_type = "int"
+            value_type_fixed = "int"
         elif value_type.lower() in ("float", "decimal"):
-            value_type = "float"
-        if is_new is True or value_type is not None:
-            self.states[gateway_id][key]["value_type"] = value_type
+            value_type_fixed = "float"
+        else:
+            value_type_fixed = value_type
+        if is_new is True or value_type_fixed is not None:
+            self.states[gateway_id][key]["value_type"] = value_type_fixed
         if is_new is True or callback is not None:
             if callback is None:
                 self.states[gateway_id][key]["live"] = False
@@ -487,7 +489,7 @@ class States(YomboLibrary, object):
         self._Automation.trigger_monitor("state",
                                          key=key,
                                          value=value,
-                                         value_type=value_type,
+                                         value_type=value_type_fixed,
                                          value_full=self.states[gateway_id][key],
                                          action="set",
                                          gateway_id=gateway_id,
@@ -507,7 +509,7 @@ class States(YomboLibrary, object):
                                 )
 
         if (gateway_id == self.gateway_id or gateway_id == "cluster") and gateway_id != "local":
-            self.db_save_states_data.append([key, deepcopy( self.states[gateway_id][key])])
+            self.db_save_states_data.append([key, deepcopy(self.states[gateway_id][key])])
 
     @inlineCallbacks
     def db_save_states(self):
@@ -608,7 +610,8 @@ class States(YomboLibrary, object):
 
         :param key: Name of the state to get.
         :param offset: How far back to go. 0 is current, 1 is previous, etc.
-        :limit limit: How many records to provide
+        :param limit: How many records to provide
+        :param gateway_id: Gateway ID to get stats for.
         :return:
         """
         if gateway_id is None:
