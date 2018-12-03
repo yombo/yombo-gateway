@@ -13,7 +13,7 @@ from yombo.ext.twistar.utils import dictToWhere
 from yombo.lib.localdb import Statistics
 from yombo.utils import data_pickle, data_unpickle
 
-logger = get_logger("library.localdb.variables")
+logger = get_logger("library.localdb.statistics")
 
 
 class DB_Statistics(object):

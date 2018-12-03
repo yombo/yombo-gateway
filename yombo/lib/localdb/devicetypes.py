@@ -10,7 +10,7 @@ from yombo.core.log import get_logger
 from yombo.lib.localdb import DeviceTypeCommand, ModuleDeviceTypesView, DeviceType
 from yombo.utils import clean_dict
 
-logger = get_logger("library.localdb.variables")
+logger = get_logger("library.localdb.devicetypes")
 
 
 class DB_DeviceTypes(object):

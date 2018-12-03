@@ -12,7 +12,7 @@ from yombo.ext.twistar.utils import dictToWhere
 from yombo.lib.localdb import States
 from yombo.utils import clean_dict
 
-logger = get_logger("library.localdb.variables")
+logger = get_logger("library.localdb.states")
 
 
 class DB_States(object):
