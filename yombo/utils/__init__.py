@@ -17,9 +17,11 @@ except ImportError:
 import base64
 from difflib import SequenceMatcher
 from docutils.core import publish_parts
+import errno
 from hashlib import sha256, sha224
 import importlib
 import inspect
+import itertools
 import jinja2
 import json
 import markdown
@@ -30,6 +32,7 @@ from packaging.requirements import Requirement as pkg_requirement
 import pkg_resources
 import random
 import re
+import shutil
 import string
 import socket
 from subprocess import check_output, CalledProcessError
@@ -47,6 +50,7 @@ from twisted.internet.fdesc import writeToFD, setNonBlocking
 
 # Import 3rd-party libs
 from yombo.ext.hashids import Hashids
+import yombo.ext.magic as magicfile
 
 # Import Yombo libraries
 from yombo.core.library import YomboLibrary
@@ -59,6 +63,7 @@ import yombo.ext.base62 as base62
 logger = None  # This is set by the set_twisted_logger function.
 _Yombo = None  # Set by setup_yombo_references()
 
+magicparse = magicfile.Magic(mime_encoding=True, mime=True)
 
 @inlineCallbacks
 def test_url_listening(url):
@@ -111,6 +116,7 @@ def test_port_listening(host, port):
     """
     results = yield threads.deferToThread(host, port)
     return results
+
 
 def _test_port_listening(host, port):
     """
@@ -348,6 +354,7 @@ def read_file(filename, convert_to_unicode=None):
     return contents
 
 
+@inlineCallbacks
 def save_file(filename, content, mode=None):
     """
     A quick function to save data to a file. Defaults to overwrite, us mode "a" to append.
@@ -359,30 +366,106 @@ def save_file(filename, content, mode=None):
     :param mode: File open mode, default to "w".
     :return:
     """
-    def writeFile(filename, content, mode):
-        if mode is None:
-            mode = "w"
-        with open(filename, mode) as f:
-            fd = f.fileno()
-            setNonBlocking(fd)
-            writeToFD(fd, content)
-    writeFile(filename, unicode_to_bytes(content), mode)
+    def writeFile(file, data, file_mode):
+        if not os.path.exists(os.path.dirname(file)):
+            try:
+                os.makedirs(os.path.dirname(file))
+            except OSError as exc:  # Guard against race condition
+                if exc.errno != errno.EEXIST:
+                    raise YomboWarning(f"Unable to save file: {exc}")
+        if file_mode is None:
+            if isinstance(data, bytes):
+                file_mode = "wb"
+            else:
+                file_mode = "w"
+        file = open(file, file_mode)
+        file.write(data)
+        file.close()
+
+    yield threads.deferToThread(writeFile, filename, content, mode)
 
 
 @inlineCallbacks
-def delete_file(filename):
+def copy_file(source_path, dest_path):
+    def do_copy(src, dst):
+        shutil.copy2(src, dst)
+
+    yield threads.deferToThread(do_copy, source_path, dest_path)
+
+
+@inlineCallbacks
+def move_file(source_path, dest_path):
+    def do_move(src, dst):
+        shutil.copy2(src, dst)
+    yield threads.deferToThread(do_move, source_path, dest_path)
+
+
+@inlineCallbacks
+def file_size(filename):
+    def do_size(file):
+        os.path.getsize(file)
+    yield threads.deferToThread(do_size, filename)
+
+
+@inlineCallbacks
+def delete_file(filename, remove_empty=None):
     """
-    Delete a file, non-blocking.
+    Delete a file, returns a deferred.
+
+    :param filename: Full path of file to delete
+    :param remove_empty: If the directory is empty after the file is deleted, remove the directory.
+    :return:
+    """
+    def deleteFile(delete_filename, delete_empty):
+        try:
+            print(f"deletefile: {delete_file}")
+            os.remove(delete_filename)
+            print(f"deletefile: done")
+        except OSError as e:
+            raise YomboWarning(f"delete_file: Could not delete: {e}")
+        if delete_empty is True:
+            folder = os.path.dirname(delete_filename)
+            if os.path.exists(folder) and os.path.isdir(folder):
+                all_items = os.listdir(os.path.dirname(delete_filename))
+                if len(all_items) == 0:
+                    os.rmdir(folder)
+
+    if remove_empty is None:
+        remove_empty = False
+
+    yield threads.deferToThread(deleteFile, filename, remove_empty)
+
+
+@inlineCallbacks
+def mime_type_from_file(filename):
+    """
+    Gets the mime type by inspecting the file.
 
     :param filename:
     :return:
     """
-    def deleteFile(delete_filename):
-        try:
-            os.remove(delete_filename)
-        except OSError as e:
-            logger.warn("delete_file: Could not delete: {e}", e=e)
-    yield threads.deferToThread(deleteFile, filename)
+    def get_mime(file):
+        my_results = magicparse.from_file(file)
+        mime, charset = my_results.split("; charset=")
+        return {"content_type": mime, "charset": charset}
+    results = yield threads.deferToThread(get_mime, filename)
+    return results
+
+
+@inlineCallbacks
+def mime_type_from_buffer(data):
+    """
+    Gets the mime type by inspecting the file.
+
+    :param filename:
+    :return:
+    """
+    def get_mime(buffer):
+        my_results = magicparse.from_buffer(buffer)
+        mime, charset = my_results.split("; charset=")
+        return {"content_type": mime, "charset": charset}
+    results = yield threads.deferToThread(get_mime, data)
+    return results
 
 
 @inlineCallbacks
@@ -423,6 +506,31 @@ def set_nested_dict(dic, keys, value):
     for key in keys[:-1]:
         dic = dic.setdefault(key, {})
     dic[keys[-1]] = value
+
+
+def slice_dict(dic, start, stop=None, step=None):
+    """
+    Slices a dictionary.
+    Usage:
+    >>> new_dict = slice_dict(old_dict, stop)  # start = 0 if not specificed
+    >>> new_dict = slice_dict(old_dict, start, stop)
+    >>> new_dict = slice_dict(old_dict, start, stop, step)
+
+    Examples:
+    >>> new_dict = slice_dict(old_dict, 1)  # equiv for a list: some_list[0:1]
+    >>> new_dict = slice_dict(old_dict, 2, 4)  # equiv for a list: some_list[2:4]
+    >>> new_dict = slice_dict(old_dict, 2, 6)  # Start at 2, end at 6, skiping every other one.
+
+    :param dic:
+    :param start: Place to start slicing, default is 0
+    :param stop: Where to stop slicing
+    :param step: Used to skep items, like every other one
+    :return:
+    """
+    if stop is None:
+        return dict(itertools.islice(dic.items(), start))
+
+    return dict(itertools.islice(dic.items(), start, stop, step))
 
 
 def ordereddict_to_dict(value):
