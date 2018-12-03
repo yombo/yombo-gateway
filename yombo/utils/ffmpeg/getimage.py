@@ -13,6 +13,7 @@ Use ffmpeg to capture an image from a media stream.
 from twisted.internet.defer import inlineCallbacks, Deferred
 
 # Import Yombo libraries
+from yombo.classes.image import Image
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
 
@@ -87,10 +88,9 @@ class GetImage(YBOFFmpeg):
                 "-frames:v",
                 "1",
             ]
-            if self.output_format == IMAGE_JPEG:
-                args.extend(("-bsf:v", "mjpeg2jpeg"))
-            else:
-                args.extend(("-c:v", "png"))
+                # # args.extend(("-bsf:v", "mjpeg2jpeg"))
+                # args.extend(("-bsf:v", "mjpeg2jpeg"))
+            # else:
         else:
             args = [
                 "-v",
@@ -98,14 +98,18 @@ class GetImage(YBOFFmpeg):
                 "-an",
                 "-frames:v",
                 "1",
-                "-c:v",
-                self.output_format,
+                # "-c:v",
+                # self.output_format,
             ]
+
+        if self.output_format != IMAGE_JPEG:
+            args.extend(("-c:v", "png"))
 
         output_buffer = b""
 
         def collect_results(output):
             nonlocal output_buffer
+            # print(f"GetImage: Collect results received: {len(output)}")
             output_buffer += output
 
         def collect_results_final(*args, **kargs):
@@ -118,17 +122,24 @@ class GetImage(YBOFFmpeg):
             """
             nonlocal image_deferred
             nonlocal output_buffer
+            # print("GetImage: collect_results_final")
             try:
-                image_deferred.callback(output_buffer)
+                image = Image("image/jpeg", output_buffer)
+                image_deferred.callback(image)
             except Exception as e:
                 print("collect_results_final Exception:")
                 print(e)
 
-        if streaming is True:  # Don't autoreconnect, end of image...is end of image.
+        if streaming is True:  # Don't auto-reconnect, end of image...is end of image.
+            # print("GetImage, STREAMING..")
+            image_deferred = Deferred()
             self.stdout_callback = results_callback
             self.closed_callback = results_final_callback
             results = yield self.open(self.video_url, commands=args, output="-f image2pipe -", auto_reconnect=False)
+            image = yield image_deferred
+            return image
         else:
+            # print("GetImage, Not straming.")
             image_deferred = Deferred()
             self.stdout_callback = collect_results
             self.closed_callback = collect_results_final

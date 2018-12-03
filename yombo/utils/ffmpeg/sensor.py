@@ -327,7 +327,7 @@ class SensorMotion(FFmpegSensorBase):
             input = f"-framerate {self._framerate} -re -loop 1 -i {input_source}"
             commands = [
                 "-vf",
-                f"select=gt(scene\,{self._sensitivity / 1000})",
+                f"hqdn3d=20:10,select=gt(scene\,{self._sensitivity / 1000})",
                 "-f",
                 "framemd5",
             ]
@@ -336,7 +336,7 @@ class SensorMotion(FFmpegSensorBase):
             commands = [
                 "-an",
                 "-vf",
-                f"select=gt(scene\,{self._sensitivity / 1000})",
+                f"hqdn3d=20:10,select=gt(scene\,{self._sensitivity / 1000})",
                 "-f",
                 "framemd5",
                 # "select=gt(scene\\,{0})".format(self._sensitivity / 1000),
