@@ -26,7 +26,7 @@ from operator import itemgetter
 from os import path, listdir, mkdir
 import shutil
 from time import time
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, urlparse, urlunparse
 
 # Import twisted libraries
 from twisted.web.server import Site
@@ -61,6 +61,7 @@ from yombo.lib.webinterface.routes.api_v1.server import route_api_v1_server
 from yombo.lib.webinterface.routes.api_v1.stream import broadcast as route_api_v1_stream_broadcast
 from yombo.lib.webinterface.routes.api_v1.stream import route_api_v1_stream
 from yombo.lib.webinterface.routes.api_v1.statistics import route_api_v1_statistics
+from yombo.lib.webinterface.routes.api_v1.storage import route_api_v1_storage
 from yombo.lib.webinterface.routes.api_v1.system import route_api_v1_system
 from yombo.lib.webinterface.routes.api_v1.webinterface_logs import route_api_v1_webinterface_logs
 
@@ -105,6 +106,7 @@ from yombo.lib.webinterface.routes.scenes.state import route_scenes_state
 from yombo.lib.webinterface.routes.scenes.template import route_scenes_template
 from yombo.lib.webinterface.routes.statistics import route_statistics
 from yombo.lib.webinterface.routes.states import route_states
+from yombo.lib.webinterface.routes.storage import route_storage
 from yombo.lib.webinterface.routes.system import route_system
 from yombo.lib.webinterface.routes.users import route_users
 from yombo.lib.webinterface.routes.webinterface_logs import route_webinterface_logs
@@ -224,6 +226,8 @@ class WebInterface(YomboLibrary):
         self.web_interface_fully_started = False
         self.enabled = self._Configs.get("webinterface", "enabled", True)
 
+        self.fqdn = self._Configs.get2("dns", "fqdn", None, False)
+
         self.gateway_id = self._Configs.gateway_id
         self.is_master = self._Configs.is_master
         self.master_gateway_id = self._Configs.master_gateway_id
@@ -261,6 +265,7 @@ class WebInterface(YomboLibrary):
         route_api_v1_command(self.webapp)
         route_api_v1_device(self.webapp)
         route_api_v1_device_command(self.webapp)
+        route_api_v1_events(self.webapp)
         route_api_v1_gateway(self.webapp)
         route_api_v1_module(self.webapp)
         route_api_v1_notification(self.webapp)
@@ -269,7 +274,7 @@ class WebInterface(YomboLibrary):
         route_api_v1_stream(self.webapp, self)
         route_api_v1_system(self.webapp)
         route_api_v1_scene(self.webapp)
-        route_api_v1_events(self.webapp)
+        route_api_v1_storage(self.webapp)
         route_api_v1_webinterface_logs(self.webapp)
 
         # Load devtool routes
@@ -318,6 +323,7 @@ class WebInterface(YomboLibrary):
             route_setup_wizard(self.webapp)
         route_statistics(self.webapp)
         route_states(self.webapp)
+        route_storage(self.webapp)
         route_system(self.webapp)
         route_users(self.webapp)
         route_webinterface_logs(self.webapp)
@@ -396,11 +402,16 @@ class WebInterface(YomboLibrary):
         self.webapp.templates.globals["_sslcerts"] = self._SSLCerts
         self.webapp.templates.globals["_states"] = self._States
         self.webapp.templates.globals["_statistics"] = self._Statistics
+        self.webapp.templates.globals["_storage"] = self._Storage
         self.webapp.templates.globals["_tasks"] = self._Tasks
         self.webapp.templates.globals["_times"] = self._Times
         self.webapp.templates.globals["_variables"] = self._Variables
         self.webapp.templates.globals["_validate"] = self._Validate
+        self.webapp.templates.globals["_webinterface"] = self
         self.webapp.templates.globals["py_time_time"] = time
+        self.webapp.templates.globals["py_urllib_urlparse"] = urlparse
+        self.webapp.templates.globals["py_urllib_urlunparse"] = urlunparse
+        self.webapp.templates.globals["yombo_utils"] = yombo.utils
         self.webapp.templates.globals["misc_wi_data"] = self.misc_wi_data
         self.webapp.templates.globals["webinterface"] = self
 
@@ -613,7 +624,7 @@ class WebInterface(YomboLibrary):
         :param kwargs:
         :return:
         """
-        fqdn = self._Configs.get("dns", "fqdn", None, False)
+        fqdn = self.fqdn()
         if fqdn is None:
             logger.warn("Unable to create webinterface SSL cert: DNS not set properly.")
             return
@@ -674,6 +685,36 @@ class WebInterface(YomboLibrary):
         request.setResponseCode(404)
         return "Not found, I say"
 
+    @property
+    def internal_url(self):
+        """
+        Returns the starting portion of the URL to this host.
+        https://i.exmaple.yombo.net
+
+        :return:
+        """
+        fqdn = self.fqdn()
+        if fqdn is None:
+            internal_hostname = self._Configs.get("core", "localipaddress_v4")
+            return f"http://{internal_hostname}:{self.wi_port_nonsecure()}"
+        else:
+            return f"https://i.{fqdn}:{self.wi_port_secure()}"
+
+    @property
+    def external_url(self):
+        """
+        Returns the starting portion of the URL to this host.
+        https://e.exmaple.yombo.net
+
+        :return:
+        """
+        fqdn = self.fqdn()
+        if fqdn is None:
+            external_hostname = self._Configs.get("core", "externalipaddress_v4")
+            return f"https://{external_hostname}:{self.wi_port_secure()}"
+        else:
+            return f"https://e.{fqdn}:{self.wi_port_secure()}"
+
     def display_pin_console(self):
         print("###########################################################")
         print("#                                                         #")
@@ -682,8 +723,8 @@ class WebInterface(YomboLibrary):
             print("# configuration only mode.                                #")
             print("#                                                         #")
 
-        dns_fqdn = self._Configs.get("dns", "fqdn", None, False)
-        if dns_fqdn is None:
+        fqdn = self.fqdn()
+        if fqdn is None:
             local_hostname = "127.0.0.1"
             internal_hostname = self._Configs.get("core", "localipaddress_v4")
             external_hostname = self._Configs.get("core", "externalipaddress_v4")
@@ -701,7 +742,7 @@ class WebInterface(YomboLibrary):
             print("# From external network (check port forwarding):          #")
             print(f"#  {external:<54} #")
         else:
-            website_url = f"http://{dns_fqdn}"
+            website_url = f"http://{fqdn}"
             print("# The gateway can be accessed from the following url:     #")
             print("#                                                         #")
             print("# From anywhere:                                          #")

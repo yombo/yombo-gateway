@@ -109,6 +109,7 @@ HARD_LOAD["Scenes"] = {"operating_mode": "all"}
 HARD_LOAD["Users"] = {"operating_mode": "all"}
 HARD_LOAD["AuthKeys"] = {"operating_mode": "all"}
 HARD_LOAD["Intents"] = {"operating_mode": "all"}
+HARD_LOAD["Storage"] = {"operating_mode": "all"}
 
 HARD_UNLOAD = OrderedDict()
 HARD_UNLOAD["Users"] = {"operating_mode": "all"}
@@ -173,6 +174,7 @@ RUN_PHASE = {
     "libraries_stop": 5600,
     "libraries_unload": 5800,
 }
+
 
 class Loader(YomboLibrary, object):
     """
@@ -530,6 +532,7 @@ class Loader(YomboLibrary, object):
             library._Startup = self.loadedLibraries["startup"]
             library._States = self.loadedLibraries["states"]
             library._Statistics = self.loadedLibraries["statistics"]
+            library._Storage = self.loadedLibraries["storage"]
             library._Tasks = self.loadedLibraries["tasks"]
             library._Template = self.loadedLibraries["template"]
             library._Times = self.loadedLibraries["times"]
@@ -537,6 +540,7 @@ class Loader(YomboLibrary, object):
             library._Users = self.loadedLibraries["users"]
             library._Variables = self.loadedLibraries["variables"]
             library._Validate = self.loadedLibraries["validate"]
+            library._WebInterface = self.loadedLibraries["webinterface"]
             library._WebSessions = self.loadedLibraries["websessions"]
 
             if self.check_operating_mode(config["operating_mode"]) is False:

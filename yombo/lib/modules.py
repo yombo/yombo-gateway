@@ -48,34 +48,34 @@ logger = get_logger("library.modules")
 SYSTEM_MODULES = {
     # This module was removed during the automation revamp. This is left here for future
     # reference on how to add system modules.
-    # "automationhelpers": {
-    #     "id": "automationhelpers",  # module_id
-    #     "gateway_id": "local",
-    #     "module_type": "logic",
-    #     "machine_label": "AutomationHelpers",
-    #     "label": "Automation Helpers",
-    #     "short_description": "Adds basic platforms to the automation rules.",
-    #     "medium_description": "Adds basic platforms to the automation rules.",
-    #     "description": "Adds basic platforms to the automation rules.",
-    #     "medium_description_html": "Adds basic platforms to the automation rules.",
-    #     "description_html": "Adds basic platforms to the automation rules.",
-    #     "install_branch": "system",
-    #     "install_count": "",
-    #     "see_also": "",
-    #     "prod_branch": "",
-    #     "dev_branch": "",
-    #     "prod_version": "",
-    #     "dev_version": "",
-    #     "repository_link": "",
-    #     "issue_tracker_link": "",
-    #     "doc_link": "https://yg2.in/about_rules",
-    #     "git_link": "",
-    #     "public": "2",
-    #     "status": "1",
-    #     "created_at": int(time()),
-    #     "updated_at": int(time()),
-    #     "load_source": "system modules",
-    #     }
+    "storagefile": {
+        "id": "modulestoragefile",  # module_id
+        "gateway_id": "local",
+        "module_type": "logic",
+        "machine_label": "StorageFile",
+        "label": "Storage - File",
+        "short_description": "Adds support to storing files within the filesystem.",
+        "medium_description": "Adds support to storing files within the filesystem.",
+        "description": "Adds support to storing files within the filesystem.",
+        "medium_description_html": "Adds support to storing files within the filesystem.",
+        "description_html": "Adds support to storing files within the filesystem.",
+        "install_branch": "system",
+        "install_count": "",
+        "see_also": "",
+        "prod_branch": "",
+        "dev_branch": "",
+        "prod_version": "",
+        "dev_version": "",
+        "repository_link": "",
+        "issue_tracker_link": "",
+        "doc_link": "",
+        "git_link": "",
+        "public": "2",
+        "status": "1",
+        "created_at": int(time()),
+        "updated_at": int(time()),
+        "load_source": "system modules",
+        }
     }
 
 
@@ -674,6 +674,7 @@ class Modules(YomboLibrary):
             module._SSLCerts = self._Loader.loadedLibraries["sslcerts"]
             module._States = self._Loader.loadedLibraries["states"]
             module._Statistics = self._Loader.loadedLibraries["statistics"]
+            module._Storage = self._Loader.loadedLibraries["storage"]
             module._Tasks = self._Loader.loadedLibraries["tasks"]
             module._Template = self._Loader.loadedLibraries["template"]
             module._Times = self._Loader.loadedLibraries["times"]
@@ -682,6 +683,7 @@ class Modules(YomboLibrary):
             module._Variables = self._Loader.loadedLibraries["variables"]
             module._Validate = self._Loader.loadedLibraries["validate"]
             module._WebSessions = self._Loader.loadedLibraries["websessions"]
+            module._WebInterface = self._Loader.loadedLibraries["webinterface"]
 
             module._hooks_called["_init_"] = 0
             if int(module._status) != 1:

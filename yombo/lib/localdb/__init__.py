@@ -20,11 +20,8 @@ A database API to SQLite3.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/localdb.html>`_
 """
 # Import python libraries
-from collections import OrderedDict
-from sqlite3 import IntegrityError
 import inspect
-from os import chmod, listdir, remove, rename
-from os.path import isfile, join
+from os import chmod
 import re
 import sys
 from time import time
@@ -38,15 +35,13 @@ from yombo.ext.twistar.utils import dictToWhere
 from twisted.enterprise import adbapi
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.task import LoopingCall
-from twisted.internet.utils import getProcessOutput
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 import yombo.core.settings as settings
-from yombo.utils import clean_dict, instance_properties, data_pickle, data_unpickle, sleep, sha224_compact
-from yombo.utils.datatypes import coerce_value
+from yombo.utils import instance_properties, data_pickle, data_unpickle
 
 logger = get_logger("library.localdb")
 
@@ -160,8 +155,16 @@ class Notifications(DBObject):
     TABLENAME = "notifications"
 
 
+class Roles(DBObject):
+    TABLENAME = "roles"
+
+
 class Schema_Version(DBObject):
     TABLENAME = "schema_version"
+
+
+class Sessions(DBObject):
+    TABLENAME = "webinterface_sessions"
 
 
 class Sqldict(DBObject):
@@ -176,6 +179,10 @@ class Statistics(DBObject):
     TABLENAME = "statistics"
 
 
+class Storage(DBObject):
+    TABLENAME = "storage"
+
+
 class Tasks(DBObject):
     TABLENAME = "tasks"
 
@@ -187,10 +194,6 @@ class Users(DBObject):
 
 class UserRoles(DBObject):
     TABLENAME = "user_roles"
-
-
-class Roles(DBObject):
-    TABLENAME = "roles"
 
 
 class VariableData(DBObject):
@@ -215,10 +218,6 @@ class VariableGroupFieldView(DBObject):
 
 class VariableGroupFieldDataView(DBObject):
     TABLENAME = "variable_group_field_data_view"
-
-
-class Sessions(DBObject):
-    TABLENAME = "webinterface_sessions"
 
 
 class WebinterfaceLogs(DBObject):
@@ -257,12 +256,13 @@ from yombo.lib.localdb.events import DB_Events
 from yombo.lib.localdb.nodes import DB_Nodes
 from yombo.lib.localdb.states import DB_States
 from yombo.lib.localdb.statistics import DB_Statistics
+from yombo.lib.localdb.storage import DB_Storage
 from yombo.lib.localdb.variables import DB_Variables
 from yombo.lib.localdb.websessions import DB_Websessions
 
 
 class LocalDB(YomboLibrary, DB_Tools, DB_Devices, DB_DeviceTypes, DB_Events, DB_Nodes, DB_States,
-              DB_Statistics, DB_Variables, DB_Websessions):
+              DB_Statistics, DB_Storage, DB_Variables, DB_Websessions):
     """
     Manages all database interactions.
     """
@@ -342,6 +342,7 @@ class LocalDB(YomboLibrary, DB_Tools, DB_Devices, DB_DeviceTypes, DB_Events, DB_
 
         # used to cache datatables lookups for the webinterface viewers
         self.event_counts = self._Cache.ttl(ttl=15, tags="events")
+        self.storage_counts = self._Cache.ttl(ttl=15, tags="storage")
         self.webinterface_counts = self._Cache.ttl(ttl=15, tags="webinterface_logs")
 
     def _start_(self, **kwargs):
@@ -807,8 +808,8 @@ class LocalDB(YomboLibrary, DB_Tools, DB_Devices, DB_DeviceTypes, DB_Events, DB_
             '(CASE secure WHEN 1 THEN \'TLS/SSL\' ELSE \'Unsecure\' END || "<br>" || method || "<br>" || hostname || "<br>" || path) as request_info',
             # '(method || "<br>" || hostname || "<br>" || path) as request_info',
             "auth_id as user",
-            "(ip || "<br>" || agent || "<br>" || referrer) as client_info",
-            "(response_code || "<br>" || response_size) as response",
+            '(ip || "<br>" || agent || "<br>" || referrer) as client_info',
+            '(response_code || "<br>" || response_size) as response',
         ]
 
         if search in (None, ""):
