@@ -487,6 +487,8 @@ class Device_Attributes(MagicAttributesMixin):
         self.status_delayed = {}
         self.status_delayed_calllater = None
         self.source = kwargs.get("source", "database")
+        self.parent = None  # Only set if this device is a child to anther device.
+        self.parent_id = None  # Only set if this device is a child to anther device.
         if self.source == "database":
             self.is_in_db = True
         else:

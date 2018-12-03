@@ -547,8 +547,9 @@ class Devices(YomboLibrary):
             "created_at": time(),
             "updated_at": time(),
         })
-        print("creating child device: %s" % new_data)
         new_device = yield self.import_device(new_data, source="child")
+        new_device.parent = existing
+        new_device.parent_id = existing.device_id
         return new_device
 
     @inlineCallbacks
