@@ -202,13 +202,13 @@ class VideoCamera(Camera):
 
     @inlineCallbacks
     def get_camera_image(self):
-        print(f"vC: get_camera iamge, {self.image_url}, {self.video_url}")
+        # print(f"vC: get_camera iamge, {self.image_url}, {self.video_url}")
         if self.image_url is not None:
-            print(f"vC: From parent")
+            # print(f"vC: From parent")
             results = yield super().get_camera_image()
             return results
         elif self.video_url is not None:
-            print(f"vC: From video")
+            # print(f"vC: From video")
             image_getter = GetImage(self, self.video_url)
             image = yield image_getter.get_image()
             return image
