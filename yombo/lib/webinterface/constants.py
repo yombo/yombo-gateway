@@ -125,6 +125,17 @@ NAV_SIDE_MENU = [
         "opmode": "run",
         "cluster": "any",
     },
+    {
+        "label1": "Info",
+        "label2": "Storage",
+        "priority1": 3000,
+        "priority2": 6000,
+        "icon": "fa fa-hdd fa-fw",
+        "url": "/storage/index",
+        "tooltip": "",
+        "opmode": "run",
+        "cluster": "any",
+    },
 
     {
         "label1": "Statistics",
