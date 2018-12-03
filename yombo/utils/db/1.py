@@ -40,6 +40,7 @@ def new_db_file(Registry, **kwargs):
     yield create_table_sqldict(Registry)
     yield create_table_states(Registry)
     yield create_table_statistics(Registry)
+    yield create_table_storage(Registry)
     yield create_table_tasks(Registry)
     yield create_table_users(Registry)
     yield create_table_webinterface_sessions(Registry)
@@ -626,6 +627,39 @@ def create_table_statistics(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(create_index("statistics", "bucket_type"))
     yield Registry.DBPOOL.runQuery("CREATE UNIQUE INDEX IF NOT EXISTS table_b_t_IDX ON statistics (bucket_name, bucket_type, bucket_time)")
     yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS table_t_n_t_IDX ON statistics (finished, uploaded, anon)")
+
+
+@inlineCallbacks
+def create_table_storage(Registry, **kwargs):
+    """ Stores information about various stored data. """
+    table = """CREATE TABLE `storage` (
+        `id`                 TEXT,
+        `scheme`             TEXT,
+        `username`           TEXT,
+        `password`           TEXT,
+        `netloc`             TEXT,
+        `port`               INTEGER,
+        `path`               TEXT,
+        `params`             TEXT,
+        `query`              TEXT,
+        `fragment`           TEXT,
+        `mangle_id`          TEXT,
+        `expires`            INTEGER,
+        `public`             TEXT,
+        `internal_url`       TEXT,
+        `external_url`       TEXT,
+        `internal_thumb_url` TEXT,
+        `external_thumb_url` TEXT,
+        `content_type`       TEXT,
+        `charset`            TEXT,
+        `size`               TEXT,
+        `file_path`          TEXT,
+        `file_path_thumb`    TEXT,
+        `variables`          TEXT,
+        `created_at`         INTEGER NOT NULL);"""
+    yield Registry.DBPOOL.runQuery(table)
+    yield Registry.DBPOOL.runQuery(create_index("storage", "id"))
+    yield Registry.DBPOOL.runQuery(create_index("storage", "expires"))
 
 
 @inlineCallbacks
