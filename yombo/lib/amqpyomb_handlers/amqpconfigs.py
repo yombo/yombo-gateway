@@ -131,25 +131,31 @@ class AmqpConfigHandler(YomboLibrary):
 
         :return:
         """
-        if self.__doing_full_configs == True and len(self.__process_queue) == 0:
+        # print(f"check_download_done_calllater....{self.__process_queue}")
+        if self.__doing_full_configs is True and len(self.__process_queue) == 0:
             last_complete = self.parent._Configs.get("amqpyombo", "lastcomplete", None, False)
             if last_complete == None:
                 if self.init_startup_count > 5:
-                    logger.error("Unable to reach or contact server. If problem persists, check your configs. (Help link soon.)")
+                    logger.error("Unable to reach or contact server. If problem persists, check your configs. "
+                                 "(Help link soon.)")
                     self.reconnect = False
                     reactor.stop()
                     return
-                logger.warn("Try #{count}, haven't been able to download configurations. However, there are no existing configs. Will keep trying.",
+                logger.warn("Try #{count}, haven't been able to download configurations."
+                            " However, there are no existing configs. Will keep trying.",
                             count=self.init_startup_count)
             else:
                 if last_complete < int(time() - 60*60*48):
-                    logger.warn("Try #{count}, haven't been able to download configurations. Will continue trying in background.",
+                    logger.warn("Try #{count}, haven't been able to download configurations. "
+                                "Will continue trying in background.",
                             count=self.init_startup_count)
-                    logger.warn("Using old configuration information. If this persists, check your configs. (Help link soon.)")
+                    logger.warn("Using old configuration information. If this persists, check your configs. "
+                                "(Help link soon.)")
                     if self.init_defer.called is False:
                         self.init_defer.callback(1)  # if we don't check for this, we can't stop!
                 else:
-                    logger.error("Unable to reach or contact server. Configurations too old to keep using. If problem persists, check your configs. (Help link soon.)")
+                    logger.error("Unable to reach or contact server. Configurations too old to keep using. "
+                                 "If problem persists, check your configs. (Help link soon.)")
                     self.reconnect = False
                     reactor.stop()
                     return
