@@ -81,7 +81,6 @@ class DBObject(Validator):
         if self.__class__.RELATIONSHIP_CACHE is None:
             self.__class__.initRelationshipCache()
 
-
     def updateAttrs(self, kwargs):
         """
         Set the attributes of this object based on the given C{dict}.
@@ -91,7 +90,6 @@ class DBObject(Validator):
         """
         for k, v in six.iteritems(kwargs):
             setattr(self, k, v)
-
 
     def save(self):
         """
@@ -115,7 +113,6 @@ class DBObject(Validator):
             return self
         return self.isValid().addCallback(_save)
 
-
     def validate(self):
         """
         Run all validations associated with this object's class.  This will return a deferred
@@ -124,7 +121,6 @@ class DBObject(Validator):
         (keys are property names, values are the error messages describing the error).
         """
         return self.__class__._validate(self)
-
 
     def isValid(self):
         """
@@ -135,7 +131,6 @@ class DBObject(Validator):
             return obj.errors.isEmpty()
         return self.validate().addCallback(_isValid)
 
-
     def beforeCreate(self):
         """
         Method called before a new object is created.  Classes can overwrite this method.
@@ -143,14 +138,12 @@ class DBObject(Validator):
         may return a C{Deferred}.
         """
 
-
     def beforeUpdate(self):
         """
         Method called before an existing object is updated.  Classes can overwrite this method.
         If False is returned, then the object is not saved in the database.  This method
         may return a C{Deferred}.
         """
-
 
     def beforeSave(self):
         """
@@ -162,7 +155,6 @@ class DBObject(Validator):
         L{beforeUpdate} when an existing object (whose C{id} is not C{None}) is being saved.
         """
 
-
     def afterInit(self):
         """
         Method called when a new L{DBObject} is instantiated as a result of DB queries. If you
@@ -170,14 +162,12 @@ class DBObject(Validator):
         Classes can overwrite this method.  This method may return a C{Deferred}.
         """
 
-
     def beforeDelete(self):
         """
         Method called before a L{DBObject} is deleted.  Classes can overwrite this method.
         If False is returned, then the L{DBObject} is not deleted from database.
         This method may return a C{Deferred}.
         """
-
 
     def _create(self):
         """
@@ -201,7 +191,6 @@ class DBObject(Validator):
 
         return defer.maybeDeferred(self.beforeCreate).addCallback(_beforeSave)
 
-
     def _update(self):
         """
         Method to actually save an existing object in the DB.  Handles calling this class's
@@ -224,7 +213,6 @@ class DBObject(Validator):
 
         return defer.maybeDeferred(self.beforeUpdate).addCallback(_beforeSave)
 
-
     def refresh(self):
         """
         Update the properties for this object from the database.
@@ -232,7 +220,6 @@ class DBObject(Validator):
         @return: A C{Deferred} object.
         """
         return self._config.refreshObj(self)
-
 
     def toHash(self, cols, includeBlank=False, exclude=None, base=None):
         """
@@ -259,7 +246,6 @@ class DBObject(Validator):
                 h[col] = value
         return h
 
-
     def delete(self):
         """
         Delete this instance from the database.  Calls L{beforeDelete} before deleting from
@@ -272,7 +258,7 @@ class DBObject(Validator):
             oldid = self._rowid
             self._rowid = None
             self._deleted = True
-            return self.__class__.deleteAll(where=["rowid = ?", oldid])
+            return self.__class__.deleteAll(where=["id = ?", oldid])
 
         def _deleteOnSuccess(result):
             if result is False:
@@ -285,7 +271,6 @@ class DBObject(Validator):
                 return defer.DeferredList(ds).addCallback(_delete)
 
         return defer.maybeDeferred(self.beforeDelete).addCallback(_deleteOnSuccess)
-
 
     def loadRelations(self, *relations):
         """
@@ -313,7 +298,6 @@ class DBObject(Validator):
         for relation in relations:
             ds[relation] = getattr(self, relation).get()
         return deferredDict(ds)
-
 
     @classmethod
     def addRelation(klass, relation, rtype):
@@ -343,7 +327,6 @@ class DBObject(Validator):
         relationshipKlass = Relationship.TYPES[rtype]
         klass.RELATIONSHIP_CACHE[name] = (relationshipKlass, args)
 
-
     @classmethod
     def initRelationshipCache(klass):
         """
@@ -353,7 +336,6 @@ class DBObject(Validator):
         for rtype in Relationship.TYPES.keys():
             for relation in getattr(klass, rtype):
                 klass.addRelation(relation, rtype)
-
 
     @classmethod
     def tablename(klass):
@@ -368,7 +350,6 @@ class DBObject(Validator):
             inf = Inflector()
             klass.TABLENAME = inf.tableize(klass.__name__)
         return klass.TABLENAME
-
 
     @classmethod
     def findOrCreate(klass, **attrs):
@@ -386,7 +367,6 @@ class DBObject(Validator):
             return klass.findBy(**attrs).addCallback(handle)
         return _findOrCreate()
 
-
     @classmethod
     def findBy(klass, **attrs):
         """
@@ -399,7 +379,6 @@ class DBObject(Validator):
         """
         where = dictToWhere(attrs)
         return klass.find(where=where)
-
 
     @classmethod
     def find(klass, id=None, where=None, group=None, limit=None, orderby=None):
@@ -432,7 +411,6 @@ class DBObject(Validator):
         d = config.select(klass.tablename(), id, where, group, limit, orderby)
         return d.addCallback(createInstances, klass)
 
-
     @classmethod
     def count(klass, where=None):
         """
@@ -448,7 +426,6 @@ class DBObject(Validator):
         config = Registry.getConfig()
         return config.count(klass.tablename(), where=where)
 
-
     @classmethod
     def all(klass):
         """
@@ -459,7 +436,6 @@ class DBObject(Validator):
         A C{list} containing all of the instances in the database.
         """
         return klass.find()
-
 
     @classmethod
     def deleteAll(klass, where=None):
@@ -477,7 +453,6 @@ class DBObject(Validator):
         tablename = klass.tablename()
         return config.delete(tablename, where)
 
-
     @classmethod
     def exists(klass, where=None):
         """
@@ -494,7 +469,6 @@ class DBObject(Validator):
             return result is not None
         return klass.find(where=where, limit=1).addCallback(_exists)
 
-
     def __str__(self):
         """
         Get the string version of this object.
@@ -504,7 +478,6 @@ class DBObject(Validator):
         for key in Registry.SCHEMAS.get(tablename, []):
             attrs[key] = getattr(self, key, None)
         return "<%s object: %s>" % (self.__class__.__name__, str(attrs))
-
 
     def __getattribute__(self, name):
         """
@@ -524,7 +497,6 @@ class DBObject(Validator):
             return relationshipKlass(self, name, args)
         return object.__getattribute__(self, name)
 
-
     def __eq__(self, other):
         """
         Determine if this object is the same as another (only taking
@@ -538,7 +510,6 @@ class DBObject(Validator):
         eqid = hasattr(other, '_rowid') and self._rowid == other._rowid
         return eqclass and eqid
 
-
     def __neq__(self, other):
         """
         Determine if this object is not the same as another (only taking
@@ -550,10 +521,8 @@ class DBObject(Validator):
         """
         return not self == other
 
-
     def __hash__(self):
         return hash('%s.%d' % (type(self).__name__, self._rowid))
-
 
     __repr__ = __str__
 
