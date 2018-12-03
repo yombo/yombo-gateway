@@ -187,7 +187,7 @@ class YBOFFmpeg(object):
         # if port_open is False:
         #     raise YomboWarning("Appears the port")
 
-        print("FFMPEG:starting ffmpeg process: %s" % (" ".join(self._argv)))
+        logger.debug("FFMPEG:starting ffmpeg process: {args}", args=" ".join(self._argv))
 
         try:
             yield reactor.spawnProcess(self._protocol, self._argv[0], self._argv)

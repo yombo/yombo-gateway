@@ -47,7 +47,6 @@ from twisted.internet.ssl import ClientContextFactory
 from twisted.internet import protocol
 from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks
-from twisted.internet.task import LoopingCall
 from twisted.internet.utils import getProcessOutput
 
 # 3rd party libraries

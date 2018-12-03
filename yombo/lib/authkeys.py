@@ -212,7 +212,6 @@ class AuthKeys(YomboLibrary):
         if "roles" not in data:
             data["roles"] = []
 
-        print(f"adding auth key: {data}")
         self.authkeys[data["auth_id"]] = AuthKey(self, data, load_source=load_source)
         return self.authkeys[data["auth_id"]]
 
