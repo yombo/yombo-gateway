@@ -627,7 +627,7 @@ class Times(YomboLibrary, object):
             self.is_moon_visible = self.item_visible(item="Moon")
 
         if self.item_visible(item="Moon"):
-            print(f"setting send_now_moonset to call in: {moonset-cur_time}")
+            # print(f"setting send_now_moonset to call in: {moonset-cur_time}")
             self._Calllater.new(moonset-cur_time+0.1, self._send_now_moonset, _task_description="Sets moonset state.")
             self._Calllater.new(moonset-cur_time+1, self._setup_moon_events)
         else:
@@ -641,7 +641,7 @@ class Times(YomboLibrary, object):
         the second callLater is to come back to this function and redo it all.
         This is different than day/night since it accounts for twilight.
         """
-        logger.warn("starting _setup_light_dark_events..")
+        logger.debug("starting _setup_light_dark_events..")
 
         cur_time = time.time()
         sunset = self.sunset_twilight()
@@ -672,7 +672,7 @@ class Times(YomboLibrary, object):
         This is different than light/dark since this doesn't account
         for twilight.
         """
-        logger.warn("starting _setup_day_night_events..")
+        logger.debug("starting _setup_day_night_events..")
         self._CalcDayNight()
         cur_time = time.time()
         sunset = self.sunset()
