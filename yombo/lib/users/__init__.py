@@ -140,6 +140,8 @@ class Users(YomboLibrary):
         self.users: dict = {}
         self.gateway_id = self._Configs.get("core", "gwid", "local", False)
         self.owner_id = self._Configs.get("core", "owner_id", None, False)
+        self.system_seed = self._Configs.get("core", "rand_seed")
+
         self.owner_user = None
         self.auth_platforms = deepcopy(AUTH_PLATFORMS)  # Possible platforms
 
@@ -238,8 +240,8 @@ class Users(YomboLibrary):
     def load_users(self):
         db_users = yield self._LocalDB.get_users()
 
-        for user in db_users:
-            self.users[user.email] = User(self, user.__dict__, flush_cache=False)
+        for record in db_users:
+            self.users[record.email] = User(self, record.__dict__, flush_cache=False)
 
     @inlineCallbacks
     def api_search_user(self, requested_user, session=None):
@@ -344,6 +346,10 @@ class Users(YomboLibrary):
             data["permissions"] = []
         if "saved_permissions" not in data:
             data["saved_permissions"] = None
+
+        if source == "system":
+            data["role_id"] = sha256_compact(data["role_id"] + self.system_seed)
+
         self.roles[data["role_id"]] = Role(self,
                                            machine_label=machine_label,
                                            label=data["label"],

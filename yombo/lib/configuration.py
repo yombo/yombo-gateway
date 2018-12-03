@@ -81,7 +81,7 @@ from yombo.utils.networking import get_local_network_info
 from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
 import yombo.core.settings as settings
-from yombo.utils import dict_merge, global_invoke_all, save_file, data_pickle, data_unpickle
+from yombo.utils import dict_merge, global_invoke_all, save_file, data_pickle, data_unpickle, random_string
 from yombo.utils.location import detect_location_info
 
 logger = get_logger("library.configuration")
@@ -238,6 +238,7 @@ class Configuration(YomboLibrary):
                         pass
                     self.set(section, option, value, ignore_case=True)
 
+        self.get("core", "rand_seed", random_string(length=128))
         logger.debug("done parsing yombo.ini. Now about to parse yombo.ini.info.")
         try:
             config_parser = configparser.ConfigParser()

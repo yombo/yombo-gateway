@@ -89,7 +89,7 @@ class Role(PermissionMixin):
         Save the user device
         :return:
         """
-        if self.source != "user":
+        if self.source == "system":
             return
         tosave = {
             "role_id": self.role_id,
