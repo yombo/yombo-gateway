@@ -54,6 +54,7 @@ class MagicAttributesMixin(object):
         self._SSLCerts = parent._Loader.loadedLibraries["sslcerts"]
         self._States = parent._Loader.loadedLibraries["states"]
         self._Statistics = parent._Loader.loadedLibraries["statistics"]
+        self._Storage = parent._Loader.loadedLibraries["storage"]
         self._Tasks = parent._Loader.loadedLibraries["tasks"]
         self._Template = parent._Loader.loadedLibraries["template"]
         self._Times = parent._Loader.loadedLibraries["times"]
@@ -61,4 +62,5 @@ class MagicAttributesMixin(object):
         self._YomboAPI = parent._Loader.loadedLibraries["yomboapi"]
         self._Variables = parent._Loader.loadedLibraries["variables"]
         self._Validate = parent._Loader.loadedLibraries["validate"]
+        self._WebInterface = parent._Loader.loadedLibraries["webinterface"]
         self._WebSessions = parent._Loader.loadedLibraries["websessions"]
