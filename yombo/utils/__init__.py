@@ -418,9 +418,7 @@ def delete_file(filename, remove_empty=None):
     """
     def deleteFile(delete_filename, delete_empty):
         try:
-            print(f"deletefile: {delete_file}")
             os.remove(delete_filename)
-            print(f"deletefile: done")
         except OSError as e:
             raise YomboWarning(f"delete_file: Could not delete: {e}")
         if delete_empty is True:
@@ -1427,9 +1425,9 @@ def is_true_false(value, only_bool=False):
             return value
     elif isinstance(value, str):
         value = value.lower()
-        if value in (1, "true", "1", "open", "on", "running"):
+        if value in ("true", "1", "open", "opened", "on", "running", "alive"):
             return True
-        if value in (0, "false", "0", "closed", "off", "stopped"):
+        if value in ("false", "0", "close", "closed", "off", "stopped", "dead"):
             return False
     elif isinstance(value, int):
             if value == 1:
