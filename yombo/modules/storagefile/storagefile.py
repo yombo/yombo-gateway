@@ -56,7 +56,6 @@ class StorageFile(YomboModule):
     def generate_url(self, parts, file_id, mangle_id, thumb=None):
         folder, filename = ntpath.split(parts.netloc + parts.path)
         file, extension = os.path.splitext(filename)
-        # print(f"#### generate_url parts: {parts}")
 
         if thumb is True:
             thumb2 = "_thumb"
@@ -157,7 +156,6 @@ class StorageFile(YomboModule):
                 final_path = file_path
             yield save_file(final_path, thumbnail.content)
             url = self.generate_url(dest_parts_thumb, file_id, mangle_id, thumb=True)
-            # print(f"#### URL: {url}")
             results.update({
                 "internal_thumb_url": self._WebInterface.internal_url + url,
                 "external_thumb_url": self._WebInterface.external_url + url,
@@ -177,13 +175,11 @@ class StorageFile(YomboModule):
         :return:
         """
         try:
-            print(f'storage file- deleting file: {file["file_path"]}')
             yield delete_file(file["file_path"], remove_empty=True)
         except Exception as e:
             logger.warn("Error deleting file: {e}", e=e)
             pass
         try:
-            print(f'storage file- deleting file: {file["file_path_thumb"]}')
             yield delete_file(file["file_path_thumb"], remove_empty=True)
         except Exception as e:
             logger.warn("Error deleting file thumb: {e}", e=e)
