@@ -237,7 +237,7 @@ class SensorMotion(FFmpegSensorBase):
     Detects motion from the provided URL.
     """
     def __init__(self, parent, sensor_callback, source_type=None,
-                 sensitivity=None, reactivate_timeout=None, low_timeout=None,
+                 sensitivity=None, denoise=None, reactivate_timeout=None, low_timeout=None,
                  framerate=None, connected_callback=None, closed_callback=None):
         """
         Setup a motion detection sensor.
@@ -270,10 +270,12 @@ class SensorMotion(FFmpegSensorBase):
         self.sensor_type = "ffmpeg motion"
         self._source_type = None
         self._framerate = None
+        self._denoise = None
 
         # The first frame is always detected as motion, ignore it. Also used to send connected callback.
         self.set_options(
             sensitivity=sensitivity or 10,
+            denoise=denoise or 10,
             reactivate_timeout=reactivate_timeout or 30,
             low_timeout=low_timeout or 30,
             source_type=source_type,
@@ -285,13 +287,15 @@ class SensorMotion(FFmpegSensorBase):
 
         self.re_data = re.compile(r"\d,.*\d,.*\d,.*\d,.*\d,.*\w")
 
-    def set_options(self, sensitivity=None, reactivate_timeout=None, low_timeout=None,
+    def set_options(self, sensitivity=None, denoise=None, reactivate_timeout=None, low_timeout=None,
                     source_type=None, framerate=None):
         """
         Update sensor parameters.
         """
         if sensitivity is not None:
             self._sensitivity = sensitivity
+        if denoise is not None:
+            self._denoise = denoise
         if reactivate_timeout is not None:
             self._reactivate_timeout = reactivate_timeout
         if low_timeout is not None:
@@ -327,20 +331,24 @@ class SensorMotion(FFmpegSensorBase):
             input = f"-framerate {self._framerate} -re -loop 1 -i {input_source}"
             commands = [
                 "-vf",
-                f"hqdn3d=20:10,select=gt(scene\,{self._sensitivity / 1000})",
+                f"select=gt(scene\,{self._sensitivity / 1000})",
                 "-f",
                 "framemd5",
             ]
+            if self._denoise > 0:
+                commands = commands + ["-vf", f"hqdn3d={self._denoise}:10"]
         else:
             input = input_source
             commands = [
                 "-an",
                 "-vf",
-                f"hqdn3d=20:10,select=gt(scene\,{self._sensitivity / 1000})",
+                f"select=gt(scene\,{self._sensitivity / 1000})",
                 "-f",
                 "framemd5",
                 # "select=gt(scene\\,{0})".format(self._sensitivity / 1000),
             ]
+            if self._denoise > 0:
+                commands = commands + ["-vf", f"hqdn3d={self._denoise}:10"]
 
         results = yield self.open(input, commands, output="-", extra_cmd=extra_cmd)
         return results
