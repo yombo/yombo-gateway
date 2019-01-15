@@ -27,6 +27,8 @@ REQUIRED_PYTHON_VER = (3, 5, 3)
 # Yombo gateway version number
 VERSION = __version__
 
+MODULE_API_VERSION = 1
+
 # Days of the week
 WEEKDAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 
