@@ -5,7 +5,7 @@ Yombo Automation Python Reference
 =================================
 
 Release |release|
-(`Release notes <https://yombo.net/release_notes/gateway/0.22.0>`_)
+(`Release notes <https://yombo.net/release_notes/gateway/0.23.0>`_)
 
 The Yombo Gateway is a framework that allows users to quickly develop
 modules to implement automation of various devices around the home, office,
