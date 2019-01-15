@@ -33,6 +33,7 @@ def new_db_file(Registry, **kwargs):
     yield create_table_input_types(Registry)
     yield create_table_locations(Registry)
     yield create_table_modules(Registry)
+    yield create_table_module_commits(Registry)
     yield create_table_module_device_types(Registry)
     yield create_table_module_installed(Registry)
     yield create_table_nodes(Registry)
@@ -80,7 +81,7 @@ def create_table_schema_version(Registry, **kwargs):
 def create_table_auth_keys(Registry, **kwargs):
     """ Nearly the same as webinterface_sessions, but for auth keys """
     table = """CREATE TABLE `auth_keys` (
-        `id`              TEXT NOT NULL, /* moduleUUID */
+        `id`              TEXT NOT NULL,
         `label`           TEXT NOT NULL,
         `description`     TEXT NOT NULL,
         `enabled`         INTEGER NOT NULL,
@@ -101,7 +102,7 @@ def create_table_auth_keys(Registry, **kwargs):
 def create_table_categories(Registry, **kwargs):
     """ System categories """
     table = """CREATE TABLE `categories` (
-        `id`            TEXT NOT NULL, /* commandUUID */
+        `id`            TEXT NOT NULL,
         `parent_id` TEXT NOT NULL,
         `category_type` TEXT NOT NULL,
         `machine_label` TEXT NOT NULL,
@@ -120,7 +121,7 @@ def create_table_categories(Registry, **kwargs):
 def create_table_commands(Registry, **kwargs):
     """ Defines the commands table. Lists all possible commands a local or remote gateway can perform. """
     table = """CREATE TABLE `commands` (
-        `id`            TEXT NOT NULL, /* commandUUID */
+        `id`            TEXT NOT NULL,
         `machine_label` TEXT NOT NULL,
         `voice_cmd`     TEXT,
         `label`         TEXT NOT NULL,
@@ -436,7 +437,6 @@ def create_table_input_types(Registry, **kwargs):
         `label`         TEXT NOT NULL,
         `description`   TEXT,
         `category_id`   TEXT NOT NULL,
-        `platform`      TEXT,
         `public`        INTEGER,
         `always_load`   INTEGER DEFAULT 0,
         `status`        INTEGER,
@@ -470,7 +470,7 @@ def create_table_locations(Registry, **kwargs):
 def create_table_modules(Registry, **kwargs):
     """ Stores module information """
     table = """CREATE TABLE `modules` (
-        `id`                 TEXT NOT NULL, /* moduleUUID */
+        `id`                 TEXT NOT NULL, /* module ID */
         `gateway_id`         TEXT NOT NULL,
         `machine_label`      TEXT NOT NULL,
         `module_type`        TEXT NOT NULL,
@@ -487,10 +487,7 @@ def create_table_modules(Registry, **kwargs):
         `doc_link`           TEXT,
         `git_link`           TEXT,
         `install_branch`     TEXT NOT NULL,
-        `prod_branch`        TEXT NOT NULL,
-        `dev_branch`         TEXT,
-        `prod_version`       TEXT,
-        `dev_version`        TEXT,
+        `require_approved`   INTEGER NOT NULL DEFAULT 1,
         `public`             INTEGER NOT NULL,
         `status`             INTEGER NOT NULL, /* disabled, enabled, deleted */
         `created_at`         INTEGER NOT NULL,
@@ -498,6 +495,23 @@ def create_table_modules(Registry, **kwargs):
         PRIMARY KEY(id));"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index("modules", "machine_label"))
+
+
+@inlineCallbacks
+def create_table_module_commits(Registry, **kwargs):
+    """ Stores module information """
+    table = """CREATE TABLE `module_commits` (
+        `id`            INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        `module_id`     TEXT NOT NULL,
+        `branch`        TEXT NOT NULL,
+        `commit`        TEXT NOT NULL,
+        `committed_at`  INTEGER NOT NULL,
+        `approved`      INTEGER,
+        `created_at`    INTEGER NOT NULL)"""
+    yield Registry.DBPOOL.runQuery(table)
+    yield Registry.DBPOOL.runQuery(
+        "CREATE UNIQUE INDEX IF NOT EXISTS module_commits_id_idx ON module_commits ('module_id', 'branch', 'committed_at')")
+    yield Registry.DBPOOL.runQuery(create_index("module_commits", "commit"))
 
 
 @inlineCallbacks
@@ -521,11 +535,12 @@ def create_table_module_installed(Registry, **kwargs):
     table = """CREATE TABLE `module_installed` (
         `id`                INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
         `module_id`         TEXT NOT NULL, /* module.id */
-        `installed_version` TEXT NOT NULL,
-        `install_at`      INTEGER NOT NULL,
-        `last_check`        INTEGER NOT NULL);"""
+        `installed_branch`  TEXT NOT NULL,
+        `installed_commit`  TEXT NOT NULL,
+        `install_at`        INTEGER NOT NULL,
+        `last_check_at`     INTEGER NOT NULL);"""
     yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index("module_installed", "module_id"))
+    yield Registry.DBPOOL.runQuery(create_index("module_installed", "module_id", unique=True))
 
 
 @inlineCallbacks
@@ -700,7 +715,7 @@ def create_table_users(Registry, **kwargs):
 def create_table_webinterface_sessions(Registry, **kwargs):
     """ Defines the web interface session store. Used by the :class:`WebInterface` class to maintain session information """
     table = """CREATE TABLE `webinterface_sessions` (
-        `id`             TEXT NOT NULL, /* moduleUUID */
+        `id`             TEXT NOT NULL,
         `enabled`        INTEGER NOT NULL,
         `gateway_id`     TEXT NOT NULL,
         `user_id`        TEXT NOT NULL,
@@ -883,7 +898,8 @@ def create_trigger_delete_variablefields_variable_data(Registry, **kwargs):
 def create_view_devices_view(Registry, **kwargs):
     """  """
     view = """CREATE VIEW devices_view AS
-    SELECT devices.*, device_types.machine_label AS device_type_machine_label, categories.machine_label as category_machine_label
+    SELECT devices.*, device_types.machine_label AS device_type_machine_label,
+    categories.machine_label AS category_machine_label
     FROM devices
     JOIN device_types ON devices.device_type_id = device_types.id
     JOIN categories ON device_types.category_id = categories.id
@@ -896,7 +912,8 @@ def create_view_modules_view(Registry, **kwargs):
     """  """
     ## Create view for modules ##
     view = """CREATE VIEW modules_view AS
-    SELECT modules.*, module_installed.installed_version, module_installed. install_at, module_installed.last_check
+    SELECT modules.*, module_installed.installed_branch, module_installed.installed_commit,
+    module_installed.last_check_at, module_installed. install_at, module_installed.last_check_at
     FROM modules LEFT OUTER JOIN module_installed ON modules.id = module_installed.module_id"""
     yield Registry.DBPOOL.runQuery(view)
 

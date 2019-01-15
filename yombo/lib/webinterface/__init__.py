@@ -11,7 +11,7 @@ Provides web interface to easily configure and manage the gateway devices and mo
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2016-2018 by Yombo.
+:copyright: Copyright 2016-2019 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/webinterface.html>`_
 """
@@ -381,6 +381,7 @@ class WebInterface(YomboLibrary):
         self.webapp.templates.globals["_events"] = self._Events
         self.webapp.templates.globals["_devices"] = self._Devices
         self.webapp.templates.globals["_devicetypes"] = self._DeviceTypes
+        self.webapp.templates.globals["_downloadmodules"] = self._DownloadModules
         self.webapp.templates.globals["_gatewaycoms"] = self._GatewayComs
         self.webapp.templates.globals["_gateways"] = self._Gateways
         self.webapp.templates.globals["_gpg"] = self._GPG
@@ -997,6 +998,7 @@ class WebInterface(YomboLibrary):
 
     def setup_basic_filters(self):
         self.webapp.templates.filters["yes_no"] = yombo.utils.is_yes_no
+        self.webapp.templates.filters["true_false"] = yombo.utils.is_true_false
         self.webapp.templates.filters["excerpt"] = yombo.utils.excerpt
         self.webapp.templates.filters["make_link"] = yombo.utils.make_link
         self.webapp.templates.filters["status_to_string"] = converters.status_to_string

@@ -363,16 +363,24 @@ class AmqpConfigHandler(YomboLibrary):
                 select_fields.append("updated_at")
             if "created_at" in table_cols:
                 select_fields.append("created_at")
-            # print(" selecting table: %s  fields: %s" % (current_table, select_fields))
             records = yield self._LocalDB.select(current_table, ", ".join(select_fields))
             for record in records:
                 self.db_existing_data[current_table][record["id"]] = record
             if config_item == "gateway_modules":
-                module_select_fields = ["id", "module_id", "installed_version", "install_at", "last_check"]
-                records = yield self._LocalDB.select("module_installed", ", ".join(module_select_fields))
+                records = yield self._LocalDB.select("module_installed", "id")
                 self.db_existing_data["module_installed"] = {}
                 for record in records:
-                    self.db_existing_data["module_installed"][record["id"]] = record
+                    self.db_existing_data["module_installed"][record["id"]] = True
+
+                records = yield self._LocalDB.select("module_commits", "id")
+                self.db_existing_data["module_commits"] = {}
+                for record in records:
+                    self.db_existing_data["module_commits"][record["id"]] = True
+                self.db_insert_data["module_commits"] = []
+                self.db_update_data["module_commits"] = []
+                self.db_completed_ids["module_commits"] = []
+
+                # print("gateway module data_items: %s" % data_items)
 
         # self.db_existing_data = {}  # used to keep track of items to add, update, or delete
         # self.db_delete_ids = {}  # [table][row_id]
@@ -409,15 +417,27 @@ class AmqpConfigHandler(YomboLibrary):
                             if filtered_data["id"] in self.db_existing_data["module_installed"]:
                                 self.db_delete_ids["module_installed"].append(filtered_data["id"])
                                 self.db_completed_ids["module_installed"].append(filtered_data["id"])
+                            self._LocalDB.delete("module_commits", where=["module_id = ?", filtered_data["id"]])
+                            # print(f"gateway commits: {data['module_commits']}")
+
                         elif filtered_data["id"] in self.db_existing_data[current_table]:
                             self.db_delete_ids[current_table].append(filtered_data["id"])
                             self.db_completed_ids[current_table].append(filtered_data["id"])
                         continue
 
+                if config_item == "gateway_modules":
+                    for commit in data['module_commits']:
+                        if commit["id"] in self.db_existing_data["module_commits"]:
+                            self.db_update_data["module_commits"].append(commit)
+                        else:
+                            self.db_insert_data["module_commits"].append(commit)
+                        self.db_completed_ids["module_commits"].append(filtered_data["id"])
+
                 # check to make sure the record has the required columns.
                 if dict_has_key(filtered_data, required_db_keys) is False:
-                    logger.warn("{config_item}: Cannot do anything. Must have these keys: {needs}  Only had these keys: {has}",
-                                config_item=config_item, needs=required_db_keys, has=filtered_data)
+                    missing = set(required_db_keys) - filtered_data.keys()
+                    logger.warn("{config_item}: Cannot do anything. Must have these keys: {needs}  Missing: {missing}",
+                                config_item=config_item, needs=required_db_keys, missing=missing)
                     self.db_completed_ids[current_table].append(filtered_data["id"])
                     continue
 
@@ -458,7 +478,7 @@ class AmqpConfigHandler(YomboLibrary):
                 # If a new record
                 # print("if filtered_data["id"] (%s) not in self.db_existing_data[current_table] (%s) == 0:
                 if filtered_data["id"] not in self.db_existing_data[current_table]:
-                    if "status" in filtered_data and filtered_data["status"] == 2: # we don"t add deleted items...
+                    if "status" in filtered_data and filtered_data["status"] == 2:  # we don"t add deleted items...
                         if config_data["purgeable"]:
                             self.item_purged(config_item, filtered_data["id"])
                             continue

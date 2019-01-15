@@ -235,8 +235,6 @@ def route_devtools_config_modules(webapp):
                 "issue_tracker_link": webinterface.request_get_default(request, "issue_tracker_link", ""),
                 "doc_link": webinterface.request_get_default(request, "doc_link", ""),
                 "git_link": webinterface.request_get_default(request, "git_link", ""),
-                "prod_branch": webinterface.request_get_default(request, "prod_branch", ""),
-                "dev_branch": webinterface.request_get_default(request, "dev_branch", ""),
                 "status": int(webinterface.request_get_default(request, "status", 1)),
                 "public": int(webinterface.request_get_default(request, "public", 0)),
             }
@@ -259,8 +257,6 @@ def route_devtools_config_modules(webapp):
                 "issue_tracker_link": request.args.get("issue_tracker_link")[0],
                 "doc_link": request.args.get("doc_link")[0],
                 "git_link": request.args.get("git_link")[0],
-                "prod_branch": request.args.get("prod_branch")[0],
-                "dev_branch": request.args.get("dev_branch")[0],
                 "public": int(request.args.get("public")[0]),
                 "status": int(request.args.get("status")[0]),
             }
@@ -329,9 +325,6 @@ def route_devtools_config_modules(webapp):
                 "issue_tracker_link": request.args.get("issue_tracker_link", [""])[0],
                 "doc_link": request.args.get("doc_link", [""])[0],
                 "git_link": request.args.get("git_link", [""])[0],
-                "prod_branch": request.args.get("prod_branch", [""])[0],
-                "dev_branch": request.args.get("dev_branch", [""])[0],
-                #                "variable_data": json_output["vars"],
                 "public": int(request.args.get("public", [0])[0]),
                 "status": int(request.args.get("status", [1])[0]),
             }

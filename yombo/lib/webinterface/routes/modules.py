@@ -54,6 +54,23 @@ def route_modules(webapp):
             return page.render(alerts=webinterface.get_alerts(),
                                )
 
+        @webapp.route("/check_for_updates")
+        @require_auth()
+        @inlineCallbacks
+        def page_modules_check_for_updates(webinterface, request, session):
+            """
+            Check all modules for updates.
+
+            :param webinterface: pointer to the web interface library
+            :param request: a Twisted request
+            :param session: User"s session information.
+            :return:
+            """
+            session.has_access("module", "*", "view")
+            yield webinterface._DownloadModules.check_modules()
+            webinterface.add_alert("Modules checked for updates.")
+            return webinterface.redirect(request, "/modules/index")
+
         @webapp.route("/server_index")
         @require_auth()
         def page_modules_server_index(webinterface, request, session):
@@ -107,6 +124,7 @@ def route_modules(webapp):
                     "module_id": json_output["module_id"],
                     "module_label": json_output["module_label"],
                     "install_branch": json_output["install_branch"],
+                    "require_approved": json_output["require_approved"],
                 }
                 if "first_time" in json_output:
                     ok_to_save = False
@@ -114,7 +132,8 @@ def route_modules(webapp):
                 data = {
                     "status": 1,
                     "module_id": module_results["data"]["id"],
-                    "install_branch": module_results["data"]["prod_branch"],
+                    "install_branch": "production",
+                    "require_approved": 1,
                     "variable_data": {},
                 }
                 json_output = {}
@@ -322,6 +341,7 @@ def route_modules(webapp):
                 "status": json_output["status"],
                 "module_id": json_output["module_id"],
                 "install_branch": json_output["install_branch"],
+                "require_approved": json_output["require_approved"],
             }
 
             variable_data = yield webinterface._Variables.extract_variables_from_web_data(

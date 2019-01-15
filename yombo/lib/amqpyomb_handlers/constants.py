@@ -267,7 +267,6 @@ CONFIG_ITEMS = {
             "machine_label": "machine_label",
             "label": "label",
             "description": "description",
-            "platform": "platform",
             "always_load": "always_load",
             "created_at": "created_at",
             "updated_at": "updated_at",
@@ -303,16 +302,34 @@ CONFIG_ITEMS = {
             "install_count": "install_count",
             "doc_link": "doc_link",
             "git_link": "git_link",
-            "prod_branch": "prod_branch",
-            "dev_branch": "dev_branch",
-            "prod_version": "prod_version",
-            "dev_version": "dev_version",
             "install_branch": "install_branch",
+            "require_approved": "require_approved",
             "always_load": "always_load",
             "public": "public",
             "status": "status",
             "created_at": "created_at",
             "updated_at": "updated_at",
+        }
+    },
+
+    "gateway_module_commits": {
+        "dbclass": "ModuleCommits",
+        "table": "modulecommits",
+        "library": "modules",
+        "functions": {
+            # "enabled": "enable_command",
+            # "disabled": "enable_command",
+            # "deleted": "enable_command",
+        },
+        "purgeable": True,
+        "map": {  # api name : database field name
+            "id": "id",
+            "module_id": "id",
+            "branch": "branch",
+            "commit": "commit",
+            "committed_at": "committed_at",
+            "approved": "approved",
+            "created_at": "created_at",
         }
     },
 

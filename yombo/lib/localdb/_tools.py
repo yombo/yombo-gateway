@@ -20,8 +20,6 @@ logger = get_logger("library.localdb._tools")
 
 
 class DB_Tools(object):
-    def get_model_class(self, class_name):
-        return globals()[class_name]()
 
     @inlineCallbacks
     def _load_db_model(self):

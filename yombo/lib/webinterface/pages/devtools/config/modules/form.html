@@ -170,28 +170,6 @@
                             </div>
 
                             <div class="form-group">
-                                <label style="margin-top: 20px; margin-bottom: 0px">Production Branch </label>
-                                <a href="#" data-toggle="modal" data-target="#modalproductionbranch"><i class="fa fa-question fa-lg"></i></a>
-                                {{ macros.modal("modalproductionbranch", 'Production Branch', '
-                                <p>Each git repository can have multiple branches. List the name of the branch that Yombo should treat as the \'stable\' or \'production\' branch. This is usually "master".</p>
-                                ') }}
-                                <div class="input-group">
-                                    <input tabindex="11" type="text" class="form-control" name="prod_branch" id="prod_branch" size="60" placeholder="master" value="{{ module.prod_branch }}">
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label style="margin-top: 20px; margin-bottom: 0px">Development Branch </label>
-                                <a href="#" data-toggle="modal" data-target="#modaldevelopmentbranch"><i class="fa fa-question fa-lg"></i></a>
-                                {{ macros.modal("modaldevelopmentbranch", 'Development Branch', '
-                                <p>Each git repository can have multiple branches. List the name of the branch that Yombo should treat as the \'testing\' or \'development\' branch. This is usually "develop".</p>
-                                ') }}
-                                <div class="input-group">
-                                    <input tabindex="12" type="text" class="form-control" name="dev_branch" id="dev_branch" size="60" placeholder="develop" value="{{ module.dev_branch }}">
-                                </div>
-                            </div>
-
-                            <div class="form-group">
                                 <label style="margin-top: 20px; margin-bottom: 0px">Status: </label>
                                 <a href="#" data-toggle="modal" data-target="#modalstatus"><i class="fa fa-question fa-lg"></i></a>
                                 {{ macros.modal("modalstatus", 'Status: enabled / disabled', '
@@ -370,17 +348,6 @@
                 maxlength: 255,
                 url: true,
             },
-            prod_branch: {
-                minlength: 2,
-                maxlength: 255,
-                required: true,
-            },
-            dev_branch: {
-                minlength: 2,
-                maxlength: 255,
-                required: false,
-            },
-
         },
         messages: {
             short_description: "Must be between 100 and 156 characters long.",

@@ -134,6 +134,11 @@ class Modules(DBObject):
     TABLENAME = "modules"
 
 
+class ModuleCommits(DBObject):
+    BELONGSTO = ["modules"]
+    TABLENAME = "module_commits"
+
+
 class ModuleDeviceTypes(DBObject):
     BELONGSTO = ["devices"]
     TABLENAME = "module_device_types"
@@ -358,6 +363,9 @@ class LocalDB(YomboLibrary, DB_Tools, DB_Devices, DB_DeviceTypes, DB_Events, DB_
         if self.save_bulk_queue_loop is not None and self.save_bulk_queue_loop.running:
             self.save_bulk_queue_loop.stop()
 
+    def get_model_class(self, class_name):
+        return globals()[class_name]
+
     @inlineCallbacks
     def get_dbitem_by_id(self, dbitem, db_id, status=None):
         if dbitem not in MODULE_CLASSES:
@@ -550,10 +558,11 @@ class LocalDB(YomboLibrary, DB_Tools, DB_Devices, DB_DeviceTypes, DB_Events, DB_
             always_load = False
 
         if always_load == True:
-            records = yield self.dbconfig.select("input_types", where=["always_load = ?", 1])
+            records = yield self.dbconfig.select("input_types", where=["always_load = ?", 1], orderby="label")
             return records
         elif always_load is False:
-            records = yield self.dbconfig.select("input_types", where=["always_load = ? OR always_load = ?", 1, 0])
+            records = yield self.dbconfig.select("input_types", where=["always_load = ? OR always_load = ?", 1, 0],
+                                                 orderby="label")
             return records
         else:
             return []
@@ -571,20 +580,41 @@ class LocalDB(YomboLibrary, DB_Tools, DB_Devices, DB_DeviceTypes, DB_Events, DB_
         return records
 
     @inlineCallbacks
-    def get_modules_view(self, get_all=False):
-        if get_all is False:
+    def get_modules_view(self, get_all=False, where=None):
+        if where is not None:
+            records = yield Modules.find(where=where)
+        elif get_all is False:
             records = yield ModulesView.find(where=["status = ?", 1])
         else:
             records = yield ModulesView.all()
-
         return records
 
     @inlineCallbacks
-    def modules_install_new(self, data):
+    def get_module_commits(self, module_id, branch, approved=None, aslist=None):
+        print(f"get_module_commits: module_id={module_id}, branch={branch}, aslist={aslist}")
+        if approved is None:
+            records = yield ModuleCommits.find(where=["module_id = ? and branch = ?", module_id, branch],
+                                               group="module_id, branch", orderby="id DESC"
+                                               )
+        else:
+            records = yield ModuleCommits.find(where=["module_id = ? and branch = ? and approved = ?",
+                                                      module_id, branch, approved],
+                                               group="module_id, branch", orderby="id DESC"
+                                               )
+        if aslist is True:
+            commits = []
+            for record in records:
+                commits.append(record.commit)
+            return commits
+        return records
+
+    @inlineCallbacks
+    def install_module(self, data):
         results = yield ModuleInstalled(module_id=data["module_id"],
-                                        installed_version=data["installed_version"],
+                                        installed_branch=data["installed_branch"],
+                                        installed_commit=data["installed_commit"],
                                         install_at=data["install_at"],
-                                        last_check=data["last_check"],
+                                        last_check_at=data["last_check_at"],
                                         ).save()
         return results
 

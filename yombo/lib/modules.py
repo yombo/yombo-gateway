@@ -32,6 +32,7 @@ from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks, maybeDeferred, Deferred, DeferredList
 
 # Import Yombo libraries
+from yombo.constants import MODULE_API_VERSION
 from yombo.core.exceptions import YomboHookStopProcessing, YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
@@ -60,12 +61,9 @@ SYSTEM_MODULES = {
         "medium_description_html": "Adds support to storing files within the filesystem.",
         "description_html": "Adds support to storing files within the filesystem.",
         "install_branch": "system",
+        "require_approved": 0,
         "install_count": "",
         "see_also": "",
-        "prod_branch": "",
-        "dev_branch": "",
-        "prod_version": "",
-        "dev_version": "",
         "repository_link": "",
         "issue_tracker_link": "",
         "doc_link": "",
@@ -85,6 +83,7 @@ class Modules(YomboLibrary):
     """
 
     _rawModulesList = {}
+    disabled_modules = {}
 
     modules = {}  # Stores a list of modules. Populated by the loader module at startup.
 
@@ -152,6 +151,7 @@ class Modules(YomboLibrary):
         :raises Exception: Always raised.
         """
         raise Exception("Not allowed.")
+
     def __iter__(self):
         """ iter modules. """
         return self.modules.__iter__()
@@ -198,6 +198,7 @@ class Modules(YomboLibrary):
         """
         Init doesn't do much. Just setup a few variables. Things really happen in start.
         """
+        self.module_api_version = MODULE_API_VERSION
         self.gateway_id = self._Configs.get("core", "gwid", "local", False)
         self._invoke_list_cache = {}  # Store a list of hooks that exist or not. A cache.
         self.hook_counts = {}  # keep track of hook names, and how many times it"s called.
@@ -416,14 +417,11 @@ class Modules(YomboLibrary):
                   "see_also": mod_see_also,
                   "install_count": 1,
                   "install_branch": "",
-                  "prod_branch": "",
-                  "dev_branch": "",
+                  "require_approved": 0,
                   "repository_link": "",
                   "issue_tracker_link": "",
                   "doc_link": mod_doc_link,
                   "git_link": "",
-                  "prod_version": "",
-                  "dev_version": "",
                   "public": "0",
                   "status": "1",
                   "created_at": int(time()),
@@ -516,7 +514,7 @@ class Modules(YomboLibrary):
                 else:
                     requirements = bytes_to_unicode(input.splitlines())
                     for line in requirements:
-                        yield self._Loader.install_python_requirement(line)
+                        yield self._Loader.install_python_requirement(line, f"module:{module['machine_label']}")
 
     def import_modules(self):
         """
@@ -528,13 +526,21 @@ class Modules(YomboLibrary):
 
         for module_id, module in self._rawModulesList.items():
             module_path_name = f"yombo.modules.{module['machine_label']}"
-
+            logger.debug("Importing module: {label}", label=module_path_name)
             try:
                 module_instance, module_name = self._Loader.import_component(module_path_name, module["machine_label"], "module", module["id"])
             except ImportError as e:
+                logger.error("----------==(Import Error: Loading Module)==------------")
+                logger.error("----Name: {module_path_name}", module_path_name=module_path_name)
+                logger.error("---------------==(Error)==--------------------------")
+                logger.error("{e}", e=e)
+                logger.error("---------------==(Traceback)==--------------------------")
+                logger.error("{trace}", trace=traceback.format_exc())
+                logger.error("--------------------------------------------------------")
+                logger.error("Not loading module: {label}", label=module["machine_label"])
                 continue
             except:
-                logger.error("--------==(Error: Loading Module)==--------")
+                logger.error("--------------==(Error: Loading Module)==--------------")
                 logger.error("----Name: {module_path_name}", module_path_name=module_path_name)
                 logger.error("---------------==(Traceback)==--------------------------")
                 logger.error("{trace}", trace=traceback.format_exc())
@@ -545,6 +551,7 @@ class Modules(YomboLibrary):
             self.add_imported_module(module["id"], module_name, module_instance)
             self.modules[module_id]._hooks_called = {}
             self.modules[module_id]._module_id = module["id"]
+            self.modules[module_id]._module_id2 = module["id"]
             self.modules[module_id]._module_type = module["module_type"]
             self.modules[module_id]._machine_label = module["machine_label"]
             self.modules[module_id]._label = module["label"]
@@ -560,10 +567,7 @@ class Modules(YomboLibrary):
             self.modules[module_id]._doc_link = module["doc_link"]
             self.modules[module_id]._git_link = module["git_link"]
             self.modules[module_id]._install_branch = module["install_branch"]
-            self.modules[module_id]._prod_branch = module["prod_branch"]
-            self.modules[module_id]._dev_branch = module["prod_branch"]
-            self.modules[module_id]._prod_version = module["prod_version"]
-            self.modules[module_id]._dev_version = module["dev_version"]
+            self.modules[module_id]._require_approved = module["require_approved"]
             self.modules[module_id]._public = module["public"]
             self.modules[module_id]._status = module["status"]
             self.modules[module_id]._created_at = module["created_at"]
@@ -645,6 +649,7 @@ class Modules(YomboLibrary):
             module._AuthKeys = self._Loader.loadedLibraries["authkeys"]
             module._Automation = self._Loader.loadedLibraries["automation"]
             module._Cache = self._Loader.loadedLibraries["cache"]
+            module._DownloadModules = self._Loader.loadedLibraries["downloadmodules"]
             module._Calllater = self._Loader.loadedLibraries["calllater"]
             module._Commands = self._Loader.loadedLibraries["commands"]
             module._Configs = self._Loader.loadedLibraries["configuration"]
@@ -1078,6 +1083,7 @@ class Modules(YomboLibrary):
         api_data = {
             "module_id": data["module_id"],
             "install_branch": data["install_branch"],
+            "require_approved": data["require_approved"],
             "status": 1,
         }
 
@@ -1190,6 +1196,7 @@ class Modules(YomboLibrary):
         logger.debug("Editing module: {module_id} == {data}", module_id=module_id, data=data)
         api_data = {
             "install_branch": data["install_branch"],
+            "require_approved": data["require_approved"],
             "status": data["status"],
         }
 
