@@ -24,7 +24,6 @@ It's important to note that any module within the Yombo system will have access 
 
 # Import python libraries
 import yombo.ext.gnupg as gnupg
-# import gnupg
 import os.path
 from subprocess import Popen, PIPE
 from Crypto import Random
