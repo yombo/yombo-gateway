@@ -185,11 +185,6 @@ class InputTypes(YomboLibrary):
         """
         yield self._load_input_types_from_database()
 
-    # def _stop_(self, **kwargs):
-    #     """
-    #     Cleans up any pending deferreds.
-    #     """
-
     @inlineCallbacks
     def _load_input_types_from_database(self):
         """

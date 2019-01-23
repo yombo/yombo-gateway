@@ -14,7 +14,6 @@ class Input_Type(object):
     :ivar label: (string) Human label
     :ivar machine_label: (string) A non-changable machine label.
     :ivar category_id: (string) Reference category id.
-    :ivar platform: (string) A regex to validate if user input is valid or not.
     :ivar always_load: (int) 1 if this item is loaded at startup, otherwise 0.
     :ivar status: (int) 0 - disabled, 1 - enabled, 2 - deleted
     :ivar public: (int) 0 - private, 1 - public pending approval, 2 - public
@@ -38,7 +37,7 @@ class Input_Type(object):
         :type input_type: dict
 
         """
-        logger.debug("input_type info: {input_type}", input_type=input_type)
+        # logger.debug("input_type info: {input_type}", input_type=input_type)
 
         self._Parent = parent
         self.input_type_id = input_type["id"]
@@ -46,7 +45,6 @@ class Input_Type(object):
 
         # below are configure in update_attributes()
         self.category_id = None
-        self.platform = "all"
         self.label = None
         self.machine_label = None
         self.description = None
@@ -90,11 +88,6 @@ class Input_Type(object):
             self.created = input_type["created"]
         if "updated" in input_type:
             self.updated = input_type["updated"]
-        if "platform" in input_type:
-            if input_type["platform"] is None or input_type["platform"] == "":
-                self.platform = "all"
-            else:
-                self.platform = input_type["platform"]
 
     def __str__(self):
         """
