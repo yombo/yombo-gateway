@@ -38,10 +38,22 @@
                             <div class="input-group">
                                 <select required class="selectpicker show-tick" name="install_branch" id="install_branch" placeholder="">
                                     <option value="production" selected>Production</option>
-                                    {%- if server_module.dev_branch != "" %}
-                                        <option data-divider="true"></option>
-                                        <option value="development">Development (High risk)</option>
-                                    {%- endif %}
+                                    <option data-divider="true"></option>
+                                    <option value="development">Development (High risk)</option>
+                                </select>
+                            </div>
+
+                            <label style="margin-top: 15px; margin-bottom: 0px">Approved Versions: </label>
+                                <a href="#" data-toggle="modal" data-target="#modalapprovedversions"><i class="fa fa-question fa-lg"></i></a>
+                                {{ macros.modal("modalapprovedversions", 'Approved Versions', "
+                                <p>Approved versions have been screened to be safe to use.</p>
+                                ") }}
+                                <br>
+                            <div class="input-group">
+                                <select required class="selectpicker show-tick" name="require_approved" id="require_approved" placeholder="">
+                                    <option value="1" selected>Approved</option>
+                                    <option data-divider="true"></option>
+                                    <option value="0">Un-screened versions (High risk)</option>
                                 </select>
                             </div>
 
@@ -54,8 +66,8 @@
                                 <br>
                             <div class="input-group">
                                 <select required class="selectpicker show-tick" name="status" id="status" placeholder="">
-                                    <option value="0" >Disabled</option>
                                     <option value="1" selected>Enabled</option>
+                                    <option value="0" >Disabled</option>
                                 </select>
                             </div>
 

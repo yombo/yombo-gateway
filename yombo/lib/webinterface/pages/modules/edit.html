@@ -41,11 +41,21 @@
                                 <br>
                             <div class="input-group">
                                 <select required class="selectpicker show-tick" name="install_branch" id="install_branch" placeholder="">
-                                    <option value="production"{% if module._install_branch == server_module.prod_branch %} selected{% endif %}>Production</option>
-                                    {%- if server_module.dev_branch != "" %}
-                                        <option data-divider="true"></option>
-                                        <option value="development"{% if module._install_branch == server_module.dev_branch %} selected{% endif %}>Development (Higher risk)</option>
-                                    {%- endif %}
+                                    <option value="production"{% if module._install_branch == "production" %} selected{% endif %}>Production</option>
+                                    <option value="development"{% if module._install_branch == "development" %} selected{% endif %}>Development (Higher risk)</option>
+                                </select>
+                            </div>
+
+                            <label style="margin-top: 0px; margin-bottom: 0px">Approved Versions: </label>
+                                <a href="#" data-toggle="modal" data-target="#modalapprovedversions"><i class="fa fa-question fa-lg"></i></a>
+                                {{ macros.modal("modalapprovedversions", 'Approved Versions', "
+                                <p>Approved versions have been screened to be safe to use.</p>
+                                <br>
+                            <div class="input-group">
+                                <select required class="selectpicker show-tick" name="install_branch" id="install_branch" placeholder="">
+                                    <option value="1" selected>Approved</option>
+                                    <option data-divider="true"></option>
+                                    <option value="0">Un-screened versions (High risk)</option>
                                 </select>
                             </div>
 

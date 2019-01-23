@@ -35,65 +35,76 @@
   </div>
 </div>
 
-            <div class="row">
-                <div class="col-lg-12">
-                    <h1 class="page-header">{{ _('webinterface_label', 'Installed Modules') }}
-                    <a href="#" data-toggle=modal data-target=#localModal><i class="fa fa-question pull-right"></i></a></h1>
-                    A list of currently installed modules.
-                </div>
-                <!-- /.col-lg-12 -->
+<div class="row">
+    <div class="col-lg-12">
+        <h1 class="page-header">{{ _('webinterface_label', 'Installed Modules') }}
+        <a href="#" data-toggle=modal data-target=#localModal><i class="fa fa-question pull-right"></i></a></h1>
+    </div>
+    <!-- /.col-lg-12 -->
+</div>
+<!-- /.row -->
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                A list of currently installed modules.<br>
+                <a href="/modules/server_index" class="btn btn-md btn-primary">Install a Module</a>
+                <a href="/modules/check_for_updates" class="btn btn-md btn-primary">Check for updates</a>
             </div>
-            <!-- /.row -->
-            <div class="row">
-                <div class="col-lg-12">
-                    <div class="panel panel-default">
-                        <div class="panel-heading">
-                            <h4>Installed Modules</h4>
-                                <a href="/modules/server_index" class="btn btn-md btn-primary">Install Module</a>
-                        </div>
-                        <!-- /.panel-heading -->
-                        <div class="panel-body">
-                           <div class="dataTable_wrapper">
-                                <table width="100%" class="table table-striped table-bordered table-hover" id="dataTables-example">
-                                    <thead>
-                                        <tr>
-                                            <th>Name</th><th>Description</th><th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>{% for moduleID, module in _modules.items() %}
-                                         <tr>
-                                             <td><a href="/modules/{{ moduleID }}/details">{{ module._label }}</a><br>
-                                              {% if moduleID in webinterface.module_config_links %}
-                                                 <a  class="alert-success" href="{{webinterface.module_config_links[moduleID]}}">More Settings</a>
-                                              {% endif %}
-                                            </td>
-                                             <td>{{ module._short_description }}</td>
-                                             <td>
-                                             {% if module._load_source == 'sql' -%}
-                                                {% if module._status == 0 -%}
-                                             <a href="/modules/{{ moduleID }}/edit">Edit</a> &nbsp; <a class="alert-success" href="/modules/{{ moduleID }}/enable">Enable</a> &nbsp; <a class="alert-danger" href="/modules//{{ moduleID }}remove">Remove</a>
-                                                {% elif module._status == 1 -%}
-                                             <a href="/modules/{{ moduleID }}/edit">Edit</a> &nbsp; <a class="alert-warning" href="/modules/{{ moduleID }}/disable">Disable</a> &nbsp; <a class="alert-danger" href="/modules/{{ moduleID }}/remove">Remove</a>
-                                                {% elif module._status == 2 -%}
-                                             <a class="alert-success" href="/modules/{{ moduleID }}/disable">Enable</a>
-                                                {% endif %}
-                                             {% elif module._load_source == 'system modules'%}
-                                                 System module, cannot modify.
-                                             {% else %}
-                                                 Module not loaded from cloud. Cannot modify. Source: {{module._load_source}}
-                                             {% endif %}
+            <!-- /.panel-heading -->
+            <div class="panel-body">
+               <div class="dataTable_wrapper">
+                    <table width="100%" class="table table-striped table-bordered table-hover" id="dataTables-example">
+                        <thead>
+                            <tr>
+                                <th>Name</th><th>Description</th><th>Status</th><th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>{% for moduleID, module in _modules.items() %}
+                             <tr>
+                                 <td><a href="/modules/{{ moduleID }}/details">{{ module._label }}</a><br>
+                                  {% if moduleID in webinterface.module_config_links %}
+                                     <a  class="alert-success" href="{{webinterface.module_config_links[moduleID]}}">More Settings</a>
+                                  {% endif %}
+                                </td>
+                                 <td>{{ module._short_description }}</td>
+                                 <td>{#_downloadmodules.modules[module._module_id]#}
+                                     {% if module._module_id in _downloadmodules.modules %}
+                                     Last Checked: {{_downloadmodules.modules[module._module_id]['last_check_at']|epoch_to_string}}
+                                     ({{_downloadmodules.modules[module._module_id]['last_check_at']|epoch_get_age}})
+                                     <br>
+                                     Versions behind:
+                                     {{_downloadmodules.modules[module._module_id]['commits_behind']}}
+                                     {% else %}
+                                     Unknown download status.
+                                     {% endif %}
+                                 </td>
+                                 <td>
+                                 {% if module._load_source == 'sql' -%}
+                                    {% if module._status == 0 -%}
+                                 <a href="/modules/{{ moduleID }}/edit">Edit</a> &nbsp; <a class="alert-success" href="/modules/{{ moduleID }}/enable">Enable</a> &nbsp; <a class="alert-danger" href="/modules//{{ moduleID }}remove">Remove</a>
+                                    {% elif module._status == 1 -%}
+                                 <a href="/modules/{{ moduleID }}/edit">Edit</a> &nbsp; <a class="alert-warning" href="/modules/{{ moduleID }}/disable">Disable</a> &nbsp; <a class="alert-danger" href="/modules/{{ moduleID }}/remove">Remove</a>
+                                    {% elif module._status == 2 -%}
+                                 <a class="alert-success" href="/modules/{{ moduleID }}/disable">Enable</a>
+                                    {% endif %}
+                                 {% elif module._load_source == 'system modules'%}
+                                     System module, cannot modify.
+                                 {% else %}
+                                     Module not loaded from cloud. Cannot modify. Source: {{module._load_source}}
+                                 {% endif %}
 
-                                         </tr>{% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- /.panel-body -->
+                             </tr>{% endfor %}
+                        </tbody>
+                    </table>
                 </div>
-                <!-- /.col-lg-6 -->
             </div>
-            <!-- /.row -->
+        </div>
+        <!-- /.panel-body -->
+    </div>
+    <!-- /.col-lg-6 -->
+</div>
+<!-- /.row -->
 {% endblock %}
 
 {% block body_bottom_js %}{% include 'lib/webinterface/fragments/datatables_js.tpl' %}{% endblock %}
