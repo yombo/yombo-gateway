@@ -363,49 +363,50 @@ class Devices(YomboLibrary):
 
         logger.debug("All energy usage: {all_energy_usage}", all_energy_usage=all_energy_usage)
 
-        for location, data in all_energy_usage.items():
-            if location in self.all_energy_usage:
-                if ENERGY_ELECTRIC in self.all_energy_usage[location] and \
-                        all_energy_usage[location][ENERGY_ELECTRIC] != self.all_energy_usage[location][ENERGY_ELECTRIC]:
+        for location_label, data in all_energy_usage.items():
+            if location_label in self.all_energy_usage:
+                if ENERGY_ELECTRIC in self.all_energy_usage[location_label] and \
+                        all_energy_usage[location_label][ENERGY_ELECTRIC] != \
+                        self.all_energy_usage[location_label][ENERGY_ELECTRIC]:
                     # print("EU: setting eletrcic: %s %s" % (location_label, all_energy_usage[location][ENERGY_ELECTRIC]))
                     self._Statistics.datapoint(
                         f"energy.{location_label}.electric",
-                        round(all_energy_usage[location][ENERGY_ELECTRIC])
+                        round(all_energy_usage[location_label][ENERGY_ELECTRIC])
                     )
-                if ENERGY_GAS in self.all_energy_usage[location] and \
-                        all_energy_usage[location][ENERGY_GAS] != self.all_energy_usage[location][ENERGY_GAS]:
+                if ENERGY_GAS in self.all_energy_usage[location_label] and \
+                        all_energy_usage[location_label][ENERGY_GAS] != self.all_energy_usage[location_label][ENERGY_GAS]:
                         self._Statistics.datapoint(
                             f"energy.{location_label}.gas",
-                            round(all_energy_usage[location][ENERGY_GAS], 3)
+                            round(all_energy_usage[location_label][ENERGY_GAS], 3)
                         )
-                if ENERGY_WATER in self.all_energy_usage[location] and \
-                        all_energy_usage[location][ENERGY_WATER] != self.all_energy_usage[location][ENERGY_WATER]:
+                if ENERGY_WATER in self.all_energy_usage[location_label] and \
+                        all_energy_usage[location_label][ENERGY_WATER] != self.all_energy_usage[location_label][ENERGY_WATER]:
                         self._Statistics.datapoint(
                             f"energy.{location_label}.water",
-                            round(all_energy_usage[location][ENERGY_WATER], 3)
+                            round(all_energy_usage[location_label][ENERGY_WATER], 3)
                         )
-                if ENERGY_NOISE in self.all_energy_usage[location] and \
-                        all_energy_usage[location][ENERGY_NOISE] != self.all_energy_usage[location][ENERGY_NOISE]:
+                if ENERGY_NOISE in self.all_energy_usage[location_label] and \
+                        all_energy_usage[location_label][ENERGY_NOISE] != self.all_energy_usage[location_label][ENERGY_NOISE]:
                         self._Statistics.datapoint(
                             f"energy.{location_label}.noise",
-                            round(all_energy_usage[location][ENERGY_NOISE], 1)
+                            round(all_energy_usage[location_label][ENERGY_NOISE], 1)
                         )
             else:
                 self._Statistics.datapoint(
                     f"energy.{location_label}.electric",
-                    round(all_energy_usage[location][ENERGY_ELECTRIC])
+                    round(all_energy_usage[location_label][ENERGY_ELECTRIC])
                 )
                 self._Statistics.datapoint(
                     f"energy.{location_label}.gas",
-                    round(all_energy_usage[location][ENERGY_GAS], 3)
+                    round(all_energy_usage[location_label][ENERGY_GAS], 3)
                 )
                 self._Statistics.datapoint(
                     f"energy.{location_label}.water",
-                    round(all_energy_usage[location][ENERGY_WATER], 3)
+                    round(all_energy_usage[location_label][ENERGY_WATER], 3)
                 )
                 self._Statistics.datapoint(
                     f"energy.{location_label}.noise",
-                    round(all_energy_usage[location][ENERGY_NOISE], 1)
+                    round(all_energy_usage[location_label][ENERGY_NOISE], 1)
                 )
         self.all_energy_usage = deepcopy(all_energy_usage)
 
@@ -1126,7 +1127,7 @@ class Devices(YomboLibrary):
         :return:
         """
         if device_id not in self.devices:
-            raise YomboWarning("device_id doesn't exist. Nothing to delete.", 300, "enable_device", "Devices")
+            raise YomboWarning("device_id doesn't exist. Nothing to enable.", 300, "enable_device", "Devices")
 
         device = self.devices.get(device_id)
         if "session" in kwargs:
@@ -1146,7 +1147,7 @@ class Devices(YomboLibrary):
         :return:
         """
         if device_id not in self.devices:
-            raise YomboWarning("device_id doesn't exist. Nothing to delete.", 300, "disable_device", "Devices")
+            raise YomboWarning("device_id doesn't exist. Nothing to disable.", 300, "disable_device", "Devices")
         device = self.devices.get(device_id)
         if "session" in kwargs:
             session = kwargs["session"]
@@ -1154,6 +1155,25 @@ class Devices(YomboLibrary):
             session = None
 
         results = yield device.update_attributes({"status": 0}, source=source, session=session)
+        return results
+
+    @inlineCallbacks
+    def delete_device(self, device_id, source=None, **kwargs):
+        """
+        Deletes a given device id.
+
+        :param device_id:
+        :return:
+        """
+        if device_id not in self.devices:
+            raise YomboWarning("device_id doesn't exist. Nothing to delete.", 300, "disable_device", "Devices")
+        device = self.devices.get(device_id)
+        if "session" in kwargs:
+            session = kwargs["session"]
+        else:
+            session = None
+
+        results = yield device.update_attributes({"status": 2}, source=source, session=session)
         return results
 
     @inlineCallbacks
