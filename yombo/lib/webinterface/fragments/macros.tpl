@@ -66,6 +66,12 @@
     {{form_select_device(items, input_name, input_id, value)}}
     {%- elif input_types[field.input_type_id].machine_label == "password" %}
     <input type="password" class="form-control" name="{{input_name}}" id="{{input_id}}" value="^^USE^ORIG^^"
+    {%- elif input_types[field.input_type_id].machine_label == "bool" %}
+    <select class="selectpicker show-tick" lass="selectpicker show-tick" title="Select..."
+      name="{{input_name}}" id="{{input_id}}">
+        <option value="true" {% if value|true_false == true %}selected{%endif%}>True</option>
+        <option value="false" {% if value|true_false == false %}selected{%endif%}>False</option>
+    </select>
     {%- else -%}
     <input type="text" class="form-control" name="{{input_name}}" id="{{input_id}}" value="{{value}}"
     {%- if field.required %} required{% endif %}>
@@ -105,7 +111,7 @@
                             {%- endfor %}
                             {%- endif %}
                             {%- if field.multiple or field.data|length == 0%}
-                            {{form_input_type(items, item, input_types, field, "vars[" ~ field.id ~ "][new_2]", "vars[" ~ field.id ~ "][new_2]")}}
+                            {{form_input_type(items, item, input_types, field, "vars[" ~ field.id ~ "][new_2]", "vars[" ~ field.id ~ "][new_2]", field.default_value)}}
                             {%- endif %}
                         </td>
                      </tr>
