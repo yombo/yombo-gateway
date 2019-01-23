@@ -180,6 +180,7 @@ class WebSessions(YomboLibrary):
             raise YomboWarning("Session id is not valid.")
 
         results = yield self.get_session_by_id(session_id)
+        logger.debug("get_session_from_request: Found the session: {session}", session=results.asdict())
         return results
 
     @inlineCallbacks
@@ -228,15 +229,15 @@ class WebSessions(YomboLibrary):
         else:
             try:
                 db_session = yield self._LocalDB.get_web_session(compact_id)
-                # db_session["id"] = session_id
             except Exception as e:
                 raise_error(f"Cannot find session id: {e}")
             try:
                 db_session["user"] = self._Users.get(db_session["user_id"])
             except KeyError as e:
                 raise_error("User in session wasn't found.")
+            db_session["auth_id"] = db_session["id"]
+            db_session["auth_id_long"] = session_id
             self.active_sessions[compact_id] = AuthWebsession(self, db_session, load_source="database")
-            self.active_sessions[compact_id].auth_id_long = session_id
 
             if self.active_sessions[compact_id].enabled is True:
                 return self.active_sessions[compact_id]
@@ -274,7 +275,8 @@ class WebSessions(YomboLibrary):
         session_id = random_string(length=randint(60, 70))
         compact_id = sha224_compact(session_id)
 
-        data["id"] = compact_id
+        data["auth_id"] = compact_id
+        data["auth_id_long"] = session_id
 
         if request is not None:
             request.addCookie(self.config.cookie_session_name, session_id, domain=self.get_cookie_domain(request),
@@ -344,13 +346,13 @@ class WebSessions(YomboLibrary):
         for session_id in list(self.active_sessions.keys()):
             session = self.active_sessions[session_id]
 
-            if session.enabled is False and session.created_at > current_time - 600 \
-                    and session.last_access_at > current_time - 120:
+            if session.enabled is False and session.created_at < current_time - 600 \
+                    and session.last_access_at < current_time - 120:
                 del self.active_sessions[session_id]
                 yield self._LocalDB.delete_web_session(session_id)
                 count += 1
 
-            if session.is_dirty >= 200 or force_save is True or session.last_access_at < int(time() - (60*30)):
+            if session.is_dirty >= 200 or force_save is True or session.last_access_at < int(time() - 1800):
                 if session.in_db:
                     logger.debug("clean_sessions - syncing web session to DB: {id}", id=session_id)
                     # print(f"clean_session: update_web_session: {self._LocalDB.update_web_session}")
@@ -389,17 +391,6 @@ class AuthWebsession(UserMixin, AuthMixin):
     A single session.
     """
     # Override AuthMixin
-    def _set_auth_id(self, val):
-        self._auth_id = val
-        self.auth_at = time()
-
-    # Override AuthMixin
-    @property
-    def enabled(self):
-        """"""
-        return self.check_valid()
-
-    # Override AuthMixin
     @property
     def enabled(self):
         """"""
@@ -421,12 +412,17 @@ class AuthWebsession(UserMixin, AuthMixin):
         # Auth specific attributes
         self.auth_type = AUTH_TYPE_WEBSESSION
         self.auth_type_id = 'user'
-        self._auth_id = record["id"]
-        self._auth_id_long = None  # will eventually be populated by a web request. Usually near creation time.
+        self.auth_at = None
+
+        # will eventually be populated by a web request. Usually near creation time.
+        print(f"websession: setting auth: {record}")
+        self.auth_id = record["auth_id"]
+        self.auth_id_long = record["auth_id_long"]
         self.source = "websessions"
         self.source_type = "library"
         self.gateway_id = record["gateway_id"]
 
+        print(f"new web after setting auth: {self.asdict()}")
         # Local attributes
         self.auth_at = None
         self.auth_pin = None
@@ -486,27 +482,46 @@ class AuthWebsession(UserMixin, AuthMixin):
         :return:
         """
         if self._enabled is False:
-            # logger.info("check_valid: enabled is false, returning False")
+            logger.info("check_valid: enabled is false, returning False")
             return False
 
         if self.created_at < (int(time() - self._Parent.config.max_session)):
-            # logger.info("check_valid: Expiring session, it's too old: {session_id}", session_id=self.session_id)
+            logger.info("check_valid: Expiring session, it's too old: {session_id}", session_id=self.session_id)
             self.expire()
             return False
 
         if self.last_access_at < (int(time() - self._Parent.config.max_idle)):
-            # logger.info("check_valid: Expiring session, no recent access: {session_id}", session_id=self.session_id)
+            logger.info("check_valid: Expiring session, no recent access: {session_id}", session_id=self.session_id)
             self.expire()
             return False
 
         if self.auth_id is None and auth_id_missing_ok is not True:
-            # logger.info("check_valid: auth_id is None, returning False")
+            logger.info("check_valid: auth_id is None, returning False")
             return False
 
         if self.auth_id is None and self.last_access_at < (int(time() - self._Parent.config.max_session_no_auth)):
-            # logger.info("check_valid: Expiring session, no recent access and not authenticated: {auth_id}",
-            #             auth_id=self.auth_id)
+            logger.info("check_valid: Expiring session, no recent access and not authenticated: {auth_id}",
+                        auth_id=self.auth_id)
             self.expire()
             return False
 
         return True
+
+    def asdict(self):
+           # super().asdict()
+        return {
+            "auth_at": self.auth_at,
+            "auth_data": self.auth_data,
+            "auth_id": self.auth_id,
+            "auth_id_long": self.auth_id_long,
+            "auth_type": self.auth_type,
+            "auth_type_id": self.auth_type_id,
+            "enabled": self.enabled,
+            "gateway_id": self.gateway_id,
+            "source": self.source,
+            "source_type": self.source_type,
+            "last_access_at": self.last_access_at,
+            "user": self._user,
+            "updated_at": self.updated_at,
+            "created_at": self.created_at,
+        }

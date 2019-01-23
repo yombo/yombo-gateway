@@ -134,7 +134,7 @@ class AuthMixin(YomboBaseMixin):
 
     @property
     def auth_id(self):
-        if hasattr(self, "user_id"):
+        if hasattr(self, "user_id") and self.user_id is not None:
             return self.user_id
         return self._auth_id
 
@@ -180,7 +180,7 @@ class AuthMixin(YomboBaseMixin):
             self.in_db = False
             self.is_dirty = 1000
 
-        self._auth_id = None
+        self._auth_id = kwargs.get("auth_id", None)
 
         self.auth_data = {}
         # These are set by the item that actually created this instance.

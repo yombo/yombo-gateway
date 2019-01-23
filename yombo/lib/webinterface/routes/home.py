@@ -98,7 +98,7 @@ def route_home(webapp):
                 return page.render(alerts=webinterface.get_alerts())
             if results["code"] == 200:
                 login = results["response"]["login"]
-                session._user = user
+                session.user = user
                 session.auth_pin = True
                 session["yomboapi_session"] = login["session"]
                 session["yomboapi_login_key"] = login["login_key"]

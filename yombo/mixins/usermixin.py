@@ -58,6 +58,14 @@ class UserMixin(RolesMixin, YomboBaseMixin):
     def user(self):
         return self._user
 
+    @user.setter
+    def user(self, val):
+        print("usermixin: setting user: %s" % val)
+        if self._user is not None:
+            raise YomboWarning("Unable to set user (from usermixin), already have a user.")
+        self.auth_at = time()
+        self._user = val
+
     @property
     def user_id(self):
         if self._user is None:
