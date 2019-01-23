@@ -88,37 +88,12 @@
                                         ') }}
                                         <br>
                                         <div class="input-group">
-                                            <select tabindex="4" data-header="Select a category" data-live-search="true" data-size="10" class="selectpicker show-tick form-control" name="category_id" id="category_id">
+                                            <select tabindex="4" data-header="Select a category" data-live-search="true" data-size="10" class="selectpicker show-tick" name="category_id" id="category_id">
                                                 {% for category in categories if not category.id == category.parent_id -%}
 
                                                 <option value="{{ category.id }}"{% if input_type.category_id == category.id %} selected{% endif %}>{{category.label}}</option>
                                                 {% endfor %}
                                             </select>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-lg-3 col-md-5">
-                                    <div class="form-group">
-                                        <label style="margin-top: 0px; margin-bottom: 0px">Platform: </label>
-                                        <a href="#" data-toggle="modal" data-target="#modalPlatform"><i class="fa fa-question fa-lg"></i></a>
-                                        {{ macros.modal("modalPlatform", 'Platform', '
-                                        <p>A platform is way to classify devices. A platform is a class that is used to instantiate the
-                                        device. The base or default platform is "device". Other base classes defined by Yombo:</p>
-                                        <ul>
-                                            <li>light - A light based device. Has attributes for lights such as dimming.</li>
-                                            <li>appliance - A light based device. Has attributes for lights such as dimming.</li>
-                                            <ul>
-                                                <li>relay - A subclass of appliance. Renames toggle commands to "open" and "close".</li>
-                                            </ul>
-                                        </ul>
-                                        <p>A module can define additional device type classes. See <a href="https://yg2.in/f_gw_dev_device_types"
-                                        target="_blank">Yombo Developer Documentation</a> for more details. </p>
-                                        <p>This value can be a comma seperated list of classes to try to instantiate the device with,
-                                        from highest to lowest. Example: "special_relay, relay, appliance, device".</p>
-                                        ') }}
-                                        <br>
-                                        <div class="input-group">
-                                            <input tabindex=5" type="text" class="form-control" name="platform" id="platform" size="30" placeholder="zwave_light, light, device" value="{{ input_type.platform|hide_none }}" required>
                                         </div>
                                     </div>
                                 </div>
