@@ -17,13 +17,12 @@ Responsible for adding, removing, and updating devices that are used by the gate
 :view-source: `View Source Code <https://github.com/yombo/yombo-gateway/blob/master/yombo/lib/webinterface/route_devices.py>`_
 """
 
-from collections import OrderedDict
 import json
 
 from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboWarning, YomboNoAccess
+from yombo.core.exceptions import YomboWarning
 from yombo.lib.webinterface.auth import require_auth
 from yombo.core.log import get_logger
 
@@ -54,13 +53,13 @@ def add_devices_breadcrumb(webinterface, request, device_id, session):
         else:
             cluster_devices.append(data)
 
-    data = OrderedDict()
+    data = {}
     if len(local_devices) > 0:
-        data["Local Gateway"] = OrderedDict()
+        data["Local Gateway"] = {}
         for item in local_devices:
             data["Local Gateway"][item[0]] = item[1]
     if len(cluster_devices) > 0:
-        data["Local Cluster"] = OrderedDict()
+        data["Local Cluster"] = {}
         for item in cluster_devices:
             data["Local Cluster"][item[0]] = item[1]
 
@@ -154,7 +153,7 @@ def route_devices(webapp):
                 else:
                     ok_to_save = False
 
-                energy_map = OrderedDict(sorted(list(energy_map.items()), key=lambda x_y: float(x_y[0])))
+                energy_map = sorted(list(energy_map.items()), key=lambda x_y: float(x_y[0]))
             except Exception as e:
                 logger.warn("Error while processing device add_details: {e}", e=e)
 
@@ -491,7 +490,7 @@ def route_devices(webapp):
                 except:
                     pass
 
-            energy_map = OrderedDict(sorted(list(energy_map.items()), key=lambda x_y1: float(x_y1[0])))
+            energy_map = sorted(list(energy_map.items()), key=lambda x_y1: float(x_y1[0]))
             json_output = json.loads(request.args.get("json_output")[0])
 
             # print("energy_map: %s " % energy_map)
@@ -509,7 +508,6 @@ def route_devices(webapp):
                 return webinterface.redirect(request, f"/devices/{device_id}/edit")
 
             data = {
-                # "garage_id": request.args.get("garage_id", ""),
                 "location_id": request.args.get("location_id")[0],
                 "area_id": request.args.get("area_id")[0],
                 "machine_label": request.args.get("machine_label")[0],
