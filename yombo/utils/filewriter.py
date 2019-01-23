@@ -14,7 +14,7 @@ This class will keep the file open, so be sure to close this file when done!
    # don't forget "def init(self)"
 
    def start(self):
-       self.file = FileWriter(self, filename="myfile.txt"))
+       self.file = FileWriter(self, filename="myfile.txt")
        self.file.write("some more text....")
 
    def stop(self):
@@ -79,7 +79,7 @@ class FileWriter:
                     raise YomboFileError("File does not exist, told not cannot create one.",
                                          103, "__init__", "FileReader")
 
-            self.fp_in = codecs.open(self.filename, "a", encoding="utf-8")
+            self.fp_out = codecs.open(self.filename, "a", encoding="utf-8")
         except IOError as e:
             (errno, strerror) = e.args
             raise YomboFileError(f"Logreader could not open file for reading. Reason: {strerror}",
@@ -93,8 +93,8 @@ class FileWriter:
         """
         Call to close the file from being monitored.
         """
-        if self.fp_in is not None:
-            self.fp_in.close()
+        if self.fp_out is not None:
+            self.fp_out.close()
 
     def write(self, output):
         """
@@ -118,5 +118,5 @@ class FileWriter:
         :param output:
         :return:
         """
-        if self.fp_in is not None:
-            self.fp_in.write(output)
+        if self.fp_out is not None:
+            self.fp_out.write(output)
