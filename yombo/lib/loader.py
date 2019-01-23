@@ -41,6 +41,7 @@ Stops components in the following phases. Modules first, then libraries.
 import asyncio
 from collections import OrderedDict, Callable
 import os.path
+from packaging.requirements import Requirement as pkg_requirement
 from random import randint
 from re import search as ReSearch
 from subprocess import check_output
@@ -87,12 +88,12 @@ HARD_LOAD["YomboAPI"] = {"operating_mode": "all"}
 HARD_LOAD["Startup"] = {"operating_mode": "all"}
 HARD_LOAD["AMQP"] = {"operating_mode": "run"}
 HARD_LOAD["CronTab"] = {"operating_mode": "all"}
-HARD_LOAD["DownloadModules"] = {"operating_mode": "run"}
 HARD_LOAD["Times"] = {"operating_mode": "all"}
 HARD_LOAD["Commands"] = {"operating_mode": "all"}
 HARD_LOAD["DeviceTypes"] = {"operating_mode": "all"}
 HARD_LOAD["InputTypes"] = {"operating_mode": "all"}
 HARD_LOAD["Variables"] = {"operating_mode": "all"}
+HARD_LOAD["DownloadModules"] = {"operating_mode": "run"}
 HARD_LOAD["Modules"] = {"operating_mode": "all"}
 HARD_LOAD["Devices"] = {"operating_mode": "all"}
 HARD_LOAD["AMQPYombo"] = {"operating_mode": "run"}
@@ -395,12 +396,30 @@ class Loader(YomboLibrary, object):
         # self.loop.close()
 
     @inlineCallbacks
-    def install_python_requirement(self, requirement):
+    def install_python_requirement(self, requirement, source=None):
+        if source is None:
+            source = "System"
         line = yombo.utils.bytes_to_unicode(requirement)
         line = line.strip()
-        if len(line) == 0 or line.startswith("#"):
+        if len(line) == 0 or line.startswith("#") or line.startswith("git+"):
             return
         logger.debug("Processing requirement: {requirement}", requirement=line)
+        requirement = pkg_requirement(line)
+        package_name = requirement.name
+        package_specifier = requirement.specifier
+
+        if package_name in self.requirements:
+            if self.requirements[package_name]['specifier'] == package_specifier:
+                self.requirements[package_name]['used_by'].append(source)
+                return
+            else:
+                logger.warn("Unable to install conflicting python module '{name}'. Version '{current}' already set,"
+                            " requested '{new}' by: {source}",
+                            name=package_name, current=self.requirements[package_name]['specifier'],
+                            new=package_specifier, source=source)
+
+                return
+
         try:
             pkg_info = yield yombo.utils.get_python_package_info(line, events_queue=self.startup_events_queue)
             logger.debug("Processing requirement: results: {results}", results=pkg_info)
@@ -410,21 +429,23 @@ class Loader(YomboLibrary, object):
             raise YomboCritical(e.message)
         logger.debug("Have requirement details...")
         if pkg_info is not None:
-            self.requirements[line] = {
+            save_info = {
                 "name": pkg_info.project_name,
                 "version": pkg_info._version,
                 "path": pkg_info.location,
-                "used_by": ["Yombo framework"],
-                "package": line,
+                "used_by": [source, ],
+                "specifier": package_specifier,
             }
         else:
-            self.requirements[line] = {
-                "name": line,
+            save_info = {
+                "name": package_name,
                 "version": "Invalid python module",
                 "path": "Invalid module",
-                "used_by": ["Yombo framework"],
-                "package": line,
+                "used_by": [source, ],
+                "specifier": package_specifier,
             }
+
+        self.requirements[package_name] = save_info
 
     def Loader_i18n_atoms(self, **kwargs):
        return [
@@ -507,6 +528,7 @@ class Loader(YomboLibrary, object):
             library._Devices = self.loadedLibraries["devices"]
             library._DeviceTypes = self.loadedLibraries["devicetypes"]
             library._Discovery = self.loadedLibraries["discovery"]
+            library._DownloadModules = self.loadedLibraries["downloadmodules"]
             library._Gateways = self.loadedLibraries["gateways"]
             library._GatewayComs = self.loadedLibraries["gateways_communications"]
             library._GPG = self.loadedLibraries["gpg"]
