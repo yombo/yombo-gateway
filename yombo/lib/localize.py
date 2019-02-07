@@ -153,6 +153,7 @@ class Localize(YomboLibrary):
         rebuilt on each run.
         :return:
         """
+        default_lang = self.default_lang()
         try:
             languages_to_update = {}
             self.parse_directory("yombo/utils/locale", has_header=True)
@@ -193,14 +194,14 @@ class Localize(YomboLibrary):
                 languages_to_update[lang] = True
 
             # If we have a default language, lets make sure we have language files for it.
-            if self.default_lang() is not None:
-                if self.default_lang() not in self.files:
+            if default_lang is not None:
+                if default_lang not in self.files:
                     self.default_lang(set=None)
-                    language = self.default_lang().split("_")[0]
+                    language = default_lang.split("_")[0]
                     if language in self.files:
                         self.default_lang(set=language)
             # If no default lang, try the system language.
-            if self.default_lang() is None:
+            if default_lang is None:
                 language = self.get_system_language()
                 if language in self.files:
                     self.default_lang(set=language)
@@ -210,25 +211,19 @@ class Localize(YomboLibrary):
                         self.default_lang(set=language)
 
             # If still no language, we will use english.
-            if self.default_lang() is None:
+            if default_lang is None:
                 self.default_lang(set="en")
 
             # English is the base of all language files. If English needs updating, we update the default too.
-            if "en" in languages_to_update and self.default_lang() not in languages_to_update:
-                languages_to_update[self.default_lang()] = True
+            if "en" in languages_to_update and default_lang not in languages_to_update and default_lang != '':
+                languages_to_update[default_lang] = True
 
             # Always do english language updates first, it"s the base of all.
             if "en" in languages_to_update:
                 self.update_language_files("en")
                 del languages_to_update["en"]
 
-            # Add the default language to the stack.
-            if self.default_lang() in languages_to_update:
-                self.update_language_files(self.default_lang())
-                del languages_to_update[self.default_lang()]
-
-            # self.default_lang() = "es" # some testing...
-            self._States["localize.default_language"] = self.default_lang()
+            self._States["localize.default_language"] = default_lang
 
             for lang, files in languages_to_update.items():
                 self.update_language_files(lang)
@@ -303,6 +298,7 @@ class Localize(YomboLibrary):
             makedirs(output_folder)
 
         # merge files
+        makedirs(path.dirname(output_folder + "/yombo.po"), exist_ok=True)
         with open(output_folder + "/yombo.po", "w") as outfile:
             for fname in self.files[language]:
                 with open(fname) as infile:
