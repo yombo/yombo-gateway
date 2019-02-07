@@ -1067,15 +1067,6 @@ class WebInterface(YomboLibrary):
         the webinterface JS and CSS files.
         :return:
         """
-        # if not path.exists(f"{self.working_dir}/webinterface/static/dist"):
-        #     mkdir(f"{self.working_dir}/webinterface/static/dist")
-        # if not path.exists(f"{self.working_dir}/webinterface/static/dist/css"):
-        #     mkdir(f"{self.working_dir}/webinterface/static/dist/css")
-        # if not path.exists(f"{self.working_dir}/webinterface/static/dist/js"):
-        #     mkdir(f"{self.working_dir}/webinterface/static/dist/js")
-        # if not path.exists(f"{self.working_dir}/webinterface/static/dist/fonts"):
-        #     mkdir(f"{self.working_dir}/webinterface/static/dist/fonts")
-
         def do_cat(inputs, output):
             # output = "yombo/lib/webinterface/static/" + output
 
@@ -1105,29 +1096,29 @@ class WebInterface(YomboLibrary):
         CAT_SCRIPTS = [
             "source/bootstrap/dist/css/bootstrap.min.css",
         ]
-        CAT_SCRIPTS_OUT = "dist/css/bootstrap.min.css"
+        CAT_SCRIPTS_OUT = "css/bootstrap.min.css"
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
         CAT_SCRIPTS = [
             "source/bootstrap/dist/css/bootstrap.min.css.map",
         ]
-        CAT_SCRIPTS_OUT = "dist/css/bootstrap.min.css.map"
+        CAT_SCRIPTS_OUT = "css/bootstrap.min.css.map"
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         CAT_SCRIPTS = [
             "source/bootstrap/dist/css/bootstrap-theme.min.css",
         ]
-        CAT_SCRIPTS_OUT = "dist/css/bootstrap-theme.min.css"
+        CAT_SCRIPTS_OUT = "css/bootstrap-theme.min.css"
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
         CAT_SCRIPTS = [
             "source/bootstrap/dist/css/bootstrap-theme.min.css.map",
         ]
-        CAT_SCRIPTS_OUT = "dist/css/bootstrap-theme.min.css.map"
+        CAT_SCRIPTS_OUT = "css/bootstrap-theme.min.css.map"
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         CAT_SCRIPTS = [
             "source/creative/css/creative.css",
             ]
-        CAT_SCRIPTS_OUT = "dist/css/creative.css"
+        CAT_SCRIPTS_OUT = "css/creative.css"
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         CAT_SCRIPTS = [
@@ -1135,19 +1126,19 @@ class WebInterface(YomboLibrary):
             "source/sb-admin/css/sb-admin-2.css",
             "source/sb-admin/css/yombo.css",
             ]
-        CAT_SCRIPTS_OUT = "dist/css/admin2-metisMenu.min.css"
+        CAT_SCRIPTS_OUT = "css/admin2-metisMenu.min.css"
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
         CAT_SCRIPTS = [
             "source/metisMenu/metisMenu.min.css.map",
         ]
-        CAT_SCRIPTS_OUT = "dist/css/metisMenu.min.css.map"
+        CAT_SCRIPTS_OUT = "css/metisMenu.min.css.map"
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         CAT_SCRIPTS = [
             "source/datatables_1.10.18/dataTables.bootstrap.min.css",
             "source/datatables_1.10.18/responsive.bootstrap.css",
             ]
-        CAT_SCRIPTS_OUT = "dist/css/datatables.min.css"
+        CAT_SCRIPTS_OUT = "css/datatables.min.css"
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         CAT_SCRIPTS = [
@@ -1156,7 +1147,7 @@ class WebInterface(YomboLibrary):
             "source/datatables_1.10.18/dataTables.responsive.min.js",
             "source/datatables_1.10.18/responsive.bootstrap.js",
             ]
-        CAT_SCRIPTS_OUT = "dist/js/datatables.min.js"
+        CAT_SCRIPTS_OUT = "js/datatables.min.js"
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
         copytree("source/datatables_1.10.18/images/", "dist/images/")
 
@@ -1166,37 +1157,37 @@ class WebInterface(YomboLibrary):
             "source/bootstrap/dist/js/bootstrap.min.js",
             "source/metisMenu/metisMenu.min.js",
         ]
-        CAT_SCRIPTS_OUT = "dist/js/jquery-cookie-bootstrap-metismenu.min.js"
+        CAT_SCRIPTS_OUT = "js/jquery-cookie-bootstrap-metismenu.min.js"
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
         CAT_SCRIPTS = [
             "source/metisMenu/metisMenu.min.js.map",
         ]
-        CAT_SCRIPTS_OUT = "dist/js/metisMenu.min.js.map"
+        CAT_SCRIPTS_OUT = "js/metisMenu.min.js.map"
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         CAT_SCRIPTS = [
             "source/jquery/jquery.validate.min.js",
         ]
-        CAT_SCRIPTS_OUT = "dist/js/jquery.validate.min.js"
+        CAT_SCRIPTS_OUT = "js/jquery.validate.min.js"
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         CAT_SCRIPTS = [
             "source/sb-admin/js/sb-admin-2.min.js",
             "source/sb-admin/js/yombo.js",
         ]
-        CAT_SCRIPTS_OUT = "dist/js/sb-admin2.min.js"
+        CAT_SCRIPTS_OUT = "js/sb-admin2.min.js"
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         CAT_SCRIPTS = [
             "source/font-awesome5/js/fontawesome-all.min.js",
             ]
-        CAT_SCRIPTS_OUT = "dist/js/fontawesome-all.min.js"
+        CAT_SCRIPTS_OUT = "js/fontawesome-all.min.js"
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         CAT_SCRIPTS = [
             "source/jrcode/jquery-qrcode.min.js",
             ]
-        CAT_SCRIPTS_OUT = "dist/js/jquery-qrcode.min.js"
+        CAT_SCRIPTS_OUT = "js/jquery-qrcode.min.js"
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         CAT_SCRIPTS = [
@@ -1204,55 +1195,55 @@ class WebInterface(YomboLibrary):
             "source/creative/js/scrollreveal.min.js",
             "source/creative/js/creative.min.js",
             ]
-        CAT_SCRIPTS_OUT = "dist/js/creative.min.js"
+        CAT_SCRIPTS_OUT = "js/creative.min.js"
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         CAT_SCRIPTS = [
             "source/echarts/echarts.min.js",
             ]
-        CAT_SCRIPTS_OUT = "dist/js/echarts.min.js"
+        CAT_SCRIPTS_OUT = "js/echarts.min.js"
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
 
         CAT_SCRIPTS = [
             "source/sb-admin/js/mappicker.js",
             ]
-        CAT_SCRIPTS_OUT = "dist/js/mappicker.js"
+        CAT_SCRIPTS_OUT = "js/mappicker.js"
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
         CAT_SCRIPTS = [
             "source/sb-admin/css/mappicker.css",
             ]
-        CAT_SCRIPTS_OUT = "dist/css/mappicker.css"
+        CAT_SCRIPTS_OUT = "css/mappicker.css"
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         CAT_SCRIPTS = [
             "source/mqtt/mqttws31.min.js",
             ]
-        CAT_SCRIPTS_OUT = "dist/js/mqttws31.min.js"
+        CAT_SCRIPTS_OUT = "js/mqttws31.min.js"
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         CAT_SCRIPTS = [
             "source/sb-admin/js/jquery.serializejson.min.js",
             ]
-        CAT_SCRIPTS_OUT = "dist/js/jquery.serializejson.min.js"
+        CAT_SCRIPTS_OUT = "js/jquery.serializejson.min.js"
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         CAT_SCRIPTS = [
             "source/sb-admin/js/sha256.js",
             ]
-        CAT_SCRIPTS_OUT = "dist/js/sha256.js"
+        CAT_SCRIPTS_OUT = "js/sha256.js"
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         CAT_SCRIPTS = [
             "source/yombo/jquery.are-you-sure.js",
             ]
-        CAT_SCRIPTS_OUT = "dist/js/jquery.are-you-sure.js"
+        CAT_SCRIPTS_OUT = "js/jquery.are-you-sure.js"
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         # Just copy files
-        copytree("source/bootstrap/dist/fonts/", "dist/fonts/")
-        copytree("source/bootstrap-select/", "dist/bootstrap-select/")
-        copytree("source/img/", "dist/img/")
+        copytree("source/bootstrap/dist/fonts/", "fonts/")
+        copytree("source/bootstrap-select/", "bootstrap-select/")
+        copytree("source/img/", "img/")
 
 class web_translator(object):
     def __init__(self, webinterface, locales):
