@@ -36,7 +36,6 @@ def show_help():
     """Display the help menu when calling the tac file directly (a no-no)."""
     print("This file shouldn't be called directly by users. Please use either:")
     print("1) ybo - If installed by Yombo install scripts")
-    print(f"2) {os.path.dirname(os.path.abspath(__file__))}/yombo.sh")
     print("\n")
 
 
@@ -125,6 +124,8 @@ def start():
         os.makedirs(f"{working_dir}/etc/certs")
     if not os.path.exists(f"{working_dir}/locale"):
         os.makedirs(f"{working_dir}/locale")
+    if not os.path.exists(f"{working_dir}/webinterface"):
+        os.makedirs(f"{working_dir}/webinterface")
     if not os.path.exists(f"{working_dir}/log"):
         os.makedirs(f"{working_dir}/log")
     if not os.path.exists(f"{working_dir}/opt"):
