@@ -23,7 +23,7 @@ import jinja2
 import json
 from klein import Klein
 from operator import itemgetter
-from os import path, listdir, mkdir
+from os import path, listdir, mkdir, makedirs
 import shutil
 from time import time
 from urllib.parse import parse_qs, urlparse, urlunparse
@@ -534,6 +534,7 @@ class WebInterface(YomboLibrary):
 
     # @inlineCallbacks
     def start_web_servers(self):
+
         if self.already_starting_web_servers is True:
             return
         self.already_starting_web_servers = True
@@ -577,11 +578,11 @@ class WebInterface(YomboLibrary):
                     while port_attempts < 100:
                         try:
                             # print("about to start ssl listener on port: %s" % self.wi_port_secure())
-                            self.web_interface_ssl_listener = reactor.listenSSL(self.wi_port_secure(), self.web_factory,
+                            self.web_interface_ssl_listener = reactor.listenSSL(self.wi_port_secure()+port_attempts, self.web_factory,
                                                                                 contextFactory)
                             break
                         except Exception as e:
-                            print(f"Unable to start secure web server: {e}")
+                            logger.warn(f"Unable to start secure web server: {e}", e=e)
                             port_attempts += 1
                     if port_attempts >= 100:
                         logger.warn("Unable to start secure web server, no available port could be found. Tried: {starting} - {ending}",
@@ -1060,23 +1061,26 @@ class WebInterface(YomboLibrary):
 
     def _build_dist(self):
         """
-        This is blocking code. Doesn"t really matter, it only does it on startup.
+        This is blocking code. Doesn't really matter, it only does it on startup.
 
         Builds the "dist" directory from the "build" directory. Easy way to update the source css/js files and update
         the webinterface JS and CSS files.
         :return:
         """
-        if not path.exists("yombo/lib/webinterface/static/dist"):
-            mkdir("yombo/lib/webinterface/static/dist")
-        if not path.exists("yombo/lib/webinterface/static/dist/css"):
-            mkdir("yombo/lib/webinterface/static/dist/css")
-        if not path.exists("yombo/lib/webinterface/static/dist/js"):
-            mkdir("yombo/lib/webinterface/static/dist/js")
-        if not path.exists("yombo/lib/webinterface/static/dist/fonts"):
-            mkdir("yombo/lib/webinterface/static/dist/fonts")
+        # if not path.exists(f"{self.working_dir}/webinterface/static/dist"):
+        #     mkdir(f"{self.working_dir}/webinterface/static/dist")
+        # if not path.exists(f"{self.working_dir}/webinterface/static/dist/css"):
+        #     mkdir(f"{self.working_dir}/webinterface/static/dist/css")
+        # if not path.exists(f"{self.working_dir}/webinterface/static/dist/js"):
+        #     mkdir(f"{self.working_dir}/webinterface/static/dist/js")
+        # if not path.exists(f"{self.working_dir}/webinterface/static/dist/fonts"):
+        #     mkdir(f"{self.working_dir}/webinterface/static/dist/fonts")
 
         def do_cat(inputs, output):
-            output = "yombo/lib/webinterface/static/" + output
+            # output = "yombo/lib/webinterface/static/" + output
+
+            output = f"{self.working_dir}/webinterface/static/{output}"
+            makedirs(path.dirname(output), exist_ok=True)
             with open(output, "w") as outfile:
                 for fname in inputs:
                     fname = "yombo/lib/webinterface/static/" + fname
@@ -1085,12 +1089,11 @@ class WebInterface(YomboLibrary):
 
         def copytree(src, dst, symlinks=False, ignore=None):
             src = "yombo/lib/webinterface/static/" + src
-            dst = "yombo/lib/webinterface/static/" + dst
+            dst = f"{self.working_dir}/webinterface/static/{dst}"
             if path.exists(dst):
                 shutil.rmtree(dst)
             if path.isdir(src):
-                if not path.exists(dst):
-                    mkdir(dst)
+                makedirs(path.dirname(dst), exist_ok=True)
             for item in listdir(src):
                 s = path.join(src, item)
                 d = path.join(dst, item)
