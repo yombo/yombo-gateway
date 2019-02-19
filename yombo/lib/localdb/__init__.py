@@ -21,7 +21,6 @@ A database API to SQLite3.
 """
 # Import python libraries
 import inspect
-from os import chmod
 import re
 import sys
 from time import time
@@ -164,10 +163,6 @@ class Roles(DBObject):
     TABLENAME = "roles"
 
 
-class Schema_Version(DBObject):
-    TABLENAME = "schema_version"
-
-
 class Sessions(DBObject):
     TABLENAME = "webinterface_sessions"
 
@@ -297,50 +292,12 @@ class LocalDB(YomboLibrary, DB_Tools, DB_Devices, DB_DeviceTypes, DB_Events, DB_
         def show_connected(connection):
             connection.execute("PRAGMA foreign_keys = ON")
 
-        connect_time = time()
         Registry.DBPOOL = adbapi.ConnectionPool("sqlite3",
-                                                f"{self.working_dir}/etc/yombo.db",
+                                                f"{self.working_dir}/etc/yombo.sqlite3",
                                                 check_same_thread=False,
                                                 cp_min=1, cp_max=1, cp_openfun=show_connected)
         self.dbconfig = Registry.getConfig()
-
-        self.schema_version = 0
-        self.database_file_is_new = None
-        try:
-            results = yield Schema_Version.find(where=["table_name = ?", "core"])
-            self.schema_version = results[0].version
-            start_schema_version = self.schema_version
-            self.database_file_is_new = False
-        except Exception as e:
-            logger.info("Problem with database: {e}", e=e)
-            logger.info("Creating new database file.")
-            start_schema_version = 0
-            self.database_file_is_new = True
-        Registry.DBPOOL.runOperation("PRAGMA synchronous=1;")
-        self.current_db_meta_file = __import__("yombo.utils.db." + str(LATEST_SCHEMA_VERSION), globals(), locals(),
-                                   [str(LATEST_SCHEMA_VERSION)], 0)
-        if self.database_file_is_new is False:
-            # if existing, we will upgrade the database.
-            current_schema_version = start_schema_version
-            for current_schema_version in range(self.schema_version + 1, LATEST_SCHEMA_VERSION + 1):
-                imported_file = __import__("yombo.utils.db." + str(current_schema_version), globals(), locals(), ["upgrade"], 0)
-                results = yield imported_file.upgrade(Registry)
-
-                self.dbconfig.update("schema_version",
-                                     {"version": current_schema_version},
-                                     where=["table_name = ?", "core"])
-                # results = yield Schema_Version.all()
-        else:
-            current_schema_version = LATEST_SCHEMA_VERSION
-            # if new, we will just install the latest meta in the lastest version file.
-            results = yield self.current_db_meta_file.new_db_file(Registry)
-
-            self.dbconfig.update("schema_version",
-                                 {"version": LATEST_SCHEMA_VERSION},
-                                 where=["table_name = ?", "core"])
-        self._Events.new("localdb", "connected", (start_schema_version, current_schema_version))
-
-        chmod(f"{self.working_dir}/etc/yombo.db", 0o600)
+        # self._Events.new("localdb", "connected", (start_schema_version, current_schema_version))
 
         yield self._load_db_model()
         Registry.DBPOOL.runOperation("PRAGMA synchronous=2;")

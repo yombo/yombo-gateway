@@ -11,6 +11,7 @@ import os
 import select
 import shlex
 import sys
+from time import time
 from twisted.internet import asyncioreactor
 
 """ Try to use a faster looper."""
@@ -106,6 +107,7 @@ def start():
         print(f"Error starting Yombo: {e}")
         exit()
 
+    app_dir = arguments["app_dir"]  # Typically the user"s directory: ~/.yombo
     working_dir = arguments["working_dir"]  # Typically the user"s directory: ~/.yombo
     # ensure that usr data directory exists
     if not os.path.exists(f"{working_dir}/gpg"):
@@ -146,6 +148,19 @@ def start():
         exit(200)
     from twisted.application import service as twisted_service
     application = twisted_service.Application("yombo")
+
+    from yoyo import read_migrations
+    from yoyo import get_backend
+
+    print("Checking Yombo database structure.")
+    start = time()
+    backend = get_backend(f"sqlite:////{working_dir}/etc/yombo.sqlite3")
+    migrations = read_migrations(f"{app_dir}/yombo/lib/localdb/migrations")
+    with backend.lock():
+        backend.apply_migrations(backend.to_apply(migrations))
+    print(f"Duration: {time() - start}")
+    os.chmod(f"{working_dir}/etc/yombo.sqlite3", 0o600)
+    exit()
 
     # Gateway service is responsible for actually running everything.
     from yombo.core.gwservice import GWService

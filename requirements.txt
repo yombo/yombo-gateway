@@ -41,3 +41,4 @@ unidecode==1.0.*
 uvloop==0.11.3
 voluptuous==0.11.5
 wheel==0.32.*
+yoyo-migrations==6.1.*
