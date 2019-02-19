@@ -153,14 +153,13 @@ def start():
     from yoyo import get_backend
 
     print("Checking Yombo database structure.")
-    start = time()
+    # start = time()
     backend = get_backend(f"sqlite:////{working_dir}/etc/yombo.sqlite3")
     migrations = read_migrations(f"{app_dir}/yombo/lib/localdb/migrations")
     with backend.lock():
         backend.apply_migrations(backend.to_apply(migrations))
-    print(f"Duration: {time() - start}")
+    # print(f"Duration: {time() - start}")
     os.chmod(f"{working_dir}/etc/yombo.sqlite3", 0o600)
-    exit()
 
     # Gateway service is responsible for actually running everything.
     from yombo.core.gwservice import GWService
