@@ -17,19 +17,20 @@ The input type (singular) class represents one input type.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/inputtypes.html>`_
 """
-from functools import partial
+import collections
+from functools import reduce
 from time import time
 
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks, Deferred
+from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
+from yombo.core.library_search import LibrarySearch
 from yombo.core.log import get_logger
-from yombo.utils import search_instance, do_search_instance, global_invoke_all
-import collections
-from functools import reduce
+from yombo.utils import global_invoke_all
+
 logger = get_logger("library.inputtypes")
 
 BASE_INPUT_TYPE_PLATFORMS = {
@@ -45,13 +46,21 @@ BASE_INPUT_TYPE_PLATFORMS = {
                                          "Yombo_Device"],
 }
 
-class InputTypes(YomboLibrary):
+class InputTypes(YomboLibrary, LibrarySearch):
     """
     Manages all input types available for input types.
 
     All modules already have a predefined reference to this library as
     `self._InputTypes`. All documentation will reference this use case.
     """
+    input_types = {}
+
+    # The following are used by get(), get_advanced(), search(), and search_advanced()
+    item_search_attribute = "input_types"
+    item_searchable_attributes = [
+        "input_type_id", "category_id", "label", "machine_label", "description", "status", "public"
+    ]
+
     def __contains__(self, input_type_requested):
         """
         .. note:: The input type must be enabled to be found using this method. Use :py:meth:`get <InputTypes.get>`
@@ -171,10 +180,6 @@ class InputTypes(YomboLibrary):
         Setups up the basic framework. Nothing is loaded in here until the
         Load() stage.
         """
-        self.input_types = {}
-        self.input_type_search_attributes = ["input_type_id", "category_id", "label", "machine_label", "description",
-            "status", "always_load", "public"]
-
         self.platforms = {}
         self.load_platforms(BASE_INPUT_TYPE_PLATFORMS)
 
@@ -189,7 +194,7 @@ class InputTypes(YomboLibrary):
     def _load_input_types_from_database(self):
         """
         Loads input types from database and sends them to
-        :py:meth:`import_input_types <InputTypes.import_input_types>`
+        :py:meth:`_load_input_type_into_memory <InputTypes._load_input_type_into_memory>`
 
         This can be triggered either on system startup or when new/updated input types have been saved to the
         database and we need to refresh existing input types.
@@ -200,13 +205,13 @@ class InputTypes(YomboLibrary):
 
         for input_type in input_types:
             if input_type["machine_label"] in self.platforms:
-                self.import_input_types(input_type, self.platforms[input_type["machine_label"]])
+                self._load_input_type_into_memory(input_type, self.platforms[input_type["machine_label"]])
                 if input_type["machine_label"] not in validators_loaded:
                     validators_loaded.append(input_type["machine_label"])
             else:
                 # print("111: %s" % input_type)
                 logger.warn("Input Type '{label}' doesn't have a validator.", label=input_type["machine_label"])
-                self.import_input_types(input_type, self.platforms["any"])
+                self._load_input_type_into_memory(input_type, self.platforms["any"])
 
         # now create any input_types for validators where we don't have a DB item - rare
         # print("!!!!!!!!!!!!!!!!!!!!!!!!!!  now loading missing validators....")
@@ -220,36 +225,14 @@ class InputTypes(YomboLibrary):
                 "label": validator_name,
                 "machine_label": validator_name,
                 "description": validator_name,
-                "always_load": 1,
                 "status": 1,
                 "public": 0,
                 "created_at": time(),
                 "updated_at": time(),
             }
-            self.import_input_types(input_type, klass)
+            self._load_input_type_into_memory(input_type, klass)
 
-    def load_platforms(self, platforms):
-        """
-        Load the platforms and prep them for usage.
-
-        :param platforms: 
-        :return: 
-        """
-        for path, items in platforms.items():
-            for item in items:
-                item_key = item.lower()
-                if item_key.startswith("_"):
-                    item_key = item_key[1:]
-
-                module_root = __import__(path, globals(), locals(), [], 0)
-                module_tail = reduce(lambda p1, p2: getattr(p1, p2), [module_root, ] + path.split(".")[1:])
-                klass = getattr(module_tail, item)
-                if not isinstance(klass, collections.Callable):
-                    logger.warn("Unable to load input type platform '{name}', it's not callable.", name=item)
-                    continue
-                self.platforms[item_key] = klass
-
-    def import_input_types(self, input_type, klass, test_input_type=False):
+    def _load_input_type_into_memory(self, input_type, klass, test_input_type=False):
         """
         Add a new input types to memory or update an existing input types.
 
@@ -286,104 +269,31 @@ class InputTypes(YomboLibrary):
                               input_type=self.input_types[input_type_id],
                               )
 
-    def get_all(self):
+    def load_platforms(self, platforms):
         """
-        Returns a copy of the input types list.
-        :return:
+        Load the platforms and prep them for usage.
+
+        :param platforms: 
+        :return: 
         """
-        return self.input_types.copy()
+        for path, items in platforms.items():
+            for item in items:
+                item_key = item.lower()
+                if item_key.startswith("_"):
+                    item_key = item_key[1:]
+
+                module_root = __import__(path, globals(), locals(), [], 0)
+                module_tail = reduce(lambda p1, p2: getattr(p1, p2), [module_root, ] + path.split(".")[1:])
+                klass = getattr(module_tail, item)
+                if not isinstance(klass, collections.Callable):
+                    logger.warn("Unable to load input type platform '{name}', it's not callable.", name=item)
+                    continue
+                self.platforms[item_key] = klass
 
     def check(self, input_type_requested, value, **kwargs):
         input_type_platform = self.get(input_type_requested)
         # print("validator: %s" % validator)
         return input_type_platform.validate(value, **kwargs)
-
-    def get(self, input_type_requested, limiter=None, status=None):
-        """
-        Performs the actual search.
-
-        .. note::
-
-           Modules shouldn't use this function. Use the built in reference to
-           find input types:
-
-            >>> self._InputTypes["13ase45"]
-
-        or:
-
-            >>> self._InputTypes["numeric"]
-
-        :raises YomboWarning: For invalid requests.
-        :raises KeyError: When item requested cannot be found.
-        :param input_type_requested: The input type ID or input type label to search for.
-        :type input_type_requested: string
-        :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
-        :type limiter_override: float
-        :param status: Deafult: 1 - The status of the input type to check for.
-        :type status: int
-        :return: Pointer to requested input type.
-        :rtype: dict
-        """
-        if limiter is None:
-            limiter = .89
-
-        if limiter > .99999999:
-            limiter = .99
-        elif limiter < .10:
-            limiter = .10
-
-        if input_type_requested in self.input_types:
-            item = self.input_types[input_type_requested]
-            if status is not None and item.status != status:
-                raise KeyError("Requested input type found, but has invalid status: %s" % item.status)
-            return item
-        else:
-            attrs = [
-                {
-                    "field": "input_type_id",
-                    "value": input_type_requested,
-                    "limiter": limiter,
-                },
-                {
-                    "field": "label",
-                    "value": input_type_requested,
-                    "limiter": limiter,
-                },
-                {
-                    "field": "machine_label",
-                    "value": input_type_requested,
-                    "limiter": limiter,
-                }
-            ]
-            try:
-                # logger.debug("Get is about to call search...: %s" % input_type_requested)
-                # found, key, item, ratio, others = self._search(attrs, operation="highest")
-                found, key, item, ratio, others = do_search_instance(attrs, self.input_types,
-                                                                     self.input_type_search_attributes,
-                                                                     limiter=limiter,
-                                                                     operation="highest")
-                # logger.debug("found input type by search: {input_type_id}", input_type_id=key)
-                if found:
-                    return item
-                else:
-                    raise KeyError("Input type not found: %s" % input_type_requested)
-            except YomboWarning as e:
-                raise KeyError("Searched for %s, but had problems: %s" % (input_type_requested, e))
-
-    def search(self, _limiter=None, _operation=None, **kwargs):
-        """
-        Search for input type based on attributes for all input types.
-
-        :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
-        :type limiter_override: float
-        :param status: Deafult: 1 - The status of the input type to check for.
-        :return: 
-        """
-        return search_instance(kwargs,
-                               self.input_types,
-                               self.input_type_search_attributes,
-                               _limiter,
-                               _operation)
 
     @inlineCallbacks
     def dev_input_type_add(self, data, **kwargs):

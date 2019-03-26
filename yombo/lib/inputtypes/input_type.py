@@ -14,7 +14,6 @@ class Input_Type(object):
     :ivar label: (string) Human label
     :ivar machine_label: (string) A non-changable machine label.
     :ivar category_id: (string) Reference category id.
-    :ivar always_load: (int) 1 if this item is loaded at startup, otherwise 0.
     :ivar status: (int) 0 - disabled, 1 - enabled, 2 - deleted
     :ivar public: (int) 0 - private, 1 - public pending approval, 2 - public
     :ivar created: (int) EPOCH time when created
@@ -49,7 +48,6 @@ class Input_Type(object):
         self.machine_label = None
         self.description = None
         self.input_regex = None
-        self.always_load = None
         self.status = None
         self.public = None
         self.created = None
@@ -78,8 +76,6 @@ class Input_Type(object):
             self.machine_label = input_type["machine_label"]
         if "description" in input_type:
             self.description = input_type["description"]
-        if "always_load" in input_type:
-            self.always_load = input_type["always_load"]
         if "status" in input_type:
             self.status = input_type["status"]
         if "public" in input_type:
@@ -107,7 +103,6 @@ class Input_Type(object):
             "label": str(self.label),
             "description": str(self.description),
             "input_regex": str(self.input_regex),
-            "always_load": str(self.always_load),
             "public": int(self.public),
             "status": int(self.status),
             "created": int(self.created),
