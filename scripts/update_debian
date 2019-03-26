@@ -1,6 +1,23 @@
 #!/usr/bin/env bash
+#
+#
+# This script is called by yombo_update.  Please start this script from there.
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
 # Handles updates for various Debian distros. Including ubunut,
 # and raspberry pi.
+#
+#
+#
 
 if [ "$USER" = "root" ] && [ "$SUDO_USER" == "" ]; then
   echo "This script cannot be run as root directly and must be run"
