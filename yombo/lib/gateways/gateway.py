@@ -32,7 +32,6 @@ class Gateway:
     :ivar machine_label: (string) A non-changable machine label.
     :ivar category_id: (string) Reference category id.
     :ivar input_regex: (string) A regex to validate if user input is valid or not.
-    :ivar always_load: (int) 1 if this item is loaded at startup, otherwise 0.
     :ivar status: (int) 0 - disabled, 1 - enabled, 2 - deleted
     :ivar public: (int) 0 - private, 1 - public pending approval, 2 - public
     :ivar created_at: (int) EPOCH time when created
@@ -43,6 +42,7 @@ class Gateway:
         if self.machine_label in ("local", "cluster"):
             return False
         return True
+    
     def __init__(self, parent, gateway):
         """
         Setup the gateway object using information passed in.
@@ -61,11 +61,12 @@ class Gateway:
         self.master_gateway_id = None
         self.label = None
         self.description = None
+        self.user_id = None
         self.mqtt_auth = None
         self.mqtt_auth_prev = None
         self.mqtt_auth_next = None
         self.mqtt_auth_last_rotate = None
-        self.fqdn = None
+        self.dns_name = None
         self.internal_ipv4 = None
         self.external_ipv4 = None
         self.internal_port = None
@@ -117,6 +118,8 @@ class Gateway:
             self.label = gateway["label"]
         if "description" in gateway:
             self.description = gateway["description"]
+        if "user_id" in gateway:
+            self.user_id = gateway["user_id"]
         if "mqtt_auth" in gateway:
             self.mqtt_auth = gateway["mqtt_auth"]
         if "mqtt_auth_next" in gateway:
@@ -129,8 +132,8 @@ class Gateway:
             self.internal_port = gateway["internal_port"]
         if "external_port" in gateway:
             self.external_port = gateway["external_port"]
-        if "fqdn" in gateway:
-            self.fqdn = gateway["fqdn"]
+        if "dns_name" in gateway:
+            self.dns_name = gateway["dns_name"]
         if "internal_secure_port" in gateway:
             self.internal_secure_port = gateway["internal_secure_port"]
         if "external_secure_port" in gateway:
@@ -181,7 +184,7 @@ class Gateway:
         """
         return {
             "gateway_id": str(self.gateway_id),
-            "fqdn": str(self.fqdn),
+            "dns_name": str(self.dns_name),
             "is_master": self.is_master,
             "master_gateway_id": str(self.master_gateway_id),
             "machine_label": str(self.machine_label),
@@ -218,7 +221,7 @@ class Gateway:
         """
         return {
             "gateway_id": str(self.gateway_id),
-            "fqdn": str(self.fqdn),
+            "dns_name": str(self.dns_name),
             "is_master": self.is_master,
             "master_gateway_id": str(self.master_gateway_id),
             "machine_label": str(self.machine_label),

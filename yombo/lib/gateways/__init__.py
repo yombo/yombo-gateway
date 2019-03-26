@@ -22,18 +22,28 @@ from twisted.internet.defer import inlineCallbacks
 from yombo.constants import VERSION
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
+from yombo.core.library_search import LibrarySearch
 from yombo.core.log import get_logger
 from yombo.lib.gateways.gateway import Gateway
-from yombo.utils import do_search_instance, global_invoke_all
+from yombo.utils import global_invoke_all
 from yombo.utils.decorators import deprecated
 
 logger = get_logger("library.gateways")
 
 
-class Gateways(YomboLibrary):
+class Gateways(YomboLibrary, LibrarySearch):
     """
     Manages information about gateways.
     """
+    gateways = {}
+
+    # The following are used by get(), get_advanced(), search(), and search_advanced()
+    item_search_attribute = "gateways"
+    item_searchable_attributes = [
+        "gateway_id", "gateway_id", "label", "machine_label", "status"
+    ]
+    item_sort_key = "machine_label"
+
     library_phase = 0
 
     @property
@@ -71,7 +81,6 @@ class Gateways(YomboLibrary):
     @master.setter
     def master(self, val):
         return
-
 
     def __contains__(self, gateway_requested):
         """
@@ -184,32 +193,30 @@ class Gateways(YomboLibrary):
         Load() stage.
         """
         self.library_phase = 1
-        self.gateways = {}
         self.gateway_status = yield self._SQLDict.get(self, "gateway_status")
         self.gateway_id = self._Configs.gateway_id
         self.is_master = self._Configs.is_master
         self.master_gateway_id = self._Configs.master_gateway_id
 
-        self.gateway_search_attributes = ["gateway_id", "gateway_id", "label", "machine_label", "status"]
         if self._Loader.operating_mode != "run":
-            self.import_gateway({
+            self._load_gateway_into_memory({
                 "id": "local",
                 "is_master": True,
                 "master_gateway_id": "",
                 "machine_label": "local",
                 "label": "Local",
                 "description": "Local",
-                "fqdn": "127.0.0.1",
+                "dns_name": "127.0.0.1",
                 "version": VERSION,
             })
-        self.import_gateway({
+        self._load_gateway_into_memory({
             "id": "cluster",
             "is_master": False,
             "master_gateway_id": "",
             "machine_label": "cluster",
             "label": "Cluster",
             "description": "All gateways in a cluster.",
-            "fqdn": "127.0.0.1",
+            "dns_name": "127.0.0.1",
             "version": VERSION,
         })
         yield self._load_gateways_from_database()
@@ -236,74 +243,73 @@ class Gateways(YomboLibrary):
     def _load_gateways_from_database(self):
         """
         Loads gateways from database and sends them to
-        :py:meth:`import_gateway <Gateways.import_gateway>`
+        :py:meth:`_load_gateway_into_memory <Gateways._load_gateway_into_memory>`
 
         This can be triggered either on system startup or when new/updated gateways have been saved to the
         database and we need to refresh existing gateways.
         """
         gateways = yield self._LocalDB.get_gateways()
         for a_gateway in gateways:
-            self.import_gateway(a_gateway)
+            self._load_gateway_into_memory(a_gateway)
 
-    def import_gateway(self, gateway, test_gateway=False):
+    def _load_gateway_into_memory(self, gateway, test_gateway=False):
         """
         Add a new gateways to memory or update an existing gateways.
 
         **Hooks called**:
 
-        * _gateway_before_load_ : If added, sends gateway dictionary as "gateway"
-        * _gateway_before_update_ : If updated, sends gateway dictionary as "gateway"
-        * _gateway_loaded_ : If added, send the gateway instance as "gateway"
-        * _gateway_updated_ : If updated, send the gateway instance as "gateway"
+        * _gateway_before_load_ : Called before the gateway is loaded into memory.
+        * _gateway_after_load_ : Called after the gateway is loaded into memory.
 
         :param gateway: A dictionary of items required to either setup a new gateway or update an existing one.
-        :type input: dict
+        :type gateway: dict
         :param test_gateway: Used for unit testing.
         :type test_gateway: bool
-        :returns: Pointer to new input. Only used during unittest
+        :returns: Pointer to new gateway. Only used during unittest
         """
-        # logger.debug("importing gateway: {gateway}", gateway=gateway)
+        # print(f"gateway keys installed: {list(self.gateways.keys())}")
+        logger.debug("gateway: {gateway}", gateway=gateway)
 
         gateway_id = gateway["id"]
-        if gateway_id == self.gateway_id():
-            gateway["version"] = VERSION
-        global_invoke_all("_gateways_before_import_",
-                          called_by=self,
-                          gateway_id=gateway_id,
-                          gateway=gateway,
-                          )
-        if gateway_id not in self.gateways:
+        if gateway_id in self.gateways:
+            raise YomboWarning(f"Cannot add gateway to memory, already exists: {gateway_id}")
+
+        try:
             global_invoke_all("_gateway_before_load_",
                               called_by=self,
                               gateway_id=gateway_id,
                               gateway=gateway,
                               )
-            self.gateways[gateway_id] = Gateway(self, gateway)
-            global_invoke_all("_gateway_loaded_",
+        except Exception as e:
+            pass
+        self.gateways[gateway_id] = Gateway(self, gateway)  # Create a new gateway in memory
+        try:
+            global_invoke_all("_gateway_after_load_",
                               called_by=self,
                               gateway_id=gateway_id,
                               gateway=self.gateways[gateway_id],
                               )
-        elif gateway_id not in self.gateways:
-            global_invoke_all("_gateway_before_update_",
-                              called_by=self,
-                              gateway_id=gateway_id,
-                              gateway=self.gateways[gateway_id],
-                              )
-            self.gateways[gateway_id].update_attributes(gateway)
-            global_invoke_all("_gateway_updated_",
-                              called_by=self,
-                              gateway_id=gateway_id,
-                              gateway=self.gateways[gateway_id],
-                              )
+        except Exception as e:
+            pass
 
-    @deprecated(deprecated_in="0.21.0", removed_in="0.22.0",
+        if gateway["id"] == self.gateway_id():
+            self._Configs.set("core", "is_master", gateway["is_master"])
+            self._Configs.set("core", "master_gateway_id", gateway["master_gateway_id"])
+            self._Configs.set("core", "updated_at", gateway["created_at"])
+            self._Configs.set("core", "machine_label", gateway["label"])
+            self._Configs.set("core", "label", gateway["label"])
+            self._Configs.set("core", "description", gateway["description"])
+            self._Configs.set("core", "owner_id", gateway["user_id"])
+            self._Configs.set("core", "owner_id", gateway["user_id"])
+            self._Configs.set("dns", "fqdn", gateway["dns_name"])
+
+    @deprecated(deprecated_in="0.21.0", removed_in="0.25.0",
                 current_version=VERSION,
                 details="Use the 'local' property instead.")
     def get_local(self):
         return self.gateways[self.gateway_id()]
 
-    @deprecated(deprecated_in="0.21.0", removed_in="0.22.0",
+    @deprecated(deprecated_in="0.21.0", removed_in="0.25.0",
                 current_version=VERSION,
                 details="Use the 'local_id' property instead.")
     def get_local_id(self):
@@ -313,7 +319,6 @@ class Gateways(YomboLibrary):
         """
         return self.gateway_id()
 
-
     def get_gateways(self):
         """
         Returns a copy of the gateways list.
@@ -321,127 +326,7 @@ class Gateways(YomboLibrary):
         """
         return self.gateways.copy()
 
-    def get_meta(self, gateway_requested, gateway=None, limiter=None, status=None):
-        """
-        Performs the actual search.
 
-        .. note::
-
-           Can use the built in methods below or use get_meta/get to include "gateway_type" limiter:
-
-            >>> self._Gateways["13ase45"]
-
-        or:
-
-            >>> self._Gateways["numeric"]
-
-        :raises YomboWarning: For invalid requests.
-        :raises KeyError: When item requested cannot be found.
-        :param gateway_requested: The gateway ID or gateway label to search for.
-        :type gateway_requested: string
-        :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
-        :type limiter_override: float
-        :param status: Deafult: 1 - The status of the gateway to check for.
-        :type status: int
-        :return: Pointer to requested gateway.
-        :rtype: dict
-        """
-        if limiter is None:
-            limiter = .89
-
-        if limiter > .99999999:
-            limiter = .99
-        elif limiter < .10:
-            limiter = .10
-
-        if status is None:
-            status = 1
-
-        if gateway_requested in self.gateways:
-            item = self.gateways[gateway_requested]
-            # if item.status != status:
-            #     raise KeyError("Requested gateway found, but has invalid status: %s" % item.status)
-            return item
-        else:
-            attrs = [
-                {
-                    "field": "gateway_id",
-                    "value": gateway_requested,
-                    "limiter": limiter,
-                },
-                {
-                    "field": "machine_label",
-                    "value": gateway_requested,
-                    "limiter": limiter,
-                },
-                {
-                    "field": "label",
-                    "value": gateway_requested,
-                    "limiter": limiter,
-                }
-            ]
-            try:
-                # logger.debug("Get is about to call search...: %s" % gateway_requested)
-                # found, key, item, ratio, others = self._search(attrs, operation="highest")
-                found, key, item, ratio, others = do_search_instance(attrs, self.gateways,
-                                                                     self.gateway_search_attributes,
-                                                                     limiter=limiter,
-                                                                     operation="highest")
-                # logger.debug("found gateway by search: others: {others}", others=others)
-                if found:
-                    return item
-                raise KeyError(f"Gateway not found: {gateway_requested}")
-            except YomboWarning as e:
-                raise KeyError(f"Searched for {gateway_requested}, but had problems: {e}")
-
-    def get(self, gateway_requested, limiter=None, status=None):
-        """
-        Returns a deferred! Looking for a gateway id in memory.
-
-        .. note::
-
-           Modules shouldn't use this function. Use the built in reference to
-           find devices:
-
-            >>> self._Gateways["13ase45"]
-
-        or:
-
-            >>> self._Gateways["numeric"]
-
-        :raises YomboWarning: For invalid requests.
-        :raises KeyError: When item requested cannot be found.
-        :param gateway_requested: The gateway ID or gateway label to search for.
-        :type gateway_requested: string
-        :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
-        :type limiter_override: float
-        :param status: Deafult: 1 - The status of the gateway to check for.
-        :type status: int
-        :return: Pointer to requested gateway.
-        :rtype: dict
-        """
-        try:
-            gateway = self.get_meta(gateway_requested, limiter, status)
-        except Exception as e:
-            logger.warn("Unable to find requested gateway: {gateway}.  Reason: {e}", gateway=gateway_requested, e=e)
-            raise YomboWarning("Cannot find requested gateway...")
-        return gateway
-
-    def search(self, criteria):
-        """
-        Search for gateways based on a dictionary of key=value pairs.
-
-        :param criteria:
-        :return:
-        """
-        results = {}
-        for gateway_id, gateway in self.gateways.items():
-            for key, value in criteria.items():
-                if key not in self.gateway_search_attributes:
-                    continue
-                if value == getattr(gateway, key):
-                    results[gateway_id] = gateway
-        return results
 
     @inlineCallbacks
     def add_gateway(self, api_data, source=None, **kwargs):
@@ -489,7 +374,7 @@ class Gateways(YomboLibrary):
             gateway_id = gateway_results["data"]["id"]
 
         new_gateway = gateway_results["data"]
-        self.import_gateway(new_gateway)
+        self._load_gateway_into_memory(new_gateway)
         return {
             "status": "success",
             "msg": "Gateway added.",
