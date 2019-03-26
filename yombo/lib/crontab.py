@@ -66,11 +66,11 @@ from twisted.internet.task import LoopingCall
 from twisted.internet import reactor
 
 # Import Yombo libraries
-from yombo.utils import random_string
 from yombo.core.exceptions import YomboWarning, YomboCronTabError
 from yombo.core.library import YomboLibrary
+from yombo.core.library_search import LibrarySearch
 from yombo.core.log import get_logger
-from yombo.utils import search_instance, do_search_instance, generate_source_string, random_string
+from yombo.utils import random_string
 
 logger = get_logger("library.crontab")
 
@@ -94,13 +94,22 @@ def conv_to_set(obj):  # Allow single integer to be provided
     return obj
 
 
-class CronTab(YomboLibrary):
+class CronTab(YomboLibrary, LibrarySearch):
     """
     Manages all cron jobs.
 
     All modules already have a predefined reference to this library as
     `self._CronTab`. All documentation will reference this use case.
     """
+    cron_tasks = {}
+
+    # The following are used by get(), get_advanced(), search(), and search_advanced()
+    item_search_attribute = "cron_tasks"
+    item_searchable_attributes = [
+        "cron_id", "label", "enabled"
+    ]
+    item_sort_key = "machine_label"
+
     def __contains__(self, cron_task_requested):
         """
         .. note::
@@ -217,8 +226,6 @@ class CronTab(YomboLibrary):
         :type loader: Instance of Loader
         """
         self.gateway_id = self._Configs.get2("core", "gwid", "local", False)
-        self.cron_tasks = {}
-        self.cron_task_search_attributes = ["cron_id", "label", "enabled"]
         self.check_cron_tabs_loop = None  # a simple loop that checks all cron tabs to see if they need to run.
         self.check_cron_tabs_loop = LoopingCall(self.check_cron_tabs)
 
@@ -253,90 +260,6 @@ class CronTab(YomboLibrary):
         the_time = datetime(*datetime.now().timetuple()[:5])
         for task in self.cron_tasks:
             self.cron_tasks[task].check(the_time)
-
-    def get(self, cron_task_requested=None, limiter=None, status=None):
-        """
-        Looks for a cron task by it"s id and label.
-
-        .. note::
-
-           Modules shouldn"t use this function. Use the built in reference to
-           find cron tasks:
-
-            >>> self._CronTab["129da137ab9318"]
-
-        or:
-
-            >>> self._CronTab["module.mymodule.mycron"]
-
-        :raises YomboWarning: For invalid requests.
-        :raises KeyError: When item requested cannot be found.
-        :param cron_task_requested: The cron task ID or cron task label to search for.
-        :type cron_task_requested: string
-        :param limiter: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
-        :type limiter: float
-        :param status: Deafult: 1 - The status of the cron task to check for.
-        :type status: int
-        :return: Pointer to requested cron tab.
-        :rtype: dict
-        """
-        if cron_task_requested is None:
-            return self.cron_tasks
-
-        if limiter is None:
-            limiter = .89
-
-        if limiter > .99999999:
-            limiter = .99
-        elif limiter < .10:
-            limiter = .10
-
-        if cron_task_requested in self.cron_tasks:
-            item = self.cron_tasks[cron_task_requested]
-            if status is not None and item.status != status:
-                raise KeyError(f"Requested cron tab found, but has invalid status: {item.status}")
-            return item
-        else:
-            attrs = [
-                {
-                    "field": "cron_id",
-                    "value": cron_task_requested,
-                    "limiter": limiter,
-                },
-                {
-                    "field": "label",
-                    "value": cron_task_requested,
-                    "limiter": limiter,
-                }
-            ]
-            try:
-                # logger.debug("Get is about to call search...: %s" % cron_task_requested)
-                found, key, item, ratio, others = do_search_instance(attrs, self.cron_tasks,
-                                                                     self.cron_task_search_attributes,
-                                                                     limiter=limiter,
-                                                                     operation="highest")
-                # logger.debug("found cron tab by search: {cron_id}", cron_id=key)
-                if found:
-                    return item
-                else:
-                    raise KeyError(f"Cron tab not found: {cron_task_requested}")
-            except YomboWarning as e:
-                raise KeyError(f"Searched for {cron_task_requested}, but had problems: {e}")
-
-    def search(self, _limiter=None, _operation=None, **kwargs):
-        """
-        Advanced search, typically should use the :py:meth:`get <yombo.lib.crontab.CronTab.get>` method. 
-
-        :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
-        :type limiter_override: float
-        :param status: Deafult: 1 - The status of the cron tab to check for.
-        :return: 
-        """
-        return search_instance(kwargs,
-                               self.cron_tasks,
-                               self.cron_task_search_attributes,
-                               _limiter,
-                               _operation)
 
     def new(self, crontab_callback, min=allMatch, hour=allMatch, day=allMatch,
             month=allMatch, dow=allMatch, label="", enabled=True, args=(),
