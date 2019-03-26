@@ -138,20 +138,20 @@ class DB_Tools(object):
 
         :return:
         """
-        db_file = self._Atoms.get("working_dir") + "/etc/yombo.db"
+        db_file = self._Atoms.get("working_dir") + "/etc/yombo.sqlite3"
         db_backup_path = self._Atoms.get("working_dir") + "/bak/db/"
         db_backup_files = [f for f in listdir(db_backup_path) if isfile(join(db_backup_path, f))]
         start_time = time()
         for i in range(20, -1, -1):  # reversed range
-            current_backup_file_name = f"yombo.db.{i}"
+            current_backup_file_name = f"yombo.sqlite3.{i}"
             if current_backup_file_name in db_backup_files:
                 if i == 20:
                     remove(db_backup_path + current_backup_file_name)
                 else:
-                    next_backup_file_name = f"yombo.db.{str(i + 1)}"
+                    next_backup_file_name = f"yombo.sqlite3.{str(i + 1)}"
                     rename(db_backup_path + current_backup_file_name, db_backup_path + next_backup_file_name)
 
-        yield getProcessOutput("sqlite3", [db_file, f".backup {db_backup_path}yombo.db.1"])
+        yield getProcessOutput("sqlite3", [db_file, f".backup {db_backup_path}yombo.sqlite3.1"])
         self._Events.new("localdb", "dbbackup", time() - start_time)
 
     @inlineCallbacks

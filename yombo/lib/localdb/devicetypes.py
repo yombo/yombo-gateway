@@ -15,18 +15,9 @@ logger = get_logger("library.localdb.devicetypes")
 
 class DB_DeviceTypes(object):
     @inlineCallbacks
-    def get_device_types(self, always_load=None):
-        if always_load is None:
-            always_load = False
-
-        if always_load == True:
-            records = yield self.dbconfig.select("device_types", where=["always_load = ?", 1])
-            return records
-        elif always_load is False:
-            records = yield self.dbconfig.select("device_types", where=["always_load = ? OR always_load = ?", 1, 0])
-            return records
-        else:
-            return []
+    def get_device_types(self):
+        records = yield self.dbconfig.select("device_types")
+        return records
 
     @inlineCallbacks
     def get_module_device_types(self, module_id):

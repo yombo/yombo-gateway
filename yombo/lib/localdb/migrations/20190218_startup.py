@@ -15,8 +15,8 @@ steps = [
         `enabled`         INTEGER NOT NULL,
         `roles`           TEXT,
         `auth_data`       TEXT NOT NULL,
-        `created_by`      INTEGER NOT NULL,
-        `created_by_type` INTEGER NOT NULL,
+        `created_by`      TEXT NOT NULL,
+        `created_by_type` TEXT NOT NULL,
         `created_at`      INTEGER NOT NULL,
         `last_access_at`  INTEGER NOT NULL,
         `updated_at`      INTEGER NOT NULL,
@@ -85,7 +85,7 @@ steps = [
         `created_at`             INTEGER NOT NULL,
         `updated_at`             INTEGER NOT NULL,
 /*     FOREIGN KEY(device_type_id) REFERENCES artist(device_types) */
-     PRIMARY KEY(id));"""),
+       PRIMARY KEY(id));"""),
       step(create_index("devices", "id", unique=True)),
       step(create_index("devices", "device_type_id")),
       step(create_index("devices", "gateway_id")),
@@ -105,10 +105,10 @@ steps = [
         `value_casing`   TEXT NOT NULL,
         `encryption`     TEXT NOT NULL,
         `notes`          TEXT,
-        `always_load`    INTEGER DEFAULT 0,
         `updated_at`     INTEGER NOT NULL,
         `created_at`     INTEGER NOT NULL,
-        UNIQUE (device_type_id, command_id, input_type_id) ON CONFLICT IGNORE);"""),
+        PRIMARY KEY(id));"""),
+        # UNIQUE (id) ON CONFLICT IGNORE);"""),
       step(create_index("device_command_inputs", "device_type_id")),
 
       # Defines the device command table to store command history and various info.
@@ -191,7 +191,6 @@ steps = [
         `platform`      TEXT,
         `public`        INTEGER,
         `status`        INTEGER,
-        `always_load`   INTEGER DEFAULT 0,
         `created_at`    INTEGER,
         `updated_at`    INTEGER,
         UNIQUE (label) ON CONFLICT IGNORE,
@@ -237,9 +236,10 @@ steps = [
         `machine_label`         TEXT NOT NULL,
         `label`                 TEXT NOT NULL,
         `description`           TEXT,
+        `user_id`               TEXT,
         `mqtt_auth`             TEXT,
         `mqtt_auth_next`        TEXT,
-        `mqtt_auth_last_rotate_at` TEXT,
+        `mqtt_auth_last_rotate_at` INTEGER,
         `internal_ipv4`         TEXT,
         `external_ipv4`         TEXT,
         `internal_ipv6`         TEXT,
@@ -301,7 +301,6 @@ steps = [
         `label`         TEXT NOT NULL,
         `description`   TEXT,
         `public`        INTEGER,
-        `always_load`   INTEGER DEFAULT 0,
         `status`        INTEGER,
         `created_at`    INTEGER,
         `updated_at`    INTEGER,
@@ -312,9 +311,9 @@ steps = [
       # All locations configured for an account.
       step("""CREATE TABLE `locations` (
         `id`             TEXT NOT NULL,
+        `user_id`        TEXT NOT NULL,
         `location_type`  TEXT NOT NULL,
         `machine_label`  TEXT NOT NULL,
-        `environment`    TEXT,
         `label`          TEXT NOT NULL,
         `description`    TEXT,
         `updated_at`     INTEGER NOT NULL,
@@ -324,25 +323,26 @@ steps = [
       # Stores module information
       step("""CREATE TABLE `modules` (
         `id`                 TEXT NOT NULL, /* module ID */
-        `gateway_id`         TEXT NOT NULL,
-        `machine_label`      TEXT NOT NULL,
+        `user_id`            TEXT NOT NULL,
         `module_type`        TEXT NOT NULL,
+        `machine_label`      TEXT NOT NULL,
         `label`              TEXT NOT NULL,
-        `short_description`  TEXT,
-        `medium_description` TEXT,
-        `description`        TEXT,
-        `medium_description_html` TEXT,
-        `description_html`   TEXT,
+        `short_description`  TEXT NOT NULL,
+        `medium_description` TEXT NOT NULL,
+        `description`        TEXT NOT NULL,
+        `medium_description_html` TEXT NOT NULL,
+        `description_html`   TEXT NOT NULL,
         `see_also`           TEXT,
         `repository_link`    TEXT,
         `issue_tracker_link` TEXT,
         `install_count`      INTEGER DEFAULT 0,
         `doc_link`           TEXT,
         `git_link`           TEXT,
-        `install_branch`     TEXT NOT NULL,
-        `require_approved`   INTEGER NOT NULL DEFAULT 1,
+        `git_auto_approve`   INTEGER NOT NULL,
         `public`             INTEGER NOT NULL,
         `status`             INTEGER NOT NULL, /* disabled, enabled, deleted */
+        `install_branch`     TEXT NOT NULL,
+        `require_approved`   INTEGER NOT NULL DEFAULT 1,
         `created_at`         INTEGER NOT NULL,
         `updated_at`         INTEGER NOT NULL,
         PRIMARY KEY(id));"""),
@@ -350,7 +350,7 @@ steps = [
 
       #  Stores module installation information
       step("""CREATE TABLE `module_commits` (
-        `id`            INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        `id`            TEXT NOT NULL,
         `module_id`     TEXT NOT NULL,
         `branch`        TEXT NOT NULL,
         `commit`        TEXT NOT NULL,
@@ -359,7 +359,8 @@ steps = [
         `created_at`    INTEGER NOT NULL)"""),
       step("""CREATE UNIQUE INDEX IF NOT EXISTS module_commits_id_idx
         ON module_commits ('module_id', 'branch', 'committed_at')"""),
-      step(create_index("module_commits", "commit")),
+      step(create_index("module_commits", "module_id")),
+      step(create_index("module_commits", "created_at")),
 
       # All possible device types for a module
       step("""CREATE TABLE `module_device_types` (
@@ -386,9 +387,9 @@ steps = [
         `gateway_id`        TEXT,
         `node_type`         TEXT NOT NULL,
         `weight`            INTEGER NOT NULL,
-        `label`             TEXT,
         `machine_label`     TEXT,
-        `always_load`       INTEGER,
+        `label`             TEXT,
+        `always_load`       INTEGER DEFAULT 1,
         `destination`       TEXT,
         `data`              BLOB,
         `data_content_type` TEXT NOT NULL,
@@ -518,10 +519,13 @@ steps = [
       # Store users
       step("""CREATE TABLE `users` (
         `id`                 TEXT NOT NULL,
+        `user_id`              TEXT NOT NULL,
         `email`              TEXT NOT NULL,
         `name`               TEXT NOT NULL,
         `access_code_digits` TEXT,
         `access_code_string` TEXT,
+        `refresh_token`      TEXT,
+        `access_token`       TEXT,
         `updated_at`         INTEGER NOT NULL,
         `created_at`         INTEGER NOT NULL );"""),
       step(create_index("users", "id", unique=True)),
@@ -560,6 +564,45 @@ steps = [
         `uploaded`          BOOL DEFAULT 0
         );"""),
 
+      # Stores the variable data. The format is defined in variable_fields (above).
+      step("""CREATE TABLE `variable_data` (
+        `id`                     TEXT NOT NULL,  /* variable_id */
+        `user_id`                TEXT NOT NULL,
+        `gateway_id`             TEXT NOT NULL,
+        `variable_field_id`      TEXT NOT NULL,
+        `variable_relation_id`   TEXT NOT NULL,
+        `variable_relation_type` TEXT NOT NULL,
+        `data`                   TEXT NOT NULL,
+        `data_weight`            INTEGER DEFAULT 0,
+        `updated_at`             INTEGER NOT NULL,
+        `created_at`             INTEGER NOT NULL,
+        PRIMARY KEY(id))
+        ;"""),
+      step("""CREATE INDEX IF NOT EXISTS variable_data_id_type_idx 
+        ON variable_data (variable_field_id, variable_relation_id, variable_relation_type)"""),
+
+      # Store variable fields. These define that actual variables.
+      step("""CREATE TABLE `variable_fields` (
+        `id`                  TEXT NOT NULL, /* variable_field_id */
+        `user_id`             TEXT NOT NULL,
+        `variable_group_id`   TEXT NOT NULL,
+        `field_machine_label` TEXT NOT NULL,
+        `field_label`         TEXT NOT NULL,
+        `field_description`   TEXT NOT NULL,
+        `field_weight`        INTEGER DEFAULT 0,
+        `value_required`      INTEGER NOT NULL,
+        `value_max`           INTEGER,
+        `value_min`           INTEGER,
+        `value_casing`        TEXT NOT NULL,
+        `encryption`          TEXT NOT NULL,
+        `input_type_id`       TEXT NOT NULL,
+        `default_value`       TEXT NOT NULL,
+        `field_help_text`     TEXT NOT NULL,
+        `multiple`            INTEGER NOT NULL,
+        `updated_at`          INTEGER NOT NULL,
+        `created_at`          INTEGER NOT NULL);"""),
+      step(create_index("variable_fields", "variable_group_id")),
+
       # The following three tables and following views manages the variables set for devices and modules.
       step("""CREATE TABLE `variable_groups` (
         `id`                  TEXT NOT NULL, /* group_id */
@@ -576,42 +619,6 @@ steps = [
       step("""CREATE INDEX IF NOT EXISTS variable_groups_relation_id_type_idx
        ON variable_groups (group_relation_id, group_relation_type, group_machine_label)"""),
 
-      # Store variable fields. These define that actual variables.
-      step("""CREATE TABLE `variable_fields` (
-        `id`                  TEXT NOT NULL, /* field_id */
-        `group_id`            TEXT NOT NULL,
-        `field_machine_label` TEXT NOT NULL,
-        `field_label`         TEXT NOT NULL,
-        `field_description`   TEXT NOT NULL,
-        `field_help_text`     TEXT NOT NULL,
-        `field_weight`        INTEGER DEFAULT 0,
-        `value_required`      INTEGER NOT NULL,
-        `value_max`           INTEGER,
-        `value_min`           INTEGER,
-        `value_casing`        TEXT NOT NULL,
-        `encryption`          TEXT NOT NULL,
-        `input_type_id`       TEXT NOT NULL,
-        `default_value`       TEXT NOT NULL,
-        `multiple`            INTEGER NOT NULL,
-        `updated_at`          INTEGER NOT NULL,
-        `created_at`          INTEGER NOT NULL);"""),
-      step(create_index("variable_fields", "group_id")),
-
-      # Stores the variable data. The format is defined in variable_fields (above).
-      step("""CREATE TABLE `variable_data` (
-        `id`            TEXT NOT NULL,  /* field_id */
-        `gateway_id`    TEXT DEFAULT 0,
-        `field_id`      TEXT NOT NULL,
-        `data_relation_id`   TEXT NOT NULL,
-        `data_relation_type` TEXT NOT NULL,
-        `data`          TEXT NOT NULL,
-        `data_weight`   INTEGER DEFAULT 0,
-        `updated_at`    INTEGER NOT NULL,
-        `created_at`    INTEGER NOT NULL,
-        PRIMARY KEY(id))
-        ;"""),
-      step("""CREATE INDEX IF NOT EXISTS variable_data_id_type_idx 
-        ON variable_data (field_id, data_relation_id, data_relation_type)"""),
 
       #########################
       ##      Triggers       ##
@@ -621,7 +628,7 @@ steps = [
          AFTER DELETE ON devices
          FOR EACH ROW
          BEGIN
-           DELETE FROM variable_data WHERE data_relation_id = OLD.id and data_relation_type = "device";
+           DELETE FROM variable_data WHERE variable_field_id = OLD.id and variable_field_id = "device";
          END"""),
 
       # Delete variable information for a module when a module is deleted.
@@ -631,7 +638,7 @@ steps = [
          BEGIN
            DELETE FROM module_device_types WHERE module_id = OLD.id;
            /* DELETE FROM module_installed WHERE module_id = OLD.id; */
-           DELETE FROM variable_data WHERE data_relation_id = OLD.id and data_relation_type = "module";
+           DELETE FROM variable_data WHERE variable_field_id = OLD.id and variable_relation_type = "module";
          END"""),
 
       # Delete variable fields when variable groups are removed.
@@ -639,7 +646,7 @@ steps = [
          AFTER DELETE ON variable_groups
          FOR EACH ROW
          BEGIN
-           DELETE FROM variable_fields WHERE group_id = OLD.id;
+           DELETE FROM variable_fields WHERE variable_group_id = OLD.id;
          END"""),
 
       # If a variable field is deleted, delete it's matching data.
@@ -647,7 +654,7 @@ steps = [
          AFTER DELETE ON variable_fields
          FOR EACH ROW
          BEGIN
-           DELETE FROM variable_data WHERE field_id = OLD.id;
+           DELETE FROM variable_data WHERE variable_field_id = OLD.id;
          END"""),
 
       #########################
@@ -675,50 +682,50 @@ steps = [
 
       #
       step("""CREATE VIEW variable_field_data_view AS
-         SELECT variable_data.id as data_id, variable_data.gateway_id, variable_data.field_id,
-         variable_data.data_relation_id, variable_data.data_relation_type, variable_data.data, variable_data.data_weight,
+         SELECT variable_data.id as data_id, variable_data.gateway_id, variable_data.variable_field_id,
+         variable_data.variable_field_id, variable_data.variable_relation_type, variable_data.data, variable_data.data_weight,
          variable_data.updated_at as data_updated_at, variable_data.created_at as data_created_at, variable_fields.field_machine_label,
          variable_fields.field_label, variable_fields.field_description, variable_fields.field_weight,
          variable_fields.encryption, variable_fields.input_type_id, variable_fields. default_value,
          variable_fields.field_help_text, variable_fields.value_required, variable_fields.value_min,
          variable_fields.value_max,variable_fields.value_casing, variable_fields.multiple,
          variable_fields.created_at as field_created_at, variable_fields.updated_at as field_updated_at,
-         variable_groups.group_label, variable_groups.group_machine_label, variable_groups.id as group_id,
+         variable_groups.group_label, variable_groups.group_machine_label, variable_groups.id as variable_group_id,
          variable_groups.group_relation_type, variable_groups.group_relation_id,
          variable_groups.group_description, variable_groups.group_weight, variable_groups.status as group_status
          FROM variable_fields
-         LEFT OUTER JOIN variable_data ON variable_data.field_id = variable_fields.id
-         JOIN variable_groups ON variable_fields.group_id = variable_groups.id"""),
+         LEFT OUTER JOIN variable_data ON variable_data.variable_field_id = variable_fields.id
+         JOIN variable_groups ON variable_fields.variable_group_id = variable_groups.id"""),
 
       #
       step("""CREATE VIEW variable_group_field_view AS
-         SELECT  variable_fields.id as field_id, variable_fields.field_machine_label,variable_fields.field_label,
+         SELECT  variable_fields.id as variable_field_id, variable_fields.field_machine_label,variable_fields.field_label,
          variable_fields.field_description, variable_fields.field_weight,
          variable_fields.encryption, variable_fields.input_type_id, variable_fields. default_value, variable_fields.field_help_text,
          variable_fields.value_required, variable_fields.value_min, variable_fields.value_max,variable_fields.value_casing,
          variable_fields.multiple, variable_fields.created_at as field_created_at, variable_fields.updated_at as field_updated_at,
-         variable_groups.id as group_id, variable_groups.group_label, variable_groups.group_machine_label,variable_groups.group_description,
+         variable_groups.id as variable_group_id, variable_groups.group_label, variable_groups.group_machine_label,variable_groups.group_description,
          variable_groups.group_weight, variable_groups.status as group_status, variable_groups.group_relation_type,
          variable_groups.group_relation_id
          FROM variable_groups
-         JOIN variable_fields ON variable_fields.group_id = variable_groups.id"""),
+         JOIN variable_fields ON variable_fields.variable_group_id = variable_groups.id"""),
 
       #
       step("""CREATE VIEW variable_group_field_data_view AS
-         SELECT variable_data.id as data_id, variable_data.gateway_id, variable_data.field_id, variable_data.data_relation_id,
-         variable_data.data_relation_type, variable_data.data, variable_data.data_weight,
+         SELECT variable_data.id as data_id, variable_data.gateway_id, variable_data.variable_field_id, variable_data.variable_field_id,
+         variable_data.variable_relation_type, variable_data.data, variable_data.data_weight,
          variable_data.updated_at as data_updated_at, variable_data.created_at as data_created_at,
          variable_fields.field_machine_label, variable_fields.field_label, variable_fields.field_description,
          variable_fields.field_weight, variable_fields.encryption, variable_fields.input_type_id,
          variable_fields. default_value, variable_fields.field_help_text, variable_fields.value_required,
          variable_fields.value_min, variable_fields.value_max,variable_fields.value_casing, variable_fields.multiple,
          variable_fields.created_at as field_created_at, variable_fields.updated_at as field_updated_at,
-         variable_groups.id as group_id, variable_groups.group_label, variable_groups.group_machine_label,
+         variable_groups.id as variable_group_id, variable_groups.group_label, variable_groups.group_machine_label,
          variable_groups.group_relation_type, variable_groups.group_relation_id,
          variable_groups.group_description, variable_groups.group_weight, variable_groups.status as group_status
          FROM variable_fields
-         LEFT OUTER JOIN variable_data ON variable_data.field_id = variable_fields.id
-         JOIN variable_groups ON variable_fields.group_id = variable_groups.id"""),
+         LEFT OUTER JOIN variable_data ON variable_data.variable_field_id = variable_fields.id
+         JOIN variable_groups ON variable_fields.variable_group_id = variable_groups.id"""),
 
       #
       step("""CREATE VIEW addable_device_types_view AS

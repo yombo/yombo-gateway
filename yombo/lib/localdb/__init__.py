@@ -122,11 +122,6 @@ class Logs(DBObject):
     TABLENAME = "logs"
 
 
-class ModuleInstalled(DBObject):
-    TABLENAME = "module_installed"
-    BELONGSTO = ["modules"]
-
-
 class Modules(DBObject):
     HASONE = [{"name": "module_installed", "class_name": "ModuleInstalled", "foreign_key": "module_id"}]
     HASMANY = [{"name": "module_device_types", "class_name": "ModuleDeviceTypes", "foreign_key": "module_id"}]
@@ -145,6 +140,11 @@ class ModuleDeviceTypes(DBObject):
 
 class ModuleDeviceTypesView(DBObject):
     TABLENAME = "module_device_types_view"
+
+
+class ModuleInstalled(DBObject):
+    TABLENAME = "module_installed"
+    BELONGSTO = ["modules"]
 
 
 class ModulesView(DBObject):
@@ -250,9 +250,11 @@ for item in TEMP_MODULE_CLASSES:
 del TEMP_MODULE_CLASSES
 
 from yombo.lib.localdb._tools import DB_Tools
+from yombo.lib.localdb.commands import DB_Commands
 from yombo.lib.localdb.devices import DB_Devices
 from yombo.lib.localdb.devicetypes import DB_DeviceTypes
 from yombo.lib.localdb.events import DB_Events
+from yombo.lib.localdb.modules import DB_Modules
 from yombo.lib.localdb.nodes import DB_Nodes
 from yombo.lib.localdb.states import DB_States
 from yombo.lib.localdb.statistics import DB_Statistics
@@ -261,8 +263,8 @@ from yombo.lib.localdb.variables import DB_Variables
 from yombo.lib.localdb.websessions import DB_Websessions
 
 
-class LocalDB(YomboLibrary, DB_Tools, DB_Devices, DB_DeviceTypes, DB_Events, DB_Nodes, DB_States,
-              DB_Statistics, DB_Storage, DB_Variables, DB_Websessions):
+class LocalDB(YomboLibrary, DB_Tools, DB_Commands, DB_Devices, DB_DeviceTypes, DB_Events, DB_Modules,
+              DB_Nodes, DB_States, DB_Statistics, DB_Storage, DB_Variables, DB_Websessions):
     """
     Manages all database interactions.
     """
@@ -287,8 +289,12 @@ class LocalDB(YomboLibrary, DB_Tools, DB_Devices, DB_DeviceTypes, DB_Events, DB_
         self.cleanup_database_loop = None
         self.cleanup_database_running = False
         self.db_model = {}  # store generated database model here.
-        # Connect to the DB
+        self.remote_tables = ['auth_keys', 'categories', 'commands', 'devices', 'device_command_inputs',
+                              'device_commands', 'device_types', 'device_type_commands', 'gateways', 'input_types',
+                              'locations', 'modules', 'module_commits', 'module_device_types', 'nodes', 'users',
+                              'variable_groups', 'variable_fields', 'variable_data']
 
+        # Connect to the DB
         def show_connected(connection):
             connection.execute("PRAGMA foreign_keys = ON")
 
@@ -346,23 +352,31 @@ class LocalDB(YomboLibrary, DB_Tools, DB_Devices, DB_DeviceTypes, DB_Events, DB_
             records = yield MODULE_CLASSES[dbitem].select(where=dictToWhere(where))
         return records
 
-    #########################
-    ###    Commands     #####
-    #########################
+    #######
     @inlineCallbacks
-    def get_commands(self, always_load=None):
-        if always_load is None:
-            always_load = False
+    def get_ids_for_remote_tables(self):
+        """
+        Gets all the IDS for all tables that are remotely managed.
 
-        if always_load == True:
-            records = yield self.dbconfig.select("commands", where=["always_load = ?", 1])
-            return records
-        elif always_load is False:
-            records = yield self.dbconfig.select("commands", where=["always_load = ? OR always_load = ?", 1, 0])
-            return records
-        else:
-            return []
+        :return:
+        """
+        ids = {}
+        current_time = int(time())
+        for table in self.remote_tables:
+            ids[table] = {}
+            select = "id"
+            # print(f"db_model: {self.db_model[table]}")
+            if "updated_at" in self.db_model[table]:
+                select += ", updated_at"
+            table_ids = yield self.dbconfig.select(table, select=select)
+            for item in table_ids:
+                if "updated_at" in self.db_model[table]:
+                    ids[table][item['id']] = item['updated_at']
+                else:
+                    ids[table][item['id']] = current_time
 
+            # print(f"get_ids_for_remote_tables Table: {table}, data: {ids[table]}")
+        return ids
 
     ###########################
     ###     Locations     #####
@@ -510,107 +524,9 @@ class LocalDB(YomboLibrary, DB_Tools, DB_Devices, DB_DeviceTypes, DB_Events, DB_
     ###    Input Types      #####
     #############################
     @inlineCallbacks
-    def get_input_types(self, always_load=None):
-        if always_load is None:
-            always_load = False
-
-        if always_load == True:
-            records = yield self.dbconfig.select("input_types", where=["always_load = ?", 1], orderby="label")
-            return records
-        elif always_load is False:
-            records = yield self.dbconfig.select("input_types", where=["always_load = ? OR always_load = ?", 1, 0],
-                                                 orderby="label")
-            return records
-        else:
-            return []
-
-    #############################
-    ###    Modules          #####
-    #############################
-
-    @inlineCallbacks
-    def get_modules(self, get_all=False):
-        if get_all is False:
-            records = yield Modules.find(where=["status = ? OR status = ?", 1, 0])
-        else:
-            records = yield Modules.all()
+    def get_input_types(self):
+        records = yield self.dbconfig.select("input_types", orderby="label")
         return records
-
-    @inlineCallbacks
-    def get_modules_view(self, get_all=False, where=None):
-        if where is not None:
-            records = yield Modules.find(where=where)
-        elif get_all is False:
-            records = yield ModulesView.find(where=["status = ?", 1])
-        else:
-            records = yield ModulesView.all()
-        return records
-
-    @inlineCallbacks
-    def get_module_commits(self, module_id, branch, approved=None, aslist=None):
-        print(f"get_module_commits: module_id={module_id}, branch={branch}, aslist={aslist}")
-        if approved is None:
-            records = yield ModuleCommits.find(where=["module_id = ? and branch = ?", module_id, branch],
-                                               group="module_id, branch", orderby="id DESC"
-                                               )
-        else:
-            records = yield ModuleCommits.find(where=["module_id = ? and branch = ? and approved = ?",
-                                                      module_id, branch, approved],
-                                               group="module_id, branch", orderby="id DESC"
-                                               )
-        if aslist is True:
-            commits = []
-            for record in records:
-                commits.append(record.commit)
-            return commits
-        return records
-
-    @inlineCallbacks
-    def install_module(self, data):
-        results = yield ModuleInstalled(module_id=data["module_id"],
-                                        installed_branch=data["installed_branch"],
-                                        installed_commit=data["installed_commit"],
-                                        install_at=data["install_at"],
-                                        last_check_at=data["last_check_at"],
-                                        ).save()
-        return results
-
-    @inlineCallbacks
-    def get_module_routing(self, where=None):
-        """
-        Used to load a list of deviceType routing information.
-
-        Called by: lib.Modules::load_data
-
-        :param where: Optional - Can be used to append a where statement
-        :type returnType: string
-        :return: Modules used for routing device message packets
-        :rtype: list
-        """
-        records = yield ModuleRoutingView.all()
-        return records
-
-    @inlineCallbacks
-    def set_module_status(self, module_id, status):
-        """
-        Used to set the status of a module. Shouldn't be used by developers.
-        Used to load a list of deviceType routing information.
-
-        Called by: lib.Modules::enable, disable, and delete
-
-        :param module_id: Id of the module to updates
-        :type module_id: string
-        :param status: Value to set the status field.
-        :type status: int
-        """
-
-        modules = yield Modules.find(where=["id = ?", module_id])
-        if modules is None:
-            return None
-        module = modules[0]
-        module.status = status
-        results = yield module.save()
-        return results
 
     #############################
     ###    Notifications    #####
@@ -776,7 +692,26 @@ class LocalDB(YomboLibrary, DB_Tools, DB_Devices, DB_DeviceTypes, DB_Events, DB_
     @inlineCallbacks
     def get_users(self):
         records = yield Users.all()
+        for record in records:
+            record = record.__dict__
         return records
+
+    @inlineCallbacks
+    def update_user(self, user):
+        """
+        Updates the user in the database. This receives a User() instance from the Users library.
+
+        :param user: User instance from the User library.
+        :type user: User instance
+        :param kwargs:
+        :return:
+        """
+        args = {
+            "refresh_token": user.refresh_token,
+            "access_token": user.access_token,
+        }
+        results = yield self.dbconfig.update("users", args, where=["id = ?", user.user_id])
+        return results
 
     ################################
     ###   Webinterface logs    #####
@@ -931,8 +866,8 @@ class LocalDB(YomboLibrary, DB_Tools, DB_Devices, DB_DeviceTypes, DB_Events, DB_
         yield self.dbconfig.insert(table, val)
 
     @inlineCallbacks
-    def select(self, table, select_cols):
-        records = yield self.dbconfig.select(table, select=select_cols)
+    def select(self, table, select_cols, **kwargs):
+        records = yield self.dbconfig.select(table, select=select_cols, **kwargs)
         return records
 
     @inlineCallbacks

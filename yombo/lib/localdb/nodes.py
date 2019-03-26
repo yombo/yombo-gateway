@@ -14,17 +14,15 @@ class DB_Nodes(object):
 
     @inlineCallbacks
     def get_nodes(self):
-        records = yield self.dbconfig.select("nodes", where=["destination = ?", "gw"])
+        records = yield self.dbconfig.select("nodes",
+                                             where=["destination = ? or always_load = 1", "gw"])
         for record in records:
             record["data"] = data_unpickle(record["data"], record["data_content_type"])
         return records
 
     @inlineCallbacks
-    def get_node(self, node_id):
+    def get_node_by_id(self, node_id):
         record = yield Node.select(where=["id = ?", node_id], limit=1)
-        record["node_id"] = record["id"]
-        del record["id"]
-        # attempt to decode the data..
         record["data"] = data_unpickle(record["data"], record["data_content_type"])
         return record
     #
@@ -44,7 +42,16 @@ class DB_Nodes(object):
 
     @inlineCallbacks
     def add_node(self, data, **kwargs):
-        node = Node()
+        """
+        Add a node to the database. This should only be called by the nodes library to create a new
+        new node after it's been sent to Yombo API. This will also be called by the nodes library if the node
+        was sent in externally, such as by the SystemDataHnadler library.
+
+        :param data: A node isntance representing the node data to store.
+        :param kwargs:
+        :return:
+        """
+        node = Node()  # This is the db node class, not be confused with the Node() from the Node library.
         node.id = data.node_id
         node.parent_id = data.parent_id
         node.gateway_id = data.gateway_id
@@ -62,7 +69,15 @@ class DB_Nodes(object):
         yield node.save()
 
     @inlineCallbacks
-    def update_node(self, node, **kwargs):
+    def update_node(self, node):
+        """
+        Updates the node in the database. This receives a Node() instance from the Node library.
+
+        :param node: Node instance from the Node library.
+        :type node: Node instance
+        :param kwargs:
+        :return:
+        """
         args = {
             "parent_id": node.parent_id,
             "gateway_id": node.gateway_id,
@@ -84,5 +99,11 @@ class DB_Nodes(object):
 
     @inlineCallbacks
     def delete_node(self, node_id):
+        """
+        Deletes a node by it's id.
+        :param node_id: Node id
+        :type node_id: str
+        :return:
+        """
         results = yield self.dbconfig.delete("nodes", where=["id = ?", node_id])
         return results

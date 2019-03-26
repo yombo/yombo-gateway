@@ -86,7 +86,7 @@ class DB_Variables(object):
         return records
 
     @inlineCallbacks
-    def get_variable_fields_data(self, data_relation_id=None, **kwargs):
+    def get_variable_fields_data(self, variable_field_id=None, **kwargs):
         """
         Gets fields an associated data. Named arguments are used to crate the WHERE statement.
 
@@ -98,8 +98,8 @@ class DB_Variables(object):
             orderby="field_weight ASC, data_weight ASC")
         variables = OrderedDict()
         for record in records:
-            if data_relation_id is not None:
-                if record.data_relation_id not in (None, data_relation_id):
+            if variable_field_id is not None:
+                if record.variable_field_id not in (None, variable_field_id):
                     continue
 
             if record.field_machine_label not in variables:
@@ -132,8 +132,8 @@ class DB_Variables(object):
                 "weight": record.data_weight,
                 "created_at": record.data_created_at,
                 "updated_at": record.data_updated_at,
-                "relation_id": record.data_relation_id,
-                "relation_type": record.data_relation_type,
+                "relation_id": record.variable_field_id,
+                "relation_type": record.variable_relation_type,
             }
             if record.data is not None:
                 value = yield self._GPG.decrypt(record.data)
@@ -220,7 +220,7 @@ class DB_Variables(object):
         return variables
 
     @inlineCallbacks
-    def get_variable_groups_fields_data(self, data_relation_id=None, **kwargs):
+    def get_variable_groups_fields_data(self, variable_field_id=None, **kwargs):
         """
         Gets groups with nested fields, with nested data. Named arguments are used to crate the WHERE statement.
 
@@ -232,8 +232,8 @@ class DB_Variables(object):
             orderby="group_weight ASC, field_weight ASC, data_weight ASC")
         variables = OrderedDict()
         for record in records:
-            if data_relation_id is not None:
-                if record.data_relation_id not in (None, data_relation_id):
+            if variable_field_id is not None:
+                if record.variable_field_id not in (None, variable_field_id):
                     continue
 
             if record.group_machine_label not in variables:
@@ -277,8 +277,8 @@ class DB_Variables(object):
                 "weight": record.data_weight,
                 "created_at": record.data_created_at,
                 "updated_at": record.data_updated_at,
-                "relation_id": record.data_relation_id,
-                "relation_type": record.data_relation_type,
+                "relation_id": record.variable_field_id,
+                "relation_type": record.variable_relation_type,
             }
             if record.data is not None:
                 value = yield self._GPG.decrypt(record.data)
@@ -312,16 +312,16 @@ class DB_Variables(object):
         return variables
 
     @inlineCallbacks
-    def del_variables(self, data_relation_type, data_relation_id):
+    def del_variables(self, variable_relation_type, variable_field_id):
         """
         Deletes variables for a given relation type and relation id.
 
         :return:
         """
         results = yield self.dbconfig.delete("variable_data",
-                                             where=["data_relation_type = ? and data_relation_id = ?",
-                                                    data_relation_type,
-                                                    data_relation_id]
+                                             where=["variable_relation_type = ? and variable_field_id = ?",
+                                                    variable_relation_type,
+                                                    variable_field_id]
                                              )
         return results
 
@@ -336,8 +336,8 @@ class DB_Variables(object):
         args = {
             "id": data["id"],
             "field_id": data["field_id"],
-            "data_relation_id": data["relation_id"],
-            "data_relation_type": data["relation_type"],
+            "variable_field_id": data["relation_id"],
+            "variable_relation_type": data["relation_type"],
             "data": data["data"],
             "data_weight": data["data_weight"],
             "updated_at": data["updated_at"],
