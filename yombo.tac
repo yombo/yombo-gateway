@@ -126,8 +126,8 @@ def start():
         os.makedirs(f"{working_dir}/etc/certs")
     if not os.path.exists(f"{working_dir}/locale"):
         os.makedirs(f"{working_dir}/locale")
-    if not os.path.exists(f"{working_dir}/webinterface"):
-        os.makedirs(f"{working_dir}/webinterface")
+    if not os.path.exists(f"{working_dir}/frontend"):
+        os.makedirs(f"{working_dir}/frontend")
     if not os.path.exists(f"{working_dir}/log"):
         os.makedirs(f"{working_dir}/log")
     if not os.path.exists(f"{working_dir}/opt"):
