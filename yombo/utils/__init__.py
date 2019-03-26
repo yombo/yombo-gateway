@@ -1056,52 +1056,71 @@ def percentile(data_list, percent, key=lambda x:x):
     return d0+d1
 
 
+# def search_instance(arguments, haystack, allowed_keys, limiter, max_results=None):
+#     if limiter is None:
+#         limiter = .89
+#
+#     if limiter > .99999999:
+#         limiter = .99
+#     elif limiter < .10:
+#         limiter = .10
+#
+#     attrs = []
+#     for attr, value in arguments.items():
+#         if attr in allowed_keys:
+#             attrs.append(
+#                 {
+#                     "field": attr,
+#                     "value": value,
+#                     "limiter": limiter,
+#                 }
+#             )
+#
+#     return do_search_instance(attrs,
+#                               haystack,
+#                               allowed_keys,
+#                               limiter=limiter,
+#                               max_results=max_results)
 
-def search_instance(arguments, haystack, allowed_keys, limiter, operation):
+
+def do_search_instance(attributes, haystack, allowed_keys, limiter=None, max_results=None,
+                       required_field=None, required_value=None,
+                       ignore_field=None, ignore_value=None):
+    """
+    Does the actual search of the devices. It scans through each item in haystack, and searches for any
+    supplied attributes using fuzzy logic. The limiter (either specified in the attributes or the limiter
+    argument if not supplied in teh attributes) controls how much of a string much match to be included in
+    the results.
+
+    Scan through the dictionary (or list), and match keys. Returns the value of
+    the best matching key.
+
+    :param attributes: Either a list of dictionaries containing: field, value, limiter or a dictionary
+      containing field:values to match.
+    :type attributes: list of dictionaries, or a dictionary of attributes/value.
+    :param operation: Set weather to all matching, or highest matching. Either "any" or "highest".
+    """
     if limiter is None:
-        limiter = .89
-
+        limiter = .90
     if limiter > .99999999:
         limiter = .99
     elif limiter < .10:
         limiter = .10
 
-    attrs = []
-    for attr, value in arguments.items():
-        if attr in allowed_keys:
-            attrs.append(
-                {
-                    "field": attr,
-                    "value": value,
-                    "limiter": limiter,
-                }
-            )
-
-    return do_search_instance(attrs,
-                              haystack,
-                              allowed_keys,
-                              limiter=limiter,
-                              operation=operation)
-
-
-def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operation=None, status_field=None, status_value=None):
-    """
-    Does the actual search of the devices. It scans through each item in haystack, and searches for any
-    supplied attributes.
-
-    Scan through the dictionary, and match keys. Returns the value of
-    the best matching key.
-
-    :param attributes: A list of dictionaries containing: field, value, limiter
-    :type attributes: list of dictionaries
-    :param operation: Set weather to all matching, or highest matching. Either "any" or "highest".
-    """
-    if limiter is None:
-        limiter = .89
-    if operation is None:
-        operation = "any"
-    if isinstance(attributes, list) is False:
+    if isinstance(attributes, dict):
+        new_attributes = []
+        for field, value in attributes.items():
+            new_attributes.append({
+                "field": field,
+                "value": value,
+                "limiter": limiter,
+            })
+        attributes = new_attributes
+        del new_attributes
+    elif isinstance(attributes, list) is False:
         raise YomboWarning("Attributes must be a list.")
+
+    # print(f"do_search_attrs: {attributes}")
     for attr in attributes:
         if isinstance(attr, dict) is False:
             raise YomboWarning("Attribute items must be dictionaries")
@@ -1117,24 +1136,23 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operati
             elif attr["limiter"] < .10:
                 attr["limiter"] = .10
 
-    if status_field is None or status_value is None:
-        status_field = None
-        status_value = None
-
     # Prepare the minion
     stringDiff = SequenceMatcher()
 
     # used when return highest
     best_ratio = 0
     best_limiter = 0
-    best_match = None
-    best_key = None
+    # best_match = None
+    # best_key = None
 
     key_list = []
 
     for item_id, item in haystack.items():
-        if status_value is not None:
-            if getattr(item, status_field) != status_value:
+        if ignore_field is not None:
+            if getattr(item, ignore_field) == ignore_value:
+                continue
+        if required_field is not None:
+            if getattr(item, required_field) != required_value:
                 continue
         for attr in attributes:
             stringDiff.set_seq1(str(attr["value"]))
@@ -1144,51 +1162,40 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operati
             #     continue  # might get here, even though it"s not a string. Catch it!
             ratio = stringDiff.ratio()
 
-            if operation == "any":
-                if ratio > attr["limiter"]:
-                    key_list.append({"key": item_id, "value": item, "ratio": ratio})
-                    # item[item_id] = item
-            else:
-                # if this is the best ratio so far - save it and the value
-                if ratio > best_ratio:
-                    best_ratio = ratio
-                    best_limiter = attr["limiter"]
-                    best_key = item_id
-                    best_match = item
+            if ratio < limiter:
+                continue
+            # if this is the best ratio so far - save it and the value
+            if ratio > best_ratio:
+                best_ratio = ratio
+                best_limiter = attr["limiter"]
 
-                key_list.append({"key": item_id, "value": item, "ratio": ratio})
+            key_list.append({"key": item_id, "value": item, "ratio": ratio})
 
-    sorted_list = sorted(key_list, key=lambda k: k["ratio"], reverse=True)
+    key_list = sorted(key_list, key=lambda k: k["ratio"], reverse=True)
+    result_values = {}
+    result_ratios = {}
+    # count = 0
+    for item in key_list:
+        if item["key"] in result_values:
+            if item["ratio"] > result_ratios[item["key"]]:
+                result_ratios[item["key"]] = item["ratio"]
+            continue
+        result_values[item["key"]] = item["value"]
+        result_ratios[item["key"]] = item["ratio"]
 
+        # count += 1
+        if isinstance(max_results, int) and len(result_values) == max_results:
+            break
 
-    if operation == "any":
-        return (
-            best_ratio >= best_limiter,  # the part that does the actual check.
-            best_key,
-            best_match,
-            best_ratio,
-            sorted_list)
-    else:
-        return_list = []
-        if best_ratio >= best_limiter:  # if we have one match, only return a list of matches.
-            for item in sorted_list:
-                if item["ratio"] >= limiter:
-                    return_list.append(item)
-                    # return (
-                    #     best_ratio >= best_limiter,  # the part that does the actual check.
-                    #     best_key,
-                    #     best_match,
-                    #     best_ratio,
-                    #     return_list)
+    if best_ratio is None:
+        raise KeyError("No items found above the cut off limit.")
 
-        if best_key is None:
-            raise KeyError("No items found above the cut off limit.")
-        return (
-            best_ratio >= best_limiter,  # the part that does the actual check.
-            best_key,
-            best_match,
-            best_ratio,
-            sorted_list[:10])
+    return {
+        "was_found": best_ratio >= best_limiter,  # the part that does the actual check.
+        "best_ratio": best_ratio,
+        "values": result_values,
+        "ratios": result_ratios,
+    }
 
 
 def get_method_definition_level(meth):
