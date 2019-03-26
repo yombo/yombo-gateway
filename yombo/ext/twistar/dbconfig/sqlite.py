@@ -17,12 +17,6 @@ class SQLiteDBConfig(InteractionBase):
     def insertArgsToString(self, vals):
         return "(" + ",".join(["?" for _ in list(vals.items())]) + ")"
 
-    def insertMany(self, tablename, vals):
-        def _insertMany(txn):
-            for val in vals:
-                self.insert(tablename, val, txn)
-        return Registry.DBPOOL.runInteraction(_insertMany)
-
     def pragma(self, pragma_string):
         """
         Run a pragma string.
