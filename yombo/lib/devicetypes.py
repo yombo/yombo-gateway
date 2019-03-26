@@ -18,8 +18,8 @@ This library keeps track of what modules can access what device types, and what 
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/devicetypes.html>`_
 """
-from collections import OrderedDict
-import inspect
+from collections import OrderedDict, Callable
+from functools import reduce
 import os
 from pyclbr import readmodule
 
@@ -29,20 +29,29 @@ from twisted.internet.defer import inlineCallbacks
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
+from yombo.core.library_search import LibrarySearch
 from yombo.core.log import get_logger
-from yombo.utils import search_instance, do_search_instance, global_invoke_all
-import collections
-from functools import reduce
+from yombo.utils import global_invoke_all, do_search_instance
 
 logger = get_logger("library.devicetypes")
 
 
-class DeviceTypes(YomboLibrary):
+class DeviceTypes(YomboLibrary, LibrarySearch):
     """
     Manages device type database tabels. Just simple update a module"s device types or device type"s available commands
     and any required database tables are updated. Also maintains a list of module device types and device type commands
     in memory for access.
     """
+    device_types = {}
+
+    # The following are used by get(), get_advanced(), search(), and search_advanced()
+    item_search_attribute = "device_types"
+    item_searchable_attributes = [
+        "device_type_id", "input_type_id", "category_id", "label", "machine_label", "description",
+        "status", "always_load", "public"
+    ]
+    item_sort_key = "node_type"
+
     def __contains__(self, device_type_requested):
         """
         .. note:: The device type must be enabled to be found using this method. Use :py:meth:`get <DeviceTypes.get>`
@@ -165,10 +174,7 @@ class DeviceTypes(YomboLibrary):
         """
         Sets up basic attributes.
         """
-        self.gateway_id = self._Configs.get("core", "gwid", "local", False)
-        self.device_types = {}
-        self.device_type_search_attributes = ["device_type_id", "input_type_id", "category_id", "label", "machine_label", "description",
-            "status", "always_load", "public"]
+        self.gateway_id = self._Configs.gateway_id
         self.platforms = {}  # This is filled in lib.modules::do_import_modules
 
     @inlineCallbacks
@@ -206,25 +212,11 @@ class DeviceTypes(YomboLibrary):
         yield self._load_device_types_from_database()
         self.load_platforms(device_type_platforms)
 
-
-    def sorted(self, key=None):
-        """
-        Returns an OrderedDict, sorted by key.  If key is not set, then default is "label".
-
-        :param key: Attribute contained in a device to sort by.
-        :type key: str
-        :return: All devices, sorted by key.
-        :rtype: OrderedDict
-        """
-        if key is None:
-            key = "label"
-        return OrderedDict(sorted(iter(self.device_types.items()), key=lambda i: getattr(i[1], key)))
-
     @inlineCallbacks
     def _load_device_types_from_database(self):
         """
         Loads device types from database and sends them to
-        :py:meth:`import_device_types <DeviceTypes.import_device_types>`
+        :py:meth:`_load_device_type_into_memory <DeviceTypes._load_device_type_into_memory>`
 
         This can be triggered either on system startup or when new/updated device types have been saved to the
         database and we need to refresh existing device types.
@@ -232,11 +224,53 @@ class DeviceTypes(YomboLibrary):
         device_types = yield self._LocalDB.get_device_types()
         logger.debug("device_types: {device_types}", device_types=device_types)
         for device_type in device_types:
-            yield self.import_device_types(device_type)
+            yield self._load_device_type_into_memory(device_type)
+
+    @inlineCallbacks
+    def _load_device_type_into_memory(self, device_type, test_device_type=False):
+        """
+        Add a new device types to memory or update an existing device types.
+
+        **Hooks called**:
+
+        * _device_type_before_load_ : Called before the device type is loaded into memory
+        * _device_type_after_load_ : Called after the device type is loaded into memory
+
+        :param device_type: A dictionary of items required to either setup a new device type or update an existing one.
+        :type device_type: dict
+        :param test_device_type: Used for unit testing.
+        :type test_device_type: bool
+        :returns: Pointer to new device. Only used during unittest
+        """
+        logger.debug("device_type: {device_type}", device_type=device_type)
+
+        device_type_id = device_type["id"]
+        if device_type_id in self.device_types:
+            raise YomboWarning(f"Cannot add device type to memory, already exists: {device_type_id}")
+
+        try:
+            yield global_invoke_all("_device_types_before_load",
+                                    called_by=self,
+                                    device_type_id=device_type_id,
+                                    device_type=device_type,
+                                    )
+        except Exception:
+            pass
+        self.device_types[device_type_id] = DeviceType(self, device_type)
+        yield self.device_types[device_type_id]._init_()  # Adds available commands to this.
+        try:
+            yield global_invoke_all("_device_types_after_load",
+                                    called_by=self,
+                                    device_type_id=device_type_id,
+                                    device_type=device_type,
+                                    )
+        except Exception:
+            pass
 
     def load_platforms(self, platforms):
         """
-        Load the platforms and prep them for usage.
+        Device type platforms, like light, fan, switch, etc. These can be included in modules, system device
+        type platforms are located in the lib/devices.
 
         :param platforms: 
         :return: 
@@ -250,156 +284,10 @@ class DeviceTypes(YomboLibrary):
                 module_root = __import__(path, globals(), locals(), [], 0)
                 module_tail = reduce(lambda p1, p2: getattr(p1, p2), [module_root, ] + path.split(".")[1:])
                 klass = getattr(module_tail, item)
-                if not isinstance(klass, collections.Callable):
+                if not isinstance(klass, Callable):
                     logger.warn("Unable to load device platform '{name}', it's not callable.", name=item)
                     continue
                 self.platforms[item_key] = klass
-
-    @inlineCallbacks
-    def import_device_types(self, device_type, test_device_type=False):
-        """
-        Add a new device types to memory or update an existing device types.
-
-        **Hooks called**:
-
-        * _device_type_before_load_ : If added, sends device type dictionary as "device_type"
-        * _device_type_before_update_ : If updated, sends device type dictionary as "device_type"
-        * _device_type_loaded_ : If added, send the device type instance as "device_type"
-        * _device_type_updated_ : If updated, send the device type instance as "device_type"
-
-        :param device_type: A dictionary of items required to either setup a new device type or update an existing one.
-        :type device: dict
-        :param test_device_type: Used for unit testing.
-        :type test_device_type: bool
-        :returns: Pointer to new device. Only used during unittest
-        """
-        logger.debug("device_type: {device_type}", device_type=device_type)
-
-        device_type_id = device_type["id"]
-        global_invoke_all("_device_types_before_import_",
-                          called_by=self,
-                          device_type_id=device_type_id,
-                          device_type=device_type,
-                          )
-        if device_type_id not in self.device_types:
-            global_invoke_all("_device_type_before_load_",
-                              called_by=self,
-                              device_type_id=device_type_id,
-                              device_type=device_type,
-                              )
-            self.device_types[device_type_id] = DeviceType(self, device_type)
-            yield self.device_types[device_type_id]._init_()
-            global_invoke_all("_device_type_loaded_",
-                              called_by=self,
-                              device_type_id=device_type_id,
-                              device_type=self.device_types[device_type_id],
-                              )
-        elif device_type_id not in self.device_types:
-            global_invoke_all("_device_type_before_update_",
-                              called_by=self,
-                              device_type_id=device_type_id,
-                              device_type=self.device_types[device_type_id],
-                              )
-            self.device_types[device_type_id].update_attributes(device_type)
-            yield self.device_types[device_type_id]._init_()
-            global_invoke_all("_device_type_updated_",
-                              called_by=self,
-                              device_type_id=device_type_id,
-                              device_type=self.device_types[device_type_id],
-                              )
-
-    def get(self, device_type_requested, limiter=None, status=None):
-        """
-        Performs the actual search.
-
-        .. note::
-
-           Modules shouldn"t use this function. Use the built in reference to
-           find devices:
-
-            >>> self._DeviceTypes["13ase45"]
-
-        or:
-
-            >>> self._DeviceTypes["numeric"]
-
-        :raises YomboWarning: For invalid requests.
-        :raises KeyError: When item requested cannot be found.
-        :param device_type_requested: The device type ID or device type label to search for.
-        :type device_type_requested: string
-        :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
-        :type limiter_override: float
-        :param status: Deafult: 1 - The status of the device type to check for.
-        :type status: int
-        :return: Pointer to requested device type.
-        :rtype: dict
-        """
-        if inspect.isclass(device_type_requested):
-            if isinstance(device_type_requested, DeviceType):
-                return device_type_requested
-            else:
-                raise ValueError("Passed in an unknown object")
-
-        if limiter is None:
-            limiter = .89
-
-        if limiter > .99999999:
-            limiter = .99
-        elif limiter < .10:
-            limiter = .10
-
-        # logger.info("self.device_types: {ee}", ee=)
-        if device_type_requested in self.device_types:
-            item = self.device_types[device_type_requested]
-            if status is not None and item.status != status:
-                raise KeyError(f"Requested device type found, but has invalid status: {item.status}")
-            return item
-        else:
-            attrs = [
-                {
-                    "field": "device_type_id",
-                    "value": device_type_requested,
-                    "limiter": limiter,
-                },
-                {
-                    "field": "label",
-                    "value": device_type_requested,
-                    "limiter": limiter,
-                },
-                {
-                    "field": "machine_label",
-                    "value": device_type_requested,
-                    "limiter": limiter,
-                }
-            ]
-            try:
-                logger.debug(f"Get is about to call search...: {device_type_requested}")
-                # found, key, item, ratio, others = self._search(attrs, operation="highest")
-                found, key, item, ratio, others = do_search_instance(attrs, self.device_types,
-                                                                     self.device_type_search_attributes,
-                                                                     limiter=limiter,
-                                                                     operation="highest")
-                logger.debug("found device type by search: {device_type_id}", device_type_id=key)
-                if found:
-                    return item
-                else:
-                    raise KeyError(f"Device type not found: {device_type_requested}")
-            except YomboWarning as e:
-                raise KeyError(f"Searched for {device_type_requested}, but had problems: {e}")
-
-    def search(self, _limiter=None, _operation=None, **kwargs):
-        """
-        Search for device type based on attributes for all device types.
-
-        :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
-        :type limiter_override: float
-        :return: 
-        """
-        return search_instance(kwargs,
-                               self.device_types,
-                               self.device_type_search_attributes,
-                               _limiter,
-                               _operation)
 
     @inlineCallbacks
     def addable_device_types(self):
@@ -410,19 +298,6 @@ class DeviceTypes(YomboLibrary):
         """
         device_types = yield self._LocalDB.get_addable_device_types()
         return device_types
-
-    @inlineCallbacks
-    def ensure_loaded(self, device_type_id):
-        """
-        Called by the device class to make sure the requsted device type id is loaded. This happens in
-        the background.
-
-        :param device_type_id:
-        :return:
-        """
-        if device_type_id not in self.device_types:
-            device_type = yield self._LocalDB.get_device_type(device_type_id)
-            yield self.import_device_types(device_type[0])
 
     def devices_by_device_type(self, requested_device_type, gateway_id=None):
         """
@@ -949,6 +824,7 @@ class DeviceTypes(YomboLibrary):
             "msg": "Removed command from device type.",
         }
 
+
 class DeviceType(object):
     """
     A class to manage a single device type.
@@ -990,7 +866,6 @@ class DeviceType(object):
         """
         Simply calls reload.
         """
-
         yield self.reload()
 
     @inlineCallbacks
@@ -1000,7 +875,6 @@ class DeviceType(object):
         notification that device type has been updated, or when device type commands have changed.
         :return:
         """
-
         command_ids = yield self._Parent._LocalDB.get_device_type_commands(self.device_type_id)
         self.commands.clear()
         logger.debug("Device type received command ids: {command_ids}", command_ids=command_ids)
@@ -1044,8 +918,6 @@ class DeviceType(object):
             self.machine_label = device_type["machine_label"]
         if "description" in device_type:
             self.description = device_type["description"]
-        if "always_load" in device_type:
-            self.always_load = device_type["always_load"]
         if "status" in device_type:
             self.status = device_type["status"]
         if "public" in device_type:
@@ -1081,9 +953,9 @@ class DeviceType(object):
         :return:
         """
         # if gateway_id is None:
-        #     gateway_id = self.gateway_id
+        #     gateway_id = self.gateway_id()
 
-        attrs = [
+        search_attributes = [
             {
                 "field": "device_type_id",
                 "value": self.device_type_id,
@@ -1092,16 +964,17 @@ class DeviceType(object):
         ]
 
         try:
-            found, key, item, ratio, others = do_search_instance(attrs, self._Parent._Devices.devices,
-                                      self._Parent.device_type_search_attributes)
-            if found:
+            results = do_search_instance(search_attributes,
+                                         self._Parent._Devices.devices,
+                                         self._Parent.item_searchable_attributes)
+
+            if results["was_found"]:
                 devices = {}
-                for item in others:
-                    device = item["value"]
+                for device_id, device in results['values'].items():
                     if gateway_id is not None:
                         if device.gateway_id != gateway_id:
                             continue
-                    devices[device["device_id"]] = device
+                    devices[device_id] = device
                 return devices
             else:
                 return {}
@@ -1128,12 +1001,6 @@ class DeviceType(object):
         return self.device_type_id
 
     def asdict(self):
-        return self.__repl__()
-
-    def __repl__(self):
-        """
-        Export device type variables as a dictionary.
-        """
         return {
             "device_type_id": str(self.device_type_id),
             "machine_label": str(self.machine_label),
@@ -1144,3 +1011,9 @@ class DeviceType(object):
             "created_at": int(self.created_at),
             "updated_at": int(self.updated_at),
         }
+
+    def __repl__(self):
+        """
+        Export device type variables as a dictionary.
+        """
+        return self.asdict()
