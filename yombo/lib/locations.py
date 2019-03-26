@@ -15,7 +15,6 @@ Stores location and area information in memory.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/locations.html>`_
 """
-from collections import OrderedDict
 from time import time
 
 # Import twisted libraries
@@ -24,37 +23,41 @@ from twisted.internet.defer import inlineCallbacks
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
+from yombo.core.library_search import LibrarySearch
 from yombo.core.log import get_logger
 from yombo.mixins.yombobasemixin import YomboBaseMixin
-from yombo.utils import search_instance, do_search_instance, global_invoke_all
+from yombo.utils import global_invoke_all
 
 logger = get_logger("library.locations")
 
-class Locations(YomboLibrary):
+class Locations(YomboLibrary, LibrarySearch):
     """
     Manages locations for a gateway.
     """
-    @property
-    def locations_sorted(self):
-        return OrderedDict(sorted(self.locations.items(), key=lambda x: x[1].label))
+    locations = {}
+
+    # The following are used by get(), get_advanced(), search(), and search_advanced()
+    item_search_attribute = "locations"
+    item_searchable_attributes = [
+        "location_id", "label", "machine_label"
+    ]
+    item_sort_key = "machine_label"
 
     @property
     def location_id(self):
-        return self.gateway_location_id()
+        return self.gateway_location.location_id
 
     @property
     def area_id(self):
-        return self.gateway_area_id()
+        return self.gateway_area.location_id
 
     @property
     def location(self):
-        location = self.gateway_location_id()
-        return self.get(location)
+        return self.gateway_location
 
     @property
     def area(self):
-        location = self.gateway_area_id()
-        return self.get(location)
+        return self.gateway_area.location_id
 
     def __contains__(self, location_requested):
         """
@@ -165,8 +168,6 @@ class Locations(YomboLibrary):
         Load() stage.
         """
         self._started = False
-        self.locations = {}
-        self.location_search_attributes = ["location_id", "label", "machine_label"]
 
         yield self._load_locations_from_database()
 
@@ -238,8 +239,8 @@ class Locations(YomboLibrary):
             self._States.set("detected_location.use_metric", True, value_type="bool", source=self)
 
         # Gateway logical location.  House, bedroom, etc.
-        self.gateway_location_id = self._Configs.get2("location", "location_id", self.get_default("location"), True)
-        self.gateway_area_id = self._Configs.get2("location", "area_id", self.get_default("area"), True)
+        self.gateway_location = self.get_default("location")
+        self.gateway_area = self.get_default("area")
 
     def _start_(self, **kwargs):
         self._started = True
@@ -248,14 +249,14 @@ class Locations(YomboLibrary):
     def _load_locations_from_database(self):
         """
         Loads locations from database and sends them to
-        :py:meth:`import_location <Locations.import_location>`
+        :py:meth:`_load_location_into_memory <Locations._load_location_into_memory>`
 
         This can be triggered either on system startup or when new/updated locations have been saved to the
         database and we need to refresh existing locations.
         """
         locations = yield self._LocalDB.get_locations()
         for location in locations:
-            self.import_location(location.__dict__)
+            self._load_location_into_memory(location.__dict__)
 
         # Have "none" site location and area locations as defaults.
         self.locations["area_none"] = Location(self, {
@@ -277,7 +278,7 @@ class Locations(YomboLibrary):
             "created_at": int(time()),
         })
 
-    def import_location(self, location, test_location=False):
+    def _load_location_into_memory(self, location, test_location=False):
         """
         Add a new locations to memory or update an existing locations.
 
@@ -373,13 +374,6 @@ class Locations(YomboLibrary):
                 return f"{output} {area_label} {label}"
         return f"{output} {label}"
 
-    def get_all(self):
-        """
-        Returns a copy of the locations list.
-        :return:
-        """
-        return self.locations.copy()
-
     def get_default(self, location_type):
         """
         Get a default location. This only work when there is only one other location other than None. Returns
@@ -391,110 +385,32 @@ class Locations(YomboLibrary):
         if location_type not in ("area", "location"):
             raise YomboWarning(f"Unknown location_type: {location_type}")
 
-        found_id = None
+        default_id = self._Configs.get("location", "{location_type}_id", None, True)
+        if default_id is not None:
+            try:
+                print(f"searching for: {default_id}")
+                location = self.get(default_id)
+                self._Configs.set("location", f"{location_type}_id", location.location_id)
+                return location
+            except KeyError:
+                pass
+
+        none_id = None
         for location_id, location in self.locations.items():
             if location.location_type != location_type:
                 continue
-            if found_id is None or location.machine_label != "none":
-                found_id = location_id
 
-        if found_id is None:
-            if f"{location_type}_none" in self.locations:
-                return f"{location_type}_none"
-        return found_id
+            if location.machine_label == "none":
+                none_id = location
+                continue
 
-    def get(self, location_requested, location_type=None, limiter=None):
-        """
-        Performs the actual search.
+            if location.machine_label != "none":
+                self._Configs.set("location", f"{location_type}_id", location.location_id)
+                return location
 
-        .. note::
-
-           Modules can also simply treat this library as a dictionary to lookup items, however, this will search
-           any location type.
-
-            >>> self.Locations["13ase45"]
-
-        or:
-
-            >>> self.Locations["numeric"]
-
-        To specify a location type, use this format for the string:   location_type:location_id
-
-            >>> self.Locations["area:13ase45"]
-
-        :raises YomboWarning: For invalid requests.
-        :raises KeyError: When item requested cannot be found.
-        :param location_requested: The location ID or location label to search for.
-        :type location_requested: string
-        :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
-        :type limiter_override: float
-        :return: Pointer to requested location.
-        :rtype: dict
-        """
-        if limiter is None:
-            limiter = .89
-
-        if limiter > .99999999:
-            limiter = .99
-        elif limiter < .10:
-            limiter = .10
-
-        if ":" in location_requested:
-            location_type, location_requested = location_requested.split(":", 1)
-
-        if location_requested in self.locations:
-            item = self.locations[location_requested]
-            return item
-        else:
-            attrs = [
-                {
-                    "field": "location_id",
-                    "value": location_requested,
-                    "limiter": limiter,
-                },
-                {
-                    "field": "machine_label",
-                    "value": location_requested,
-                    "limiter": limiter,
-                },
-                {
-                    "field": "label",
-                    "value": location_requested,
-                    "limiter": limiter,
-                }
-            ]
-            try:
-                logger.debug("Get is about to call search...: {location_requested}", location_requested=location_requested)
-                # found, key, item, ratio, others = self._search(attrs, operation="highest")
-                found, key, item, ratio, others = do_search_instance(attrs, self.locations,
-                                                                     self.location_search_attributes,
-                                                                     limiter=limiter,
-                                                                     operation="highest")
-                logger.debug("found location by search: others: {others}", others=others)
-                if location_type is not None:
-                    for other in others:
-                        if other["value"].location_type == location_type and other["ratio"] > limiter:
-                            return other["value"]
-                else:
-                    if found:
-                        return item
-                raise KeyError(f"Location not found: {location_requested}")
-            except YomboWarning as e:
-                raise KeyError(f"Searched for {location_requested}, but had problems: {e}")
-
-    def search(self, _limiter=None, _operation=None, **kwargs):
-        """
-        Search for location based on attributes for all locations.
-
-        :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
-        :type limiter_override: float
-        :return:
-        """
-        return search_instance(kwargs,
-                               self.locations,
-                               self.location_search_attributes,
-                               _limiter,
-                               _operation)
+        if none_id is None:
+            raise KeyError("Unknown location...")
+        return none_id
 
     @inlineCallbacks
     def add_location(self, data, **kwargs):
@@ -526,7 +442,7 @@ class Locations(YomboLibrary):
         data["updated_at"] = time()
         data["created_at"] = time()
         self._LocalDB.insert_locations(data)
-        self.import_location(data)
+        self._load_location_into_memory(data)
 
         return {
             "status": "success",
@@ -675,8 +591,8 @@ class Location(YomboBaseMixin):
         Sets various values from a location dictionary. This can be called when either new or
         when updating.
 
-        :param location: 
-        :return: 
+        :param location:
+        :return:
         """
         if "location_type" in location:
             if location["location_type"].lower() not in ("area", "location", "none"):
