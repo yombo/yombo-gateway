@@ -38,7 +38,7 @@ from yombo.utils import (random_string, global_invoke_all, do_search_instance, d
     generate_source_string, data_pickle)
 
 # Import local items
-from ._device_attributes import Device_Attributes
+# from ._device_attributes import Device_Attributes
 from ._device_command import Device_Command
 from ._device_status import Device_Status
 
@@ -1008,35 +1008,37 @@ class Device_Base(object):
             commands = {}
             for command_id, data in available_commands.items():
                 commands[command_id] = data["command"]
-            attrs = [
+            search_attributes = [
                 {
                     "field": "command_id",
                     "value": command_requested,
                     "limiter": .96,
                 },
                 {
-                    "field": "label",
+                    "field": "machine_label",
                     "value": command_requested,
                     "limiter": .89,
                 },
                 {
-                    "field": "machine_label",
+                    "field": "label",
                     "value": command_requested,
                     "limiter": .89,
-                }
+                },
             ]
             try:
                 logger.debug("Get is about to call search...: {command_requested}", command_requested=command_requested)
-                found, key, item, ratio, others = do_search_instance(attrs, commands,
-                                                                     self._Parent._Commands.command_search_attributes,
-                                                                     limiter=.89,
-                                                                     operation="highest")
-                logger.debug("found command by search: {command_id}", command_id=key)
-                if found:
+                results = do_search_instance(search_attributes,
+                                             commands,
+                                             self._Parent.item_searchable_attributes,
+                                             allowed_keys=self._Parent._Commands.item_searchable_attributes,
+                                             limiter=.89,
+                                             max_results=1)
+
+                if results["was_found"]:
                     return True
                 else:
                     return False
-            except YomboWarning as e:
+            except YomboWarning:
                 return False
                 # raise KeyError("Searched for %s, but had problems: %s" % (command_requested, e))
 

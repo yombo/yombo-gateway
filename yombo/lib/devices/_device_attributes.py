@@ -519,8 +519,6 @@ class Device_Attributes(MagicAttributesMixin):
         else:
             self.meta = {}
 
-        yield self._Parent._DeviceTypes.ensure_loaded(self.device_type_id)
-
         if self.test_device is False and self.device_is_new is True:
             self.device_is_new = False
             device_history = self._Configs.get("devices", "load_history_depth", 30)
@@ -872,7 +870,7 @@ class Device_Attributes(MagicAttributesMixin):
         self.device_variables_cached = yield self._Parent._Variables.get_variable_fields_data(
             group_relation_type="device_type",
             group_relation_id=self.device_type_id,
-            data_relation_id=self.device_id
+            variable_field_id=self.device_id
         )
         return self.device_variables_cached
 

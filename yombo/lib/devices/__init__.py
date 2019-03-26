@@ -74,8 +74,9 @@ from twisted.internet.defer import inlineCallbacks, maybeDeferred, Deferred
 from yombo.constants import ENERGY_NONE, ENERGY_ELECTRIC, ENERGY_GAS, ENERGY_WATER, ENERGY_NOISE, ENERGY_TYPES
 from yombo.core.exceptions import YomboWarning, YomboHookStopProcessing
 from yombo.core.library import YomboLibrary
+from yombo.core.library_search import LibrarySearch
 from yombo.core.log import get_logger
-from yombo.utils import global_invoke_all, search_instance, do_search_instance, generate_source_string, sleep
+from yombo.utils import global_invoke_all, generate_source_string, sleep
 
 from ._device import Device
 from ._device_command import Device_Command
@@ -83,7 +84,7 @@ from ._device_command import Device_Command
 logger = get_logger("library.devices")
 
 
-class Devices(YomboLibrary):
+class Devices(YomboLibrary, LibrarySearch):
     """
     Manages all devices and provides the primary interaction interface. The
     primary functions developers should use are:
@@ -92,6 +93,16 @@ class Devices(YomboLibrary):
     * :py:meth:`command <Devices.command>` - Send a command to a device.
     * :py:meth:`search <Devices.search>` - Get a pointer to a device, using device_id or device label.
     """
+    devices = {}
+    # The following are used by get(), get_advanced(), search(), and search_advanced()
+    item_search_attribute = "devices"
+    item_searchable_attributes = [
+        "device_id", "device_type_id", "machine_label", "label", "area_label_lower", "full_label_lower",
+        "area_label", "full_label", "description"
+    ]
+    item_sort_key = "machine_label"
+    item_criteria_keys = ["device_id", "machine_label", "label"]
+
 
     def __contains__(self, device_requested):
         """
@@ -206,29 +217,11 @@ class Devices(YomboLibrary):
         """
         return list(self.devices.values())
 
-    def sorted(self, key=None):
-        """
-        Returns an OrderedDict, sorted by "key". The key can be any attribute within the device object, such as
-        label, area_label, etc.
-
-        :param key: Attribute contained in a device to sort by, default: area_label
-        :type key: str
-        :return: All devices, sorted by key.
-        :rtype: OrderedDict
-        """
-        if key is None:
-            key = "area_label"
-        return OrderedDict(sorted(iter(self.devices.items()), key=lambda i: getattr(i[1], key)))
-
     @inlineCallbacks
     def _init_(self, **kwargs):
         """
         Sets up basic attributes.
         """
-        self.devices = {}
-        self.device_search_attributes = ["device_id", "device_type_id", "machine_label", "label",
-            "area_label_lower", "full_label_lower", "area_label", "full_label", "description"]
-
         self.gateway_id = self._Configs.get("core", "gwid", "local", False)
         self.is_master = self._Configs.get("core", "is_master", "local", False)
         self.master_gateway_id = self._Configs.get2("core", "master_gateway_id", "local", False)
@@ -257,7 +250,7 @@ class Devices(YomboLibrary):
         """
         yield self._load_devices_from_database()
         yield self._load_device_commands()
-        if self._States["loader.operating_mode"] == "run":
+        if self._Loader.operating_mode == "run":
             self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming,
                                        client_id=f"Yombo-devices-{self.gateway_id}")
 
@@ -268,7 +261,7 @@ class Devices(YomboLibrary):
 
         :return: 
         """
-        if self._States["loader.operating_mode"] == "run":
+        if self._Loader.operating_mode == "run":
             self.mqtt.subscribe("yombo/devices/+/get")
             self.mqtt.subscribe("yombo/devices/+/cmd")
 
@@ -413,7 +406,7 @@ class Devices(YomboLibrary):
     @inlineCallbacks
     def _load_devices_from_database(self):
         """
-        Loads devices from database and sends them to :py:meth:`import_device <Devices.import_device>`
+        Loads devices from database and sends them to :py:meth:`_load_node_into_memory <Devices._load_node_into_memory>`
         
         This can be triggered either on system startup or when new/updated devices have been saved to the
         database and we need to refresh existing devices.
@@ -430,7 +423,7 @@ class Devices(YomboLibrary):
                     new_map[float(key)] = float(value)
                 record["energy_map"] = new_map
                 logger.debug("Loading device: {record}", record=record)
-                new_device = yield self.import_device(record, source="database")
+                new_device = yield self._load_node_into_memory(record, source="database")
                 try:
                     global_invoke_all("_device_imported_",
                                       called_by=self,
@@ -441,7 +434,7 @@ class Devices(YomboLibrary):
                     pass
 
     @inlineCallbacks
-    def import_device(self, device, source=None, test_device=None):  # load or re-load if there was an update.
+    def _load_node_into_memory(self, device, source=None, test_device=None):  # load or re-load if there was an update.
         """
         Add a new device to memory.
 
@@ -505,13 +498,13 @@ class Devices(YomboLibrary):
 
             d = Deferred()
             d.addCallback(lambda ignored: maybeDeferred(self.devices[device_id]._system_init_, device, source=source))
-            d.addErrback(self.import_device_failure, self.devices[device_id])
+            d.addErrback(self._load_node_into_memory_failure, self.devices[device_id])
             d.addCallback(lambda ignored: maybeDeferred(self.devices[device_id]._init_))
-            d.addErrback(self.import_device_failure, self.devices[device_id])
+            d.addErrback(self._load_node_into_memory_failure, self.devices[device_id])
             d.addCallback(lambda ignored: maybeDeferred(self.devices[device_id]._load_))
-            d.addErrback(self.import_device_failure, self.devices[device_id])
+            d.addErrback(self._load_node_into_memory_failure, self.devices[device_id])
             d.addCallback(lambda ignored: maybeDeferred(self.devices[device_id]._start_))
-            d.addErrback(self.import_device_failure, self.devices[device_id])
+            d.addErrback(self._load_node_into_memory_failure, self.devices[device_id])
             d.callback(1)
             yield d
             try:
@@ -526,7 +519,7 @@ class Devices(YomboLibrary):
             self.devices[device_id].update_attributes(device, source)
         return self.devices[device_id]
 
-    def import_device_failure(self, failure, device):
+    def _load_node_into_memory_failure(self, failure, device):
         logger.error("Got failure while creating device instance for '{label}': {failure}", failure=failure,
                      label=device['label'])
 
@@ -548,7 +541,7 @@ class Devices(YomboLibrary):
             "created_at": time(),
             "updated_at": time(),
         })
-        new_device = yield self.import_device(new_data, source="child")
+        new_device = yield self._load_node_into_memory(new_data, source="child")
         new_device.parent = existing
         new_device.parent_id = existing.device_id
         return new_device
@@ -792,124 +785,6 @@ class Devices(YomboLibrary):
                 devices.append(device.asdict())
         return devices
 
-    def get(self, device_requested, limiter=None, status=None):
-        """
-        Performs the actual search.
-
-        .. note::
-
-           Modules shouldn't use this function. Use the built in reference to
-           find devices:
-           
-            >>> self._Devices["8w3h4sa"]
-        
-        or:
-        
-            >>> self._Devices["porch light"]
-
-        :raises YomboWarning: For invalid requests.
-        :raises KeyError: When item requested cannot be found.
-        :param device_requested: The device ID, machine_label, or device label to search for.
-        :type device_requested: string
-        :param limiter: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
-        :type limiter: float
-        :param status: Default: 1 - The status of the device to check for.
-        :type status: int
-        :return: Pointer to requested device.
-        :rtype: dict
-        """
-        if isinstance(device_requested, Device):
-            return device_requested
-        elif isinstance(device_requested, str) is False:
-            raise ValueError("device_requested must be device instance or a string.")
-
-        if device_requested in self.devices:
-            return self.devices[device_requested]
-
-        if limiter is None:
-            limiter = .90
-
-        if limiter > .99999999:
-            limiter = .99
-        elif limiter < .10:
-            limiter = .10
-
-        if device_requested in self.devices:
-            item = self.devices[device_requested]
-            if status is not None and item.status != status:
-                raise KeyError(f"Requested device found, but has invalid status: {item.status}")
-            return item
-        else:
-            attrs = [
-                {
-                    "field": "device_id",
-                    "value": device_requested,
-                    "limiter": limiter,
-                },
-                {
-                    "field": "machine_label",
-                    "value": device_requested,
-                    "limiter": limiter,
-                },
-                {
-                    "field": "label",
-                    "value": device_requested,
-                    "limiter": limiter,
-                },
-                {
-                    "field": "area_label",
-                    "value": device_requested,
-                    "limiter": limiter,
-                },
-                {
-                    "field": "full_label",
-                    "value": device_requested,
-                    "limiter": limiter,
-                },
-                {
-                    "field": "area_label_lower",
-                    "value": device_requested,
-                    "limiter": limiter,
-                },
-                {
-                    "field": "full_label_lower",
-                    "value": device_requested,
-                    "limiter": limiter,
-                },
-            ]
-            try:
-                # logger.debug(f"Get is about to call search...: {device_requested}")
-                found, key, item, ratio, others = do_search_instance(attrs,
-                                                                     self.devices,
-                                                                     self.device_search_attributes,
-                                                                     limiter=limiter,
-                                                                     operation="highest")
-                logger.debug("found ({found}) device by search: {device_id}, ratio: {ratio}",
-                             found=found, device_id=key, ratio=ratio)
-                if found:
-                    return self.devices[key]
-                else:
-                    # logger.info("others ({others})", others=others)
-                    raise KeyError(f"Device not found: {device_requested}")
-            except YomboWarning as e:
-                raise KeyError(f"Searched for {device_requested}, but had problems: {e}")
-
-    def search(self, _limiter=None, _operation=None, **kwargs):
-        """
-        Search for devices based on attributes for all devices.
-        
-        :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
-        :type limiter_override: float
-        :param status: Deafult: 1 - The status of the device to check for.
-        :return: 
-        """
-        found, key, item, ratio, others = search_instance(kwargs,
-                               self.devices,
-                               self.device_search_attributes,
-                               _limiter,
-                               _operation)
-        return others
-
     @inlineCallbacks
     def add_device(self, api_data, source=None, **kwargs):
         """
@@ -1003,7 +878,7 @@ class Devices(YomboLibrary):
 
         logger.debug("device add results: {device_results}", device_results=device_results)
 
-        self.import_device(new_device, source)
+        self._load_node_into_memory(new_device, source)
 
         try:
             yield global_invoke_all("_device_added_",
