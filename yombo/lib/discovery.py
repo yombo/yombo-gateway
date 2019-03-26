@@ -24,7 +24,7 @@ from twisted.internet.defer import inlineCallbacks
 # Import Yombo libraries
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import search_instance, do_search_instance, sha256_compact
+from yombo.utils import sha256_compact
 
 logger = get_logger("library.discovery")
 
