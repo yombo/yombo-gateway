@@ -240,7 +240,7 @@ class Automation(YomboLibrary):
         :return:
         """
         logger.debug("Automation rule starting, about to iterate rules and validate&activate.")
-        self.rules = self._Nodes.search({"node_type": "automation_rules"})
+        self.rules = self._Nodes.search_advanced({"node_type": "automation_rules"})["values"]
         for rule_id, rule in self.rules.items():
             self.patch_automation_rule(rule)
             self.actions_running[rule_id] = "stopped"
