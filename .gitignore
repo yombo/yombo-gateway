@@ -65,7 +65,20 @@ mymodules/*
 x10testout.txt
 mitchlog.*
 old/*
-.idea/*
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Front end #
+#############
+yombo/frontend/node_modules/
+yombo/frontend/dist/
+yombo/frontend/npm-debug.log*
+yombo/frontend/yarn-debug.log*
+yombo/frontend/yarn-error.log*
+
 
 # Ignore Modules folder, except for system modules and demos #
 ##############################################################
