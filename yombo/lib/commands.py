@@ -17,25 +17,34 @@ The command (singular) class represents one command.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/commands.html>`_
 """
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks, Deferred
+from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
+from yombo.core.library_search import LibrarySearch
 from yombo.core.log import get_logger
-from yombo.utils import search_instance, do_search_instance, global_invoke_all
+from yombo.utils import global_invoke_all
 from yombo.classes.fuzzysearch import FuzzySearch
-from yombo.utils.decorators import cached
 
 logger = get_logger("library.commands")
 
-class Commands(YomboLibrary):
+class Commands(YomboLibrary, LibrarySearch):
     """
     Manages all commands available for devices.
 
     All modules already have a predefined reference to this library as
     `self._Commands`. All documentation will reference this use case.
     """
+    commands = {}
+
+    # The following are used by get(), get_advanced(), search(), and search_advanced()
+    item_search_attribute = "commands"
+    item_searchable_attributes = [
+        "command_id", "label", "machine_label", "description", "voice_cmd", "cmd", "status"
+    ]
+    item_sort_key = "machine_label"
+
     def __contains__(self, command_requested):
         """
         .. note::
@@ -158,26 +167,14 @@ class Commands(YomboLibrary):
         Setups up the basic framework.
 
         """
-        self.load_deferred = None  # Prevents loader from moving on past _start_ until we are done.
-        self.commands = {}
         self.__yombocommandsByVoice = FuzzySearch(None, .92)
-        self.command_search_attributes = ["command_id", "label", "machine_label", "description", "always_load",
-            "voice_cmd", "cmd", "status"]
 
+    @inlineCallbacks
     def _load_(self, **kwargs):
         """
         Loads commands from the database and imports them.
         """
-        self._load_commands_from_database()
-        self.load_deferred = Deferred()
-        return self.load_deferred
-
-    def _stop_(self, **kwargs):
-        """
-        Cleans up any pending deferreds.
-        """
-        if self.load_deferred is not None and self.load_deferred.called is False:
-            self.load_deferred.callback(1)  # if we don't check for this, we can't stop!
+        yield self._load_commands_from_database()
 
     def _clear_(self, **kwargs):
         """
@@ -192,7 +189,7 @@ class Commands(YomboLibrary):
     @inlineCallbacks
     def _load_commands_from_database(self):
         """
-        Loads commands from database and sends them to :py:meth:`import_command() <Commands.import_device>`
+        Loads commands from database and sends them to :py:meth:`_load_command_into_memory() <Commands.import_device>`
 
         This can be triggered either on system startup or when new/updated commands have been saved to the
         database and we need to refresh existing commands.
@@ -200,214 +197,47 @@ class Commands(YomboLibrary):
         commands = yield self._LocalDB.get_commands()
         logger.debug("commands: {commands}", commands=commands)
         for command in commands:
-            yield self.import_command(command)
-        self.load_deferred.callback(10)
+            yield self._load_command_into_memory(command)
 
     @inlineCallbacks
-    def import_command(self, command, test_command=False):
+    def _load_command_into_memory(self, command, test_command=False):
         """
-        Add a new command to memory or update an existing command.
+        Loads a dictionary
 
         **Hooks called**:
 
-        * _command_before_load_ : If added, sends command dictionary as "command"
-        * _command_before_update_ : If updated, sends command dictionary as "command"
-        * _command_loaded_ : If added, send the command instance as "command"
-        * _command_updated_ : If updated, send the command instance as "command"
+        * _command_before_load_ : Called before the command is loaded into memory
+        * _command_after_load_ : Called after the command is loaded into memory
 
-        :param device: A dictionary of items required to either setup a new command or update an existing one.
-        :type device: dict
+        :param command: A dictionary of items required to either setup a new command or update an existing one.
+        :type command: dict
         :param test_command: Used for unit testing.
         :type test_command: bool
-        :returns: Pointer to new device. Only used during unittest
+        :returns: Pointer to new command. Only used during unittest
         """
         logger.debug("command: {command}", command=command)
+
         command_id = command["id"]
+        if command_id in self.commands:
+            raise YomboWarning(f"Cannot add command to memory, already exists: {command_id}")
 
-        yield global_invoke_all("_command_before_import_",
-                                called_by=self,
-                                command_id=command_id,
-                                command=command,
-                                )
-        if command_id not in self.commands:
-            try:
-                yield global_invoke_all("_command_before_load_",
-                                        called_by=self,
-                                        command_id=command_id,
-                                        command=command,
-                                        )
-            except Exception as e:
-                pass
-            self.commands[command_id] = Command(command)
-            try:
-                yield global_invoke_all("_command_loaded_",
-                                        called_by=self,
-                                        command_id=command_id,
-                                        command=self.commands[command_id],
-                                        )
-            except Exception as e:
-                pass
-        elif command_id in self.commands:
-            try:
-                yield global_invoke_all("_command_before_update_",
-                                        called_by=self,
-                                        command_id=command_id,
-                                        command=self.commands[command_id],
-                                        )
-            except Exception as e:
-                pass
-
-            self.commands[command_id].update_attributes(command)
-            try:
-                yield global_invoke_all("_command_updated_",
-                                        called_by=self,
-                                        command_id=command_id,
-                                        command=self.commands[command_id],
-                                        )
-            except Exception as e:
-                pass
-
-        if command["voice_cmd"] is not None:
-            self.__yombocommandsByVoice[command["voice_cmd"]] = self.commands[command_id]
-
-        # if test_command:
-        #     return self.commands[command_id]
-
-    @cached(30)
-    def get(self, command_requested, limiter=None, status=None, command_list=None):
-        """
-        Looks for commands by it's id, label, and machine_label.
-
-        .. note::
-
-           Modules shouldn't use this function. Use the built in reference to
-           find commands:
-
-            >>> self._Commands["sz45q3423"]
-
-        or:
-
-            >>> self._Commands["on"]
-
-        :raises YomboWarning: For invalid requests.
-        :raises KeyError: When item requested cannot be found.
-        :raises ValueError: When input value is invalid.
-        :param command_requested: The command ID, label, and machine_label to search for.
-        :type command_requested: string
-        :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
-        :type limiter_override: float
-        :param status: Deafult: 1 - The status of the command to check for.
-        :type status: int
-        :return: Pointer to requested command.
-        :rtype: dict
-        """
-        if isinstance(command_requested, Command):
-            return command_requested
-        elif command_requested is None:
-            raise KeyError("command_requested is None, so here is None")
-        elif isinstance(command_requested, str) is False:
-            raise KeyError("command_requested must be command instance or a string.")
-        if command_requested in self.commands:
-            return self.commands[command_requested]
-
-        if limiter is None:
-            limiter = .89
-
-        if limiter > .99999999:
-            limiter = .99
-        elif limiter < .10:
-            limiter = .10
-
-        if command_requested in self.commands:
-            item = self.commands[command_requested]
-            if status is not None and item.status != status:
-                raise KeyError(f"Requested command found, but has invalid status: {item.status}")
-            return item
-        else:
-            attrs = [
-                {
-                    "field": "command_id",
-                    "value": command_requested,
-                    "limiter": limiter,
-                },
-                {
-                    "field": "label",
-                    "value": command_requested,
-                    "limiter": limiter,
-                },
-                {
-                    "field": "machine_label",
-                    "value": command_requested,
-                    "limiter": limiter,
-                }
-            ]
-            try:
-                if command_list is not None:
-                    commands = command_list
-                else:
-                    commands = self.commands
-                logger.debug("Get is about to call search...: {command_requested}", command_requested=command_requested)
-                found, key, item, ratio, others = do_search_instance(attrs, commands,
-                                                                     self.command_search_attributes,
-                                                                     limiter=limiter,
-                                                                     operation="highest")
-                logger.debug("found command by search: {command_id}", command_id=key)
-                if found:
-                    return item
-                else:
-                    raise KeyError(f"Command not found: {command_requested}")
-            except YomboWarning as e:
-                raise KeyError(f"Searched for {command_requested}, but had problems: {e}")
-
-    def search(self, _limiter=None, _operation=None, **kwargs):
-        """
-        Advanced search, typically should use the :py:meth:`get <yombo.lib.commands.Commands.get>` method.
-
-        :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
-        :type limiter_override: float
-        :param status: Deafult: 1 - The status of the command to check for.
-        :return:
-        """
-        return search_instance(kwargs,
-                               self.commands,
-                               self.command_search_attributes,
-                               _limiter,
-                               _operation)
-
-    def get_commands_by_voice(self):
-        """
-        This function shouldn't be used by modules. Internal use only. For modules,
-        use: `self._Commands["on"]` to search by name.
-
-        :return: Pointer to array of all devices.
-        :rtype: dict
-        """
-        return self.__yombocommandsByVoice
-
-    def get_local_commands(self):
-        """
-        Return a dictionary with all the public commands.
-
-        :return: Returns any commands that are not publicly available.
-        :rtype: list of objects
-        """
-        results = {}
-        for command_id, command in self.commands.items():
-            if command.public <= 1:
-                results[command_id] = command
-        return results
-
-    def get_public_commands(self):
-        """
-        Return a dictionary with all the public commands.
-
-        :return:
-        """
-        results = {}
-        for command_id, command in self.commands.items():
-            if command.public == 2:
-                results[command_id] = command
-        return results
+        try:
+            yield global_invoke_all("_command_after_load_",
+                                    called_by=self,
+                                    command_id=command_id,
+                                    command=command,
+                                    )
+        except Exception:
+            pass
+        self.commands[command_id] = Command(command)
+        try:
+            yield global_invoke_all("_command_loaded_",
+                                    called_by=self,
+                                    command_id=command_id,
+                                    command=self.commands[command_id],
+                                    )
+        except Exception:
+            pass
 
     @inlineCallbacks
     def dev_command_add(self, data, **kwargs):
@@ -649,19 +479,15 @@ class Command:
         logger.debug("command info: {command}", command=command)
 
         self.command_id = command["id"]
-        self.cmd = command["machine_label"]
-        self.machine_label = self.cmd
-
+        self.machine_label = command["machine_label"]
         # the below are setup during update_attributes()
         self.label = None
         self.description = None
         self.voice_cmd = None
-        self.always_load = None
         self.public = None
         self.status = None
         self.created_at = None
         self.updated_at = None
-
         self.update_attributes(command)
 
     def update_attributes(self, command):
@@ -676,7 +502,6 @@ class Command:
         self.label = command["label"]
         self.description = command["description"]
         self.voice_cmd = command["voice_cmd"]
-        self.always_load = command["always_load"]
         self.public = command["public"]
         self.status = command["status"]
         self.created_at = command["created_at"]
@@ -698,9 +523,7 @@ class Command:
         """
         return {
             "command_id": str(self.command_id),
-            "always_load": str(self.always_load),
             "voice_cmd": str(self.voice_cmd),
-            "cmd": str(self.cmd),  # AKA machineLabel
             "label": str(self.label),
             "machine_label": str(self.machine_label),
             "description": str(self.description),
@@ -717,16 +540,4 @@ class Command:
         :return: A dictionary that can be used to re-create this instance.
         :rtype: dict
         """
-        return {
-            "command_id": str(self.command_id),
-            "always_load": str(self.always_load),
-            "voice_cmd": str(self.voice_cmd),
-            "cmd": str(self.cmd),  # AKA machineLabel
-            "label": str(self.label),
-            "machine_label": str(self.machine_label),
-            "description": str(self.description),
-            "public": int(self.public),
-            "status": int(self.status),
-            "created_at": int(self.created_at),
-            "updated_at": int(self.updated_at),
-        }
+        return self.asdict()
