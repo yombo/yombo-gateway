@@ -5,7 +5,7 @@ Create various exceptions to be used throughout the Yombo gateway.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2012-2017 by Yombo.
+:copyright: Copyright 2012-2019 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/core/exceptions.html>`_
 """
@@ -17,27 +17,72 @@ from yombo.constants import RESTART_EXIT_CODE, QUIT_ERROR_EXIT_CODE
 class YomboException(Exception):
     """
     Extends *Exception* - A non-fatal generic gateway exception that is used for minor errors.
+
+    Accepts a list of errors and will generate both text mesasge and html output. The raw
+    error will also be made available.
+
+    The meta variable is a dict to provide any additional details about the error.
     """
-    def __init__(self, message, errorno=1, name="unknown", component="component", html_message=None):
+    def __init__(self, errors=None, errorno=1, name="unknown", component="component", meta=None):
         """
-        :param message: The error message to log/display.
-        :type message: string
+        :param errors: List of errors with additional details. Can be used by others to format more detailed responses.
+        :type errors: list
         :param errorno: The error number to log/display.
         :type errorno: int
         :param name: Name of the library, component, or module rasing the exception.
         :type name: string
         :param component: What type of ojbect is calling: component, library, or module
         :type component: string
+        :param meta: Any additional items for reference.
+        :type meta: dict
         """
-        Exception.__init__(self, message)
-        self.message = message
-        if html_message is None:
-            self.html_message = message
+        message = ""
+        html = ""
+
+        # print(f"Type of errors: {type(errors)}")
+        if isinstance(errors, str):
+            # print("errors is a string...")
+            errors = [{'detail': errors}]
+            # print(f"new errors: {errors}")
         else:
-            self.html_message = html_message
+            errors = errors
+
+        # allowed_keys = ["id", "links", "status", "code", "title", "detail", "source", "meta"]
+        for error in errors:
+            # print(f"error: {error}")
+            if "code" not in error:
+                error["code"] = f"errorno"
+            if "id" not in error:
+                error["id"] = f"no_id_provided_{errorno}"
+            if "title" not in error:
+                error["title"] = self.__class__.__name__
+            if "detail" not in error:
+                error["detail"] = "No details about exception was provided."
+            if "links" not in error:
+                error["links"] = {}
+            if "about" not in error["links"]:
+                error["links"]["about"] = f"https://yombo.com/docs/exceptions/{self.__class__.__name__}"
+
+        for error in errors:
+            # print(f"exception error: {error}")
+            if len(message) > 0:
+                # print(f"message: '{message}', len: {len(message)}")
+                message += ",+ "
+            message += f"{message}{error['title']} - {error['detail']}"
+            html += f"<li>{error['title']}<ul><li>{error['detail']}</li><li>{error['code']}</li></ul></li>"
+        if len(message) == 0:
+            message = "Unknown error"
+
+        # message += f"  In component: {component}->{name}"
+        self.errors = errors
+        self.message = message
+        self.html = html
+        Exception.__init__(self, self.message)
+
         self.errorno = errorno
         self.component = component
         self.name = name
+        self.meta = meta
 
     def __str__(self):
         """
@@ -54,21 +99,22 @@ class YomboWarning(YomboException):
     """
     Extends *Exception* - A non-fatal warning gateway exception that is used for items needing user attention.
     """
-    def __init__(self, message, errorno=101, name="unknown", component="component", html_message=None, details=None):
+    def __init__(self, errors, errorno=101, name="unknown", component="component", meta=None):
         """
         Setup the YomboWarning and then pass everying to YomboException
         
-        :param message: The error message to log/display.
-        :type message: string
+        :param errors: List of errors with additional details. Can be used by others to format more detailed responses.
+        :type errors: list
         :param errorno: The error number to log/display.
         :type errorno: int
         :param name: Name of the library, component, or module rasing the exception.
         :type name: string
         :param component: What type of ojbect is calling: component, library, or module
         :type component: string
+        :param meta: Any additional items for reference.
+        :type meta: dict
         """
-        YomboException.__init__(self, message, errorno, name, component, html_message)
-        self.details = details
+        YomboException.__init__(self, errors, errorno, name, component, meta)
 
 
 class IntentError(YomboWarning):
@@ -81,8 +127,8 @@ class UnknownIntent(IntentError):
     """
     When the intent is not registered.
     """
-    def __init__(self, message, errorno=1359, name="unknown", component="unknown"):
-        YomboException.__init__(self, message, errorno, name, component)
+    def __init__(self, errors, errorno=1359, name="unknown", component="component", meta=None):
+        YomboException.__init__(self, errors, errorno, name, component, meta)
 
 
 class InvalidSlotInfo(IntentError):
@@ -108,21 +154,22 @@ class YomboInvalidValidation(YomboException):
     Occurs when asked to validate something and it fails. Primary use cases are: 1) validating user inputs to
     the web interface, or 2) validating variable types within the framework or modules.
     """
-
-    def __init__(self, message, errorno=119, name="unknown", component="validate"):
+    def __init__(self, errors, errorno=1873, name="unknown", component="component", meta=None):
         """
         Setup the YomboWarning and then pass everying to YomboException
 
-        :param message: The error message to log/display.
-        :type message: string
+        :param errors: List of errors with additional details. Can be used by others to format more detailed responses.
+        :type errors: list
         :param errorno: The error number to log/display.
         :type errorno: int
         :param name: Name of the library, component, or module rasing the exception.
         :type name: string
         :param component: What type of ojbect is calling: component, library, or module
         :type component: string
+        :param meta: Any additional items for reference.
+        :type meta: dict
         """
-        YomboException.__init__(self, message, errorno, name, component)
+        YomboException.__init__(self, errors, errorno, name, component, meta)
 
 
 class YomboInvalidArgument(ValueError):
@@ -137,49 +184,29 @@ class YomboAPICredentials(YomboException):
     Extends *YomboException* - A non-fatal warning gateway exception that is used when the YomboAPI library
     ran into an authentication issue and cannot process the request.
     """
-
-    def __init__(self, message, errorno=101, name="unknown", component="component"):
+    def __init__(self, errors, errorno=9854, name="unknown", component="component", meta=None):
         """
         Setup the YomboWarning and then pass everying to YomboException
 
-        :param message: The error message to log/display.
-        :type message: string
+        :param errors: List of errors with additional details. Can be used by others to format more detailed responses.
+        :type errors: list
         :param errorno: The error number to log/display.
         :type errorno: int
         :param name: Name of the library, component, or module rasing the exception.
         :type name: string
         :param component: What type of ojbect is calling: component, library, or module
         :type component: string
+        :param meta: Any additional items for reference.
+        :type meta: dict
         """
-        YomboException.__init__(self, message, errorno, name, component)
-
-
-class YomboAutomationWarning(YomboWarning):
-    """
-    Extends *Exception* - A non-fatal warning when an automation rule into a problem. Typically, the user needs
-    to adjust their automation rule.
-    """
-    def __init__(self, message, errorno=101, name="unknown", component="component"):
-        """
-        Setup the YomboWarning and then pass everying to YomboException
-
-        :param message: The error message to log/display.
-        :type message: string
-        :param errorno: The error number to log/display.
-        :type errorno: int
-        :param name: Name of the library, component, or module rasing the exception.
-        :type name: string
-        :param component: What type of ojbect is calling: component, library, or module
-        :type component: string
-        """
-        YomboWarning.__init__(self, message, errorno, name, component)
+        YomboException.__init__(self, errors, errorno, name, component, meta)
 
 
 class YomboCritical(RuntimeWarning):
     """
     Extends *RuntimeWarning* - A **fatal error** gateway exception - **forces the gateway to quit**.
     """
-    def __init__(self, message, errorno=101, name="unknown", component="component", exit_code=None):
+    def __init__(self, message, errorno=9999, name="unknown", component="component", exit_code=None):
         """
         Setup the YomboCritical. When caught, call the exit function of this exception to
         exit the gateway.
@@ -268,7 +295,7 @@ class YomboNoAccess(YomboWarning):
     """
 
     def __init__(self, item_permissions=None, roles=None, platform=None, item=None, action=None,
-                 message="No access", name="unknown", component="component", html_message=None):
+                 message="No access", name="unknown", component="component", messages=None):
         """
         Setup the YomboWarning and then pass everying to YomboException
 
@@ -280,7 +307,7 @@ class YomboNoAccess(YomboWarning):
         :type component: string
         """
         YomboException.__init__(self, message=message, errorno=403, name=name, component=component,
-                                html_message=html_message)
+                                messages=messages)
         self.item_permissions = item_permissions
         self.roles = roles
         self.platform = platform
@@ -374,7 +401,7 @@ class YomboHookStopProcessing(YomboWarning):
     Raise this during a hook call to stop processing any remain hook calls and to stop further processing
     of the remaining request.
     """
-    def __init__(self, message, errorno=101, name="unknown", component="component", collected=None, by_who=None):
+    def __init__(self, message, errorno=19348, name="unknown", component="component", collected=None, by_who=None):
         """
         Setup the YomboWarning and then pass everying to YomboException
 
@@ -387,4 +414,10 @@ class YomboHookStopProcessing(YomboWarning):
         :param component: What type of ojbect is calling: component, library, or module
         :type component: string
         """
-        YomboWarning.__init__(self, message, errorno, component, name)
+        errors = [
+            {
+                "title": "Yombo Hook Stop Processing",
+                "detail": "The requested hook should stop processing."
+            }
+        ]
+        YomboWarning.__init__(self, errors, errorno, component, name)
