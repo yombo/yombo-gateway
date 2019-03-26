@@ -157,7 +157,7 @@ class AuthMixin(YomboBaseMixin):
     def has_user(self) -> str:
         if hasattr(self, "_user_id"):
             if self._user_id is None:
-                return True
+                return False
             return True
         return False
 
@@ -287,6 +287,9 @@ class AuthMixin(YomboBaseMixin):
         if hasattr(self, "is_dirty"):
             self.is_dirty += 50000
         self.save()
+
+    def is_valid(self):
+        return self.enabled
 
     def expire(self):
         """

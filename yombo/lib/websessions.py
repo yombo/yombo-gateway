@@ -221,7 +221,8 @@ class WebSessions(YomboLibrary):
         if session_id == "LOGOFF":
             raise_error("Session has been logged off.")
         if compact_id in self.active_sessions:
-            if self.active_sessions[compact_id].check_valid(auth_id_missing_ok=True) is True:
+            print("check is valid.. 2")
+            if self.active_sessions[compact_id].is_valid() is True:
                 self.get_session_by_id_cache[compact_id] = self.active_sessions[compact_id]
                 return self.active_sessions[compact_id]
             else:
@@ -391,10 +392,11 @@ class AuthWebsession(UserMixin, AuthMixin):
     A single session.
     """
     # Override AuthMixin
-    @property
-    def enabled(self):
-        """"""
-        return self.check_valid()
+    # @property
+    # def enabled(self):
+    #     """"""
+    #     print("AuthWebsession::enabled")
+    #     return self.is_valid()
 
     # Override AuthMixin
     @property
@@ -414,20 +416,22 @@ class AuthWebsession(UserMixin, AuthMixin):
         self.auth_type_id = 'user'
         self.auth_at = None
 
+        # print(f"websession: record: {record}")
+
         # will eventually be populated by a web request. Usually near creation time.
-        print(f"websession: setting auth: {record}")
+        # print(f"websession: setting auth: {record}")
         self.auth_id = record["auth_id"]
         self.auth_id_long = record["auth_id_long"]
         self.source = "websessions"
         self.source_type = "library"
         self.gateway_id = record["gateway_id"]
 
-        print(f"new web after setting auth: {self.asdict()}")
+        # print(f"new web after setting auth: {self.asdict()}")
         # Local attributes
         self.auth_at = None
-        self.auth_pin = None
-        self.auth_pin_at = None
         self._user = None
+
+        self.alerts = {}
 
         # Attempt to set _user based on user_id
         if "user" in record:
@@ -444,6 +448,33 @@ class AuthWebsession(UserMixin, AuthMixin):
         })
 
         self.update_attributes(record, load_source == "database")
+
+    def add_alert(self, message, level="info", dismissible=True, deletable=True):
+        """
+        Add an alert to the stack.
+        :param level: info, warning, error
+        :param message:
+        :return:
+        """
+        rand = random_string(length=15)
+        self.alerts[rand] = {
+            "level": level,
+            "message": message,
+            "dismissible": dismissible,
+            "deletable": deletable,
+        }
+        return rand
+
+    def get_alerts(self, session=None):
+        """
+        Retrieve a list of alerts for display.
+        """
+        show_alerts = {}
+        for keyid in list(self.alerts.keys()):
+            show_alerts[keyid] = self.alerts[keyid]
+            if self.alerts[keyid]["dismissible"] is False:
+                del self.alerts[keyid]
+        return show_alerts
 
     def update_attributes(self, record=None, stay_clean=None):
         """
@@ -475,35 +506,39 @@ class AuthWebsession(UserMixin, AuthMixin):
         if stay_clean is not True:
             self.is_dirty = 2000
 
-    def check_valid(self, auth_id_missing_ok=None):
+    def is_valid(self, auth_id_missing_ok=None):
         """
         Checks if a session is valid or not.
 
         :return:
         """
         if self._enabled is False:
-            logger.info("check_valid: enabled is false, returning False")
+            logger.info("is_valid: enabled is false, returning False")
             return False
 
         if self.created_at < (int(time() - self._Parent.config.max_session)):
-            logger.info("check_valid: Expiring session, it's too old: {session_id}", session_id=self.session_id)
+            logger.info("is_valid: Expiring session, it's too old: {session_id}", session_id=self.session_id)
             self.expire()
             return False
 
         if self.last_access_at < (int(time() - self._Parent.config.max_idle)):
-            logger.info("check_valid: Expiring session, no recent access: {session_id}", session_id=self.session_id)
+            logger.info("is_valid: Expiring session, no recent access: {session_id}", session_id=self.session_id)
             self.expire()
             return False
 
-        if self.auth_id is None and auth_id_missing_ok is not True:
-            logger.info("check_valid: auth_id is None, returning False")
-            return False
+        print(f"websession: authid: {self.auth_id}")
+        # if self.auth_id is None and auth_id_missing_ok is not True:
+        #     logger.info("is_valid: auth_id is None, returning False")
+        #     return False
 
         if self.auth_id is None and self.last_access_at < (int(time() - self._Parent.config.max_session_no_auth)):
-            logger.info("check_valid: Expiring session, no recent access and not authenticated: {auth_id}",
+            logger.info("is_valid: Expiring session, no recent access and not authenticated: {auth_id}",
                         auth_id=self.auth_id)
             self.expire()
             return False
+
+        # if self.user_id is False:
+        #     return False
 
         return True
 

@@ -370,16 +370,16 @@ class AuthKey(AuthMixin, PermissionMixin, RolesMixin):
         self.auth_id = random_string(length=randint(50, 55))
         self._Parent.finish_rotate_key(old_auth_id, self.auth_id, self)
 
-    def check_valid(self):
+    def is_valid(self):
         """
         Checks if a session is valid or not.
 
         :return:
         """
-        if self.enabled is False:
-            # logger.info("check_valid: enabled is false, returning False")
-            return False
-        return True
+        if self.enabled is True:
+            # logger.info("is_valid: enabled is false, returning False")
+            return True
+        return False
 
     def save(self):
         tosave = {
