@@ -94,7 +94,6 @@ class Registry(object):
         """
         Sets up debuging, or disables it.
 
-
         :param debug:
         :param filepointer:
         :return:

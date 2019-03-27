@@ -22,6 +22,7 @@ Modified for use with Yombo by Mitch
 :license: LICENSE for details.
 """
 
+
 class DictObject(dict):
     """
     A dictionary that can be treated as a dictionary or an object.

@@ -16,7 +16,7 @@ Used by the Yombo Gateway framework to set up it's libraries.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2012-2017 by Yombo.
+:copyright: Copyright 2012-2019 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/core/library.html>`_
 """

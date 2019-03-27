@@ -94,7 +94,7 @@ documentation.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2012-2016 by Yombo.
+:copyright: Copyright 2012-2019 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/core/module.html>`_
 """

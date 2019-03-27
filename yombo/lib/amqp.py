@@ -330,7 +330,7 @@ class AMQPClient(object):
         }
 
         if username is not None and password is not None:
-            self.pika_credentials=pika.PlainCredentials( username, password )
+            self.pika_credentials=pika.PlainCredentials(username, password)
             pika_params["credentials"] = self.pika_credentials
 
         self.pika_parameters = pika.ConnectionParameters(**pika_params)

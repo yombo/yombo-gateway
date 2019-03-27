@@ -5,6 +5,6 @@
    :synopsis: Core resources of the Yombo gateway.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-:copyright: 2012-2018 by Yombo
+:copyright: 2012-2019 by Yombo
 :license: LICENSE for details.
 """
