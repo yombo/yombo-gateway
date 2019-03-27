@@ -47,6 +47,9 @@ class Gateway_Communications(YomboLibrary):
     ok_to_publish_updates = False
 
     def _init_(self, **kwargs):
+        if self._Loader.operating_mode != "run":
+            return
+
         self.ok_to_publish_updates = False
         self.log_incoming = deque([], 150)
         self.log_outgoing = deque([], 150)
@@ -88,7 +91,7 @@ class Gateway_Communications(YomboLibrary):
         if self.is_master():
             mqtt_hosts = [
                 {
-                    "address": "i." + master_gateway.fqdn,
+                    "address": "i." + master_gateway.dns_name,
                     "mqtt": [
                         {"port": master_gateway.internal_mqtt, "ssl": False},
                         {"port": master_gateway.internal_mqtt_le, "ssl": True},
@@ -104,7 +107,7 @@ class Gateway_Communications(YomboLibrary):
         else:
             mqtt_hosts = [
                 {
-                    "address": "i." + master_gateway.fqdn,
+                    "address": "i." + master_gateway.dns_name,
                     "mqtt": [
                         {"port": master_gateway.internal_mqtt_le, "ssl": True},
                         {"port": master_gateway.internal_mqtt_ss, "ssl": True},
@@ -116,7 +119,7 @@ class Gateway_Communications(YomboLibrary):
                     ]
                 },
                 {
-                    "address": "e." + master_gateway.fqdn,
+                    "address": "e." + master_gateway.dns_name,
                     "mqtt": [
                         {"port": master_gateway.external_mqtt_le, "ssl": True},
                         {"port": master_gateway.external_mqtt_ss, "ssl": True},
