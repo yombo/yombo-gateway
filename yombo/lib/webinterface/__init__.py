@@ -23,16 +23,19 @@ import jinja2
 import json
 from klein import Klein
 from operator import itemgetter
-from os import path, listdir, mkdir, makedirs
+from os import path, listdir, makedirs, environ, walk as oswalk, unlink, stat as osstat
+from random import randint
 import shutil
 from time import time
 from urllib.parse import parse_qs, urlparse, urlunparse
 
 # Import twisted libraries
 from twisted.web.server import Site
-from twisted.internet import reactor, ssl
+from twisted.web.static import File
+from twisted.internet import reactor, ssl, threads
 from twisted.internet.defer import inlineCallbacks, maybeDeferred, Deferred
 from twisted.internet.task import LoopingCall
+from twisted.internet.utils import getProcessOutput
 
 # Import 3rd party libraries
 from yombo.ext.expiringdict import ExpiringDict
@@ -45,7 +48,7 @@ import yombo.ext.totp
 import yombo.utils
 import yombo.utils.converters as converters
 import yombo.utils.datetime as dt_util
-from yombo.lib.webinterface.auth import require_auth_pin, require_auth, run_first
+from yombo.lib.webinterface.auth import require_auth
 
 from yombo.lib.webinterface.routes.api_v1.automation import route_api_v1_automation
 from yombo.lib.webinterface.routes.api_v1.camera import route_api_v1_camera
@@ -158,9 +161,9 @@ class Yombo_Site(Site):
         :param request:
         :return:
         """
-        ignored_extensions = (".js", ".css", ".jpg", ".jpeg", ".gif", ".ico", ".woff2", ".map")
+        ignored_extensions = (".png", ".js", ".css", ".jpg", ".jpeg", ".gif", ".ico", ".woff2", ".map",
+                              "site.webmanifest")
         url_path = request.path.decode().strip()
-
         if any(url_path.endswith(ext) for ext in ignored_extensions):
             return
 
@@ -173,7 +176,7 @@ class Yombo_Site(Site):
             else:
                 user_id = request.auth.safe_display
         else:
-            print(f"request has no auth! : {request}")
+            # print(f"request has no auth! : {request}")
             user_id = None
 
         self.log_queue.append(OrderedDict({
@@ -223,6 +226,7 @@ class WebInterface(YomboLibrary):
 
     @inlineCallbacks
     def _init_(self, **kwargs):
+        self.frontend_building = False
         self.web_interface_fully_started = False
         self.enabled = self._Configs.get("webinterface", "enabled", True)
 
@@ -242,9 +246,7 @@ class WebInterface(YomboLibrary):
         self.app_dir = self._Atoms.get("app_dir")
         self.wi_dir = "/lib/webinterface"
 
-        self._build_dist()  # Make all the JS and CSS files
-        self.secret_pin_totp = self._Configs.get2("webinterface", "auth_pin_totp",
-                                     yombo.utils.random_string(length=16, letters="ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"))
+        self.build_dist()  # Make all the JS and CSS files
         self.misc_wi_data = {}
 
         self.wi_port_nonsecure = self._Configs.get2("webinterface", "nonsecure_port", 8080)
@@ -335,6 +337,7 @@ class WebInterface(YomboLibrary):
         self.web_server_ssl_started = False
 
         self.web_factory = None
+        self.user_login_tokens = self._Cache.ttl(name="lib.users.cache", ttl=300)
 
     @property
     def operating_mode(self):
@@ -345,12 +348,6 @@ class WebInterface(YomboLibrary):
             return
 
         self.module_config_links = {}
-
-        self.auth_pin = self._Configs.get2("webinterface", "auth_pin",
-              yombo.utils.random_string(length=4, letters=yombo.utils.human_alphabet()).lower())
-        self.auth_pin_totp = self._Configs.get2("webinterface", "auth_pin_totp", yombo.utils.random_string(length=16))
-        self.auth_pin_type = self._Configs.get2("webinterface", "auth_pin_type", "pin")
-        self.auth_pin_required = self._Configs.get2("webinterface", "auth_pin_required", True)
 
         # self.web_factory = Yombo_Site(self.webapp.resource(), None, logPath="/dev/null")
         self.web_factory = Yombo_Site(self.webapp.resource(), None, logPath=None)
@@ -409,12 +406,18 @@ class WebInterface(YomboLibrary):
         self.webapp.templates.globals["_variables"] = self._Variables
         self.webapp.templates.globals["_validate"] = self._Validate
         self.webapp.templates.globals["_webinterface"] = self
+        self.webapp.templates.globals["py_randint"] = randint
         self.webapp.templates.globals["py_time_time"] = time
         self.webapp.templates.globals["py_urllib_urlparse"] = urlparse
         self.webapp.templates.globals["py_urllib_urlunparse"] = urlunparse
         self.webapp.templates.globals["yombo_utils"] = yombo.utils
         self.webapp.templates.globals["misc_wi_data"] = self.misc_wi_data
+        self.webapp.templates.globals["misc_wi_data"] = self.misc_wi_data
         self.webapp.templates.globals["webinterface"] = self
+        self.webapp.templates.globals["_location_id"] = None
+        self.webapp.templates.globals["_area_id"] = None
+        self.webapp.templates.globals["_location"] = None
+        self.webapp.templates.globals["_area"] = None
 
         self._refresh_jinja2_globals_()
         self.starting = False
@@ -428,6 +431,8 @@ class WebInterface(YomboLibrary):
 
         :return:
         """
+        if self.operating_mode != "run":
+            return
         self.webapp.templates.globals["_location_id"] = self._Locations.location_id
         self.webapp.templates.globals["_area_id"] = self._Locations.area_id
         self.webapp.templates.globals["_location"] = self._Locations.location
@@ -677,6 +682,9 @@ class WebInterface(YomboLibrary):
     @webapp.route("/<path:catchall>")
     @require_auth()
     def page_404(self, request, session, catchall):
+        # print(f"page 404: {self.working_dir}/frontend/")
+        return File(self.working_dir + "/frontend/")
+
         request.setResponseCode(404)
         page = self.get_template(request, self.wi_dir + "/pages/errors/404.html")
         return page.render()
@@ -684,8 +692,9 @@ class WebInterface(YomboLibrary):
     @webapp.handle_errors(NotFound)
     @require_auth()
     def notfound(self, request, failure):
+        """ This shouldn't ever be used....failsafe."""
         request.setResponseCode(404)
-        return "Not found, I say"
+        return "Not found, I say!"
 
     @property
     def internal_url(self):
@@ -751,9 +760,6 @@ class WebInterface(YomboLibrary):
             print(f"#  {website_url:<54} #")
 
         print("#                                                         #")
-        print("#                                                         #")
-        print("# Web Interface access pin code:                          #")
-        print(f"#  {self.auth_pin():<25}                              #")
         print("#                                                         #")
         print("###########################################################")
 
@@ -869,7 +875,7 @@ class WebInterface(YomboLibrary):
 
         self.starting = False
 
-    def add_alert(self, message, level="info", dismissable=True, type="session", deletable=True):
+    def add_alert(self, message, level="info", dismissible=True, type="session", deletable=True):
         """
         Add an alert to the stack.
         :param level: info, warning, error
@@ -881,23 +887,10 @@ class WebInterface(YomboLibrary):
             "type": type,
             "level": level,
             "message": message,
-            "dismissable": dismissable,
+            "dismissible": dismissible,
             "deletable": deletable,
         }
         return rand
-
-    def make_alert(self, message, level="info", type="session", dismissable=False):
-        """
-        Add an alert to the stack.
-        :param level: info, warning, error
-        :param message:
-        :return:
-        """
-        return {
-            "level": level,
-            "message": message,
-            "dismissable": dismissable,
-        }
 
     def get_alerts(self, type=None, session=None):
         """
@@ -1041,36 +1034,80 @@ class WebInterface(YomboLibrary):
     def do_shutdown(self):
         raise YomboCritical("Web Interface setup wizard complete.")
 
-    # def WebInterface_configuration_set(self, **kwargs):
-    #     """
-    #     Hook from configuration library. Get any configuration changes.
-    #
-    #     :param kwargs: "section", "option", and "value" are sent here.
-    #     :return:
-    #     """
-    #     if kwargs["section"] == "webinterface":
-    #         option = kwargs["option"]
-    #         if option == "auth_pin":
-    #             self.auth_pin(set=kwargs["value"])
-    #         elif option == "auth_pin_totp":
-    #             self.auth_pin_totp(set=kwargs["value"])
-    #         elif option == "auth_pin_type":
-    #             self.auth_pin_type(set=kwargs["value"])
-    #         elif option == "auth_pin_required":
-    #             self.auth_pin_required(set=kwargs["value"])
-
-    def _build_dist(self):
+    @inlineCallbacks
+    def frontend_npm_run(self, arguments=None):
         """
-        This is blocking code. Doesn't really matter, it only does it on startup.
+        Does the actual execution of the npm run.
 
-        Builds the "dist" directory from the "build" directory. Easy way to update the source css/js files and update
-        the webinterface JS and CSS files.
+        :param arguments: A list of arguments to pass to NPM.
+        :return:
+        """
+        if arguments is None:
+            arguments = ["run", "production"]
+
+        results = yield getProcessOutput(
+            "npm",
+            arguments,
+            path=f"{self.app_dir}/yombo/frontend",
+            env=environ.copy(),
+            errortoo=True,
+        )
+        print(f"NPM Build results: {results}")
+
+    @inlineCallbacks
+    def build_frontend(self, environemnt=None):
+        """
+        This execute the NPM build process for the frontend.
+
+        :return:
+        """
+        self.app_dir
+        if self.frontend_building is True:
+            return
+
+        if self.frontend_building is True:
+            logger.warn("Cannot build frontend : already building...")
+            return
+        # print("!!!!!!! Build frontend starting")
+        self.frontend_building = True
+        yield self.frontend_npm_run()
+        self.frontend_building = False
+        # print("!!!!!!! Build frontend finished")
+
+    @inlineCallbacks
+    def copy_frontend(self, environemnt=None):
+        """
+        Copy the frontend contents to the static folder.
+        :return:
+        """
+        yield self.copytree("yombo/frontend/dist/", "frontend/")
+
+    @inlineCallbacks
+    def build_dist(self):
+        """
+        Copies the CSS, JS, and images to the static directory for the system pages (login/out, config, etc).
+
+        This also starts the NPM build production process for the frontend and copies those files to the
+        the distribution directory.
+        :return:
+        """
+        # yield threads.deferToThread(self.empty_directory, f"{self.working_dir}/frontend/")
+        yield self.copy_static_web_items()
+
+        # if path.exists(f"{self.working_dir}/frontend/index.html") is False:
+        yield self.copy_frontend()  # We copy the previously build frontend incase it's new install..
+        yield self.build_frontend()
+        yield self.copy_frontend()  # now copy the final version...
+
+    @inlineCallbacks
+    def copy_static_web_items(self):
+        """
+        Copies base webpages, not relating to the frontend application.
+
         :return:
         """
         def do_cat(inputs, output):
-            # output = "yombo/lib/webinterface/static/" + output
-
-            output = f"{self.working_dir}/webinterface/static/{output}"
+            output = f"{self.working_dir}/frontend/{output}"
             makedirs(path.dirname(output), exist_ok=True)
             with open(output, "w") as outfile:
                 for fname in inputs:
@@ -1078,172 +1115,53 @@ class WebInterface(YomboLibrary):
                     with open(fname) as infile:
                         outfile.write(infile.read())
 
-        def copytree(src, dst, symlinks=False, ignore=None):
-            src = "yombo/lib/webinterface/static/" + src
-            dst = f"{self.working_dir}/webinterface/static/{dst}"
-            if path.exists(dst):
-                shutil.rmtree(dst)
-            if path.isdir(src):
-                makedirs(path.dirname(dst), exist_ok=True)
-            for item in listdir(src):
-                s = path.join(src, item)
-                d = path.join(dst, item)
-                if path.isdir(s):
-                    shutil.copytree(s, d, symlinks, ignore)
-                else:
-                    shutil.copy2(s, d)
-
         CAT_SCRIPTS = [
-            "source/bootstrap/dist/css/bootstrap.min.css",
+            "source/bootstrap4/css/bootstrap.min.css",
+            "source/bootstrap-select/css/bootstrap-select.min.css",
+            "source/yombo/yombo.css",
         ]
-        CAT_SCRIPTS_OUT = "css/bootstrap.min.css"
-        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
-        CAT_SCRIPTS = [
-            "source/bootstrap/dist/css/bootstrap.min.css.map",
-        ]
-        CAT_SCRIPTS_OUT = "css/bootstrap.min.css.map"
+        CAT_SCRIPTS_OUT = "css/basic_app.min.css"
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         CAT_SCRIPTS = [
-            "source/bootstrap/dist/css/bootstrap-theme.min.css",
-        ]
-        CAT_SCRIPTS_OUT = "css/bootstrap-theme.min.css"
-        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
-        CAT_SCRIPTS = [
-            "source/bootstrap/dist/css/bootstrap-theme.min.css.map",
-        ]
-        CAT_SCRIPTS_OUT = "css/bootstrap-theme.min.css.map"
-        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
-
-        CAT_SCRIPTS = [
-            "source/creative/css/creative.css",
-            ]
-        CAT_SCRIPTS_OUT = "css/creative.css"
-        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
-
-        CAT_SCRIPTS = [
-            "source/metisMenu/metisMenu.min.css",
-            "source/sb-admin/css/sb-admin-2.css",
-            "source/sb-admin/css/yombo.css",
-            ]
-        CAT_SCRIPTS_OUT = "css/admin2-metisMenu.min.css"
-        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
-        CAT_SCRIPTS = [
-            "source/metisMenu/metisMenu.min.css.map",
-        ]
-        CAT_SCRIPTS_OUT = "css/metisMenu.min.css.map"
-        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
-
-        CAT_SCRIPTS = [
-            "source/datatables_1.10.18/dataTables.bootstrap.min.css",
-            "source/datatables_1.10.18/responsive.bootstrap.css",
-            ]
-        CAT_SCRIPTS_OUT = "css/datatables.min.css"
-        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
-
-        CAT_SCRIPTS = [
-            "source/datatables_1.10.18/jquery.dataTables.min.js",
-            "source/datatables_1.10.18/dataTables.bootstrap.min.js",
-            "source/datatables_1.10.18/dataTables.responsive.min.js",
-            "source/datatables_1.10.18/responsive.bootstrap.js",
-            ]
-        CAT_SCRIPTS_OUT = "js/datatables.min.js"
-        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
-        copytree("source/datatables_1.10.18/images/", "dist/images/")
-
-        CAT_SCRIPTS = [
-            "source/jquery/jquery-2.2.4.min.js",
-            "source/sb-admin/js/js.cookie.min.js",
-            "source/bootstrap/dist/js/bootstrap.min.js",
-            "source/metisMenu/metisMenu.min.js",
-        ]
-        CAT_SCRIPTS_OUT = "js/jquery-cookie-bootstrap-metismenu.min.js"
-        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
-        CAT_SCRIPTS = [
-            "source/metisMenu/metisMenu.min.js.map",
-        ]
-        CAT_SCRIPTS_OUT = "js/metisMenu.min.js.map"
-        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
-
-        CAT_SCRIPTS = [
+            "source/jquery/jquery-3.3.1.min.js",
             "source/jquery/jquery.validate.min.js",
-        ]
-        CAT_SCRIPTS_OUT = "js/jquery.validate.min.js"
-        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
-
-        CAT_SCRIPTS = [
-            "source/sb-admin/js/sb-admin-2.min.js",
-            "source/sb-admin/js/yombo.js",
-        ]
-        CAT_SCRIPTS_OUT = "js/sb-admin2.min.js"
-        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
-
-        CAT_SCRIPTS = [
-            "source/font-awesome5/js/fontawesome-all.min.js",
-            ]
-        CAT_SCRIPTS_OUT = "js/fontawesome-all.min.js"
-        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
-
-        CAT_SCRIPTS = [
-            "source/jrcode/jquery-qrcode.min.js",
-            ]
-        CAT_SCRIPTS_OUT = "js/jquery-qrcode.min.js"
-        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
-
-        CAT_SCRIPTS = [
-            "source/creative/js/jquery.easing.min.js",
-            "source/creative/js/scrollreveal.min.js",
-            "source/creative/js/creative.min.js",
-            ]
-        CAT_SCRIPTS_OUT = "js/creative.min.js"
-        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
-
-        CAT_SCRIPTS = [
-            "source/echarts/echarts.min.js",
-            ]
-        CAT_SCRIPTS_OUT = "js/echarts.min.js"
-        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
-
-
-        CAT_SCRIPTS = [
-            "source/sb-admin/js/mappicker.js",
-            ]
-        CAT_SCRIPTS_OUT = "js/mappicker.js"
-        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
-        CAT_SCRIPTS = [
-            "source/sb-admin/css/mappicker.css",
-            ]
-        CAT_SCRIPTS_OUT = "css/mappicker.css"
-        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
-
-        CAT_SCRIPTS = [
-            "source/mqtt/mqttws31.min.js",
-            ]
-        CAT_SCRIPTS_OUT = "js/mqttws31.min.js"
-        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
-
-        CAT_SCRIPTS = [
-            "source/sb-admin/js/jquery.serializejson.min.js",
-            ]
-        CAT_SCRIPTS_OUT = "js/jquery.serializejson.min.js"
-        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
-
-        CAT_SCRIPTS = [
-            "source/sb-admin/js/sha256.js",
-            ]
-        CAT_SCRIPTS_OUT = "js/sha256.js"
-        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
-
-        CAT_SCRIPTS = [
+            "source/js-cookie/js.cookie.min.js",
+            "source/bootstrap4/js/bootstrap.bundle.min.js",
+            "source/bootstrap-select/js/bootstrap-select.min.js",
             "source/yombo/jquery.are-you-sure.js",
-            ]
-        CAT_SCRIPTS_OUT = "js/jquery.are-you-sure.js"
+            "source/yombo/yombo.js",
+        ]
+        CAT_SCRIPTS_OUT = "js/basic_app.js"
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
-        # Just copy files
-        copytree("source/bootstrap/dist/fonts/", "fonts/")
-        copytree("source/bootstrap-select/", "bootstrap-select/")
-        copytree("source/img/", "img/")
+        yield self.copytree("yombo/lib/webinterface/static/source/img/", "frontend/img/")
+
+    @inlineCallbacks
+    def copytree(self, src, dst, symlinks=False, ignore=None):
+        if src.startswith("/") is False:
+            src = self.app_dir + "/" + src
+        if dst.startswith("/") is False:
+            dst = self.working_dir + "/" + dst
+        # print(f"!!!!!!! Start copytree....appdir{self.app_dir} {src} -> {dst}")
+
+        if not path.exists(dst):
+            makedirs(dst)
+        for item in listdir(src):
+            s = path.join(src, item)
+            d = path.join(dst, item)
+            if path.isdir(s):
+                self.copytree(s, d, symlinks, ignore)
+            else:
+                if not path.exists(d) or osstat(s).st_mtime - osstat(d).st_mtime > 1:
+                    yield threads.deferToThread(shutil.copy2, s, d)
+
+    def empty_directory(self, delpath):
+        for root, dirs, files in oswalk(delpath):
+            for f in files:
+                unlink(path.join(root, f))
+            for d in dirs:
+                shutil.rmtree(path.join(root, d))
 
 class web_translator(object):
     def __init__(self, webinterface, locales):
