@@ -93,12 +93,13 @@ HARD_LOAD["Commands"] = {"operating_mode": "all"}
 HARD_LOAD["DeviceTypes"] = {"operating_mode": "all"}
 HARD_LOAD["InputTypes"] = {"operating_mode": "all"}
 HARD_LOAD["Variables"] = {"operating_mode": "all"}
-HARD_LOAD["DownloadModules"] = {"operating_mode": "run"}
 HARD_LOAD["Modules"] = {"operating_mode": "all"}
 HARD_LOAD["Devices"] = {"operating_mode": "all"}
+HARD_LOAD["SystemDataHandler"] = {"operating_mode": "run"}
 HARD_LOAD["AMQPYombo"] = {"operating_mode": "run"}
 HARD_LOAD["Gateways"] = {"operating_mode": "all"}
 HARD_LOAD["Gateway_Communications"] = {"operating_mode": "all"}
+HARD_LOAD["DownloadModules"] = {"operating_mode": "run"}
 HARD_LOAD["Nodes"] = {"operating_mode": "all"}
 HARD_LOAD["MQTT"] = {"operating_mode": "run"}
 HARD_LOAD["SSLCerts"] = {"operating_mode": "all"}
@@ -595,7 +596,8 @@ class Loader(YomboLibrary, object):
     def check_operating_mode(self, allowed):
         """
         Checks if something should be run based on the current operating_mode.
-        :param config: Either string or list or posible operating_modes
+
+        :param allowed: Either string or list or possible operating_modes
         :return: True/False
         """
         operating_mode = self.operating_mode
