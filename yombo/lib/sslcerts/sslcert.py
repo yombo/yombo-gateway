@@ -358,7 +358,7 @@ class SSLCert(object):
         certificate, then we will mark any requested certs as being bad/empty.
         :return: 
         """
-        system_fqdn = self._Parent.fqdn()
+        system_fqdn = self._Parent.local_gateway.dns_name
         if system_fqdn != self.current_fqdn and self.current_fqdn is not None:
             logger.warn("System FQDN doesn't match current requested cert for: {sslname}", sslname=self.sslname)
             self.current_is_valid = None
@@ -682,7 +682,7 @@ class SSLCert(object):
         try:
             the_job = yield self._Parent.generate_csr_queue.put(request)
             results = the_job.result
-            self.next_fqdn = self._Parent.fqdn()
+            self.next_fqdn = self._Parent.local_gateway.dns_name
         except Exception as e:
             self.next_csr_generation_error_count += 1
             if self.next_csr_generation_error_count < 5:

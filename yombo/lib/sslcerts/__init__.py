@@ -100,7 +100,7 @@ class SSLCerts(YomboLibrary):
         self.hostname = gethostname()
 
         self.gateway_id = self._Configs.get("core", "gwid", "local", False)
-        self.fqdn = self._Configs.get2("dns", "fqdn", None, False)
+        self.local_gateway = self._Gateways.local
 
         self.self_signed_cert_file = self._Atoms.get("working_dir") + "/etc/certs/sslcert_selfsigned.cert.pem"
         self.self_signed_key_file = self._Atoms.get("working_dir") + "/etc/certs/sslcert_selfsigned.key.pem"
@@ -142,8 +142,7 @@ class SSLCerts(YomboLibrary):
                                                    False)
 
         # Check if any libraries or modules need certs.
-        fqdn = self._Configs.get("dns", "fqdn", None, False)
-        if fqdn is None:
+        if self.local_gateway.dns_name is None:
             logger.warn("Unable to generate sign ssl/tls certs, gateway has no domain name.")
             return
 
@@ -211,8 +210,7 @@ class SSLCerts(YomboLibrary):
         :param bypass_checks: For internal use only.
         :return: 
         """
-        fqdn = self._Configs.get("dns", "fqdn", None, False)
-        if fqdn is None:
+        if self.local_gateway.dns_name is None:
             logger.warn("Unable to generate sign ssl/tls certs, gateway has no domain name.")
             return
 
@@ -272,14 +270,13 @@ class SSLCerts(YomboLibrary):
             raise YomboWarning("'sslname' is required.")
         results["sslname"] = csr_request["sslname"]
 
-        fqdn = self.fqdn()
-        if fqdn is None:
+        if self.local_gateway.dns_name is None:
             raise YomboWarning("Unable to create SSL Certs, no system domain set.")
 
         if "cn" not in csr_request:
-            raise YomboWarning(f"'cn' must be included, and must end with our local FQDN: {fqdn}")
-        elif csr_request["cn"].endswith(fqdn) is False:
-            results["cn"] = csr_request["cn"] + "." + fqdn
+            raise YomboWarning(f"'cn' must be included, and must end with our local FQDN: {self.local_gateway.dns_name}")
+        elif csr_request["cn"].endswith(self.local_gateway.dns_name) is False:
+            results["cn"] = csr_request["cn"] + "." + self.local_gateway.dns_name
         else:
             results["cn"] = csr_request["cn"]
 
@@ -288,8 +285,8 @@ class SSLCerts(YomboLibrary):
         else:
             san_list = []
             for san in csr_request["sans"]:
-                if san.endswith(fqdn) is False:
-                    san_list.append(str(san + "." + fqdn))
+                if san.endswith(self.local_gateway.dns_name) is False:
+                    san_list.append(str(san + "." + self.local_gateway.dns_name))
                 else:
                     san_list.append(str(san))
 
