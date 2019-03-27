@@ -13,13 +13,14 @@ even if this library wasn't used to make the request.
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.22.0
 
-:copyright: Copyright 2018 by Yombo.
+:copyright: Copyright 2018-2019 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/requests.html>`_
 """
 # Import python libraries
 import json
 import msgpack
+import traceback
 import treq
 
 # Import twisted libraries
@@ -105,37 +106,37 @@ class Requests(YomboLibrary):
         logger.debug("Request receive: {method} : {url}", method=method, url=url)
         method = method.upper()
         try:
-            response = yield treq.request(method, url, **kwargs)
+            treq_response = yield treq.request(method, url, **kwargs)
         except ConnectionRefusedError as e:
             raise YomboWarning(f"Connection was refused to '{url}': {e}")
         except ConnectError as e:
             raise YomboWarning(f"Error connecting to '{url}': {e}")
+        except Exception as e:
+            logger.info("Requests error: {error}", error=e)
+            logger.error("---------------==(Traceback)==--------------------------")
+            logger.error("{trace}", trace=traceback.format_exc())
+            logger.error("--------------------------------------------------------")
+            logger.warn("An exception of type {etype} occurred in yombo.lib.yomboapi:import_component. Message: {msg}",
+                        etype=type(e), msg=e)
+            logger.error("--------------------------------------------------------")
+            raise e
 
-        content_type, content, content_raw = yield self.process_response(response)
-        return {
-            "content": content,
-            "content_raw": content_raw,
-            "response": response,
-            "content_type": content_type,
-            "content_type": content_type,
-            "request": response.request.original,
-            "headers": response.all_headers,
-        }
+        response = WebResponse(self)
+        yield response.process_response(treq_response)
+        return response
 
-    def clean_headers(self, response, update_response=None):
-        """
-        Take a treq response and get friendly headers.
 
-        :param response:
-        :return:
-        """
-        all_headers = CaseInsensitiveDict()
-        raw_headers = bytes_to_unicode(response.headers._rawHeaders)
-        for key, value in raw_headers.items():
-            all_headers[key.lower()] = value
-        if update_response is not False:
-            response.all_headers = all_headers
-        return all_headers
+class WebResponse(object):
+    def __init__(self, parent):
+        self._Parent = parent
+        self.request = None
+        self.content = None
+        self.content_raw = None
+        self.response = None
+        self.content_type = None
+        self.response_phrase = None
+        self.response_code = None
+        self.headers = None
 
     @inlineCallbacks
     def process_response(self, response):
@@ -151,6 +152,7 @@ class Requests(YomboLibrary):
         """
         raw_content = yield treq.content(response)
         content = raw_content
+        # print(f"process_respionse: {content}")
         headers = self.clean_headers(response, True)
 
         content_type = headers[HEADER_CONTENT_TYPE][0]
@@ -178,4 +180,36 @@ class Requests(YomboLibrary):
                     content_type = "dict"
                 except Exception:
                     content = raw_content
-        return content_type, bytes_to_unicode(content), raw_content
+
+        content = bytes_to_unicode(content)
+        # return {
+        #     "content_type": content_type,
+        #     "headers": response.all_headers,
+        # }
+
+        self.content = bytes_to_unicode(content)
+        self.content_raw = raw_content
+        self.request = response.request.original
+        self.response = response
+        self.content_type = content_type
+        self.response_phrase = bytes_to_unicode(response.phrase)
+        self.response_code = response.code
+        self.headers = headers
+
+    def clean_headers(self, response, update_response=None):
+        """
+        Take a treq response and get friendly headers.
+
+        :param response:
+        :return:
+        """
+        all_headers = CaseInsensitiveDict()
+        raw_headers = bytes_to_unicode(response.headers._rawHeaders)
+        for key, value in raw_headers.items():
+            all_headers[key.lower()] = value
+        if update_response is not False:
+            response.all_headers = all_headers
+        return all_headers
+
+
+
