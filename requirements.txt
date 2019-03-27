@@ -15,6 +15,8 @@ json-api-doc==0.4.0
 klein==17.10.0
 logger==1.4
 markdown==3.0.*
+marshmallow==3.0.0rc4
+marshmallow-jsonapi==0.21.0
 msgpack-python==0.5.6
 netaddr==0.7.19
 netifaces==0.10.9
@@ -27,6 +29,7 @@ Pillow==5.4.1
 pycrypto==2.6.1
 pydispatcher==2.0.5
 pyephem==3.7.*
+pyjwt==1.7.*
 pyopenssl==18.0.*
 pyserial==3.2.0
 python_dateutil==2.7.*
