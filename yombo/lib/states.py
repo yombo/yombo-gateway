@@ -83,6 +83,8 @@ class States(YomboLibrary, object):
     """
     MAX_HISTORY = 100
     gateway_id = "local"
+    states = {}
+
 
     def __contains__(self, state_requested):
         """
@@ -222,7 +224,7 @@ class States(YomboLibrary, object):
 
     def _start_(self, **kwargs):
         self.module_phase = 3
-        if self._States["loader.operating_mode"] == "run":
+        if self._Loader.operating_mode == "run":
             self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming,
                                        client_id=f"Yombo-states-{self.gateway_id}")
             self.mqtt.subscribe("yombo/states/+/get")
@@ -336,7 +338,7 @@ class States(YomboLibrary, object):
 
         return partial(self.get, key, human, full, gateway_id=gateway_id)
 
-    def get(self, key, human=None, full=None, gateway_id=None):
+    def get(self, key, human=None, full=None, gateway_id=None, default='eEryLOZESKJf7cqQZv2bFlh04Hrf3NxLazV5KEuvyXFtkgxpq70vWsIz9xwr'):
         """
         Get the value of a given state (key).
 
@@ -348,10 +350,13 @@ class States(YomboLibrary, object):
         :type human: bool
         :param full: If true, Returns all data about the state. If false, just the value.
         :type full: bool
+        :param gateway_id: The gateway id to lookup. If 'self', will be converted to local gateway ID.
+        :param default: If set, will return a this value if it's not set. Otherwise, will raise KeyError if not set.
+        :type default: str
         :return: Value of state
         """
         # logger.debug("states:get: {key} = {value}", key=key)
-        if gateway_id is None:
+        if gateway_id is None or gateway_id.lower() == 'self':
             gateway_id = self.gateway_id
 
         self._Statistics.increment("lib.states.get", bucket_size=15, anon=True)
@@ -372,6 +377,10 @@ class States(YomboLibrary, object):
                 return values
             else:
                 raise KeyError("Searched for atoms, none found.")
+
+        # print(f"States get...... gateway_id: {gateway_id}")
+        # print(f"States key: {key}")
+        # print(self.states)
         if human is True:
             return self.states[gateway_id][key]["value_human"]
         elif full is True:
