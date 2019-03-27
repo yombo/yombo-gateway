@@ -61,59 +61,56 @@ class Startup(YomboLibrary):
         :param kwargs:
         :return:
         """
+        print("Startup library: init: start..")
+
+        self.configs_needed = []
+        self.configs_needed_human = []
         self.gwid = self._Configs.get2("core", "gwid", "local", False)
-        self.gwuuid = self._Configs.get2("core", "gwuuid", None, False)
         self.gwhash = self._Configs.get2("core", "gwhash", None, False)
-        self.api_auth = self._Configs.get2("core", "api_auth", None, False)
         self.has_valid_gw_auth = False
 
         self.cache_updater_running = False
         self.system_stopping = False
         if self._Loader.operating_mode == "first_run":  # will know if first_run already or yombo.ini is missing.
+            self.configs_needed = ['gwid', 'gwhash']
             return
         first_run = self._Configs.get("core", "first_run", False, False)
         if first_run is True:
             self._Loader.operating_mode = "first_run"
-            return True
+            self.configs_needed = ['gwid', 'gwhash']
+            return
 
-        operating_mode = "run"
-        items_needed = []
         gwid = self.gwid()
         if gwid is None or gwid == "":
-            items_needed.append("Gateway ID is missing. Please complete the setup wizard again.")
-            operating_mode = "first_run"
-            return operating_mode, items_needed
-        gwuuid = self.gwuuid()
-        if gwuuid is None or gwuuid == "":
-            operating_mode = "config"
-            items_needed.append("Gateway UUID is missing.")
+            self.configs_needed_human.append("Gateway ID is missing. Please complete the setup wizard again.")
+            self._Loader.operating_mode = "first_run"
+            self.configs_needed = ['gwid']
+            return
+
         gwhash = self.gwhash()
         if gwhash is None or gwhash == "":
-            operating_mode = "config"
-            items_needed.append("Gateway password is missing.")
+            print("setting to config mode ... 11")
+            self._Loader.operating_mode = "config"
+            self.configs_needed = ['gwhash']
+            self.configs_needed_human.append("Gateway password is missing.")
 
-        if len(items_needed) == 0:
-            has_valid_credentials = yield self._YomboAPI.check_gateway_api_auth_valid()
+        if len(self.configs_needed_human) == 0:
+            has_valid_credentials = self._YomboAPI.gateway_credentials_is_valid
             if has_valid_credentials is False:
-                received_credentails = yield self.search_for_valid_sessions()
-                if received_credentails is False:
-                    operating_mode = "config"
-                    logger.error("System is unable to authenticate itself with the server. The owner simply needs to"
-                                 " log into the system. This will activate the reauthorization.")
-                    items_needed.append("Gateway ID, hash, or session is invalid. Tried to get new ones, but failed.")
-                    items_needed.append("The owner needs to log into the gateway to automatically fix.")
-                elif received_credentails is True:
-                    operating_mode = "config"
-                    items_needed.append("Received new gateway credentials. Restarting too.")
+                print("setting to config mode ... 22")
+                self._Loader.operating_mode = "config"
+                self.configs_needed_human.append("Gateway ID is invalid or has invalid authentication info.")
+        else:
+            return
 
         is_master = self._Configs.get("core", "is_master", True)
         if is_master is False:
             master_gateway_id = self._Configs.get("core", "master_gateway_id", None, False)
             if master_gateway_id is None or master_gateway_id == "":
-                items_needed.append("Gateway is marked as slave, but no master gateway set.")
+                self.configs_needed_human.append("Gateway is marked as slave, but no master gateway set.")
 
-        if len(items_needed) > 0:
-            needed_text = "</li><li>".join(items_needed)
+        if len(self.configs_needed_human) > 0:
+            needed_text = "</li><li>".join(self.configs_needed_human)
             self._Notifications.add({"title": "Need configurations",
                                      "message":
                                          f"System has been placed into configuration mode. The following "
@@ -124,9 +121,10 @@ class Startup(YomboLibrary):
                                      "always_show": True,
                                      "always_show_allow_clear": True,
                                      })
+            print("setting to config mode ... 33")
             self._Loader.operating_mode = "config"
-        else:
-            self._Loader.operating_mode = operating_mode
+
+        self._Loader.operating_mode = "run"
         yield self._GPG._init_from_startup_()
 
     @inlineCallbacks
@@ -135,36 +133,6 @@ class Startup(YomboLibrary):
         self._Atoms.set("ffmpeg_bin", results, source=self)
         results = yield threads.deferToThread(search_for_executable, 'ffprobe')
         self._Atoms.set("ffprobe_bin", results, source=self)
-
-    @inlineCallbacks
-    def search_for_valid_sessions(self, items_needed):
-        """
-        Current define API session is invalid, now nose through the
-        current sessions database entries looking for something good to use.
-
-        :param session:
-        :return:
-        """
-
-        @inlineCallbacks
-        def try_get_new_gateway_credentials(try_session):
-            try:
-                yield self._YomboAPI.get_new_gateway_credentials(session=try_session)
-            except YomboRestart:
-                logger.error("System going down for restart, have new auth credentials")
-                yield sleep(120)
-                return True
-            except YomboWarning:
-                return False
-
-        sessions = yield self._LocalDB.get_web_session()
-        for session in sessions:
-            data = session["auth_data"]
-            if "yomboapi_session" in data and isinstance(data["yomboapi_session"], str):
-                results = yield try_get_new_gateway_credentials(data["yomboapi_session"])
-                if results is True:
-                    return True
-        return False
 
     def _start_(self, **kwargs):
         """
