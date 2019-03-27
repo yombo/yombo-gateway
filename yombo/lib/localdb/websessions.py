@@ -25,8 +25,6 @@ class DB_Websessions(object):
                 "enabled": coerce_value(data.enabled, "bool"),
                 "user_id": data.user_id,
                 "auth_at": save_data.get("auth_at", 0),
-                "auth_pin": save_data.get("auth_pin", False),
-                "auth_pin_at": save_data.get("auth_pin_at", 0),
                 "created_by": save_data.get("created_by", "unknown"),
                 "gateway_id": data.gateway_id,
                 "auth_data": save_data.get("auth_data", {}),
@@ -52,8 +50,6 @@ class DB_Websessions(object):
         save_data = data_pickle({
             "auth_data": session.auth_data,
             "auth_at": session.auth_at,
-            "auth_pin": session.auth_pin,
-            "auth_pin_at": session.auth_pin_at,
             "created_by": session.created_by,
         })
 
@@ -76,8 +72,6 @@ class DB_Websessions(object):
             "auth_data": session.auth_data,
             "auth_type": session.auth_type,
             "auth_at": session.auth_at,
-            "auth_pin": session.auth_pin,
-            "auth_pin_at": session.auth_pin_at,
             "created_by": session.created_by,
         })
         args = {
