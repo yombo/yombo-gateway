@@ -175,11 +175,13 @@ class Scenes(YomboLibrary, object):
 
         :return:
         """
-        self.scenes = self._Nodes.search({"node_type": "scene"})
+        self.scenes = self._Nodes.get_advanced({"node_type": "scene"})
+        # print(f"scenes._load_ got these scenes back from the node search: {self.scenes}")
         gateway_id = self.gateway_id()
         # First, clean out other gateways....
         for scene_id in list(self.scenes.keys()):
             scene = self.scenes[scene_id]
+            # print(f"scene: {scene.asdict()}")
             if "gateway_id" in scene.data["config"]:
                 if scene.data["config"]["gateway_id"] != gateway_id:
                     del self.scenes[scene_id]
