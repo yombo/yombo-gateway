@@ -29,7 +29,6 @@ class TestCommand:
             'machine_label': 'test_label_1',
             'description': "Test Cmd 1",
             'voice_cmd': None,
-            'always_load': 1,
             'public': 0,
             'status': 0,
             'created': int(time()) - 100,
@@ -41,11 +40,9 @@ class TestCommand:
 
         assert command.command_id == record['id']
         assert command.label == record['label']
-        assert command.cmd == record['machine_label']
         assert command.machine_label == record['machine_label']
         assert command.description == record['description']
         assert command.voice_cmd == record['voice_cmd']
-        assert command.always_load == record['always_load']
         assert command.public == record['public']
         assert command.status == record['status']
         assert command.created == record['created']
