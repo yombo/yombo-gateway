@@ -25,6 +25,7 @@ from twisted.internet.defer import inlineCallbacks
 from yombo.constants.users import *
 from yombo.core.exceptions import YomboWarning, YomboNoAccess
 from yombo.core.library import YomboLibrary
+from yombo.core.library_search import LibrarySearch
 from yombo.core.log import get_logger
 from yombo.lib.users.role import Role
 from yombo.lib.users.user import User
@@ -35,10 +36,17 @@ from yombo.utils import global_invoke_all, data_unpickle, sha256_compact, random
 logger = get_logger("library.users")
 
 
-class Users(YomboLibrary):
+class Users(YomboLibrary, LibrarySearch):
     """
     Maintains a list of users and what they can do.
     """
+    users = {}
+    # The following are used by get(), get_advanced(), search(), and search_advanced()
+    item_search_attribute = "users"
+    item_searchable_attributes = ["id", "user_id", "email", "label", "name"]
+    item_sort_key = "machine_label"
+    item_criteria_keys = ["user_id", "email", "name"]
+
     def __contains__(self, user_requested):
         """
         Checks to if a provided user exists.
@@ -136,6 +144,8 @@ class Users(YomboLibrary):
         return self.users.values()
 
     def _init_(self, **kwargs):
+        print("USERS: init")
+
         self.roles: dict = {}
         self.users: dict = {}
         self.gateway_id = self._Configs.get("core", "gwid", "local", False)
@@ -166,6 +176,7 @@ class Users(YomboLibrary):
         self.get_access_permissions_cache = self._Cache.ttl(name="lib.users.get_access_permissions_cache", ttl=86400, tags=("role", "user"))
         self.get_access_access_permissions_cache = self._Cache.ttl(name="lib.users.get_access_permissions_cache", ttl=21600, tags=("role", "user"))
         self.has_access_cache = self._Cache.ttl(name="lib.users.has_access_cache", ttl=43200, tags=("role", "user"))  # 12hrs
+        print("USERS: init done")
 
     def _load_(self, **kwargs):
         """
@@ -173,10 +184,19 @@ class Users(YomboLibrary):
         :param kwargs:
         :return:
         """
+        print("USERS: load")
         self.load_roles()
+        print("USERS: load done")
 
     @inlineCallbacks
     def _start_(self, **kwargs):
+        """
+        Start the users library by loading the users, roles, and other items.
+
+        :param kwargs:
+        :return:
+        """
+        print("USERS: START")
         results = yield global_invoke_all("_auth_platforms_", called_by=self)
         logger.debug("_auth_platforms_ results: {results}", results=results)
         for component, platforms in results.items():
@@ -219,7 +239,13 @@ class Users(YomboLibrary):
                     source = "system"
                 self.add_role(role_data, source=source, flush_cache=False)
 
-        yield self.load_users()
+        # print(f"USERS:  START 22 {self._Loader.operating_mode}")
+
+        if self._Loader.operating_mode != "run":
+            return
+        print("USERS:  START 33")
+
+        yield self._load_users_from_database()
         if self.owner_id is not None:
             self.owner_user = self.get(self.owner_id)
             self.owner_user.attach_role("admin")
@@ -237,11 +263,14 @@ class Users(YomboLibrary):
         self._Cache.flush(tags=("user", "role"))
 
     @inlineCallbacks
-    def load_users(self):
+    def _load_users_from_database(self):
         db_users = yield self._LocalDB.get_users()
+        print(f"!!!!!  DB Users: {db_users}")
+        print(f"!!!!!  Loaded Users start: {self.users}")
 
         for record in db_users:
-            self.users[record.email] = User(self, record.__dict__, flush_cache=False)
+            self.users[record.user_id] = User(self, record, flush_cache=False)
+        print(f"!!!!!  Loaded Users done: {self.users}")
 
     @inlineCallbacks
     def api_search_user(self, requested_user, session=None):
@@ -1086,25 +1115,6 @@ class Users(YomboLibrary):
 
         # print("### final out items: %s" % out_item_keys)
         return return_values(out_item_keys, out_permissions)
-
-    def get(self, requested_id):
-        """
-        Looks for a given requested_id as either a user_id or email address.
-        :param requested_id:
-        :return:
-        """
-        if requested_id in self.users:
-            return self.users[requested_id]
-        if requested_id.lower() in self.users:
-            return self.users[requested_id]
-        for email, user in self.users.items():
-            if user.user_id == requested_id:
-                return user
-            if user.name == requested_id:
-                return user
-            if user.email == requested_id:
-                return user
-        raise KeyError(f"User not found. {requested_id}")
 
     def get_role(self, requested_role):
         """

@@ -107,9 +107,6 @@ class Configuration(YomboLibrary):
             "gwhash": {
                 "encrypt": True
             },
-            "api_auth": {
-                "encrypt": True
-            },
         },
         "webinterface": {
             "cookie_session": {
@@ -340,9 +337,7 @@ class Configuration(YomboLibrary):
         self.gateway_id = self._Configs.get2("core", "gwid", "local", False)
         self.is_master = self._Configs.get2("core", "is_master", True, False)
         self.master_gateway_id = self._Configs.get2("core", "master_gateway_id", "local", False)
-
-
-    # def _load_(self, **kwargs):
+        self.gateway_id = self.get2("core", "gwid", "local", False)  # Referenced from multiple libraries.
 
     def _started_(self, **kwargs):
         self.save(True, display_extra_warning=True)
