@@ -70,7 +70,6 @@ class Template(YomboLibrary):
         self.environment.globals["strptime"] = strptime
         self.environment.globals["utcnow"] = dt.utcnow
 
-        self.environment.globals["local_gateway"] = self._Gateways.local
         self.environment.globals["amqp"] = self._AMQP
         self.environment.globals["amqpyombo"] = self._AMQPYombo
         self.environment.globals["authkeys"] = self._AuthKeys
@@ -130,6 +129,15 @@ class Template(YomboLibrary):
         self.environment.filters["hide_none"] = display_hide_none
         self.environment.filters["display_encrypted"] = self._GPG.display_encrypted
         self.environment.filters["display_temperature"] = self._Localize.display_temperature
+        self.environment.globals["location_id"] = None
+        self.environment.globals["area_id"] = None
+        self.environment.globals["location"] = None
+        self.environment.globals["area"] = None
+
+        if self._Loader.operating_mode != "run":
+            self.environment.globals["local_gateway"] = "local"
+        else:
+            self.environment.globals["local_gateway"] = self._Gateways.local
 
     def _refresh_jinja2_globals_(self, **kwargs):
         """
@@ -137,10 +145,11 @@ class Template(YomboLibrary):
 
         :return:
         """
-        self.environment.globals["location_id"] = self._Locations.location_id
-        self.environment.globals["area_id"] = self._Locations.area_id
-        self.environment.globals["location"] = self._Locations.location
-        self.environment.globals["area"] = self._Locations.area
+        if self._Loader.operating_mode == "run":
+            self.environment.globals["location_id"] = self._Locations.location_id
+            self.environment.globals["area_id"] = self._Locations.area_id
+            self.environment.globals["location"] = self._Locations.location
+            self.environment.globals["area"] = self._Locations.area
 
     def new(self, template_content):
         """
