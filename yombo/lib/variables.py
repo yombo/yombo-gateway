@@ -55,22 +55,22 @@ class Variables(YomboLibrary):
         self.gateway_id = self._Configs.get("core", "gwid", "local", False)
 
     @inlineCallbacks
-    def get_variable_data(self, data_relation_type=None, data_relation_id=None, **kwargs):
+    def get_variable_data(self, variable_relation_type=None, variable_field_id=None, **kwargs):
         """
         Gets available variable data for a given device_id or module_id. Any additional named arguments
         will be used as key/value pairs in the where statement.
 
-        :param data_relation_type: Either "module" or "device".
-        :type data_relation_type: str
-        :param data_relation_id: The id of the module or device to find.
-        :type data_relation_id: str
+        :param variable_relation_type: Either "module" or "device".
+        :type variable_relation_type: str
+        :param variable_field_id: The id of the module or device to find.
+        :type variable_field_id: str
         :return: Available variable data.
         :rtype: list
         """
-        if data_relation_type is not None:
-            kwargs["data_relation_type"] = data_relation_type
-        if data_relation_id is not None:
-            kwargs["data_relation_id"] = data_relation_id
+        if variable_relation_type is not None:
+            kwargs["variable_relation_type"] = variable_relation_type
+        if variable_field_id is not None:
+            kwargs["variable_field_id"] = variable_field_id
 
         results = yield self._LocalDB.get_variable_data(**kwargs)
         return results
@@ -126,7 +126,7 @@ class Variables(YomboLibrary):
     @inlineCallbacks
     def get_variable_fields_data(self, **kwargs):
         """
-        Used to get the fields and data. Named arguments needs to be data_relation_id and data_relation_type.
+        Used to get the fields and data. Named arguments needs to be variable_field_id and variable_relation_type.
         
         This method returns a deferred.
         
@@ -175,7 +175,7 @@ class Variables(YomboLibrary):
     @inlineCallbacks
     def get_variable_groups_fields_data(self, **kwargs):
         """
-        Returns groups, fields, and data. Usually data_relation_id and data_relation_type is submitted.
+        Returns groups, fields, and data. Usually variable_field_id and variable_relation_type is submitted.
         
         This returns a deferred.
 
