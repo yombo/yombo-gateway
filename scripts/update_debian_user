@@ -21,13 +21,12 @@ cd /home/$USER/.pyenv && git pull && cd -
 cd "$YOMBO_ROOT_DIR"
 
 pip3 install --upgrade pip
-pip2 install --upgrade pip
 pip3 install netifaces
-#PYTHON_CONFIGURE_OPTS="--enable-optimizations" MAKE_OPTS="-j4" pyenv install 3.6.8 -s
-MAKE_OPTS="-j4" pyenv install 3.6.8 -s
-pyenv local 3.6.8
+
+CORECOUNT=$(grep -c ^processor /proc/cpuinfo)
+CORECOUNT=$(($CORECOUNT + 1))
+
+MAKE_OPTS="-j$CORECOUNT" pyenv install 3.7.3 -s
 
 git pull
 pip3 install --upgrade -r requirements.txt
-
-
