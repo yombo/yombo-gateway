@@ -392,8 +392,8 @@ def route_modules(webapp):
             device_variables = yield webinterface._Variables.get_variable_groups_fields_data(
                 group_relation_type="device_type",
                 group_relation_id=device["device_type_id"],
-                data_relation_type="device",
-                data_relation_id=device["device_id"],
+                variable_relation_type="device",
+                variable_field_id=device["device_id"],
             )
 
             if variable_data is not None:

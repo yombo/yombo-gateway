@@ -8,7 +8,7 @@ from twisted.internet.defer import inlineCallbacks
 from twisted.internet import reactor
 
 from yombo.core.exceptions import YomboWarning
-from yombo.lib.webinterface.auth import require_auth_pin, require_auth
+from yombo.lib.webinterface.auth import require_auth
 from yombo.utils import is_true_false, unicode_to_bytes, bytes_to_unicode, save_file
 from yombo.core.log import get_logger
 
@@ -25,12 +25,10 @@ def route_setup_wizard(webapp):
                                )
 
         @webapp.route("/", methods=["GET"])
-        @require_auth_pin(login_redirect="/setup_wizard/1")
         def page_setup_wizard_home(webinterface, request, session):
             return webinterface.redirect(request, "/setup_wizard/1")
 
         @webapp.route("/restore_details",)
-        @require_auth_pin(login_redirect="/setup_wizard/restore")
         @inlineCallbacks
         def page_setup_wizard_restore_details(webinterface, request, session):
             """
@@ -113,7 +111,6 @@ def route_setup_wizard(webapp):
                                )
 
         @webapp.route("/restore_complete",)
-        @require_auth_pin(login_redirect="/setup_wizard/restore")
         @inlineCallbacks
         def page_setup_wizard_restore_complete(webinterface, request, session):
             """
@@ -162,7 +159,6 @@ def route_setup_wizard(webapp):
                                )
 
         @webapp.route("/1")
-        @require_auth_pin(login_redirect="/setup_wizard/1")
         def page_setup_wizard_1(webinterface, request, session):
             """
             Displays the welcome page. Doesn"t do much.
@@ -190,6 +186,7 @@ def route_setup_wizard(webapp):
         @require_auth(login_redirect="/setup_wizard/2")
         @inlineCallbacks
         def page_setup_wizard_2(webinterface, request, session):
+            print("page_setup_wizard_2  11")
             if session is not None:
                 if session.get("setup_wizard_done", False) is True:
                     return webinterface.redirect(request, f"/setup_wizard/{session['setup_wizard_last_step']}")
@@ -197,11 +194,15 @@ def route_setup_wizard(webapp):
                     webinterface.add_alert("Invalid wizard state. Please don't use the browser forward or back buttons.")
                     return webinterface.redirect(request, "/setup_wizard/1")
 
+            print("page_setup_wizard_2  22")
             try:
+                print(f"page_setup_wizard_2  33 {webinterface}")
                 results = yield webinterface._YomboAPI.request("GET",
                                                                "/v1/gateway/",
                                                                None,
                                                                session["yomboapi_session"])
+                print("page_setup_wizard_2  44")
+
             except YomboWarning as e:
                 webinterface.add_alert("System credentials appear to be invalid. Please login as the gateway owner.")
                 session["auth"] = False
@@ -703,7 +704,6 @@ def route_setup_wizard(webapp):
             # print("got gwid before set: %s" % webinterface._Configs.get("core", "gwid"))
             webinterface._Configs.set("core", "gwid", results["data"]["id"])
             webinterface._Configs.set("core", "gwuuid", results["data"]["uuid"])
-            webinterface._Configs.set("core", "api_auth", results["data"]["api_auth"])
             webinterface._Configs.set("core", "machine_label", session["setup_wizard_gateway_machine_label"])
             webinterface._Configs.set("core", "label", session["setup_wizard_gateway_label"])
             webinterface._Configs.set("core", "description", session["setup_wizard_gateway_description"])

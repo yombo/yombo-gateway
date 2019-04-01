@@ -1,13 +1,16 @@
 # Import python libraries
+from hashlib import sha256
 from time import time
+import jwt
 from random import randint
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks
+from twisted.names import client
 from twisted.web.static import File
 
 # Import Yombo libraries
-from yombo.lib.webinterface.auth import require_auth_pin, require_auth, run_first
+from yombo.lib.webinterface.auth import require_auth, run_first
 from yombo.core.exceptions import YomboWarning, YomboRestart
 import yombo.ext.totp
 import yombo.utils
@@ -20,31 +23,28 @@ def route_home(webapp):
             return "User-agent: *\nDisallow: /\n"
 
         @webapp.route("/")
-        def home(webinterface, request):
+        @run_first()
+        def home(webinterface, request, session):
+            # print(f"webinterface.operating_mode: {webinterface.operating_mode}")
             if webinterface.operating_mode == "config":
                 return config_home(webinterface, request)
             elif webinterface.operating_mode == "first_run":
                 return first_run_home(webinterface, request)
-            return run_home(webinterface, request)
-
-        @require_auth()
-        def run_home(webinterface, request, session):
-            page = webinterface.webapp.templates.get_template(webinterface.wi_dir + "/pages/index.html")
-            delayed_device_commands = webinterface._Devices.delayed_commands()
-            return page.render(alerts=webinterface.get_alerts(),
-                               device_commands_delayed=delayed_device_commands,
-                               )
+            if session is None or session.enabled is False or session.is_valid() is False or session.has_user is False:
+                return webinterface.redirect(request, "/user/login")
+            return File(webinterface.working_dir + "/frontend/")
 
         @require_auth()
         def config_home(webinterface, request, session):
             page = webinterface.get_template(request, webinterface.wi_dir + "/config_pages/index.html")
             return page.render(alerts=webinterface.get_alerts(),
                                )
+
         @run_first()
         def first_run_home(webinterface, request, session):
             return webinterface.redirect(request, "/setup_wizard/1")
 
-        @webapp.route("/logout")
+        @webapp.route("/user/logout")
         @run_first()
         # @inlineCallbacks
         def page_logout_get(webinterface, request, session):
@@ -59,63 +59,72 @@ def route_home(webapp):
                 pass
             return request.redirect("/?")
 
-        @webapp.route("/login/user", methods=["GET"])
-        @require_auth_pin()
+        @webapp.route("/user/login", methods=["GET"])
+        @run_first(create_session=True)
         def page_login_user_get(webinterface, request, session):
-            return webinterface.redirect(request, "/?")
+            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/misc/login_user.html")
 
-        @webapp.route("/login/user", methods=["POST"])
-        @require_auth_pin(create_session=True)
+            host = request.getHost()
+            session["login_request_id"] = yombo.utils.random_string(length=50)
+            background_image_ids = [456, 477, 478, 480, 503, 520, 640]  # https://picsum.photos/images
+            image_id = background_image_ids[int(time()/10)%len(background_image_ids)]
+            return page.render(
+                alerts=session.get_alerts(),
+                request_id=session["login_request_id"],
+                secure=1 if request.isSecure() else 0,
+                hostname=host.host,
+                port=host.port,
+                gateway_id=webinterface.gateway_id(),
+                image_id=image_id
+            )
+
+        @webapp.route("/user/auth_sso", methods=["POST"])
+        @run_first(create_session=True)
         @inlineCallbacks
         def page_login_user_post(webinterface, request, session):
-            if "g-recaptcha-response" not in request.args:
-                webinterface.add_alert("Captcha Missing", "warning")
-                return login_redirect(webinterface, request)
-            if "email" not in request.args:
-                webinterface.add_alert("Email Missing", "warning")
-                return login_redirect(webinterface, request)
-            if "password" not in request.args:
-                webinterface.add_alert("Password Missing", "warning")
-                return login_redirect(webinterface, request)
-            submitted_g_recaptcha_response = request.args.get("g-recaptcha-response")[0]
-            submitted_email = request.args.get("email")[0]
-            submitted_password = request.args.get("password")[0]
-            user = None
-            if webinterface.operating_mode == "run":
-                try:
-                    user = webinterface._Users.get(submitted_email)
-                except KeyError:
-                    webinterface.add_alert("Email address not allowed to access gateway.", "warning")
-                    page = webinterface.get_template(request, webinterface.wi_dir + "/pages/misc/login_user.html")
-                    return page.render(alerts=webinterface.get_alerts())
+            gateway_id = webinterface.gateway_id()
+            if "token" not in request.args:
+                session.add_alert("Error with incoming SSO request: token is missing")
+                return webinterface.redirect(request, "/user/auth_sso")
+            if "request_id" not in request.args:
+                session.add_alert("Error with incoming SSO request: request_id is missing")
+                return webinterface.redirect(request, "/user/auth_sso")
 
-            try:
-                results = yield webinterface._YomboAPI.user_login_with_credentials(
-                    submitted_email, submitted_password, submitted_g_recaptcha_response)
-            except YomboWarning as e:
-                webinterface.add_alert(f"{e.errorno}: {e.message}", "warning")
-                page = webinterface.get_template(request, webinterface.wi_dir + "/pages/misc/login_user.html")
-                return page.render(alerts=webinterface.get_alerts())
-            if results["code"] == 200:
-                login = results["response"]["login"]
-                session.user = user
-                session.auth_pin = True
-                session["yomboapi_session"] = login["session"]
-                session["yomboapi_login_key"] = login["login_key"]
+            token = request.args.get("token", [{}])[0]
+            token_hash = sha256(yombo.utils.unicode_to_bytes(token)).hexdigest()
+            print(f"Tokens in cache: {webinterface.user_login_tokens}")
+            if token_hash in webinterface.user_login_tokens:
+                session.add_alert("The authentication token has already been claimed and cannot be used again.",
+                                  level="danger",
+                                  dismissible=False)
+                return webinterface.redirect(request, "/user/login")
+            # webinterface.user_login_tokens[token_hash] = True
 
+            token_data = jwt.decode(token, verify=False)
+            print(f"TOekn user_id: {token_data['user_id']}")
+            print(f"Users: {webinterface._Users.users}")
+            user = webinterface._Users.get(token_data["user_id"])
+            print(f"User: {user}")
+            print(f"User access_token: {user.access_token}")
+            print(f"User refresh_token: {user.refresh_token}")
+
+            request_id = request.args.get("request_id", [{}])[0]
+            response = yield webinterface._YomboAPI.request(
+                "POST", f"/v1/gateways/{gateway_id}/check_user_token",
+                {
+                    "token": token,
+                }
+            )
+            data = response.content["data"]["attributes"]
+            print(f"resonse: {data}")
+
+            if data["is_valid"] is True:
+                session.user = webinterface._Users.get(data["user_id"])
                 request.received_cookies[webinterface._WebSessions.config.cookie_session_name] = session.auth_id
-                try:
-                    webinterface._YomboAPI.check_if_new_gateway_credentials_needed(login["session"])
-                except YomboRestart:
-                    page = webinterface.get_template(request, webinterface.wi_dir + "/pages/restart.html")
-                    return page.render(alerts=webinterface.get_alerts())
-                except YomboWarning:
-                    print("Got an error, will handle it later....")
                 return login_redirect(webinterface, request, session)
             else:
-                webinterface.add_alert(results["msg"], "warning")
-                page = webinterface.get_template(request, webinterface.wi_dir + "/pages/misc/login_user.html")
-                return page.render(alerts=webinterface.get_alerts())
+                session.add_alert("Token was invalid.", "warning")
+                return webinterface.redirect(request, "/user/login")
 
         def login_redirect(webinterface, request, session=None, location=None):
             if session is not None and "login_redirect" in session:
@@ -125,47 +134,31 @@ def route_home(webapp):
                 location = "/?"
             return webinterface.redirect(request, location)
 
-        @webapp.route("/login/pin", methods=["GET"])
-        @run_first()
-        def page_login_pin_get(webinterface, request, session):
-            return webinterface.redirect(request, "/?")
-
-        @webapp.route("/login/pin", methods=["POST"])
-        @run_first(create_session=True)
-        def page_login_pin_post(webinterface, request, session):
-            submitted_pin = request.args.get("authpin")[0]
-            if submitted_pin.isalnum() is False:
-                webinterface.add_alert("Invalid authentication.", "warning")
-                return webinterface.redirect(request, "/login/pin")
-
-            def create_pin_session(l_webinterface, l_request, l_session):
-                if l_session is None:
-                    l_session = webinterface._WebSessions.create(request)
-                l_session.auth_pin = True
-                l_session.auth_id = None
-                l_session["yomboapi_session"] = ""
-                l_session["yomboapi_login_key"] = ""
-                request.received_cookies[l_webinterface._WebSessions.config.cookie_session_name] = l_session.auth_id
-
-            if webinterface.auth_pin_type() == "pin":
-                if submitted_pin == webinterface.auth_pin():
-                    create_pin_session(webinterface, request, session)
-                else:
-                    return webinterface.redirect(request, "/login/pin")
-            elif webinterface.auth_pin_type() == "totp":
-                if yombo.ext.totp.valid_totp(submitted_pin, webinterface.secret_pin_totp(), window=10):
-                    create_pin_session(webinterface, request, session)
-                else:
-                    return webinterface.redirect(request, "/login/pin")
-            elif webinterface.auth_pin_type() == "none":
-                create_pin_session(webinterface, request, session)
-
-            return webinterface.redirect(request, "/?")
-
-        @webapp.route("/static/", branch=True)
-        @run_first()
-        def static(webinterface, request, session):
+        @webapp.route("/css/", branch=True)
+        def static_frontend_css(webinterface, request):
+            """ For frontend css stylesheets. """
             request.responseHeaders.removeHeader("Expires")
             request.setHeader("Cache-Control", f"max-age={randint(3600, 7200)}")
-            return File(webinterface.app_dir + "/yombo/lib/webinterface/static/dist")
+            return File(webinterface.working_dir + "/frontend/css")
+
+        @webapp.route("/img/", branch=True)
+        def static_frontend_img(webinterface, request):
+            """ For frontend images. """
+            request.responseHeaders.removeHeader("Expires")
+            request.setHeader("Cache-Control", f"max-age={randint(3600, 7200)}")
+            return File(webinterface.working_dir + "/frontend/img")
+
+        @webapp.route("/js/", branch=True)
+        def static_frontend_js(webinterface, request):
+            """ For frontend javascript files. """
+            request.responseHeaders.removeHeader("Expires")
+            request.setHeader("Cache-Control", f"max-age={randint(3600, 7200)}")
+            return File(webinterface.working_dir + "/frontend/js")
+
+        @webapp.route("/favicon.ico")
+        def static(webinterface, request):
+            request.responseHeaders.removeHeader("Expires")
+            request.setHeader("Cache-Control", f"max-age={randint(3600, 7200)}")
+            return File(webinterface.working_dir + "/frontend/img/icons/favicon.ico")
+
 

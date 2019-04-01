@@ -28,7 +28,7 @@ def route_panel(webapp):
         @require_auth()
         def page_panel_index(webinterface, request, session):
             session.has_access("panel", "*", "view", raise_error=True)
-            master_gateway_id = webinterface._Configs.get("core", "master_gateway_id", None, False)
+            master_gateway_id = webinterface.master_gateway_id()
             if master_gateway_id is None:
                 page = webinterface.get_template(request, webinterface.wi_dir + "/pages/panel/no_master_gateway.html")
                 master_gateway_id = None

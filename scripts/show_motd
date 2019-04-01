@@ -94,9 +94,6 @@ if data_path_exists is True:
         external_ip = config_parser.get('core', 'externalipaddress_v4', fallback="None")
         nonsecure_port = config_parser.get('webinterface', 'nonsecure_port', fallback=8080)
         secure_port = config_parser.get('webinterface', 'secure_port', fallback=8443)
-        auth_pin_required = config_parser.get('webinterface', 'auth_pin_required', fallback=False)
-        auth_pin_type = config_parser.get('webinterface', 'auth_pin_type', fallback='')
-        auth_pin = config_parser.get('webinterface', 'auth_pin', fallback='')
     except IOError as e:
         pass
     except configparser.NoSectionError:
@@ -107,9 +104,6 @@ else:
     external_ip = "None"
     nonsecure_port = 8080
     secure_port = 8443
-    auth_pin_required = False
-    auth_pin_type = ''
-    auth_pin = ''
 
 if dns_fqdn != "None":
     local = "http://127.0.0.1:%s" % nonsecure_port
@@ -133,19 +127,14 @@ data_yombo['Local'] = local
 data_yombo['Internal'] = internal
 data_yombo['External'] = external
 
-if auth_pin_required in (True, 'true', 'True'):
-    if auth_pin_type == 'pin':
-        data_yombo['Auth pin'] = auth_pin
-    else:
-        data_yombo['Auth pin'] = 'Using TOPT, unable to display'
-else:
-    data_yombo['Auth pin'] = 'None required'
-
 with open('/proc/uptime', 'r') as f:
     uptime_seconds = float(f.readline().split()[0])
-    uptime = timedelta(seconds = uptime_seconds)
-data_system['Uptime'] = "%s days, %s hours" % (uptime.days, uptime.seconds//3600)
+    uptime = timedelta(seconds=uptime_seconds)
+data_system['Uptime'] = "%s days, %s hours, %s minutes" % (uptime.days, uptime.seconds//3600, uptime.seconds//60)
 data_system['Kernel'] = platform.release()
+
+command = "grep -c ^processor /proc/cpuinfo"
+cores = subprocess.check_output(command, shell=True).strip().decode()
 
 command = "cat /proc/cpuinfo"
 all_info = subprocess.check_output(command, shell=True).strip()
@@ -154,7 +143,7 @@ for line in all_info.split(b"\n"):
     if b"model name" in line:
         cpu_model = re.sub(b".*model name.*:", b"", line, 1).decode("utf-8").strip()
         break
-data_system['CPU'] = cpu_model
+data_system['CPU'] = f"{cores} x {cpu_model}"
 
 if data_path_exists is True:
     df = subprocess.Popen(["df", "-h", data_path], stdout=subprocess.PIPE)
@@ -165,6 +154,8 @@ if data_path_exists is True:
 else:
     data_system['Disk'] = "Data directory not found"
 
+version = sys.version_info
+data_system['Python'] = f"{version.major}.{version.minor}.{version.micro} ({version.releaselevel})"
 # Now convert the dict to a list.
 data_formatted = [
     '',
@@ -198,6 +189,7 @@ logo = [
 '     YYYY:::::YYYY    ',
 '     Y:::::::::::Y    ',
 '     YYYYYYYYYYYYY    ',
+'                      ',
 ]
 
 for logo_idx, logo_elem in enumerate(logo):

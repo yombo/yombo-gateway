@@ -38,7 +38,7 @@ def route_configs(webapp):
             return page.render(alerts=webinterface.get_alerts(),
                                config=configs,
                                master_gateways=master_gateways,
-                               master_gateway_id=webinterface.master_gateway_id,
+                               master_gateway_id=webinterface.master_gateway_id(),
                                )
 
         @webapp.route("/basic", methods=["POST"])
@@ -249,26 +249,6 @@ def route_configs(webapp):
                 valid_submit = False
                 webinterface.add_alert(f"Invalid webinterface secure port: {e}")
 
-            try:
-                submitted_webinterface_pin_type=request.args.get("webinterface_pin_type")[0]
-            except:
-                valid_submit = False
-                webinterface.add_alert("Invalid web interface auth pin type.")
-            else:
-                if submitted_webinterface_pin_type == "pin":
-                    try:
-                        submitted_webinterface_auth_pin = request.args.get("webinterface_auth_pin")[0]
-                    except:
-                        webinterface.add_alert("No auth access code set, required when auth type set to 'access code'.")
-                        valid_submit = False
-                    else:
-                        webinterface._Configs.set("webinterface", "auth_pin_type", submitted_webinterface_pin_type)
-                        webinterface._Configs.set("webinterface", "auth_pin", submitted_webinterface_auth_pin)
-                elif submitted_webinterface_pin_type == "totp":
-                        webinterface._Configs.set("webinterface", "auth_pin_type", submitted_webinterface_pin_type)
-                elif submitted_webinterface_pin_type == "none":
-                        webinterface.add_alert("No auth type set. This is unwise.")
-                        webinterface._Configs.set("webinterface", "auth_pin_type", submitted_webinterface_pin_type)
 
             try:
                 webinterface._Configs.set("localization", "degrees", request.args.get("localization_degrees")[0])

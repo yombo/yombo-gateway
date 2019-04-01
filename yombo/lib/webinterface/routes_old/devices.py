@@ -232,7 +232,7 @@ def route_devices(webapp):
                                device=device,
                                device_variables=device_variables,
                                device_type=device_type,
-                               locations=webinterface._Locations.locations_sorted,
+                               locations=webinterface._Locations.sorted(),
                                states=webinterface._States.get("#")
                                )
 

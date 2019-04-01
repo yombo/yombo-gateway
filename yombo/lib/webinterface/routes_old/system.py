@@ -34,7 +34,7 @@ def route_system(webapp):
         @require_auth()
         def page_system_backup(webinterface, request, session):
             session.has_access("system_options", "*", "backup", raise_error=True)
-            db_size = os.path.getsize(f"{webinterface.working_dir}/etc/yombo.db")
+            db_size = os.path.getsize(f"{webinterface.working_dir}/etc/yombo.sqlite3")
             page = webinterface.get_template(request, webinterface.wi_dir + "/pages/system/backup.html")
             return page.render(alerts=webinterface.get_alerts(),
                                db_size=db_size
@@ -50,7 +50,7 @@ def route_system(webapp):
                 password2 = request.args.get("password2")[0]
                 if password1 != password2:
                     webinterface.add_alert("Encryption passwords do not match.", "danger")
-                    db_size = os.path.getsize(f"{webinterface.working_dir}/etc/yombo.db")
+                    db_size = os.path.getsize(f"{webinterface.working_dir}/etc/yombo.sqlite3")
                     page = webinterface.get_template(request, webinterface.wi_dir + "/pages/system/backup.html")
                     return page.render(alerts=webinterface.get_alerts(),
                                        db_size=db_size
@@ -112,13 +112,13 @@ def route_system(webapp):
             session.has_access("system_options", "*", "backup", raise_error=True)
             request.setHeader("Content-Description", "File Transfer")
             request.setHeader("Content-Type", "application/octet-stream")
-            request.setHeader("Content-Disposition", "attachment; filename=yombo.db")
+            request.setHeader("Content-Disposition", "attachment; filename=yombo.sqlite3")
             request.setHeader("Content-Transfer-Encoding", "binary")
             request.setHeader("Expires", "0")
             request.setHeader("Cache-Control", "must-revalidate, post-check=0, pre-check=0")
             request.setHeader("Pragma", "public")
             # webinterface._LocalDB.make_backup()
-            return File(f"{webinterface.working_path}/etc/yombo.db")
+            return File(f"{webinterface.working_path}/etc/yombo.sqlite3")
 
         @webapp.route("/control")
         @require_auth()
