@@ -239,7 +239,7 @@ class Users(YomboLibrary, LibrarySearch):
                     source = "system"
                 self.add_role(role_data, source=source, flush_cache=False)
 
-        # print(f"USERS:  START 22 {self._Loader.operating_mode}")
+        print(f"USERS:  START 22 {self._Loader.operating_mode}")
 
         if self._Loader.operating_mode != "run":
             return

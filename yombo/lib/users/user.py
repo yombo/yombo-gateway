@@ -32,7 +32,7 @@ class User(AuthMixin, PermissionMixin, RolesMixin):
     def __str__(self):
         return f"{self.name} <{self.email}>"
 
-    def __init__(self, parent, data={}, flush_cache=None):
+    def __init__(self, parent, data=object, flush_cache=None):
         """
         Setup a new user instance.
 
@@ -51,8 +51,6 @@ class User(AuthMixin, PermissionMixin, RolesMixin):
         self.name: str = data.name
         self.access_code_digits: int = data.access_code_digits
         self.access_code_string: str = data.access_code_string
-        self.refresh_token: str = data.refresh_token
-        self.access_token: str = data.access_token
 
         # Load roles and item permissions.
         rbac_raw = self._Parent._Configs.get("rbac_user_roles", self.user_id, None, False, ignore_case=True)
@@ -77,20 +75,6 @@ class User(AuthMixin, PermissionMixin, RolesMixin):
         if "item_permissions" in rbac:
             self.item_permissions = rbac["item_permissions"]
         self.save()
-
-    def set_oauth_tokens(self, refresh_token=None, access_token=None):
-        """
-        Saves the oauth tokens for accessing Yombo API.
-
-        :param refresh_token:
-        :param access_token:
-        :return:
-        """
-        if refresh_token is not None:
-            self.refresh_token = refresh_token
-        if access_token is not None:
-            self.access_token = access_token
-        self.save_to_database()
 
     def has_access(self, platform, item, action, raise_error=None):
         """
