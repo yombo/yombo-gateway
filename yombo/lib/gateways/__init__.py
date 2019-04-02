@@ -15,6 +15,7 @@ Tracks gateway details for the local gateway and any member gateways within the 
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/gateways.html>`_
 """
+from time import time
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks
 
@@ -208,6 +209,9 @@ class Gateways(YomboLibrary, LibrarySearch):
                 "description": "Local",
                 "dns_name": "127.0.0.1",
                 "version": VERSION,
+                "user_id": "local",
+                "created_at": int(time()),
+                "updated_at": int(time()),
             })
         self._load_gateway_into_memory({
             "id": "cluster",
@@ -218,6 +222,9 @@ class Gateways(YomboLibrary, LibrarySearch):
             "description": "All gateways in a cluster.",
             "dns_name": "127.0.0.1",
             "version": VERSION,
+            "user_id": "local",
+            "created_at": int(time()),
+            "updated_at": int(time()),
         })
         yield self._load_gateways_from_database()
 
@@ -295,7 +302,8 @@ class Gateways(YomboLibrary, LibrarySearch):
         if gateway["id"] == self.gateway_id():
             self._Configs.set("core", "is_master", gateway["is_master"])
             self._Configs.set("core", "master_gateway_id", gateway["master_gateway_id"])
-            self._Configs.set("core", "updated_at", gateway["created_at"])
+            self._Configs.set("core", "created_at", gateway["created_at"])
+            self._Configs.set("core", "updated_at", gateway["updated_at"])
             self._Configs.set("core", "machine_label", gateway["label"])
             self._Configs.set("core", "label", gateway["label"])
             self._Configs.set("core", "description", gateway["description"])

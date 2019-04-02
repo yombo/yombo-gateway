@@ -69,10 +69,10 @@ class Gateway:
         self.dns_name = None
         self.internal_ipv4 = None
         self.external_ipv4 = None
-        self.internal_port = None
-        self.external_port = None
-        self.internal_secure_port = None
-        self.external_secure_port = None
+        self.internal_http_port = None
+        self.external_http_port = None
+        self.internal_http_secure_port = None
+        self.external_http_secure_port = None
         self.internal_mqtt = None
         self.internal_mqtt_le = None
         self.internal_mqtt_ss = None
@@ -128,16 +128,16 @@ class Gateway:
             self.internal_ipv4 = gateway["internal_ipv4"]
         if "external_ipv4" in gateway:
             self.external_ipv4 = gateway["external_ipv4"]
-        if "internal_port" in gateway:
-            self.internal_port = gateway["internal_port"]
-        if "external_port" in gateway:
-            self.external_port = gateway["external_port"]
+        if "internal_http_port" in gateway:
+            self.internal_http_port = gateway["internal_http_port"]
+        if "external_http_port" in gateway:
+            self.external_http_port = gateway["external_http_port"]
         if "dns_name" in gateway:
             self.dns_name = gateway["dns_name"]
-        if "internal_secure_port" in gateway:
-            self.internal_secure_port = gateway["internal_secure_port"]
-        if "external_secure_port" in gateway:
-            self.external_secure_port = gateway["external_secure_port"]
+        if "internal_http_secure_port" in gateway:
+            self.internal_http_secure_port = gateway["internal_http_secure_port"]
+        if "external_http_secure_port" in gateway:
+            self.external_http_secure_port = gateway["external_http_secure_port"]
         if "internal_mqtt" in gateway:
             self.internal_mqtt = gateway["internal_mqtt"]
         if "internal_mqtt_le" in gateway:
@@ -193,10 +193,10 @@ class Gateway:
             "com_status": str(self.com_status),
             "internal_ipv4": str(self.internal_ipv4),
             "external_ipv4": str(self.external_ipv4),
-            "internal_port": str(self.internal_port),
-            "external_port": str(self.external_port),
-            "internal_secure_port": str(self.internal_secure_port),
-            "external_secure_port": str(self.external_secure_port),
+            "internal_http_port": str(self.internal_http_port),
+            "external_http_port": str(self.external_http_port),
+            "internal_http_secure_port": str(self.internal_http_secure_port),
+            "external_http_secure_port": str(self.external_http_secure_port),
             "internal_mqtt": str(self.internal_mqtt),
             "internal_mqtt_le": str(self.internal_mqtt_le),
             "internal_mqtt_ss": str(self.internal_mqtt_ss),
