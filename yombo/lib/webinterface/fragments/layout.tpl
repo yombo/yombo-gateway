@@ -1,6 +1,13 @@
 <!DOCTYPE html>
 <html>
    <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      @import url('https://fonts.googleapis.com/css?family=Open+Sans');
+       html,body{
+           font-family: 'Open Sans', sans-serif !important;
+       }
+    </style>
 	{% block head_top %}{% endblock %}
     <link rel="apple-touch-icon" sizes="180x180" href="/img/icons/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/img/icons/favicon-32x32.png">
@@ -46,8 +53,6 @@
        </div>
     {%- endif %}
     {%- block content %}{% endblock %}
-    </div>
-    <!-- /#wrapper -->
 
     <!-- jQuery, js.cookie, bootstrap4, bootstrap select, bootstrap datatables, are you sure -->
     <script src="/js/basic_app.js"></script>

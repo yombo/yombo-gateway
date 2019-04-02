@@ -1,0 +1,133 @@
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+
+{% block head_top %}
+{% include "lib/webinterface/fragments/bg_image.tpl" %}
+<style>
+   html,body{
+       background-position: center;
+       background-size: cover;
+       background-repeat: no-repeat;
+       height: 100%;
+       color: white;
+   }
+
+   .card{
+       color: white;
+       /*height: 370px;*/
+       margin-top: auto;
+       margin-bottom: auto;
+       /*width: 400px;*/
+       background-color: rgba(0,0,0,0.85) !important;
+       border-radius: 1rem !important;
+   }
+
+   .card-header{
+       border-bottom: 1px solid rgba(255,255,255,.2) !important;
+   }
+
+   .card-header h3{
+       color: white;
+   }
+
+   .input-group-prepend span{
+       width: 50px;
+       background-color: #FFC312;
+       color: black;
+       border:0 !important;
+   }
+
+   input:focus{
+       outline: 0 0 0 0  !important;
+       box-shadow: 0 0 0 0 !important;
+
+   }
+
+   .links{
+       color: white;
+   }
+
+   .links a{
+       margin-left: 4px;
+   }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row" style="padding-top: 5em; padding-bottom: 2em;">
+        <div class="col-md-8 offset-2">
+            <div class="card">
+              <div class="card-header text-center">
+                  <h2>Gateway Setup</h2>
+                <h5 class="card-title">Gateway setup & installation wizard</h5>
+              </div>
+              <div class="card-body">
+                <p class="card-text">
+                    This <a href="https://yombo.net">Yombo</a> gateway is not configured. Use one of the two methods
+                    below to complete the setup.
+                </p>
+              </div>
+            </div>
+        </div>
+  </div>
+  <div class="row">
+    <div class="col-md-4 offset-2">
+        <div class="card">
+          <div class="card-header text-center">
+              <h2>Gateway Setup Wizard</h2>
+                <h5 class="card-title">Gateway setup & installation wizard</h5>
+                <div class="progress">
+                  <div class="progress-bar progress-bar-primary progress-bar-striped" role="progressbar" aria-valuenow="{{ ((0/6)*100)|int }}" aria-valuemin="0" aria-valuemax="100" style="min-width: 2em; width: {{ ((0/6)*100)|int }}%">
+                  0%
+                  </div>
+                </div>
+          </div>
+          <div class="card-body">
+            <br>
+            <p class="card-text">
+                Use the setup wizard when creating a new gateway, or when reinstalling a gateway
+                without a configuration backup.
+            </p>
+            <p class="card-text">
+                To setup a new gateway or recover an existing gateway, you'll be required to login into your
+                Yombo Account; if you don't have one, you'll be prompted to create one.
+            </p>
+            <a class="btn btn-lg btn-success btn-block" href="/setup_wizard/2">Run wizard
+                <i class="fa fa-angle-double-right pull-right"></i></a>
+              </p>
+          </div>
+        </div>
+    </div>
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-header text-center">
+              <h2>Restore from backup</h2>
+            <h5 class="card-title">Recover gateway from a backp</h5>
+          </div>
+          <div class="card-body">
+            <p class="card-text">
+                If you are reinstalling and have a configuration backup, use this method to quickly
+                restore the configuration settings.
+            </p>
+            <p class="card-text">
+                If you are reinstalling the gateway and don't have a configuration backup, don't
+                worry. Simply use the setup wizard. However, you will need to re-enter any
+                encrypted data such as passwords where needed.
+            </p>
+              <br>
+           <p class="card-text" style="font-size: 1.2em">
+                To restore, simply click the button below and select the configuration backup file.
+            </p>
+            <form method="post" action="/setup_wizard/restore_details" enctype="multipart/form-data">
+                <label class="btn btn-lg btn-success btn-block" for="restorefile">
+                    <input id="restorefile" name="restorefile" type="file" style="display:none;" onchange="javascript:this.form.submit();">
+                    Select configuration restore file
+                </label>
+            </form>
+          </div>
+        </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

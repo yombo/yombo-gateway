@@ -1,0 +1,23 @@
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+{% block head_top %}
+{% include "lib/webinterface/fragments/bg_image.tpl" %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row" style="padding-top: 5em; padding-bottom: 2em;">
+        <div class="col-12">
+			<div class="card">
+				<div class="card-header ">
+					<h3>{{title}}</h3>
+				</div>
+				<div class="card-body" style="padding-top: 1em;">
+					{%- for message in messages %}
+					<p>{message}</p>
+					{%- endfor %}
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+{% endblock %}
