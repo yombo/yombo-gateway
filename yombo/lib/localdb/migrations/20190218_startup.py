@@ -244,10 +244,10 @@ steps = [
         `external_ipv4`         TEXT,
         `internal_ipv6`         TEXT,
         `external_ipv6`         TEXT,
-        `internal_port`         INTEGER,
-        `external_port`         INTEGER,
-        `internal_secure_port`  INTEGER,
-        `external_secure_port`  INTEGER,
+        `internal_http_port`    INTEGER,
+        `external_http_port`    INTEGER,
+        `internal_http_secure_port`  INTEGER,
+        `external_http_secure_port`  INTEGER,
         `internal_mqtt`         INTEGER,
         `internal_mqtt_le`      INTEGER,
         `internal_mqtt_ss`      INTEGER,
@@ -519,13 +519,11 @@ steps = [
       # Store users
       step("""CREATE TABLE `users` (
         `id`                 TEXT NOT NULL,
-        `user_id`              TEXT NOT NULL,
+        `user_id`            TEXT NOT NULL,
         `email`              TEXT NOT NULL,
         `name`               TEXT NOT NULL,
         `access_code_digits` TEXT,
         `access_code_string` TEXT,
-        `refresh_token`      TEXT,
-        `access_token`       TEXT,
         `updated_at`         INTEGER NOT NULL,
         `created_at`         INTEGER NOT NULL );"""),
       step(create_index("users", "id", unique=True)),
@@ -538,6 +536,8 @@ steps = [
         `gateway_id`     TEXT NOT NULL,
         `user_id`        TEXT NOT NULL,
         `auth_data`      TEXT NOT NULL,
+        `refresh_token`  TEXT,
+        `access_token`   TEXT,
         `created_at`     INTEGER NOT NULL,
         `last_access_at` INTEGER NOT NULL,
         `updated_at`     INTEGER NOT NULL,
@@ -682,34 +682,43 @@ steps = [
 
       #
       step("""CREATE VIEW variable_field_data_view AS
-         SELECT variable_data.id as data_id, variable_data.gateway_id, variable_data.variable_field_id,
-         variable_data.variable_field_id, variable_data.variable_relation_type, variable_data.data, variable_data.data_weight,
-         variable_data.updated_at as data_updated_at, variable_data.created_at as data_created_at, variable_fields.field_machine_label,
-         variable_fields.field_label, variable_fields.field_description, variable_fields.field_weight,
-         variable_fields.encryption, variable_fields.input_type_id, variable_fields. default_value,
-         variable_fields.field_help_text, variable_fields.value_required, variable_fields.value_min,
-         variable_fields.value_max,variable_fields.value_casing, variable_fields.multiple,
+         SELECT variable_data.id as data_id, variable_data.user_id, variable_data.gateway_id,
+         variable_data.variable_field_id,
+         variable_data.variable_relation_id, variable_data.variable_relation_type,
+		 COALESCE(variable_data.data, variable_fields.default_value) as data,
+         variable_data.data_weight, variable_data.updated_at as data_updated_at,
+         variable_data.created_at as data_created_at,
+
+         variable_fields.field_machine_label, variable_fields.field_label,
+         variable_fields.field_description, variable_fields.field_weight,
+         variable_fields.value_max, variable_fields.value_min, variable_fields.value_casing,
+         variable_fields.encryption, variable_fields.input_type_id, variable_fields.default_value,
+         variable_fields.field_help_text, variable_fields.multiple,
          variable_fields.created_at as field_created_at, variable_fields.updated_at as field_updated_at,
-         variable_groups.group_label, variable_groups.group_machine_label, variable_groups.id as variable_group_id,
-         variable_groups.group_relation_type, variable_groups.group_relation_id,
-         variable_groups.group_description, variable_groups.group_weight, variable_groups.status as group_status
+         variable_fields.value_required, variable_fields.variable_group_id,
+
+         variable_groups.group_relation_id, variable_groups.group_relation_type, variable_groups.group_machine_label,
+         variable_groups.group_label, variable_groups.group_description, variable_groups.group_weight,
+         variable_groups.status as group_status
          FROM variable_fields
          LEFT OUTER JOIN variable_data ON variable_data.variable_field_id = variable_fields.id
          JOIN variable_groups ON variable_fields.variable_group_id = variable_groups.id"""),
 
       #
       step("""CREATE VIEW variable_group_field_view AS
-         SELECT  variable_fields.id as variable_field_id, variable_fields.field_machine_label,variable_fields.field_label,
+         SELECT  variable_fields.id as variable_field_id, variable_fields.user_id,
+         variable_fields.field_machine_label, variable_fields.field_label,
          variable_fields.field_description, variable_fields.field_weight,
-         variable_fields.encryption, variable_fields.input_type_id, variable_fields. default_value, variable_fields.field_help_text,
-         variable_fields.value_required, variable_fields.value_min, variable_fields.value_max,variable_fields.value_casing,
-         variable_fields.multiple, variable_fields.created_at as field_created_at, variable_fields.updated_at as field_updated_at,
-         variable_groups.id as variable_group_id, variable_groups.group_label, variable_groups.group_machine_label,variable_groups.group_description,
-         variable_groups.group_weight, variable_groups.status as group_status, variable_groups.group_relation_type,
-         variable_groups.group_relation_id
+         variable_fields.value_max, variable_fields.value_min, variable_fields.value_casing,
+         variable_fields.encryption, variable_fields.input_type_id, variable_fields.default_value,
+         variable_fields.field_help_text, variable_fields.multiple,
+         variable_fields.created_at as field_created_at, variable_fields.updated_at as field_updated_at,
+
+         variable_groups.group_relation_id, variable_groups.group_relation_type, variable_groups.group_machine_label,
+         variable_groups.group_label, variable_groups.group_description, variable_groups.group_weight,
+         variable_groups.status as group_status
          FROM variable_groups
          JOIN variable_fields ON variable_fields.variable_group_id = variable_groups.id"""),
-
       #
       step("""CREATE VIEW variable_group_field_data_view AS
          SELECT variable_data.id as data_id, variable_data.gateway_id, variable_data.variable_field_id, variable_data.variable_field_id,
