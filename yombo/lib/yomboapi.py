@@ -138,12 +138,20 @@ class YomboAPI(YomboLibrary):
     def update_results(self, response, method, url):
         if response.content_type == "string":
             logger.warn("-----==( Error: API received an invalid response )==----")
+            logger.warn("Request: {request}", request=response.request.__dict__)
             logger.warn("URL: {method} {uri}", method=response.request.method, uri=response.request.uri)
             logger.warn("Header: {request_headers}", request_headers=response.request.headers)
             logger.warn("Content: {content}", content=response.content)
             logger.warn("--------------------------------------------------------")
 
         if response.response_code >= 300:
+            logger.warn("-----==( Error: API received an invalid response )==----")
+            logger.warn("Request: {request}", request=response.request.__dict__)
+            logger.warn("Code: {code}", code=response.response_code)
+            logger.warn("URL: {method} {uri}", method=response.request.method, uri=response.request.uri)
+            logger.warn("Header: {request_headers}", request_headers=response.request.headers)
+            logger.warn("Content: {content}", content=response.content)
+            logger.warn("--------------------------------------------------------")
             html_message = ""
             message = ""
             logger.warn("Error with API request: {method} {url}", method=method, url=url)
@@ -157,7 +165,6 @@ class YomboAPI(YomboLibrary):
                     raise YomboWarning(response.content["errors"], response.response_code, "update_results", "yomboapi")
             else:
                 message = f"{response.response_code} - {response.response_phrase}"
-            print(f"response2: {response.content}")
             raise YomboWarning(message, response.response_code, "update_results", "yomboapi", meta=response)
         # print(f"before json_api_doc: {response.content}")
         # response.content = json_api_doc.parse(response.content)
@@ -176,7 +183,6 @@ class ApiRequest:
 
         self.method = method
         self.url = self. base_url + url
-        # print(f"yombo api reqeust full url: {self.url}")
         self.request_data = request_data
         self.timeout = 30
         self.extra_headers = headers
@@ -193,22 +199,23 @@ class ApiRequest:
     @property
     def headers(self):
         """ Merge my headers with requested headers"""
-        return {**self.extra_headers, **self._my_headers, **self._authorization_header}
+        if self._authorization_header is not None:
+            return {**self.extra_headers, **self._my_headers, **self._authorization_header}
+        else:
+            return {**self.extra_headers, **self._my_headers}
+
         # return {**self.extra_headers, **self._my_headers, **self.authorization_header()}
 
     def check_authorization_header(self, incoming):
-
         # print("checking auth header 1")
         if incoming is None or incoming == "":
             # print("checking auth header 2")
             if self._Parent.gateway_credentials_is_valid is False:
-                # print("checking auth header 3")
-                raise YomboAPICredentials("Yombo API Request::No valid API credentials.")
+                return None
             return {"Authorization": f"YomboGateway {self._Parent.gateway_id()} "
                     f"{self._Parent.gateway_hash()}"}
         else:
             return {"Authorization": incoming}
-            # self._authorization_header = f"YomboGateway {self._Parent.gateway_id()}_{self._Parent._api_auth_getter()}"
 
     @inlineCallbacks
     def request(self):
