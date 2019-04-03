@@ -38,6 +38,7 @@ import socket
 from subprocess import check_output, CalledProcessError
 import sys
 from time import time
+import treq
 import textwrap
 from urllib.parse import urlparse
 import zlib
@@ -126,6 +127,22 @@ def _test_port_listening(host, port):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     logger.debug("# Test non ssl host - port: {host} - {port}", host=host, port=port)
     return sock.connect_ex((host, port)) == 0
+
+
+def download_file(url, destination_filename):
+    """
+    Returns a deferred!
+
+    This downloads a file from a URL and saves it toa  file.
+    :param url:
+    :param destination_filename:
+    :return:
+    """
+    destination = open(destination_filename, 'wb')
+    d = treq.get(url, unbuffered=True)
+    d.addCallback(treq.collect, destination.write)
+    d.addBoth(lambda _: destination.close())
+    return d
 
 
 def search_for_executable(executable):
