@@ -102,8 +102,9 @@ class WebSessions(YomboLibrary):
             "ignore_expiry": True,
             "ignore_change_ip": True,
             "expired_message": "Session expired",
-            "httponly": True,
+            "httponly": False,  # If enabled, frontend app won't work. :(
             "secure": False,
+            "samesite": ""  # strict won't work with SSO. :(
         })
         self.clean_sessions_loop = LoopingCall(self.clean_sessions)
         self.clean_sessions_loop.start(random_int(30, .2), False)  # Every hour-ish. Save to disk, or remove from memory.
@@ -221,7 +222,6 @@ class WebSessions(YomboLibrary):
         if session_id == "LOGOFF":
             raise_error("Session has been logged off.")
         if compact_id in self.active_sessions:
-            print("check is valid.. 2")
             if self.active_sessions[compact_id].is_valid() is True:
                 self.get_session_by_id_cache[compact_id] = self.active_sessions[compact_id]
                 return self.active_sessions[compact_id]
@@ -278,11 +278,16 @@ class WebSessions(YomboLibrary):
 
         data["auth_id"] = compact_id
         data["auth_id_long"] = session_id
+        data["refresh_token"] = None
+        data["refresh_token_expires_at"] = 0
+        data["access_token"] = None
+        data["access_token_expires_at"] = 0
 
         if request is not None:
             request.addCookie(self.config.cookie_session_name, session_id, domain=self.get_cookie_domain(request),
                               path=self.config.cookie_path, max_age=self.config.max_session,
-                              secure=self.config.secure, httpOnly=self.config.httponly)
+                              secure=self.config.secure, httpOnly=self.config.httponly,
+                              sameSite=self.config.samesite)
 
         self.active_sessions[compact_id] = AuthWebsession(self, data)
         self.active_sessions[compact_id].auth_id_long = session_id
@@ -407,6 +412,47 @@ class AuthWebsession(UserMixin, AuthMixin):
     def auth_id_long(self, val):
         self._auth_id_long = val
 
+    @inlineCallbacks
+    def get_refresh_token(self):
+        if self._refresh_token is None:
+            return (None, 0)
+        token = yield self._Parent._GPG.decrypt_aes(self._auth_id_long, self._refresh_token)
+        return (token, self.refresh_token_expires_at)
+
+    @inlineCallbacks
+    def set_refresh_token(self, token, expires_at):
+        self._refresh_token = yield self._Parent._GPG.encrypt_aes(self._auth_id_long, token)
+        self.refresh_token_expires_at = expires_at
+        # yield self._LocalDB.update_web_session(self)
+
+    @inlineCallbacks
+    def get_access_token(self):
+        if self._access_token is None:
+            return (None, 0)
+        token = yield self._Parent._GPG.decrypt_aes(self._auth_id_long, self._access_token)
+        return (token, self.access_token_expires_at)
+
+    @inlineCallbacks
+    def set_access_token(self, token, expires_at):
+        self._access_token = yield self._Parent._GPG.encrypt_aes(self._auth_id_long, token)
+        self.access_token_expires_at = expires_at
+        # yield self._LocalDB.update_web_session(self)
+
+    # def __len__(self):
+    #     return len(self.data)
+    #
+    # def __getitem__(self, item):
+    #     return self.data[item]
+    #
+    # def __setitem__(self, item, val):
+    #     self.data[item] = val
+    #
+    # def __delitem__(self, item):
+    #     del self.data[item]
+    #
+    # def __contains__(self, item):
+    #     return item in self.data
+
     # Local
     def __init__(self, parent, record, load_source=None):
         super().__init__(parent, load_source=load_source)
@@ -426,6 +472,11 @@ class AuthWebsession(UserMixin, AuthMixin):
         self.source_type = "library"
         self.gateway_id = record["gateway_id"]
 
+        self._refresh_token: str = record["refresh_token"]
+        self.refresh_token_expires_at: int = record["refresh_token_expires_at"]
+        self._access_token: str = record["access_token"]
+        self.access_token_expires_at: int = record["access_token_expires_at"]
+
         # print(f"new web after setting auth: {self.asdict()}")
         # Local attributes
         self.auth_at = None
@@ -443,8 +494,10 @@ class AuthWebsession(UserMixin, AuthMixin):
                 raise YomboWarning("User_id not found, cannot fully create websession.")
 
         self.auth_data.update({
-            "yomboapi_session": None,
-            "yomboapi_login_key": None,
+            "refresh_token": None,
+            "refresh_token_expires_at": None,
+            "access_token": None,
+            "access_token_expires_at": None,
         })
 
         self.update_attributes(record, load_source == "database")
@@ -498,13 +551,37 @@ class AuthWebsession(UserMixin, AuthMixin):
         if "auth_data" in record:
             if isinstance(record["auth_data"], dict):
                 self.auth_data.update(record["auth_data"])
-        if "yomboapi_session" not in self.auth_data:
-            self.auth_data["yombo_session"] = None
-            if "yomboapi_login_key" not in self.auth_data:
-                self.auth_data["yomboapi_login_key"] = None
 
         if stay_clean is not True:
             self.is_dirty = 2000
+
+    @inlineCallbacks
+    def authorization_header(self):
+        """
+        Used to generate the Authorization header for making Yombo API calls.
+
+        :return:
+        """
+        access_token = yield self.get_access_token()
+        return f"user_api_token {access_token[0]}"
+
+    def set_access_tokens(self, refresh_token=None, refresh_token_expires_at=None, access_token=None, access_token_expires_at=None):
+        """
+        Saves the oauth tokens for accessing Yombo API.
+
+        :param refresh_token:
+        :param access_token:
+        :return:
+        """
+        if refresh_token is not None:
+            self.refresh_token = refresh_token
+        if refresh_token_expires_at is not None:
+            self.refresh_token_expires_at = refresh_token_expires_at
+        if access_token is not None:
+            self.access_token = access_token
+        if access_token_expires_at is not None:
+            self.access_token_expires_at = access_token_expires_at
+        self.save_to_database()
 
     def is_valid(self, auth_id_missing_ok=None):
         """
@@ -525,11 +602,6 @@ class AuthWebsession(UserMixin, AuthMixin):
             logger.info("is_valid: Expiring session, no recent access: {session_id}", session_id=self.session_id)
             self.expire()
             return False
-
-        print(f"websession: authid: {self.auth_id}")
-        # if self.auth_id is None and auth_id_missing_ok is not True:
-        #     logger.info("is_valid: auth_id is None, returning False")
-        #     return False
 
         if self.auth_id is None and self.last_access_at < (int(time() - self._Parent.config.max_session_no_auth)):
             logger.info("is_valid: Expiring session, no recent access and not authenticated: {auth_id}",
