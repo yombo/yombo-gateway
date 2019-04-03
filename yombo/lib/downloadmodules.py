@@ -78,7 +78,7 @@ class DownloadModules(YomboLibrary):
         self.current_api = f"api_{MODULE_API_VERSION}"
         self.maxDownloadConcurrent = self._Configs.get("misc", "downloadmodulesconcurrent", self.MAX_DOWNLOAD_CONCURRENT)
         self.download_path = self._Atoms.get("app_dir") + "/yombo/modules/"
-        self.mysemaphore = defer.DeferredSemaphore(self.maxDownloadConcurrent)  #used to queue deferreds
+        # self.mysemaphore = defer.DeferredSemaphore(self.maxDownloadConcurrent)  #used to queue deferreds
         self.modules = {}
         yield self.check_modules()
 
