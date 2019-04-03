@@ -1,161 +1,72 @@
 {% extends "lib/webinterface/fragments/layout.tpl" %}
 {% block head_top %}
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-   @import url('https://fonts.googleapis.com/css?family=Numans');
-
-   @media screen and (min-width: 2049px) {
-      html,body {
-       background-image: url('/img/bg/{{ image_id }}.jpg');
-      }
-    }
-
-   @media screen and (min-width: 1537px) and (max-width:2048px) {
-      html,body {
-       background-image: url('/img/bg/{{ image_id }}_1536.jpg');
-      }
-    }
-
-   @media screen and (min-width: 1025px) and (max-width:1536px) {
-      html,body {
-       background-image: url('/img/bg/{{ image_id }}_1536.jpg');
-      }
-    }
-
-   @media screen and (min-width: 601px) and (max-width:1024px) {
-      html,body {
-       background-image: url('/img/bg/{{ image_id }}_1024.jpg');
-      }
-    }
-
-   @media screen and (min-width: 100px) and (max-width:600px) {
-      html,body {
-       background-image: url('/img/bg/{{ image_id }}_600.jpg');
-      }
-    }
-
-   @media (max-width: 767px) {
-      #content .modal.fade.in {
-        top: 5%;
-      }
-    }
-   html,body{
-       background-position: center;
-       background-size: cover;
-       background-repeat: no-repeat;
-       height: 100%;
-       font-family: 'Numans', sans-serif;
-       color: white;
-   }
-
-   .container{
-       height: 100%;
-       align-content: center;
-   }
-
-   .card{
-       color: white;
-       height: 370px;
-       margin-top: auto;
-       margin-bottom: auto;
-       width: 400px;
-       background-color: rgba(0,0,0,0.7) !important;
-       border-radius: 1rem !important;
-   }
-
-   .card-header{
-       border-bottom: 1px solid rgba(255,255,255,.2) !important;
-   }
-
-   .card-header h3{
-       color: white;
-   }
-
-   .input-group-prepend span{
-       width: 50px;
-       background-color: #FFC312;
-       color: black;
-       border:0 !important;
-   }
-
-   input:focus{
-       outline: 0 0 0 0  !important;
-       box-shadow: 0 0 0 0 !important;
-
-   }
-
-   .remember{
-       color: white;
-   }
-
-   .remember input
-   {
-       width: 20px;
-       height: 20px;
-       margin-left: 15px;
-       margin-right: 5px;
-   }
-
-   .login_btn{
-       color: black;
-       background-color: #FFC312;
-       width: 100px;
-   }
-
-   .login_btn:hover{
-       color: black;
-       background-color: white;
-   }
-
-   .links{
-       color: white;
-   }
-
-   .links a{
-       margin-left: 4px;
-   }
-</style>
+{% include "lib/webinterface/fragments/bg_image.tpl" %}
 {% endblock %}
-{% block content %}
-{% if misc_wi_data.operating_mode == 'config' %}
-<div class="row">
-    <div class="col-md-6 col-md-offset-3">
-        <h1 class="page-header">Setup Mode</h1>
-        <p>
-            Yombo Gateway is in configuration and setup mode.
-        </p>
-    </div>
-    <!-- /.col-lg-12 -->
-</div>
-{% endif %}
 
-<!-- Modal -->
-<div class="container">
-	<div class="d-flex justify-content-center h-100">
-		<div class="card">
-			<div class="card-header">
-				<h3>Single Sign In <img class="float-right" src="/img/logo-100px.png" height="50" alt="Yombo.net"></h3>
-                Gateway: {{ misc_wi_data.gateway_label() }} {{ active_page }}
-			</div>
-			<div class="card-body text-center" style="padding-top: 3em;">
-                <form action="https://mydev.yombo.net/gateway/login/redirect" method="post">
-                    <input type="hidden" name="request_id" value="{{ request_id }}">
-                    <input type="hidden" name="gateway_id" value="{{ gateway_id }}">
-                    <input type="hidden" name="secure" value="{{ secure }}">
-                    <input type="hidden" name="host" value="{{ hostname }}">
-                    <input type="hidden" name="port" value="{{ port }}">
-                    <input type="submit" value="Login with Yombo.Net" class="btn btn-success btn-lg">
-                    <h5 style="margin-top: 1em;">
-                        <a href="#" data-toggle="modal" data-target="#whatisthisModal"> What is this? </a>
-                    </h5>
-                </form>
-			</div>
-			<div class="card-footer">
-                <span class="float-left"><a href="https://yombo.net/policies/terms_of_use">Terms</a></span>
-                <span class="float-right"><a href="https://yombo.net/policies/privacy_policy">Privacy</a></span>
-                <div class="text-center"><a href="https://yombo.net/docs">Documentation</a></div>
-			</div>
-		</div>
+{% block content %}
+{% if autoredirect == 1 %}
+<script type="application/javascript">
+    function loginForm() {
+        document.myform.action = "https://mydev.yombo.net/gateway/login/redirect";
+        // console.log("loginForm")
+        document.myform.submit();
+    }
+    if (window.addEventListener)
+        window.addEventListener("load", loginForm, false);
+    else if (window.attachEvent)
+        window.attachEvent("onload", loginForm);
+    else window.onload = loginForm;
+</script>
+{% endif %}
+<div class="container-fluid">
+    {% if misc_wi_data.operating_mode == 'config' %}
+    <div class="row">
+        <div class="col-12 col-md-8 col-lg-6 col-lg-5 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Configuration Mode</h3>
+                    Gateway: {{ misc_wi_data.gateway_label() }}
+                </div>
+                <div class="card-body text-center" style="padding-top: 3em;">
+                    It appears this gateway lost it's authentication and requires re-configuration.
+                </div>
+                <div class="card-footer">
+                    <span class="float-left"><a href="https://yombo.net/policies/terms_of_use">Terms</a></span>
+                    <span class="float-right"><a href="https://yombo.net/policies/privacy_policy">Privacy</a></span>
+                    <div class="text-center"><a href="https://yombo.net/docs">Documentation</a></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    {% endif %}
+    <div class="row" style="padding-top: 5em; padding-bottom: 2em;">
+        <div class="col-12 col-sm-10 col-md-6 col-lg-4 col-lg-3 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Single Sign In <img class="float-right" src="/img/logo-100px.png" height="50" alt="Yombo.net"></h3>
+                    Gateway: {{ misc_wi_data.gateway_label() }} {{ active_page }}
+                </div>
+                <div class="card-body text-center" style="padding-top: 3em;">
+                    <form action="https://mydev.yombo.net/gateway/login/redirect" id="myform" name="myform" method="post">
+                        <input type="hidden" name="request_id" value="{{ request_id }}">
+                        <input type="hidden" name="gateway_id" value="{{ gateway_id }}">
+                        <input type="hidden" name="secure" value="{{ secure }}">
+                        <input type="hidden" name="host" value="{{ hostname }}">
+                        <input type="hidden" name="port" value="{{ port }}">
+                        <input type="submit" value="Login with Yombo.Net" class="btn btn-success btn-lg">
+                        <h5 style="margin-top: 1em;">
+                            <a href="#" data-toggle="modal" data-target="#whatisthisModal"> What is this? </a>
+                        </h5>
+                    </form>
+                </div>
+                <div class="card-footer">
+                    <span class="float-left"><a href="https://yombo.net/policies/terms_of_use">Terms</a></span>
+                    <span class="float-right"><a href="https://yombo.net/policies/privacy_policy">Privacy</a></span>
+                    <div class="text-center"><a href="https://yombo.net/docs">Documentation</a></div>
+                </div>
+            </div>
+        </div>
 	</div>
 </div>
 <!-- Modal -->
