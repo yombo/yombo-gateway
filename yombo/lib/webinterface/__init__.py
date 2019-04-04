@@ -46,8 +46,9 @@ import yombo.utils.datetime as dt_util
 from yombo.lib.webinterface.auth import require_auth
 
 from yombo.lib.webinterface.class_helpers.builddist import BuildDistribution
-from yombo.lib.webinterface.class_helpers.yombo_site import Yombo_Site
 from yombo.lib.webinterface.class_helpers.errorhandler import ErrorHandler
+from yombo.lib.webinterface.class_helpers.yombo_site import Yombo_Site
+from yombo.lib.webinterface.class_helpers.webserver import WebServer
 
 from yombo.lib.webinterface.routes.api_v1.automation import route_api_v1_automation
 from yombo.lib.webinterface.routes.api_v1.camera import route_api_v1_camera
@@ -76,7 +77,7 @@ from yombo.lib.webinterface.constants import NAV_SIDE_MENU, DEFAULT_NODE, NOTIFI
 logger = get_logger("library.webinterface")
 
 
-class WebInterface(YomboLibrary, ErrorHandler, BuildDistribution):
+class WebInterface(BuildDistribution, ErrorHandler, YomboLibrary, WebServer):
     """
     Web interface framework.
     """

@@ -16,6 +16,7 @@ ERROR_RESPONSES = {
           "message": "The browser (or client) has sent too many requests to fast. Slow down on the coffee."},
 }
 
+
 class ErrorHandler(object):
     """
     Handles error pages.
@@ -23,6 +24,7 @@ class ErrorHandler(object):
     def error_page(webinterface, request, session, response_code=400, title=None, messages=None, api=None):
         """
         Displays an error page to the user. This also sets the response code to response_code.
+
         :param response_code:
         :param request:
         :param title:
