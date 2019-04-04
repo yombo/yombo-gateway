@@ -61,8 +61,6 @@ class Startup(YomboLibrary):
         :param kwargs:
         :return:
         """
-        print("Startup library: init: start..")
-
         self.configs_needed = []
         self.configs_needed_human = []
         self.gwid = self._Configs.get2("core", "gwid", "local", False)
