@@ -86,11 +86,12 @@ class GPG(YomboLibrary):
         self._gpg_keys = {}
         self._generating_key_deferred = None
         self.sks_pools = [  # Send to a few to ensure we get our key seeded
-            "gpg.nebrwesleyan.edu",
+            "ipv4.pool.sks-keyservers.net",
             "na.pool.sks-keyservers.net",
             "eu.pool.sks-keyservers.net",
             "oc.pool.sks-keyservers.net",
             "pool.sks-keyservers.net",
+            "ha.pool.sks-keyservers.net"
         ]
         self.working_dir = settings.arguments["working_dir"]
         self.gpg = gnupg.GPG(gnupghome=f"{self.working_dir}/etc/gpg")
@@ -218,6 +219,8 @@ class GPG(YomboLibrary):
             self.send_my_gpg_key_to_yombo()
         elif self.mykey_last_sent_yombo() < int(time()) - (60*60*24*30):
             self.send_my_gpg_key_to_yombo()
+
+        # print(f"mykey_last_sent_keyserver: {self.mykey_last_sent_keyserver()}")
 
         if self.mykey_last_sent_keyserver() is None:
             yield self.send_my_gpg_key_to_keyserver()
