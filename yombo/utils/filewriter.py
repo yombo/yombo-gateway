@@ -69,14 +69,13 @@ class FileWriter:
 
         The params defined refer to kwargs and become class variables.
 
-        The mode can be specified as well, the default mode is 'a' for 'append'.  You can use 2 write modes:
+        The mode can be specified as well, the default mode is "a" for "append".  You can use 2 write modes:
         w - create a new file
         a - append file
 
         :param filename: **Required.** The path and file to monitor.
         :type filename: string
         :param mode: Which mode to open the file: w - create new file, a - append
-        :param encoding: If using text, specify the encoding - default: utf-8
         :param fileid: Assign a unique file id. Used if the filename may change
             in the future, but you want to persist tracking if the filename changes.
             defaults to filename is not supplied.
@@ -87,22 +86,20 @@ class FileWriter:
         :param frequency: How often this filewriter should check for data to write, in seconds. If not written to often, set to high.
         """
         if filename is None or filename == "":
-            raise YomboWarning("FileWriting class requires a file name to save to.", 125473, "__init__", "FileWriter")
+            raise YomboWarning("FileWriter requires a file name to write to.", 125473, "__init__", "FileWriter")
+        if filename.startswith("/") is False:
+            filename = f"./{filename}"
         self.filename = filename
+
         self.fileid = kwargs.get("fileid", self.filename)
         self.make_if_missing = kwargs.get("make_if_missing", True)
 
         if "mode" in kwargs:
-            mode = kwargs['mode']
+            mode = kwargs["mode"]
             if mode not in ("a", "w"):
                 raise YomboWarning(f"Write must be one of: a, w", 628312, "__init__", "FileWriter")
         else:
-            mode = 'a'
-
-        if "encoding" in kwargs:
-            encoding = kwargs['encoding']
-        else:
-            encoding = 'utf-8'
+            mode = "a"
 
         self.close_when_done = False  # used when saving files and if it should close when it's done...
         self.write_queue = []
@@ -110,21 +107,18 @@ class FileWriter:
         try:
             if os.path.exists(fileparts[0]) is False:
                 if self.make_if_missing is False:
-                    raise YomboWarning("File does not exist, told not cannot create one.",
+                    raise YomboWarning("File does not exist, told not to create one.",
                                          121639, "__init__", "FileWriter")
                 else:
                     os.makedirs(fileparts[0])
 
-            logger.debug("{fileid}: About to open file: {mode} - {filename}",
+            logger.info("{fileid}: About to open file: {mode} - {filename}",
                         fileid=self.fileid, mode=mode, filename=self.filename)
-            if mode.endswith("t") or len(mode) == 1:
-                self.fp_out = codecs.open(self.filename, mode, encoding=encoding)
-            else:
-                self.fp_out = codecs.open(self.filename, mode)
+            self.fp_out = codecs.open(self.filename, mode)
             logger.debug("{fileid}: File pointer: {fp}", fileid=self.fileid, fp=self.fp_out.__dict__)
         except IOError as e:
             (errno, strerror) = e.args
-            raise YomboWarning(f"Logreader could not open file for reading ({self.filename}). Reason: {strerror}",
+            raise YomboWarning(f"FileWriter could not open file for writing ({self.filename}). Reason: {strerror}",
                                  435121, "__init__", "FileWriter")
 
         self.save_running = False
