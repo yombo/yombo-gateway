@@ -1,33 +1,33 @@
-{% extends "lib/webinterface/fragments/layout_blank.tpl" %}
-{% block head_css %}
-{% include 'lib/webinterface/fragments/select_css.tpl' %}
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+
+{% block head_top %}
+{% include "lib/webinterface/fragments/bg_image.tpl" %}
 {% endblock %}
 
 {% set progressbar = 100 %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-8 col-md-offset-2">
-        <div class="login-panel panel panel-info">
-            <div class="panel-heading">
-                <img src="/static/img/logo-100px.png" height="50" class="pull-left" align="middle">
-                <h2 style="text-align: center">Gateway Setup Wizard</h2>
-                <h4 style="text-align: center">Setup complete</h4>
-                <p></p>
-                <div class="col-md-8 col-md-offset-2">
-                    <div class="progress">
-                      <div class="progress-bar progress-bar-primary progress-bar-striped" role="progressbar" aria-valuenow="{{ progressbar }}" aria-valuemin="2" aria-valuemax="100" style="min-width: 2em; width: {{ progressbar }}%">
-                        {{ progressbar }}%
-                      </div>
-                    </div>
+<div class="container-fluid">
+    <div class="row" style="padding-top: 3em; padding-bottom: 2em;">
+        <div class="col-12 col-md-10 col-lg-8 col-lg-6 mx-auto">
+            <div class="card">
+              <div class="card-header text-center">
+                  <h2>Gateway Setup Wizard</h2>
+                <h5 class="card-title">Finished</h5>
+                <div class="progress">
+                  <div class="progress-bar progress-bar-primary progress-bar-striped" role="progressbar" aria-valuenow="{{ progressbar }}" aria-valuemin="2" aria-valuemax="100" style="min-width: 2em; width: {{ progressbar }}%">
+                    {{ progressbar }}%
+                  </div>
                 </div>
-            </div>
-            <div class="panel-body">
-                <p></p>
-                <h2>Setup Complete</h2>
+              </div>
+              <div class="card-body">
                 <p>Setup is complete. Simply restart the gateway and begin automating!</p>
-                <p><strong>The first reboot can take a few minutes on slower systems. Please be extra patient.</strong></p>
-                <a class="btn btn-md btn-success align-center" href="/setup_wizard/7_restart">Restart Gateway</a>
+                <p><strong>The first reboot can take a few minutes on slower systems. Please be extra patient.</strong>
+                On the first reboot, the gateway will finalize the installation. This includes setting up and distributing
+                the encryption keys and download additional data to run the gateway.</p>
+                <p>On low powered machines, like Raspberry PI, it can take up to 5 minutes to complete this task.</p>
+                <a class="btn btn-md btn-success align-center" href="/setup_wizard/finished_restart">Restart Gateway</a>
+              </div>
             </div>
         </div>
     </div>

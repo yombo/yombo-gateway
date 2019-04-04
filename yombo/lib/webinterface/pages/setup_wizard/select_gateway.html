@@ -4,11 +4,11 @@
 {% include "lib/webinterface/fragments/bg_image.tpl" %}
 {% endblock %}
 
-{% set progressbar = 12 %}
+{% set progressbar = 10 %}
 
 {% block content %}
 <div class="container-fluid">
-    <div class="row" style="padding-top: 5em; padding-bottom: 2em;">
+    <div class="row" style="padding-top: 3em; padding-bottom: 2em;">
         <div class="col-12 col-md-10 col-lg-8 col-lg-6 mx-auto">
             <div class="card">
               <div class="card-header text-center">
@@ -22,21 +22,21 @@
               </div>
               <div class="card-body">
 {% if available_gateways|length == 0 %}
-                <form action="/setup_wizard/3" method="POST" role="form">
+                <form action="/setup_wizard/basic_settings" method="POST" role="form">
                 <h2>Create New Gateway</h2>
                 <p class="card-text">
                     No previously configured gateways were found in your account.
                 </p>
-                <a class="btn btn-md btn-warning" href="/setup_wizard/1"><i class="fa fa-chevron-left pull-left"></i>&nbsp; Back</a>
+                <a class="btn btn-md btn-warning" href="/setup_wizard/select_gateway"><i class="fa fa-chevron-left pull-left"></i>&nbsp; Back</a>
                     <input class="form-control" id="gateway" name="gateway-id" type="hidden" value="new">
-                    <button type="submit" id="submit-login" class="btn btn-lg btn-success pull-right">New Gateway<i class="fa fa-chevron-right pull-right"></i></button>
+                    <button type="submit" id="submit-new" class="btn btn-lg btn-success pull-right">New Gateway<i class="fa fa-chevron-right pull-right"></i></button>
                 </form>
 {% else %}
                 <h2>Create New Gateway or Use Existing</h2>
                 <p class="card-text">
                     Configured gateways were found, would you like to use one of these?
                 </p>
-                <form action="/setup_wizard/3" method="POST" role="form">
+                <form action="/setup_wizard/basic_settings" method="POST" role="form">
                     <fieldset>
                         <div class="form-group">
                             <select name="gateway-id" required class="selectpicker show-tick" title="Select...">
@@ -48,8 +48,8 @@
                             </select>
                         </div>
                     </fieldset>
-                    <a class="btn btn-md btn-warning" href="/setup_wizard/1"><i class="fa fa-chevron-left pull-left"></i>&nbsp; Back</a>
-                    <button type="submit" id="submit-login" class="btn btn-lg btn-info pull-right">Next</button>
+                    <a class="btn btn-md btn-warning" href="/setup_wizard/select_gateway"><i class="fa fa-chevron-left float-left"></i>&nbsp; Back</a>
+                    <button type="submit" id="submit-existing" class="btn btn-lg btn-success float-right">Next</button>
                 </form>
 {%- endif %}
               </div>
@@ -58,6 +58,4 @@
     </div>
 </div>
 {% endblock %}
-
-{% block body_bottom_js %}{% include 'lib/webinterface/fragments/select_js.tpl' %}{% endblock %}
 
