@@ -219,6 +219,13 @@ class States(YomboLibrary, object):
         self.db_save_states_loop.start(random_int(30, .10), False)
         yield self.load_states()
 
+        # setup cluster state defaults if not set
+        try:
+            self.get("is.away", gateway_id="cluster")
+        except KeyError:
+            self.set("is.away", False, gateway_id="cluster")
+
+
     def _load_(self, **kwargs):
         self.library_phase = 2
 
@@ -458,7 +465,8 @@ class States(YomboLibrary, object):
             is_new = False
             if self.states[gateway_id][key]["value"] == value:
                 return
-            self._Statistics.increment("lib.states.set.update", bucket_size=60, anon=True)
+            if hasattr(self, "_Statistics"):
+                self._Statistics.increment("lib.states.set.update", bucket_size=60, anon=True)
         else:
             # logger.debug("Saving state: {key} = {value}", key=key, value=value)
             is_new = True
@@ -466,7 +474,8 @@ class States(YomboLibrary, object):
                 "gateway_id": gateway_id,
                 "live": False,
             }
-            self._Statistics.increment("lib.states.set.new", bucket_size=60, anon=True)
+            if hasattr(self, "_Statistics"):
+                self._Statistics.increment("lib.states.set.new", bucket_size=60, anon=True)
 
         self.states[gateway_id][key]["source"] = source_label
         self.states[gateway_id][key]["value"] = value
