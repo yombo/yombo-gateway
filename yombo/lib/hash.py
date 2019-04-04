@@ -92,7 +92,7 @@ class Hash(YomboLibrary):
     def argon2_find_cost_calculator(self, max_time=None):
         """
         Finds a good cost factor for the current system. It tests various factors and finds the most expensive one
-        for this system that is still under 400 milliseconds.
+        for this system that is still around 300 milliseconds, or whatever max_time is set to or MAX_DURATION.
 
         :param force_update: If true, will force a new search.
         :return:
