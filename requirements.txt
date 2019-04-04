@@ -26,7 +26,7 @@ parsedatetime==2.4
 passlib==1.7.*
 pika==0.12.0
 Pillow==6.0.*
-pycrypto==2.6.1
+pycryptodome==3.8.1
 pydispatcher==2.0.5
 pyephem==3.7.*
 pyjwt==1.7.*
