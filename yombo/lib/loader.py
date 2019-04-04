@@ -195,7 +195,10 @@ class Loader(YomboLibrary, object):
     def operating_mode(self, val):
         if RUN_PHASE[self._run_phase] > 200:
             self.loadedLibraries["states"]["loader.operating_mode"] = val
-            logger.info("Operating mode set to: {mode}", mode=val)
+            if val == 'run':
+                logger.debug("Operating mode set to: {mode}", mode=val)
+            else:
+                logger.warn("Operating mode set to: {mode}", mode=val)
         self._operating_mode = val
 
     @property
