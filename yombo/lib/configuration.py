@@ -475,8 +475,10 @@ class Configuration(YomboLibrary):
                     continue
                 configs[section][item] = data['value']
 
+        configs = dict(sorted(configs.items()))
         #now we save the sections and the items...with i18n comments!
         for section, options in configs.items():
+            options = dict(sorted(options.items()))
             contents += "\n################################################################################\n"
             contents += f"## {section: ^74} ##\n"
 
