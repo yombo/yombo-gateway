@@ -64,7 +64,6 @@ REQUIRES = [
     'parsedatetime',
     'passlib',
     'pika',
-    'pycrypto',
     'pydispatcher',
     'pyephem',
     'pyopenssl',
