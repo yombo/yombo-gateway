@@ -35,7 +35,7 @@
    </head>
    <body>
    {%- if alerts|length != 0 %}
-       <div class="alert-messages">
+       <div class="alert-messages" style="z-index: 999;">
           {%- for key, alert in alerts.items() %}
               {%- if alert.dismissible %}
           <div class="alert alert-{{ alert.level }} alert-dismissible fade show" role="alert" data-the_alert_id="{{ key }}"">
