@@ -292,3 +292,7 @@ color:#dd3939;
     right: 1rem;
     width: calc(100vw - 2rem);
 }
+
+.modal-lg {
+    max-width: 80% !important;
+}
