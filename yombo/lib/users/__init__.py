@@ -144,8 +144,6 @@ class Users(YomboLibrary, LibrarySearch):
         return self.users.values()
 
     def _init_(self, **kwargs):
-        print("USERS: init")
-
         self.roles: dict = {}
         self.users: dict = {}
         self.gateway_id = self._Configs.get("core", "gwid", "local", False)
@@ -176,7 +174,6 @@ class Users(YomboLibrary, LibrarySearch):
         self.get_access_permissions_cache = self._Cache.ttl(name="lib.users.get_access_permissions_cache", ttl=86400, tags=("role", "user"))
         self.get_access_access_permissions_cache = self._Cache.ttl(name="lib.users.get_access_permissions_cache", ttl=21600, tags=("role", "user"))
         self.has_access_cache = self._Cache.ttl(name="lib.users.has_access_cache", ttl=43200, tags=("role", "user"))  # 12hrs
-        print("USERS: init done")
 
     def _load_(self, **kwargs):
         """
@@ -184,9 +181,7 @@ class Users(YomboLibrary, LibrarySearch):
         :param kwargs:
         :return:
         """
-        print("USERS: load")
         self.load_roles()
-        print("USERS: load done")
 
     @inlineCallbacks
     def _start_(self, **kwargs):
@@ -196,7 +191,6 @@ class Users(YomboLibrary, LibrarySearch):
         :param kwargs:
         :return:
         """
-        print("USERS: START")
         results = yield global_invoke_all("_auth_platforms_", called_by=self)
         logger.debug("_auth_platforms_ results: {results}", results=results)
         for component, platforms in results.items():
@@ -239,11 +233,8 @@ class Users(YomboLibrary, LibrarySearch):
                     source = "system"
                 self.add_role(role_data, source=source, flush_cache=False)
 
-        print(f"USERS:  START 22 {self._Loader.operating_mode}")
-
         if self._Loader.operating_mode != "run":
             return
-        print("USERS:  START 33")
 
         yield self._load_users_from_database()
         if self.owner_id is not None:
@@ -265,12 +256,9 @@ class Users(YomboLibrary, LibrarySearch):
     @inlineCallbacks
     def _load_users_from_database(self):
         db_users = yield self._LocalDB.get_users()
-        print(f"!!!!!  DB Users: {db_users}")
-        print(f"!!!!!  Loaded Users start: {self.users}")
-
         for record in db_users:
             self.users[record.user_id] = User(self, record, flush_cache=False)
-        print(f"!!!!!  Loaded Users done: {self.users}")
+
 
     @inlineCallbacks
     def api_search_user(self, requested_user, session=None):
