@@ -54,7 +54,7 @@
        margin-top: auto;
        margin-bottom: auto;
        /*width: 400px;*/
-       background-color: rgba(0,0,0,0.85) !important;
+       background-color: rgba(0,0,0,0.88) !important;
        border-radius: 1rem !important;
    }
 
