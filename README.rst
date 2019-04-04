@@ -28,13 +28,16 @@ To created intermediate to advanced automation rules or to extend the
 capabilites of the gateway, consider `developing a module <https://yg2.in/dev>`_.
 
 ============
-Python 3.6.x
+Python 3.7.x
 ============
 
-It's HIGHLY recommended to use latest Python 3.6 version. A simple script is located in yombo/install,
+Yombo Gateway only works on python 3.7.x. It might work on 3.6.8, however, this isn't tested or
+supported due to new features. If you are not using the
+`quick start <https://yombo.net/docs/gateway/quick_start>` guide to get started, you can just
+install python 3.7.x using the setup_pyenv.sh script file:
 to setup:
 1) Go to the yombo gateway directory (where this README file is located)
-2) install/setup_pyenv.sh
+2) bash install/setup_pyenv.sh
 
 On a Raspberry Pi 3, this will take quite a while. On a Raspberry Pi Zero, it's best to enjoy some
 lunch or dinner at your favorite place or simply use
