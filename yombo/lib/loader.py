@@ -269,7 +269,7 @@ class Loader(YomboLibrary, object):
             logger.debug("Upgrading pip...")
             check_output(["pip3", "install", "--upgrade", "pip"])
 
-        logger.debug("Reading Yombo requirements.txt file")
+        logger.info("Reading Yombo requirements.txt file and checking for updates.")
         if os.path.isfile("requirements.txt"):
             try:
                 input = yield yombo.utils.read_file("requirements.txt")
