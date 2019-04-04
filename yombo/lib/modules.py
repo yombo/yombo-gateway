@@ -981,6 +981,8 @@ class Modules(YomboLibrary, LibrarySearch):
 
     @inlineCallbacks
     def module_variables(self, module_name, module_id):
+        logger.debug("modules::module_variables - start: {module_name}, {module_id}",
+                     module_name=module_name, module_id=module_id)
         variables = yield self._Variables.get_variable_fields_data(
             group_relation_type="module",
             group_relation_id=module_id,
@@ -989,6 +991,7 @@ class Modules(YomboLibrary, LibrarySearch):
             #
             # variable_relation_type=variable_relation_type,
             # variable_field_id=variable_field_id)
+        logger.debug("modules::module_variables - variables: {variables}", variables=variables)
 
         if module_name in self._localModuleVars:
             variables = dict_merge(variables, self._localModuleVars[module_name])
