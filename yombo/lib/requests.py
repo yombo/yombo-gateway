@@ -114,6 +114,7 @@ class Requests(YomboLibrary):
         except Exception as e:
             logger.info("Requests error: {error}", error=e)
             logger.error("---------------==(Traceback)==--------------------------")
+            logger.error("{method} {url}", method=method, url=url)
             logger.error("{trace}", trace=traceback.format_exc())
             logger.error("--------------------------------------------------------")
             logger.warn("An exception of type {etype} occurred in yombo.lib.yomboapi:import_component. Message: {msg}",
