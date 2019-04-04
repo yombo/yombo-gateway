@@ -23,19 +23,14 @@ import jinja2
 import json
 from klein import Klein
 from operator import itemgetter
-from os import path, listdir, makedirs, environ, walk as oswalk, unlink, stat as osstat
 from random import randint
-import shutil
 from time import time
 from urllib.parse import parse_qs, urlparse, urlunparse
 
 # Import twisted libraries
-from twisted.web.server import Site
-from twisted.web.static import File
-from twisted.internet import reactor, ssl, threads
+from twisted.internet import reactor, ssl
 from twisted.internet.defer import inlineCallbacks, maybeDeferred, Deferred
 from twisted.internet.task import LoopingCall
-from twisted.internet.utils import getProcessOutput
 
 # Import 3rd party libraries
 from yombo.ext.expiringdict import ExpiringDict
@@ -50,6 +45,10 @@ import yombo.utils.converters as converters
 import yombo.utils.datetime as dt_util
 from yombo.lib.webinterface.auth import require_auth
 
+from yombo.lib.webinterface.class_helpers.builddist import BuildDistribution
+from yombo.lib.webinterface.class_helpers.yombo_site import Yombo_Site
+from yombo.lib.webinterface.class_helpers.errorhandler import ErrorHandler
+
 from yombo.lib.webinterface.routes.api_v1.automation import route_api_v1_automation
 from yombo.lib.webinterface.routes.api_v1.camera import route_api_v1_camera
 from yombo.lib.webinterface.routes.api_v1.command import route_api_v1_command
@@ -58,6 +57,7 @@ from yombo.lib.webinterface.routes.api_v1.device_command import route_api_v1_dev
 from yombo.lib.webinterface.routes.api_v1.events import route_api_v1_events
 from yombo.lib.webinterface.routes.api_v1.gateway import route_api_v1_gateway
 from yombo.lib.webinterface.routes.api_v1.module import route_api_v1_module
+from yombo.lib.webinterface.routes.api_v1.mqtt import route_api_v1_mqtt
 from yombo.lib.webinterface.routes.api_v1.notification import route_api_v1_notification
 from yombo.lib.webinterface.routes.api_v1.scenes import route_api_v1_scene
 from yombo.lib.webinterface.routes.api_v1.server import route_api_v1_server
@@ -68,143 +68,15 @@ from yombo.lib.webinterface.routes.api_v1.storage import route_api_v1_storage
 from yombo.lib.webinterface.routes.api_v1.system import route_api_v1_system
 from yombo.lib.webinterface.routes.api_v1.webinterface_logs import route_api_v1_webinterface_logs
 
-from yombo.lib.webinterface.routes.devtools.config import route_devtools_config
-from yombo.lib.webinterface.routes.devtools.config_commands import route_devtools_config_commands
-from yombo.lib.webinterface.routes.devtools.config_device_types import route_devtools_config_device_types
-from yombo.lib.webinterface.routes.devtools.config_device_type_commands import route_devtools_config_device_type_commmands
-from yombo.lib.webinterface.routes.devtools.config_device_command_inputs import route_devtools_config_device_command_inputs
-from yombo.lib.webinterface.routes.devtools.config_input_types import route_devtools_config_input_types
-from yombo.lib.webinterface.routes.devtools.config_modules import route_devtools_config_modules
-from yombo.lib.webinterface.routes.devtools.config_variables import route_devtools_config_variables
-
-from yombo.lib.webinterface.routes.authkeys import route_authkeys
-from yombo.lib.webinterface.routes.atoms import route_atoms
-from yombo.lib.webinterface.routes.automation import route_automation
-from yombo.lib.webinterface.routes.automation.device import route_automation_device
-from yombo.lib.webinterface.routes.automation.pause import route_automation_pause
-from yombo.lib.webinterface.routes.automation.scene import route_automation_scene
-from yombo.lib.webinterface.routes.automation.state import route_automation_state
-from yombo.lib.webinterface.routes.automation.template import route_automation_template
-from yombo.lib.webinterface.routes.calllater import route_calllater
-from yombo.lib.webinterface.routes.configs import route_configs
-from yombo.lib.webinterface.routes.crontab import route_crontabs
-from yombo.lib.webinterface.routes.debug import route_debug
-from yombo.lib.webinterface.routes.devices import route_devices
-from yombo.lib.webinterface.routes.discovery import route_discovery
-from yombo.lib.webinterface.routes.events import route_events
-from yombo.lib.webinterface.routes.locations import route_locations
-from yombo.lib.webinterface.routes.gateways import route_gateways
 from yombo.lib.webinterface.routes.home import route_home
-from yombo.lib.webinterface.routes.intents import route_intents
 from yombo.lib.webinterface.routes.misc import route_misc
-from yombo.lib.webinterface.routes.modules import route_modules
-from yombo.lib.webinterface.routes.notices import route_notices
-from yombo.lib.webinterface.routes.panel import route_panel
-from yombo.lib.webinterface.routes.roles import route_roles
-from yombo.lib.webinterface.routes.scenes import route_scenes
-from yombo.lib.webinterface.routes.scenes.device import route_scenes_device
-from yombo.lib.webinterface.routes.scenes.pause import route_scenes_pause
-from yombo.lib.webinterface.routes.scenes.scene import route_scenes_scene
-from yombo.lib.webinterface.routes.scenes.state import route_scenes_state
-from yombo.lib.webinterface.routes.scenes.template import route_scenes_template
-from yombo.lib.webinterface.routes.statistics import route_statistics
-from yombo.lib.webinterface.routes.states import route_states
-from yombo.lib.webinterface.routes.storage import route_storage
-from yombo.lib.webinterface.routes.system import route_system
-from yombo.lib.webinterface.routes.users import route_users
-from yombo.lib.webinterface.routes.webinterface_logs import route_webinterface_logs
+from yombo.lib.webinterface.routes.user import route_user
 from yombo.lib.webinterface.constants import NAV_SIDE_MENU, DEFAULT_NODE, NOTIFICATION_PRIORITY_MAP_CSS
 
 logger = get_logger("library.webinterface")
 
 
-class NotFound(Exception):
-    pass
-
-
-class Yombo_Site(Site):
-
-    def setup_log_queue(self, webinterface):
-        self.save_log_queue_loop = LoopingCall(self.save_log_queue)
-        self.save_log_queue_loop.start(31.7, False)
-
-        self.log_queue = []
-
-        self.webinterface = webinterface
-        self.db_save_log = self.webinterface._LocalDB.webinterface_save_logs
-
-    def _escape(self, s):
-        """
-        Return a string like python repr, but always escaped as if surrounding
-        quotes were double quotes.
-        @param s: The string to escape.
-        @type s: L{bytes} or L{unicode}
-        @return: An escaped string.
-        @rtype: L{unicode}
-        """
-        if not isinstance(s, bytes):
-            s = s.encode("ascii")
-
-        r = repr(s)
-        if not isinstance(r, str):
-            r = r.decode("ascii")
-        if r.startswith(u"b"):
-            r = r[1:]
-        if r.startswith(u"'"):
-            return r[1:-1].replace(u'"', u'\\"').replace(u"\\'", u"'")
-        return r[1:-1]
-
-    def log(self, request):
-        """
-        This is magically called by the Twisted framework unicorn: twisted.web.http:Request.finish()
-
-        :param request:
-        :return:
-        """
-        ignored_extensions = (".png", ".js", ".css", ".jpg", ".jpeg", ".gif", ".ico", ".woff2", ".map",
-                              "site.webmanifest")
-        url_path = request.path.decode().strip()
-        if any(url_path.endswith(ext) for ext in ignored_extensions):
-            return
-
-        if request.getClientIP() == "127.0.0.1" and url_path.startswith("/api/v1/mqtt/auth/"):
-            return
-
-        if hasattr(request, "auth"):
-            if request.auth is None:
-                user_id = None
-            else:
-                user_id = request.auth.safe_display
-        else:
-            # print(f"request has no auth! : {request}")
-            user_id = None
-
-        self.log_queue.append(OrderedDict({
-            "request_at": time(),
-            "request_protocol": request.clientproto.decode().strip(),
-            "referrer": self._escape(request.getHeader(b"referer") or b"-").strip(),
-            "agent": self._escape(request.getHeader(b"user-agent") or b"-").strip(),
-            "ip": request.getClientIP(),
-            "hostname": request.getRequestHostname().decode().strip(),
-            "method": request.method.decode().strip(),
-            "path": url_path,
-            "secure": request.isSecure(),
-            "auth_id": user_id,
-            "response_code": request.code,
-            "response_size": request.sentLength,
-            "uploadable": 1,
-            "uploaded": 0,
-            })
-        )
-
-    def save_log_queue(self):
-        if len(self.log_queue) > 0:
-            queue = self.log_queue
-            self.log_queue = []
-            self.db_save_log(queue)
-
-
-class WebInterface(YomboLibrary):
+class WebInterface(YomboLibrary, ErrorHandler, BuildDistribution):
     """
     Web interface framework.
     """
@@ -270,6 +142,7 @@ class WebInterface(YomboLibrary):
         route_api_v1_events(self.webapp)
         route_api_v1_gateway(self.webapp)
         route_api_v1_module(self.webapp)
+        route_api_v1_mqtt(self.webapp)
         route_api_v1_notification(self.webapp)
         route_api_v1_server(self.webapp)
         route_api_v1_statistics(self.webapp)
@@ -279,58 +152,15 @@ class WebInterface(YomboLibrary):
         route_api_v1_storage(self.webapp)
         route_api_v1_webinterface_logs(self.webapp)
 
-        # Load devtool routes
-        route_devtools_config(self.webapp)
-        route_devtools_config_commands(self.webapp)
-        route_devtools_config_device_types(self.webapp)
-        route_devtools_config_device_type_commmands(self.webapp)
-        route_devtools_config_device_command_inputs(self.webapp)
-        route_devtools_config_input_types(self.webapp)
-        route_devtools_config_modules(self.webapp)
-        route_devtools_config_variables(self.webapp)
-
         # Load web server routes
-        route_authkeys(self.webapp)
-        route_atoms(self.webapp)
-        route_automation(self.webapp)
-        route_automation_device(self.webapp)
-        route_automation_pause(self.webapp)
-        route_automation_scene(self.webapp)
-        route_automation_state(self.webapp)
-        route_automation_template(self.webapp)
-        route_calllater(self.webapp)
-        route_configs(self.webapp)
-        route_crontabs(self.webapp)
-        route_debug(self.webapp)
-        route_devices(self.webapp)
-        route_discovery(self.webapp)
-        route_events(self.webapp)
-        route_locations(self.webapp)
-        route_devtools_config(self.webapp)
-        route_gateways(self.webapp)
         route_home(self.webapp)
-        route_intents(self.webapp)
         route_misc(self.webapp)
-        route_modules(self.webapp)
-        route_notices(self.webapp)
-        route_roles(self.webapp)
-        route_scenes(self.webapp)
-        route_scenes_device(self.webapp)
-        route_scenes_pause(self.webapp)
-        route_scenes_scene(self.webapp)
-        route_scenes_state(self.webapp)
-        route_scenes_template(self.webapp)
+        route_user(self.webapp)
         if self.operating_mode != "run":
+            from yombo.lib.webinterface.routes.restore import route_restore
             from yombo.lib.webinterface.routes.setup_wizard import route_setup_wizard
             route_setup_wizard(self.webapp)
-        route_statistics(self.webapp)
-        route_states(self.webapp)
-        route_storage(self.webapp)
-        route_system(self.webapp)
-        route_users(self.webapp)
-        route_webinterface_logs(self.webapp)
-        if self.is_master():
-            route_panel(self.webapp)
+            route_restore(self.webapp)
 
         self.temp_data = ExpiringDict(max_age_seconds=1800)
         self.web_server_started = False
@@ -355,7 +185,7 @@ class WebInterface(YomboLibrary):
         self.web_factory.noisy = False  # turn off Starting/stopping message
         self.displayTracebacks = False
 
-        self._display_pin_console_at = 0
+        self._display_how_to_access_at = 0  # When the display notice for how to access the web was shown.
 
         self.misc_wi_data["gateway_label"] = self._Configs.get2("core", "label", "Yombo Gateway", False)
         self.misc_wi_data["operating_mode"] = self.operating_mode
@@ -418,6 +248,7 @@ class WebInterface(YomboLibrary):
         self.webapp.templates.globals["_area_id"] = None
         self.webapp.templates.globals["_location"] = None
         self.webapp.templates.globals["_area"] = None
+        self.webapp.templates.globals["bg_image_id"] = lambda: int(time()/300) % 6
 
         self._refresh_jinja2_globals_()
         self.starting = False
@@ -454,8 +285,8 @@ class WebInterface(YomboLibrary):
 
     def _started_(self, **kwargs):
         # if self.operating_mode != "run":
-        self._display_pin_console_at = int(time())
-        self.display_pin_console()
+        self._display_how_to_access_at = int(time())
+        self.display_how_to_access()
         self._Notifications.delete("webinterface:starting")
         self.web_interface_fully_started = True
 
@@ -513,96 +344,10 @@ class WebInterface(YomboLibrary):
             pass
             # add base node...
 
-    @inlineCallbacks
-    def change_ports(self, port_nonsecure=None, port_secure=None):
-        if port_nonsecure is None and port_secure is None:
-            logger.info("Asked to change ports, but nothing has changed.")
-            return
-
-        if port_nonsecure is not None:
-            if port_nonsecure != self.wi_port_nonsecure():
-                self.wi_port_nonsecure(set=port_nonsecure)
-                logger.info("Changing port for the non-secure web interface: {port}", port=port_nonsecure)
-                if self.web_server_started:
-                    yield self.web_interface_listener.stopListening()
-                    self.web_server_started = False
-
-        if port_secure is not None:
-            if port_secure != self.wi_port_secure():
-                self.wi_port_secure(set=port_secure)
-                logger.info("Changing port for the secure web interface: {port}", port=port_secure)
-                if self.web_server_ssl_started:
-                    yield self.web_interface_ssl_listener.stopListening()
-                    self.web_server_ssl_started = False
-
-        self.start_web_servers()
-
-    # @inlineCallbacks
-    def start_web_servers(self):
-
-        if self.already_starting_web_servers is True:
-            return
-        self.already_starting_web_servers = True
-        logger.debug("starting web servers")
-        if self.web_server_started is False:
-            if self.wi_port_nonsecure() == 0:
-                logger.warn("Non secure port has been disabled. With gateway stopped, edit yomobo.ini and change: webinterface->nonsecure_port")
-            else:
-                self.web_server_started = True
-                port_attempts = 0
-                while port_attempts < 100:
-                    try:
-                        self.web_interface_listener = reactor.listenTCP(self.wi_port_nonsecure()+port_attempts, self.web_factory)
-                        break
-                    except Exception as e:
-                        port_attempts += 1
-                if port_attempts >= 100:
-                    logger.warn("Unable to start web server, no available port could be found. Tried: {starting} - {ending}",
-                                starting=self.wi_port_secure(), ending=self.wi_port_secure()+port_attempts)
-                elif port_attempts > 0:
-                    self._Configs.set("webinterface", "nonsecure_port", self.wi_port_nonsecure()+port_attempts)
-                    logger.warn(
-                        "Web interface is on a new port: {new_port}", new_port=self.wi_port_nonsecure()+port_attempts)
-
-        if self.web_server_ssl_started is False:
-            if self.wi_port_secure() == 0:
-                logger.warn("Secure port has been disabled. With gateway stopped, edit yomobo.ini and change: webinterface->secure_port")
-            else:
-                self.web_server_ssl_started = True
-                cert = self._SSLCerts.get("lib_webinterface")
-
-                if cert["key_crypt"] is None or cert["cert_crypt"] is None:
-                    logger.warn("Unable to start secure web interface, cert is not valid.")
-                else:
-                    contextFactory = ssl.CertificateOptions(privateKey=cert["key_crypt"],
-                                                            certificate=cert["cert_crypt"],
-                                                            extraCertChain=cert["chain_crypt"])
-                    port_attempts = 0
-                    # print("########### WEBINTER: about to start SSL port listener")
-
-                    while port_attempts < 100:
-                        try:
-                            # print("about to start ssl listener on port: %s" % self.wi_port_secure())
-                            self.web_interface_ssl_listener = reactor.listenSSL(self.wi_port_secure()+port_attempts, self.web_factory,
-                                                                                contextFactory)
-                            break
-                        except Exception as e:
-                            logger.warn(f"Unable to start secure web server: {e}", e=e)
-                            port_attempts += 1
-                    if port_attempts >= 100:
-                        logger.warn("Unable to start secure web server, no available port could be found. Tried: {starting} - {ending}",
-                                    starting=self.wi_port_secure(), ending=self.wi_port_secure()+port_attempts)
-                    elif port_attempts > 0:
-                        self._Configs.set("webinterface", "secure_port", self.wi_port_secure()+port_attempts)
-                        logger.warn(
-                            "Secure (tls/ssl) web interface is on a new port: {new_port}", new_port=self.wi_port_secure()+port_attempts)
-
-        logger.debug("done starting web servers")
-        self.already_starting_web_servers = False
-
     def _configuration_set_(self, **kwargs):
         """
-        Receive configuruation updates and adjust as needed.
+        Need to monitor if the web interface port has changed. This will restart the webinterface
+        server if needed.
 
         :param kwargs: section, option(key), value
         :return:
@@ -610,10 +355,6 @@ class WebInterface(YomboLibrary):
         section = kwargs["section"]
         option = kwargs["option"]
         value = kwargs["value"]
-
-        # if section == "core":
-        #     if option == "label":
-        #         self.misc_wi_data["gateway_label"] = value
 
         if self.starting is True:
             return
@@ -624,77 +365,11 @@ class WebInterface(YomboLibrary):
             elif option == "secure_port":
                 self.change_ports(port_secure=value)
 
-    def _sslcerts_(self, **kwargs):
-        """
-        Called to collect to ssl cert requirements.
-
-        :param kwargs:
-        :return:
-        """
-        fqdn = self.fqdn()
-        if fqdn is None:
-            logger.warn("Unable to create webinterface SSL cert: DNS not set properly.")
-            return
-        cert = {}
-        cert["sslname"] = "lib_webinterface"
-        cert["sans"] = ["localhost", "l", "local", "i", "e", "internal", "external", str(int(time()))]
-        cert["cn"] = cert["sans"][0]
-        cert["update_callback"] = self.new_ssl_cert
-        return cert
-
-    @inlineCallbacks
-    def new_ssl_cert(self, newcert, **kwargs):
-        """
-        Called when a requested certificate has been signed or updated. If needed, this function
-        will function will restart the SSL service if the current certificate has expired or is
-        a self-signed cert.
-
-        :param kwargs:
-        :return:
-        """
-        logger.info("Got a new cert! About to install it.")
-        if self.web_server_ssl_started is not None:
-            yield self.web_interface_ssl_listener.stopListening()
-            self.web_server_ssl_started = False
-        self.start_web_servers()
-
     @inlineCallbacks
     def _unload_(self, **kwargs):
         if hasattr(self, "web_factory"):
             if self.web_factory is not None:
                 yield self.web_factory.save_log_queue()
-
-    # def WebInterface_configuration_details(self, **kwargs):
-    #     return [{"webinterface": {
-    #                 "enabled": {
-    #                     "description": {
-    #                         "en": "Enables/disables the web interface.",
-    #                     }
-    #                 },
-    #                 "port": {
-    #                     "description": {
-    #                         "en": "Port number for the web interface to listen on."
-    #                     }
-    #                 }
-    #             },
-    #     }]
-
-    @webapp.route("/<path:catchall>")
-    @require_auth()
-    def page_404(self, request, session, catchall):
-        # print(f"page 404: {self.working_dir}/frontend/")
-        return File(self.working_dir + "/frontend/")
-
-        request.setResponseCode(404)
-        page = self.get_template(request, self.wi_dir + "/pages/errors/404.html")
-        return page.render()
-
-    @webapp.handle_errors(NotFound)
-    @require_auth()
-    def notfound(self, request, failure):
-        """ This shouldn't ever be used....failsafe."""
-        request.setResponseCode(404)
-        return "Not found, I say!"
 
     @property
     def internal_url(self):
@@ -725,43 +400,6 @@ class WebInterface(YomboLibrary):
             return f"https://{external_hostname}:{self.wi_port_secure()}"
         else:
             return f"https://e.{fqdn}:{self.wi_port_secure()}"
-
-    def display_pin_console(self):
-        print("###########################################################")
-        print("#                                                         #")
-        if self.operating_mode != "run":
-            print("# The Yombo Gateway website is running in                 #")
-            print("# configuration only mode.                                #")
-            print("#                                                         #")
-
-        fqdn = self.fqdn()
-        if fqdn is None:
-            local_hostname = "127.0.0.1"
-            internal_hostname = self._Configs.get("core", "localipaddress_v4")
-            external_hostname = self._Configs.get("core", "externalipaddress_v4")
-            local = f"http://{local_hostname}:{self.wi_port_nonsecure()}"
-            internal = f"http://{internal_hostname}:{self.wi_port_nonsecure()}"
-            external = f"https://{external_hostname}:{self.wi_port_secure()}"
-            print("# The gateway can be accessed from the following urls:    #")
-            print("#                                                         #")
-            print("# On local machine:                                       #")
-            print(f"#  {local:<54} #")
-            print("#                                                         #")
-            print("# On local network:                                       #")
-            print(f"#  {internal:<54} #")
-            print("#                                                         #")
-            print("# From external network (check port forwarding):          #")
-            print(f"#  {external:<54} #")
-        else:
-            website_url = f"http://{fqdn}"
-            print("# The gateway can be accessed from the following url:     #")
-            print("#                                                         #")
-            print("# From anywhere:                                          #")
-            print(f"#  {website_url:<54} #")
-
-        print("#                                                         #")
-        print("#                                                         #")
-        print("###########################################################")
 
     def i18n(self, request):
         """
@@ -908,12 +546,10 @@ class WebInterface(YomboLibrary):
         return show_alerts
 
     def get_template(self, request, template_path):
-        request.setHeader("server", "Apache/2.4.33 (Ubuntu)")
         request.webinterface.webapp.templates.globals["_"] = request.webinterface.i18n(request)  # set in auth.update_request.
         return self.webapp.templates.get_template(template_path)
 
     def redirect(self, request, redirect_path):
-        request.setHeader("server", "Apache/2.4.33 (Ubuntu)")
         request.redirect(redirect_path)
 
     def _get_parms(self, request):
@@ -1034,134 +670,6 @@ class WebInterface(YomboLibrary):
     def do_shutdown(self):
         raise YomboCritical("Web Interface setup wizard complete.")
 
-    @inlineCallbacks
-    def frontend_npm_run(self, arguments=None):
-        """
-        Does the actual execution of the npm run.
-
-        :param arguments: A list of arguments to pass to NPM.
-        :return:
-        """
-        if arguments is None:
-            arguments = ["run", "production"]
-
-        results = yield getProcessOutput(
-            "npm",
-            arguments,
-            path=f"{self.app_dir}/yombo/frontend",
-            env=environ.copy(),
-            errortoo=True,
-        )
-        print(f"NPM Build results: {results}")
-
-    @inlineCallbacks
-    def build_frontend(self, environemnt=None):
-        """
-        This execute the NPM build process for the frontend.
-
-        :return:
-        """
-        self.app_dir
-        if self.frontend_building is True:
-            return
-
-        if self.frontend_building is True:
-            logger.warn("Cannot build frontend : already building...")
-            return
-        # print("!!!!!!! Build frontend starting")
-        self.frontend_building = True
-        yield self.frontend_npm_run()
-        self.frontend_building = False
-        # print("!!!!!!! Build frontend finished")
-
-    @inlineCallbacks
-    def copy_frontend(self, environemnt=None):
-        """
-        Copy the frontend contents to the static folder.
-        :return:
-        """
-        yield self.copytree("yombo/frontend/dist/", "frontend/")
-
-    @inlineCallbacks
-    def build_dist(self):
-        """
-        Copies the CSS, JS, and images to the static directory for the system pages (login/out, config, etc).
-
-        This also starts the NPM build production process for the frontend and copies those files to the
-        the distribution directory.
-        :return:
-        """
-        # yield threads.deferToThread(self.empty_directory, f"{self.working_dir}/frontend/")
-        yield self.copy_static_web_items()
-
-        # if path.exists(f"{self.working_dir}/frontend/index.html") is False:
-        yield self.copy_frontend()  # We copy the previously build frontend incase it's new install..
-        yield self.build_frontend()
-        yield self.copy_frontend()  # now copy the final version...
-
-    @inlineCallbacks
-    def copy_static_web_items(self):
-        """
-        Copies base webpages, not relating to the frontend application.
-
-        :return:
-        """
-        def do_cat(inputs, output):
-            output = f"{self.working_dir}/frontend/{output}"
-            makedirs(path.dirname(output), exist_ok=True)
-            with open(output, "w") as outfile:
-                for fname in inputs:
-                    fname = "yombo/lib/webinterface/static/" + fname
-                    with open(fname) as infile:
-                        outfile.write(infile.read())
-
-        CAT_SCRIPTS = [
-            "source/bootstrap4/css/bootstrap.min.css",
-            "source/bootstrap-select/css/bootstrap-select.min.css",
-            "source/yombo/yombo.css",
-        ]
-        CAT_SCRIPTS_OUT = "css/basic_app.min.css"
-        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
-
-        CAT_SCRIPTS = [
-            "source/jquery/jquery-3.3.1.min.js",
-            "source/jquery/jquery.validate.min.js",
-            "source/js-cookie/js.cookie.min.js",
-            "source/bootstrap4/js/bootstrap.bundle.min.js",
-            "source/bootstrap-select/js/bootstrap-select.min.js",
-            "source/yombo/jquery.are-you-sure.js",
-            "source/yombo/yombo.js",
-        ]
-        CAT_SCRIPTS_OUT = "js/basic_app.js"
-        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
-
-        yield self.copytree("yombo/lib/webinterface/static/source/img/", "frontend/img/")
-
-    @inlineCallbacks
-    def copytree(self, src, dst, symlinks=False, ignore=None):
-        if src.startswith("/") is False:
-            src = self.app_dir + "/" + src
-        if dst.startswith("/") is False:
-            dst = self.working_dir + "/" + dst
-        # print(f"!!!!!!! Start copytree....appdir{self.app_dir} {src} -> {dst}")
-
-        if not path.exists(dst):
-            makedirs(dst)
-        for item in listdir(src):
-            s = path.join(src, item)
-            d = path.join(dst, item)
-            if path.isdir(s):
-                self.copytree(s, d, symlinks, ignore)
-            else:
-                if not path.exists(d) or osstat(s).st_mtime - osstat(d).st_mtime > 1:
-                    yield threads.deferToThread(shutil.copy2, s, d)
-
-    def empty_directory(self, delpath):
-        for root, dirs, files in oswalk(delpath):
-            for f in files:
-                unlink(path.join(root, f))
-            for d in dirs:
-                shutil.rmtree(path.join(root, d))
 
 class web_translator(object):
     def __init__(self, webinterface, locales):
