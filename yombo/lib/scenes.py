@@ -175,7 +175,10 @@ class Scenes(YomboLibrary, object):
 
         :return:
         """
-        self.scenes = self._Nodes.get_advanced({"node_type": "scene"})
+        try:
+            self.scenes = self._Nodes.get_advanced({"node_type": "scene"})
+        except KeyError:
+            self.scenes = {}
         # print(f"scenes._load_ got these scenes back from the node search: {self.scenes}")
         gateway_id = self.gateway_id()
         # First, clean out other gateways....
