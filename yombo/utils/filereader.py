@@ -1,7 +1,7 @@
 #This file was created by Yombo for use with Yombo Python Gateway automation
 #software.  Details can be found at https://yombo.net
 """
-The FileReader class uses non-blocking code to open and monitor a file
+The FileReader class uses non-blocking code to open and **monitor** a file
 for reading lines of text and for monitoring the file for any new lines.
 
 For any lines of the text found, it will send it to the function set
@@ -30,12 +30,13 @@ send any new lines of text to the function define on setup.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2013-2016 by Yombo.
+:copyright: Copyright 2013-2019 by Yombo.
 :license: LICENSE for details.
 """
 # Import python libraries
 import codecs
 import os
+from pathlib import Path
 
 # Import twisted libraries
 from twisted.internet import reactor
@@ -43,7 +44,7 @@ from twisted.internet.task import LoopingCall
 from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboFileError
+from yombo.core.exceptions import YomboWarning
 from yombo.utils import get_component
 
 
@@ -54,7 +55,7 @@ class FileReader:
 
     Typically used to monitor log files.
     """
-    def __init__(self, owner_object, **kwargs):
+    def __init__(self, owner_object, filename, **kwargs):
         """
         Generate a new File Reader instance. 
 
@@ -66,6 +67,7 @@ class FileReader:
             in the future, but you want to persist tracking if the filename changes.
             defaults to filename is not supplied.
         :type fileid: string
+        :param encoding: If using text, specify the encoding - default: utf-8
         :param callback: **Required.** A function to call with new content found in file.
         :type callback: pointer to function
         :param make_if_missing: If true, will create an empty file if file doesn't
@@ -74,15 +76,28 @@ class FileReader:
         :param frequency: How often, in seconds, to check for new content. Default: 1
         :type frequency: int
         """
+        if "encoding" in kwargs:
+            self.encoding = kwargs["encoding"]
+        else:
+            self.encoding = "utf-8"
+
+        if filename is None or filename == "":
+            raise YomboWarning("FileReader requires a file name to read from,", 652321, "__init__", "FileWriter")
+        if filename.startswith("/") is False:
+            filename = f"./{filename}"
+
         try:
             self.filename = kwargs["filename"]
         except:
-            raise YomboFileError("filename not set.", 101, "__init__", "FileReader")
+            raise YomboWarning("FileReader requires a filename to read.", 232124, "__init__", "FileReader")
 
+        if os.path.exists(self.filename) is False:
+            raise YomboWarning(f"FileReader cannot find the requested file to open for monitoring: {self.filename}",
+                               423215, "__init__", "FileReader")
         try:
             self.callback = kwargs["callback"]
         except:
-            raise YomboFileError("callback not set.", 102, "__init__", "FileReader")
+            raise YomboWarning("FileReader requires a callback to send data to.", 654231, "__init__", "FileReader")
 
         self._owner_object = owner_object
 
@@ -104,11 +119,11 @@ class FileReader:
         try:
             if not os.path.exists(self.filename):
                 if self.make_if_missing is True:  # if file doesn't exist
-                    open(self.filename, "w").close()  # create it and then close.
+                    Path.touch(self.filename)  # Touch the file if it doesn't exists and set the counter to 0.
                     self.fileInfo["startLocation"] = 0
                 else:
-                    raise YomboFileError("File does not exist, told not cannot create one.",
-                                         103, "__init__", "FileReader")
+                    raise YomboWarning("File does not exist, told not cannot create one.",
+                                         554224, "__init__", "FileReader")
             else:  # else, exists. If smaller than last run, reset the file pointer.
                 file_info = os.stat(self.filename)
                 if file_info.st_size < self.fileInfo["startLocation"]:
@@ -118,8 +133,8 @@ class FileReader:
             self.fp_in.seek(self.fileInfo["startLocation"])
         except IOError as e:
             (errno, strerror) = e.args
-            raise YomboFileError(f"Logreader could not open file for reading. Reason: {strerror}",
-                                 104, "__init__", "FileReader")
+            raise YomboWarning(f"FileReader could not open file for reading. Reason: {strerror}",
+                                 265743, "__init__", "FileReader")
         else:
             self.watch_loop = LoopingCall(self._watch)
             self.watch_loop.start(self.frequency)
