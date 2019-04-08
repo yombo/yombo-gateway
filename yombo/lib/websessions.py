@@ -423,7 +423,7 @@ class AuthWebsession(UserMixin, AuthMixin):
     def set_refresh_token(self, token, expires_at):
         self._refresh_token = yield self._Parent._GPG.encrypt_aes(self._auth_id_long, token)
         self.refresh_token_expires_at = expires_at
-        # yield self._LocalDB.update_web_session(self)
+        yield self._LocalDB.update_web_session(self)
 
     @inlineCallbacks
     def get_access_token(self):
@@ -436,22 +436,7 @@ class AuthWebsession(UserMixin, AuthMixin):
     def set_access_token(self, token, expires_at):
         self._access_token = yield self._Parent._GPG.encrypt_aes(self._auth_id_long, token)
         self.access_token_expires_at = expires_at
-        # yield self._LocalDB.update_web_session(self)
-
-    # def __len__(self):
-    #     return len(self.data)
-    #
-    # def __getitem__(self, item):
-    #     return self.data[item]
-    #
-    # def __setitem__(self, item, val):
-    #     self.data[item] = val
-    #
-    # def __delitem__(self, item):
-    #     del self.data[item]
-    #
-    # def __contains__(self, item):
-    #     return item in self.data
+        yield self._LocalDB.update_web_session(self)
 
     # Local
     def __init__(self, parent, record, load_source=None):
@@ -462,10 +447,7 @@ class AuthWebsession(UserMixin, AuthMixin):
         self.auth_type_id = 'user'
         self.auth_at = None
 
-        # print(f"websession: record: {record}")
-
         # will eventually be populated by a web request. Usually near creation time.
-        # print(f"websession: setting auth: {record}")
         self.auth_id = record["auth_id"]
         self.auth_id_long = record["auth_id_long"]
         self.source = "websessions"
@@ -502,30 +484,34 @@ class AuthWebsession(UserMixin, AuthMixin):
 
         self.update_attributes(record, load_source == "database")
 
-    def add_alert(self, message, level="info", dismissible=True, deletable=True):
+    def add_alert(self, message, level="info", display_once=True, deletable=True, id=None):
         """
         Add an alert to the stack.
-        :param level: info, warning, error
         :param message:
+        :param level: info, warning, error
+        :param display_once: bool - If the message should only be displayed once.
         :return:
         """
-        rand = random_string(length=15)
-        self.alerts[rand] = {
+        if id is None:
+            id = random_string(length=15)
+        self.alerts[id] = {
             "level": level,
             "message": message,
-            "dismissible": dismissible,
+            "display_once": display_once,
             "deletable": deletable,
         }
-        return rand
+        return id
 
-    def get_alerts(self, session=None):
+    def get_alerts(self, autodelete=None):
         """
         Retrieve a list of alerts for display.
         """
+        if autodelete is None:
+            autodelete = True
         show_alerts = {}
         for keyid in list(self.alerts.keys()):
             show_alerts[keyid] = self.alerts[keyid]
-            if self.alerts[keyid]["dismissible"] is False:
+            if self.alerts[keyid]["display_once"] is True and autodelete is True:
                 del self.alerts[keyid]
         return show_alerts
 
@@ -564,24 +550,6 @@ class AuthWebsession(UserMixin, AuthMixin):
         """
         access_token = yield self.get_access_token()
         return f"user_api_token {access_token[0]}"
-
-    def set_access_tokens(self, refresh_token=None, refresh_token_expires_at=None, access_token=None, access_token_expires_at=None):
-        """
-        Saves the oauth tokens for accessing Yombo API.
-
-        :param refresh_token:
-        :param access_token:
-        :return:
-        """
-        if refresh_token is not None:
-            self.refresh_token = refresh_token
-        if refresh_token_expires_at is not None:
-            self.refresh_token_expires_at = refresh_token_expires_at
-        if access_token is not None:
-            self.access_token = access_token
-        if access_token_expires_at is not None:
-            self.access_token_expires_at = access_token_expires_at
-        self.save_to_database()
 
     def is_valid(self, auth_id_missing_ok=None):
         """
