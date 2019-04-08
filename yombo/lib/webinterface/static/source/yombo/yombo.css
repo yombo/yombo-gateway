@@ -296,3 +296,8 @@ color:#dd3939;
 .modal-lg {
     max-width: 80% !important;
 }
+
+label {
+    margin-bottom: .2rem !important;
+    font-size: 1.4em !important;
+}
