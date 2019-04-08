@@ -112,7 +112,7 @@ class FileWriter:
                 else:
                     os.makedirs(fileparts[0])
 
-            logger.info("{fileid}: About to open file: {mode} - {filename}",
+            logger.debug("{fileid}: About to open file: {mode} - {filename}",
                         fileid=self.fileid, mode=mode, filename=self.filename)
             self.fp_out = codecs.open(self.filename, mode)
             logger.debug("{fileid}: File pointer: {fp}", fileid=self.fileid, fp=self.fp_out.__dict__)
