@@ -216,9 +216,9 @@ class GPG(YomboLibrary):
         # print("elf.mykey_last_sent_yombo(): %s" % type(self.mykey_last_sent_yombo()))
         # print("elf.mykey_last_sent_yombo(): %s" % self.mykey_last_sent_yombo())
         if self.mykey_last_sent_yombo() is None:
-            self.send_my_gpg_key_to_yombo()
+            yield self.send_my_gpg_key_to_yombo()
         elif self.mykey_last_sent_yombo() < int(time()) - (60*60*24*30):
-            self.send_my_gpg_key_to_yombo()
+            yield self.send_my_gpg_key_to_yombo()
 
         # print(f"mykey_last_sent_keyserver: {self.mykey_last_sent_keyserver()}")
 
@@ -233,6 +233,7 @@ class GPG(YomboLibrary):
                     self.mykey_last_sent_keyserver() < int(time()) - (60*60*1):
                 yield self.get_my_gpg_key_from_keyserver()
 
+    @inlineCallbacks
     def send_my_gpg_key_to_yombo(self):
         """
         Send my gpg key to the yombo server.
@@ -243,22 +244,21 @@ class GPG(YomboLibrary):
 
         mykey = self.gpg_key_full
         body = {
-            "fingerprint": mykey["fingerprint"],
-            "publickey": mykey["publickey"],
+            "keyid": mykey["fingerprint"],
+            "publickey_ascii": mykey["publickey"],
         }
 
-        # logger.info("sending local information: {body}", body=body)
+        logger.debug("Sending my public GPG key to Yombo.")
+        logger.debug("sending gpg information: {body}", body=body)
+        gwid = self.gateway_id()
+        try:
+            response = yield self._YomboAPI.request(
+                "POST", f"/v1/gateways/{gwid}/gpg",
+                body)
 
-        requestmsg = self._AMQPYombo.generate_message_request(
-            exchange_name="ysrv.e.gw_system",
-            source="yombo.gateway.lib.gpg",
-            destination="yombo.server.gw_system",
-            body=body,
-            request_type="gw_gpg_update",
-            callback=None,
-        )
-        logger.info("Sending my public GPG key to Yombo.")
-        self._AMQPYombo.publish(**requestmsg)
+        except YomboWarning as e:
+            logger.warn("Unable to send GPG key to Yombo: {e}", e=e)
+            return
         self._Configs.set("gpg", "last_sent_yombo", int(time()))
 
     @inlineCallbacks
