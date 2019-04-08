@@ -183,7 +183,7 @@ class GatewaysSchema(YomboSchemaBase):
     master_gateway_id = fields.String(required=True)
     machine_label = fields.String(required=True)
     label = fields.String(required=True)
-    description = fields.String(required=True)
+    description = fields.String(allow_none=True)
     user_id = fields.String(required=True)
     mqtt_auth = fields.String(allow_none=True)
     mqtt_auth_next = fields.String(allow_none=True)
