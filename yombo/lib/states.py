@@ -126,7 +126,7 @@ class States(YomboLibrary, object):
         .. note:: If this is a new state, or you wish to set a human filter for the value, use
            :py:meth:`set <States.set>` method.
 
-            >>> self._States["module.local.name.hi"] = "somee value"
+            >>> self._States["module.local.name.hi"] = "some value"
 
         :raises YomboWarning: Raised when request is malformed.
         :param state_requested: The state key to replace the value for.
@@ -504,6 +504,8 @@ class States(YomboLibrary, object):
 
         self.states[gateway_id][key]["value_human"] = self.convert_to_human(value, value_type)
 
+        if hasattr(self, '_Automation') is False:
+            return
         self._Automation.trigger_monitor("state",
                                          key=key,
                                          value=value,
