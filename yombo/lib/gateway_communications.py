@@ -82,6 +82,8 @@ class Gateway_Communications(YomboLibrary):
             """ Quick function to test if host is listening to a port. """
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             logger.debug("# Test non ssl host - port: {host} - {port}", host=host, port=port)
+            if port is None:
+                return False
             return sock.connect_ex((host, port))
 
         # Now determine the optimal mqtt connection to the master gateway. Order or preference:
@@ -89,21 +91,37 @@ class Gateway_Communications(YomboLibrary):
         # 2) Local network, but with SSL preferred.
         # 3) Remote network, only SSL!
         if self.is_master():
-            mqtt_hosts = [
-                {
-                    "address": "i." + master_gateway.dns_name,
-                    "mqtt": [
-                        {"port": master_gateway.internal_mqtt, "ssl": False},
-                        {"port": master_gateway.internal_mqtt_le, "ssl": True},
-                        {"port": master_gateway.internal_mqtt_ss, "ssl": True},
-                    ],
-                    "ws": [
-                        # {"port": master_gateway.internal_mqtt_ws, "ssl": False},
-                        {"port": master_gateway.internal_mqtt_ws_le, "ssl": True},
-                        {"port": master_gateway.internal_mqtt_ws_ss, "ssl": True},
-                    ]
-                }
-            ]
+            if master_gateway.dns_name is not None:
+                mqtt_hosts = [
+                    {
+                        "address": "i." + master_gateway.dns_name,
+                        "mqtt": [
+                            {"port": self._Configs.get("mqtt", "server_listen_port"), "ssl": False},
+                            {"port": self._Configs.get("mqtt", "server_listen_port_le_ssl"), "ssl": True},
+                            {"port": self._Configs.get("mqtt", "server_listen_port_ss_ssl"), "ssl": True},
+                        ],
+                        "ws": [
+                            # {"port": master_gateway.internal_mqtt_ws, "ssl": False},
+                            {"port": self._Configs.get("mqtt", "server_listen_port_websockets_le_ssl"), "ssl": True},
+                            {"port": self._Configs.get("mqtt", "server_listen_port_websockets_ss_ssl"), "ssl": True},
+                        ]
+                    }
+                ]
+            else:
+                mqtt_hosts = [
+                    {
+                        "address": self._Configs.get("core", "localipaddress_v4"),
+                        "mqtt": [
+                            {"port": self._Configs.get("mqtt", "server_listen_port"), "ssl": False},
+                            {"port": self._Configs.get("mqtt", "server_listen_port_ss_ssl"), "ssl": True},
+                        ],
+                        "ws": [
+                            # {"port": master_gateway.internal_mqtt_ws, "ssl": False},
+                            {"port": self._Configs.get("mqtt", "server_listen_port_websockets_ss_ssl"), "ssl": True},
+                        ]
+                    }
+                ]
+
         else:
             mqtt_hosts = [
                 {
