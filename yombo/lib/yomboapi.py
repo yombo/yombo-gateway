@@ -157,8 +157,8 @@ class YomboAPI(YomboLibrary):
             logger.warn("Error with API request: {method} {url}", method=method, url=url)
             if "errors" in response.content:
                 errors = response.content["errors"]
-                print(f"Yombo API errors: {errors}")
                 for error in errors:
+                    # print(f"Yombo API error: {error}")
                     if len(message) == 0:
                         message += ", "
                     message += f"{message}  {error['title']} - {error['detail']}"
