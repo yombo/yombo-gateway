@@ -20,7 +20,7 @@ from yombo.core.log import get_logger
 logger = get_logger("library.webinterface.builddist")
 
 
-class BuildDistribution(object):
+class BuildDistribution:
     """
     Handles building the distribution files. Primarily, it runs the NPM Build process and copies the contents
     to the working_dir where it can be accessed through the web server.
