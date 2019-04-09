@@ -16,7 +16,6 @@ Provides web interface to easily configure and manage the gateway devices and mo
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/webinterface.html>`_
 """
 # Import python libraries
-from collections import OrderedDict
 from copy import deepcopy
 from hashlib import sha256
 import jinja2
@@ -28,7 +27,7 @@ from time import time
 from urllib.parse import parse_qs, urlparse, urlunparse
 
 # Import twisted libraries
-from twisted.internet import reactor, ssl
+from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks, maybeDeferred, Deferred
 from twisted.internet.task import LoopingCall
 
@@ -39,7 +38,6 @@ from yombo.ext.expiringdict import ExpiringDict
 from yombo.core.exceptions import YomboRestart, YomboCritical
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-import yombo.ext.totp
 import yombo.utils
 import yombo.utils.converters as converters
 import yombo.utils.datetime as dt_util
@@ -47,6 +45,7 @@ from yombo.lib.webinterface.auth import require_auth
 
 from yombo.lib.webinterface.class_helpers.builddist import BuildDistribution
 from yombo.lib.webinterface.class_helpers.errorhandler import ErrorHandler
+from yombo.lib.webinterface.class_helpers.render import Render
 from yombo.lib.webinterface.class_helpers.yombo_site import Yombo_Site
 from yombo.lib.webinterface.class_helpers.webserver import WebServer
 
@@ -77,14 +76,13 @@ from yombo.lib.webinterface.constants import NAV_SIDE_MENU, DEFAULT_NODE, NOTIFI
 logger = get_logger("library.webinterface")
 
 
-class WebInterface(BuildDistribution, ErrorHandler, YomboLibrary, WebServer):
+class WebInterface(BuildDistribution, ErrorHandler, Render, YomboLibrary, WebServer):
     """
     Web interface framework.
     """
     webapp = Klein()  # Like Flask, but for twisted
 
     visits = 0
-    alerts = OrderedDict()
     starting = True
     already_starting_web_servers = False
     hook_listeners = {}  # special way to toss hook calls to routes.
@@ -97,7 +95,6 @@ class WebInterface(BuildDistribution, ErrorHandler, YomboLibrary, WebServer):
         """
         return "Yombo web interface library"
 
-    @inlineCallbacks
     def _init_(self, **kwargs):
         self.frontend_building = False
         self.web_interface_fully_started = False
@@ -113,7 +110,7 @@ class WebInterface(BuildDistribution, ErrorHandler, YomboLibrary, WebServer):
             return
 
         self.translators = {}
-        self.idempotence = yield self._SQLDict.get("yombo.lib.webinterface", "idempotence")  # tracks if a request was already made
+        self.idempotence = self._Cache.ttl(name="lib.webinterface.idempotence", ttl=300)
 
         self.working_dir = self._Atoms.get("working_dir")
         self.app_dir = self._Atoms.get("app_dir")
@@ -243,13 +240,13 @@ class WebInterface(BuildDistribution, ErrorHandler, YomboLibrary, WebServer):
         self.webapp.templates.globals["py_urllib_urlunparse"] = urlunparse
         self.webapp.templates.globals["yombo_utils"] = yombo.utils
         self.webapp.templates.globals["misc_wi_data"] = self.misc_wi_data
-        self.webapp.templates.globals["misc_wi_data"] = self.misc_wi_data
         self.webapp.templates.globals["webinterface"] = self
         self.webapp.templates.globals["_location_id"] = None
         self.webapp.templates.globals["_area_id"] = None
         self.webapp.templates.globals["_location"] = None
         self.webapp.templates.globals["_area"] = None
         self.webapp.templates.globals["bg_image_id"] = lambda: int(time()/300) % 6
+        self.webapp.templates.globals["get_alerts"] = self.get_alerts
 
         self._refresh_jinja2_globals_()
         self.starting = False
@@ -491,7 +488,7 @@ class WebInterface(BuildDistribution, ErrorHandler, YomboLibrary, WebServer):
                     self.module_config_links[component._module_id] = options["configs"]["settings_link"]
 
         # build menu tree
-        self.misc_wi_data["nav_side"] = OrderedDict()
+        self.misc_wi_data["nav_side"] = {}
 
         is_master = self.is_master()
         # temp_list = sorted(nav_side_menu, key=itemgetter("priority1", "priority2", "label1"))
@@ -514,37 +511,23 @@ class WebInterface(BuildDistribution, ErrorHandler, YomboLibrary, WebServer):
 
         self.starting = False
 
-    def add_alert(self, message, level="info", dismissible=True, type="session", deletable=True):
+    def add_alert(self, session, message, level="info", display_once=True, deletable=True, id=None):
         """
         Add an alert to the stack.
         :param level: info, warning, error
         :param message:
         :return:
         """
-        rand = yombo.utils.random_string(length=12)
-        self.alerts[rand] = {
-            "type": type,
-            "level": level,
-            "message": message,
-            "dismissible": dismissible,
-            "deletable": deletable,
-        }
-        return rand
+        id = session.add_alert(message, level, display_once, deletable, id)
+        return id
 
-    def get_alerts(self, type=None, session=None):
+    def get_alerts(self, session, autodelete=None):
         """
         Retrieve a list of alerts for display.
         """
-        if type is None:
-            type = "session"
-
-        show_alerts = OrderedDict()
-        for keyid in list(self.alerts.keys()):
-            if self.alerts[keyid]["type"] == type:
-                show_alerts[keyid] = self.alerts[keyid]
-                if type == "session":
-                    del self.alerts[keyid]
-        return show_alerts
+        if session is None:
+            return {}
+        return session.get_alerts(autodelete)
 
     def get_template(self, request, template_path):
         request.webinterface.webapp.templates.globals["_"] = request.webinterface.i18n(request)  # set in auth.update_request.
