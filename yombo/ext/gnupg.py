@@ -27,14 +27,14 @@ Vinay Sajip to make use of the subprocess module (Steve's version uses os.fork()
 and so does not work on Windows). Renamed to gnupg.py to avoid confusion with
 the previous versions.
 
-Modifications Copyright (C) 2008-2017 Vinay Sajip. All rights reserved.
+Modifications Copyright (C) 2008-2019 Vinay Sajip. All rights reserved.
 
 A unittest harness (test_gnupg.py) has also been added.
 """
 
-__version__ = "0.4.2.dev0"
+__version__ = "0.4.5.dev0"
 __author__ = "Vinay Sajip"
-__date__  = "$06-Jul-2017 15:09:20$"
+__date__  = "$24-Jan-2019 08:43:25$"
 
 try:
     from io import StringIO
@@ -217,12 +217,26 @@ class Verify(object):
         "TRUST_ULTIMATE" : TRUST_ULTIMATE,
     }
 
+    # for now, just the most common error codes. This can be expanded as and
+    # when reports come in of other errors.
+    GPG_SYSTEM_ERROR_CODES = {
+        1: 'permission denied',
+        35: 'file exists',
+        81: 'file not found',
+        97: 'not a directory',
+    }
+
+    GPG_ERROR_CODES = {
+        11: 'incorrect passphrase',
+    }
+
     def __init__(self, gpg):
         self.gpg = gpg
         self.valid = False
         self.fingerprint = self.creation_date = self.timestamp = None
         self.signature_id = self.key_id = None
         self.username = None
+        self.key_id = None
         self.key_status = None
         self.status = None
         self.pubkey_fingerprint = None
@@ -230,6 +244,7 @@ class Verify(object):
         self.sig_timestamp = None
         self.trust_text = None
         self.trust_level = None
+        self.sig_info = {}
 
     def __nonzero__(self):
         return self.valid
@@ -237,41 +252,72 @@ class Verify(object):
     __bool__ = __nonzero__
 
     def handle_status(self, key, value):
+
+        def update_sig_info(**kwargs):
+            sig_id = self.signature_id
+            if sig_id:
+                info = self.sig_info[sig_id]
+                info.update(kwargs)
+
         if key in self.TRUST_LEVELS:
             self.trust_text = key
             self.trust_level = self.TRUST_LEVELS[key]
+            update_sig_info(trust_level=self.trust_level,
+                            trust_text=self.trust_text)
         elif key in ("WARNING", "ERROR"):
             logger.warning('potential problem: %s: %s', key, value)
         elif key == "BADSIG":  # pragma: no cover
             self.valid = False
             self.status = 'signature bad'
             self.key_id, self.username = value.split(None, 1)
+            update_sig_info(keyid=self.key_id, username=self.username,
+                            status=self.status)
         elif key == "ERRSIG":  # pragma: no cover
             self.valid = False
+            parts = value.split()
             (self.key_id,
              algo, hash_algo,
              cls,
-             self.timestamp) = value.split()[:5]
+             self.timestamp) = parts[:5]
+            # Since GnuPG 2.2.7, a fingerprint is tacked on
+            if len(parts) >= 7:
+                self.fingerprint = parts[6]
             self.status = 'signature error'
+            update_sig_info(keyid=self.key_id, timestamp=self.timestamp,
+                            fingerprint=self.fingerprint, status=self.status)
         elif key == "EXPSIG":  # pragma: no cover
             self.valid = False
             self.status = 'signature expired'
             self.key_id, self.username = value.split(None, 1)
+            update_sig_info(keyid=self.key_id, username=self.username,
+                            status=self.status)
         elif key == "GOODSIG":
             self.valid = True
             self.status = 'signature good'
             self.key_id, self.username = value.split(None, 1)
+            update_sig_info(keyid=self.key_id, username=self.username,
+                            status=self.status)
         elif key == "VALIDSIG":
+            fingerprint, creation_date, sig_ts, expire_ts = value.split()[:4]
             (self.fingerprint,
              self.creation_date,
              self.sig_timestamp,
-             self.expire_timestamp) = value.split()[:4]
+             self.expire_timestamp) = (fingerprint, creation_date, sig_ts,
+                                       expire_ts)
             # may be different if signature is made with a subkey
             self.pubkey_fingerprint = value.split()[-1]
             self.status = 'signature valid'
+            update_sig_info(fingerprint=fingerprint, creation_date=creation_date,
+                            timestamp=sig_ts, expiry=expire_ts,
+                            pubkey_fingerprint=self.pubkey_fingerprint,
+                            status=self.status)
         elif key == "SIG_ID":
+            sig_id, creation_date, timestamp = value.split()
+            self.sig_info[sig_id] = {'creation_date': creation_date,
+                                     'timestamp': timestamp}
             (self.signature_id,
-             self.creation_date, self.timestamp) = value.split()
+             self.creation_date, self.timestamp) = (sig_id, creation_date,
+                                                    timestamp)
         elif key == "DECRYPTION_FAILED":  # pragma: no cover
             self.valid = False
             self.key_id = value
@@ -289,15 +335,33 @@ class Verify(object):
             else:
                 self.key_status = 'signing key was revoked'
             self.status = self.key_status
+            update_sig_info(status=self.status, keyid=self.key_id)
         elif key in ("UNEXPECTED", "FAILURE"):  # pragma: no cover
             self.valid = False
             self.key_id = value
             if key == "UNEXPECTED":
                 self.status = 'unexpected data'
             else:
-                # N.B. there might be other reasons
+                # N.B. there might be other reasons. For example, if an output
+                # file can't  be created - /dev/null/foo will lead to a
+                # "not a directory" error, but which is not sent as a status
+                # message with the [GNUPG:] prefix. Similarly if you try to
+                # write to "/etc/foo" as a non-root user, a "permission denied"
+                # error will be sent as a non-status message.
+                message = 'error - %s' % value
+                parts = value.split()
+                if parts[-1].isdigit():
+                    code = int(parts[-1])
+                    system_error = bool(code & 0x8000)
+                    code = code & 0x7FFF
+                    if system_error:
+                        mapping = self.GPG_SYSTEM_ERROR_CODES
+                    else:
+                        mapping = self.GPG_ERROR_CODES
+                    if code in mapping:
+                        message = mapping[code]
                 if not self.status:
-                    self.status = 'incorrect passphrase'
+                    self.status = message
         elif key in ("DECRYPTION_INFO", "PLAINTEXT", "PLAINTEXT_LENGTH",
                      "NO_SECKEY", "BEGIN_SIGNING"):
             pass
@@ -493,7 +557,7 @@ class ListKeys(SearchKeys):
 
     def fpr(self, args):
         fp = args[9]
-        if fp in self.key_map:  # pragma: no cover
+        if fp in self.key_map and self.gpg.check_fingerprint_collisions:  # pragma: no cover
             raise ValueError('Unexpected fingerprint collision: %s' % fp)
         if not self.in_subkey:
             self.curkey['fingerprint'] = fp
@@ -749,6 +813,9 @@ class GPG(object):
         """
         self.gpgbinary = gpgbinary
         self.gnupghome = gnupghome
+        # issue 112: fail if the specified value isn't a directory
+        if gnupghome and not os.path.isdir(gnupghome):
+            raise ValueError('gnupghome should be a directory (it isn\'t): %s' % gnupghome)
         if keyring:
             # Allow passing a string or another iterable. Make it uniformly
             # a list of keyring filenames
@@ -792,14 +859,19 @@ class GPG(object):
             dot = '.'.encode('ascii')
             self.version = tuple([int(s) for s in m.groups()[0].split(dot)])
 
+        # See issue #97. It seems gpg allow duplicate keys in keyrings, so we
+        # can't be too strict.
+        self.check_fingerprint_collisions = False
+
     def make_args(self, args, passphrase):
         """
         Make a list of command line elements for GPG. The value of ``args``
         will be appended. The ``passphrase`` argument needs to be True if
         a passphrase will be sent to GPG, else False.
         """
-        cmd = [self.gpgbinary, '--status-fd', '2', '--no-tty']
-        cmd.extend(['--debug', 'ipc'])
+        cmd = [self.gpgbinary, '--status-fd', '2', '--no-tty', '--no-verbose']
+        if 'DEBUG_IPC' in os.environ:
+            cmd.extend(['--debug', 'ipc'])
         if passphrase and hasattr(self, 'version'):
             if self.version >= (2, 1):
                 cmd[1:1] = ['--pinentry-mode', 'loopback']
@@ -889,11 +961,15 @@ class GPG(object):
         while True:
             data = stream.read(1024)
             if len(data) == 0:
+                if on_data:
+                    on_data(data)
                 break
             logger.debug("chunk: %r" % data[:256])
-            chunks.append(data)
+            append = True
             if on_data:
-                on_data(data)
+                append = on_data(data) != False
+            if append:
+                chunks.append(data)
         if _py3k:
             # Join using b'' or '', as appropriate
             result.data = type(data)().join(chunks)
@@ -924,6 +1000,8 @@ class GPG(object):
         if writer is not None:
             writer.join()
         process.wait()
+        if process.returncode != 0:
+            logger.warning('gpg returned a non-zero error code: %d', process.returncode)
         if stdin is not None:
             try:
                 stdin.close()
@@ -964,9 +1042,20 @@ class GPG(object):
             args.extend(['--yes'])
         args.extend(['--output', no_quote(output)])
 
+    def is_valid_passphrase(self, passphrase):
+        """
+        Confirm that the passphrase doesn't contain newline-type characters -
+        it is passed in a pipe to gpg, and so not checking could lead to
+        spoofing attacks by passing arbitrary text after passphrase and newline.
+        """
+        return ('\n' not in passphrase and '\r' not in passphrase and
+                '\x00' not in passphrase)
+
     def sign_file(self, file, keyid=None, passphrase=None, clearsign=True,
                   detach=False, binary=False, output=None, extra_args=None):
         """sign file"""
+        if passphrase and not self.is_valid_passphrase(passphrase):
+            raise ValueError('Invalid passphrase')
         logger.debug("sign_file: %s", file)
         if binary:  # pragma: no cover
             args = ['-s']
@@ -1004,8 +1093,8 @@ class GPG(object):
         """Verify the signature on the contents of the string 'data'
 
         >>> GPGBINARY = os.environ.get('GPGBINARY', 'gpg')
-        >>> gpg = GPG(gpgbinary=GPGBINARY, gnupghome="keys")
-        >>> gpg = GPG(gpgbinary=GPGBINARY, gnupghome="keys")
+        >>> if not os.path.isdir('keys'): os.mkdir('keys')
+        >>> gpg = GPG(gpgbinary=GPGBINARY, gnupghome='keys')
         >>> input = gpg.gen_key_input(passphrase='foo')
         >>> key = gpg.gen_key(input)
         >>> assert key
@@ -1084,10 +1173,11 @@ class GPG(object):
         >>> import shutil
         >>> shutil.rmtree("keys", ignore_errors=True)
         >>> GPGBINARY = os.environ.get('GPGBINARY', 'gpg')
-        >>> gpg = GPG(gpgbinary=GPGBINARY, gnupghome="keys")
+        >>> if not os.path.isdir('keys'): os.mkdir('keys')
+        >>> gpg = GPG(gpgbinary=GPGBINARY, gnupghome='keys')
         >>> os.chmod('keys', 0x1C0)
         >>> result = gpg.recv_keys('pgp.mit.edu', '92905378')
-        >>> assert result
+        >>> if 'NO_EXTERNAL_TESTS' not in os.environ: assert result
 
         """
         result = self.result_map['import'](self)
@@ -1128,6 +1218,8 @@ class GPG(object):
         via pinentry, you should specify expect_passphrase=False. (It's only
         checked for GnuPG >= 2.1).
         """
+        if passphrase and not self.is_valid_passphrase(passphrase):
+            raise ValueError('Invalid passphrase')
         which='key'
         if secret:  # pragma: no cover
             if (self.version >= (2, 1) and passphrase is None and
@@ -1165,7 +1257,8 @@ class GPG(object):
         via pinentry, you should specify expect_passphrase=False. (It's only
         checked for GnuPG >= 2.1).
         """
-
+        if passphrase and not self.is_valid_passphrase(passphrase):
+            raise ValueError('Invalid passphrase')
         which=''
         if secret:
             which='-secret-key'
@@ -1232,7 +1325,8 @@ class GPG(object):
         >>> import shutil
         >>> shutil.rmtree("keys", ignore_errors=True)
         >>> GPGBINARY = os.environ.get('GPGBINARY', 'gpg')
-        >>> gpg = GPG(gpgbinary=GPGBINARY, gnupghome="keys")
+        >>> if not os.path.isdir('keys'): os.mkdir('keys')
+        >>> gpg = GPG(gpgbinary=GPGBINARY, gnupghome='keys')
         >>> input = gpg.gen_key_input(passphrase='foo')
         >>> result = gpg.gen_key(input)
         >>> fp1 = result.fingerprint
@@ -1246,7 +1340,8 @@ class GPG(object):
 
         if sigs:
             which = 'sigs'
-        else:            which='keys'
+        else:
+            which = 'keys'
         if secret:
             which='secret-keys'
         args = ['--list-%s' % which,
@@ -1287,10 +1382,11 @@ class GPG(object):
         >>> import shutil
         >>> shutil.rmtree('keys', ignore_errors=True)
         >>> GPGBINARY = os.environ.get('GPGBINARY', 'gpg')
+        >>> if not os.path.isdir('keys'): os.mkdir('keys')
         >>> gpg = GPG(gpgbinary=GPGBINARY, gnupghome='keys')
         >>> os.chmod('keys', 0x1C0)
         >>> result = gpg.search_keys('<vinay_sajip@hotmail.com>')
-        >>> assert result, 'Failed using default keyserver'
+        >>> if 'NO_EXTERNAL_TESTS' not in os.environ: assert result, 'Failed using default keyserver'
         >>> #keyserver = 'keyserver.ubuntu.com'
         >>> #result = gpg.search_keys('<vinay_sajip@hotmail.com>', keyserver)
         >>> #assert result, 'Failed using keyserver.ubuntu.com'
@@ -1329,7 +1425,8 @@ class GPG(object):
         control input.
 
         >>> GPGBINARY = os.environ.get('GPGBINARY', 'gpg')
-        >>> gpg = GPG(gpgbinary=GPGBINARY, gnupghome="keys")
+        >>> if not os.path.isdir('keys'): os.mkdir('keys')
+        >>> gpg = GPG(gpgbinary=GPGBINARY, gnupghome='keys')
         >>> input = gpg.gen_key_input(passphrase='foo')
         >>> result = gpg.gen_key(input)
         >>> assert result
@@ -1396,6 +1493,8 @@ class GPG(object):
             always_trust=False, passphrase=None,
             armor=True, output=None, symmetric=False, extra_args=None):
         "Encrypt the message read from the file-like object 'file'"
+        if passphrase and not self.is_valid_passphrase(passphrase):
+            raise ValueError('Invalid passphrase')
         args = ['--encrypt']
         if symmetric:
             # can't be False or None - could be True or a cipher algo value
@@ -1436,7 +1535,8 @@ class GPG(object):
         >>> if os.path.exists("keys"):
         ...     shutil.rmtree("keys", ignore_errors=True)
         >>> GPGBINARY = os.environ.get('GPGBINARY', 'gpg')
-        >>> gpg = GPG(gpgbinary=GPGBINARY, gnupghome="keys")
+        >>> if not os.path.isdir('keys'): os.mkdir('keys')
+        >>> gpg = GPG(gpgbinary=GPGBINARY, gnupghome='keys')
         >>> input = gpg.gen_key_input(name_email='user1@test', passphrase='pp1')
         >>> result = gpg.gen_key(input)
         >>> fp1 = result.fingerprint
@@ -1484,6 +1584,8 @@ class GPG(object):
 
     def decrypt_file(self, file, always_trust=False, passphrase=None,
                      output=None, extra_args=None):
+        if passphrase and not self.is_valid_passphrase(passphrase):
+            raise ValueError('Invalid passphrase')
         args = ["--decrypt"]
         if output:  # write the output to a file with the specified name
             self.set_output_without_confirmation(args, output)

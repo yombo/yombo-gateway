@@ -66,7 +66,7 @@ Comment: https://github.com/suminb/base62 commit hash:ab786ae631d76bc4bbdd483bfe
 Files: yombo/ext/hashids.py
 Copyright: 2012-2014 Ivan Akimov, David Aurelio
 License: Other
-Comment: https://github.com/davidaurelio/hashids-python commit hash:0de5c0f5b30a18956a5573a43af0d1d5af6099ec
+Comment: https://github.com/davidaurelio/hashids-python commit hash:48f92cfd8427a0e434c9ced212fb93e641752db3
   Permission is hereby granted, free of charge, to any person
   obtaining a copy of this software and associated documentation
   files (the "Software"), to deal in the Software without
@@ -91,7 +91,7 @@ Comment: https://github.com/davidaurelio/hashids-python commit hash:0de5c0f5b30a
 Files: yombo/ext/gnupg.py
   Copyright: Copyright (c) 2008-2014 by Vinay Sajip.
   License: Other
-  Comment: https://bitbucket.org/vinay.sajip/python-gnupg commit hash:1cde809886d9873d6b4c53bbfea91fe4f144677b
+  Comment: https://bitbucket.org/vinay.sajip/python-gnupg commit hash:39793b7816230698951a692f607b45403877cc6b
   Copyright (c) 2008-2014 by Vinay Sajip.
   All rights reserved.
   .
