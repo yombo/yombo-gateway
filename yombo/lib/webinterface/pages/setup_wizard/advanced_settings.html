@@ -11,7 +11,7 @@
 <!-- Modals -->
 <!-- Overview help -->
 <div class="modal fade" id="localModal" tabindex="-1" role="dialog" aria-labelledby="localModalLabel">
-  <div class="modal-dialog" role="document">
+  <div class="modal-dialog modal-lg" role="document">
     <div class="modal-content">
       <div class="modal-header btn-primary">
         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
@@ -19,7 +19,7 @@
       </div>
       <div class="modal-body">
           <p>
-              Only one gateway per location (a house, other house, etc) is required. This setting determines if this
+              Only one master gateway per location (a house, other house, etc) is required. This setting determines if this
               gateway is the master or primary gateway. If this is a slave gateway, simply select the master gateway
               from the drop down.
           </p>
@@ -46,8 +46,9 @@
               <ul>
                   <li>Using various slaves allows for receiving and sending IR commands to each room to control devices.</li>
                   <li>Use a Raspberry Pi Zero in each room to collect signal strength of Bluetooth devices. This allows
-                      the system to know which room someone is in if they keep their cell phone or other bluetooth device
-                      with them. This allows for turning on lights or items based on who is in the room.</li>
+                      the system to know which room someone is in if they keep their cell phone, smartwatch, bluetooth
+                      tracker, or other bluetooth device with them. This allows for turning on lights or items based
+                      on who is in the room.</li>
                 </ul>
       </div>
       <div class="modal-footer">
@@ -247,7 +248,7 @@ and more. This information helps us design a more robust system.
       $('#myModal').modal('show').find('.modal-body').load($(this).attr('href'));
     });
 
-        $('#submit').click(function(){
+    $('#submit').click(function(){
          /* when the submit button in the modal is clicked, submit the form */
         $('#myForm').submit();
     });

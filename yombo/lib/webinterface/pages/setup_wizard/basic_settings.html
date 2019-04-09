@@ -9,7 +9,7 @@
 
 {% block content %}
 <!-- Modals -->
-<div class="modal fade" id="localModal" tabindex="-1" role="dialog" aria-labelledby="localModalLabel">
+<div class="modal fade" id="locationModal" tabindex="-1" role="dialog" aria-labelledby="locationModalLabel">
   <div class="modal-dialog modal-lg" role="document">
     <div class="modal-content">
       <div class="modal-header btn-primary">
@@ -92,6 +92,20 @@
 </ul>
 ") }}
 
+{{ macros.modal("labelModal", "Gateway Label", "
+<p>A friendly label for this gateway to allow you to easily identify this gateway from other gateways you may have.</p>
+<p>Examples: Garage, Shed, Master Bedroom, House</p>
+") }}
+
+{{ macros.modal("machinelabelModal", "Gateway Machine Label", "
+<p>A machine version of the gateway label. This label will be used in scenes, automation rules, and modules to uniquely
+identify this gateway.
+</p>
+<p>
+    Examples: garage, shed, master_bedroom
+</p>
+") }}
+
 <form id="myForm" action="/setup_wizard/advanced_settings" method="POST" role="form">
     <div class="container-fluid">
         <div class="row" style="padding-top: 3em; padding-bottom: 2em;">
@@ -117,6 +131,7 @@
 {% endif %}
                     <div class="form-group">
                         <label for="gateway_label">Gateway Label</label>
+                        <a href="#" data-toggle=modal data-target=#labelModal> <i class="fa fa-question-circle  fa-lg"></i></a><br>
                         <div class="input-group">
                             <input type="text" class="form-control" name="gateway_label" id="gateway_label" placeholder="'House', 'Garage', 'Shed'" value="{{ gw_fields.label }}" autofocus required>
                             <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
@@ -124,6 +139,7 @@
                     </div>
                     <div class="form-group">
                         <label for="gateway_machine_label">Gateway Machine Label</label>
+                        <a href="#" data-toggle=modal data-target=#machinelabelModal> <i class="fa fa-question-circle  fa-lg"></i></a>
                         <br>Lower case, no spaces. Dashes and underscores are ok.
                         <div class="input-group">
                             <input type="text" class="form-control" name="gateway_machine_label" id="gateway_machine_label" placeholder="'house', 'harage', 'shed'" value="{{ gw_fields.machine_label }}" required>
@@ -138,15 +154,15 @@
                         </div>
                     </div>
 
-                    <div class="row">
+                    <div class="row mt-5">
                         <div id="address3" class="col-md-4">
                             <div id="map-output"></div>
                                 <div class="form-group">
-                                    <label>Search for location</label><a href="#" data-toggle=modal data-target=#localModal> <i class="fa fa-question-circle  fa-lg"></i></a><br>
-                                        <input style="margin-bottom: .2em;" id="search_txt" type="text" class="form-control" value="{{ settings.location.location_search.data }}" maxlength="100"><br>
-                                        <input id="search_btn" type="button" class="btn btn-secondary" value="Search">&nbsp;
-                                        <input id="detect_btn" type="button" class="btn btn-secondary" value="Detect" disabled>
-                                <input type="hidden" class="form-control" name="location_search" id="location_search" size="30" value="a" maxlength="100"><br>
+                                    <label>Search for location</label>
+                                    <a href="#" data-toggle=modal data-target=#locationModal> <i class="fa fa-question-circle  fa-lg"></i></a><br>
+                                    <input style="margin-bottom: .2em;" id="search_txt" type="text" class="form-control" value="{{ settings.location.location_search.data }}" maxlength="100">
+                                    <input id="search_btn" type="button" class="btn btn-success" value="Search">&nbsp;
+                                    <input type="hidden" class="form-control" name="location_search" id="location_search" size="30" value="a" maxlength="100">
                                 </div>
                                 <div class="form-group">
                                     <label for="location_latitude">Latitude</label>

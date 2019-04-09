@@ -31,7 +31,7 @@
 
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                <a href="#" id="submit" class="btn btn-success success">Submit</a>
+                <a href="#" id="submit" class="btn btn-success success">Save and Continue</a>
             </div>
         </div>
     </div>
@@ -83,7 +83,7 @@
                                         {% if allow_change == 0 %}Now{% else %}{{ allow_change|epoch_to_string }}{% endif %}</li>
                                 </ul>
 
-                                {% if allow_change < current_time %}
+                                {% if allow_change < py_time_time() %}
                                 <h4 style="padding-top: 2.5em;">Set new DNS</h4>
                                 <p>
                                 <input type="hidden" name="dns_domain_id" />
@@ -133,7 +133,7 @@
                             <div class="card-body">
                                 <p>
                                     Dynamic DNS is already setup and configured.
-                                {% if allow_change < current_time %}
+                                {% if allow_change < py_time_time() %}
                                     You can skip this section or setup a new DNS name.
                                 {% else %}
                                     It's too soon to change the DNS name, please wait until after: {{ allow_change|epoch_to_string }}
@@ -151,6 +151,7 @@
         </div>
     </div>
 </form>
+
 <div class="modal fade" id="dns_check_error_modal" role="dialog">
     <div class="modal-dialog modal-sm">
         <div class="modal-content">
@@ -173,122 +174,122 @@
 
 <script>
 
-var lastSearchSubmit = "";
+    var lastSearchSubmit = "";
 
-$('form').on('keyup keypress', function(e) {
-  var keyCode = e.keyCode || e.which;
-  if((keyCode== 13) && ($(e.target)[0]!=$("textarea")[0])) {
-    if ($(e.target)[0]==$("#search_txt")[0]) {
-        $("#dns_name").click();
-	    e.preventDefault();
-	    return false;
-	}
-    e.preventDefault();
-    return false;
-  }
-});
-
-function submitter(btn, fqdn) {
-    var param = btn.parentElement.parentElement.id;
-    var myForm = document.forms["myForm"];
-    $('#fqdn').text(btn.id);
-
-    myForm.elements["dns_domain_id"].value = param;
-    console.log("this domain id: " + btn.id);
-    $('#confirm-submit').modal('show');
-//    myForm.submit();
-    return false;
-}
-
-/* when the submit button in the modal is clicked, submit the form */
-$('#submit').click(function(){
-    console.log("##################################" + val);
-    $.ajax({
-        url: "/api/v1/server/dns/select_dns/" + val,
-        dataType: 'json',
-        success: function (resp) {
-            $("#myTableId td").parent().remove();
-            var trHTML = '';
-            $.each(resp, function (i, userData) {
-                console.log("i: " + i);
-                console.log(userData);
-                for (var i in userData) {
-                    console.log(userData[i]['attributes']);
-                    var availField = "";
-                    if (userData[i]['attributes']['available'] == false) {
-                        availField = `<button type="button" class="btn btn-block btn-sm btn-danger disabled" style="margin: auto; width: 80%;">
-                        Not Available - ${val}.${userData[i]['attributes']['domain']}</button>`;
-                    } else {
-                        availField = `<button type="button" class="btn btn-block btn-md btn-primary" style="margin: auto; width: 80%;"
-                        onclick="submitter(this); return false;" id="${val}.${userData[i]['attributes']['domain']}">
-                        Select: <strong>${val}.${userData[i]['attributes']['domain']}</strong></button>`;
-                    }
-                    trHTML +=
-                        '<tr id="' + userData.id + '"><td width="10%">'
-                        + availField
-                        + '</td></tr>';
-                }
-            });
-            $('#tBody').append(trHTML);
-        },
-        error: function (req, status, err) {
-            var data = req.responseJSON;
-//                console.log('something went wrong', status, err);
-//                console.log(data);
-            var mymodal = $('#dns_check_error_modal');
-            mymodal.find('.modal-body').text(data['message']);
-            mymodal.modal('show');
+    $('form').on('keyup keypress', function(e) {
+      var keyCode = e.keyCode || e.which;
+      if((keyCode== 13) && ($(e.target)[0]!=$("textarea")[0])) {
+        if ($(e.target)[0]==$("#search_txt")[0]) {
+            $("#dns_name").click();
+            e.preventDefault();
+            return false;
         }
+        e.preventDefault();
+        return false;
+      }
     });
-    $('#myForm').submit();
-});
 
-function doSearch() {
-    var val = $('#dnsname').val();
-    if (val == lastSearchSubmit) {
-        return;
-    } else {
-        lastSearchSubmit = val;
+    function submitter(btn, fqdn) {
+        var param = btn.parentElement.parentElement.id;
+        var myForm = document.forms["myForm"];
+        $('#fqdn').text(btn.id);
+
+        myForm.elements["dns_domain_id"].value = param;
+        console.log("this domain id: " + btn.id);
+        $('#confirm-submit').modal('show');
+    //    myForm.submit();
+        return false;
     }
-    $.ajax({
-        url: "/api/v1/server/dns/check_available/" + val,
-        dataType: 'json',
-        success: function (resp) {
-            $("#myTableId td").parent().remove();
-            var trHTML = '';
-            $.each(resp, function (i, userData) {
-                console.log("i: " + i);
-                console.log(userData);
-                for (var i in userData) {
-                    console.log(userData[i]['attributes']);
-                    var availField = "";
-                    if (userData[i]['attributes']['available'] == false) {
-                        availField = `<button type="button" class="btn btn-block btn-sm btn-danger disabled" style="margin: auto; width: 80%;">
-                        Not Available - ${val}.${userData[i]['attributes']['domain']}</button>`;
-                    } else {
-                        availField = `<button type="button" class="btn btn-block btn-md btn-primary" style="margin: auto; width: 80%;"
-                        onclick="submitter(this); return false;" id="${val}.${userData[i]['attributes']['domain']}">
-                        Select: <strong>${val}.${userData[i]['attributes']['domain']}</strong></button>`;
-                    }
-                    trHTML +=
-                        '<tr id="' + userData.id + '"><td width="10%">'
-                        + availField
-                        + '</td></tr>';
-                }
-            });
-            $('#tBody').append(trHTML);
-        },
-        error: function (req, status, err) {
-            var data = req.responseJSON;
-            var mymodal = $('#dns_check_error_modal');
-            mymodal.find('.modal-body').text(data['message']);
-            mymodal.modal('show');
-        }
+
+    /* when the submit button in the modal is clicked, submit the form */
+    $('#submit').click(function(){
+        console.log("##################################" + val);
+    //     $.ajax({
+    //         url: "/api/v1/server/dns/select_dns/" + val,
+    //         dataType: 'json',
+    //         success: function (resp) {
+    //             $("#myTableId td").parent().remove();
+    //             var trHTML = '';
+    //             $.each(resp, function (i, userData) {
+    //                 console.log("i: " + i);
+    //                 console.log(userData);
+    //                 for (var i in userData) {
+    //                     console.log(userData[i]['attributes']);
+    //                     var availField = "";
+    //                     if (userData[i]['attributes']['available'] == false) {
+    //                         availField = `<button type="button" class="btn btn-block btn-sm btn-danger disabled" style="margin: auto; width: 80%;">
+    //                         Not Available - ${val}.${userData[i]['attributes']['domain']}</button>`;
+    //                     } else {
+    //                         availField = `<button type="button" class="btn btn-block btn-md btn-primary" style="margin: auto; width: 80%;"
+    //                         onclick="submitter(this); return false;" id="${val}.${userData[i]['attributes']['domain']}">
+    //                         Select: <strong>${val}.${userData[i]['attributes']['domain']}</strong></button>`;
+    //                     }
+    //                     trHTML +=
+    //                         '<tr id="' + userData.id + '"><td width="10%">'
+    //                         + availField
+    //                         + '</td></tr>';
+    //                 }
+    //             });
+    //             $('#tBody').append(trHTML);
+    //         },
+    //         error: function (req, status, err) {
+    //             var data = req.responseJSON;
+    // //                console.log('something went wrong', status, err);
+    // //                console.log(data);
+    //             var mymodal = $('#dns_check_error_modal');
+    //             mymodal.find('.modal-body').text(data['message']);
+    //             mymodal.modal('show');
+    //         }
+    //     });
+        $('#myForm').submit();
     });
 
-}
+    function doSearch() {
+        var val = $('#dnsname').val();
+        if (val == lastSearchSubmit) {
+            return;
+        } else {
+            lastSearchSubmit = val;
+        }
+        $.ajax({
+            url: "/api/v1/server/dns/check_available/" + val,
+            dataType: 'json',
+            success: function (resp) {
+                $("#myTableId td").parent().remove();
+                var trHTML = '';
+                $.each(resp, function (i, userData) {
+                    console.log("i: " + i);
+                    console.log(userData);
+                    for (var i in userData) {
+                        console.log(userData[i]['attributes']);
+                        var availField = "";
+                        if (userData[i]['attributes']['available'] == false) {
+                            availField = `<button type="button" class="btn btn-block btn-sm btn-danger disabled" style="margin: auto; width: 80%;">
+                            Not Available - ${val}.${userData[i]['attributes']['domain']}</button>`;
+                        } else {
+                            availField = `<button type="button" class="btn btn-block btn-md btn-primary" style="margin: auto; width: 80%;"
+                            onclick="submitter(this); return false;" id="${val}.${userData[i]['attributes']['domain']}">
+                            Select: <strong>${val}.${userData[i]['attributes']['domain']}</strong></button>`;
+                        }
+                        trHTML +=
+                            '<tr id="' + userData.id + '"><td width="10%">'
+                            + availField
+                            + '</td></tr>';
+                    }
+                });
+                $('#tBody').append(trHTML);
+            },
+            error: function (req, status, err) {
+                var data = req.responseJSON;
+                var mymodal = $('#dns_check_error_modal');
+                mymodal.find('.modal-body').text(data['message']);
+                mymodal.modal('show');
+            }
+        });
 
-$("#fire").on('click', doSearch);
+    }
+
+    $("#fire").on('click', doSearch);
 
 </script>
 {% endblock %}

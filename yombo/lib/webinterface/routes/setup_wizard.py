@@ -39,9 +39,11 @@ def route_setup_wizard(webapp):
                                                                 authorization_header=auth_header)
 
             except YomboWarning as e:
-                session.add_alert("System credentials appear to be invalid. Please login as the gateway owner.")
-                session["auth"] = False
-                return webinterface.redirect(request, "/setup_wizard/select_gateway")
+                logger.warn("Unable to get list of gateways: {e}", e=e)
+                for error in e.errors:
+                    print(f"Error: {error}")
+                    session.add_alert(f"Unable to get list of gateways, Yombo API responded with: ({error['code']}) {error['title']} - {error['detail']}", "warning")
+                return webinterface.redirect(request, "/")
             available_gateways = {}
 
             data = response.content["data"]
@@ -387,7 +389,7 @@ def route_setup_wizard(webapp):
                     "label": session["setup_wizard_gateway_label"],
                     "description": session["setup_wizard_gateway_description"],
                     "is_master": session["setup_wizard_gateway_is_master"],
-                    "status": 1,
+                    "status": 1
                 }
                 if session["setup_wizard_gateway_master_gateway_id"] is not None:
                     data["master_gateway"] = session["setup_wizard_gateway_master_gateway_id"],
@@ -397,10 +399,13 @@ def route_setup_wizard(webapp):
                                                                     data,
                                                                     authorization_header=auth_header)
                 except YomboWarning as e:
-                    for error in e.error:
-                        session.add_alert(error["detail"], "warning")
+                    for error in e.errors:
+                        session.add_alert(
+                            f"Unable to add gateway, Yombo API responded with: ({error['code']}) {error['title']} - "
+                            f"{error['detail']}",
+                            "warning")
                     return webinterface.redirect(request, "/setup_wizard/basic_settings")
-                print(f"response.content: {response.content}")
+                # print(f"response.content: {response.content}")
                 session["setup_wizard_gateway_id"] = response.content["id"]
 
             else:
@@ -414,7 +419,11 @@ def route_setup_wizard(webapp):
                         data,
                         authorization_header=auth_header)
                 except YomboWarning as e:
-                        session.add_alert(e.message, "warning")
+                    for error in e.errors:
+                        session.add_alert(
+                            f"Unable to setup gateway, Yombo API responded with: ({error['code']}) {error['title']} -"
+                            f" {error['detail']}",
+                            "warning")
                         return webinterface.redirect(request, "/setup_wizard/dns")
 
                 try:
@@ -422,7 +431,11 @@ def route_setup_wizard(webapp):
                         "GET", f"/v1/gateways/{session['setup_wizard_gateway_id']}/reset_authentication",
                         authorization_header=auth_header)
                 except YomboWarning as e:
-                        session.add_alert(e.message, "warning")
+                    for error in e.errors:
+                        session.add_alert(
+                            f"Unable to setup gateway, Yombo API responded with: ({error['code']}) {error['title']} -"
+                            f" {error['detail']}",
+                            "warning")
                         return webinterface.redirect(request, "/setup_wizard/dns")
 
             print(f"response.content 222: {response.content}")
@@ -467,13 +480,17 @@ def route_setup_wizard(webapp):
                     f"/v1/gateways/{webinterface._Configs.get('core', 'gwid')}/dns",
                     authorization_header=auth_header)
             except YomboWarning as e:
-                # session.add_alert(e.html_message, "warning")
-                # session.add_alert(dns_results["content"]["html_message"], "warning")
+                for error in e.errors:
+                    session.add_alert(
+                        f"Unable to setup gateway DNS, Yombo API responded with: ({error['code']}) {error['title']} -"
+                        f" {error['detail']}",
+                        "warning")
                 webinterface._Configs.set("dns", "dns_name", None)
                 webinterface._Configs.set("dns", "dns_domain", None)
                 webinterface._Configs.set("dns", "dns_domain_id", None)
                 webinterface._Configs.set("dns", "allow_change_at", 0)
                 webinterface._Configs.set("dns", "fqdn", None)
+                return webinterface.redirect(request, "/setup_wizard/dns")
             else:
                 dns_data = response.content["data"]["attributes"]
                 webinterface._Configs.set("dns", "dns_name", dns_data["name"])
@@ -538,7 +555,11 @@ def route_setup_wizard(webapp):
                     data,
                     session=session["yomboapi_session"])
             except YomboWarning as e:
-                session.add_alert(e.html_message, "warning")
+                for error in e.errors:
+                    session.add_alert(
+                        f"Unable to setup gateway DNS, Yombo API responded with: ({error['code']}) {error['title']} -"
+                        f" {error['detail']}",
+                        "warning")
                 return webinterface.redirect(request, "pages/setup_wizard/dns")
 
             session["setup_wizard_last_step"] = "finished"
