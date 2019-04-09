@@ -1,5 +1,12 @@
 """
 Handles rendering content to browsers or API requests.
+
+.. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+.. versionadded:: 0.24.0
+
+:copyright: Copyright 2019 by Yombo.
+:license: LICENSE for details.
+:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/webinterface/class_helpers/render.html>`_
 """
 # Import python libraries
 from glob import glob

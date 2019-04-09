@@ -2,6 +2,13 @@
 Extends the web_interface library class: Handles the webserver and interacts with Yombo-Site.
 
 Also requests the SSL cert from the sslcert library.
+
+.. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+.. versionadded:: 0.24.0
+
+:copyright: Copyright 2019 by Yombo.
+:license: LICENSE for details.
+:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/webinterface/class_helpers/webserver.html>`_
 """
 # Import python libraries
 from time import time

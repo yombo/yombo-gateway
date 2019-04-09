@@ -1,6 +1,12 @@
 """
 Responsible for running the website.
 
+.. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+.. versionadded:: 0.24.0
+
+:copyright: Copyright 2019 by Yombo.
+:license: LICENSE for details.
+:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/webinterface/class_helpers/yombo_site.html>`_
 """
 # Import python libraries
 from collections import OrderedDict
