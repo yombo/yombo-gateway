@@ -24,7 +24,6 @@
     <!-- Bootstrap4 Core CSS, bootstrap select-->
     <link href="/css/basic_app.min.css" rel="stylesheet">
     {% block head_css %}{% endblock %}
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
 	{% block head_bottom %}{% endblock %}
     <link rel="preload" href="/sw.js" as="script">
     {%- if nuxtpreload is defined %}
@@ -34,29 +33,30 @@
     {%- endif %}
    </head>
    <body>
+   {% set alerts = get_alerts(session) %}
    {%- if alerts|length != 0 %}
        <div class="alert-messages" style="z-index: 999;">
-          {%- for key, alert in alerts.items() %}
-              {%- if alert.dismissible %}
-          <div class="alert alert-{{ alert.level }} alert-dismissible fade show" role="alert" data-the_alert_id="{{ key }}"">
-            {{ alert.message }}
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
-          </div>
+       {%- for key, alert in alerts.items() %}
+          {%- if alert.deletable %}
+            <div class="alert alert-{{ alert.level }} alert-dismissible fade show" role="alert" data-the_alert_id="{{ key }}"">
+              {{ alert.message }}
+              <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
           {%- else %}
               <div class="alert alert-{{ alert.level }}" role="alert">
                 {{ alert.message }}
               </div>
           {%- endif -%}
-          {%- endfor -%}
+       {%- endfor -%}
        </div>
     {%- endif %}
     {%- block content %}{% endblock %}
 
+    <script defer src="https://use.fontawesome.com/releases/v5.8.1/js/all.js" integrity="sha384-g5uSoOSBd7KkhAMlnQILrecXvzst9TdC09/VM+pjDTCM+1il8RHz5fKANTFFb+gQ" crossorigin="anonymous"></script>
     <!-- jQuery, js.cookie, bootstrap4, bootstrap select, bootstrap datatables, are you sure -->
     <script src="/js/basic_app.js"></script>
-
     {% block body_bottom_js %}{% endblock %}
    {% block body_bottom %}{% endblock %}
    </body>
