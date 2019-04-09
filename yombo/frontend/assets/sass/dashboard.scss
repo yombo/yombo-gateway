@@ -1,0 +1,65 @@
+/*!
+ =========================================================
+ * Copyright 2017 Creative Tim (http://www.creative-tim.com)
+ * Designed by www.invisionapp.com Coded by www.creative-tim.com
+ =========================================================
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * The original files have been modified to fit the needs of the Yombo Gateway Frontend application.
+ */
+
+@import 'dashboard/variables';
+@import 'dashboard/mixins';
+
+// Plugins CSS
+@import 'dashboard/plugins/plugin-bootstrap-switch';
+@import 'dashboard/plugins/plugin-nouislider';
+@import 'dashboard/plugins/plugin-perfect-scrollbar';
+@import 'dashboard/plugins/plugin-sweetalert2';
+@import 'dashboard/plugins/plugin-card-wizard';
+@import 'dashboard/plugins/plugin-fullcalendar';
+
+// Core CSS
+@import 'dashboard/buttons';
+@import 'dashboard/inputs';
+@import 'dashboard/checkboxes-radio';
+@import 'dashboard/progress';
+@import 'dashboard/badges';
+@import 'dashboard/pagination';
+@import 'dashboard/typography';
+@import 'dashboard/misc';
+@import 'dashboard/info-areas';
+@import 'dashboard/pills';
+
+// components
+@import 'dashboard/social-buttons';
+@import 'dashboard/tabs';
+@import 'dashboard/navbar';
+@import 'dashboard/dropdown';
+@import 'dashboard/alerts';
+@import 'dashboard/images';
+@import 'dashboard/popups';
+@import 'dashboard/nucleo-outline';
+@import 'dashboard/modals';
+@import 'dashboard/carousel';
+@import 'dashboard/tables';
+@import 'dashboard/dashboard-sidebar-and-main-panel';
+@import 'dashboard/cards';
+@import 'dashboard/footers';
+@import 'dashboard/timeline';
+@import 'dashboard/fixed-plugin';
+
+// example pages and sections
+@import 'dashboard/example-pages';
+@import 'dashboard/sections';
+
+// element-ui plugins
+@import "dashboard/element-ui-plugins/select";
+@import "dashboard/element-ui-plugins/date_picker";
+@import "dashboard/element-ui-plugins/tags";
+@import "dashboard/element-ui-plugins/input";
+@import "dashboard/element-ui-plugins/tables";
+@import "dashboard/element-ui-plugins/tooltip";
+
+
+@import 'dashboard/responsive';
