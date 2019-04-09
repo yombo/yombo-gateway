@@ -1,30 +1,36 @@
-{% extends "lib/webinterface/fragments/layout_blank.tpl" %}
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+
+{% block head_top %}
+{% include "lib/webinterface/fragments/bg_image.tpl" %}
+{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-8 col-md-offset-2">
-        <div class="login-panel panel panel-info">
-            <div class="panel-heading">
-                <a href="/?"><img src="/static/img/logo-100px.png" height="50" class="pull-left" align="middle"></a>
-                <h2 style="text-align: center">Gateway Setup Wizard</h2>
-                <h3 style="text-align: center">Restore ready</h3>
-                <p></p>
-            </div>
-            <div class="panel-body">
-                <ul>
-                    <li>Gateway Name: {{restore['gateway_label']}}</li>
-                    <li>Backup Created: {{restore['time']|epoch_to_string}} ({{restore['time']|epoch_get_age}})</li>
-                    <li>Encrypted: {{restore['encrypted']}}</li>
-                    <li>Backup format version: {{restore['backup_version']}}</li>
-                </ul>
-                <hr>
-                <div  style="text-align: center">
-                    <p>
-                        The configuration restore file has been validated and is ready to be processed.
-                    </p>
-                    <p>
-                    <a class="btn btn-md btn-primary align-center" href="/setup_wizard/restore_complete">Restore and restart</a>
-                    </p>
+<div class="container-fluid">
+    <div class="row" style="padding-top: 5em; padding-bottom: 2em;">
+        <div class="col-md-8 col-md-offset-2">
+            <div class="login-panel panel panel-info">
+                <div class="panel-heading">
+                    <a href="/?"><img src="/static/img/logo-100px.png" height="50" class="pull-left" align="middle"></a>
+                    <h2 style="text-align: center">Gateway Setup Wizard</h2>
+                    <h3 style="text-align: center">Restore ready</h3>
+                    <p></p>
+                </div>
+                <div class="panel-body">
+                    <ul>
+                        <li>Gateway Name: {{restore['gateway_label']}}</li>
+                        <li>Backup Created: {{restore['time']|epoch_to_string}} ({{restore['time']|epoch_get_age}})</li>
+                        <li>Encrypted: {{restore['encrypted']}}</li>
+                        <li>Backup format version: {{restore['backup_version']}}</li>
+                    </ul>
+                    <hr>
+                    <div  style="text-align: center">
+                        <p>
+                            The configuration restore file has been validated and is ready to be processed.
+                        </p>
+                        <p>
+                        <a class="btn btn-md btn-primary align-center" href="/setup_wizard/restore_complete">Restore and restart</a>
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
