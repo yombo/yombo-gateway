@@ -222,7 +222,7 @@ Comment: https://github.com/tadeck/onetimepass commit hash:ee4b4e1700089757594a5
 Files: yombo/ext/polib.py
 Copyright: 2006-2015 David Jean Louis
 License: MIT License
-  Comment: https://bitbucket.org/izi/polib commit hash:e57eb8e2a29473ce2263b349c8fa6c414565bd53
+  Comment: https://bitbucket.org/izi/polib commit hash:c5b3c9a4861cb11ffa7807bfba96e823445e372c
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
   in the Software without restriction, including without limitation the rights
