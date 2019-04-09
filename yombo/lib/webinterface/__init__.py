@@ -109,6 +109,7 @@ class WebInterface(BuildDistribution, ErrorHandler, Render, YomboLibrary, WebSer
         if not self.enabled:
             return
 
+        self.file_cache = {}  # used to load a few static files into memory that are commonly used.
         self.translators = {}
         self.idempotence = self._Cache.ttl(name="lib.webinterface.idempotence", ttl=300)
 
