@@ -1,6 +1,6 @@
 .. index:: webinterface_summary
 
-.. _webinterface_summary::
+.. _webinterface_summary:
 
 .. currentmodule:: yombo.lib.webinterface
 
@@ -17,6 +17,20 @@ The web interface is broken down into several modules. See below for the core mo
 See the `Web Interface library documentation <https://yombo.net/docs/libraries/web_interface>`_ for more
 details.
 
+Web Interface Library
+=========================
+
+Primary webinterface library files.
+
+.. toctree::
+   :maxdepth: 1
+
+   __init__.rst
+   class_helpers/builddist.rst
+   class_helpers/errorhandler.rst
+   class_helpers/render.rst
+   class_helpers/webserver.rst
+
 Routes
 =======
 
@@ -30,14 +44,6 @@ Web Interface HTML
 
 The HTML pages displayed can be viewed from the git repository:
 `HTML Pages <https://github.com/yombo/yombo-gateway/tree/master/yombo/lib/webinterface/pages>`_ .
-
-Web Interface Library
-=========================
-
-.. toctree::
-   :maxdepth: 1
-
-   __init__.rst
 
 Helper Files
 ============

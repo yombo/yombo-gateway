@@ -5,8 +5,12 @@
 .. currentmodule:: yombo.lib.webinterface.constants
 
 =================================================================
-Web Interface::Constants (yombo.lib.webinterface.constants)
+WebInterface::Constants (yombo.lib.webinterface.constants)
 =================================================================
+
+.. note::
+
+  This is a helper file that is used by the :ref:`WebInterface <webinterface>`.
 
 .. note::
 

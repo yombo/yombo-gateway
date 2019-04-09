@@ -65,6 +65,16 @@ The gateway framework is split into a few directories:
  * :ref:`framework_modules` - Extend the features of the Yombo gateway.
  * :ref:`framework_utils` - Various utilities for getting things done.
 
+.. _framework_frontend
+
+Frontend Application
+==========================
+
+The :ref:`frontend application <frontend_summary>` is a Vue + Nuxt web application used for interacting with the gateway.
+This includes gateway configuration and device management. It also used as a control panel to
+view and control devices. The application is only accessible once the user has authenticated
+and logged in and will be displayed automatically after authentication.
+
 .. _framework_core:
 
 Core
@@ -115,7 +125,7 @@ IoT devices, etc.
    ../lib/inputtypes/_summary.rst
    ../lib/hash.rst
    ../lib/hashids.rst
-   ../lib/loader.grst
+   ../lib/loader.rst
    ../lib/localdb/_summary.rst
    ../lib/localize.rst
    ../lib/locations.rst
@@ -123,7 +133,6 @@ IoT devices, etc.
    ../lib/mqtt.rst
    ../lib/nodes.rst
    ../lib/notifications.rst
-   ../lib/queue.rst
    ../lib/queue.rst
    ../lib/requests.rst
    ../lib/scenes.rst
