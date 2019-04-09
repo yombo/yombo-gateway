@@ -222,7 +222,7 @@ class DeviceTypes(YomboLibrary, LibrarySearch):
         database and we need to refresh existing device types.
         """
         device_types = yield self._LocalDB.get_device_types()
-        logger.debug("device_types: {device_types}", device_types=device_types)
+        # logger.debug("device_types: {device_types}", device_types=device_types)
         for device_type in device_types:
             yield self._load_device_type_into_memory(device_type)
 
@@ -256,6 +256,8 @@ class DeviceTypes(YomboLibrary, LibrarySearch):
                                     )
         except Exception:
             pass
+        logger.debug("load: device_type: {device_type}", device_type=device_type)
+
         self.device_types[device_type_id] = DeviceType(self, device_type)
         yield self.device_types[device_type_id]._init_()  # Adds available commands to this.
         try:
@@ -879,10 +881,15 @@ class DeviceType(object):
         self.commands.clear()
         logger.debug("Device type received command ids: {command_ids}", command_ids=command_ids)
         for command_id in command_ids:
-            self.commands[command_id] = {
-                "command": self._Parent._Commands[command_id],
-                "inputs": {}
-            }
+            try:
+                self.commands[command_id] = {
+                    "command": self._Parent._Commands[command_id],
+                    "inputs": {}
+                }
+            except KeyError:
+                logger.warn("Device type '{label}' is unable to find command: {command_id}",
+                            label=self.label, command_id=command_id)
+                continue
             inputs = yield self._Parent._LocalDB.device_type_command_inputs_get(self.device_type_id, command_id)
             for input in inputs:
                 self.commands[command_id]["inputs"][input.machine_label] = {
