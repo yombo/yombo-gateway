@@ -75,6 +75,7 @@ yombo/frontend/*.log
 yombo/frontend/npm-debug.log*
 yombo/frontend/yarn-debug.log*
 yombo/frontend/yarn-error.log*
+yombo/frontend/static/sw.js
 
 # Runtime data
 yombo/frontend/pids
