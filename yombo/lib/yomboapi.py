@@ -130,15 +130,16 @@ class YomboAPI(YomboLibrary):
         # print(f"yomboapi request: 5: {request_data}")
         # print(f"yomboapi request: 5: {response.content_raw}")
 
-        self.update_results(response, method, url)
+        self.update_results(response, method, url, request_data)
         return response
 
-    def update_results(self, response, method, url):
+    def update_results(self, response, method, url, request_data):
         if response.content_type == "string":
-            logger.warn("-----==( Error: API received an invalid response )==----")
+            logger.warn("-----==( Error: API received an invalid response, got a string back )==----")
             logger.warn("Request: {request}", request=response.request.__dict__)
             logger.warn("URL: {method} {uri}", method=response.request.method, uri=response.request.uri)
             logger.warn("Header: {request_headers}", request_headers=response.request.headers)
+            logger.warn("Request Data: {request_data}", request_data=request_data)
             logger.warn("Content: {content}", content=response.content)
             logger.warn("--------------------------------------------------------")
 
@@ -148,15 +149,14 @@ class YomboAPI(YomboLibrary):
             logger.warn("Code: {code}", code=response.response_code)
             logger.warn("URL: {method} {uri}", method=response.request.method, uri=response.request.uri)
             logger.warn("Header: {request_headers}", request_headers=response.request.headers)
+            logger.warn("Request Data: {request_data}", request_data=request_data)
             logger.warn("Content: {content}", content=response.content)
             logger.warn("--------------------------------------------------------")
-            html_message = ""
             message = ""
             logger.warn("Error with API request: {method} {url}", method=method, url=url)
             if "errors" in response.content:
                 errors = response.content["errors"]
                 for error in errors:
-                    # print(f"Yombo API error: {error}")
                     if len(message) == 0:
                         message += ", "
                     message += f"{message}  {error['title']} - {error['detail']}"
@@ -164,9 +164,6 @@ class YomboAPI(YomboLibrary):
             else:
                 message = f"{response.response_code} - {response.response_phrase}"
             raise YomboWarning(message, response.response_code, "update_results", "yomboapi", meta=response)
-        # print(f"before json_api_doc: {response.content}")
-        # response.content = json_api_doc.parse(response.content)
-        # print(f"response:  {response.content}\n")
 
 
 class ApiRequest:
