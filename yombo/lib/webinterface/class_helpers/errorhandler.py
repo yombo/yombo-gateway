@@ -17,7 +17,7 @@ ERROR_RESPONSES = {
 }
 
 
-class ErrorHandler(object):
+class ErrorHandler:
     """
     Handles error pages.
     """
