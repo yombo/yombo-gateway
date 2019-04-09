@@ -1,11 +1,19 @@
 """
 Extends the web_interface library class to add support for building the static files for web clients.
+
+.. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+.. versionadded:: 0.24.0
+
+:copyright: Copyright 2019 by Yombo.
+:license: LICENSE for details.
+:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/webinterface/class_helpers/builddist.html>`_
 """
 # Import python libraries
-import shutil
-from time import time
+import gzip
 from os import environ, path, makedirs, listdir, walk as oswalk, unlink, stat as osstat
 from PIL import Image
+import shutil
+from time import time
 
 # Import twisted libraries
 from twisted.internet import threads
@@ -13,11 +21,10 @@ from twisted.internet.defer import inlineCallbacks, DeferredList
 from twisted.internet.utils import getProcessOutput
 
 # Import Yombo libraries
-import yombo.ext.totp
-import yombo.utils
+from yombo.utils import read_file, download_file
 from yombo.core.log import get_logger
 
-logger = get_logger("library.webinterface.builddist")
+logger = get_logger("library.webinterface.class_helpers.builddist")
 
 
 class BuildDistribution:
@@ -25,6 +32,32 @@ class BuildDistribution:
     Handles building the distribution files. Primarily, it runs the NPM Build process and copies the contents
     to the working_dir where it can be accessed through the web server.
     """
+    @inlineCallbacks
+    def build_dist(self):
+        """
+        This builds the ~/.yombo/frontend folder.
+
+        1) Copies the basic webinterface items to ~/.yombo/frontend for us when the user
+           isn't logged in, or when the gateawy needs to be setup
+
+        2) Generates the frontend single page application, and copies to ~/.yombo/frontend
+           This step uses NPM to build the application and take a few minutes on low end
+           devices such as Raspberry PI.
+
+        3) Checks if there's any nice background images, if not, it downloads some free ones
+           and renders various sizes to be displayed as needed.
+        :return:
+        """
+        deferreds = []
+        deferreds.append(self.copy_static_web_items())
+        if not path.exists(self.working_dir + "/frontend/img/bg"):
+            deferreds.append(self.download_background_images())
+        if not path.exists(f"{self.working_dir}/frontend/_nuxt"):
+            deferreds.append(self.copy_frontend())  # We copy the previously built frontend in case it's new install..
+        deferreds.append(self.load_file_cache())
+        deferreds.append(self.build_frontend())
+        yield DeferredList(deferreds)
+
     @inlineCallbacks
     def frontend_npm_run(self, arguments=None):
         """
@@ -75,43 +108,27 @@ class BuildDistribution:
         :return:
         """
         yield threads.deferToThread(self.empty_directory, f"{self.working_dir}/frontend/_nuxt")
-        yield threads.deferToThread(self.empty_directory, f"{self.working_dir}/frontend/about")
-        yield threads.deferToThread(self.empty_directory, f"{self.working_dir}/frontend/ct")
-        yield threads.deferToThread(self.empty_directory, f"{self.working_dir}/frontend/controltower")
-        yield threads.deferToThread(self.empty_directory, f"{self.working_dir}/frontend/dashboard")
-        yield self.copytree("yombo/frontend/dist/", "frontend/")
+        yield self.copytree("yombo/frontend/dist/_nuxt/", "frontend/_nuxt/")
+        yield threads.deferToThread(shutil.copy2, self.app_dir + "/yombo/frontend/dist/index.html", self.working_dir + "/frontend/")
+        yield threads.deferToThread(shutil.copy2, self.app_dir + "/yombo/frontend/dist/sw.js", self.working_dir + "/frontend/")
+        yield self.load_file_cache()
 
     @inlineCallbacks
-    def build_dist(self):
+    def load_file_cache(self):
         """
-        This builds the ~/.yombo/frontend folder.
-
-        1) Copies the basic webinterface items to ~/.yombo/frontend for us when the user
-           isn't logged in, or when the gateawy needs to be setup
-
-        2) Generates the frontend single page application, and copies to ~/.yombo/frontend
-           This step uses NPM to build the application and take a few minutes on low end
-           devices such as Raspberry PI.
-
-        3) Checks if there's any nice background images, if not, it downloads some free ones
-           and renders various sizes to be displayed as needed.
+        Loads a few files into memory for faster reply. This used in home_static_frontend_catchall
         :return:
         """
-        deferreds = []
-        deferreds.append(self.copy_static_web_items())
-        if not path.exists(self.working_dir + "/frontend/img/bg"):
-            deferreds.append(self.download_background_images())
-        if not path.exists(f"{self.working_dir}/frontend/_nuxt"):
-            deferreds.append(self.copy_frontend())  # We copy the previously built frontend in case it's new install..
-        deferreds.append(self.build_frontend())
-
-        yield DeferredList(deferreds)
-        # if not path.exists(f"{self.working_dir}/frontend/_nuxt"):
-        #     yield self.copy_frontend()  # We copy the previously built frontend in case it's new install..
-        # yield self.build_frontend()
-        #
-        # if not path.exists(self.working_dir + "/frontend/img/bg"):
-        #     yield self.download_background_images()
+        if "index" not in self.file_cache:
+            self.file_cache["index"] = {}
+        self.file_cache["index"]["data"] = yield read_file(f"{self.working_dir}/frontend/index.html")
+        self.file_cache["index"]["headers"] = {"Cache-Control": f"max-age=120",
+                                               "Content-Type": "text/html"}
+        if "sw.js" not in self.file_cache:
+            self.file_cache["sw.js"] = {}
+        self.file_cache["sw.js"]["data"] = yield read_file(f"{self.working_dir}/frontend/sw.js")
+        self.file_cache["sw.js"]["headers"] = {"Cache-Control": f"max-age=120",
+                                               "Content-Type": "application/javascript"}
 
     @inlineCallbacks
     def download_background_images(self):
@@ -123,24 +140,24 @@ class BuildDistribution:
         # print("!@!@!@!@!@ Download images...")
 
         background_images = [  # these images are free.  See unplash.com
-            'https://images.unsplash.com/photo-1414490929659-9a12b7e31907',
-            'https://images.unsplash.com/reserve/unsplash_524010c76b52a_1.JPG',
-            'https://images.unsplash.com/reserve/z7R1rjT6RhmZdqWbM5hg_R0001139.jpg',
-            'https://images.unsplash.com/reserve/J3URHssSQyqifuJVcgKu_Wald.jpg',
-            'https://images.unsplash.com/uploads/14114036359651bd991f1/b3ed8fdf',
-            'https://images.unsplash.com/reserve/vof4H8A1S02iWcK6mSAd_sarahmachtsachen.com_TheBeach.jpg',
+            "https://images.unsplash.com/photo-1414490929659-9a12b7e31907",
+            "https://images.unsplash.com/reserve/unsplash_524010c76b52a_1.JPG",
+            "https://images.unsplash.com/reserve/z7R1rjT6RhmZdqWbM5hg_R0001139.jpg",
+            "https://images.unsplash.com/reserve/J3URHssSQyqifuJVcgKu_Wald.jpg",
+            "https://images.unsplash.com/uploads/14114036359651bd991f1/b3ed8fdf",
+            "https://images.unsplash.com/reserve/vof4H8A1S02iWcK6mSAd_sarahmachtsachen.com_TheBeach.jpg",
             ]  # If added/updated, update WI/route/user.py - page_usr_login_user_get
         sizes = [2048, 1536, 1024, 600]
         if not path.exists(f"{self.working_dir}/frontend/img/bg"):
             makedirs(f"{self.working_dir}/frontend/img/bg")
 
         for idx, image in enumerate(background_images):
-            yield yombo.utils.download_file(image,
+            yield download_file(image,
                                             f"{self.working_dir}/frontend/img/bg/{idx}.jpg")
             full = Image.open(f"{self.working_dir}/frontend/img/bg/{idx}.jpg")
             for size in sizes:
                 out = yield threads.deferToThread(full.resize, (size, size), Image.BICUBIC)
-                yield threads.deferToThread(out.save, f"{self.working_dir}/frontend/img/bg/{idx}_{size}.jpg", format='JPEG', subsampling=0, quality=68)
+                yield threads.deferToThread(out.save, f"{self.working_dir}/frontend/img/bg/{idx}_{size}.jpg", format="JPEG", subsampling=0, quality=68)
 
     @inlineCallbacks
     def copy_static_web_items(self):
