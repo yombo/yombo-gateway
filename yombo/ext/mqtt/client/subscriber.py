@@ -58,7 +58,7 @@ class ConnectedState(BaseConnectedState):
 
     def unsubscribe(self, request):
         return self.protocol.doUnsubscribe(request)
-    
+
     def handleSUBACK(self, response):
         self.protocol.handleSUBACK(response)
 
@@ -72,6 +72,7 @@ class ConnectedState(BaseConnectedState):
     def handlePUBREL(self, response):
         self.protocol.handlePUBREL(response)
 
+
 # ------------------------
 # MQTT Client Protocol Class
 # ------------------------
@@ -80,12 +81,12 @@ class ConnectedState(BaseConnectedState):
 class MQTTProtocol(PubSubsMQTTProtocol):
     '''
     Subscriber role MQTTClient Protocol
-    '''   
+    '''
 
     def __init__(self, factory, addr):
         PubSubsMQTTProtocol.__init__(self, factory, addr)
         # patches the state machine
         self.CONNECTED = ConnectedState(self)
-        
 
-__all__ = [ "MQTTProtocol" ]
+
+__all__ = ["MQTTProtocol"]

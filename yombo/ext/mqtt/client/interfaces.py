@@ -34,15 +34,13 @@ from zope.interface import Interface, Attribute
 
 
 class IMQTTClientControl(Interface):
-
     '''
     This interface defines operations to start,maintain and finish
     and MQTT connection, above the TCP layer
     '''
 
-    
     def connect(clientId, keepalive=0, willTopic=None,
-                willMessage=None, willQoS=0, willRetain=False, 
+                willMessage=None, willQoS=0, willRetain=False,
                 username=None, password=None, cleanStart=True, version=mqtt.v311):
         '''
         Abstract
@@ -117,8 +115,6 @@ class IMQTTClientControl(Interface):
         (to be yet confirmed) before the connection deferred is fired.
     """)
 
-
-
     def setTimeout(timeout):
         '''
         Abstract
@@ -168,6 +164,7 @@ class IMQTTClientControl(Interface):
 
         '''
 
+
 # ============================================================================ #
 #                      MQTT Client Subscriber Interface                        #
 # ============================================================================ #
@@ -184,7 +181,7 @@ class IMQTTSubscriber(Interface):
         ========
 
         Send a SUBSCRIBE control packet.
-        
+
         Description
         ===========
 
@@ -225,14 +222,11 @@ class IMQTTSubscriber(Interface):
             The callbacks will be invoked with the msgId as parameter.
         '''
 
-
     onPublish = Attribute("""
         @type onPublish: C{function or bounded method}
         @ivar onPublish: handler that will be invoked whenever a PUBLISH message arrive.
         with parameters (topic, payload, qos, dup, retain, msgId).
     """)
-
-    
 
 
 # ============================================================================ #
@@ -245,7 +239,7 @@ class IMQTTPublisher(Interface):
     pure publisher MQTT client.
     '''
 
-    def setBandwith(bandwith, factor = 2):
+    def setBandwith(bandwith, factor=2):
         '''
         Abstract
         ========
@@ -262,7 +256,7 @@ class IMQTTPublisher(Interface):
         This is useful to avoid timeouts and retransmissions in very 
         large payloads using QoS=1 and 2. 
         '''
-        
+
     def publish(topic, message, qos=0, retain=False):
         '''
 
@@ -273,7 +267,7 @@ class IMQTTPublisher(Interface):
 
         Description
         ===========
-        
+
         Publish a message with a give QoS [0..2], returning a deferred.
         The cleanStart flag in the C{connect} API has an impact on when the
         errback is called. When cleanStart = False, 

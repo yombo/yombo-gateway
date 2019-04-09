@@ -41,43 +41,37 @@ from twisted.internet.protocol import ReconnectingClientFactory
 # Own modules
 # -----------
 
-from .. import __version__
+from ..      import __version__
 from ..error import ProfileValueError
 
 # Yombo Items
 from yombo.core.log import get_logger
-logger = get_logger('ext.mqtt.factory')
+log = get_logger('ext.mqtt.factory')
 
 
 class MQTTFactory(ReconnectingClientFactory):
-
     SUBSCRIBER = 0x1
     PUBLISHER = 0x2
 
     def __init__(self, profile):
-        self.profile  = profile
-
-        self.initialDelay = 0.7  # these settings copied from yombo amqp
+        self.profile = profile
+        self.initialDelay = 0.8  # Some of these settings copied from yombo amqp
         self.jitter = 0.2
-        self.factor = 1.82503912
-        self.maxDelay = 25 # this puts retrys around 17-26 seconds
-
+        self.factor = 1.82
+        self.maxDelay = 25  # This equals to a max retry around 17-26 seconds
         # Packet Id generator
         self.id = 0
-        self.queuePublishTx    = {} # PUBLISH messages waiting before being transmitted
-        self.windowPublish     = {} # PUBLISH messages window waiting for PUBREC/PUBACK
-        self.windowPubRelease  = {} # PUBREL  messages (qos=2) window waiting for PUBCOMP (publisher)
-        self.windowPubRx       = {} # PUBLISH messages (qos=2) window waiting for PUBREL (subscriber side)
-        self.windowSubscribe   = {} # SUBSCRIBE messages window, waiting fr SUBACK
-        self.windowUnsubscribe = {} # UNSUBSCRIBE messages window, waiting fr UNSUBACK
+        self.queuePublishTx = {}  # PUBLISH messages waiting before being transmitted
+        self.windowPublish = {}  # PUBLISH messages window waiting for PUBREC/PUBACK
+        self.windowPubRelease = {}  # PUBREL  messages (qos=2) window waiting for PUBCOMP (publisher)
+        self.windowPubRx = {}  # PUBLISH messages (qos=2) window waiting for PUBREL (subscriber side)
+        self.windowSubscribe = {}  # SUBSCRIBE messages window, waiting fr SUBACK
+        self.windowUnsubscribe = {}  # UNSUBSCRIBE messages window, waiting fr UNSUBACK
 
-        # Various queues
-        self.send_queue = deque()  # queue messages up if we are disconnected.
-
-        # logger.debug("MQTT Client library version {version}", version=__version__)
+        log.info("MQTT Client library version {version}", version=__version__)
 
     def buildProtocol(self, addr):
-        if   self.profile == self.SUBSCRIBER:
+        if self.profile == self.SUBSCRIBER:
             from yombo.ext.mqtt.client.subscriber import MQTTProtocol
         elif self.profile == self.PUBLISHER:
             from yombo.ext.mqtt.client.publisher import MQTTProtocol
@@ -85,7 +79,7 @@ class MQTTFactory(ReconnectingClientFactory):
             from yombo.ext.mqtt.client.pubsubs import MQTTProtocol
         else:
             raise ProfileValueError("profile value not supported", self.profile)
-        
+
         v = self.queuePublishTx.get(addr, deque())
         self.queuePublishTx[addr] = v
         v = self.windowPublish.get(addr, dict())
@@ -100,19 +94,19 @@ class MQTTFactory(ReconnectingClientFactory):
         self.windowUnsubscribe[addr] = v
 
         # Keeps a persistent reference to the last protocol built
-        # This is ok *only* when connecting to a single broker. 
+        # This is ok *only* when connecting to a single broker.
         self.protocol = MQTTProtocol(self, addr)
         return self.protocol
 
     def clientConnectionLost(self, connector, reason):
-        if reason.type.__doc__ != "Connection was closed cleanly":
-            logger.debug('Lost connection. Reason {reason!r}:', reason=reason)
+        log.warn('Lost connection. Reason {reason!r}:', reason=reason)
         ReconnectingClientFactory.clientConnectionLost(self, connector, reason)
 
     def clientConnectionFailed(self, connector, reason):
-        logger.debug('Connection failed. Reason {reason!r}:', reason=reason)
+        log.warn('Conenction failed. Reason {reason!r}:', reason=reason)
         ReconnectingClientFactory.clientConnectionFailed(self, connector,
                                                          reason)
+
     # -------------
     # Helper methods
     # --------------
@@ -120,7 +114,7 @@ class MQTTFactory(ReconnectingClientFactory):
     def makeId(self):
         '''Produce ids for Protocol packets, outliving their sessions'''
         self.id = (self.id + 1) % 65536
-        self.id = self.id or 1   # avoid id 0
+        self.id = self.id or 1  # avoid id 0
         return self.id
 
 

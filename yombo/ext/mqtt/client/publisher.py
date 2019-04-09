@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------
-# Copyright (C) 2015 by Rafael Gonzalez 
+# Copyright (C) 2015 by Rafael Gonzalez
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -8,10 +8,10 @@
 # distribute, sublicense, and/or sell copies of the Software, and to
 # permit persons to whom the Software is furnished to do so, subject to
 # the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be
 # included in all copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 # EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 # MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -29,15 +29,15 @@
 # Twisted  modules
 # ----------------
 
-from zope.interface   import implementer
+from zope.interface import implementer
 
 # -----------
 # Own modules
 # -----------
 
 from .interfaces import IMQTTPublisher
-from .base       import IdleState, ConnectingState as BaseConnectingState, ConnectedState as BaseConnectedState
-from .pubsubs    import MQTTProtocol    as PubSubsMQTTProtocol
+from .base import IdleState, ConnectingState as BaseConnectingState, ConnectedState as BaseConnectedState
+from .pubsubs import MQTTProtocol    as PubSubsMQTTProtocol
 
 # Yombo Modules
 from yombo.core.log import get_logger
