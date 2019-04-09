@@ -8,6 +8,7 @@ import re
 
 # Import twisted libraries
 from twisted.web.static import File
+from twisted.web.resource import Resource
 
 # Import Yombo libraries
 from yombo.constants import CONTENT_TYPE_JSON
@@ -37,17 +38,24 @@ def route_home(webapp):
         @webapp.route("/")
         @run_first()
         def home_index(webinterface, request, session):
-            print(f"zzzz webinterface.operating_mode: {webinterface.operating_mode}")
+            # print(f"zzzz webinterface.operating_mode: {webinterface.operating_mode}")
             if webinterface.operating_mode == "config":
                 return webinterface.redirect(request, "/misc/config")
             elif webinterface.operating_mode == "first_run":
-                print("redirecting to gateway_setup")
+                logger.info("Incoming request to /, but gateway needs setup. Redirecting to gateway_setup")
                 return webinterface.redirect(request, "/misc/gateway_setup")
-            print(f"zzzz2 webinterface.operating_mode: {webinterface.operating_mode}")
+            # print(f"zzzz2 webinterface.operating_mode: {webinterface.operating_mode}")
             if session is None or session.enabled is False or session.is_valid() is False or session.has_user is False:
                 return webinterface.redirect(request, "/user/login")
-            print(f"page from home: {webinterface.working_dir}/frontend/")
-            return File(webinterface.working_dir + "/frontend/index.html")
+            # print(f"page from home: {webinterface.working_dir}/frontend/index.html")
+            f = File(webinterface.working_dir + "/frontend/index.html")
+            f.type, f.encoding = 'text/html', None
+            r = Resource()
+            r.putChild(b"", f)
+            print(f"f: {f}")
+            print(f"r: {r}")
+
+            return r
 
         @webapp.route("/nuxt.env")
         @require_auth()
@@ -56,6 +64,31 @@ def route_home(webapp):
             request.setHeader("Content-Type", CONTENT_TYPE_JSON)
 
             request.setHeader("Cache-Control", f"max-age=5")
+            internal_http_port = webinterface._Gateways.local.internal_http_port
+            internal_http_secure_port = webinterface._Gateways.local.internal_http_secure_port
+            external_http_port = webinterface._Gateways.local.external_http_port
+            external_http_secure_port = webinterface._Gateways.local.external_http_secure_port
+
+            internal_http_port = internal_http_port if internal_http_port is not None else \
+                webinterface._Configs.get("webinterface", "nonsecure_port", None, False)
+            internal_http_secure_port = internal_http_secure_port if internal_http_secure_port is not None else \
+                webinterface._Configs.get("webinterface", "secure_port", None, False)
+            external_http_port = external_http_port if external_http_port is not None else \
+                webinterface._Configs.get("webinterface", "nonsecure_port", None, False)
+            external_http_secure_port = external_http_secure_port if external_http_secure_port is not None else \
+                webinterface._Configs.get("webinterface", "secure_port", None, False)
+
+            return json.dumps({
+                "internal_http_port": internal_http_port,
+                "internal_http_secure_port": internal_http_secure_port,
+                "external_http_port": external_http_port,
+                "external_http_secure_port": external_http_secure_port,
+                "api_key": webinterface._Configs.get("frontend", "api_key", "4Pz5CwKQCsexQaeUvhJnWAFO6TRa9SafnpAQfAApqy9fsdHTLXZ762yCZOct", False),
+                "client_location":
+                    "remote" if ip_addres_in_local_network(request.getClientIP()) else "local",
+            })
+
+
             return json.dumps({
                 "internal_http_port": webinterface._Gateways.local.internal_http_port,
                 "internal_http_secure_port": webinterface._Gateways.local.internal_http_secure_port,
@@ -66,31 +99,42 @@ def route_home(webapp):
                     "remote" if ip_addres_in_local_network(request.getClientIP()) else "local",
             })
 
-        @webapp.route("/<path:catchall>", branch=True, strict_slashes=False)
+        @webapp.route("/<path:catchall>", branch=True)
         @require_auth()
         def home_static_frontend_catchall(webinterface, request, session, catchall):
             """ For frontend that doesn't match anything. """
             print(f"catchall: {catchall}")
-            print(f"page 404: {webinterface.working_dir}/frontend - {request.uri}")
-            # return File(webinterface.working_dir + "/frontend/css/")
+            print(f"page 404: {webinterface.working_dir}/frontend{request.uri.decode()}")
 
-            uri = request.uri.decode('utf-8')
-            return File(webinterface.working_dir + "/frontend" + uri)
+            f = File(webinterface.working_dir + "/frontend/index.html")
+            f.type, f.encoding = 'text/html', None
+            return f
 
-            if re.match('^[a-zA-Z0-9?/.]*$', uri) is None:  # we have bad characters
-                return "Please stop that."
-
-            max_age = 60
-            if uri.endswith('.js') or uri.endswith('.css') or uri.startswith('/img/'):
-                max_age = random_int(604800, .2)
-
-            mime = guess_extension(uri)[0]
-            if mime is not None:
-                request.setHeader("Content-Type", mime)
-            request.responseHeaders.removeHeader("Expires")
-            request.setHeader("Cache-Control", f"max-age={max_age}")
-            # return "asdf"
-            return File(webinterface.working_dir + "/frontend")
+        # @webapp.route("/<path:catchall>", branch=True, strict_slashes=False)
+        # @require_auth()
+        # def home_static_frontend_catchall(webinterface, request, session, catchall):
+        #     """ For frontend that doesn't match anything. """
+        #     print(f"catchall: {catchall}")
+        #     print(f"page 404: {webinterface.working_dir}/frontend - {request.uri}")
+        #     # return File(webinterface.working_dir + "/frontend/css/")
+        #
+        #     uri = request.uri.decode('utf-8')
+        #     return File(webinterface.working_dir + "/frontend" + uri)
+        #
+        #     if re.match('^[a-zA-Z0-9?/.]*$', uri) is None:  # we have bad characters
+        #         return "Please stop that."
+        #
+        #     max_age = 60
+        #     if uri.endswith('.js') or uri.endswith('.css') or uri.startswith('/img/'):
+        #         max_age = random_int(604800, .2)
+        #
+        #     mime = guess_extension(uri)[0]
+        #     if mime is not None:
+        #         request.setHeader("Content-Type", mime)
+        #     request.responseHeaders.removeHeader("Expires")
+        #     request.setHeader("Cache-Control", f"max-age={max_age}")
+        #     # return "asdf"
+        #     return File(webinterface.working_dir + "/frontend")
 
         @webapp.route("/css/", branch=True)
         def home_static_frontend_css(webinterface, request):
