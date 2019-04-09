@@ -81,7 +81,6 @@ class YomboAPI(YomboLibrary):
             return
 
         except Exception as e:
-            print("Yombo api 333")
             logger.info("check_gateway_credentials API Error: {error}", error=e)
             logger.error("---------------==(Traceback)==--------------------------")
             logger.error("{trace}", trace=traceback.format_exc())
@@ -91,7 +90,6 @@ class YomboAPI(YomboLibrary):
             logger.error("--------------------------------------------------------")
             self.gateway_credentials_is_valid = False
         else:
-            # print("Yombo api 444")
             data = response.content["data"]
             # print(f"auth check response: {data}")
             # print(f"auth check response: {data['attributes']}")
