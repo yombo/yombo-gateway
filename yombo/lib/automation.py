@@ -262,6 +262,7 @@ class Automation(YomboLibrary):
         for rule_id, rule in self.rules.items():
             logger.debug("_started_: Checking rule '{label}' has runstart. Type: {rule_type}",
                          label=rule.label, rule_type=rule.data['trigger'])
+            # logger.debug("rule: {rule}", rule=rule)
             run_on_start = rule.data["config"]["run_on_start"]
             if run_on_start is not True:
                 continue
