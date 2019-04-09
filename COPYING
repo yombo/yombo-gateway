@@ -152,7 +152,7 @@ Comment: https://github.com/autocracy/python-ipy commit hash:716ab264ef2ab028645
 Files: yombo/ext/magic.py
 Copyright: 2001-2014 Adam Hupp
 License: MIT License
-Comment: https://github.com/ahupp/python-magic commit: d9ffadd4ab85553937389f10b39e1da1f5ed583e
+Comment: https://github.com/ahupp/python-magic commit: c5b386b08bfbc01330e2ba836d97749d242429dc
   The MIT License (MIT)
   .
   Copyright (c) 2001-2014 Adam Hupp

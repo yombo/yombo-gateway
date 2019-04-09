@@ -1,13 +1,11 @@
 """
-This file was sourced from: https://github.com/ahupp/python-magic
-
-This is a wrapper around the libmagic file identification library.
+magic is a wrapper around the libmagic file identification library.
 
 See README for more information.
 
 Usage:
 
->>> import yombo.ext.magic
+>>> import magic
 >>> magic.from_file("testdata/test.pdf")
 'PDF document, version 1.2'
 >>> magic.from_file("testdata/test.pdf", mime=True)
@@ -202,7 +200,7 @@ def errorcheck_null(result, func, args):
 
 
 def errorcheck_negative_one(result, func, args):
-    if result is -1:
+    if result == -1:
         err = magic_error(args[0])
         raise MagicException(err)
     else:
@@ -226,8 +224,10 @@ def coerce_filename(filename):
     # .encode('ascii').  If you use the filesystem encoding
     # then you'll get inconsistent behavior (crashes) depending on the user's
     # LANG environment variable
-    is_unicode = isinstance(filename, str)
-
+    is_unicode = (sys.version_info[0] <= 2 and
+                  isinstance(filename, unicode)) or \
+                  (sys.version_info[0] >= 3 and
+                   isinstance(filename, str))
     if is_unicode:
         return filename.encode('utf-8', 'surrogateescape')
     else:
