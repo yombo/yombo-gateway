@@ -35,7 +35,7 @@ Comment: https://github.com/SublimeCodeIntel/inflector commit hash:acfe73d3cacf8
 Files: yombo/ext/base62.py
 Copyright: Copyright (c) 2014, Sumin Byeon
 License: Other
-Comment: https://github.com/suminb/base62 commit hash:f09cadf8a7ccab9b81a2b576bd85e6942fe85cbb
+Comment: https://github.com/suminb/base62 commit hash:ab786ae631d76bc4bbdd483bfe6ba98998a91d76
   Copyright (c) 2014, Sumin Byeon
   All rights reserved.
   .
