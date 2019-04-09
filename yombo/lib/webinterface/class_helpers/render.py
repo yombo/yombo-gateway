@@ -81,8 +81,6 @@ class Render:
         :param response_code:
         :return:
         """
-        request.setHeader("Content-Type", CONTENT_TYPE_JSON)
-
         if id is None:
             id = random_string(length=20)
         if attributes is None:
@@ -116,6 +114,24 @@ class Render:
                 }
             )))
         return json.dumps(response)
+
+    def render_api_raw(self, request, session, data, response_code=None):
+        """
+        Renders content to an API based client, however this takes the data input as a dictionary and will
+        not be processed. THis shoulud be in JSON API format, but not always.
+
+        :param request:
+        :param session:
+        :param data:
+        :param response_code:
+        :return:
+        """
+        if response_code is None:
+            response_code = 200
+
+        request.setResponseCode(response_code)
+        request.setHeader("Content-Type", CONTENT_TYPE_JSON)
+        return json.dumps(data)
 
     def render_api_errors(self, request, session, errors=None, meta=None, response_code=None):
         """
