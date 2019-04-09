@@ -1,5 +1,6 @@
 # Import python libraries
 import json
+from yombo.utils import random_string
 
 from yombo.constants import CONTENT_TYPE_JSON
 
@@ -47,70 +48,101 @@ def return_json(request, payload, code=None):
     return json.dumps(payload)
 
 
-def return_good(request, message=None, payload=None, comments=None, code=None):
+def return_good_base(request, data=None, included=None, code=None, meta=None):
     request.setHeader("Content-Type", CONTENT_TYPE_JSON)
-    if comments is None:
-        comments = {}
+    if data is None:
+        data = []
     if code is None:
         code = 200
     request.setResponseCode(code)
-    if payload is None:
-        payload = {}
-    if message is None:
-        message = "OK"
-    return json.dumps({
-        "code": code,
-        "message": message,
-        "comments": comments,
-        "payload": payload,
-    })
+    response = {
+        "data": data,
+    }
+    if included is not None:
+        response["included"] = included
+    if meta is not None:
+        response["meta"] = meta
+
+    return json.dumps(response)
 
 
-def return_not_found(request, message=None, code=None, comments=None):
+def return_good(request, data_type, id=None, attributes=None, included=None, code=None, meta=None):
     request.setHeader("Content-Type", CONTENT_TYPE_JSON)
-    if comments is None:
-        comments = {}
+
+    if id is None:
+        id = random_string(length=15)
+    if attributes is None:
+        attributes = {}
+
+    response = {
+        "type": data_type,
+        "id": id,
+        "attributes": attributes,
+    }
+    if included is not None:
+        response["included"] = included
+    if meta is not None:
+        response["meta"] = meta
+
+    return return_good_base(request, data=response, included=included, code=code, meta=meta)
+
+
+def return_error(request, errors=None, code=None, meta=None):
+    request.setHeader("Content-Type", CONTENT_TYPE_JSON)
+    if errors is None:
+        errors = [{}]
+    if code is None:
+        code = 400
+    request.setResponseCode(code)
+
+    print(f"return_error: {errors}")
+    for error in errors:
+        if "code" not in error:
+            error["code"] = str(code)
+        if "id" not in error:
+            error["id"] = f"no_id_provided_{code}"
+        if "title" not in error:
+            error["title"] = "Unknown error"
+        if "detail" not in error:
+            error["detail"] = "No details about error was provided."
+        if "links" not in error:
+            error["links"] = {}
+        if "about" not in error["links"]:
+            error["links"]["about"] = f"https://yombo.net/GWAPI:Error_Responses"
+
+    response = {
+        "errors": errors,
+    }
+
+    if meta is not None:
+        response["meta"] = meta
+
+    return json.dumps(response)
+
+
+def return_error_single(request, message=None, code=None, meta=None):
+    if message is not None:
+        errors = [{"message": message}]
+    else:
+        errors = None
+    return return_error(request, errors=errors, code=code, meta=meta)
+
+
+def return_not_found(request, message=None, code=None, meta=None):
+    if message is not None:
+        errors = [{"message": message}]
+    else:
+        errors = [{"title": "Not found", "message": "The requested item or path was not found."}]
     if code is None:
         code = 404
-    request.setResponseCode(code)
-    if message is None:
-        message = "Not found"
-    return json.dumps({
-        "code": code,
-        "message": message,
-        "comments": comments,
-    })
+    return return_error(request, errors=errors, code=code, meta=meta)
 
 
-def return_error(request, message=None, code=None, comments=None):
-    request.setHeader("Content-Type", CONTENT_TYPE_JSON)
-    if comments is None:
-        comments = {}
-    if code is None:
-        code = 200
-    request.setResponseCode(code)
-    if message is None:
-        message = "System error"
-    return json.dumps({
-        "code": code,
-        "message": message,
-        "comments": comments,
-    })
-
-
-def return_unauthorized(request, message=None, code=None, comments=None):
-    request.setHeader("Content-Type", CONTENT_TYPE_JSON)
-    if comments is None:
-        comments = {}
+def return_unauthorized(request, message=None, code=None, meta=None):
+    if message is not None:
+        errors = [{"message": message}]
+    else:
+        errors = [{"title": "Not authorized", "message": "The request has not been authorized."}]
     if code is None:
         code = 401
-    request.setResponseCode(code)
-    if message is None:
-        message = "Not authorized"
-    return json.dumps({
-        "code": code,
-        "message": message,
-        "comments": comments,
-        "redirect": "/?",
-    })
-
+    return return_error(request, errors=errors, code=code, meta=meta)
