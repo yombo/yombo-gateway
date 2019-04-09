@@ -80,7 +80,11 @@ class LibrarySearch(object):
                     "machine_label": item_requested,
                 }
         # print(f"library search: get: criteria {criteria}")
-        return self.get_advanced(criteria, multiple=False)
+        try:
+            return self.get_advanced(criteria, multiple=False)
+        except KeyError:
+            raise KeyError(f"No matching {self.item_search_attribute} found: {item_requested}")
+
 
     def get_advanced(self, criteria, multiple=None):
         """
