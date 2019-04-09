@@ -35,7 +35,7 @@ class SystemDataHandler(YomboLibrary, object):
     Handles downloading system data and saving it to the database. If the system is running, it will send
     events as needed.
     """
-    MAX_DOWNLOAD_CONCURRENT = 5  # config: misc:downloadmodulesconcurrent
+    MAX_DOWNLOAD_CONCURRENT = 4  # config: misc:downloadmodulesconcurrent
 
     @inlineCallbacks
     def _init_(self):
@@ -58,8 +58,8 @@ class SystemDataHandler(YomboLibrary, object):
             "related_variable_group_devices": f"/v1/gateways/{self.gwid}/relationships/variable_groups_devices",
             "related_variable_group_modules": f"/v1/gateways/{self.gwid}/relationships/variable_groups_modules",
         }
-        self.maxDownloadConcurrent = self._Configs.get("misc", "downloadconfigsconcurrent", self.MAX_DOWNLOAD_CONCURRENT)
-        # print(f"Number of downloaders: {self.maxDownloadConcurrent}")
+        self.maxDownloadConcurrent = self._Configs.get("misc", "downloadconfigsconcurrent",
+                                                       self.MAX_DOWNLOAD_CONCURRENT, False)
         self.download_semaphore = defer.DeferredSemaphore(self.maxDownloadConcurrent)  # used to queue deferreds
         self.download_deferreds = []
         self.process_queue = []  # All downloaded configs are placed here. Only update the data one at a time.
@@ -164,6 +164,7 @@ class SystemDataHandler(YomboLibrary, object):
         attributes = self.field_remap(data_raw["attributes"], config_data)
 
         try:
+            # print(f"{item_type}: {attributes}")
             data = schema.load(attributes)
         except Exception as e:
             logger.info("Loading schema data error for: {item_type}", item_type=item_type)
