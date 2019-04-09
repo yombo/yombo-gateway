@@ -4,25 +4,19 @@ Extends the web_interface library class: Handles the webserver and interacts wit
 Also requests the SSL cert from the sslcert library.
 """
 # Import python libraries
-import shutil
 from time import time
-from os import environ, path, makedirs, listdir, walk as oswalk, unlink, stat as osstat
-from PIL import Image
 
 # Import twisted libraries
-from twisted.internet import threads
-from twisted.internet.defer import inlineCallbacks, DeferredList
-from twisted.internet.utils import getProcessOutput
+from twisted.internet import reactor, ssl
+from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
-import yombo.ext.totp
-import yombo.utils
 from yombo.core.log import get_logger
 
 logger = get_logger("library.webinterface.builddist")
 
 
-class WebServer(object):
+class WebServer:
     """
     Handles setting up, restarting, and stopping the webserver.
     """
@@ -159,7 +153,7 @@ class WebServer(object):
             print("#                                                         #")
 
         fqdn = self.fqdn()
-        if fqdn == "127.0.0.1":
+        if fqdn == "127.0.0.1" or fqdn is None:
             local_hostname = "127.0.0.1"
             internal_hostname = self._Configs.get("core", "localipaddress_v4")
             external_hostname = self._Configs.get("core", "externalipaddress_v4")
