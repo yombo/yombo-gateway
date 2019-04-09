@@ -57,7 +57,7 @@ def route_api_v1_scene(webapp):
 
             page = webinterface.get_template(request, webinterface.wi_dir + "/pages/scenes/form_device_inputs.html")
             return page.render(
-                alerts=webinterface.get_alerts(),
+                alerts=session.get_alerts(),
                 inputs=inputs,
                 action_details=action_details,
                 )

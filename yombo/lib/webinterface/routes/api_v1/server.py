@@ -33,6 +33,6 @@ def route_api_v1_server(webapp):
             except YomboWarning as e:
                 return return_error(request, e.message, e.errorno)
 
-            return webinterface.render_api(request, session,
+            return webinterface.render_api_raw(request, session,
                                            data=response.content["data"]
                                            )

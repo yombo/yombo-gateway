@@ -1,20 +1,20 @@
 """
 This file handles the homepage, static files, and misc one-off urls.
 """
-from os import path
 import json
-from mimetypes import guess_extension
 import re
 
 # Import twisted libraries
 from twisted.web.static import File
-from twisted.web.resource import Resource
 
 # Import Yombo libraries
 from yombo.constants import CONTENT_TYPE_JSON
 from yombo.lib.webinterface.auth import require_auth, run_first
 from yombo.utils import random_int
 from yombo.utils.networking import ip_addres_in_local_network
+from yombo.core.log import get_logger
+
+logger = get_logger("library.webinterface.routes.home")
 
 
 class NotFound(Exception):
@@ -35,6 +35,25 @@ def route_home(webapp):
         def robots_txt(webinterface, request):
             return "User-agent: *\nDisallow: /\n"
 
+        @webapp.route("/<path:catchall>", branch=True)
+        @require_auth()
+        def home_static_frontend_catchall(webinterface, request, session, catchall):
+            """ For frontend that doesn't match anything. """
+            base_headers(request)
+            uri = request.uri.decode()[1:]
+            logger.info("Catchall for: {uri}", uri=uri)
+
+            if uri not in webinterface.file_cache:
+                if webinterface.operating_mode != "run":
+                    webinterface.redirect(request, "/")
+                uri = "index"
+            if uri in webinterface.file_cache:
+                file = webinterface.file_cache[uri]
+                if "headers" in file and len(file["headers"]) > 0:
+                    for header_name, header_content in file['headers'].items():
+                        request.setHeader(header_name, header_content)
+                return file["data"]
+
         @webapp.route("/")
         @run_first()
         def home_index(webinterface, request, session):
@@ -44,18 +63,16 @@ def route_home(webapp):
             elif webinterface.operating_mode == "first_run":
                 logger.info("Incoming request to /, but gateway needs setup. Redirecting to gateway_setup")
                 return webinterface.redirect(request, "/misc/gateway_setup")
-            # print(f"zzzz2 webinterface.operating_mode: {webinterface.operating_mode}")
+            print(f"zzzz2 webinterface.operating_mode: {webinterface.operating_mode}")
             if session is None or session.enabled is False or session.is_valid() is False or session.has_user is False:
                 return webinterface.redirect(request, "/user/login")
             # print(f"page from home: {webinterface.working_dir}/frontend/index.html")
-            f = File(webinterface.working_dir + "/frontend/index.html")
-            f.type, f.encoding = 'text/html', None
-            r = Resource()
-            r.putChild(b"", f)
-            print(f"f: {f}")
-            print(f"r: {r}")
 
-            return r
+            file = webinterface.file_cache["index"]
+            if "headers" in file and len(file["headers"]) > 0:
+                for header_name, header_content in file['headers'].items():
+                    request.setHeader(header_name, header_content)
+            return file["data"]
 
         @webapp.route("/nuxt.env")
         @require_auth()
@@ -79,6 +96,7 @@ def route_home(webapp):
                 webinterface._Configs.get("webinterface", "secure_port", None, False)
 
             return json.dumps({
+                "working_dir": webinterface.working_dir,
                 "internal_http_port": internal_http_port,
                 "internal_http_secure_port": internal_http_secure_port,
                 "external_http_port": external_http_port,
@@ -87,28 +105,6 @@ def route_home(webapp):
                 "client_location":
                     "remote" if ip_addres_in_local_network(request.getClientIP()) else "local",
             })
-
-
-            return json.dumps({
-                "internal_http_port": webinterface._Gateways.local.internal_http_port,
-                "internal_http_secure_port": webinterface._Gateways.local.internal_http_secure_port,
-                "external_http_port": webinterface._Gateways.local.external_http_port,
-                "external_http_secure_port": webinterface._Gateways.local.external_http_secure_port,
-                "api_key": webinterface._Configs.get("frontend", "api_key", "4Pz5CwKQCsexQaeUvhJnWAFO6TRa9SafnpAQfAApqy9fsdHTLXZ762yCZOct", False),
-                "client_location":
-                    "remote" if ip_addres_in_local_network(request.getClientIP()) else "local",
-            })
-
-        @webapp.route("/<path:catchall>", branch=True)
-        @require_auth()
-        def home_static_frontend_catchall(webinterface, request, session, catchall):
-            """ For frontend that doesn't match anything. """
-            print(f"catchall: {catchall}")
-            print(f"page 404: {webinterface.working_dir}/frontend{request.uri.decode()}")
-
-            f = File(webinterface.working_dir + "/frontend/index.html")
-            f.type, f.encoding = 'text/html', None
-            return f
 
         # @webapp.route("/<path:catchall>", branch=True, strict_slashes=False)
         # @require_auth()
@@ -140,6 +136,7 @@ def route_home(webapp):
         def home_static_frontend_css(webinterface, request):
             """ For frontend css stylesheets. """
             request.responseHeaders.removeHeader("Expires")
+            base_headers(request)
             request.setHeader("Cache-Control", f"max-age={random_int(604800, .2)}")
             return File(webinterface.working_dir + "/frontend/css")
 
@@ -147,6 +144,7 @@ def route_home(webapp):
         def home_static_frontend_img(webinterface, request):
             """ For frontend images. """
             request.responseHeaders.removeHeader("Expires")
+            base_headers(request)
             request.setHeader("Cache-Control", f"max-age={random_int(604800, .2)}")
             return File(webinterface.working_dir + "/frontend/img")
 
@@ -156,6 +154,7 @@ def route_home(webapp):
             # uri = request.uri.decode('utf-8')
             # print(f"static_frontend_js {uri}")
             # if uri.endswith('basic_app.js'):
+            base_headers(request)
             request.setHeader("Cache-Control", f"max-age={random_int(604800, .2)}")
             request.responseHeaders.removeHeader("Expires")
             return File(webinterface.working_dir + "/frontend/js")
@@ -166,18 +165,18 @@ def route_home(webapp):
             # uri = request.uri.decode('utf-8')
             # print(f"static_frontend_js {uri}")
             # if uri.endswith('basic_app.js'):
+            base_headers(request)
             request.setHeader("Cache-Control", f"max-age={random_int(604800, .2)}")
             request.responseHeaders.removeHeader("Expires")
             return File(webinterface.working_dir + "/frontend/_nuxt")
 
-        @webapp.route("/sw.js")
-        def home_static_sw_js_nuxt(webinterface, request):
-            request.responseHeaders.removeHeader("Expires")
-            request.setHeader("Cache-Control", f"max-age={random_int(604800, .2)}")
-            return File(webinterface.working_dir + "/frontend/sw.js")
-
         @webapp.route("/favicon.ico")
         def home_static(webinterface, request):
             request.responseHeaders.removeHeader("Expires")
+            base_headers(request)
             request.setHeader("Cache-Control", f"max-age={random_int(604800, .2)}")
             return File(webinterface.working_dir + "/frontend/img/icons/favicon.ico")
+
+        def base_headers(request):
+            request.setHeader("server", "Apache/2.4.38 (Unix)")
+            request.setHeader("X-Powered-By", "YGW")

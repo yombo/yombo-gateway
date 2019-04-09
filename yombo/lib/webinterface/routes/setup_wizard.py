@@ -480,17 +480,19 @@ def route_setup_wizard(webapp):
                     f"/v1/gateways/{webinterface._Configs.get('core', 'gwid')}/dns",
                     authorization_header=auth_header)
             except YomboWarning as e:
-                for error in e.errors:
-                    session.add_alert(
-                        f"Unable to setup gateway DNS, Yombo API responded with: ({error['code']}) {error['title']} -"
-                        f" {error['detail']}",
-                        "warning")
+                response = e.meta
                 webinterface._Configs.set("dns", "dns_name", None)
                 webinterface._Configs.set("dns", "dns_domain", None)
                 webinterface._Configs.set("dns", "dns_domain_id", None)
                 webinterface._Configs.set("dns", "allow_change_at", 0)
                 webinterface._Configs.set("dns", "fqdn", None)
-                return webinterface.redirect(request, "/setup_wizard/dns")
+                if response.response_code != 404:
+                    for error in e.errors:
+                        session.add_alert(
+                            f"Unable to setup gateway DNS, Yombo API responded with: ({error['code']}) {error['title']} -"
+                            f" {error['detail']}",
+                            "warning")
+                    return webinterface.redirect(request, "/setup_wizard/dns")
             else:
                 dns_data = response.content["data"]["attributes"]
                 webinterface._Configs.set("dns", "dns_name", dns_data["name"])
