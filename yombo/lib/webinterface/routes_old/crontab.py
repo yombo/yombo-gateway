@@ -21,7 +21,7 @@ logger = get_logger("library.webinterface.routes.crontabs")
 def route_crontabs(webapp):
     with webapp.subroute("/crontab") as webapp:
         def root_breadcrumb(webinterface, request):
-            webinterface.add_breadcrumb(request, "/?", "Home")
+            webinterface.add_breadcrumb(request, "/", "Home")
             webinterface.add_breadcrumb(request, "/crontab/index", "CronTabs")
 
         @webapp.route("/")

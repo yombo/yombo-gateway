@@ -21,7 +21,7 @@ logger = get_logger("library.webinterface.routes.automation.scene")
 def route_automation_scene(webapp):
     with webapp.subroute("/automation") as webapp:
         def root_breadcrumb(webinterface, request):
-            webinterface.add_breadcrumb(request, "/?", "Home")
+            webinterface.add_breadcrumb(request, "/", "Home")
             webinterface.add_breadcrumb(request, "/automation/index", "Automation Rule")
 
         @webapp.route("/<string:rule_id>/set_trigger_scene", methods=["GET"])

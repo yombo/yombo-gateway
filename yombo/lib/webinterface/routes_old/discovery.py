@@ -28,7 +28,7 @@ logger = get_logger("library.webinterface.routes.discovery")
 def route_discovery(webapp):
     with webapp.subroute("/discovery") as webapp:
         def root_breadcrumb(webinterface, request):
-            webinterface.add_breadcrumb(request, "/?", "Home")
+            webinterface.add_breadcrumb(request, "/", "Home")
             webinterface.add_breadcrumb(request, "/discovery/index", "Discovery")
 
         @webapp.route("/")

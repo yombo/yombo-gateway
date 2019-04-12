@@ -9,7 +9,7 @@ def route_devtools_config_commands(webapp):
     with webapp.subroute("/devtools") as webapp:
 
         def root_breadcrumb(webinterface, request):
-            webinterface.add_breadcrumb(request, "/?", "Home")
+            webinterface.add_breadcrumb(request, "/", "Home")
             webinterface.add_breadcrumb(request, "/devtools/config/", "Config Tools")
             webinterface.add_breadcrumb(request, "/devtools/config/commands/index", "Commands", True)
 

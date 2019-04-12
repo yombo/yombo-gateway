@@ -23,7 +23,7 @@ logger = get_logger("library.webinterface.routes.automation.device")
 def route_automation_device(webapp):
     with webapp.subroute("/automation") as webapp:
         def root_breadcrumb(webinterface, request):
-            webinterface.add_breadcrumb(request, "/?", "Home")
+            webinterface.add_breadcrumb(request, "/", "Home")
             webinterface.add_breadcrumb(request, "/automation/index", "Automation Rule")
 
         @webapp.route("/<string:rule_id>/set_trigger_device", methods=["GET"])

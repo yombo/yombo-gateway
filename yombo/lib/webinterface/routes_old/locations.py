@@ -31,7 +31,7 @@ def route_locations(webapp):
     """
     with webapp.subroute("/locations") as webapp:
         def root_breadcrumb(webinterface, request):
-            webinterface.add_breadcrumb(request, "/?", "Home")
+            webinterface.add_breadcrumb(request, "/", "Home")
             webinterface.add_breadcrumb(request, "/locations/index", "Locations")
 
         @webapp.route("/")

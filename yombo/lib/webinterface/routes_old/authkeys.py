@@ -41,7 +41,7 @@ def route_authkeys(webapp):
     """
     with webapp.subroute("/authkeys") as webapp:
         def root_breadcrumb(webinterface, request):
-            webinterface.add_breadcrumb(request, "/?", "Home")
+            webinterface.add_breadcrumb(request, "/", "Home")
             webinterface.add_breadcrumb(request, "/authkeys/index", "Auth Keys")
 
         def return_authkey_details(webinterface, request, session, auth_key):
@@ -49,7 +49,7 @@ def route_authkeys(webapp):
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, f"/authkeys/{auth_key.auth_id}/details",
                                         auth_key.label)
-            return page.render(alerts=webinterface.get_alerts(),
+            return page.render(alerts=session.get_alerts(),
                                authkey=auth_key,
                                )
 
@@ -73,7 +73,7 @@ def route_authkeys(webapp):
 
             page = webinterface.get_template(request, webinterface.wi_dir + "/pages/authkeys/index.html")
             root_breadcrumb(webinterface, request)
-            return page.render(alerts=webinterface.get_alerts(),
+            return page.render(alerts=session.get_alerts(),
                                authkeys=webinterface._AuthKeys.authkeys,
                                )
 

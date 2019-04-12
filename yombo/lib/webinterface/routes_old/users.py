@@ -30,7 +30,7 @@ logger = get_logger("library.webinterface.route_devices")
 def route_users(webapp):
     with webapp.subroute("/users") as webapp:
         def root_breadcrumb(webinterface, request):
-            webinterface.add_breadcrumb(request, "/?", "Home")
+            webinterface.add_breadcrumb(request, "/", "Home")
             webinterface.add_breadcrumb(request, "/users/index", "Users")
 
         @webapp.route("/")

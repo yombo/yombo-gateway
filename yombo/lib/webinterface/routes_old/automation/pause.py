@@ -21,7 +21,7 @@ logger = get_logger("library.webinterface.routes.automation.pause")
 def route_automation_pause(webapp):
     with webapp.subroute("/automation") as webapp:
         def root_breadcrumb(webinterface, request):
-            webinterface.add_breadcrumb(request, "/?", "Home")
+            webinterface.add_breadcrumb(request, "/", "Home")
             webinterface.add_breadcrumb(request, "/automation/index", "Automation")
 
         @webapp.route("/<string:rule_id>/add_action_pause", methods=["GET"])

@@ -21,7 +21,7 @@ logger = get_logger("library.webinterface.routes.automation.template")
 def route_automation_template(webapp):
     with webapp.subroute("/automation") as webapp:
         def root_breadcrumb(webinterface, request):
-            webinterface.add_breadcrumb(request, "/?", "Home")
+            webinterface.add_breadcrumb(request, "/", "Home")
             webinterface.add_breadcrumb(request, "/automation/index", "Automation Rules")
 
         @webapp.route("/<string:rule_id>/set_condition_template", methods=["GET"])

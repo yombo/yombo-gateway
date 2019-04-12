@@ -8,7 +8,7 @@ def route_devtools_config_device_command_inputs(webapp):
     with webapp.subroute("/devtools") as webapp:
 
         def root_breadcrumb(webinterface, request):
-            webinterface.add_breadcrumb(request, "/?", "Home")
+            webinterface.add_breadcrumb(request, "/", "Home")
             webinterface.add_breadcrumb(request, "/devtools/config/", "Config Tools")
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types", True)
 

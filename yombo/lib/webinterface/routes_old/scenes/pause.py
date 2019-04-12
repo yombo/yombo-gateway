@@ -20,7 +20,7 @@ logger = get_logger("library.webinterface.routes.scenes.pause")
 def route_scenes_pause(webapp):
     with webapp.subroute("/scenes") as webapp:
         def root_breadcrumb(webinterface, request):
-            webinterface.add_breadcrumb(request, "/?", "Home")
+            webinterface.add_breadcrumb(request, "/", "Home")
             webinterface.add_breadcrumb(request, "/scenes/index", "Scenes")
 
         @webapp.route("/<string:scene_id>/add_pause", methods=["GET"])

@@ -549,7 +549,7 @@ class WebInterface(BuildDistribution, ErrorHandler, Render, YomboLibrary, WebSer
             return default
 
     def home_breadcrumb(self, request):
-        self.add_breadcrumb(request, "/?", "Home")
+        self.add_breadcrumb(request, "/", "Home")
 
     def add_breadcrumb(self, request, url=None, text=None, show=None, style=None, data=None):
         if hasattr(request, "breadcrumb") is False:
@@ -632,7 +632,7 @@ class WebInterface(BuildDistribution, ErrorHandler, Render, YomboLibrary, WebSer
         if message is None:
             message = ""
         if redirect is None:
-            redirect = "/?"
+            redirect = "/"
 
         page = self.get_template(request, self.wi_dir + "/pages/restart.html")
         reactor.callLater(0.3, self.do_restart)

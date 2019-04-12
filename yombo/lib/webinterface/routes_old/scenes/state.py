@@ -21,7 +21,7 @@ logger = get_logger("library.webinterface.routes.scenes.state")
 def route_scenes_state(webapp):
     with webapp.subroute("/scenes") as webapp:
         def root_breadcrumb(webinterface, request):
-            webinterface.add_breadcrumb(request, "/?", "Home")
+            webinterface.add_breadcrumb(request, "/", "Home")
             webinterface.add_breadcrumb(request, "/scenes/index", "Scenes")
 
         @webapp.route("/<string:scene_id>/add_state", methods=["GET"])

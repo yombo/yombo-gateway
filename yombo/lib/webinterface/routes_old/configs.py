@@ -28,7 +28,7 @@ def route_configs(webapp):
                     session=session["yomboapi_session"])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, "warning")
-                return webinterface.redirect(request, "/?")
+                return webinterface.redirect(request, "/")
 
             master_gateways = sorted(master_gateways_results["data"], key=lambda k: k['label'])
 
@@ -70,7 +70,7 @@ def route_configs(webapp):
                     session=session["yomboapi_session"])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, "warning")
-                return webinterface.redirect(request, "/?")
+                return webinterface.redirect(request, "/")
             new_master = None
             if submitted_master_gateway_id == webinterface.gateway_id():
                 new_master = True

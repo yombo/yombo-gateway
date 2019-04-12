@@ -24,7 +24,7 @@ logger = get_logger("library.webinterface.routes.automation")
 def route_automation(webapp):
     with webapp.subroute("/automation") as webapp:
         def root_breadcrumb(webinterface, request):
-            webinterface.add_breadcrumb(request, "/?", "Home")
+            webinterface.add_breadcrumb(request, "/", "Home")
             webinterface.add_breadcrumb(request, "/automation/index", "Automation")
 
         @webapp.route("/")

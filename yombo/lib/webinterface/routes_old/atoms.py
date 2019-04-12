@@ -16,7 +16,7 @@ def route_atoms(webapp):
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/info", "Info")
             webinterface.add_breadcrumb(request, "/atoms/index", "Atoms")
-            return page.render(alerts=webinterface.get_alerts(),
+            return page.render(alerts=session.get_alerts(),
                                )
 
         @webapp.route("/<string:gateway_id>/<string:atom_name>/details")
@@ -34,7 +34,7 @@ def route_atoms(webapp):
             webinterface.add_breadcrumb(request, "/info", "Info")
             webinterface.add_breadcrumb(request, "/atoms/index", "Atoms")
             webinterface.add_breadcrumb(request, f"/atoms/{gateway_id}/{atom_name}/details", atom_name)
-            page = page.render(alerts=webinterface.get_alerts(),
+            page = page.render(alerts=session.get_alerts(),
                                atom=atom,
                                atom_to_human=webinterface._Atoms.convert_to_human,
                                )
