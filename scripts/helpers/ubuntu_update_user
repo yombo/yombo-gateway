@@ -11,8 +11,6 @@ if [ "$EUID" -eq 0 ]; then
     exit
 fi
 
-OPTIMIZE=$1
-
 YOMBO_SCRIPT_DIR="$( cd "$(dirname "$0")" ; pwd -P )"
 YOMBO_ROOT_DIR="$(dirname $YOMBO_SCRIPT_DIR)"
 

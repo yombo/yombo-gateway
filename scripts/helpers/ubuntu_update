@@ -13,8 +13,7 @@
 #
 #
 #
-# Handles updates for various Debian distros. Including ubunut,
-# and raspberry pi.
+# Handles updates for Ubuntu.
 #
 #
 #
@@ -101,4 +100,3 @@ elif [ $LOCAL = $BASE ] || [ $LIBWEBSOCKETSUPDATED = "yes" ]; then
     make binary WITH_WEBSOCKETS=yes WITH_DOCS=no CFLAGS=-I/usr/local/include/
     sudo make install WITH_WEBSOCKETS=yes WITH_DOCS=no CFLAGS=-I/usr/local/include/
 fi
-
