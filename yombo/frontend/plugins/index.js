@@ -29,7 +29,14 @@ import axios from 'axios'
 
 async function getEnv() {
   let response = await axios.get('/nuxt.env');
-  Object.defineProperty(Vue.prototype, '$gwenv', { value: response.data });
+  if (typeof response.data === 'string') {
+    console.log("response data is a string....");
+    console.log(response.data);
+    console.log(JSON.parse(response.data));
+    Object.defineProperty(Vue.prototype, '$gwenv', {value: JSON.parse(response.data)});
+  } else {
+    Object.defineProperty(Vue.prototype, '$gwenv', {value: response.data});
+  }
 }
 
 getEnv();
