@@ -58,7 +58,6 @@ from yombo.ext.mqtt.error import ProfileValueError
 from yombo.core.exceptions import YomboWarning, YomboCritical
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.lib.webinterface.auth import require_auth
 from yombo.utils import random_string, sleep
 from yombo.utils.filewriter import FileWriter
 
@@ -70,6 +69,7 @@ class MQTT(YomboLibrary):
     Manages MQTT broker and client connections.
     """
     client_enabled = True
+
 
     def _init_(self, **kwargs):
         """
@@ -96,8 +96,10 @@ class MQTT(YomboLibrary):
             self.server_listen_port_ss_ssl = self._Configs.get("mqtt", "server_listen_port_ss_ssl", 1884)
             self.server_listen_port_le_ssl = self._Configs.get("mqtt", "server_listen_port_le_ssl", 8883)
             self.server_listen_port_websockets = self._Configs.get("mqtt", "server_listen_port_websockets", 8081)
-            self.server_listen_port_websockets_ss_ssl = self._Configs.get("mqtt", "server_listen_port_websockets_ss_ssl", 8444)
-            self.server_listen_port_websockets_le_ssl = self._Configs.get("mqtt", "server_listen_port_websockets_le_ssl", 8445)
+            self.server_listen_port_websockets_ss_ssl = \
+                self._Configs.get("mqtt", "server_listen_port_websockets_ss_ssl", 8444)
+            self.server_listen_port_websockets_le_ssl = \
+                self._Configs.get("mqtt", "server_listen_port_websockets_le_ssl", 8445)
             self.server_allow_anonymous = self._Configs.get("mqtt", "server_allow_anonymous", False)
         else:
             self.server_listen_port = 0
@@ -332,88 +334,6 @@ class MQTT(YomboLibrary):
         yield sleep(0.5)
         running = yield self.check_mqtt_broker_running()
         return running
-
-    def _webinterface_add_routes_(self, **kwargs):
-        """
-        A demonstration of how to add menus and provide function calls to the web interface library. This would
-        normally be used by modules and not libaries, this is here for documentation purposes.
-        :param kwargs:
-        :return:
-        """
-        if hasattr(self, "_States") and self._Loader.operating_mode == "run":
-            if self.client_enabled:
-                return {
-                    "nav_side": [
-                        {
-                            "label1": "System",
-                            "label2": "MQTT Listen",
-                            "priority1": 6000,  # Even with a value, "Tools" is already defined and will be ignored.
-                            "priority2": 20000,
-                            "icon": "fa fa-wrench fa-fw",
-                            "url": "/system/mqtt-listen",
-                            "tooltip": "",
-                            "opmode": "run",
-                        },
-                        {
-                            "label1": "System",
-                            "label2": "MQTT Log",
-                            "priority1": 6000,  # Even with a value, "Tools" is already defined and will be ignored.
-                            "priority2": 20100,
-                            "icon": "fa fa-wrench fa-fw",
-                            "url": "/system/mqtt-log",
-                            "tooltip": "",
-                            "opmode": "run",
-                        },
-                        {
-                            "label1": "System",
-                            "label2": "MQTT Publish",
-                            "priority1": 6000,  # Even with a value, "Tools" is already defined and will be ignored.
-                            "priority2": 20200,
-                            "icon": "fa fa-wrench fa-fw",
-                            "url": "/system/mqtt-publish",
-                            "tooltip": "",
-                            "opmode": "run",
-                        },
-                    ],
-                    "routes": [
-                        self.web_interface_routes,
-                   ],
-                }
-
-    def web_interface_routes(self, webapp):
-        """
-        Adds routes to the webinterface module. Normally, a module will store any template files within the module,
-        but for this example, we will store the templates within the webinterface module.
-
-        :param webapp: A pointer to the webapp, it"s used to setup routes.
-        :return:
-        """
-        with webapp.subroute("/") as webapp:
-
-            @webapp.route("/system/mqtt-listen")
-            @require_auth()
-            def page_system_mqtt_listen(webinterface, request, session):
-                session.has_access("system_options", "*", "mqtt")
-                page = webinterface.webapp.templates.get_template(webinterface.wi_dir + "/pages/mqtt/listen.html")
-                return page.render(alerts=webinterface.get_alerts(),
-                                   session=session)
-
-            @webapp.route("/system/mqtt-log")
-            @require_auth()
-            def page_system_mqtt_log(webinterface, request, session):
-                session.has_access("system_options", "*", "mqtt")
-                page = webinterface.webapp.templates.get_template(webinterface.wi_dir + "/pages/mqtt/log.html")
-                return page.render(alerts=webinterface.get_alerts(),
-                                   log_outgoing=self._GatewayComs.log_outgoing,
-                                   log_incoming=self._GatewayComs.log_incoming,
-                                   )
-
-            @webapp.route("/system/mqtt-publish")
-            @require_auth()
-            def page_system_mqtt_publish(webinterface, request, session):
-                session.has_access("system_options", "*", "mqtt")
-                page = webinterface.webapp.templates.get_template(webinterface.wi_dir + "/pages/mqtt/publish.html")
-                return page.render(alerts=webinterface.get_alerts())
 
     def new(self, server_hostname=None, server_port=None, username=None, password=None, ssl=None,
             mqtt_incoming_callback=None, mqtt_connected_callback=None, mqtt_connection_lost_callback=None,
