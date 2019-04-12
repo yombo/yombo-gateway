@@ -605,7 +605,7 @@ class PikaFactory(protocol.ReconnectingClientFactory):
 
         if queue_name in self.queues:
             raise YomboWarning(
-                f"AMQP Protocol {client_id} - Already has a queue: {queue_name}",
+                f"AMQP Protocol {AMQPClient.client_id} - Already has a queue: {queue_name}",
                     200, "register_exchange", "PikaFactory")
 
         self.queues[queue_name] = {
@@ -636,7 +636,7 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         logger.debug("Factory:register_exchange - {exchange_name}", exchange_name=exchange_name)
         if exchange_name in self.exchanges:
             raise YomboWarning(
-                f"AMQP Protocol:{client_id} - Already has an exchange_name: {exchange_name}",
+                f"AMQP Protocol:{AMQPClient.client_id} - Already has an exchange_name: {exchange_name}",
                     200, "register_exchange", "PikaFactory")
 
         self.exchanges[exchange_name] = {
@@ -668,7 +668,7 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         eqb_name = sha256(unicode_to_bytes(exchange_name + queue_name + routing_key)).hexdigest()
         if eqb_name in self.exchange_queue_bindings:
             raise YomboWarning(
-                f"AMQP Protocol:{client_id} - Already has an exchange-queue-routing key binding: "
+                f"AMQP Protocol:{AMQPClient.client_id} - Already has an exchange-queue-routing key binding: "
                 f"{exchange_name}-{queue_name}-{routing_key}", 200, "register_exchange", "PikaFactory")
 
         self.exchange_queue_bindings[exchange_name+queue_name] = {
@@ -698,7 +698,7 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         logger.debug("Factory:subscribe - {queue_name}", queue_name=queue_name)
         if queue_name in self.consumers:
             raise YomboWarning(
-                f"AMQP Protocol:{client_id} - Already subscribed to queue_name: {queue_name}",
+                f"AMQP Protocol:{AMQPClient.client_id} - Already subscribed to queue_name: {queue_name}",
                     200, "subscribe", "PikaFactory")
 
         self.consumers[queue_name] = {
@@ -910,6 +910,7 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
         """
         Save pointer to factory and then call it's parent __init__.
         """
+        logger.debug(f"PikaProtocol __init__ - about to setup delivery_queue")
         self.delivery_queue = {
             "urgent": deque(),
             "high": deque(),
