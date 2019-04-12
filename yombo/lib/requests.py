@@ -153,7 +153,6 @@ class WebResponse(object):
         """
         raw_content = yield treq.content(response)
         content = raw_content
-        # print(f"process_respionse: {content}")
         headers = self.clean_headers(response, True)
 
         content_type = headers[HEADER_CONTENT_TYPE][0]
