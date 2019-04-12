@@ -423,7 +423,7 @@ class AuthWebsession(UserMixin, AuthMixin):
     def set_refresh_token(self, token, expires_at):
         self._refresh_token = yield self._Parent._GPG.encrypt_aes(self._auth_id_long, token)
         self.refresh_token_expires_at = expires_at
-        yield self._LocalDB.update_web_session(self)
+        yield self._Parent._LocalDB.update_web_session(self)
 
     @inlineCallbacks
     def get_access_token(self):
@@ -436,7 +436,7 @@ class AuthWebsession(UserMixin, AuthMixin):
     def set_access_token(self, token, expires_at):
         self._access_token = yield self._Parent._GPG.encrypt_aes(self._auth_id_long, token)
         self.access_token_expires_at = expires_at
-        yield self._LocalDB.update_web_session(self)
+        yield self._Parent._LocalDB.update_web_session(self)
 
     # Local
     def __init__(self, parent, record, load_source=None):
