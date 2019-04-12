@@ -16,12 +16,54 @@ logger = get_logger("library.webinterface.routes.apiv1.mqtt")
 
 
 def route_api_v1_mqtt(webapp):
-    with webapp.subroute("/api/v1") as webapp:
+    with webapp.subroute("/api/v1/mqtt") as webapp:
 
-        @webapp.route("/mqtt")
+        @webapp.route("/log_incoming")
+        @require_auth()
+        def page_system_mqtt_log(webinterface, request, session):
+            """
+            Get the incoming log.
+
+            :param webinterface:
+            :param request:
+            :param session:
+            :return:
+            """
+            if session.has_access("system_options", "*", "mqtt") is False:
+                return webinterface.render_api_error(request, session, response_code=403)
+            page = webinterface.webapp.templates.get_template(webinterface.wi_dir + "/pages/mqtt/log.html")
+            return webinterface.render_api(request, session,
+                                           data_type="backup_info",
+                                           id=webinterface._Gateways.local_id,
+                                           attributes={"log": webinterface._GatewayComs.log_incoming},
+                                           )
+
+        @webapp.route("/log_outgoing")
+        @require_auth()
+        def page_system_mqtt_log(webinterface, request, session):
+            """
+            Get the incoming log.
+
+            :param webinterface:
+            :param request:
+            :param session:
+            :return:
+            """
+            if session.has_access("system_options", "*", "mqtt") is False:
+                return webinterface.render_api_error(request, session, response_code=403)
+            page = webinterface.webapp.templates.get_template(webinterface.wi_dir + "/pages/mqtt/log.html")
+            return webinterface.render_api(request, session,
+                                           data_type="backup_info",
+                                           id=webinterface._Gateways.local_id,
+                                           attributes={"log": webinterface._GatewayComs.log_incoming},
+                                           )
+
+        @webapp.route("/publish")
         @run_first()
         @inlineCallbacks
         def api_v1_mqtt(webinterface, request, session):
+            if session.has_access("system_options", "*", "mqtt") is False:
+                return webinterface.render_api_error(request, session, response_code=403)
             print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   /api/v1/mqtt: %s" % request)
             session.has_access("system_options", "*", "mqtt")
             topic = request.args.get("topic")[0]  # please do some validation!!
@@ -51,9 +93,16 @@ def route_api_v1_mqtt(webapp):
                 raise YomboWarning("MQTT username has invalid characters")
             return user
 
-        @webapp.route("/mqtt/auth/user", methods=["POST", "GET"])
+        @webapp.route("/auth/user", methods=["POST", "GET"])
         @inlineCallbacks
         def api_v1_mqtt_auth_user(webinterface, request):
+            """
+            Used by the mosquitto broker to validate a user.
+
+            :param webinterface:
+            :param request:
+            :return:
+            """
             request.setHeader("Content-Type", CONTENT_TYPE_TEXT_PLAIN)
             response_code = 403
             user = split_username(request.args[b"username"][0].decode())
@@ -87,6 +136,13 @@ def route_api_v1_mqtt(webapp):
 
         @webapp.route("/mqtt/auth/superuser", methods=["POST"])
         def api_v1_mqtt_auth_superuser(webinterface, request):
+            """
+            Used by the mosquitto broker to validate a super user.
+
+            :param webinterface:
+            :param request:
+            :return:
+            """
             # print("/api/v1/mqtt/auth/superuser: %s" % request.args)
             response_code = 403
             logger.info("mqtt superuser: {args}", args=request.args)
@@ -102,6 +158,13 @@ def route_api_v1_mqtt(webapp):
 
         @webapp.route("/mqtt/auth/acl", methods=["POST"])
         def api_v1_mqtt_auth_acl(webinterface, request):
+            """
+            Used by the mosquitto broker to validate a if clients can access, read, or write to various topics.
+
+            :param webinterface:
+            :param request:
+            :return:
+            """
             # print("/api/v1/mqtt/auth/acl: %s" % request)
             logger.info("mqtt acl: {args}", args=request.args)
 
