@@ -52,7 +52,6 @@ from yombo.constants import CONTENT_TYPE_JSON, CONTENT_TYPE_MSGPACK, CONTENT_TYP
 
 # Handlers for processing various messages.
 from yombo.lib.amqpyomb_handlers.amqpcontrol import AmqpControlHandler
-from yombo.lib.amqpyomb_handlers.amqpconfigs import AmqpConfigHandler
 from yombo.lib.amqpyomb_handlers.amqpsystem import AmqpSystemHandler
 
 logger = get_logger("library.amqpyombo")
@@ -91,7 +90,6 @@ class AMQPYombo(YomboLibrary):
         self.amqp_loginid = self.user_id + "_" + self._Configs.get("core", "gwuuid")
         self.request_configs = False
         self.controlHandler = AmqpControlHandler(self)
-        self.configHandler = AmqpConfigHandler(self)
         self.systemHandler = AmqpSystemHandler(self)
         self.gateway_id = self._Configs.gateway_id
         self.is_master = self._Configs.is_master
@@ -99,9 +97,8 @@ class AMQPYombo(YomboLibrary):
 
         self.amqpyombo_options = {   # Stores data from sub-modules
             "connected": [],
-            "disconnected": [self.configHandler.disconnected, ],
+            "disconnected": [],
             "routing": {
-                "config": [self.configHandler.amqp_incoming, ],
                 "control": [self.controlHandler.amqp_incoming, ],
                 "system": [self.systemHandler.amqp_incoming, ],
                 "sslcerts": [self._SSLCerts.amqp_incoming, ],
@@ -113,9 +110,7 @@ class AMQPYombo(YomboLibrary):
         self.send_local_information_loop = None  # used to periodically send yombo servers updated information
 
         self.connected = False
-        self.init_deferred = Deferred()
         self.connect()
-        return self.init_deferred
 
     @inlineCallbacks
     def _load_(self, **kwargs):
@@ -136,10 +131,6 @@ class AMQPYombo(YomboLibrary):
         Called by the Yombo system when it's time to shutdown. This in turn calls the disconnect.
         :return:
         """
-        if self.init_deferred is not None and self.init_deferred.called is False:
-            self.init_deferred.callback(1)  # if we don't check for this, we can't stop!
-
-        self.configHandler._stop_()
         self.controlHandler._stop_()
         self.systemHandler._stop_()
         self.disconnect()  # will be cleaned up by amqp library anyways, but it's good to be nice.
@@ -176,6 +167,7 @@ class AMQPYombo(YomboLibrary):
 
         # get a new amqp instance and connect.
         if self.amqp is None:
+            # print(f'Ampq login: {self.amqp_loginid}, {self._Configs.get("core", "gwhash")}')
             self.amqp = yield self._AMQP.new(hostname=amqp_host,
                                              port=amqp_port,
                                              virtual_host="yombo",
@@ -193,9 +185,6 @@ class AMQPYombo(YomboLibrary):
         if already_have_amqp is None:
             self.amqp.subscribe("ygw.q." + self.user_id, incoming_callback=self.amqp_incoming, queue_no_ack=False,
                                 persistent=True)
-
-        # print("in amqp:connect - setting init_deffered")
-        self.configHandler.connect_setup(self.init_deferred)
 
     def disconnect(self):
         """
@@ -276,10 +265,10 @@ class AMQPYombo(YomboLibrary):
             "external_ipv4": self._Configs.get("core", "externalipaddress_v4"),
             # "internal_ipv6": self._Configs.get("core", "externalipaddress_v6"),
             # "external_ipv6": self._Configs.get("core", "externalipaddress_v6"),
-            "internal_port": self._Configs.get("webinterface", "nonsecure_port"),
-            "external_port": self._Configs.get("webinterface", "nonsecure_port"),
-            "internal_secure_port": self._Configs.get("webinterface", "secure_port"),
-            "external_secure_port": self._Configs.get("webinterface", "secure_port"),
+            "internal_http_port": self._Configs.get("webinterface", "nonsecure_port"),
+            "external_http_port": self._Configs.get("webinterface", "nonsecure_port"),
+            "internal_http_secure_port": self._Configs.get("webinterface", "secure_port"),
+            "external_http_secure_port": self._Configs.get("webinterface", "secure_port"),
             "internal_mqtt": self._Configs.get("mqtt", "server_listen_port"),
             "internal_mqtt_le": self._Configs.get("mqtt", "server_listen_port_le_ssl"),
             "internal_mqtt_ss": self._Configs.get("mqtt", "server_listen_port_ss_ssl"),
@@ -305,18 +294,9 @@ class AMQPYombo(YomboLibrary):
             destination="yombo.server.gw_system",
             body=body,
             request_type="connected",
-            callback=self.receive_local_information,
+            # callback=self.receive_local_information,
         )
         self.publish(**requestmsg)
-
-    def receive_local_information(self, body=None, properties=None, correlation_info=None,
-                                  send_message_meta=None, receied_message_meta=None, **kwargs):
-        if self.request_configs is False:  # this is where we start requesting information - after we have sent out info.
-            self.request_configs = True
-            if "owner_id" in body:
-                self._Configs.set("core", "owner_id", body["owner_id"])
-
-            return self.configHandler.connected()
 
     def amqp_incoming_parse(self, channel, deliver, properties, msg):
         """
@@ -526,7 +506,7 @@ class AMQPYombo(YomboLibrary):
         .. code-block:: python
 
            requestData = {
-               "exchange_name" : "gw_config",
+               "exchange_name" : "gw_other",
                "source"        : "yombo.gateway.lib.configurationupdate",
                "destination"   : "yombo.server.configs",
                "callback"      : self.amqp_direct_incoming,
