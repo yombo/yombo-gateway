@@ -133,9 +133,9 @@ class Variables(YomboLibrary):
         :param kwargs: 
         :return: 
         """
-        groups = yield self._LocalDB.get_variable_fields_data(**kwargs)
+        data = yield self._LocalDB.get_variable_fields_data(**kwargs)
         # print("variables library: get_groups_fields: groups: %s" % groups)
-        return groups
+        return data
 
     def get_variable_fields_data_callable(self, **kwargs):
         """
