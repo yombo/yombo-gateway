@@ -59,7 +59,7 @@ class SystemDataHandler(YomboLibrary, object):
             "related_variable_group_modules": f"/v1/gateways/{self.gwid}/relationships/variable_groups_modules",
         }
         self.download_semaphore = defer.DeferredSemaphore(self.MAX_DOWNLOAD_CONCURRENT)  # used to queue deferreds
-        self.download_deferreds = []
+        self.download_list = []
         self.process_queue = []  # All downloaded configs are placed here. Only update the data one at a time.
 
         self.bulk_load = False
@@ -75,7 +75,6 @@ class SystemDataHandler(YomboLibrary, object):
 
     @inlineCallbacks
     def download_system_data(self, routes=None):
-        # print("about to download system data....")
         self.bulk_load = True
         self.db_existing_ids = yield self._LocalDB.get_ids_for_remote_tables()
         logger.debug("Existing IDs: {existing_ids}", existing_ids=self.db_existing_ids)
@@ -83,16 +82,27 @@ class SystemDataHandler(YomboLibrary, object):
         if routes is None:
             routes = list(self.api_routes.keys())
 
+        download_list = []
         for route in routes:
             logger.debug("getting data from: {route}", route=self.api_routes[route])
             d = self.download_semaphore.run(self._YomboAPI.request, "GET", self.api_routes[route])
             d.addCallback(self.download_semaphore_process_results)
-            self.download_deferreds.append(d)
-        dl = defer.DeferredList(self.download_deferreds)
-        dl.addCallback(self.download_semaphore_process_results_done)
+            download_list.append(d)
+        dl = defer.DeferredList(download_list)
         yield dl
+        logger.debug("Done downloading first round of configs.")
+        while len(self.download_list) > 0:
+            url = self.download_list.pop()
+            data = yield self._YomboAPI.request("GET", url)
+            self.download_semaphore_process_results(data)
+        yield self.download_semaphore_process_results_done()
 
     def download_semaphore_process_results(self, data):
+        if "links" in data.content:
+            links = data.content["links"]
+            if "next" in links and links["next"] is not None:
+                self.download_list.append(links["next"])
+
         if "data" in data.content:
             if isinstance(data.content["data"], list):
                 for item in data.content["data"]:
@@ -108,7 +118,7 @@ class SystemDataHandler(YomboLibrary, object):
                 self.process_incoming(data.content)
 
     @inlineCallbacks
-    def download_semaphore_process_results_done(self, data):
+    def download_semaphore_process_results_done(self):
         if self.bulk_load:
             for table, records in self.db_delete_ids.items():
                 for completed_id in self.db_completed_ids[table]:  # delete items that were not sent to us.
@@ -162,7 +172,6 @@ class SystemDataHandler(YomboLibrary, object):
         attributes = self.field_remap(data_raw["attributes"], config_data)
 
         try:
-            # print(f"{item_type}: {attributes}")
             data = schema.load(attributes)
         except Exception as e:
             logger.info("Loading schema data error for: {item_type}", item_type=item_type)
