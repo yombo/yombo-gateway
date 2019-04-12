@@ -184,7 +184,7 @@ class Nodes(YomboLibrary, LibrarySearch):
         """
         Loads nodes from database and sends them to :py:meth:`_load_node_into_memory <Nodes._load_node_into_memory>`. This only
         loads nodes marked as 'always_load' = 1, or the gateway_id matches this gateway and the
-         destination is 'gw'.
+        destination is 'gw'.
 
         This function shuold only be be called on system startup by the nodes _init_ function.
         """
