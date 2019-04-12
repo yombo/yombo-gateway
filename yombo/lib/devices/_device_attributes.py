@@ -511,8 +511,6 @@ class Device_Attributes(MagicAttributesMixin):
         """
         yield self.update_attributes(device, source=source, broadcast=False)
 
-        yield self.device_variables()
-
         yield self.device_variable_fields()
         if self.test_device is None or self.test_device is False:
             self.meta = yield self._SQLDict.get("yombo.lib.device", "meta_" + self.device_id)
@@ -798,7 +796,6 @@ class Device_Attributes(MagicAttributesMixin):
         if "variable_data" in device:
             yield self._Parent.set_device_variables(self.device_id, device["variable_data"], session=session)
 
-        yield self.device_variables()  #refresh the cache
         yield self.device_variable_fields()  #refresh the cache
         yield self.device_variables()  #refresh the cache
 
@@ -872,6 +869,9 @@ class Device_Attributes(MagicAttributesMixin):
             group_relation_id=self.device_type_id,
             variable_field_id=self.device_id
         )
+        # print(f"Looking for device vars: get_variable_fields_data: group_relation_type='device_type'")
+        # print(f"device_type_id={self.device_type_id}, device_id={self.device_id}")
+        # print(f"!@!@ device_variables: {self.full_label} - {self.device_variables_cached}")
         return self.device_variables_cached
 
     @inlineCallbacks
