@@ -65,7 +65,7 @@ export default {
     },
     logo: {
       type: String,
-      default: 'img/logo-100px.png'
+      default: '/img/logo-100px.png'
     },
     dashboardsidebarLinks: {
       type: Array,
