@@ -96,12 +96,18 @@ def route_home(webapp):
                 webinterface._Configs.get("webinterface", "secure_port", None, False)
 
             return json.dumps({
+                "gateway_id": webinterface.gateway_id(),
                 "working_dir": webinterface.working_dir,
                 "internal_http_port": internal_http_port,
                 "internal_http_secure_port": internal_http_secure_port,
                 "external_http_port": external_http_port,
                 "external_http_secure_port": external_http_secure_port,
                 "api_key": webinterface._Configs.get("frontend", "api_key", "4Pz5CwKQCsexQaeUvhJnWAFO6TRa9SafnpAQfAApqy9fsdHTLXZ762yCZOct", False),
+                "mqtt_port": webinterface._MQTT.server_listen_port,
+                "mqtt_port_ssl": webinterface._MQTT.server_listen_port_ss_ssl,
+                "mqtt_port_websockets": webinterface._MQTT.server_listen_port,
+                "mqtt_port_websockets_ssl": webinterface._MQTT.server_listen_port,
+                "mqtt_port": webinterface._MQTT.server_listen_port,
                 "client_location":
                     "remote" if ip_addres_in_local_network(request.getClientIP()) else "local",
             })
