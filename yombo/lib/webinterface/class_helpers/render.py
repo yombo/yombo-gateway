@@ -23,6 +23,32 @@ from yombo.utils import random_string, sha256_compact
 
 logger = get_logger("library.webinterface.render")
 
+ERRORS = {
+    400: {"title": "Bad Request",
+          "details": "The request could not be understood by the server due to malformed syntax. "
+                     "Resending the request will not help.",
+          "about": "https://yombo.net/GWAPI:Overview"
+          },
+    401: {"title": "Unauthorized",
+          "details": "The request requires user authentication, typically requires an Auth Key",
+          "about": "https://yombo.net/GWAPI:Auth_keys"
+          },
+    403: {"title": "Forbidden",
+          "details": "The server understood the request, but is refusing to fulfill it. Authorization will not help "
+                     "and a repeat request will not help."
+                     "Resending the request will not help.",
+          "about": "https://yombo.net/GWAPI:Overview"
+          },
+    404: {"title": "Not Found",
+          "details": "The server has not found anything at the requested URI.",
+          "about": "https://yombo.net/GWAPI:Overview"
+          },
+    500: {"title": "Internal Server Error",
+          "details": "The requested item could not be returned due to an error.",
+          "about": "https://yombo.net/GWAPI:Overview"
+          },
+}
+
 
 class Render:
     """
@@ -156,18 +182,22 @@ class Render:
         if response_code is None:
             response_code = 400
 
+        if response_code not in ERRORS:
+            response_code = 400
+
+        missing = ERRORS[response_code]
         # print(f"return_error: {errors}")
         for error in errors:
             if "code" not in error:
                 error["code"] = str(response_code)
             if "title" not in error:
-                error["title"] = "Unknown error"
+                error["title"] = missing["title"]
             if "detail" not in error:
-                error["detail"] = "No details about error was provided."
+                error["detail"] = missing["detail"]
             if "links" not in error:
                 error["links"] = {}
             if "about" not in error["links"]:
-                error["links"]["about"] = f"https://yombo.net/GWAPI:Error_Responses"
+                error["links"]["about"] = missing["about"]
 
         response = {
             "errors": errors,
@@ -179,7 +209,7 @@ class Render:
         request.setResponseCode(response_code)
         return json.dumps(response)
 
-    def render_api_error(self, request, session, code=None, title=None, detail=None, link=None, meta=None,
+    def render_api_error(self, request, session, code=None, title=None, detail=None, about=None, meta=None,
                          response_code=None):
         """
         Render a single error to an API client.
@@ -189,38 +219,19 @@ class Render:
         :param code:
         :param title:
         :param detail:
-        :param link:
+        :param about:
         :param meta:
         :param response_code:
         :return:
         """
-        print("render_api_error")
-        request.setHeader("Content-Type", CONTENT_TYPE_JSON)
-
-        if response_code is None:
-            response_code = 400
-
         error = {"links": {}}
-        if code is None:
-            error["code"] = str(response_code)
-        error["code"] = code
-        if title is None:
-            error["title"] = "Unknown error"
-        error["title"] = code
-        if detail is None:
-            error["detail"] = "No details about error was provided."
-        error["detail"] = code
-        if link is not None:
-            error["links"]["about"] = link
-        else:
-            error["links"]["about"] = f"https://yombo.net/GWAPI:Error_Responses"
+        if code is not None:
+            error["code"] = code
+        if title is not None:
+            error["title"] = title
+        if detail is not None:
+            error["detail"] = detail
+        if about is not None:
+            error["about"] = about
 
-        response = {
-            "errors": error,
-        }
-
-        if meta is not None:
-            response["meta"] = meta
-
-        request.setResponseCode(response_code)
-        return json.dumps(response)
+        return self.render_api_errors(request, session, [error, ], meta, response_code)
