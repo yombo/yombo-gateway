@@ -115,41 +115,39 @@ class YomboAPI(YomboLibrary):
 
     @inlineCallbacks
     def request(self, method, url, request_data=None, headers={}, authorization_header=None):
-        # print(f"yomboapi request: {url}")
-
-        # def __init__(self, parent, method="GET", url="", request_data=None, headdrs, authorization_header=None):
-
+        if "page[size]" not in url or "page%5Bsize%5D" not in url:
+            if "?" in url:
+                url += "&"
+            else:
+                url += "?"
+            url += "page[size]=500"
+        logger.debug("yomboapi request: {url}", url=url)
         request = ApiRequest(self, method, url, request_data, headers, authorization_header)
-        # print("yomboapi request: 2")
         logger.debug("headers: {headers}", headers=request.headers)
-        # print("yomboapi request: 3")
         logger.debug("yombo api request request_data: {request_data}", request_data=request_data)
-        # print(f"yomboapi request: 4 {request}")
         response = yield request.request()
-        # print(f"yomboapi request: 5: {url} - {request_data}")
-        # print(f"yomboapi request: 5: {request_data}")
-        # print(f"yomboapi request: 5: {response.content_raw}")
 
-        self.update_results(response, method, url, request_data)
+        self.check_results(response, method, url, request_data)
         return response
 
-    def update_results(self, response, method, url, request_data):
+    def check_results(self, response, method, url, request_data):
         if response.content_type == "string":
             logger.warn("-----==( Error: API received an invalid response, got a string back )==----")
             logger.warn("Request: {request}", request=response.request.__dict__)
             logger.warn("URL: {method} {uri}", method=response.request.method, uri=response.request.uri)
             logger.warn("Header: {request_headers}", request_headers=response.request.headers)
             logger.warn("Request Data: {request_data}", request_data=request_data)
+            logger.warn("Response Headers: {headers}", headers=response.headers)
             logger.warn("Content: {content}", content=response.content)
             logger.warn("--------------------------------------------------------")
-
-        if response.response_code >= 300:
+        elif response.response_code >= 300:
             logger.warn("-----==( Error: API received an invalid response )==----")
             logger.warn("Request: {request}", request=response.request.__dict__)
             logger.warn("Code: {code}", code=response.response_code)
             logger.warn("URL: {method} {uri}", method=response.request.method, uri=response.request.uri)
             logger.warn("Header: {request_headers}", request_headers=response.request.headers)
             logger.warn("Request Data: {request_data}", request_data=request_data)
+            logger.warn("Response Headers: {headers}", headers=response.headers)
             logger.warn("Content: {content}", content=response.content)
             logger.warn("--------------------------------------------------------")
             message = ""
@@ -160,7 +158,8 @@ class YomboAPI(YomboLibrary):
                     if len(message) == 0:
                         message += ", "
                     message += f"{message}  {error['title']} - {error['detail']}"
-                    raise YomboWarning(response.content["errors"], response.response_code, "update_results", "yomboapi")
+                    raise YomboWarning(response.content["errors"], response.response_code, "update_results",
+                                       "yomboapi", meta=response)
             else:
                 message = f"{response.response_code} - {response.response_phrase}"
             raise YomboWarning(message, response.response_code, "update_results", "yomboapi", meta=response)
@@ -177,7 +176,10 @@ class ApiRequest:
         self.user_agent = f"yombo-gateway-{VERSION}"
 
         self.method = method
-        self.url = self. base_url + url
+        if url.startswith("/"):
+            self.url = self. base_url + url
+        else:
+            self.url = url
         self.request_data = request_data
         self.timeout = 30
         self.extra_headers = headers
