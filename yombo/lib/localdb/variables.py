@@ -96,36 +96,40 @@ class DB_Variables(object):
         records = yield VariableFieldDataView.find(
             where=dictToWhere(kwargs),
             orderby="field_weight ASC, data_weight ASC")
-        variables = OrderedDict()
+        variables = {}
         for record in records:
             if variable_field_id is not None:
                 if record.variable_field_id not in (None, variable_field_id):
                     continue
 
             if record.field_machine_label not in variables:
+                # print(f"doing record.... 34 - {record}")
+                # print(f"doing record.... 35 - {record.value_required}")
                 variables[record.field_machine_label] = {
-                    "id": record.field_id,
+                    "id": record.variable_field_id,
                     "field_machine_label": record.field_machine_label,
                     "field_label": record.field_label,
                     "field_description": record.field_description,
-                    "field_help_text": record.field_help_text,
                     "field_weight": record.field_weight,
-                    "value_min": record.value_min,
                     "value_max": record.value_max,
+                    "value_min": record.value_min,
                     "value_casing": record.encryption,
-                    "value_required": record.value_required,
                     "encryption": record.encryption,
                     "input_type_id": record.input_type_id,
                     "default_value": record.default_value,
+                    "field_help_text": record.field_help_text,
                     "multiple": record.multiple,
-                    "data_weight": record.data_weight,
+                    "value_required": record.value_required,
+                    # "data_weight": record.data_weight,
                     "created_at": record.field_created_at,
                     "updated_at": record.field_updated_at,
-                    "data": OrderedDict(),
+                    "data": {},
                     "values": [],
                     "values_display": [],
                     "values_orig": [],
                 }
+
+            # print("doing record.... 44")
 
             data = {
                 "id": record.data_id,
@@ -135,8 +139,14 @@ class DB_Variables(object):
                 "relation_id": record.variable_field_id,
                 "relation_type": record.variable_relation_type,
             }
+            # print("doing record.... 55")
+
             if record.data is not None:
+                # print("doing record.... 61")
+
                 value = yield self._GPG.decrypt(record.data)
+                # print("doing record.... 62")
+
                 try:  # lets be gentle for now.  Try to validate and corerce.
                     # validate the value is valid input
                     data["value"] = self._InputTypes.check(
@@ -166,6 +176,7 @@ class DB_Variables(object):
             variables[record.field_machine_label]["values"].append(data["value"])
             variables[record.field_machine_label]["values_display"].append(data["value_display"])
             variables[record.field_machine_label]["values_orig"].append(data["value_orig"])
+        # print("done....")
         return variables
 
     @inlineCallbacks
