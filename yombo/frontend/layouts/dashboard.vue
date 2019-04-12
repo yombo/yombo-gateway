@@ -49,6 +49,7 @@
 
         <dashboard-sidebar-item :link="{name: 'System', icon: 'fas fa-download'}">
           <dashboard-sidebar-item :link="{name: 'Overview', path: '/dashboard/system/overview'}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: 'Backup', path: '/dashboard/system/backup'}"></dashboard-sidebar-item>
           <dashboard-sidebar-item :link="{name: 'Debug', path: '/dashboard/system/debug'}"></dashboard-sidebar-item>
           <dashboard-sidebar-item :link="{name: 'HTTP Event Stream', path: '/dashboard/system/http_event_stream'}"></dashboard-sidebar-item>
           <dashboard-sidebar-item :link="{name: 'Events', path: '/dashboard/system/events'}"></dashboard-sidebar-item>
