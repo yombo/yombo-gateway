@@ -34,7 +34,8 @@ def route_api_v1_system(webapp):
         @require_auth(api=True)
         def apiv1_system_backup_info(webinterface, request, session):
             """ Returns details about backing up the gateway. """
-            has_access = session.has_access("system_options", "*", "backup")
+            if session.has_access("system_options", "*", "backup") is False:
+                return webinterface.render_api_error(request, session, response_code=403)
             print(type(webinterface._Gateways.local_id))
             print(type(os.path.getsize(f"{webinterface.working_dir}/etc/yombo.sqlite3")))
             if has_access is False:
@@ -58,6 +59,8 @@ def route_api_v1_system(webapp):
         @require_auth(api=True)
         def apiv1_system_info(webinterface, request, session):
             """ Various details about the gateway. """
+            if session.has_access("system_options", "*", "backup") is False:
+                return webinterface.render_api_error(request, session, response_code=403)
             gateway = webinterface._Gateways.local
             attributes = {**gateway.asdict(), **{
                              "gateway_id": str(webinterface._Gateways.local_id),
