@@ -1,0 +1,171 @@
+#!/usr/bin/env bash
+# This script setup's the gateway to run on an Ubuntu installation.
+#
+# This script configures apt to use NPM version 10.
+#
+# This also ensures the system software is upto date by running apt-get upgrade.
+#
+# To use, first goto a directory where 'yombo-gateway' gateway will be created.
+# Then:
+# git clone https://github.com/yombo/yombo-gateway.git
+# cd yombo-gateway/scripts
+# ./ubuntu_setup
+
+if [ "$USER" = "root" ] && [ "$SUDO_USER" == "" ]; then
+  echo "This script cannot be run as root directly and must be run"
+  echo "as the user owning the Yombo gateway service."
+  echo ""
+  echo "Logout as root and rerun this script:"
+  echo "sudo ./ubuntu_setup"
+  exit
+fi
+
+if [ "$(id -u)" -ne 0 ]; then
+  echo "This script must run with sudo to gain root access. This"
+  echo "is needed to install the latest updates. Run this the user"
+  echo "owning the Yombo gateway service:"
+  echo ""
+  echo "Rerun this script:"
+  echo "sudo ./ubuntu_setup"
+  echo ""
+  exit
+fi
+
+SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
+PARENTPATH="$(dirname "$SCRIPTPATH")"
+YOMBOPATH="$(dirname "$PARENTPATH")"
+
+LOGFILE=/home/$SUDO_USER/yombo_setup.log
+echo ""
+echo "The log file for these changes will be available at: $LOGFILE";
+echo ""
+function logsetup {
+#    TMP=$(tail -n $RETAIN_NUM_LINES $LOGFILE 2>/dev/null) && echo "${TMP}" > $LOGFILE
+    exec > >(tee -a $LOGFILE)
+    exec 2>&1
+}
+
+chown $SUDO_USER:$SUDO_USER /home/$SUDO_USER/yombo_setup.log
+
+function log {
+    echo "[$(date --rfc-3339=seconds)]: $*"
+}
+logsetup
+
+log "==> Checking if apt is locked..."
+if [[ $(sudo lsof /var/lib/dpkg/lock 2>/dev/null) ]]; then
+    log "==> It appears the apt/dpkg is locked. Try later."
+    sudo lsof /var/lib/dpkg/lock 2>/dev/null
+    echo ""
+    exit
+fi
+
+log "==> Configuring apt for NPM version 10."
+
+curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash - > /dev/null 2>&1
+
+log "==> Upgrading os (apt upgrade)"
+
+ap upgrade > /dev/null 2>&1
+
+log "==> Installing required dependencies"
+
+apt install make libudev-dev g++ libssl-dev zlib1g-dev libbz2-dev \
+libreadline6-dev libreadline6-dev libreadline-dev libsqlite3-dev libexpat1-dev \
+liblzma-dev python python-dev python3-dev gnupg2 rng-tools build-essential cmake \
+git python3-setuptools python3-pip python-pip libyaml-dev libncurses5 expect \
+libncurses5-dev libncursesw5 libncursesw5-dev xz-utils curl wget llvm tk-dev \
+libbluetooth-dev mosquitto libmosquitto-dev libcurl4-openssl-dev libc-ares-dev \
+uuid-dev daemon quilt dirmngr libavahi-compat-libdnssd-dev libbluetooth3 \
+libboost-thread-dev libglib2.0 ntp libcairo2-dev libpython2.7-dev sqlite3 -y
+
+log "==> Installing nodejs and npm."
+apt install nodejs -y 2>&1
+apt install avahi-daemon -y 2>&1
+
+log "==> Installing homebridge incase it's going to be used later"
+npm install -g --unsafe-perm mdns > /dev/null 2>&1
+npm install -g --unsafe-perm homebridge > /dev/null 2>&1
+
+log "==> Upgrading system pip3"
+pip3 install --upgrade pip > /dev/null 2>&1
+pip3 install netifaces > /dev/null 2>&1
+
+log "==> Adding correct user to dialout for serial/USB port access."
+sudo usermod -a -G dialout $SUDO_USER  > /dev/null 2>&1
+
+log "==> Installing mosquitto."
+sudo apt-mark hold mosquitto
+
+cd /etc/mosquitto
+sudo mkdir yombo
+sudo chown $SUDO_USER yombo
+if grep -Fxq "include_dir /etc/mosquitto/yombo" mosquitto.conf
+then
+    log "==> Mosquitto already configured for Yombo."
+else
+    echo "include_dir /etc/mosquitto/yombo" >> /etc/mosquitto/mosquitto.conf
+fi
+
+cd /usr/local/src
+sudo mkdir yombo
+sudo chown $SUDO_USER yombo
+cd yombo
+
+cd /usr/local/src/yombo
+git clone https://github.com/jpmens/mosquitto-auth-plug.git &
+git clone https://github.com/eclipse/mosquitto.git &
+git clone https://github.com/warmcat/libwebsockets.git
+log "==> Compiling libsockets."
+cd libwebsockets
+mkdir build
+cd build
+cmake ..
+make
+make install
+ldconfig
+
+log "==> Compiling mosquitto auth plugin."
+cd /usr/local/src/yombo/mosquitto-auth-plug
+wget -O config.mk https://get.yombo.net/pibakery_files/mosquitto-auth.mk
+make
+
+log "==> Compiling mosquitto."
+cd /usr/local/src/yombo/mosquitto
+make binary WITH_WEBSOCKETS=yes WITH_DOCS=no CFLAGS=-I/usr/local/include/
+make install WITH_WEBSOCKETS=yes WITH_DOCS=no CFLAGS=-I/usr/local/include/
+
+log "==> Installing bin links to /etc/usr/local/bin"
+ln -s $YOMBOPATH/ybo /usr/local/bin/ybo
+ln -s $YOMBOPATH/ybo-config /usr/local/bin/ybo-config
+
+log "==> Setting up systemctl service"
+cd /etc/systemd/system/
+wget --quiet -O yombo.service https://get.yombo.net/debian_files/service-systemd
+sudo chmod 755 yombo.service
+
+log "==> Setting up additional sudoers configs"
+cd /etc/sudoers.d
+cat >yombo_$SUDO_USER <<EOL
+$SUDO_USER ALL= NOPASSWD: /bin/systemctl enable yombo.service
+$SUDO_USER ALL= NOPASSWD: /bin/systemctl disable yombo.service
+$SUDO_USER ALL= NOPASSWD: /bin/systemctl start yombo.service
+$SUDO_USER ALL= NOPASSWD: /bin/systemctl stop yombo.service
+$SUDO_USER ALL= NOPASSWD: /bin/systemctl restart yombo.service
+$SUDO_USER ALL= NOPASSWD: /bin/systemctl enable mosquitto.service
+$SUDO_USER ALL= NOPASSWD: /bin/systemctl disable mosquitto.service
+$SUDO_USER ALL= NOPASSWD: /bin/systemctl start mosquitto.service
+$SUDO_USER ALL= NOPASSWD: /bin/systemctl stop mosquitto.service
+$SUDO_USER ALL= NOPASSWD: /bin/systemctl restart mosquitto.service
+$SUDO_USER ALL= NOPASSWD: /bin/systemctl kill -s HUP mosquitto.service
+
+$SUDO_USER ALL= NOPASSWD: /usr/sbin/service yombo start
+$SUDO_USER ALL= NOPASSWD: /usr/sbin/service yombo stop
+$SUDO_USER ALL= NOPASSWD: /usr/sbin/service yombo restart
+$SUDO_USER ALL= NOPASSWD: /usr/sbin/service mosquitto start
+$SUDO_USER ALL= NOPASSWD: /usr/sbin/service mosquitto stop
+$SUDO_USER ALL= NOPASSWD: /usr/sbin/service mosquitto restart
+EOL
+chown root:root yombo_$SUDO_USER
+chmod 440 yombo_$SUDO_USER
+

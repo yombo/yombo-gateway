@@ -1,0 +1,151 @@
+#!/usr/bin/env bash
+
+if [ "$USER" = "root" ] && [ "$SUDO_USER" == "" ]; then
+  echo "This script cannot be run as root directly and must be run"
+  echo "as the user owning the Yombo gateway service."
+  echo ""
+  echo "Logout as root and then:"
+  echo "sudo yombo_update"
+  exit
+fi
+
+if [ "$(id -u)" -ne 0 ]; then
+  echo "This script must run with sudo to gain root access. This"
+  echo "is needed to install the latest updates. Run this the user"
+  echo "owning the Yombo gateway service:"
+  echo ""
+  echo "sudo yombo_update"
+  echo ""
+  exit
+fi
+
+#YOMBO_SCRIPT_DIR="$( cd "$(dirname "$0")" ; pwd -P )"
+
+
+TEMPSCRIPTPATH=$(readlink -f `which ybo`)
+rc=$?
+if [[ $rc != 0 ]]; then
+ SCRIPT_PATH="$( cd "$(dirname "$0")" ; pwd -P )"
+else
+ YOMBO_SCRIPT_DIR=$(dirname "$TEMPSCRIPTPATH")"/scripts"
+fi
+YOMBO_ROOT_DIR="$(dirname $YOMBO_SCRIPT_DIR)"
+cd "$YOMBO_SCRIPT_DIR"
+
+usage()
+{
+cat << EOF
+usage: $0 options
+
+This script is a wrapper around various platform updaters.
+
+OPTIONS:
+   -x  Force x86_64 based system (Intel/AMD)
+   -a  Force arm based system (Raspberry PI, etc)
+EOF
+}
+
+# Determine OS platform
+if [ -f /etc/os-release ]; then
+    # freedesktop.org and systemd
+    . /etc/os-release
+    OS=$NAME
+    VER=$VERSION_ID
+elif type lsb_release >/dev/null 2>&1; then
+    # linuxbase.org
+    OS=$(lsb_release -si)
+    VER=$(lsb_release -sr)
+elif [ -f /etc/lsb-release ]; then
+    # For some versions of Debian/Ubuntu without lsb_release command
+    . /etc/lsb-release
+    OS=$DISTRIB_ID
+    VER=$DISTRIB_RELEASE
+elif [ -f /etc/debian_version ]; then
+    # Older Debian/Ubuntu/etc.
+    OS=Debian
+    VER=$(cat /etc/debian_version)
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+    echo "Yombo isn't support on Mac OSX. You should use Vagrant:"
+    echo "https://yombo.net/docs/gateway/vagrant"
+    exit
+elif [[ "$OSTYPE" == "cygwin" ]]; then
+    # POSIX compatibility layer and Linux environment emulation for Windows
+    echo "Yombo isn't support on Windows. You should use Vagrant:"
+    echo "https://yombo.net/docs/gateway/vagrant"
+    exit
+elif [[ "$OSTYPE" == "msys" ]]; then
+    # Lightweight shell and GNU utilities compiled for Windows (part of MinGW)
+    echo "Yombo isn't support on Windows. You should use Vagrant:"
+    echo "https://yombo.net/docs/gateway/vagrant"
+    exit
+elif [[ "$OSTYPE" == "win32" ]]; then
+    echo "Yombo isn't support on Windows. You should use Vagrant:"
+    echo "https://yombo.net/docs/gateway/vagrant"
+    exit
+elif [[ "$OSTYPE" == "freebsd"* ]]; then
+    echo "This script hasn't been updated to support freebsd."
+    echo "Feel free update and make a pull request"
+    exit
+else
+    echo "Your operating system is unknown: $OSTYPE"
+    echo "Please email us at support@yombo.net with the output of this script."
+    exit
+fi
+
+echo "Detected: $OS -> $VER"
+
+if [[ "$OS" == "Debian" ]]; then
+    $YOMBO_SCRIPT_DIR/helpers/debian_setup
+    sudo runuser -l $SUDO_USER -c "bash -i $YOMBO_SCRIPT_DIR/helpers/debian_update_user"
+
+elif [[ "$OS" == "Ubuntu" ]]; then
+    echo "This will install various requirements to run Yombo Gateway."
+    echo ""
+    echo "This will also perform the following tasks:"
+    echo "1) Install dependencies through apt-get"
+    echo "2) Install pyenv or update pyenv"
+    echo "3) Install the latest python 3.7.x into pyenv"
+    echo "4) Update system pip2/pip3 installer to latest version."
+    echo "5) Download and compile mosquitto and libwebsockets."
+    echo "6) Setup apt to use NPM version 10."
+    echo ""
+    echo "This will take a while due to compiling the needed requirements."
+    echo ""
+    while true; do
+        read -p "Do you wish to complete this? (y/n)" yn
+        case $yn in
+            [Yy]* ) break;;
+            [Nn]* ) exit;;
+            * ) echo "Please answer y (yes) or n (no).";;
+        esac
+    done
+
+    echo ""
+
+    secs=$((5))
+    while [ $secs -gt 0 ]; do
+       echo -ne "Will continue in $secs.  Ctrl-c to abort.\033[0K\r"
+       sleep 1
+       : $((secs--))
+    done
+    $YOMBO_SCRIPT_DIR/helpers/ubuntu_setup
+    sudo runuser -l $SUDO_USER -c "bash -i $SCRIPTPATH/pyenv_setup yes"
+fi
+
+ybo motd
+
+log ""
+log "======================================================================================"
+log "=  * WARNING * WARNING * WARNING * WARNING * WARNING * WARNING * WARNING * WARNING   ="
+log "======================================================================================"
+log "=                                                                                    ="
+log "= You must exit this terminal session and start a new one before using Yombo Gateway ="
+log "=                                                                                    ="
+log "======================================================================================"
+log "=                                                                                    ="
+log "= With a NEW TERMINAL, these commands will get you started:                          ="
+log "=                                                                                    ="
+log "= ybo motd    - Details about the installation                                       ="
+log "= ybo start   - Start the Yombo Gateway                                              ="
+log "======================================================================================"
+log ""
