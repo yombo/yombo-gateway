@@ -73,15 +73,18 @@ git_branch = subprocess.check_output(["git", "-C", program_path, "rev-parse", "-
 
 yombo_version = "%s -- %s:%s" % (constants.VERSION, git_branch.decode("utf-8"), git_hash.decode("utf-8"))
 
-internal_hostname = 'localhost'
+internal_hostnames = []
 interfaces = netifaces.interfaces()
 for i in interfaces:
     if i == 'lo' or i.startswith('vir'):
         continue
     iface = netifaces.ifaddresses(i).get(netifaces.AF_INET)
     if iface != None:
-        internal_hostname = str(iface[0]['addr'])
-        break
+        internal_hostnames.append(str(iface[0]['addr']))
+        # break
+
+if len(internal_hostnames) == 0:
+    internal_hostnames = ['localhost']
 
 yombo_ini = 'Not configured'
 if data_path_exists is True:
@@ -90,7 +93,6 @@ if data_path_exists is True:
         config_parser.read('%s/yombo.ini' % data_path)
         yombo_ini = "Valid"
         dns_fqdn = config_parser.get('dns', 'fqdn', fallback="None")
-        internal_ip = config_parser.get('core', 'localipaddress_v4', fallback=internal_hostname)
         external_ip = config_parser.get('core', 'externalipaddress_v4', fallback="None")
         nonsecure_port = config_parser.get('webinterface', 'nonsecure_port', fallback=8080)
         secure_port = config_parser.get('webinterface', 'secure_port', fallback=8443)
@@ -100,19 +102,21 @@ if data_path_exists is True:
         pass
 else:
     dns_fqdn = "None"
-    internal_ip = internal_hostname
     external_ip = "None"
     nonsecure_port = 8080
     secure_port = 8443
 
+
 if dns_fqdn != "None":
     local = "http://127.0.0.1:%s" % nonsecure_port
-    internal = "http://i.%s:%s" % (dns_fqdn, nonsecure_port)
+    internal = ["http://i.%s:%s" % (dns_fqdn, nonsecure_port)]
     external = "https://e.%s:%s" % (dns_fqdn, secure_port)
     globaluri = "http://%s" % dns_fqdn
 else:
     local = "http://127.0.0.1:%s" % nonsecure_port
-    internal = "http://%s:%s" % (internal_ip, nonsecure_port)
+    internal = []
+    for hostname in internal_hostnames:
+        internal.append("http://%s:%s" % (hostname, nonsecure_port))
     external = "Not available"
     globaluri = "Not available"
 
@@ -124,8 +128,12 @@ data_yombo['Yombo Version'] = yombo_version
 data_yombo['FQDN'] = dns_fqdn
 data_yombo['From anywhere'] = globaluri
 data_yombo['Local'] = local
-data_yombo['Internal'] = internal
 data_yombo['External'] = external
+for i in range(len(internal)):
+    if len(internal) == 1:
+        data_yombo[f"Internal"] = internal[i];
+    else:
+        data_yombo[f"Internal {i}"] = internal[i];
 
 with open('/proc/uptime', 'r') as f:
     uptime_seconds = float(f.readline().split()[0])
