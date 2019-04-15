@@ -104,7 +104,6 @@ class WebSessions(YomboLibrary):
             "expired_message": "Session expired",
             "httponly": False,  # If enabled, frontend app won't work. :(
             "secure": False,
-            "samesite": ""  # strict won't work with SSO. :(
         })
         self.clean_sessions_loop = LoopingCall(self.clean_sessions)
         self.clean_sessions_loop.start(random_int(30, .2), False)  # Every hour-ish. Save to disk, or remove from memory.
@@ -258,7 +257,7 @@ class WebSessions(YomboLibrary):
         else:
             return host
 
-    @ratelimits(calls=15, period=60)
+    # @ratelimits(calls=15, period=60)
     def create_from_web_request(self, request=None, data=None):
         """
         Creates a new session.
@@ -285,9 +284,8 @@ class WebSessions(YomboLibrary):
 
         if request is not None:
             request.addCookie(self.config.cookie_session_name, session_id, domain=self.get_cookie_domain(request),
-                              path=self.config.cookie_path, max_age=self.config.max_session,
-                              secure=self.config.secure, httpOnly=self.config.httponly,
-                              sameSite=self.config.samesite)
+                              path=self.config.cookie_path, max_age=str(self.config.max_session),
+                              secure=self.config.secure, httpOnly=self.config.httponly)
 
         self.active_sessions[compact_id] = AuthWebsession(self, data)
         self.active_sessions[compact_id].auth_id_long = session_id
