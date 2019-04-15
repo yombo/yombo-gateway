@@ -41,6 +41,11 @@ requirements_compiled.txt
 # Disable storing reference builds
 yombo/frontend-*
 
+# Vagrant #
+###########
+virtualization/vagrant/.vagrant
+virtualization/vagrant/working_dir
+
 # Building / Documentation #
 ############################
 MANIFEST
