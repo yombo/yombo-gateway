@@ -33,7 +33,7 @@ pyopenssl==19.0.*
 pyserial==3.2.0
 python_dateutil==2.8.*
 python-gnupg==0.4.4
-pytz==2018.9
+pytz==2019.1
 ratelimit==2.2.*
 service_identity==18.1.0
 six==1.12.0
