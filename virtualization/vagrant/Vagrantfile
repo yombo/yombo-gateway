@@ -1,63 +1,39 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
+require 'concurrent'
 
-$script = <<-SCRIPT
-    readonly SETUP_DONE='/yombo-gateway/virtualization/vagrant/setup_done'
-
-    usage() {
-        echo '############################################################
-    
-    Use `./provision.sh` to interact with Yombo. E.g:
-    
-    - start the virtualization: `./provision.sh start`
-    - stop the virtualization: `./provision.sh stop`
-    - destroy the host and start anew: `./provision.sh recreate`
-    
-    ############################################################'
-    }
-
-    echo "Starting Yombo Setup...."
-    readonly ygw_path='/yombo-gateway/ybo'
-    readonly systemd_bin_path='/usr/bin/ybo'
-    # Setup systemd
-#    cp /yombo-gateway/virtualization/vagrant/yombo-gateway@.service \
-#        /etc/systemd/system/yombo-gateway.service
-#    systemctl --system daemon-reload
-#    systemctl enable yombo-gateway
-#    systemctl stop yombo-gateway
-    # Install packages
-    /yombo-gateway/scripts/helpers/ubuntu_setup
-    runuser -l vagrant -c "bash -i /yombo-gateway/scripts/helpers/pyenv_setup"
-    if ! [ -f $systemd_bin_path ]; then
-        ln -s $ygw_path $systemd_bin_path
-    fi
-    touch $SETUP_DONE
-    usage
-SCRIPT
+$systemCPU = Concurrent.physical_processor_count
+if $systemCPU >= 4
+  $systemCPU = 4
+elsif $systemCPU < 1
+  $systemCPU = 1
+end
 
 Vagrant.configure(2) do |config|
   config.vm.box = "generic/ubuntu1804"
   config.vm.synced_folder "../../", "/yombo-gateway"
+  config.vm.synced_folder "./working_dir", "/home/vagrant/.yombo"
   config.vm.network "public_network"
   config.vm.network "forwarded_port", guest: 8123, host: 8123
   config.vm.network "forwarded_port", guest: 8080, host: 18080
   config.vm.network "forwarded_port", guest: 8443, host: 18443
-  config.vm.provision "fix-no-tty", type: "shell", inline: $script
-    # shell.path = "provision.sh"
-  # end
+  config.vm.provision "fix-no-tty", type: "shell" do |shell|
+    shell.path = "provision.sh"
+  end
+# config.vm.provision "fix-no-tty", type: "shell", inline: $script
   config.vm.provider :virtualbox do |vb|
-    vb.cpus = 2
-    vb.customize ['modifyvm', :id, '--memory', '1024']
     vb.name = "yombo_gateway1804"
+    vb.cpus = $systemCPU
+    vb.customize ['modifyvm', :id, '--memory', '1536']
     vb.customize ["modifyvm", :id, "--usb", "on"]
     vb.customize ["modifyvm", :id, "--usbehci", "on"]
   end
   config.vm.provider :hyperv do |h, override|
     override.vm.box = "generic/ubuntu1804"
     override.vm.hostname = "contrib-ubuntu1804"
-    h.vmname = "yombo-gateway"
-    h.cpus = 2
-    h.memory = 1024
-    h.maxmemory = 1024
+    h.vmname = "yombo_gateway1804"
+    h.cpus = $systemCPU
+    h.memory = 1536
+    h.maxmemory = 1536
   end
 end
