@@ -45,72 +45,59 @@ OPTIONS:
 EOF
 }
 
-ARC=$(uname -m)
-while true; do
-  case "$1" in
-    "6")
-      ARC="x86_64"
-      shift
-      ;;
-    "a")
-      ARC="arm"
-      shift
-      ;;
-    * ) break ;;
-  esac
-done
-
-if [ "$ARC" == "none" ]; then
-    # Determine OS platform
-    DISTRO="Unknown"
-    if [[ "$OSTYPE" == "linux-gnu" ]]; then
-        # If available, use LSB to identify distribution
-        if [ -f /etc/lsb-release -o -d /etc/lsb-release.d ]; then
-            DISTRO=$(lsb_release -i | cut -d: -f2 | sed s/'^\t'//)
-        # Otherwise, use release info file
-        else
-            DISTRO=$(ls -d /etc/[A-Za-z]*[_-][rv]e[lr]* | grep -v "lsb" | cut -d'/' -f3 | cut -d'-' -f1 | cut -d'_' -f1)
-        fi
-    elif [[ "$OSTYPE" == "darwin"* ]]; then
-        echo "Yombo isn't support on Mac OSX. You should use the VirtualBox image:"
-        echo "https://yombo.net/docs/gateway/virtualbox"
-        exit
-    elif [[ "$OSTYPE" == "cygwin" ]]; then
-        # POSIX compatibility layer and Linux environment emulation for Windows
-        echo "Yombo isn't support on Windows. You should use the VirtualBox image:"
-        echo "https://yombo.net/docs/gateway/virtualbox"
-        exit
-    elif [[ "$OSTYPE" == "msys" ]]; then
-        # Lightweight shell and GNU utilities compiled for Windows (part of MinGW)
-        echo "Yombo isn't support on Windows. You should use the VirtualBox image:"
-        echo "https://yombo.net/docs/gateway/virtualbox"
-        exit
-    elif [[ "$OSTYPE" == "win32" ]]; then
-        echo "Yombo isn't support on Windows. You should use the VirtualBox image:"
-        echo "https://yombo.net/docs/gateway/virtualbox"
-        exit
-    elif [[ "$OSTYPE" == "freebsd"* ]]; then
-        echo "This script hasn't been updated to support freebsd."
-        echo "Feel free update and make a pull request"
-        exit
-    else
-        echo "Your operating system is unknown: $OSTYPE"
-        echo "Please email us at support@yombo.net with the output of this script."
-        exit
-    fi
-    echo "Detected: $OSTYPE -> $DISTRO on architecture: $ARC"
-fi
-
-
-if [ "$ARC" == "x86_64" ]; then
-  OPTIMIZE="yes"
-  echo "Advanced compiler optimization enabled for your architecture."
+# Determine OS platform
+if [ -f /etc/os-release ]; then
+    # freedesktop.org and systemd
+    . /etc/os-release
+    OS=$NAME
+    VER=$VERSION_ID
+elif type lsb_release >/dev/null 2>&1; then
+    # linuxbase.org
+    OS=$(lsb_release -si)
+    VER=$(lsb_release -sr)
+elif [ -f /etc/lsb-release ]; then
+    # For some versions of Debian/Ubuntu without lsb_release command
+    . /etc/lsb-release
+    OS=$DISTRIB_ID
+    VER=$DISTRIB_RELEASE
+elif [ -f /etc/debian_version ]; then
+    # Older Debian/Ubuntu/etc.
+    OS=Debian
+    VER=$(cat /etc/debian_version)
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+    echo "Yombo isn't support on Mac OSX. You should use Vagrant:"
+    echo "https://yombo.net/docs/gateway/vagrant"
+    exit
+elif [[ "$OSTYPE" == "cygwin" ]]; then
+    # POSIX compatibility layer and Linux environment emulation for Windows
+    echo "Yombo isn't support on Windows. You should use Vagrant:"
+    echo "https://yombo.net/docs/gateway/vagrant"
+    exit
+elif [[ "$OSTYPE" == "msys" ]]; then
+    # Lightweight shell and GNU utilities compiled for Windows (part of MinGW)
+    echo "Yombo isn't support on Windows. You should use Vagrant:"
+    echo "https://yombo.net/docs/gateway/vagrant"
+    exit
+elif [[ "$OSTYPE" == "win32" ]]; then
+    echo "Yombo isn't support on Windows. You should use Vagrant:"
+    echo "https://yombo.net/docs/gateway/vagrant"
+    exit
+elif [[ "$OSTYPE" == "freebsd"* ]]; then
+    echo "This script hasn't been updated to support freebsd."
+    echo "Feel free update and make a pull request"
+    exit
 else
-  OPTIMIZE="no"
-  echo "This hardware architecture doesn't support advanced compiler optimizations."
+    echo "Your operating system is unknown: $OSTYPE"
+    echo "Please email us at support@yombo.net with the output of this script."
+    exit
 fi
 
+echo "Detected: $OS -> $VER"
 
-$YOMBO_SCRIPT_DIR/update_debian
-
-sudo runuser -l $SUDO_USER -c "bash -i $YOMBO_SCRIPT_DIR/update_debian_user $OPTIMIZE"
+if [[ "$OS" == "Debian" ]]; then
+    $YOMBO_SCRIPT_DIR/helpers/debian_update
+    sudo runuser -l $SUDO_USER -c "bash -i $YOMBO_SCRIPT_DIR/helpers/debian_update_user"
+elif [[ "$OS" == "Ubuntu" ]]; then
+    $YOMBO_SCRIPT_DIR/helpers/ubuntu_update
+    sudo runuser -l $SUDO_USER -c "bash -i $YOMBO_SCRIPT_DIR/helpers/debian_update_user"
+fi
