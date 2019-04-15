@@ -10,7 +10,7 @@ ephem==3.7.6.*
 gnupg==2.3.1
 git+https://github.com/gitpython-developers/GitPython.git@8b3ffcd#egg=gitpython
 hashids==1.2.0
-jinja2==2.10
+jinja2==2.10.1
 json-api-doc==0.6.0
 klein==17.10.0
 logger==1.4
