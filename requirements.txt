@@ -39,7 +39,7 @@ ratelimit==2.2.*
 service_identity==18.1.0
 six==1.12.0
 treq==18.6.0
-twisted==18.9.*
+twisted==19.2.*
 unidecode==1.0.*
 uvloop==0.12.2
 voluptuous==0.11.5
