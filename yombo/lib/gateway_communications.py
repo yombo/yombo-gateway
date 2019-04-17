@@ -58,17 +58,21 @@ class Gateway_Communications(YomboLibrary):
         self.is_master = self._Configs.is_master
         self.master_gateway_id = self._Configs.master_gateway_id
 
-        local_gateway = self._Gateways.local
-        master_gateway = self._Gateways.master
-
-        # Internal here mean for internal use, for the framework only or modules making
+        # Internal here means for internal use, for the framework only or modules making
         # connections to the MQTT broker for Yombo use.
-        # The non-internal is used to show to external services/devics/webpages.
+        # The non-internal is used to show to external services/devices/webpages.
         self.client_default_host = None
         self.client_default_port = None
         self.client_default_ssl = None
         self.client_default_ws_port = None
         self.client_default_ws_ssl = None
+
+    def _load_(self, **kwargs):
+        if self._Loader.operating_mode != "run":
+            return
+
+        local_gateway = self._Gateways.local
+        master_gateway = self._Gateways.master
 
         self.client_default_username = "yombogw_" + self.gateway_id()
         self.client_default_password1 = local_gateway.mqtt_auth
@@ -81,7 +85,7 @@ class Gateway_Communications(YomboLibrary):
         def test_port(host, port):
             """ Quick function to test if host is listening to a port. """
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            logger.debug("# Test non ssl host - port: {host} - {port}", host=host, port=port)
+            logger.info("# Test non ssl host - port: {host} - {port}", host=host, port=port)
             if port is None:
                 return False
             return sock.connect_ex((host, port))
@@ -90,18 +94,19 @@ class Gateway_Communications(YomboLibrary):
         # 1) We prefer localhost with no SSL since it's all internal - less CPU on low end devics.
         # 2) Local network, but with SSL preferred.
         # 3) Remote network, only SSL!
+        fqdn = self._Configs.get("dns", "fqdn", None, False)
         if self.is_master():
-            if master_gateway.dns_name is not None:
+            if fqdn is not None:
                 mqtt_hosts = [
                     {
-                        "address": "i." + master_gateway.dns_name,
+                        "address": "internal." + fqdn,
                         "mqtt": [
                             {"port": self._Configs.get("mqtt", "server_listen_port"), "ssl": False},
                             {"port": self._Configs.get("mqtt", "server_listen_port_le_ssl"), "ssl": True},
                             {"port": self._Configs.get("mqtt", "server_listen_port_ss_ssl"), "ssl": True},
                         ],
                         "ws": [
-                            # {"port": master_gateway.internal_mqtt_ws, "ssl": False},
+                            # {"port": master_gateway.internal_mqtt_ws, "ssl": False},dns_
                             {"port": self._Configs.get("mqtt", "server_listen_port_websockets_le_ssl"), "ssl": True},
                             {"port": self._Configs.get("mqtt", "server_listen_port_websockets_ss_ssl"), "ssl": True},
                         ]
@@ -125,7 +130,7 @@ class Gateway_Communications(YomboLibrary):
         else:
             mqtt_hosts = [
                 {
-                    "address": "i." + master_gateway.dns_name,
+                    "address": "internal." + fqdn,
                     "mqtt": [
                         {"port": master_gateway.internal_mqtt_le, "ssl": True},
                         {"port": master_gateway.internal_mqtt_ss, "ssl": True},
@@ -137,7 +142,7 @@ class Gateway_Communications(YomboLibrary):
                     ]
                 },
                 {
-                    "address": "e." + master_gateway.dns_name,
+                    "address": "external." + fqdn,
                     "mqtt": [
                         {"port": master_gateway.external_mqtt_le, "ssl": True},
                         {"port": master_gateway.external_mqtt_ss, "ssl": True},
