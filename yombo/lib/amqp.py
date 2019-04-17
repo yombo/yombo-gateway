@@ -375,6 +375,7 @@ class AMQPClient(object):
         self.is_connected = True
         self.timeout_reconnect_task = False
 
+        logger.debug("AMQP Connected...{id}, callback: {callback}", id=self.client_id, callback=self.connected_callback)
         if self.connected_callback:
             self.connected_callback()
 
@@ -1278,7 +1279,7 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
                     if sent_message_meta is None:
                         # print("got yombo message bd3")
                         if correlation_info["correlation_id"] is not None and \
-                            correlation_info["received_correlation_id"] in self.factory.AMQPClient._AMQP.messages_processed:
+                            correlation_info["correlation_id"] in self.factory.AMQPClient._AMQP.messages_processed:
                             sent_message_meta = self.factory.AMQPClient._AMQP.messages_processed[correlation_id]
 
                 if reply_to in self.factory.AMQPClient._AMQP.message_correlations and correlation_info is None:
