@@ -191,43 +191,30 @@ and more. This information helps us design a more robust system.
                         <h5>Control the gateway's basic security settings.</h5>
 
                         <div class="form-group">
-                            <label for="security-status" data-toggle="tooltip"
-                                   title="Send device status to mobile and other connected devices.">
-                                Allow device status to be sent to Yombo
-                            </label>
+                            <input type="checkbox" data-toggle="toggle" data-size="xs"
+                            id="security-status" name="security-status"
+                            {% if security_items.status == '1' %} checked {% endif %}>
+                            Allow device status to be sent to Yombo
                             &nbsp;<a href="#" data-toggle="modal" data-target="#securitystatus">
                             <i class="fa fa-question-circle"></i>
                             </a>
-                            <div class="form-check checkbox-slider--a-rounded">
-                                <input type="checkbox" id="security-status" name="security-status"
-                                {% if security_items.status == '1' %} checked {% endif %}><span></span>
-                            </div>
                         </div>
 
                         <div class="form-group">
-
-                            <label for="security-send-private-stats" data-toggle="tooltip"
-                                   title="Save private statistics information in the Yombo cloud.">
-                                Allow private statistics information to be sent to Yombo
-                            </label>
-                            &nbsp;<a href="#" data-toggle="modal" data-target="#securitysendprivatestats">
+                            <input type="checkbox" data-toggle="toggle" data-size="xs"
+                            id="security-send-private-stats" name="security-send-private-stats"
+                            {% if security_items.send_private_stats == '1' %} checked {% endif %}>
+                            Allow private statistics information to be sent to Yombo
+                           &nbsp;<a href="#" data-toggle="modal" data-target="#securitysendprivatestats">
                             <i class="fa fa-question-circle"></i></a>
-                            <div class="form-check checkbox-slider--a-rounded">
-                                <input type="checkbox" id="security-send-private-stats" name="security-send-private-stats"
-                                {% if security_items.status == '1' %} checked {% endif %}><span></span>
-                            </div>
                         </div>
                         <div class="form-group">
-                            <label for="security-send-anon-stats" data-toggle="tooltip"
-                                   title="Save statistics information in the Yombo cloud.">
-                                Allow anonymous statistics information to be sent to Yombo
-                            </label>
+                            <input type="checkbox" data-toggle="toggle" data-size="xs"
+                            id="security-send-anon-stats" name="security-send-anon-stats"
+                            {% if security_items.send_anon_stats == '1' %} checked {% endif %}>
+                            Allow anonymous statistics information to be sent to Yombo
                             &nbsp;<a href="#" data-toggle="modal" data-target="#securitysendanonstats">
                             <i class="fa fa-question-circle"></i></a>
-                            <div class="form-check checkbox-slider--a-rounded">
-                                <input type="checkbox" id="security-send-anon-stats" name="security-send-anon-stats"
-                                {% if security_items.status == '1' %} checked {% endif %}><span></span>
-                            </div>
                         </div>
                         <a class="btn btn-md btn-warning" href="/setup_wizard/basic_settings">
                             <i class="fa fa-chevron-left float-left"> &nbsp; </i>Back</a>

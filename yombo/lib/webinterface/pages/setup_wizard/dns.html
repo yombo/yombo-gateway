@@ -74,7 +74,7 @@
                             </div>
                             <div class="card-body">
                                 <h3>Dynamic DNS setup</h3>
-                                <p><strong>DNS can only be changed once every 30 days. 222</strong></p>
+                                <p><strong>DNS can only be changed once every 30 days.</strong></p>
                                 <ul>
                                     <li>{{_('ui::misc::current_sub_domain', 'Current Sub-domain')}}: {{ dns_name }}</li>
                                     <li>{{_('ui::misc::current_top_level_domain', 'Current Domain')}}: {{ dns_domain }}</li>
@@ -84,7 +84,7 @@
                                 </ul>
 
                                 {% if allow_change < py_time_time() %}
-                                <h4 style="padding-top: 2.5em;">Set new DNS</h4>
+                                <h4 style="padding-top: 1.5em;">Set new DNS</h4>
                                 <p>
                                 <input type="hidden" name="dns_domain_id" />
                                 <label>Domain prefix: </label>
