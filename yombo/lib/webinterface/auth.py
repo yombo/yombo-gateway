@@ -180,9 +180,9 @@ def require_auth(roles=None, login_redirect=None, access_platform=None, access_i
                         return return_need_login(webinterface, request, None,
                                                  api_message="API request doesn't have a valid auth key or session.",
                                                  **kwargs)
-                    results = webinterface.check_idempotence(request, session)
-                    if isinstance(results, bool) is False:
-                        return results
+                    # results = webinterface.check_idempotence(request, session)
+                    # if isinstance(results, bool) is False:
+                    #     return results
             else:
                 # print("auth get session: web request")
                 try:
