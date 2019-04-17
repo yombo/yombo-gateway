@@ -37,14 +37,13 @@ if [ "$(id -u)" -ne 0 ]; then
   exit
 fi
 
-SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
-PARENTPATH="$(dirname "$SCRIPTPATH")"
-YOMBOPATH="$(dirname "$PARENTPATH")"
+YOMBO_SCRIPT_HELPER_DIR="$( cd "$(dirname "$0")" ; pwd -P )"
+YOMBO_SCRIPT_DIR="$(dirname $YOMBO_SCRIPT_HELPER_DIR)"
+YOMBO_ROOT_DIR="$(dirname $YOMBO_SCRIPT_DIR)"
 
 apt-get update >> /dev/null
 apt-get upgrade -y
 
-sudo npm install -g npm
 sudo npm update
 
 sudo pip3 install --upgrade pip
@@ -101,8 +100,3 @@ elif [ $LOCAL = $BASE ] || [ $LIBWEBSOCKETSUPDATED = "yes" ]; then
     make binary WITH_WEBSOCKETS=yes WITH_DOCS=no CFLAGS=-I/usr/local/include/
     sudo make install WITH_WEBSOCKETS=yes WITH_DOCS=no CFLAGS=-I/usr/local/include/
 fi
-
-cd $YOMBOPATH
-git pull
-
-pip3 install -r requirements.txt

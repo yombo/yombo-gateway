@@ -11,15 +11,15 @@ if [ "$EUID" -eq 0 ]; then
     exit
 fi
 
-YOMBO_SCRIPT_DIR="$( cd "$(dirname "$0")" ; pwd -P )"
+YOMBO_SCRIPT_HELPER_DIR="$( cd "$(dirname "$0")" ; pwd -P )"
+YOMBO_SCRIPT_DIR="$(dirname $YOMBO_SCRIPT_HELPER_DIR)"
 YOMBO_ROOT_DIR="$(dirname $YOMBO_SCRIPT_DIR)"
 
-cd /home/$USER/.pyenv && git pull && cd -
+cd /home/$USER/.pyenv && git pull
 
 cd "$YOMBO_ROOT_DIR"
 
 pip3 install --upgrade pip
-pip3 install netifaces
 
 CORECOUNT=$(grep -c ^processor /proc/cpuinfo)
 CORECOUNT=$(($CORECOUNT + 1))

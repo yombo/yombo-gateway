@@ -19,16 +19,7 @@ if [ "$(id -u)" -ne 0 ]; then
   exit
 fi
 
-#YOMBO_SCRIPT_DIR="$( cd "$(dirname "$0")" ; pwd -P )"
-
-
-TEMPSCRIPTPATH=$(readlink -f `which ybo`)
-rc=$?
-if [[ $rc != 0 ]]; then
- SCRIPT_PATH="$( cd "$(dirname "$0")" ; pwd -P )"
-else
- YOMBO_SCRIPT_DIR=$(dirname "$TEMPSCRIPTPATH")"/scripts"
-fi
+YOMBO_SCRIPT_DIR="$( cd "$(dirname "$0")" ; pwd -P )"
 YOMBO_ROOT_DIR="$(dirname $YOMBO_SCRIPT_DIR)"
 cd "$YOMBO_SCRIPT_DIR"
 

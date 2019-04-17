@@ -31,9 +31,9 @@ if [ "$(id -u)" -ne 0 ]; then
   exit
 fi
 
-SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
-PARENTPATH="$(dirname "$SCRIPTPATH")"
-YOMBOPATH="$(dirname "$PARENTPATH")"
+YOMBO_SCRIPT_HELPER_DIR="$( cd "$(dirname "$0")" ; pwd -P )"
+YOMBO_SCRIPT_DIR="$(dirname $YOMBO_SCRIPT_HELPER_DIR)"
+YOMBO_ROOT_DIR="$(dirname $YOMBO_SCRIPT_DIR)"
 
 LOGFILE=/home/$SUDO_USER/yombo_setup.log
 echo ""
@@ -136,8 +136,8 @@ make binary WITH_WEBSOCKETS=yes WITH_DOCS=no CFLAGS=-I/usr/local/include/
 make install WITH_WEBSOCKETS=yes WITH_DOCS=no CFLAGS=-I/usr/local/include/
 
 log "==> Installing bin links to /etc/usr/local/bin"
-ln -s $YOMBOPATH/ybo /usr/local/bin/ybo
-ln -s $YOMBOPATH/ybo-config /usr/local/bin/ybo-config
+ln -s $YOMBO_ROOT_DIR/ybo /usr/local/bin/ybo
+ln -s $YOMBO_ROOT_DIR/ybo-config /usr/local/bin/ybo-config
 
 log "==> Setting up systemctl service"
 cd /etc/systemd/system/
