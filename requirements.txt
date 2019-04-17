@@ -8,7 +8,7 @@ decorator==4.4.0
 docutils==0.14
 ephem==3.7.6.*
 gnupg==2.3.1
-git+https://github.com/gitpython-developers/GitPython.git@8b3ffcd#egg=gitpython
+git+https://github.com/gitpython-developers/GitPython.git@1f66e25#egg=gitpython
 hashids==1.2.0
 jinja2==2.10.1
 klein==17.10.0
