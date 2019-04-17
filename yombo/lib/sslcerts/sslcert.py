@@ -42,7 +42,8 @@ from twisted.internet.defer import inlineCallbacks, maybeDeferred, Deferred
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
 import yombo.core.settings as settings
-from yombo.utils import save_file, read_file, bytes_to_unicode
+from yombo.utils import save_file, read_file, bytes_to_unicode, sha256_compact, unicode_to_bytes
+
 import collections
 
 logger = get_logger("library.sslcerts.sslcert")
@@ -111,33 +112,33 @@ class SSLCert(object):
         self.key_size = None
         self.key_type = None
 
-        self.current_status = None
-        self.current_status_msg = None
-        self.current_csr_hash = None
-        self.current_cert = None
-        self.current_cert_crypt = None
-        self.current_chain = None
-        self.current_chain_crypt = None
-        self.current_key = None
-        self.current_key_crypt = None
-        self.current_created = None
-        self.current_expires = None
-        self.current_signed = None
-        self.current_submitted = None
-        self.current_fqdn = None
-        self.current_is_valid = None
+        self.current_status = None       # new / signed
+        self.current_status_msg = None   # new / signed / whatever from yombo servers
+        self.current_csr_hash = None     # sha256(compact) hash of csr
+        self.current_cert = None         # The signed cert from Lets Encrypt (or self signed)
+        self.current_cert_crypt = None   # A ready to use crypto key
+        self.current_chain = None        # Additional certs to complete the chain
+        self.current_chain_crypt = None  # A ready to use crypto key
+        self.current_key = None          # The private key - keep this a secret!
+        self.current_key_crypt = None    #
+        self.current_created_at = None   # WHen the cert was created
+        self.current_expires_at = None   # The when signature expires
+        self.current_signed_at = None    # When it was signed at
+        self.current_submitted_at = None # When it was sent to Yombo server for signing by Lets Encrypt
+        self.current_fqdn = None         # The fqdn of the cert
+        self.current_is_valid = None     # If the cert is still valid.
 
         self.next_status = None
         self.next_status_msg = None
-        self.next_csr_hash = None
-        self.next_csr = None
+        self.next_csr = None             # cert sign request
+        self.next_csr_hash = None        # hash of the csr
         self.next_cert = None
         self.next_chain = None
         self.next_key = None
-        self.next_created = None
-        self.next_expires = None
-        self.next_signed = None
-        self.next_submitted = None
+        self.next_created_at = None
+        self.next_expires_at = None
+        self.next_signed_at = None
+        self.next_submitted_at = None
         self.next_fqdn = None
         self.next_is_valid = None
         self.next_csr_generation_error_count = 0
@@ -216,14 +217,14 @@ class SSLCert(object):
             self.current_status_msg = attributes["current_status_msg"]
         if "current_csr_hash" in attributes:
             self.current_csr_hash = attributes["current_csr_hash"]
-        if "current_created" in attributes:
-            self.current_created = int(attributes["current_created"]) if attributes["current_created"] else None
-        if "current_expires" in attributes:
-            self.current_expires = int(attributes["current_expires"]) if attributes["current_expires"] else None
-        if "current_signed" in attributes:
-            self.current_signed = int(attributes["current_signed"]) if attributes["current_signed"] else None
-        if "current_submitted" in attributes:
-            self.current_submitted = int(attributes["current_submitted"]) if attributes["current_submitted"] else None
+        if "current_created_at" in attributes:
+            self.current_created_at = int(attributes["current_created_at"]) if attributes["current_created_at"] else None
+        if "current_expires_at" in attributes:
+            self.current_expires_at = int(attributes["current_expires_at"]) if attributes["current_expires_at"] else None
+        if "current_signed_at" in attributes:
+            self.current_signed_at = int(attributes["current_signed_at"]) if attributes["current_signed_at"] else None
+        if "current_submitted_at" in attributes:
+            self.current_submitted_at = int(attributes["current_submitted_at"]) if attributes["current_submitted_at"] else None
         if "current_fqdn" in attributes:
             self.current_fqdn = attributes["current_fqdn"]
         if "current_is_valid" in attributes:
@@ -243,19 +244,22 @@ class SSLCert(object):
             self.next_chain = attributes["next_chain"]
         if "next_key" in attributes:
             self.next_key = attributes["next_key"]
-        if "next_created" in attributes:
-            self.next_created = int(attributes["next_created"]) if attributes["next_created"] else None
-        if "next_expires" in attributes:
-            self.next_expires = int(attributes["next_expires"]) if attributes["next_expires"] else None
-        if "next_signed" in attributes:
-            self.next_signed = int(attributes["next_signed"]) if attributes["next_signed"] else None
-        if "next_submitted" in attributes:
-            self.next_submitted = int(attributes["next_submitted"]) if attributes["next_submitted"] else None
+        if "next_created_at" in attributes:
+            self.next_created_at = int(attributes["next_created_at"]) if attributes["next_created_at"] else None
+        if "next_expires_at" in attributes:
+            self.next_expires_at = int(attributes["next_expires_at"]) if attributes["next_expires_at"] else None
+        if "next_signed_at" in attributes:
+            self.next_signed_at = int(attributes["next_signed_at"]) if attributes["next_signed_at"] else None
+        if "next_submitted_at" in attributes:
+            self.next_submitted_at = int(attributes["next_submitted_at"]) if attributes["next_submitted_at"] else None
         if "next_fqdn" in attributes:
             self.next_fqdn = attributes["next_fqdn"]
         if "next_is_valid" in attributes:
             self.next_is_valid = attributes["next_is_valid"]
 
+        # do some back checks.
+        if self.next_csr is not None and self.next_csr_hash is None:
+            self.next_csr_hash = sha256_compact(unicode_to_bytes(self.next_csr))
         self.dirty = True
 
     @inlineCallbacks
@@ -275,8 +279,8 @@ class SSLCert(object):
         # if current is valid or will be expiring within the next 30 days, get a new cert
         if self.current_is_valid is not True or \
                 self.current_key is None or \
-                self.current_expires is None or \
-                int(self.current_expires) < int(time() + (86400*30)):
+                self.current_expires_at is None or \
+                int(self.current_expires_at) < int(time() + (86400*30)):
             if self.next_is_valid is True:
                 self.make_next_be_current()  # Migrate the next key to the current key.
             else:  # next is not valid
@@ -305,22 +309,20 @@ class SSLCert(object):
         self.current_cert = self.next_cert
         self.current_chain = self.next_chain
         self.current_key = self.next_key
-        self.current_key_crypt = crypto.load_privatekey(crypto.FILETYPE_PEM, self.current_key),
-        if isinstance(self.current_key_crypt, tuple):
-            self.current_key_crypt = self.current_key_crypt[0]
-        self.current_cert_crypt = crypto.load_certificate(crypto.FILETYPE_PEM, self.current_cert),
-        if isinstance(self.current_cert_crypt, tuple):
-            self.current_cert_crypt = self.current_cert_crypt[0]
-        self.current_chain_crypt = [crypto.load_certificate(crypto.FILETYPE_PEM, self.current_chain)],
-        if isinstance(self.current_chain_crypt, tuple):
-            self.current_chain_crypt = self.current_chain_crypt[0]
-        self.current_created = self.next_created
-        self.current_expires = self.next_expires
-        self.current_signed = self.next_signed
-        self.current_submitted = self.next_submitted
+        self.current_key_crypt = None,
+        self.current_cert_crypt = None,
+        self.current_chain_crypt = None,
+        # self.current_chain_crypt = [crypto.load_certificate(crypto.FILETYPE_PEM, self.current_chain)],
+        # if isinstance(self.current_chain_crypt, tuple):
+        #     self.current_chain_crypt = self.current_chain_crypt[0]
+        self.current_created_at = self.next_created_at
+        self.current_expires_at = self.next_expires_at
+        self.current_signed_at = self.next_signed_at
+        self.current_submitted_at = self.next_submitted_at
         self.current_fqdn = self.next_fqdn
         self.current_is_valid = self.next_is_valid
         self.clean_section("next")
+        self.set_crypto()
 
     def clean_section(self, label):
         """
@@ -338,10 +340,10 @@ class SSLCert(object):
         setattr(self, f"{label}_cert", None)
         setattr(self, f"{label}_chain", None)
         setattr(self, f"{label}_key", None)
-        setattr(self, f"{label}_created", None)
-        setattr(self, f"{label}_expires", None)
-        setattr(self, f"{label}_signed", None)
-        setattr(self, f"{label}_submitted", None)
+        setattr(self, f"{label}_created_at", None)
+        setattr(self, f"{label}_expires_at", None)
+        setattr(self, f"{label}_signed_at", None)
+        setattr(self, f"{label}_submitted_at", None)
         setattr(self, f"{label}_fqdn", None)
         setattr(self, f"{label}_is_valid", None)
 
@@ -386,9 +388,9 @@ class SSLCert(object):
             labels = [label]
 
         for label in labels:
-            if getattr(self, f"{label}_expires") is not None and \
-                    int(getattr(self, f"{label}_expires")) > int(time()) and \
-                    getattr(self, f"{label}_signed") is not None and \
+            if getattr(self, f"{label}_expires_at") is not None and \
+                    int(getattr(self, f"{label}_expires_at")) > int(time()) and \
+                    getattr(self, f"{label}_signed_at") is not None and \
                     getattr(self, f"{label}_key") is not None and \
                     getattr(self, f"{label}_cert") is not None and \
                     getattr(self, f"{label}_chain") is not None:
@@ -399,12 +401,12 @@ class SSLCert(object):
                     if getattr(self, f"{label}_key") is None or \
                             getattr(self, f"{label}_cert") is None or \
                             getattr(self, f"{label}_chain") is None or \
-                            getattr(self, f"{label}_created") is None:
+                            getattr(self, f"{label}_created_at") is None:
                         self.clean_section(label)
                 else:
                     if getattr(self, f"{label}_key") is None or \
                             getattr(self, f"{label}_csr") is None or \
-                            getattr(self, f"{label}_created") is None:
+                            getattr(self, f"{label}_created_at") is None:
                         self.clean_section(label)
 
         self.dirty = True
@@ -533,10 +535,10 @@ class SSLCert(object):
                     setattr(self, f"{label}_key", key)
                 setattr(self, f"{label}_status", return_int(meta["status"]))
                 setattr(self, f"{label}_status_msg", return_int(meta["status_msg"]))
-                setattr(self, f"{label}_expires", return_int(meta["expires"]))
-                setattr(self, f"{label}_created", return_int(meta["created"]))
-                setattr(self, f"{label}_signed", return_int(meta["signed"]))
-                setattr(self, f"{label}_submitted", return_int(meta["submitted"]))
+                setattr(self, f"{label}_expires_at", return_int(meta["expires_at"]))
+                setattr(self, f"{label}_created_at", return_int(meta["created_at"]))
+                setattr(self, f"{label}_signed_at", return_int(meta["signed_at"]))
+                setattr(self, f"{label}_submitted_at", return_int(meta["submitted_at"]))
                 setattr(self, f"{label}_fqdn", return_int(meta["fqdn"]))
 
                 self.check_is_valid(label)
@@ -566,10 +568,10 @@ class SSLCert(object):
             meta = {
                 "status": getattr(self, f"{label}_status"),
                 "status_msg": getattr(self, f"{label}_status_msg"),
-                "created": getattr(self, f"{label}_created"),
-                "expires": getattr(self, f"{label}_expires"),
-                "signed": getattr(self, f"{label}_signed"),
-                "submitted": getattr(self, f"{label}_submitted"),
+                "created_at": getattr(self, f"{label}_created_at"),
+                "expires_at": getattr(self, f"{label}_expires_at"),
+                "signed_at": getattr(self, f"{label}_signed_at"),
+                "submitted_at": getattr(self, f"{label}_submitted_at"),
                 "fqdn": getattr(self, f"{label}_fqdn"),
                 "key_type": self.key_type,
                 "key_size": self.key_size,
@@ -666,6 +668,7 @@ class SSLCert(object):
             "cn": self.cn,
             "sans": self.sans
         }
+        logger.debug("request_new_csr: request: {request}", request=request)
 
         if self.next_csr_generation_in_progress is True:  # don't run twice!
             if submit is True:  # but if previously, we weren't going to submit it, we will now if requested.
@@ -706,7 +709,7 @@ class SSLCert(object):
         # print("request_new_csr csr: %s " % self.next_csr)
         yield save_file(f"{self.working_dir}/etc/certs/{self.sslname}.next.csr.pem", self.next_csr)
         yield save_file(f"{self.working_dir}/etc/certs/{self.sslname}.next.key.pem", self.next_key)
-        self.next_created = int(time())
+        self.next_created_at = int(time())
         self.dirty = True
         self.next_csr_generation_in_progress = False
         if submit is True:
@@ -721,7 +724,6 @@ class SSLCert(object):
         if self._Parent._Loader.operating_mode != "run":
             return
 
-        # self.next_submitted = int(time())
         missing = []
         if self.next_csr is None:
             missing.append("CSR")
@@ -733,7 +735,7 @@ class SSLCert(object):
             request = self._Parent.send_csr_request(self.next_csr, self.sslname)
             logger.debug("Sending CSR Request from instance. Correlation id: {correlation_id}",
                          correlation_id=request["properties"]["correlation_id"])
-            self.next_submitted = int(time())
+            self.next_submitted_at = int(time())
         else:
             logger.warn("Requested to submit CSR, but these are missing: {missing}", missing=".".join(missing))
             raise YomboWarning("Unable to submit CSR.")
@@ -757,7 +759,8 @@ class SSLCert(object):
             return
         csr_hash = body["csr_hash"]
         if csr_hash != self.next_csr_hash:
-            logger.warn("Incoming TLS key hash is mismatched. Discarding. Have: {next_csr_hash}, received: {csr_hash}",
+            logger.warn("Incoming TLS (SSL) key hash is mismatched. Discarding. "
+                        "Have: {next_csr_hash}, received: {csr_hash}",
                         next_csr_hash=self.next_csr_hash, csr_hash=csr_hash)
             return
 
@@ -765,9 +768,9 @@ class SSLCert(object):
         self.next_status_msg = body["status_msg"]
         if body["status"] == "signed":
             self.next_chain = body["chain_text"]
-            self.next_cert = body["cert_text"]
-            self.next_signed = body["cert_signed"]
-            self.next_expires = body["cert_expires"]
+            self.next_cert = body["cert_signed"]
+            self.next_signed_at = body["cert_signed_at"]
+            self.next_expires_at = body["cert_expires_at"]
             self.next_is_valid = True
             self.dirty = True
             yield self.check_if_rotate_needed()  # this will rotate next into current
@@ -820,9 +823,9 @@ class SSLCert(object):
                 "cert_crypt": self.current_cert_crypt,
                 "chain": self.current_chain,
                 "chain_crypt": [self.current_chain_crypt],
-                "expires": self.current_expires,
-                "created": self.current_created,
-                "signed": self.current_signed,
+                "expires_at": self.current_expires_at,
+                "created_at": self.current_created_at,
+                "signed_at": self.current_signed_at,
                 "self_signed": False,
                 "cert_file": self._Parent._Atoms.get("working_dir") + f"/etc/certs/{self.sslname}.current.cert.pem",
                 "key_file": self._Parent._Atoms.get("working_dir") + f"/etc/certs/{self.sslname}.current.key.pem",
@@ -830,30 +833,10 @@ class SSLCert(object):
             }
         else:
             logger.debug("Sending SELF SIGNED cert details for {sslname}", sslname=self.sslname)
-            if self._Parent.self_signed_created is None:
+            if self._Parent.self_signed_created_at is None:
                 raise YomboWarning("Self signed cert not avail. Try restarting gateway.")
             else:
-                key_crypt = crypto.load_privatekey(crypto.FILETYPE_PEM, self._Parent.self_signed_key)
-                if isinstance(key_crypt, tuple):
-                    key_crypt = key_crypt[0]
-                cert_crypt = crypto.load_certificate(crypto.FILETYPE_PEM, self._Parent.self_signed_cert)
-                if isinstance(cert_crypt, tuple):
-                    cert_crypt = cert_crypt[0]
-                return {
-                    "key": self._Parent.self_signed_key,
-                    "cert": self._Parent.self_signed_cert,
-                    "chain": None,
-                    "key_crypt": key_crypt, ####
-                    "cert_crypt": cert_crypt,
-                    "chain_crypt": None,
-                    "expires": self._Parent.self_signed_expires,
-                    "created": self._Parent.self_signed_created,
-                    "signed": self._Parent.self_signed_created,
-                    "self_signed": True,
-                    "cert_file": self._Parent._Atoms.get("working_dir") + "/etc/certs/sslcert_selfsigned.cert.pem",
-                    "key_file": self._Parent._Atoms.get("working_dir") + "/etc/certs/sslcert_selfsigned.key.pem",
-                    "chain_file": None,
-                }
+                return self._Parent.get_self_signed()
 
     def asdict(self):
         """
@@ -876,22 +859,23 @@ class SSLCert(object):
             "current_cert": self.current_cert,
             "current_chain": self.current_chain,
             "current_key": self.current_key,
-            "current_created": None if self.current_created is None else int(self.current_created),
-            "current_expires": None if self.current_expires is None else int(self.current_expires),
-            "current_signed": self.current_signed,
-            "current_submitted": self.current_submitted,
+            "current_created_at": None if self.current_created_at is None else int(self.current_created_at),
+            "current_expires_at": None if self.current_expires_at is None else int(self.current_expires_at),
+            "current_signed_at": self.current_signed_at,
+            "current_submitted_at": self.current_submitted_at,
             "current_fqdn": self.current_fqdn,
             "current_is_valid": self.current_is_valid,
             "next_status": self.next_status,
             "next_status_msg": self.next_status_msg,
             "next_csr": self.next_csr,
+            "next_csr_hash": self.next_csr_hash,
             "next_cert": self.next_cert,
             "next_chain": self.next_chain,
             "next_key": self.next_key,
-            "next_created": None if self.next_created is None else int(self.next_created),
-            "next_expires": None if self.next_expires is None else int(self.next_expires),
-            "next_signed": self.next_signed,
-            "next_submitted": self.next_submitted,
+            "next_created_at": None if self.next_created_at is None else int(self.next_created_at),
+            "next_expires_at": None if self.next_expires_at is None else int(self.next_expires_at),
+            "next_signed_at": self.next_signed_at,
+            "next_submitted_at": self.next_submitted_at,
             "next_fqdn": self.next_fqdn,
             "next_is_valid": self.next_is_valid,
         }

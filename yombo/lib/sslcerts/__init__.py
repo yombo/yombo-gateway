@@ -13,7 +13,7 @@ This library utilizes hooks to request what certs needs to be managed. A library
 needs to return several things:
 
 * sslname (required) - String - The name of a file to expect to load a key from.
-* key_size (optional) - Int - Accepts a size of 2048 and 4096, default is 4096.
+* key_size (optional) - Int - Accepts a size of 2048 and 4096, default is 2048.
 * key_type (optional) - String - Either "rsa" or "dsa", default is rsa.
 * sans (optional) - List - A list of SAN (Subject Alternative Names)
 * type (optional) - String - Either "client" or "server". (not implemented)
@@ -104,13 +104,14 @@ class SSLCerts(YomboLibrary):
 
         self.self_signed_cert_file = self._Atoms.get("working_dir") + "/etc/certs/sslcert_selfsigned.cert.pem"
         self.self_signed_key_file = self._Atoms.get("working_dir") + "/etc/certs/sslcert_selfsigned.key.pem"
-        self.self_signed_expires = self._Configs.get("sslcerts", "self_signed_expires", None, False)
-        self.self_signed_created = self._Configs.get("sslcerts", "self_signed_created", None, False)
+        self.self_signed_expires_at = self._Configs.get("sslcerts", "self_signed_expires_at", None, False)
+        self.self_signed_created_at = self._Configs.get("sslcerts", "self_signed_created_at", None, False)
+        self.default_key_size = self._Configs.get("sslcerts", "default_key_size", 2048)
 
         if os.path.exists(self.self_signed_cert_file) is False or \
-                self.self_signed_expires is None or \
-                self.self_signed_expires < int(time() + (60*60*24*60)) or \
-                self.self_signed_created is None or \
+                self.self_signed_expires_at is None or \
+                self.self_signed_expires_at < int(time() + (60*60*24*60)) or \
+                self.self_signed_created_at is None or \
                 not os.path.exists(self.self_signed_key_file):
             logger.info("Generating a self signed cert for SSL. This can take a few moments.")
             yield self._create_self_signed_cert()
@@ -124,6 +125,9 @@ class SSLCerts(YomboLibrary):
             serializer=self.sslcert_serializer,
             unserializer=self.sslcert_unserializer
         )
+        # for key, item in self.managed_certs.items():
+
+            # print(f"Managed certs: {self.managed_certs}")
 
         self.check_if_certs_need_update_loop = None
 
@@ -188,6 +192,7 @@ class SSLCerts(YomboLibrary):
         :param item:
         :return:
         """
+        print(f"Unserialize sslcert: {item}")
         results = SSLCert(self, "sqldict", DictObject(item))
         yield results.start()
         return results
@@ -210,6 +215,7 @@ class SSLCerts(YomboLibrary):
         :param bypass_checks: For internal use only.
         :return: 
         """
+        logger.debug("add_sslcert: {ssl_data}", ssl_data=ssl_data)
         if self.local_gateway.dns_name is None:
             logger.warn("Unable to generate sign ssl/tls certs, gateway has no domain name.")
             return
@@ -247,21 +253,31 @@ class SSLCerts(YomboLibrary):
         else:
             if sslname_requested != "selfsigned":
                 logger.info("Could not find cert for '{sslname}', sending self signed. Library or module should implement _sslcerts_ with a callback method.", sslname=sslname_requested)
-            return {
-                "key": self.self_signed_key,
-                "cert": self.self_signed_cert,
-                "chain": None,
-                "key_crypt": crypto.load_privatekey(crypto.FILETYPE_PEM, self.self_signed_key),
-                "cert_crypt": crypto.load_certificate(crypto.FILETYPE_PEM, self.self_signed_cert),
-                "chain_crypt": None,
-                "expires": self.self_signed_expires,
-                "created": self.self_signed_created,
-                "signed": self.self_signed_created,
-                "self_signed": True,
-                "cert_file": self.self_signed_cert_file,
-                "key_file": self.self_signed_key_file,
-                "chain_file": None,
-            }
+            return self.get_self_signed()
+
+    def get_self_signed(self):
+        key_crypt = crypto.load_privatekey(crypto.FILETYPE_PEM, self.self_signed_key)
+        if isinstance(key_crypt, tuple):
+            key_crypt = key_crypt[0]
+        cert_crypt = crypto.load_certificate(crypto.FILETYPE_PEM, self.self_signed_cert)
+        if isinstance(cert_crypt, tuple):
+            cert_crypt = cert_crypt[0]
+
+        return {
+            "key": self.self_signed_key,
+            "cert": self.self_signed_cert,
+            "chain": None,
+            "key_crypt": key_crypt,
+            "cert_crypt": cert_crypt,
+            "chain_crypt": None,
+            "expires_at": self.self_signed_expires_at,
+            "created_at": self.self_signed_created_at,
+            "signed_at": self.self_signed_created_at,
+            "self_signed": True,
+            "cert_file": self.self_signed_cert_file,
+            "key_file": self.self_signed_key_file,
+            "chain_file": None,
+        }
 
     def check_csr_input(self, csr_request):
         results = {}
@@ -298,8 +314,15 @@ class SSLCerts(YomboLibrary):
         #     results["key_type"] = csr_request["key_type"]
         # else:
         #
+        if "key_size" in csr_request:
+            if csr_request["key_size"] < 2048:
+                csr_request["key_size"] = 2048
+            if csr_request["key_size"] > 4096:
+                csr_request["key_size"] = 4096
+        else:
+            csr_request["key_size"] = self.default_key_size
         results["key_type"] = "rsa"
-        results["key_size"] = 4096
+        results["key_size"] = csr_request["key_size"]
 
         if "csr_file" not in csr_request:
             csr_request["csr_file"] = None
@@ -350,14 +373,13 @@ class SSLCerts(YomboLibrary):
         else:
             kwargs["key_type"] = crypto.TYPE_DSA
 
-        gwid = "gw_" + self.gateway_id[0:10]
         req = crypto.X509Req()
         req.get_subject().CN = kwargs["cn"]
         req.get_subject().countryName = "US"
         req.get_subject().stateOrProvinceName = "California"
         req.get_subject().localityName = "Sacramento"
         req.get_subject().organizationName = "Yombo"
-        req.get_subject().organizationalUnitName = gwid
+        req.get_subject().organizationalUnitName = "Gateway " + self.gateway_id[0:15]
 
         # Appends SAN to have "DNS:"
         if kwargs["sans"] is not None:
@@ -402,23 +424,23 @@ class SSLCerts(YomboLibrary):
         """
         logger.debug("Creating self signed cert.")
         req = crypto.X509()
-        gwid = f"{self.gateway_id} {self.hostname}"
+
         req.get_subject().CN = "localhost"
         req.get_subject().countryName = "US"
         req.get_subject().stateOrProvinceName = "California"
-        req.get_subject().localityName = "Sacramento"
+        req.get_subject().localityName = "Self Signed"
         req.get_subject().organizationName = "Yombo"
-        req.get_subject().organizationalUnitName = gwid[0:63]
+        req.get_subject().organizationalUnitName = f"Gateway {self.gateway_id[0:15]} Self Signed"
 
         req.set_serial_number(int(time()))
         req.gmtime_adj_notBefore(0)
         req.gmtime_adj_notAfter(10 * 365 * 24 * 60 * 60)
-        self.self_signed_expires = time() + (10 * 365 * 24 * 60 * 60)
-        self.self_signed_created = time()
-        self._Configs.set("sslcerts", "self_signed_expires", self.self_signed_expires)
-        self._Configs.set("sslcerts", "self_signed_created", self.self_signed_created)
+        self.self_signed_expires_at = time() + (10 * 365 * 24 * 60 * 60)
+        self.self_signed_created_at = time()
+        self._Configs.set("sslcerts", "self_signed_expires_at", self.self_signed_expires_at)
+        self._Configs.set("sslcerts", "self_signed_created_at", self.self_signed_created_at)
         req.set_issuer(req.get_subject())
-        key = yield threads.deferToThread(self._generate_key, **{"key_type": crypto.TYPE_RSA, "key_size": 4096})
+        key = yield threads.deferToThread(self._generate_key, **{"key_type": crypto.TYPE_RSA, "key_size": self.default_key_size})
         req.set_pubkey(key)
         req.sign(key, "sha256")
 
@@ -486,6 +508,8 @@ class SSLCerts(YomboLibrary):
         :param kwargs:
         :return:
         """
+        # print(f"sslcerts: amqp_incoming: {body}")
+        # print(f"sslcerts: amqp_incoming: {headers}")
         request_type = headers["request_type"]
         kwargs["headers"] = headers
         kwargs["body"] = body
