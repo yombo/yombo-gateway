@@ -26,7 +26,7 @@ class YomboException(Exception):
     def __init__(self, errors=None, errorno=1, name="unknown", component="component", meta=None):
         """
         :param errors: List of errors with additional details. Can be used by others to format more detailed responses.
-        :type errors: list
+        :type errors: list, str
         :param errorno: The error number to log/display.
         :type errorno: int
         :param name: Name of the library, component, or module rasing the exception.
@@ -104,7 +104,7 @@ class YomboWarning(YomboException):
         Setup the YomboWarning and then pass everying to YomboException
         
         :param errors: List of errors with additional details. Can be used by others to format more detailed responses.
-        :type errors: list
+        :type errors: list, str
         :param errorno: The error number to log/display.
         :type errorno: int
         :param name: Name of the library, component, or module rasing the exception.
