@@ -47,7 +47,7 @@ from twisted.internet.defer import inlineCallbacks, Deferred, maybeDeferred
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import percentage, random_string, random_int, bytes_to_unicode, global_invoke_all
+from yombo.utils import percentage, random_string, random_int, bytes_to_unicode, global_invoke_all, sleep
 from yombo.constants import CONTENT_TYPE_JSON, CONTENT_TYPE_MSGPACK, CONTENT_TYPE_TEXT_PLAIN
 
 # Handlers for processing various messages.
@@ -110,7 +110,9 @@ class AMQPYombo(YomboLibrary):
         self.send_local_information_loop = None  # used to periodically send yombo servers updated information
 
         self.connected = False
+        self.init_deferred = Deferred()
         self.connect()
+        return self.init_deferred
 
     @inlineCallbacks
     def _load_(self, **kwargs):
@@ -134,6 +136,8 @@ class AMQPYombo(YomboLibrary):
         self.controlHandler._stop_()
         self.systemHandler._stop_()
         self.disconnect()  # will be cleaned up by amqp library anyways, but it's good to be nice.
+        if self.init_deferred is not None and self.init_deferred.called is False:
+            self.init_deferred.callback(1)  # if we don't check for this, we can't stop!
 
     def _unload_(self, **kwargs):
         self.amqp.disconnect()
@@ -206,6 +210,7 @@ class AMQPYombo(YomboLibrary):
 
         logger.debug("Disconnected from Yombo message server.")
 
+    @inlineCallbacks
     def amqp_connected(self):
         """
         Called by AQMP when connected. This function was define above when setting up self.ampq.
@@ -220,8 +225,12 @@ class AMQPYombo(YomboLibrary):
             self.send_local_information_loop = LoopingCall(self.send_local_information)
 
         # Sends various information, helps Yombo cloud know we are alive and where to find us.
+        self.send_local_information(full=True)
+        yield sleep(1)
+        self.init_deferred.callback(1)
+
         if self.send_local_information_loop.running is False:
-            self.send_local_information_loop.start(random_int(60 * 60 * 4, .2))
+            self.send_local_information_loop.start(random_int(60 * 60 * 4, .2), False)
 
     def amqp_disconnected(self):
         """
@@ -284,7 +293,7 @@ class AMQPYombo(YomboLibrary):
         }
         if full is True:
             body["is_master"] = self.is_master()
-            body["master_gateway"] = self.master_gateway_id()
+            body["master_gateway_id"] = self.master_gateway_id()
 
             # logger.info("sending local information: {body}", body=body)
 
@@ -372,8 +381,8 @@ class AMQPYombo(YomboLibrary):
                             received_message_meta=None, sent_message_meta=None,
                             subscription_callback=None, **kwargs):
 
-        logger.debug("Received incoming message: {headers}", body=headers)
-        logger.debug("Received incoming message: {body}", body=body)
+        # logger.info("Received incoming message: {headers}", body=headers)
+        # logger.info("Received incoming message: {body}", body=body)
         ## Valiate that we have the required headers
         if "message_type" not in headers:
             raise YomboWarning("Discarding request message, header 'message_type' is missing.")
@@ -405,10 +414,10 @@ class AMQPYombo(YomboLibrary):
 
         # Lastly, send it to the callback defined by the hooks returned.
         else:
-            # print("amqp_incoming..correlation info: %s" % correlation_info)
             routing = headers["gateway_routing"]
-            # print("amqp_incoming..routing to amqpyombo_options callback: %s" % routing)
-            # print("amqp_incoming...details: %s" % self.amqpyombo_options['routing'])
+            # print("amqp_incoming..correlation info: %s" % correlation_info)
+            # print(f"amqp_incoming..routing to amqpyombo_options callback: {routing}")
+            # print(f"amqp_incoming...details: {self.amqpyombo_options['routing']}")
             if routing in self.amqpyombo_options["routing"]:
                 for the_callback in self.amqpyombo_options["routing"][routing]:
                     # print("about to call callback: %s" % the_callback)
