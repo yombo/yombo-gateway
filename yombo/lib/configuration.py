@@ -508,6 +508,8 @@ class Configuration(YomboLibrary):
                                         data = yield self._GPG.encrypt(data)
                                     except YomboWarning as e:
                                         logger.info("Tried to encrypt a yombo.ini value, but gpg not ready. Saving cleartext.")
+                                    except AttributeError:
+                                        pass
 
                     i18n_label = _(f"config::config_item::{section}::{item}", "Well Mr Hippo, that didn't work. Now what?")
                     if i18n_label != "Well Mr Hippo, that didn't work. Now what?":
