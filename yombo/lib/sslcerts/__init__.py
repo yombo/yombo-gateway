@@ -192,7 +192,6 @@ class SSLCerts(YomboLibrary):
         :param item:
         :return:
         """
-        print(f"Unserialize sslcert: {item}")
         results = SSLCert(self, "sqldict", DictObject(item))
         yield results.start()
         return results
