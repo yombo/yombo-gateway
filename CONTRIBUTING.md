@@ -11,7 +11,8 @@ add support for new device protocols.
 or update [developer documentation](https://yombo.net/docs/gateway/html/current/index.html).
 
 * Fork the Yombo [git repository](https://github.com/yombo/yombo-gateway).
-* Kill a bug, implement new feature, update documentation, etc.
+* [Kill a bug](https://github.com/yombo/yombo-gateway/issues), implement new feature,
+  update documentation, etc.
 * Ensure tests work.
 * Read [How to get faster pull-request reviews](https://yombo.net/docs/developer/pull_requests)
 * Create a Pull Request against the [**develop**](https://github.com/yombo/yombo-gateway/tree/develop)
