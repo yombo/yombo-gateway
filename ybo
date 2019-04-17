@@ -49,7 +49,10 @@ COMMANDS:
   motd      Show MOTD / URL status
   urls      Show URLs to access Yombo Gateway
   version   Show version
-
+  ---- Cleanup commands, be careful! ----
+  removeini     Removes the ini file
+  removesql     Removes the database
+  removesqlini  Removes database and ini file
 
 OPTIONS:
   -debug [items]     Turn on debug mode.
@@ -95,6 +98,22 @@ function start_shell {
     # Run a shell command
 
     eval $RUN_SHELL $ARGUMENTS
+}
+
+function remove_ini {
+    # Wipe the yombo configs
+    rm $WORK_DIR/yombo.ini
+    rm $WORK_DIR/etc/yombo.ini.info
+}
+
+function remove_sql {
+    # Wipe the yombo configs
+    rm $WORK_DIR/etc/yombo.sqlite3
+}
+
+function remove_sql_ini {
+    remove_ini
+    remove_sql
 }
 
 function start_gateway {
@@ -166,6 +185,7 @@ SHOW_STATUS=false
 TACFILE="$SCRIPTPATH/yombo.tac"
 RUN_SHELL=
 ARGUMENTS=
+WORKING_DIR=$HOME/.yombo
 
 if [ $# -lt 1 ]; then
   usage
@@ -221,6 +241,18 @@ while true; do
       echo "Yombo version: $VERSION"
       exit 0
       ;;
+    "removeini")
+      RUN="remove_ini"
+      shift
+      ;;
+    "removesql")
+      RUN="remove_sql"
+      shift
+      ;;
+    "removesqlini")
+      RUN="remove_sql_ini"
+      shift
+      ;;
     "-debug" )
       ARGUMENTS="$ARGUMENTS -debug"
       if [[ "$2" != "" ]]; then
@@ -259,6 +291,7 @@ while true; do
       # Set data storage directory
       shift
       ARGUMENTS="$ARGUMENTS -w $1"
+      WORKING_DIR=$1
       shift
       ;;
     \?)
