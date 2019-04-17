@@ -45,7 +45,8 @@ class WebServer:
                 port_attempts = 0
                 while port_attempts < 100:
                     try:
-                        self.web_interface_listener = reactor.listenTCP(self.wi_port_nonsecure()+port_attempts, self.web_factory)
+                        self.web_interface_listener = reactor.listenTCP(self.wi_port_nonsecure()+port_attempts,
+                                                                        self.web_factory)
                         break
                     except Exception as e:
                         port_attempts += 1
@@ -60,35 +61,38 @@ class WebServer:
         if self.web_server_ssl_started is False:
             if self.wi_port_secure() == 0:
                 logger.warn("Secure port has been disabled. With gateway stopped, edit yomobo.ini and change: webinterface->secure_port")
-            else:
-                self.web_server_ssl_started = True
-                cert = self._SSLCerts.get("lib_webinterface")
+                return
 
-                if cert["key_crypt"] is None or cert["cert_crypt"] is None:
-                    logger.warn("Unable to start secure web interface, cert is not valid.")
-                else:
-                    contextFactory = ssl.CertificateOptions(privateKey=cert["key_crypt"],
-                                                            certificate=cert["cert_crypt"],
-                                                            extraCertChain=cert["chain_crypt"])
-                    port_attempts = 0
-                    # print("########### WEBINTER: about to start SSL port listener")
+            self.web_server_ssl_started = True
+            cert = self._SSLCerts.get("lib_webinterface")
 
-                    while port_attempts < 100:
-                        try:
-                            # print("about to start ssl listener on port: %s" % self.wi_port_secure())
-                            self.web_interface_ssl_listener = reactor.listenSSL(self.wi_port_secure()+port_attempts, self.web_factory,
-                                                                                contextFactory)
-                            break
-                        except Exception as e:
-                            logger.warn(f"Unable to start secure web server: {e}", e=e)
-                            port_attempts += 1
-                    if port_attempts >= 100:
-                        logger.warn("Unable to start secure web server, no available port could be found. Tried: {starting} - {ending}",
-                                    starting=self.wi_port_secure(), ending=self.wi_port_secure()+port_attempts)
-                    elif port_attempts > 0:
-                        self._Configs.set("webinterface", "secure_port", self.wi_port_secure()+port_attempts)
-                        logger.warn(
-                            "Secure (tls/ssl) web interface is on a new port: {new_port}", new_port=self.wi_port_secure()+port_attempts)
+            if cert["key_crypt"] is None or cert["cert_crypt"] is None:
+                logger.warn("Unable to start secure web interface, cert is not valid.")
+                return
+
+            contextFactory = ssl.CertificateOptions(privateKey=cert["key_crypt"],
+                                                    certificate=cert["cert_crypt"],
+                                                    extraCertChain=cert["chain_crypt"])
+            port_attempts = 0
+            # print("########### WEBINTER: about to start SSL port listener")
+
+            while port_attempts < 100:
+                try:
+                    # print("about to start ssl listener on port: %s" % self.wi_port_secure())
+                    self.web_interface_ssl_listener = reactor.listenSSL(self.wi_port_secure()+port_attempts,
+                                                                        self.web_factory,
+                                                                        contextFactory)
+                    break
+                except Exception as e:
+                    logger.warn(f"Unable to start secure web server: {e}", e=e)
+                    port_attempts += 1
+            if port_attempts >= 100:
+                logger.warn("Unable to start secure web server, no available port could be found. Tried: {starting} - {ending}",
+                            starting=self.wi_port_secure(), ending=self.wi_port_secure()+port_attempts)
+            elif port_attempts > 0:
+                self._Configs.set("webinterface", "secure_port", self.wi_port_secure()+port_attempts)
+                logger.warn(
+                    "Secure (tls/ssl) web interface is on a new port: {new_port}", new_port=self.wi_port_secure()+port_attempts)
 
         logger.debug("done starting web servers")
         self.already_starting_web_servers = False
@@ -130,7 +134,7 @@ class WebServer:
             return
         cert = {}
         cert["sslname"] = "lib_webinterface"
-        cert["sans"] = ["localhost", "l", "local", "i", "e", "internal", "external", str(int(time()))]
+        cert["sans"] = ["internal", "external", "local", str(int(time()))]
         cert["cn"] = cert["sans"][0]
         cert["update_callback"] = self.new_ssl_cert
         return cert
