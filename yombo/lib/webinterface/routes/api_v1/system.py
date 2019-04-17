@@ -26,7 +26,6 @@ def route_api_v1_system(webapp):
             request.setHeader("Access-Control-Allow-Origin", "*")
             return webinterface.render_api(request, None,
                                            data_type="system_awake",
-                                           id=int(webinterface._Atoms["running_since"]),
                                            attributes={"id": int(webinterface._Atoms["running_since"])},
                                            )
 
@@ -38,17 +37,10 @@ def route_api_v1_system(webapp):
                 return webinterface.render_api_error(request, session, response_code=403)
             print(type(webinterface._Gateways.local_id))
             print(type(os.path.getsize(f"{webinterface.working_dir}/etc/yombo.sqlite3")))
-            if has_access is False:
-                return webinterface.render_api(request, session,
-                                               data_type="backup_info",
-                                               id=webinterface._Gateways.local_id,
-                                               attributes={"access": False},
-                                               )
-
             return webinterface.render_api(request, session,
                                            data_type="backup_info",
-                                           id=webinterface._Gateways.local_id,
                                            attributes={
+                                               "id": webinterface._Gateways.local_id,
                                                "access": True,
                                                "db_size":
                                                    os.path.getsize(f"{webinterface.working_dir}/etc/yombo.sqlite3"),
@@ -62,7 +54,8 @@ def route_api_v1_system(webapp):
             if session.has_access("system_options", "*", "backup") is False:
                 return webinterface.render_api_error(request, session, response_code=403)
             gateway = webinterface._Gateways.local
-            attributes = {**gateway.asdict(), **{
+            attributes = {**gateway.asdict(),
+                          **{
                              "gateway_id": str(webinterface._Gateways.local_id),
                              "operating_mode": str(webinterface._Loader.operating_mode)
                             }
@@ -71,9 +64,9 @@ def route_api_v1_system(webapp):
             attributes["running_since"] = int(webinterface._Atoms["running_since"])
             attributes["uptime"] = int(time() - attributes["running_since"])
             attributes["version"] = VERSION
+            attributes["id"] = gateway.gateway_id
             return webinterface.render_api(request, session,
                                            data_type="system_info",
-                                           id=gateway.gateway_id,
                                            attributes=attributes,
                                            )
 
@@ -110,6 +103,7 @@ def route_api_v1_system(webapp):
             return webinterface.render_api(request, session,
                                            data_type="system_uptime",
                                            attributes={
+                                               "id": str(webinterface._Atoms["running_since"]),
                                                "start_time": str(webinterface._Atoms["running_since"])
                                                }
                                            )

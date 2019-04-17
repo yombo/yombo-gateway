@@ -34,8 +34,8 @@ def route_api_v1_mqtt(webapp):
             page = webinterface.webapp.templates.get_template(webinterface.wi_dir + "/pages/mqtt/log.html")
             return webinterface.render_api(request, session,
                                            data_type="backup_info",
-                                           id=webinterface._Gateways.local_id,
-                                           attributes={"log": webinterface._GatewayComs.log_incoming},
+                                           attributes={"id": webinterface._Gateways.local_id,
+                                                       "log": webinterface._GatewayComs.log_incoming},
                                            )
 
         @webapp.route("/log_outgoing")
@@ -51,11 +51,11 @@ def route_api_v1_mqtt(webapp):
             """
             if session.has_access("system_options", "*", "mqtt") is False:
                 return webinterface.render_api_error(request, session, response_code=403)
-            page = webinterface.webapp.templates.get_template(webinterface.wi_dir + "/pages/mqtt/log.html")
+            # page = webinterface.webapp.templates.get_template(webinterface.wi_dir + "/pages/mqtt/log.html")
             return webinterface.render_api(request, session,
                                            data_type="backup_info",
-                                           id=webinterface._Gateways.local_id,
-                                           attributes={"log": webinterface._GatewayComs.log_incoming},
+                                           attributes={"id": webinterface._Gateways.local_id,
+                                                       "log": webinterface._GatewayComs.log_incoming},
                                            )
 
         @webapp.route("/publish")

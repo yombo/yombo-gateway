@@ -70,6 +70,7 @@ from yombo.lib.webinterface.routes.api_v1.webinterface_logs import route_api_v1_
 
 from yombo.lib.webinterface.routes.home import route_home
 from yombo.lib.webinterface.routes.misc import route_misc
+from yombo.lib.webinterface.routes.system import route_system
 from yombo.lib.webinterface.routes.user import route_user
 from yombo.lib.webinterface.constants import NAV_SIDE_MENU, DEFAULT_NODE, NOTIFICATION_PRIORITY_MAP_CSS
 
@@ -154,6 +155,7 @@ class WebInterface(BuildDistribution, ErrorHandler, Render, YomboLibrary, WebSer
         # Load web server routes
         route_home(self.webapp)
         route_misc(self.webapp)
+        route_system(self.webapp)
         route_user(self.webapp)
         if self.operating_mode != "run":
             from yombo.lib.webinterface.routes.restore import route_restore

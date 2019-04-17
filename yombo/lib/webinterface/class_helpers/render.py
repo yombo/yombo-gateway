@@ -17,6 +17,7 @@ import zlib
 
 # Import Yombo libraries
 from yombo.constants import CONTENT_TYPE_JSON
+from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
 from yombo.lib.webinterface.routes.api_v1 import args_to_dict
 from yombo.utils import random_string, sha256_compact
@@ -100,30 +101,41 @@ class Render:
         # print(f"webinterface render {kwargs}")
         return template.render(**kwargs)
 
-    def render_api(self, request, session, data_type, id=None, attributes=None, meta=None, included=None,
+    def render_api(self, request, session, data_type, attributes=None, meta=None, included=None,
                    response_code=None):
         """
         Renders content to an API based client.
         :param request:
         :param session:
         :param data_type:
-        :param id:
-        :param attributes:
+        :param attributes: A dictionary or list of dictionaries
         :param meta:
         :param included:
         :param response_code:
         :return:
         """
-        if id is None:
-            id = random_string(length=20)
         if attributes is None:
-            attributes = {}
+            raise YomboWarning("Attributes is required for rendering to API.")
 
-        response = {
-            "type": data_type,
-            "id": id,
-            "attributes": attributes,
-        }
+        response = {}
+
+        if isinstance(attributes, list):
+            response["data"] = []
+            for item in attributes:
+                response["data"].append({
+                    "type": data_type,
+                    "id": item["id"],
+                    "attributes": item,
+                })
+        elif isinstance(attributes, dict):
+            response["data"] = {
+                "type": data_type,
+                "id": attributes["id"],
+                "attributes": attributes,
+            }
+        else:
+            raise YomboWarning("Attributes must be a dictionary or list of dictionaries.")
+
         if included is not None:
             response["included"] = included
         if meta is not None:
