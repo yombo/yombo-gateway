@@ -25,7 +25,6 @@
     <link href="/css/basic_app.min.css" rel="stylesheet">
     {% block head_css %}{% endblock %}
 	{% block head_bottom %}{% endblock %}
-    <link rel="preload" href="/sw.js" as="script">
     {%- if nuxtpreload is defined %}
        {%- for nuxtjs in nuxtpreload %}
          <link rel="preload" href="/_nuxt/{{nuxtjs[1]}}" as="script">
@@ -33,7 +32,11 @@
     {%- endif %}
    </head>
    <body>
-   {% set alerts = get_alerts(session) %}
+   {% if variable is defined %}
+       {% set alerts = get_alerts(session) %}
+   {% else %}
+       {% set alerts = {} %}
+   {% endif %}
    {%- if alerts|length != 0 %}
        <div class="alert-messages" style="z-index: 999;">
        {%- for key, alert in alerts.items() %}
