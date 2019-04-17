@@ -2,7 +2,7 @@ import axios from 'axios'
 
 export default() => {
     return axios.create({
-        baseURL: `https://mydev.yombo.net/api/v1/`,
+        baseURL: `https://api.yombo.net/api/v1/`,
         withCredentials: true,
         headers: {
             'Accept': 'application/json',

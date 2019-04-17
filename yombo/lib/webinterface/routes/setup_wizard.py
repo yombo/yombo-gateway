@@ -481,7 +481,7 @@ def route_setup_wizard(webapp):
                     authorization_header=auth_header)
             except YomboWarning as e:
                 response = e.meta
-                webinterface._Configs.set("dns", "dns_name", None)
+                webinterface._Configs.set("dns", "dname", None)
                 webinterface._Configs.set("dns", "dns_domain", None)
                 webinterface._Configs.set("dns", "dns_domain_id", None)
                 webinterface._Configs.set("dns", "allow_change_at", 0)

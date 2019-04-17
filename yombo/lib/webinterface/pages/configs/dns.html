@@ -44,8 +44,8 @@
                 <p>
                     <ul>
                         <li>{{_('ui::misc::current_fqdn', 'Current FQDN')}}: {{ dns_configs.fqdn|hide_none }}</li>
-                        <li>{{_('ui::misc::current_sub_domain', 'Current Sub-domain')}}: {{ dns_configs.dns_name|hide_none }}</li>
-                        <li>{{_('ui::misc::current_top_level_domain', 'Current Domain')}}: {{ dns_configs.dns_domain|hide_none }}</li>
+                        <li>{{_('ui::misc::current_sub_domain', 'Current Sub-domain')}}: {{ dns_configs.name|hide_none }}</li>
+                        <li>{{_('ui::misc::current_top_level_domain', 'Current Domain')}}: {{ dns_configs.domain|hide_none }}</li>
                         <li>{{_('ui::misc::allowed_next_change', 'Allowed next change')}}: {{ dns_configs.allow_change_at|epoch_to_string|hide_none
                             }}</li>
                     </ul>
@@ -76,8 +76,8 @@
                                 abuse of the domain name system.</p>
                         </div>') }}
                     <div class="input-group">
-                        <input type="hidden" name="dns_domain_id" />
-                        <input type="text" name="dns_name" id="dnsname" autofocus="autofocus" value="{{ dns_configs.dns_name||hide_none }}">
+                        <input type="hidden" name="domain_id" />
+                        <input type="text" name="dns_name" id="dnsname" autofocus="autofocus" value="{{ dns_configs.name||hide_none }}">
                         &nbsp;<a class="btn btn-success" id="fire" href="#">Search</a>
 
                         <table id="myTableId" class="table table-nonfluid table-striped table-hover table-sm">

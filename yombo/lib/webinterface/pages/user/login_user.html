@@ -7,7 +7,7 @@
 {% if autoredirect == 1 %}
 <script type="application/javascript">
     function loginForm() {
-        document.myform.action = "https://mydev.yombo.net/gateway/login/redirect";
+        document.myform.action = "https://my.yombo.net/gateway/login/redirect";
         // console.log("loginForm")
         document.myform.submit();
     }
@@ -48,7 +48,7 @@
                     Gateway: {{ misc_wi_data.gateway_label() }} {{ active_page }}
                 </div>
                 <div class="card-body text-center" style="padding-top: 3em;">
-                    <form action="https://mydev.yombo.net/gateway/login/redirect" id="myform" name="myform" method="post">
+                    <form action="https://my.yombo.net/gateway/login/redirect" id="myform" name="myform" method="post">
                         <input type="hidden" name="request_id" value="{{ request_id }}">
                         <input type="hidden" name="gateway_id" value="{{ gateway_id }}">
                         <input type="hidden" name="secure" value="{{ secure }}">

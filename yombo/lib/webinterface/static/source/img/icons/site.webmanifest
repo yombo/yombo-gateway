@@ -1,6 +1,6 @@
 {
-    "name": "",
-    "short_name": "",
+    "name": "Yombo",
+    "short_name": "YomboShort",
     "icons": [
         {
             "src": "/img/icons/android-chrome-192x192.png",
