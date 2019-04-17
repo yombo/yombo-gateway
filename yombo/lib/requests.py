@@ -155,7 +155,10 @@ class WebResponse(object):
         content = raw_content
         headers = self.clean_headers(response, True)
 
-        content_type = headers[HEADER_CONTENT_TYPE][0]
+        if HEADER_CONTENT_TYPE in headers:
+            content_type = headers[HEADER_CONTENT_TYPE][0]
+        else:
+            content_type = None
         if content_type == HEADER_CONTENT_TYPE:
             try:
                 content = yield treq.json_content(response)
@@ -206,10 +209,7 @@ class WebResponse(object):
         all_headers = CaseInsensitiveDict()
         raw_headers = bytes_to_unicode(response.headers._rawHeaders)
         for key, value in raw_headers.items():
-            all_headers[key.lower()] = value
+            all_headers[key.lower()] = value[0]
         if update_response is not False:
             response.all_headers = all_headers
         return all_headers
-
-
-
