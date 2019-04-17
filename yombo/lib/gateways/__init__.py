@@ -299,18 +299,6 @@ class Gateways(YomboLibrary, LibrarySearch):
         except Exception as e:
             pass
 
-        if gateway["id"] == self.gateway_id():
-            self._Configs.set("core", "is_master", gateway["is_master"])
-            self._Configs.set("core", "master_gateway_id", gateway["master_gateway_id"])
-            self._Configs.set("core", "created_at", gateway["created_at"])
-            self._Configs.set("core", "updated_at", gateway["updated_at"])
-            self._Configs.set("core", "machine_label", gateway["label"])
-            self._Configs.set("core", "label", gateway["label"])
-            self._Configs.set("core", "description", gateway["description"])
-            self._Configs.set("core", "owner_id", gateway["user_id"])
-            self._Configs.set("core", "owner_id", gateway["user_id"])
-            self._Configs.set("dns", "fqdn", gateway["dns_name"])
-
     @deprecated(deprecated_in="0.21.0", removed_in="0.25.0",
                 current_version=VERSION,
                 details="Use the 'local' property instead.")
