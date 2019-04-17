@@ -11,16 +11,13 @@ generate thumbs, load images from disk/buffer, auto detect image type, etc.
 :license: LICENSE for details.
 """
 import io
-import os.path
 from PIL import Image as PILImage
-from time import time
 
 from twisted.internet import threads
-from twisted.internet.defer import inlineCallbacks, Deferred
+from twisted.internet.defer import inlineCallbacks
 
 from yombo.classes.image import Image
 from yombo.core.exceptions import YomboWarning
-from yombo.utils import mime_type_from_buffer, read_file
 from yombo.utils.filehelper import FileHelper
 
 IMAGE_BMP = "image/bmp"
