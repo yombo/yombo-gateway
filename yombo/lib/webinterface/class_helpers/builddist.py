@@ -179,7 +179,7 @@ class BuildDistribution:
         CAT_SCRIPTS = [
             "source/bootstrap4/css/bootstrap.min.css",
             "source/bootstrap-select/css/bootstrap-select.min.css",
-            "source/yombo/bootstrap4-toggle.min.css",
+            "source/bootstrap4-toggle/bootstrap4-toggle.min.css",
             "source/yombo/yombo.css",
             "source/yombo/mappicker.css",
         ]
@@ -205,6 +205,7 @@ class BuildDistribution:
             "source/bootstrap4/js/bootstrap.bundle.min.js",
             "source/bootstrap-select/js/bootstrap-select.min.js",
             "source/yombo/jquery.are-you-sure.js",
+            "source/bootstrap4-toggle/bootstrap4-toggle.min.js",
             "source/yombo/yombo.js",
         ]
         CAT_SCRIPTS_OUT = "js/basic_app.js"
