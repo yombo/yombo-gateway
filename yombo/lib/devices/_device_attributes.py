@@ -420,30 +420,30 @@ class Device_Attributes(MagicAttributesMixin):
             self.test_device = test_device
 
         memory_sizing = {
-            "x_small": {"other_device_commands": 2,  #less then 512mb
-                        "other_status_history": 2,
-                        "local_device_commands": 5,
-                        "local_status_history": 5},
-            "small": {"other_device_commands": 5,  #About 1024mb
-                      "other_status_history": 5,
-                      "local_device_commands": 25,
-                      "local_status_history": 25},
-            "medium": {"other_device_commands": 25,  # About 2048mb
-                       "other_status_history": 25,
-                       "local_device_commands": 75,
-                       "local_status_history": 75},
-            "large": {"other_device_commands": 50,  # About 4096mb
-                      "other_status_history": 50,
-                      "local_device_commands": 125,
-                      "local_status_history": 125},
-            "x_large": {"other_device_commands": 100,  # About 8192mb
-                        "other_status_history": 100,
-                        "local_device_commands": 250,
-                        "local_status_history": 250},
-            "xx_large": {"other_device_commands": 200,  # More than 8192mb
-                         "other_status_history": 200,
-                         "local_device_commands": 500,
-                         "local_status_history": 500},
+            "x_small": {"other_device_commands": 5,  #less then 512mb
+                        "other_status_history": 5,
+                        "local_device_commands": 10,
+                        "local_status_history": 10},
+            "small": {"other_device_commands": 15,  #About 1024mb
+                      "other_status_history": 15,
+                      "local_device_commands": 40,
+                      "local_status_history": 40},
+            "medium": {"other_device_commands": 40,  # About 1536mb
+                       "other_status_history": 40,
+                       "local_device_commands": 80,
+                       "local_status_history": 80},
+            "large": {"other_device_commands": 75,  # About 2048mb
+                      "other_status_history": 75,
+                      "local_device_commands": 150,
+                      "local_status_history": 150},
+            "x_large": {"other_device_commands": 150,  # About 4096mb
+                        "other_status_history": 150,
+                        "local_device_commands": 300,
+                        "local_status_history": 300},
+            "xx_large": {"other_device_commands": 300,  # More than 4096mb
+                         "other_status_history": 300,
+                         "local_device_commands": 600,
+                         "local_status_history": 600},
         }
 
         sizes = memory_sizing[self._Parent._Atoms["mem.sizing"]]
