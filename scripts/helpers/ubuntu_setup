@@ -31,21 +31,61 @@ if [ "$(id -u)" -ne 0 ]; then
   exit
 fi
 
+if [ "$1" != "vagrant" ]; then
+    echo "This will install various requirements to run Yombo Gateway."
+    echo ""
+    echo "This will also perform the following tasks:"
+    echo "1) Install dependencies through apt-get"
+    echo "2) Install pyenv or update pyenv"
+    echo "3) Install the latest python 3.7.x into pyenv"
+    echo "4) Update system pip3 installer to latest version."
+    echo "5) Download and compile mosquitto and libwebsockets."
+    echo "6) Setup apt to use NPM version 10."
+    echo ""
+    echo "This will take a while due to compiling the needed requirements."
+    echo ""
+    while true; do
+        read -p "Do you wish to complete this? (y/n): " yn
+        case $yn in
+            [Yy]* ) break;;
+            [Nn]* ) exit;;
+            * ) echo "Please answer y (yes) or n (no).";;
+        esac
+    done
+
+    echo ""
+
+    secs=$((5))
+    while [ $secs -gt 0 ]; do
+       echo -ne "Will continue in $secs.  Ctrl-c to abort.\033[0K\r"
+       sleep 1
+       : $((secs--))
+    done
+fi
+
 YOMBO_SCRIPT_HELPER_DIR="$( cd "$(dirname "$0")" ; pwd -P )"
 YOMBO_SCRIPT_DIR="$(dirname $YOMBO_SCRIPT_HELPER_DIR)"
 YOMBO_ROOT_DIR="$(dirname $YOMBO_SCRIPT_DIR)"
 
+touch /home/$SUDO_USER/yombo_setup.log
+chown $SUDO_USER:$SUDO_USER /home/$SUDO_USER/yombo_setup.log
+
+touch /home/$SUDO_USER/yombo_setup_detailed.log
+chown $SUDO_USER:$SUDO_USER /home/$SUDO_USER/yombo_setup_detailed.log
+
 LOGFILE=/home/$SUDO_USER/yombo_setup.log
+LOGFILEDETAILED=/home/$SUDO_USER/yombo_setup_detailed.log
 echo ""
 echo "The log file for these changes will be available at: $LOGFILE";
+echo "Detailed logs can be found: $LOGFILEDETAILED";
+echo ""
+echo "You can monitor the details log from another terminal: tail -f $LOGFILEDETAILED"
 echo ""
 function logsetup {
 #    TMP=$(tail -n $RETAIN_NUM_LINES $LOGFILE 2>/dev/null) && echo "${TMP}" > $LOGFILE
-    exec > >(tee -a $LOGFILE)
+    exec > >(tee -a $LOGFILE $LOGFILEDETAILED)
     exec 2>&1
 }
-
-chown $SUDO_USER:$SUDO_USER /home/$SUDO_USER/yombo_setup.log
 
 function log {
     echo "[$(date --rfc-3339=seconds)]: $*"
@@ -60,42 +100,48 @@ if [[ $(sudo lsof /var/lib/dpkg/lock 2>/dev/null) ]]; then
     exit
 fi
 
-log "==> Configuring apt for NPM version 10."
+log "==> Installing curl and wget."
 
-wget https://deb.nodesource.com/setup_10.x -O - | sudo -E bash - > /dev/null 2>&1
+apt-get install wget curl -y >> $LOGFILEDETAILED 2>&1
 
-log "==> Upgrading os (apt upgrade), this can take a few minutes."
+log "==> Configuring apt for NodeJS to use version 10."
 
-apt upgrade -y > /dev/null 2>&1
+wget https://deb.nodesource.com/setup_10.x -O - | sudo -E bash - >> $LOGFILEDETAILED 2>&1
 
-log "==> Installing required dependencies"
+log "==> Upgrading OS (apt-get upgrade)."
+sudo apt-mark hold keyboard-configuration >> $LOGFILEDETAILED 2>&1
+sudo apt-mark hold grub-pc >> $LOGFILEDETAILED 2>&1
+apt-get upgrade -y >> $LOGFILEDETAILED 2>&1
+sudo apt-mark unhold keyboard-configuration >> $LOGFILEDETAILED 2>&1
+sudo apt-mark hold grub-pc >> $LOGFILEDETAILED 2>&1
 
-apt install make libudev-dev g++ libssl-dev zlib1g-dev libbz2-dev \
+log "==> Installing required dependencies (apt-get install). This will take a while."
+
+apt-get install make libudev-dev g++ libssl-dev zlib1g-dev libbz2-dev \
 libreadline6-dev libreadline6-dev libreadline-dev libsqlite3-dev libexpat1-dev \
 liblzma-dev python python-dev python3-dev gnupg2 rng-tools build-essential cmake \
 git python3-setuptools python3-pip python-pip libyaml-dev libncurses5 expect \
-libncurses5-dev libncursesw5 libncursesw5-dev xz-utils curl wget llvm tk-dev \
+libncurses5-dev libncursesw5 libncursesw5-dev xz-utils llvm tk-dev \
 libbluetooth-dev mosquitto libmosquitto-dev libcurl4-openssl-dev libc-ares-dev \
 uuid-dev daemon quilt dirmngr libavahi-compat-libdnssd-dev libbluetooth3 \
-libboost-thread-dev libglib2.0 ntp libcairo2-dev libpython2.7-dev sqlite3 -y
+libboost-thread-dev libglib2.0 ntp libcairo2-dev libpython2.7-dev sqlite3 -y >> $LOGFILEDETAILED 2>&1
 
 log "==> Installing nodejs and npm."
-apt install nodejs -y 2>&1
-apt install avahi-daemon -y 2>&1
+apt-get install nodejs -y >> $LOGFILEDETAILED 2>&1
+apt-get install avahi-daemon -y >> $LOGFILEDETAILED 2>&1
 
 log "==> Installing homebridge incase it's going to be used later"
-npm install -g --unsafe-perm mdns > /dev/null 2>&1
-npm install -g --unsafe-perm homebridge > /dev/null 2>&1
+npm install -g --unsafe-perm mdns >> $LOGFILEDETAILED 2>&1
+npm install -g --unsafe-perm homebridge >> $LOGFILEDETAILED 2>&1
 
 log "==> Upgrading system pip3"
-pip3 install --upgrade pip > /dev/null 2>&1
-pip3 install netifaces > /dev/null 2>&1
+pip3 install --upgrade pip >> $LOGFILEDETAILED 2>&1
 
 log "==> Adding correct user to dialout for serial/USB port access."
-sudo usermod -a -G dialout $SUDO_USER  > /dev/null 2>&1
+sudo usermod -a -G dialout $SUDO_USER  >> $LOGFILEDETAILED 2>&1
 
 log "==> Installing mosquitto."
-sudo apt-mark hold mosquitto
+sudo apt-mark hold mosquitto >> $LOGFILEDETAILED 2>&1
 
 cd /etc/mosquitto
 sudo mkdir yombo
@@ -113,27 +159,31 @@ sudo chown $SUDO_USER yombo
 cd yombo
 
 cd /usr/local/src/yombo
-git clone https://github.com/jpmens/mosquitto-auth-plug.git &
-git clone https://github.com/eclipse/mosquitto.git &
-git clone https://github.com/warmcat/libwebsockets.git
+log "==> Downloading Mosquitto (MQTT) Source files."
+git clone https://github.com/jpmens/mosquitto-auth-plug.git & >> $LOGFILEDETAILED 2>&1
+git clone https://github.com/eclipse/mosquitto.git & >> $LOGFILEDETAILED 2>&1
+git clone https://github.com/warmcat/libwebsockets.git >> $LOGFILEDETAILED 2>&1
 log "==> Compiling libsockets."
 cd libwebsockets
 mkdir build
 cd build
-cmake ..
-make
-make install
+log "==> Configuring Mosquitto build"
+cmake .. >> $LOGFILEDETAILED 2>&1
+log "==> Compiling Mosquitto, give this a few moments."
+make >> $LOGFILEDETAILED 2>&1
+make install >> $LOGFILEDETAILED 2>&1
 ldconfig
 
 log "==> Compiling mosquitto auth plugin."
 cd /usr/local/src/yombo/mosquitto-auth-plug
-wget -O config.mk https://get.yombo.net/pibakery_files/mosquitto-auth.mk
-make
+wget -O config.mk https://get.yombo.net/pibakery_files/mosquitto-auth.mk >> $LOGFILEDETAILED 2>&1
+make >> $LOGFILEDETAILED 2>&1
 
 log "==> Compiling mosquitto."
 cd /usr/local/src/yombo/mosquitto
-make binary WITH_WEBSOCKETS=yes WITH_DOCS=no CFLAGS=-I/usr/local/include/
-make install WITH_WEBSOCKETS=yes WITH_DOCS=no CFLAGS=-I/usr/local/include/
+make binary WITH_WEBSOCKETS=yes WITH_DOCS=no CFLAGS=-I/usr/local/include/ >> $LOGFILEDETAILED 2>&1
+log "==> Installing mosquitto."
+make install WITH_WEBSOCKETS=yes WITH_DOCS=no CFLAGS=-I/usr/local/include/ >> $LOGFILEDETAILED 2>&1
 
 log "==> Installing bin links to /etc/usr/local/bin"
 ln -s $YOMBO_ROOT_DIR/ybo /usr/local/bin/ybo
@@ -141,7 +191,7 @@ ln -s $YOMBO_ROOT_DIR/ybo-config /usr/local/bin/ybo-config
 
 log "==> Setting up systemctl service"
 cd /etc/systemd/system/
-wget --quiet -O yombo.service https://get.yombo.net/debian_files/service-systemd
+wget --quiet -O yombo.service https://get.yombo.net/debian_files/service-systemd >> $LOGFILEDETAILED 2>&1
 sudo chmod 755 yombo.service
 
 log "==> Setting up additional sudoers configs"

@@ -17,17 +17,7 @@ YOMBO_ROOT_DIR="$(dirname $YOMBO_SCRIPT_DIR)"
 
 cd /home/$USER/.pyenv && git pull
 
-cd "$YOMBO_ROOT_DIR"
-
-pip3 install --upgrade pip
-
-CORECOUNT=$(grep -c ^processor /proc/cpuinfo)
-CORECOUNT=$(($CORECOUNT + 1))
-
-MAKE_OPTS="-j$CORECOUNT" pyenv install 3.7.3 -s
-
-git pull
-pip3 install --upgrade -r requirements.txt
-
 cd "$YOMBO_ROOT_DIR"/frontend
-npm update
+npm install
+npm run build
+"bash $YOMBO_SCRIPT_DIR/helpers/pyenv_setup"

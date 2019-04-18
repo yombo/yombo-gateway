@@ -41,15 +41,50 @@ YOMBO_SCRIPT_HELPER_DIR="$( cd "$(dirname "$0")" ; pwd -P )"
 YOMBO_SCRIPT_DIR="$(dirname $YOMBO_SCRIPT_HELPER_DIR)"
 YOMBO_ROOT_DIR="$(dirname $YOMBO_SCRIPT_DIR)"
 
-apt-get update >> /dev/null
-apt-get upgrade -y
+touch /home/$SUDO_USER/yombo_setup.log
+chown $SUDO_USER:$SUDO_USER /home/$SUDO_USER/yombo_setup.log
 
-sudo npm update
+touch /home/$SUDO_USER/yombo_setup_detailed.log
+chown $SUDO_USER:$SUDO_USER /home/$SUDO_USER/yombo_setup_detailed.log
 
-sudo pip3 install --upgrade pip
+LOGFILE=/home/$SUDO_USER/yombo_setup.log
+LOGFILEDETAILED=/home/$SUDO_USER/yombo_setup_detailed.log
+echo ""
+echo "The log file for these changes will be available at: $LOGFILE";
+echo "Detailed logs can be found: $LOGFILEDETAILED";
+echo ""
+echo "You can monitor the details log from another terminal: tail -f $LOGFILEDETAILED"
+echo ""
+function logsetup {
+#    TMP=$(tail -n $RETAIN_NUM_LINES $LOGFILE 2>/dev/null) && echo "${TMP}" > $LOGFILE
+    exec > >(tee -a $LOGFILE $LOGFILEDETAILED)
+    exec 2>&1
+}
 
+function log {
+    echo "[$(date --rfc-3339=seconds)]: $*"
+}
+logsetup
+
+log "==> Running apt-get update"
+
+apt-get update >> $LOGFILEDETAILED 2>&1
+
+log "==> Running apt-get upgrade"
+sudo apt-mark hold keyboard-configuration >> $LOGFILEDETAILED 2>&1
+sudo apt-mark hold grub-pc >> $LOGFILEDETAILED 2>&1
+apt-get upgrade -y >> $LOGFILEDETAILED 2>&1
+sudo apt-mark unhold keyboard-configuration >> $LOGFILEDETAILED 2>&1
+sudo apt-mark hold grub-pc >> $LOGFILEDETAILED 2>&1
+
+log "==> Updating npm and pip3"
+sudo npm update >> $LOGFILEDETAILED 2>&1
+
+sudo pip3 install --upgrade pip >> $LOGFILEDETAILED 2>&1
+
+log "==> Checking Mosquitto and its dependencies"
 cd /usr/local/src/yombo/libwebsockets
-git remote update
+git remote update >> $LOGFILEDETAILED 2>&1
 UPSTREAM=${1:-'@{u}'}
 LOCAL=$(git rev-parse @)
 REMOTE=$(git rev-parse "$UPSTREAM")
@@ -57,46 +92,48 @@ BASE=$(git merge-base @ "$UPSTREAM")
 
 if [ $LOCAL = $REMOTE ]; then
     LIBWEBSOCKETSUPDATED=no
-    echo "libwebsockets is current, skipping"
+    log "==> libsockets is current, skipping."
 elif [ $LOCAL = $BASE ]; then
-    echo "libwebsockets is behind, updating.."
+    log "==> libwebsockets is behind, updating.."
+echo ""
     LIBWEBSOCKETSUPDATED=yes
-    git pull
+    git pull >> $LOGFILEDETAILED 2>&1
     cd build
-    make clean
-    cmake ..
-    sudo make install
-    sudo ldconfig
+    make clean >> $LOGFILEDETAILED 2>&1
+    cmake .. >> $LOGFILEDETAILED 2>&1
+    sudo make install >> $LOGFILEDETAILED 2>&1
+    sudo ldconfig >> $LOGFILEDETAILED 2>&1
 fi
 
 cd /usr/local/src/yombo/mosquitto-auth-plug
-git remote update
+git remote update >> $LOGFILEDETAILED 2>&1
 UPSTREAM=${1:-'@{u}'}
 LOCAL=$(git rev-parse @)
 REMOTE=$(git rev-parse "$UPSTREAM")
 BASE=$(git merge-base @ "$UPSTREAM")
 
 if [ $LOCAL = $REMOTE ]; then
-    echo "Mosquitto auth is current, skipping"
+    log "==> Mosquitto auth plugin is current, updating.."
 elif [ $LOCAL = $BASE ]; then
-    git pull
-    make clean
-    make
+    log "==> Mosquitto auth plugin is behind, updating.."
+    git pull >> $LOGFILEDETAILED 2>&1
+    make clean >> $LOGFILEDETAILED 2>&1
+    make >> $LOGFILEDETAILED 2>&1
 fi
 
 cd /usr/local/src/yombo/mosquitto
-git remote update
+git remote update >> $LOGFILEDETAILED 2>&1
 UPSTREAM=${1:-'@{u}'}
 LOCAL=$(git rev-parse @)
 REMOTE=$(git rev-parse "$UPSTREAM")
 BASE=$(git merge-base @ "$UPSTREAM")
 
 if [ $LOCAL = $REMOTE ] && [ $LIBWEBSOCKETSUPDATED = "no" ]; then
-    echo "libwebsockets is current, skipping"
+    log "==> Mosquitto, and it's dependants are current, skipping."
 elif [ $LOCAL = $BASE ] || [ $LIBWEBSOCKETSUPDATED = "yes" ]; then
-    echo "mosquitto is behind, or it's dependants were, updating mosquitto.."
-    git pull
-    make clean
-    make binary WITH_WEBSOCKETS=yes WITH_DOCS=no CFLAGS=-I/usr/local/include/
-    sudo make install WITH_WEBSOCKETS=yes WITH_DOCS=no CFLAGS=-I/usr/local/include/
+    log "==> Mosquitto is behind, or one of it's dependants were, updating mosquitto.."
+    git pull >> $LOGFILEDETAILED 2>&1
+    make clean >> $LOGFILEDETAILED 2>&1
+    make binary WITH_WEBSOCKETS=yes WITH_DOCS=no CFLAGS=-I/usr/local/include/ >> $LOGFILEDETAILED 2>&1
+    sudo make install WITH_WEBSOCKETS=yes WITH_DOCS=no CFLAGS=-I/usr/local/include/ >> $LOGFILEDETAILED 2>&1
 fi

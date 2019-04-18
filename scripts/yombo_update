@@ -26,19 +26,6 @@ YOMBO_SCRIPT_DIR="$( cd "$(dirname "$0")" ; pwd -P )"
 YOMBO_ROOT_DIR="$(dirname $YOMBO_SCRIPT_DIR)"
 cd "$YOMBO_SCRIPT_DIR"
 
-usage()
-{
-cat << EOF
-usage: $0 options
-
-This script is a wrapper around various platform updaters.
-
-OPTIONS:
-   -x  Force x86_64 based system (Intel/AMD)
-   -a  Force arm based system (Raspberry PI, etc)
-EOF
-}
-
 # Determine OS platform
 if [ -f /etc/os-release ]; then
     # freedesktop.org and systemd
@@ -86,12 +73,20 @@ else
     exit
 fi
 
-echo "Detected: $OS -> $VER"
+echo
+echo "###########################################"
+echo "Detected OS: $OS -> $VER"
+echo "###########################################"
+echo "If this is incorrect, exit the setup and"
+echo "manually start one of the setup scripts"
+echo "from the helpers directory."
+echo "###########################################"
+echo
 
 if [[ "$OS" == "Debian" ]]; then
-    $YOMBO_SCRIPT_DIR/helpers/debian_update
-    sudo runuser -l $SUDO_USER -c "bash -i $YOMBO_SCRIPT_DIR/helpers/debian_update_user"
+    $YOMBO_SCRIPT_DIR/helpers/debian_update $1
+    sudo runuser -l $SUDO_USER -c "bash $YOMBO_SCRIPT_DIR/helpers/debian_update_user"
 elif [[ "$OS" == "Ubuntu" ]]; then
-    $YOMBO_SCRIPT_DIR/helpers/ubuntu_update
-    sudo runuser -l $SUDO_USER -c "bash -i $YOMBO_SCRIPT_DIR/helpers/ubuntu_update_user"
+    $YOMBO_SCRIPT_DIR/helpers/ubuntu_update $1
+    sudo runuser -l $SUDO_USER -c "bash $YOMBO_SCRIPT_DIR/helpers/ubuntu_update_user"
 fi
