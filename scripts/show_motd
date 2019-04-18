@@ -59,7 +59,7 @@ parser.add_argument('-w', nargs='?', help='Set working directory')
 args = parser.parse_args()
 
 if args.w is None:
-    data_path = "%s/.yombo" % os.path.expanduser("~")
+    data_path = f"{os.path.expanduser('~')}/.yombo"
 else:
     data_path = args.w
 data_path_exists = os.path.isdir(data_path)
@@ -71,7 +71,7 @@ import yombo.constants as constants
 git_hash = subprocess.check_output(["git", "-C", program_path, "rev-parse", "--short", "HEAD"]).strip()
 git_branch = subprocess.check_output(["git", "-C", program_path, "rev-parse", "--abbrev-ref", "HEAD"]).strip()
 
-yombo_version = "%s -- %s:%s" % (constants.VERSION, git_branch.decode("utf-8"), git_hash.decode("utf-8"))
+yombo_version = f"{constants.VERSION} -- {git_branch.decode('utf-8')}:{git_hash.decode('utf-8')}"
 
 internal_hostnames = []
 interfaces = netifaces.interfaces()
@@ -90,12 +90,12 @@ yombo_ini = 'Not configured'
 if data_path_exists is True:
     try:
         config_parser = configparser.ConfigParser()
-        config_parser.read('%s/yombo.ini' % data_path)
+        config_parser.read(f"{data_path}/yombo.ini")
         yombo_ini = "Valid"
-        dns_fqdn = config_parser.get('dns', 'fqdn', fallback="None")
-        external_ip = config_parser.get('core', 'externalipaddress_v4', fallback="None")
-        nonsecure_port = config_parser.get('webinterface', 'nonsecure_port', fallback=8080)
-        secure_port = config_parser.get('webinterface', 'secure_port', fallback=8443)
+        dns_fqdn = config_parser.get("dns", "fqdn", fallback="None")
+        external_ip = config_parser.get("core", "externalipaddress_v4", fallback="None")
+        nonsecure_port = config_parser.get("webinterface", "nonsecure_port", fallback=8080)
+        secure_port = config_parser.get("webinterface", "secure_port", fallback=8443)
     except IOError as e:
         pass
     except configparser.NoSectionError:
@@ -108,38 +108,38 @@ else:
 
 
 if dns_fqdn != "None":
-    local = "http://127.0.0.1:%s" % nonsecure_port
-    internal = ["http://i.%s:%s" % (dns_fqdn, nonsecure_port)]
-    external = "https://e.%s:%s" % (dns_fqdn, secure_port)
-    globaluri = "http://%s" % dns_fqdn
+    local = "fhttp://127.0.0.1:{nonsecure_port}"
+    internal = [f"http://internal.{dns_fqdn}:{nonsecure_port}"]
+    external = f"https://external.{dns_fqdn}:{secure_port}"
+    globaluri = f"http://{dns_fqdn}"
 else:
-    local = "http://127.0.0.1:%s" % nonsecure_port
+    local = "fhttp://127.0.0.1:{nonsecure_port}"
     internal = []
     for hostname in internal_hostnames:
-        internal.append("http://%s:%s" % (hostname, nonsecure_port))
+        internal.append(f"http://{hostname}:{nonsecure_port}")
     external = "Not available"
     globaluri = "Not available"
 
 data_yombo = OrderedDict()
 data_system = OrderedDict()
-data_system['Hostname'] = str(platform.node())
-data_yombo['yombo.ini'] = yombo_ini
-data_yombo['Yombo Version'] = yombo_version
-data_yombo['FQDN'] = dns_fqdn
-data_yombo['From anywhere'] = globaluri
-data_yombo['Local'] = local
-data_yombo['External'] = external
+data_system["Hostname"] = str(platform.node())
+data_yombo["yombo.ini"] = yombo_ini
+data_yombo["Yombo Version"] = yombo_version
+data_yombo["FQDN"] = dns_fqdn
+data_yombo["From anywhere"] = globaluri
+data_yombo["Local"] = local
+data_yombo["External"] = external
 for i in range(len(internal)):
     if len(internal) == 1:
         data_yombo[f"Internal"] = internal[i];
     else:
         data_yombo[f"Internal {i}"] = internal[i];
 
-with open('/proc/uptime', 'r') as f:
+with open("/proc/uptime", "r") as f:
     uptime_seconds = float(f.readline().split()[0])
     uptime = timedelta(seconds=uptime_seconds)
-data_system['Uptime'] = "%s days, %s hours, %s minutes" % (uptime.days, uptime.seconds//3600, uptime.seconds//60)
-data_system['Kernel'] = platform.release()
+data_system["Uptime"] = f"{uptime.days} days, {uptime.seconds//3600} hours, {uptime.seconds//60} minutes"
+data_system["Kernel"] = platform.release()
 
 command = "grep -c ^processor /proc/cpuinfo"
 cores = subprocess.check_output(command, shell=True).strip().decode()
@@ -151,58 +151,59 @@ for line in all_info.split(b"\n"):
     if b"model name" in line:
         cpu_model = re.sub(b".*model name.*:", b"", line, 1).decode("utf-8").strip()
         break
-data_system['CPU'] = f"{cores} x {cpu_model}"
+data_system["CPU"] = f"{cores} x {cpu_model}"
 
 if data_path_exists is True:
     df = subprocess.Popen(["df", "-h", data_path], stdout=subprocess.PIPE)
     output = df.communicate()[0].decode("utf-8")
     device, size, used, available, percent, mountpoint = \
         output.split("\n")[1].split()
-    data_system['Disk'] = "%s / %s" % (used, available)
+    data_system["Disk"] = f"{used} / {available}"
 else:
-    data_system['Disk'] = "Data directory not found"
+    data_system["Disk"] = "Data directory not found"
 
 version = sys.version_info
-data_system['Python'] = f"{version.major}.{version.minor}.{version.micro} ({version.releaselevel})"
+data_system["Python"] = f"{version.major}.{version.minor}.{version.micro} ({version.releaselevel})"
 # Now convert the dict to a list.
 data_formatted = [
-    '',
-    '',
-    '%sYombo Access URLS and details%s' % (CBU.WHITE, CB.DONE),
+    "",
+    "",
+    f"{CBU.WHITE}Yombo Access URLS and details{CB.DONE}",
 ]
-for key, value in data_yombo.items():
-    data_formatted.append("%s%s%s: %s" % (CB.RED, key, CB.DONE, value))
 
-data_formatted.append('')
-data_formatted.append('%sSystem details%s' % (CBU.WHITE, CB.DONE))
+for key, value in data_yombo.items():
+    data_formatted.append(f"{CB.RED}{key}{CB.DONE}: {value}")
+
+data_formatted.append("")
+data_formatted.append(f"{CBU.WHITE}System details{CB.DONE}")
 for key, value in data_system.items():
-    data_formatted.append("%s%s%s: %s" % (CB.RED, key, CB.DONE, value))
+    data_formatted.append(f"{CB.RED}{key}{CB.DONE}: {value}")
 
 logo = [
-'%sYombo Gateway%s Learn more at: https://yombo.net' % (CB.BLUE, CB.DONE),
-'                      ',
-' YYYYYYY       YYYYYYY',
-' Y:::::Y       Y:::::Y',
-' Y:::::Y       Y:::::Y',
-' Y::::::Y     Y::::::Y',
-' YYY:::::Y   Y:::::YYY',
-'    Y:::::Y Y:::::Y   ',
-'     Y:::::Y:::::Y    ',
-'      Y:::::::::Y     ',
-'       Y:::::::Y      ',
-'        Y:::::Y       ',
-'        Y:::::Y       ',
-'        Y:::::Y       ',
-'        Y:::::Y       ',
-'     YYYY:::::YYYY    ',
-'     Y:::::::::::Y    ',
-'     YYYYYYYYYYYYY    ',
-'                      ',
+f"{CB.BLUE}Yombo Gateway{CB.DONE} Learn more at: https://yombo.net",
+"                      ",
+" YYYYYYY       YYYYYYY",
+" Y:::::Y       Y:::::Y",
+" Y:::::Y       Y:::::Y",
+" Y::::::Y     Y::::::Y",
+" YYY:::::Y   Y:::::YYY",
+"    Y:::::Y Y:::::Y   ",
+"     Y:::::Y:::::Y    ",
+"      Y:::::::::Y     ",
+"       Y:::::::Y      ",
+"        Y:::::Y       ",
+"        Y:::::Y       ",
+"        Y:::::Y       ",
+"        Y:::::Y       ",
+"     YYYY:::::YYYY    ",
+"     Y:::::::::::Y    ",
+"     YYYYYYYYYYYYY    ",
+"                      ",
 ]
 
 for logo_idx, logo_elem in enumerate(logo):
     try:
-        print("%s  %s" % (logo_elem, data_formatted[logo_idx]))
+        print(f"{logo_elem}  {data_formatted[logo_idx]}")
     except IndexError:
-        print("%s" % logo_elem)
+        print(f"{logo_elem}")
 
