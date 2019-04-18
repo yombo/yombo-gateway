@@ -73,6 +73,7 @@ Examples:
 
 Additional Yombo Tools:
   ybo-config - Configure Yombo Gateway service for '$REALUSER'
+  ./virtualization/vagrant - Contains provision.sh to setup VirtualBox instance
 
 EOF
 }
