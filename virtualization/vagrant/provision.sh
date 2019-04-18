@@ -101,10 +101,12 @@ setup() {
 
     touch /home/vagrant/.yombo
     chown vagrant:vagrant /home/vagrant/.yombo
-    touch /home/vagrant/yombo_setup.log
-    chown vagrant:vagrant /home/vagrant/yombo_setup.log
+#    touch /home/vagrant/yombo_setup.log
+#    chown vagrant:vagrant /home/vagrant/yombo_setup.log
+#    touch /home/vagrant/yombo_setup_detailed.log
+#    chown vagrant:vagrant /home/vagrant/yombo_setup_detailed.log
 
-    /yombo-gateway/scripts/helpers/ubuntu_setup
+    /yombo-gateway/scripts/helpers/ubuntu_setup vagrant
     runuser -l vagrant -c "bash -i /yombo-gateway/scripts/helpers/pyenv_setup"
     if ! [ -f $systemd_bin_path ]; then
         ln -s $ygw_path $systemd_bin_path
@@ -118,9 +120,6 @@ setup() {
 #    systemctl stop yombo-gateway
     # Install packages
     touch $SETUP_DONE
-    whoami
-    pwd
-    hostname
     usage
     ybo motd
 }
@@ -130,8 +129,8 @@ main() {
     # with the provider script...
     case $1 in
         "setup") rm -f setup_done; setup_start; vagrant up --provision; exit ;;
-        "restart") touch restart; vagrant provision ; exit ;;
-        "start") vagrant up --provision ; exit ;;
+        "restart") vagrant halt ; vagrant resume ; exit ;;
+        "start") vagrant resume ; guest_status ; exit ;;
         "stop") vagrant halt ; exit ;;
         "destroy") vagrant destroy -f ; exit ;;
         "recreate") setup_start; rm -f setup_done restart; vagrant destroy -f; \

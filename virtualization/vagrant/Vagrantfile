@@ -33,7 +33,7 @@ Vagrant.configure(2) do |config|
     override.vm.hostname = "contrib-ubuntu1804"
     h.vmname = "yombo_gateway1804"
     h.cpus = $systemCPU
-    h.memory = 1536
-    h.maxmemory = 1536
+    h.memory = 1024
+    h.maxmemory = 1024
   end
 end
