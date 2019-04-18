@@ -45,6 +45,7 @@ yombo/frontend-*
 ###########
 virtualization/vagrant/.vagrant
 virtualization/vagrant/working_dir
+virtualization/vagrant/*
 
 # Building / Documentation #
 ############################
@@ -151,7 +152,6 @@ yombo/frontend/.idea
 
 # Service worker
 yombo/frontend/sw.*
-
 
 # Project Tools #
 #################
