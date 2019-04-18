@@ -76,7 +76,7 @@ class BuildDistribution:
             env=environ.copy(),
             errortoo=True,
         )
-        # print(f"NPM Build results: {results}")
+        print(f"NPM Build results: {results}")
 
     @inlineCallbacks
     def build_frontend(self, environemnt=None):
@@ -94,7 +94,7 @@ class BuildDistribution:
             logger.warn("Cannot build frontend : already building...")
             return
         start_time = time()
-        # print("!!!!!!! Build frontend starting")
+        print("!!!!!!! Build frontend starting")
         self.frontend_building = True
         yield self.frontend_npm_run()
         self.frontend_building = False
@@ -122,7 +122,7 @@ class BuildDistribution:
         if "index" not in self.file_cache:
             self.file_cache["index"] = {}
         self.file_cache["index"]["data"] = yield read_file(f"{self.working_dir}/frontend/index.html")
-        self.file_cache["index"]["headers"] = {"Cache-Control": f"max-age=120",
+        self.file_cache["index"]["headers"] = {"Cache-Control": f"max-age=7200",
                                                "Content-Type": "text/html"}
         if "sw.js" not in self.file_cache:
             self.file_cache["sw.js"] = {}
