@@ -73,7 +73,9 @@ git_branch = subprocess.check_output(["git", "-C", program_path, "rev-parse", "-
 
 yombo_version = f"{constants.VERSION} -- {git_branch.decode('utf-8')}:{git_hash.decode('utf-8')}"
 
-internal_hostnames = []
+internal_hostnames = []  # might get adulterated later.
+ip_addresses = []
+
 interfaces = netifaces.interfaces()
 for i in interfaces:
     if i == 'lo' or i.startswith('vir'):
@@ -81,6 +83,7 @@ for i in interfaces:
     iface = netifaces.ifaddresses(i).get(netifaces.AF_INET)
     if iface != None:
         internal_hostnames.append(str(iface[0]['addr']))
+        ip_addresses.append(str(iface[0]['addr']))
         # break
 
 if len(internal_hostnames) == 0:
@@ -108,7 +111,7 @@ else:
 
 
 if dns_fqdn != "None":
-    local = "fhttp://127.0.0.1:{nonsecure_port}"
+    local = f"http://127.0.0.1:{nonsecure_port}"
     internal = [f"http://internal.{dns_fqdn}:{nonsecure_port}"]
     external = f"https://external.{dns_fqdn}:{secure_port}"
     globaluri = f"http://{dns_fqdn}"
@@ -166,8 +169,8 @@ version = sys.version_info
 data_system["Python"] = f"{version.major}.{version.minor}.{version.micro} ({version.releaselevel})"
 # Now convert the dict to a list.
 data_formatted = [
-    "",
-    "",
+    # "",
+    # "",
     f"{CBU.WHITE}Yombo Access URLS and details{CB.DONE}",
 ]
 
@@ -179,9 +182,14 @@ data_formatted.append(f"{CBU.WHITE}System details{CB.DONE}")
 for key, value in data_system.items():
     data_formatted.append(f"{CB.RED}{key}{CB.DONE}: {value}")
 
+for ip in ip_addresses:
+    data_formatted.append(f"{CB.RED}IP Address{CB.DONE}: {ip}")
+
+print("")
+print(f"{CB.BLUE}Yombo Gateway{CB.DONE} Learn more at: https://yombo.net")
+print("")
+
 logo = [
-f"{CB.BLUE}Yombo Gateway{CB.DONE} Learn more at: https://yombo.net",
-"                      ",
 " YYYYYYY       YYYYYYY",
 " Y:::::Y       Y:::::Y",
 " Y:::::Y       Y:::::Y",
@@ -198,8 +206,15 @@ f"{CB.BLUE}Yombo Gateway{CB.DONE} Learn more at: https://yombo.net",
 "     YYYY:::::YYYY    ",
 "     Y:::::::::::Y    ",
 "     YYYYYYYYYYYYY    ",
-"                      ",
 ]
+
+data_len = len(data_formatted)
+
+while data_len > len(logo):
+    if len(logo) % 2 == 1:
+        logo.insert(0, "                      ")
+    else:
+        logo.append("                      ")
 
 for logo_idx, logo_elem in enumerate(logo):
     try:

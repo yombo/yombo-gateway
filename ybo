@@ -47,7 +47,6 @@ COMMANDS:
   stop      Stop Yombo gateway
   status    Show the status of the Yombo service
   motd      Show MOTD / URL status
-  urls      Show URLs to access Yombo Gateway
   version   Show version
   ---- Cleanup commands, be careful! ----
   removeini     Removes the ini file
@@ -228,12 +227,6 @@ while true; do
       ;;
     "stop")
       RUN="stop_gateway"
-      shift
-      ;;
-    "urls")
-      # Show yombo urls
-      RUN="start_shell"
-      RUN_SHELL="$SCRIPTPATH/scripts/show_urls"
       shift
       ;;
     "version")
