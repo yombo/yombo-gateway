@@ -142,14 +142,6 @@ class AuthMixin(YomboBaseMixin):
     def auth_id(self, val):
         self._set_auth_id(val)
 
-    @property
-    def auth_id_long(self):
-        return self._auth_id
-
-    @auth_id_long.setter
-    def auth_id_long(self, val):
-        pass
-
     def _set_auth_id(self, val):
         self._auth_id = val
 
