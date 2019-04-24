@@ -4,7 +4,7 @@
 export default function(context) {
   console.log(context)
 
-  const paths = ['/user/logout']
+  const paths = ['/user/logout', '/system/restart'];
 
   if (paths.includes(context.route.fullPath)) {
     console.log("should logout.....");
