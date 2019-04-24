@@ -71,7 +71,6 @@ def run_first(create_session=None, *args, **kwargs):
             host = request.getHeader("host")
             hostname = request.getRequestHostname().decode('utf-8')
 
-            # print(f"auth: request.getRequestHostname(): {request.getRequestHostname()}")
             if host is None:
                 logger.info("Discarding request, appears to be malformed host header")
                 return return_need_login(webinterface, request, None,
@@ -130,14 +129,10 @@ def require_auth(roles=None, login_redirect=None, access_platform=None, access_i
     :param kwargs:
     :return:
     """
-    def call(f, *args, **kwargs):
-        return f(*args, **kwargs)
-
     def deco(f):
         @wraps(f)
         @inlineCallbacks
         def wrapped_f(webinterface, request, *a, **kw):
-            # print(f"require_auth: f: {f}")
             update_request(webinterface, request)
 
             host = request.getHeader("host")
@@ -184,27 +179,21 @@ def require_auth(roles=None, login_redirect=None, access_platform=None, access_i
                     # if isinstance(results, bool) is False:
                     #     return results
             else:
-                # print("auth get session: web request")
                 try:
                     session = yield webinterface._WebSessions.get_session_from_request(request)
                 except YomboWarning as e:
                     session = webinterface._WebSessions.create_from_web_request(request)
                     # print(f"require_auth: created new session: {session.asdict()}")
                     setup_login_redirect(webinterface, request, session, login_redirect)
-                    logger.debug("Discarding request, api requests not accepted: {e}", e=e)
+                    logger.info("Discarding request, api requests not accepted: {e}", e=e)
                     logger.debug("Request: {request}", request=request)
                     return return_need_login(webinterface, request, None,
                                              api_message=f"Discarding request, api requests not accepted: {e}",
                                              **kwargs)
 
-            # print(f"auth hh. session: {session}")
             # Now validate if the session is any good.
-            # print(f"auth session.enabled: {session.enabled}")
-            # print(f"auth session.is_valid: {session.is_valid()}")
-            # print("check is valid.. 3")
-
             if session.enabled is False or session.is_valid() is False or session.has_user is False:
-                # print("auth: require_auth: session is not enable or is not valid!")
+                setup_login_redirect(webinterface, request, session, login_redirect)
                 return return_need_login(webinterface, request, session,
                                          api_message="API Key is not valid.",
                                          **kwargs)
@@ -281,12 +270,9 @@ def setup_login_redirect(webinterface, request, session, login_redirect):
     :return:
     """
     uri = request.uri.decode('utf-8')
-    # print("setup_login_redirect: ###################################################################################3")
     if login_redirect is None:  # only create a new session if we need too
         login_redirect = request.uri.decode('utf-8')
 
-    # print(f"setup_login_redirect: login_redirect: {login_redirect}")
-    # print(f"setup_login_redirect: has session: {session}")
     if session is None:
         try:
             session = webinterface._WebSessions.create_from_web_request(request)
@@ -300,19 +286,15 @@ def setup_login_redirect(webinterface, request, session, login_redirect):
             logger.warn("Too many sessions being created!")
             return _("ui::messages::rate_limit_exceeded", "Too many attempts, try again later.")
 
-    # print(f"setup_login_redirect: gotz a session....{request.args.get('autologinredirect', [0])[0]}")
-
     try:
         auto_login_redirect = coerce_value(request.args.get('autologinredirect', [0])[0], 'int')
     except:
         auto_login_redirect = 0
-    # print(f"setup_login_redirect: auto_login_redirect_input: {auto_login_redirect}")
 
     session.created_by = "login_redirect"
     request.received_cookies[webinterface._WebSessions.config.cookie_session_name] = session.auth_id
     session["login_redirect"] = login_redirect
     session["auto_login_redirect"] = auto_login_redirect
-    # print(f"auth: setup_login_redirect, session: {session.asdict()}")
     return session
 
 
