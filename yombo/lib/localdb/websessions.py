@@ -19,15 +19,16 @@ class DB_Websessions(object):
     @inlineCallbacks
     def get_web_session(self, session_id=None):
         def parse_record(data):
-            save_data = data_unpickle(data.auth_data)
+            auth_data = data_unpickle(data.auth_data)
+
             return {
                 "id": data.id,
                 "enabled": coerce_value(data.enabled, "bool"),
                 "gateway_id": data.gateway_id,
                 "user_id": data.user_id,
-                "auth_data": save_data.save_data,
-                "refresh_token": data._refresh_token,
-                "access_token": data._access_token,
+                "auth_data": auth_data,
+                "refresh_token": data.refresh_token,
+                "access_token": data.access_token,
                 "refresh_token_expires_at": data.refresh_token_expires_at,
                 "access_token_expires_at": data.access_token_expires_at,
                 "created_at": data.created_at,
@@ -48,9 +49,11 @@ class DB_Websessions(object):
 
     @inlineCallbacks
     def save_web_session(self, session):
-        logger.debug("save_web_session: session.auth_id: {auth_id}", auth_id=session._auth_id)
-        save_data = data_pickle({
+        logger.info("save_web_session: session.auth_id: {auth_id}", auth_id=session._auth_id)
+        logger.info("save_web_session: session.auth_data: {auth_data}", auth_data=session.auth_data)
+        auth_data = data_pickle({
             "auth_data": session.auth_data,
+            "auth_type": session.auth_type,
             "auth_at": session.auth_at,
         })
 
@@ -58,7 +61,7 @@ class DB_Websessions(object):
             "id": session._auth_id,
             "enabled": coerce_value(session.enabled, "int"),
             "gateway_id": session.gateway_id,
-            "auth_data": save_data,
+            "auth_data": auth_data,
             "refresh_token": session._refresh_token,
             "access_token": session._access_token,
             "refresh_token_expires_at": session.refresh_token_expires_at,

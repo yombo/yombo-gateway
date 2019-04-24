@@ -49,7 +49,7 @@ class WebSessions(YomboLibrary):
 
     def __delitem__(self, key):
         if key in self.active_sessions:
-            logger.info("Expiring session, delete request: {session_id}", session_id=self.active_sessions[key].session_id)
+            logger.info("Expiring session, delete request: {session_id}", session_id=self.active_sessions[key].auth_id)
             self.active_sessions[key].expire()
         return
 
@@ -107,10 +107,10 @@ class WebSessions(YomboLibrary):
         })
         self.clean_sessions_loop = LoopingCall(self.clean_sessions)
         self.clean_sessions_loop.start(random_int(30, .2), False)  # Every hour-ish. Save to disk, or remove from memory.
-        self.get_session_by_id_cache = {}  # temporary until full bootup.
+        self.session_id_lookup_cache = {}  # Stores lookups from the database.
 
     def _start_(self, **kwargs):
-        self.get_session_by_id_cache = self._Cache.ttl(name="lib.websessions.get_session_by_id_cache", ttl=30, tags=("websession", "user"))
+        self.session_id_lookup_cache = self._Cache.ttl(name="lib.websessions.session_id_lookup_cache", ttl=30, tags=("websession", "user"))
 
     @inlineCallbacks
     def _stop_(self, **kwargs):
@@ -150,11 +150,11 @@ class WebSessions(YomboLibrary):
             session = yield self.get_session_from_request(request)
         except YomboWarning:
             return
-        logger.info("Closing session: {session_id} ", session_id=session.session_id)
+        logger.info("Closing session: {auth_id} ", auth_id=session.auth_id)
         session.expire()
 
     @inlineCallbacks
-    def get_session_from_request(self, request=None):
+    def get_session_from_request(self, request):
         """
         Checks the request for a valid session cookie and then tries to validate it.
 
@@ -165,34 +165,60 @@ class WebSessions(YomboLibrary):
         :return: bool
         """
         logger.debug("get_session_from_request: {request}", request=request)
+        if request is None:
+            raise YomboWarning("get_session_from_request requires a non-None request object.")
 
-        session_id = None
-        if request is not None:
-            cookie_session_name = self.config.cookie_session_name
-            cookies = request.received_cookies
-            if cookie_session_name in cookies:
-                session_id = cookies[cookie_session_name]
-            else:
-                raise YomboWarning("Session cookie not found.")
+        session_long_id = self.get_session_long_id_from_request(request)
+        request.session_long_id = session_long_id
 
-        logger.debug("get_session_from_request: Found session_id: {session_id}", session_id=session_id)
-        if session_id is None:
-            raise YomboWarning("Session id is not valid.")
+        logger.debug("get_session_from_request: Found session_long_id: {session_long_id}", session_long_id=session_long_id)
+        if session_long_id is None:
+            raise YomboWarning("Session long id was not found in web request.")
 
-        results = yield self.get_session_by_id(session_id)
+        results = yield self.get_session_by_id(session_long_id)
         logger.debug("get_session_from_request: Found the session: {session}", session=results.asdict())
         return results
 
+    def get_session_long_id_from_request(self, request):
+        """
+        Checks the request for a valid session cookie and then tries to validate it.
+
+        Returns True if everything is good, otherwise raises YomboWarning with
+        status reason.
+
+        :param request: The request instance.
+        :return: bool
+        """
+        if request is None:
+            raise YomboWarning("get_session_long_id_from_request requires a non-None request object.")
+
+        cookie_session_name = self.config.cookie_session_name
+        cookies = request.received_cookies
+        if cookie_session_name in cookies:
+            return cookies[cookie_session_name]
+        else:
+            raise YomboWarning("Session cookie not found.")
+
+    def set_request_session_long_id(self, request):
+        """
+        Try to set the session long id for the request if it's not set.
+
+        :param request:
+        :return:
+        """
+        if hasattr(request, 'session_long_id') is False:
+            session_long_id = self._Parent.get_session_long_id_from_request(request)
+            request.session_long_id = session_long_id
+
     @inlineCallbacks
-    def get_session_by_id(self, session_id=None):
+    def get_session_by_id(self, session_long_id=None):
         """
         Checks if the session ID is in the active session dictionary. If not, it queries the
         database and returns the session.
 
-        :param session_id: The requested session id
+        :param session_long_id: The requested session id
         :return: session
         """
-        logger.debug("get_session_by_id: session_id: {session_id}", session_id=session_id)
         def raise_error(message):
             """
             Sets the cache and raises an error.
@@ -200,35 +226,36 @@ class WebSessions(YomboLibrary):
             :param message:
             :return:
             """
-            self.get_session_by_id_cache[compact_id] = message + " (cached)"
+            self.session_id_lookup_cache[session_id] = message + " (cached)"
             raise YomboWarning(message)
+        logger.debug("get_session_by_id: session_long_id: {session_long_id}", session_long_id=session_long_id)
 
-        if session_id is None:
-            raise_error("Session id is not valid.")
-        if self.validate_session_id(session_id) is False:
+        if session_long_id is None:
+            raise_error("Session long id is not valid.")
+        if session_long_id == "LOGOFF":
+            raise_error("Session has been logged off.")
+        if self.validate_session_id(session_long_id) is False:
             raise_error("Invalid session id.")
 
-        compact_id = sha224_compact(session_id)
-        logger.debug("get_session_by_id: compact_id: {compact_id}", compact_id=compact_id)
+        session_id = sha224_compact(session_long_id)
+        logger.debug("get_session_by_id: session_id: {session_id}", session_id=session_id)
 
-        if compact_id in self.get_session_by_id_cache:
-            cache = self.get_session_by_id_cache[compact_id]
+        if session_id in self.session_id_lookup_cache:
+            cache = self.session_id_lookup_cache[session_id]
             if isinstance(cache, str):
                 raise YomboWarning(cache)
             else:
-                return self.get_session_by_id_cache[compact_id]
+                return self.session_id_lookup_cache[session_id]
 
-        if session_id == "LOGOFF":
-            raise_error("Session has been logged off.")
-        if compact_id in self.active_sessions:
-            if self.active_sessions[compact_id].is_valid() is True:
-                self.get_session_by_id_cache[compact_id] = self.active_sessions[compact_id]
-                return self.active_sessions[compact_id]
+        if session_id in self.active_sessions:
+            if self.active_sessions[session_id].is_valid() is True:
+                self.session_id_lookup_cache[session_id] = self.active_sessions[session_id]
+                return self.active_sessions[session_id]
             else:
                 raise_error("Session is no longer valid.")
         else:
             try:
-                db_session = yield self._LocalDB.get_web_session(compact_id)
+                db_session = yield self._LocalDB.get_web_session(session_id)
             except Exception as e:
                 raise_error(f"Cannot find session id: {e}")
             try:
@@ -236,11 +263,10 @@ class WebSessions(YomboLibrary):
             except KeyError as e:
                 raise_error("User in session wasn't found.")
             db_session["auth_id"] = db_session["id"]
-            db_session["auth_id_long"] = session_id
-            self.active_sessions[compact_id] = AuthWebsession(self, db_session, load_source="database")
+            self.active_sessions[session_id] = AuthWebsession(self, db_session, load_source="database")
 
-            if self.active_sessions[compact_id].enabled is True:
-                return self.active_sessions[compact_id]
+            if self.active_sessions[session_id].enabled is True:
+                return self.active_sessions[session_id]
             else:
                 raise_error("Session is no longer valid.")
         raise_error("Unknown session lookup error.")
@@ -257,7 +283,7 @@ class WebSessions(YomboLibrary):
         else:
             return host
 
-    # @ratelimits(calls=15, period=60)
+    @ratelimits(calls=15, period=60)
     def create_from_web_request(self, request=None, data=None):
         """
         Creates a new session.
@@ -272,23 +298,21 @@ class WebSessions(YomboLibrary):
         if "auth_data" not in data:
             data["auth_data"] = {}
 
-        session_id = random_string(length=randint(60, 70))
-        compact_id = sha224_compact(session_id)
+        session_long_id = random_string(length=randint(60, 70))
+        compact_id = sha224_compact(session_long_id)
 
         data["auth_id"] = compact_id
-        data["auth_id_long"] = session_id
         data["refresh_token"] = None
         data["refresh_token_expires_at"] = 0
         data["access_token"] = None
         data["access_token_expires_at"] = 0
 
         if request is not None:
-            request.addCookie(self.config.cookie_session_name, session_id, domain=self.get_cookie_domain(request),
+            request.addCookie(self.config.cookie_session_name, session_long_id, domain=self.get_cookie_domain(request),
                               path=self.config.cookie_path, max_age=str(self.config.max_session),
                               secure=self.config.secure, httpOnly=self.config.httponly)
 
         self.active_sessions[compact_id] = AuthWebsession(self, data)
-        self.active_sessions[compact_id].auth_id_long = session_id
         return self.active_sessions[compact_id]
 
     def set(self, request, name, value):
@@ -321,19 +345,19 @@ class WebSessions(YomboLibrary):
                 return False
         return None
 
-    def validate_session_id(self, session_id):
+    def validate_session_id(self, session_long_id):
         """
         Validate the session id to make sure it's reasonable.
-        :param session_id:
+        :param session_long_id:
         :return: 
         """
-        if session_id == "LOGOFF":  # lets not raise an error.
+        if session_long_id == "LOGOFF":  # lets not raise an error.
             return True
-        if session_id.isalnum() is False:
+        if session_long_id.isalnum() is False:
             return False
-        if len(session_id) < 30:
+        if len(session_long_id) < 30:
             return False
-        if len(session_id) > 120:
+        if len(session_long_id) > 120:
             return False
         return True
 
@@ -370,7 +394,6 @@ class WebSessions(YomboLibrary):
                 elif session.user_id is not None:
                     logger.debug("clean_sessions - adding web session to DB: session_id: {id}", id=session_id)
                     logger.debug("clean_sessions - adding web session to DB: _auth_id: {id}", id=session._auth_id)
-                    logger.debug("clean_sessions - adding web session to DB: _auth_id_long: {id}", id=session._auth_id_long)
                     try:
                         yield self._LocalDB.save_web_session(session)
                     except Exception as e:
@@ -381,11 +404,13 @@ class WebSessions(YomboLibrary):
                     session.is_dirty = 0
                 if session.last_access_at < int(time() - (60*60*24)):
                     # delete session from memory after 24 hours
-                    logger.debug("clean_sessions - Deleting session from memory only: {session_id}", session_id=session_id)
+                    logger.debug("clean_sessions - Deleting session from memory only: {session_id}",
+                                 session_id=session_id)
                     del self.active_sessions[session_id]
                 if session.last_access_at < int(time() - (300)) and session.user_id is None:
                     # delete session from memory after 5 minutes of not being active and not logged in yet!
-                    logger.debug("clean_sessions - Deleting inactive session with no user! {session_id}", session_id=session_id)
+                    logger.debug("clean_sessions - Deleting inactive session with no user! {session_id}",
+                                 session_id=session_id)
                     del self.active_sessions[session_id]
         logger.debug("Deleted {count} sessions from the session store.", count=count)
 
@@ -401,38 +426,41 @@ class AuthWebsession(UserMixin, AuthMixin):
     #     print("AuthWebsession::enabled")
     #     return self.is_valid()
 
-    # Override AuthMixin
-    @property
-    def auth_id_long(self):
-        return self._auth_id_long
-
-    @auth_id_long.setter
-    def auth_id_long(self, val):
-        self._auth_id_long = val
-
     @inlineCallbacks
-    def get_refresh_token(self):
+    def get_refresh_token(self, request):
         if self._refresh_token is None:
             return (None, 0)
-        token = yield self._Parent._GPG.decrypt_aes(self._auth_id_long, self._refresh_token)
-        return (token, self.refresh_token_expires_at)
+
+        self._Parent.set_request_session_long_id(request)
+        if hasattr(request, 'session_refresh_token') is False:
+            request.session_refresh_token = yield self._Parent._GPG.decrypt_aes(request.session_long_id,
+                                                                                self._refresh_token)
+        return (request.session_refresh_token, self.refresh_token_expires_at)
 
     @inlineCallbacks
-    def set_refresh_token(self, token, expires_at):
-        self._refresh_token = yield self._Parent._GPG.encrypt_aes(self._auth_id_long, token)
+    def set_refresh_token(self, request, token, expires_at):
+        self._Parent.set_request_session_long_id(request)
+        request.session_refresh_token = token
+        self._refresh_token = yield self._Parent._GPG.encrypt_aes(request.session_long_id, token, 128)
         self.refresh_token_expires_at = expires_at
         yield self._Parent._LocalDB.update_web_session(self)
 
     @inlineCallbacks
-    def get_access_token(self):
+    def get_access_token(self, request):
         if self._access_token is None:
             return (None, 0)
-        token = yield self._Parent._GPG.decrypt_aes(self._auth_id_long, self._access_token)
-        return (token, self.access_token_expires_at)
+
+        self._Parent.set_request_session_long_id(request)
+        if hasattr(request, 'session_access_token') is False:
+            request.session_access_token = yield self._Parent._GPG.decrypt_aes(request.session_long_id,
+                                                                               self._access_token)
+        return (request.session_access_token, self.access_token_expires_at)
 
     @inlineCallbacks
-    def set_access_token(self, token, expires_at):
-        self._access_token = yield self._Parent._GPG.encrypt_aes(self._auth_id_long, token)
+    def set_access_token(self, request, token, expires_at):
+        self._Parent.set_request_session_long_id(request)
+        request.session_access_token = token
+        self._access_token = yield self._Parent._GPG.encrypt_aes(request.session_long_id, token, 128)
         self.access_token_expires_at = expires_at
         yield self._Parent._LocalDB.update_web_session(self)
 
@@ -446,11 +474,10 @@ class AuthWebsession(UserMixin, AuthMixin):
         self.auth_at = None
 
         # will eventually be populated by a web request. Usually near creation time.
-        self.auth_id = record["auth_id"]
-        self.auth_id_long = record["auth_id_long"]
-        self.source = "websessions"
-        self.source_type = "library"
-        self.gateway_id = record["gateway_id"]
+        self.auth_id: str = record["auth_id"]
+        self.source: str = "websessions"
+        self.source_type: str = "library"
+        self.gateway_id: str = record["gateway_id"]
 
         self._refresh_token: str = record["refresh_token"]
         self.refresh_token_expires_at: int = record["refresh_token_expires_at"]
@@ -472,13 +499,6 @@ class AuthWebsession(UserMixin, AuthMixin):
                 self._user = self._Parent._Users.get(record["user_id"])
             except:
                 raise YomboWarning("User_id not found, cannot fully create websession.")
-
-        self.auth_data.update({
-            "refresh_token": None,
-            "refresh_token_expires_at": None,
-            "access_token": None,
-            "access_token_expires_at": None,
-        })
 
         self.update_attributes(record, load_source == "database")
 
@@ -540,13 +560,13 @@ class AuthWebsession(UserMixin, AuthMixin):
             self.is_dirty = 2000
 
     @inlineCallbacks
-    def authorization_header(self):
+    def authorization_header(self, request):
         """
         Used to generate the Authorization header for making Yombo API calls.
 
         :return:
         """
-        access_token = yield self.get_access_token()
+        access_token = yield self.get_access_token(request)
         return f"user_api_token {access_token[0]}"
 
     def is_valid(self, auth_id_missing_ok=None):
@@ -560,12 +580,12 @@ class AuthWebsession(UserMixin, AuthMixin):
             return False
 
         if self.created_at < (int(time() - self._Parent.config.max_session)):
-            logger.info("is_valid: Expiring session, it's too old: {session_id}", session_id=self.session_id)
+            logger.info("is_valid: Expiring session, it's too old: {auth_id}", auth_id=self.auth_id)
             self.expire()
             return False
 
         if self.last_access_at < (int(time() - self._Parent.config.max_idle)):
-            logger.info("is_valid: Expiring session, no recent access: {session_id}", session_id=self.session_id)
+            logger.info("is_valid: Expiring session, no recent access: {auth_id}", auth_id=self.auth_id)
             self.expire()
             return False
 
@@ -586,7 +606,6 @@ class AuthWebsession(UserMixin, AuthMixin):
             "auth_at": self.auth_at,
             "auth_data": self.auth_data,
             "auth_id": self.auth_id,
-            "auth_id_long": self.auth_id_long,
             "auth_type": self.auth_type,
             "auth_type_id": self.auth_type_id,
             "enabled": self.enabled,
