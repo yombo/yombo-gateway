@@ -32,6 +32,7 @@
       <drop-down tag="div" title="More..." position="right">
        <nuxt-link to="/lock" class="dropdown-item">Lock Screen</nuxt-link>
        <nuxt-link to="/frontend_settings" class="dropdown-item">Frontend Settings</nuxt-link>
+       <nuxt-link to="/system/restart" class="dropdown-item">Restart Gateway</nuxt-link>
        <nuxt-link to="/user/logout" class="dropdown-item">Logout</nuxt-link>
       </drop-down>
 
