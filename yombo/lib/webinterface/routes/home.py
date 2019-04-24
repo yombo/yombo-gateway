@@ -2,7 +2,6 @@
 This file handles the homepage, static files, and misc one-off urls.
 """
 import json
-import re
 
 # Import twisted libraries
 from twisted.web.static import File
@@ -175,6 +174,15 @@ def route_home(webapp):
             request.setHeader("Cache-Control", f"max-age={random_int(604800, .2)}")
             request.responseHeaders.removeHeader("Expires")
             return File(webinterface.working_dir + "/frontend/_nuxt")
+
+        @webapp.route("/sw.js")
+        @require_auth()
+        def home_service_worker(webinterface, request, session):
+            """ Service worker file for authenticated users only. """
+            request.responseHeaders.removeHeader("Expires")
+            base_headers(request)
+            request.setHeader("Cache-Control", f"max-age=0")
+            return File(webinterface.working_dir + "/frontend/sw.js")
 
         @webapp.route("/favicon.ico")
         def home_static(webinterface, request):
