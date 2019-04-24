@@ -283,7 +283,7 @@ class WebSessions(YomboLibrary):
         else:
             return host
 
-    @ratelimits(calls=15, period=60)
+    # @ratelimits(calls=15, period=60)
     def create_from_web_request(self, request=None, data=None):
         """
         Creates a new session.
