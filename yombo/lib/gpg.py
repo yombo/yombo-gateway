@@ -80,7 +80,6 @@ class GPG(YomboLibrary):
         """
         Get the GnuPG subsystem up and loaded.
         """
-        self.aes_blocksize = 32
         self.key_generation_status = None
         self._generating_key = False
         self._gpg_keys = {}
@@ -425,7 +424,7 @@ class GPG(YomboLibrary):
 
         if key_has_been_found is False:  # If not found, lets add the key to gpg keyring
             import_result = yield self._add_to_keyring(key_to_import)
-            print(f"import results: {import_result}")
+            # print(f"import results: {import_result}")
             if import_result["status"] == "Failed":
                 raise YomboWarning("Unable to import GPG key.")
 
@@ -813,7 +812,7 @@ class GPG(YomboLibrary):
                         return output.data
                     return bytes_to_unicode(output.data)
 
-                print("Trying more GPG keys.")
+                # print("Trying more GPG keys.")
 
                 myfingerprint = self.myfingerprint()
                 for fingerprint, data in self._gpg_keys.items():
@@ -919,27 +918,40 @@ class GPG(YomboLibrary):
             return data.encode("utf8")
         return data
 
-    def aes_pad(self, s):
-        return s + (self.aes_blocksize - len(s) % self.aes_blocksize) * self.aes_str_to_bytes(chr(self.aes_blocksize - len(s) % self.aes_blocksize))
+    def aes_pad(self, key, size):
+        """
+        Ensures the aes key is properly padded.
+
+        :param key:
+        :param size:
+        :return:
+        """
+        return key + (size - len(key) % size) * self.aes_str_to_bytes(chr(size - len(key) % size))
 
     @staticmethod
     def aes_unpad(s):
         return s[:-ord(s[len(s)-1:])]
 
     @inlineCallbacks
-    def encrypt_aes(self, key, raw):
+    def encrypt_aes(self, key, raw, size=128):
         """
-        Encrypt something using AES 256 (very strong).
+        Encrypt something using AES 128, 192, 256 (very strong).
 
         Modified from: https://gist.github.com/mguezuraga/257a662a51dcde53a267e838e4d387cd
 
         :param key: A password
         :type key: string
-        :param data: Any type of data can be encrypted. Text, binary.
+        :param raw: Any type of data can be encrypted. Text, binary.
+        :type key: string
+        :param size: AES key size, one of: 128, 192, 256
+        :type size: int
         :return: String containing the encrypted content.
         """
+        if size not in (128, 192, 256):
+            raise YomboWarning("encrypt_aes size must be one of: 128, 192, or 256")
         key = hashlib.sha256(key.encode("utf-8")).digest()
-        raw = self.aes_pad(self.aes_str_to_bytes(raw))
+        key_size = int(size/8)
+        raw = self.aes_pad(self.aes_str_to_bytes(raw), key_size)
         results = yield threads.deferToThread(self._encrypt_aes, key, raw)
         return results
 
@@ -950,10 +962,9 @@ class GPG(YomboLibrary):
         # return base64.b85encode(iv + cipher.encrypt(raw)).decode("utf-8")
 
     @inlineCallbacks
-    def decrypt_aes(self, key, enc):
+    def decrypt_aes(self, key, encoded):
         key = hashlib.sha256(key.encode("utf-8")).digest()
-        # enc = base64.b85decode(enc)
-        results = yield threads.deferToThread(self._decrypt_aes, key, enc)
+        results = yield threads.deferToThread(self._decrypt_aes, key, encoded)
         data = self.aes_unpad(results)
         return data
 
