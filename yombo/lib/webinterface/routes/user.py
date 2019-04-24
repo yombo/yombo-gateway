@@ -37,6 +37,9 @@ def route_user(webapp):
         @webapp.route("/login", methods=["GET"])
         @run_first(create_session=True)
         def page_user_login_user_get(webinterface, request, session):
+            if session.enabled is True and session.is_valid() is True and session.has_user is True:
+                print("login, but already have a valid user user....")
+                return request.redirect("/")
             host = request.getHost()
             hostname = request.getRequestHostname().decode('utf-8')
             session["login_request_id"] = yombo.utils.random_string(length=50)
@@ -84,11 +87,8 @@ def route_user(webapp):
                 session.add_alert("The authentication token has already been claimed and cannot be used again.",
                                   level="danger")
                 return webinterface.redirect(request, "/user/login")
-            # webinterface.user_login_tokens[token_hash] = True
 
             token_data = jwt.decode(token, verify=False)
-            # print(f"TOekn user_id: {token_data['user_id']}")
-            # print(f"User: {webinterface._Users.users}")
             try:
                 user = webinterface._Users.get(token_data["user_id"])
             except KeyError:
@@ -105,7 +105,6 @@ def route_user(webapp):
                     "access_code_string": "",
                 })
 
-            request_id = request.args.get("request_id", [{}])[0]
             response = yield webinterface._YomboAPI.request(
                 "POST", f"/v1/gateways/{gateway_id}/check_user_token?tokens",
                 {
@@ -115,16 +114,10 @@ def route_user(webapp):
             data = response.content["data"]["attributes"]
 
             if data["is_valid"] is True:
-                yield session.set_refresh_token(data["refresh_token"], data["refresh_token_expires_at"])
-                yield session.set_access_token(data["access_token"], data["access_token_expires_at"])
+                yield session.set_refresh_token(request, data["refresh_token"], data["refresh_token_expires_at"])
+                yield session.set_access_token(request, data["access_token"], data["access_token_expires_at"])
                 session.user = user
                 request.received_cookies[webinterface._WebSessions.config.cookie_session_name] = session.auth_id
-                # print(f"session: refresh_token: {session._refresh_token}")
-                # print(f"session: access_token: {session._access_token}")
-                # decoded_refresh = yield session.get_refresh_token()
-                # decoded_access = yield session.get_access_token()
-                # print(f"session: decoded_refresh: {decoded_refresh}")
-                # print(f"session: decoded_access: {decoded_access}")
                 return login_redirect(webinterface, request, session)
             else:
                 session.add_alert("Token was invalid.", "warning")
@@ -133,9 +126,7 @@ def route_user(webapp):
         def login_redirect(webinterface, request, session=None, location=None):
             # print(f"user: login_redirect detector...{session.asdict()}")
             if session is not None and "login_redirect" in session:
-                # print("user: login_redirect detector... has session and login redirect.")
                 location = session["login_redirect"]
-                # print(f"user: login_redirect detector... has session and login redirect.  location {location}")
                 session.delete("login_redirect")
             if location is None:
                 location = "/"

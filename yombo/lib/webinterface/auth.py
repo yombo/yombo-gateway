@@ -269,7 +269,6 @@ def setup_login_redirect(webinterface, request, session, login_redirect):
     :param login_redirect:
     :return:
     """
-    uri = request.uri.decode('utf-8')
     if login_redirect is None:  # only create a new session if we need too
         login_redirect = request.uri.decode('utf-8')
 
@@ -293,7 +292,17 @@ def setup_login_redirect(webinterface, request, session, login_redirect):
 
     session.created_by = "login_redirect"
     request.received_cookies[webinterface._WebSessions.config.cookie_session_name] = session.auth_id
-    session["login_redirect"] = login_redirect
+
+    # If login redirect end with something silly, ignore it
+    if login_redirect.endswith(('.js', '.jpg', '.png', '.css')):
+        login_redirect = "/"
+
+    # If we already have a login redirect url and a new one ends with something silly, ignore it
+    if "login_redirect" not in session:
+        session["login_redirect"] = login_redirect
+    else:  # Just display a warning...
+        logger.debug("Already have login redirect: {login_redirect}", login_redirect=session['login_redirect'])
+
     session["auto_login_redirect"] = auto_login_redirect
     return session
 
