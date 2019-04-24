@@ -1,5 +1,5 @@
 # from collections import OrderedDict
-from time import time
+from urllib.parse import urlencode
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks
@@ -22,7 +22,7 @@ def route_setup_wizard(webapp):
 
         @webapp.route("/", methods=["GET"])
         def page_setup_wizard_home(webinterface, request, session):
-            return webinterface.redirect(request, "/setup_wizard/select_gateway")
+            return webinterface.redirect(request, f"/setup_wizard/select_gateway?{urlencode(request.args)}")
 
         @webapp.route("/select_gateway")
         @require_auth()
@@ -33,7 +33,7 @@ def route_setup_wizard(webapp):
             session.set("setup_wizard_last_step", "select_gateway")
 
             try:
-                auth_header = yield session.authorization_header()
+                auth_header = yield session.authorization_header(request)
                 response = yield webinterface._YomboAPI.request("GET",
                                                                 "/v1/gateways",
                                                                 authorization_header=auth_header)
@@ -382,7 +382,7 @@ def route_setup_wizard(webapp):
             session["setup_wizard_security_send_private_stats"] = submitted_security_send_private_stats
             session["setup_wizard_security_send_anon_stats"] = submitted_security_send_anon_stats
 
-            auth_header = yield session.authorization_header()
+            auth_header = yield session.authorization_header(request)
             if session["setup_wizard_gateway_id"] == "new":
                 data = {
                     "machine_label": session["setup_wizard_gateway_machine_label"],
@@ -406,7 +406,7 @@ def route_setup_wizard(webapp):
                             "warning")
                     return webinterface.redirect(request, "/setup_wizard/basic_settings")
                 # print(f"response.content: {response.content}")
-                session["setup_wizard_gateway_id"] = response.content["id"]
+                session["setup_wizard_gateway_id"] = response.content["data"]["attributes"]
 
             else:
                 data = {
@@ -438,7 +438,6 @@ def route_setup_wizard(webapp):
                             "warning")
                         return webinterface.redirect(request, "/setup_wizard/dns")
 
-            # print(f"response.content 222: {response.content}")
 
             new_auth = response.content["data"]["attributes"]
             webinterface._Configs.set("core", "gwid", new_auth["id"])
@@ -474,7 +473,7 @@ def route_setup_wizard(webapp):
         @inlineCallbacks
         def form_setup_wizard_dns(webinterface, request, session):
             try:
-                auth_header = yield session.authorization_header()
+                auth_header = yield session.authorization_header(request)
                 response = yield webinterface._YomboAPI.request(
                     "GET",
                     f"/v1/gateways/{webinterface._Configs.get('core', 'gwid')}/dns",
