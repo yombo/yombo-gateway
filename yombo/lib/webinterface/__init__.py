@@ -163,6 +163,8 @@ class WebInterface(BuildDistribution, ErrorHandler, Render, YomboLibrary, WebSer
             route_setup_wizard(self.webapp)
             route_restore(self.webapp)
 
+        self.npm_build_results = None
+
         self.temp_data = ExpiringDict(max_age_seconds=1800)
         self.web_server_started = False
         self.web_server_ssl_started = False

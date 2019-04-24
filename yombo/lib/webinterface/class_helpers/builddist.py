@@ -76,7 +76,7 @@ class BuildDistribution:
             env=environ.copy(),
             errortoo=True,
         )
-        print(f"NPM Build results: {results}")
+        self.npm_build_results = results
 
     @inlineCallbacks
     def build_frontend(self, environemnt=None):
