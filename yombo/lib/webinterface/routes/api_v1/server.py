@@ -27,7 +27,7 @@ def route_api_v1_server(webapp):
         @inlineCallbacks
         def apiv1_server_dns_check_available(webinterface, request, session, dnsname):
             url = f"/v1/dns_domains/check_available/{dnsname}"
-            auth_header = yield session.authorization_header()
+            auth_header = yield session.authorization_header(request)
             try:
                 response = yield webinterface._YomboAPI.request("GET", url, authorization_header=auth_header)
             except YomboWarning as e:
