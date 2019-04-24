@@ -97,7 +97,7 @@ class Render:
         kwargs["session"] = session
         files = glob(f"{self.working_dir}/frontend/_nuxt/*.js")
         nuxtpreload = sorted((os.path.getsize(s), s.split('/')[-1]) for s in files) if files else ''
-        kwargs["nuxtpreload"] = nuxtpreload[-5:]
+        kwargs["nuxtpreload"] = nuxtpreload[-2:]
         # print(f"webinterface render {kwargs}")
         return template.render(**kwargs)
 
