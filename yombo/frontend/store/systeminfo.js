@@ -18,22 +18,23 @@ export const state = () => ({
   version: null,
   operating_mode: null,
   running_since: null,
+  last_download_at: 0
 });
 
 export const actions = {
-  async fetch( { commit }) {
+  fetch( { commit }) {
     let response;
 
     try {
-        response = await window.$nuxt.$gwapiv1.SystemInfo()
+      response = window.$nuxt.$gwapiv1.system().info()
+        .then(response => {
+          commit('SET_DATA', response.data['data']['attributes'])
+        });
     } catch (ex) {  // Handle error
       console.log("pages/index: has an error");
       console.log(ex);
-        return
+      return
     }
-    // Handle success
-    const data = response.data['data']['attributes']
-    commit('SET_DATA', data)
   }
 };
 
@@ -42,17 +43,9 @@ export const mutations = {
     state.label = data['label'];
 
     Object.keys(state).forEach(key => {
-      let value = state[key];
-      if(key in data){
-        // console.log("key existss...")
-        state[key] = data[key]
-          // The property exists
-      }else{
-        // console.log("key NOOOO existss...")
-          // The property DOESN'T exists
-      }
-      //use key and value here
+      state[key] = data[key];
     });
+    state.last_download_at = Math.floor(Date.now() / 1000);
   }
 };
 

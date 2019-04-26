@@ -1,6 +1,6 @@
 export const state = () => ({
-  devices: {},
-  last_download_at: 0
+  gateways: {},
+  gateways_at: 0
 });
 
 export const actions = {
@@ -8,7 +8,7 @@ export const actions = {
     let response;
 
     try {
-      response = window.$nuxt.$yboapiv1.devices().all()
+        response = window.$nuxt.$yboapiv1.gateways().all()
         .then(response => {
           commit('SET_DATA', response.data['data'])
         });
@@ -22,9 +22,9 @@ export const actions = {
 
 export const mutations = {
   SET_DATA (state, data) {
-    state.devices = {}
+    state.gateways = {}
     Object.keys(data).forEach(key => {
-      state.devices[data[key]['id']] = data[key]['attributes']
+      state.gateways[data[key]['id']] = data[key]['attributes']
     });
     state.last_download_at = Math.floor(Date.now() / 1000);
   }

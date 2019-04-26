@@ -311,7 +311,7 @@ export default {
   },
   created: function () {
     console.log("pages/dashboard/index: created");
-    this.$store.dispatch('devices/fetch');
+    // this.$store.dispatch('devices/fetch');
     // this.getSystemInfo()
   },
 };

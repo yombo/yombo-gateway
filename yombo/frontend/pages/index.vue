@@ -9,14 +9,15 @@
               </h2>
               <p class="subheading" style="margin-bottom: .5em;">{{ systemInfo.label }}</p>
             </div>
-            <p>
-              Welcome to the Yombo Gateway Frontend. Use the <nuxt-link to="/dashboard">Dashboard</nuxt-link>
-              to manage the gateway, including any automation devices, rules, and scenes.
-            </p>
-            <p>
-              Additionally, use the <nuxt-link to="/controltower">Control Tower</nuxt-link> as a control
-              display for all your automation devices.
-            </p>
+              <i18n path="ui.pages.home.welcome" tag="p">
+                <span place="label">{{ systemInfo.label }}</span>
+              </i18n>
+              <i18n path="ui.pages.home.dashboard" tag="p">
+                <span place="dashboard"><nuxt-link :to="localePath('dashboard')">{{ $t('ui.navigation.dashboard') }}</nuxt-link></span>
+              </i18n>
+              <i18n path="ui.pages.home.controltower" tag="p">
+                <span place="controltower"><nuxt-link :to="localePath('controltower')">{{ $t('ui.navigation.control_tower') }}</nuxt-link></span>
+              </i18n>
           </card>
       </div>
       <div class="col-md-4">

@@ -72,7 +72,6 @@ export default {
     },
     created: function () {
       if (this.gwLabel == null) {
-        console.log("pages/index: created");
         this.$store.dispatch('systeminfo/fetch');
         // this.getSystemInfo()
       }

@@ -29,7 +29,8 @@ export default {
   generate: {
     routes: [
       '/',
-    ]
+    ],
+    fallback: false,
   },
 
   /*
@@ -50,8 +51,9 @@ export default {
   ** Plugins to load before mounting the App
   */
   plugins: [
-    '~/plugins/index.js',
-    { src: '~/plugins/localStorage.js', ssr: false }
+    { src: '~/plugins/index.js', ssr: false },
+    { src: '~/plugins/localStorage.js', ssr: false },
+    { src: '~/plugins/startup.js', ssr: false },
   ],
 
   /*
@@ -63,6 +65,34 @@ export default {
     // Doc: https://bootstrap-vue.js.org/docs/
     'bootstrap-vue/nuxt',
     '@nuxtjs/pwa',
+    'vue-sweetalert2/nuxt',
+    ['nuxt-i18n', {
+      seo: false,
+      // locales: ['en', 'fr', 'es'],
+      defaultLocale: 'en',
+      detectBrowserLanguage: {
+        useCookie: true,
+        cookieKey: 'yombo_frontend_i18n'
+      },
+      locales: [
+        { code: 'ar', file: 'ar.js' },
+        { code: 'en', file: 'en.js' },
+        { code: 'es', file: 'es.js' },
+        { code: 'es_419', file: 'es_419.js' },
+        { code: 'hi_IN', file: 'hi_IN.js' },
+        { code: 'it', file: 'it.js' },
+        { code: 'pt', file: 'pt.js' },
+        { code: 'pt_BR', file: 'pt_BR.js' },
+        { code: 'ru', file: 'ru.js' },
+        { code: 'vi', file: 'vi.js' },
+        { code: 'zh_CN', file: 'zh_CN.js' },
+        { code: 'zh_TW', file: 'zh_TW.js' },
+      ],
+      lazy: true,
+      langDir: 'lang/'
+      }
+    ],
+
   ],
   /*
   ** Axios module configuration

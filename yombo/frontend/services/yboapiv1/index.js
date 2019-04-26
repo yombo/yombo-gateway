@@ -1,12 +1,14 @@
 import axios from 'axios'
 
 export default() => {
+  // console.log("creating yomo api axios client");
     return axios.create({
         baseURL: `https://api.yombo.net/api/v1/`,
-        withCredentials: true,
+        // withCredentials: true,
         headers: {
             'Accept': 'application/json',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Authorization': 'user_api_token ' + window.$nuxt.$store.state.access_token.access_token,
         }
     })
 }

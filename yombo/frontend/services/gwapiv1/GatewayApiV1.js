@@ -1,13 +1,11 @@
-import gwapiv1 from '@/services/gwapiv1'
+import user from '@/services/gwapiv1/user';
+import system from '@/services/gwapiv1/system';
 
 export default {
-    Devices () {
-        return gwapiv1().get('devices')
+    user () {
+      return user;
     },
-    Commands () {
-        return gwapiv1().get('devices')
-    },
-    SystemInfo () {
-        return gwapiv1().get('system/info', {withCredentials: true})
+    system () {
+      return system;
     },
 }

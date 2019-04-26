@@ -32,7 +32,7 @@
           <nuxt-link class="nav-link" to="/">
             <i class="fas fa-home" style="font-size: 18px"></i>
             <p>
-              <span class="d-lg-none d-md-block">home</span>
+              <span class="d-lg-none d-md-block">Home</span>
             </p>
           </nuxt-link>
         </li>
@@ -40,7 +40,7 @@
           <nuxt-link class="nav-link" to="/controltower">
             <i class="now-ui-icons media-2_sound-wave"></i>
             <p>
-              <span class="d-lg-none d-md-block">control Tower</span>
+              <span class="d-lg-none d-md-block">Control Tower</span>
             </p>
           </nuxt-link>
         </li>
@@ -49,7 +49,7 @@
                    class="nav-item"
                    icon="now-ui-icons ui-1_bell-53">
 
-          <a class="dropdown-item" href="#">No alerts</a>
+          <a class="dropdown-item" href="#">{{ $t('ui.alerts.messages.none')}}</a>
         </drop-down>
         <drop-down tag="li"
                    position="right"
@@ -58,7 +58,7 @@
 
           <a class="dropdown-item" href="https://my.yombo.net">My.Yombo.Net</a>
           <b-dropdown-divider />
-          <a class="dropdown-item" href="/user/logout">Logout</a>
+          <a class="dropdown-item" href="/user/logout">{{ $t('ui.navigation.logout')}}</a>
         </drop-down>
 
       </ul>
@@ -81,7 +81,7 @@ export default {
   computed: {
     routeName() {
       const { name } = this.$route;
-      console.log("routename");
+      // console.log("routename");
       return this.capitalizeFirstLetter(name);
     }
   },

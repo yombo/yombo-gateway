@@ -1,5 +1,6 @@
 export const state = () => ({
-  devices: {},
+  access_token: "",
+  access_token_expires: "",
   last_download_at: 0
 });
 
@@ -8,9 +9,9 @@ export const actions = {
     let response;
 
     try {
-      response = window.$nuxt.$yboapiv1.devices().all()
+      response = window.$nuxt.$gwapiv1.user().access_token()
         .then(response => {
-          commit('SET_DATA', response.data['data'])
+          commit('SET_DATA', response.data['data']['attributes'])
         });
     } catch (ex) {  // Handle error
       console.log("pages/index: has an error");
@@ -22,10 +23,9 @@ export const actions = {
 
 export const mutations = {
   SET_DATA (state, data) {
-    state.devices = {}
-    Object.keys(data).forEach(key => {
-      state.devices[data[key]['id']] = data[key]['attributes']
-    });
+    state.access_token = data['access_token'];
+    state.access_token_expires = data['access_token_expires'];
     state.last_download_at = Math.floor(Date.now() / 1000);
   }
 };
+

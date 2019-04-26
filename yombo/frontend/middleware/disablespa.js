@@ -2,7 +2,8 @@
 // talk to the yombo gateway for the URL.
 
 export default function(context) {
-  console.log(context)
+  // console.log(context)
+  // console.log("disable spa");
 
   const paths = ['/user/logout', '/system/restart'];
 
