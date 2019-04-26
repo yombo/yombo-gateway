@@ -89,7 +89,13 @@ export default {
         { code: 'zh_TW', file: 'zh_TW.js' },
       ],
       lazy: true,
-      langDir: 'lang/'
+      langDir: 'lang/',
+       vueI18n: {
+         fallbackLocale: 'en',
+         messages: {
+           en: require('./lang/en.json'),
+         }
+       }
       }
     ],
 

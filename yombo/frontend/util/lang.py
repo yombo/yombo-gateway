@@ -8,6 +8,8 @@ To use:
    - Click on download
    - Select all languages
    - Format: .json
+   - File Structure: All Keys
+   - Empty Translations: Don't export
    - Plural Format: Symfony
    - Placeholder format: ICU
    - Indentation: 2 spaces
@@ -17,6 +19,7 @@ To use:
 """
 
 import os
+import shutil
 import zipfile
 
 # Unzip the file to 'locale' subfolder.
@@ -33,4 +36,4 @@ for file in files:  # Process each file.
     print(f"Processing: {in_file: <22} ->    ../lang/{parts[0]}.js")
     open(f"../lang/{parts[0]}.js", "w").write("export default " + open(in_file, "r").read())
 
-
+shutil.copyfile("./locale/en.json", "../lang/en.json")
