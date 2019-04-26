@@ -21,7 +21,7 @@
 
       <ul class="navbar-nav">
         <li class="nav-item">
-          <nuxt-link class="nav-link" to="/lock">
+          <nuxt-link class="nav-link" :to="localePath('lock')">
             <i class="fas fa-lock" style="font-size: 18px"></i>
             <p>
               <span class="d-lg-none d-md-block">Lock</span>
@@ -29,7 +29,7 @@
           </nuxt-link>
         </li>
         <li class="nav-item">
-          <nuxt-link class="nav-link" to="/">
+          <nuxt-link class="nav-link" :to="localePath('index')">
             <i class="fas fa-home" style="font-size: 18px"></i>
             <p>
               <span class="d-lg-none d-md-block">Home</span>
@@ -37,7 +37,7 @@
           </nuxt-link>
         </li>
         <li class="nav-item">
-          <nuxt-link class="nav-link" to="/controltower">
+          <nuxt-link class="nav-link" :to="localePath('controltower')">
             <i class="now-ui-icons media-2_sound-wave"></i>
             <p>
               <span class="d-lg-none d-md-block">Control Tower</span>

@@ -5,7 +5,7 @@
        <navbar-toggle-button @click.native="toggleNavbar">
        </navbar-toggle-button>
      </div>
-     <nuxt-link class="navbar-brand" to="/">Yombo Gateway</nuxt-link>
+     <nuxt-link class="navbar-brand" :to="localePath('index')">Yombo Gateway</nuxt-link>
    </div>
 
    <template slot="navbar-menu">
@@ -15,7 +15,7 @@
      </li>
 
      <li class="nav-item">
-       <nuxt-link :to="localePath('dashboard')" class="nav-link">{{ $t('ui.navigation.dashboard') }}</nuxt-link>
+       <nuxt-link :to="localePath('dashboard-devices')" class="nav-link">{{ $t('ui.navigation.dashboard') }}</nuxt-link>
      </li>
 
      <li class="nav-item">
@@ -25,14 +25,14 @@
      <li class="nav-item">
       <drop-down tag="div" title="More..." position="right">
        <nuxt-link :to="localePath('lock')" class="dropdown-item">{{ $t('ui.navigation.lockscreen') }}</nuxt-link>
-       <nuxt-link to="/frontend_settings" class="dropdown-item">{{ $t('ui.navigation.frontend_settings') }}</nuxt-link>
+       <nuxt-link :to="localePath('frontend_settings')" class="dropdown-item">{{ $t('ui.navigation.frontend_settings') }}</nuxt-link>
        <nuxt-link to="/system/restart" class="dropdown-item">{{ $t('ui.navigation.restart_gateway') }}</nuxt-link>
        <nuxt-link to="/user/logout" class="dropdown-item">{{ $t('ui.navigation.logout') }}</nuxt-link>
       </drop-down>
      </li>
 
      <li class="nav-item">
-      <drop-down tag="div" title="Lang" position="right">
+      <drop-down tag="div" :title="$t('system.current_language')" position="right">
        <nuxt-link :to="switchLocalePath('ar')" class="dropdown-lang"> العربية</nuxt-link><br>
        <nuxt-link :to="switchLocalePath('en')" class="dropdown-lang"><span class="flag-icon flag-icon-us"></span>English</nuxt-link><br>
        <nuxt-link :to="switchLocalePath('es')" class="dropdown-lang">Español</nuxt-link><br>

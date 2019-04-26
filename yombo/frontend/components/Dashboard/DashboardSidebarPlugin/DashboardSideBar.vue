@@ -9,7 +9,7 @@
         </div>
       </nuxt-link>
 
-      <nuxt-link to="/" class="simple-text logo-normal">
+      <nuxt-link :to="localePath('index')" class="simple-text logo-normal">
         {{title}}
       </nuxt-link>
       <div class="navbar-minimize">

@@ -7,54 +7,54 @@
         </dashboard-sidebar-item>
 
         <dashboard-sidebar-item :link="{name: $t('ui.navigation.devices'), icon: 'fas fa-wifi'}">
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.list'), path: '/dashboard/devices'}"></dashboard-sidebar-item>
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.add'), path: '/dashboard/devices/add'}"></dashboard-sidebar-item>
-          <dashboard-sidebar-item :link="{name: $t('ui.common.discovered'), path: '/dashboard/devices/discovered'}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.list'), path: localePath('dashboard-devices')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.add'), path: localePath('dashboard-devices-add')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.common.discovered'), path: localePath('dashboard-devices-discovered')}"></dashboard-sidebar-item>
         </dashboard-sidebar-item>
 
         <dashboard-sidebar-item :link="{name: $t('ui.navigation.automation'), icon: 'fas fa-random'}">
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.rules'), path: '/dashboard/automation/rules'}"></dashboard-sidebar-item>
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.scenes'), path: '/dashboard/automation/scenes'}"></dashboard-sidebar-item>
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.crontab'), path: '/dashboard/automation/crontab'}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.rules'), path: localePath('dashboard-automation-rules')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.scenes'), path: localePath('dashboard-automation-scenes')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.crontab'), path: localePath('dashboard-automation-crontab')}"></dashboard-sidebar-item>
         </dashboard-sidebar-item>
 
         <dashboard-sidebar-item :link="{name: $t('ui.navigation.info'), icon: 'fas fa-info'}">
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.atoms'), path: '/dashboard/atoms'}"></dashboard-sidebar-item>
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.device_commands'), path: '/dashboard/device_commands'}"></dashboard-sidebar-item>
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.intents'), path: '/dashboard/intents'}"></dashboard-sidebar-item>
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.states'), path: '/dashboard/states'}"></dashboard-sidebar-item>
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.storage'), path: '/dashboard/storage'}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.atoms'), path: localePath('dashboard-atoms')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.device_commands'), path: localePath('dashboard-device_commands')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.intents'), path: localePath('dashboard-intents')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.states'), path: localePath('dashboard-states')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.storage'), path: localePath('dashboard-storage')}"></dashboard-sidebar-item>
         </dashboard-sidebar-item>
 
-        <dashboard-sidebar-item :link="{name: $t('ui.navigation.statistics'), icon: 'fas fa-tachometer-alt', path: '/dashboard/statistics'}">
+        <dashboard-sidebar-item :link="{name: $t('ui.navigation.statistics'), icon: 'fas fa-tachometer-alt', path: localePath('dashboard-statistics')}">
         </dashboard-sidebar-item>
 
         <dashboard-sidebar-item :link="{name: $t('ui.navigation.permissions'), icon: 'fas fa-user-shield'}">
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.roles'), path: '/dashboard/permissions/roles'}"></dashboard-sidebar-item>
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.users'), path: '/dashboard/permissions/users'}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.roles'), path: localePath('dashboard-permissions-roles')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.users'), path: localePath('dashboard-permissions-users')}"></dashboard-sidebar-item>
         </dashboard-sidebar-item>
 
         <dashboard-sidebar-item :link="{name: $t('ui.navigation.settings'), icon: 'fas fa-cogs'}">
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.locations'), path: '/dashboard/locations'}"></dashboard-sidebar-item>
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.dns'), path: '/dashboard/settings/dns'}"></dashboard-sidebar-item>
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.encryption'), path: '/dashboard/settings/encryption'}"></dashboard-sidebar-item>
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.gateways'), path: '/dashboard/settings/gateways'}"></dashboard-sidebar-item>
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.yombo_ini'), path: '/dashboard/settings/yomboini'}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.locations'), path: localePath('dashboard-locations')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.dns'), path: localePath('dashboard-settings-dns')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.encryption'), path: localePath('dashboard-settings-encryption')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.gateways'), path: localePath('dashboard-settings-gateways')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.yombo_ini'), path: localePath('dashboard-settings-yomboini')}"></dashboard-sidebar-item>
         </dashboard-sidebar-item>
 
         <dashboard-sidebar-item :link="{name: 'MQTT', icon: 'far fa-envelope'}">
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.send'), path: '/mqtt/send'}"></dashboard-sidebar-item>
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.monitor'), path: '/mqtt'}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.send'), path: localePath('dashboard-mqtt-send')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.monitor'), path: localePath('mqtt')}"></dashboard-sidebar-item>
         </dashboard-sidebar-item>
 
         <dashboard-sidebar-item :link="{name: $t('ui.navigation.system'), icon: 'fas fa-download'}">
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.overview'), path: '/dashboard/system/overview'}"></dashboard-sidebar-item>
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.backup'), path: '/dashboard/system/backup'}"></dashboard-sidebar-item>
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.debug'), path: '/dashboard/system/debug'}"></dashboard-sidebar-item>
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.http_event_stream'), path: '/dashboard/system/http_event_stream'}"></dashboard-sidebar-item>
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.events'), path: '/dashboard/system/events'}"></dashboard-sidebar-item>
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.status'), path: '/dashboard/system/status'}"></dashboard-sidebar-item>
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.web_logs'), path: '/dashboard/permissions/webinterface_logs'}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.overview'), path: localePath('dashboard-system-overview')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.backup'), path: localePath('dashboard-system-backup')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.debug'), path: localePath('dashboard-system-debug')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.http_event_stream'), path: localePath('dashboard-system-http_event_stream')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.events'), path: localePath('dashboard-system-events')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.status'), path: localePath('dashboard-system-status')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.web_logs'), path: localePath('dashboard-permissions-webinterface_logs')}"></dashboard-sidebar-item>
         </dashboard-sidebar-item>
 
       </template>
