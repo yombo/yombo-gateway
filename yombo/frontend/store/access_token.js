@@ -23,6 +23,7 @@ export const actions = {
 
 export const mutations = {
   SET_DATA (state, data) {
+    this.$bus.$emit('user_access_token', 'received');
     state.access_token = data['access_token'];
     state.access_token_expires = data['access_token_expires'];
     state.last_download_at = Math.floor(Date.now() / 1000);

@@ -1,14 +1,13 @@
 export const state = () => ({
-  categories: {},
+  locations: {},
   last_download_at: 0
 });
 
 export const actions = {
   fetch( { commit }) {
-    dispatch('locations/refresh', {}, {root:true});
     let response;
     try {
-      response = window.$nuxt.$yboapiv1.categories().all()
+      response = window.$nuxt.$yboapiv1.locations().all()
         .then(response => {
           commit('SET_DATA', response.data['data'])
         });
@@ -19,8 +18,8 @@ export const actions = {
     }
   },
   refresh( { state, dispatch }) {
-      this.$bus.$emit('messageSent', 'over there');
-    if (state.last_download_at <= Math.floor(Date.now()/1000) - 3600) {
+    // this.$bus.$emit('messageSent', 'over there');
+    if (state.last_download_at <= Math.floor(Date.now()/1000) - 60) {
       dispatch('fetch');
     }
   }
@@ -28,19 +27,10 @@ export const actions = {
 
 export const mutations = {
   SET_DATA (state, data) {
-    state.categories = {}
+    state.locations = {}
     Object.keys(data).forEach(key => {
-      state.categories[data[key]['id']] = data[key]['attributes']
+      state.locations[data[key]['id']] = data[key]['attributes']
     });
     state.last_download_at = Math.floor(Date.now() / 1000);
-  }
-};
-
-export const getters =  {
-  fullLabel: (state) => (id) => {
-    let item = state.devices.devices[id];
-
-    if
-    return state.locations.locations[]
   }
 };
