@@ -83,6 +83,8 @@ yombo/frontend/npm-debug.log*
 yombo/frontend/yarn-debug.log*
 yombo/frontend/yarn-error.log*
 yombo/frontend/static/sw.js
+yombo/frontend/static/nuxt.env
+
 
 # NPM installed packages.
 yombo/frontend/package-lock.json
