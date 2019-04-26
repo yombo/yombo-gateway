@@ -84,6 +84,13 @@ yombo/frontend/yarn-debug.log*
 yombo/frontend/yarn-error.log*
 yombo/frontend/static/sw.js
 
+# NPM installed packages.
+yombo/frontend/package-lock.json
+
+# In process language files
+yombo/frontend/util/locale/*
+yombo/frontend/util/*.zip
+
 # Runtime data
 yombo/frontend/pids
 
