@@ -43,8 +43,8 @@
         </dashboard-sidebar-item>
 
         <dashboard-sidebar-item :link="{name: 'MQTT', icon: 'far fa-envelope'}">
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.send'), path: localePath('dashboard-mqtt-send')}"></dashboard-sidebar-item>
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.monitor'), path: localePath('mqtt')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.send'), path: localePath('dashboard-mqtt')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.monitor'), path: localePath('dashboard-mqtt-monitor')}"></dashboard-sidebar-item>
         </dashboard-sidebar-item>
 
         <dashboard-sidebar-item :link="{name: $t('ui.navigation.system'), icon: 'fas fa-download'}">
@@ -55,6 +55,22 @@
           <dashboard-sidebar-item :link="{name: $t('ui.navigation.events'), path: localePath('dashboard-system-events')}"></dashboard-sidebar-item>
           <dashboard-sidebar-item :link="{name: $t('ui.navigation.status'), path: localePath('dashboard-system-status')}"></dashboard-sidebar-item>
           <dashboard-sidebar-item :link="{name: $t('ui.navigation.web_logs'), path: localePath('dashboard-permissions-webinterface_logs')}"></dashboard-sidebar-item>
+        </dashboard-sidebar-item>
+
+        <dashboard-sidebar-item :link="{name: $t('ui.navigation.debug'), icon: 'fas fa-bug'}">
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.overview'), path: localePath('dashboard-debug')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.authentication_platforms'), path: localePath('dashboard-debug-authentication_platforms')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.cache'), path: localePath('dashboard-debug-cache')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.commands'), path: localePath('dashboard-debug-commands')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.device_types'), path: localePath('dashboard-debug-device_types')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.events'), path: localePath('dashboard-debug-events')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.hooks_called_libraries'), path: localePath('dashboard-debug-hooks_called_libraries')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.hooks_called_modules'), path: localePath('dashboard-debug-hooks_called_modules')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.modules'), path: localePath('dashboard-debug-modules')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.nodes'), path: localePath('dashboard-debug-nodes')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.sslcerts'), path: localePath('dashboard-debug-sslcerts')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.statistic_bucket_lifetimes'), path: localePath('dashboard-debug-statistic_bucket_lifetimes')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.requirements'), path: localePath('dashboard-debug-requirements')}"></dashboard-sidebar-item>
         </dashboard-sidebar-item>
 
       </template>

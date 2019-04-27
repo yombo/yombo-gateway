@@ -8,19 +8,19 @@
               <div class="col-md-3">
                 <div class="statistics">
                   <div class="info">
-                    <nuxt-link to="/dashboard/devices" class="dropdown-item">
+                    <nuxt-link :to="localePath('dashboard-devices')" class="dropdown-item">
                     <div class="icon icon-primary">
                       <i class="fas fa-wifi fa-2x"></i>
                     </div>
                     <h3 class="info-title">
-                      <animated-number :value="76"></animated-number>
+                      <animated-number :value="device_count"></animated-number>
                     </h3>
                     </nuxt-link>
                     <h6 class="stats-title">
-                      <drop-down tag="div" title="Devices">
-                        <nuxt-link to="/dashboard/devices" class="dropdown-item">View</nuxt-link>
-                        <nuxt-link to="/dashboard/devices/add" class="dropdown-item">Add</nuxt-link>
-                        <nuxt-link to="/ct" class="dropdown-item">Control Tower</nuxt-link>
+                      <drop-down tag="div" :title="$t('ui.navigation.devices')">
+                        <nuxt-link :to="localePath('dashboard-devices')" class="dropdown-item">View</nuxt-link>
+                        <nuxt-link :to="localePath('dashboard-devices-add')" class="dropdown-item">Add</nuxt-link>
+                        <nuxt-link :to="localePath('controltower')" class="dropdown-item">Control Tower</nuxt-link>
                       </drop-down>
                     </h6>
                   </div>
@@ -35,7 +35,7 @@
                     <h3 class="info-title">
                       <animated-number :value="1"></animated-number>
                     </h3>
-                    <h6 class="stats-title">Delayed Commands</h6>
+                    <h6 class="stats-title">{{ $t('ui.navigation.delayed_commands') }}</h6>
                   </div>
                 </div>
               </div>
@@ -48,7 +48,7 @@
                     <h3 class="info-title">
                       <animated-number :value="135"></animated-number>
                     </h3>
-                    <h6 class="stats-title">Commands</h6>
+                    <h6 class="stats-title">{{ $t('ui.navigation.commands') }}</h6>
                     <small>In last 24 hours</small>
 
                   </div>
@@ -165,6 +165,8 @@
 <script>
 
 import LineChart from '../../components/Dashboard/Charts/LineChart';
+import Command from '@/models/command'
+import Device from '@/models/device'
 
 import {
   StatsCard,
@@ -309,10 +311,33 @@ export default {
       }
     };
   },
+  computed: {
+    device_count () {
+      return Device.query().count();
+    },
+    command_count () {
+      return Command.query().count();
+    },
+    device_age () {
+      return (new Date(Date.now()/1000)) - this.$store.state.devices.last_download_at
+    },
+    devices () {
+      return Device.query().with('locations').orderBy('id', 'desc').get()
+    }
+  },
   created: function () {
-    console.log("pages/dashboard/index: created");
-    // this.$store.dispatch('devices/fetch');
-    // this.getSystemInfo()
+    console.log("dashboard home: created....")
+    this.$store.dispatch('categories/refresh');
+    this.$store.dispatch('commands/refresh');
+    this.$store.dispatch('device_command_inputs/refresh');
+    this.$store.dispatch('device_type_commands/refresh');
+    this.$store.dispatch('device_types/refresh');
+    this.$store.dispatch('devices/refresh');
+    this.$store.dispatch('gateways/refresh');
+    this.$store.dispatch('input_types/refresh');
+    this.$store.dispatch('locations/refresh');
+    this.$store.dispatch('modules/refresh');
+    this.$store.dispatch('module_device_types/refresh');
   },
 };
 </script>
