@@ -31,7 +31,12 @@ files = os.listdir("./locale/")
 
 for file in files:  # Process each file.
   parts = file.split(".")
+  if parts[0] == "en":
+    print("Skipping en.js, duplicate due to it being the default language.")
+    continue;  # No need for two copies of the english translation.
+
   if parts[1] == "json":  # Open a file, append 'export' to it, and then spit it back out.
+
     in_file = f"./locale/{parts[0]}.json"
     print(f"Processing: {in_file: <22} ->    ../lang/{parts[0]}.js")
     open(f"../lang/{parts[0]}.js", "w").write("export default " + open(in_file, "r").read())
