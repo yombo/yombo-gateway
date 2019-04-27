@@ -7,7 +7,7 @@ export default {
   ** Headers of the page
   */
   head: {
-    title: pkg.name,
+    title: "Yombo Frontend",
     meta: [
       { charset: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
@@ -53,6 +53,7 @@ export default {
   plugins: [
     { src: '~/plugins/index.js', ssr: false },
     { src: '~/plugins/localStorage.js', ssr: false },
+    { src:'~/plugins/bus.js', ssr: false },
     { src: '~/plugins/startup.js', ssr: false },
   ],
 
