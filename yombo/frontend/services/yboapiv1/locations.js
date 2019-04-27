@@ -4,8 +4,7 @@ export default {
     all () {
         return yboapiv1().get('/locations')
     },
-    find(locationId) {
-        console.log("locations find: " + locationId);
-        return yboapiv1().get('locations/' + locationId);
+    find(id) {
+        return yboapiv1().get('/locations/' + id);
     },
 }

@@ -1,14 +1,14 @@
-import Category from '@/models/category'
+import Device_Command_Input from '@/models/device_command_input'
 
 export const state = () => ({
   last_download_at: 0
 });
 
 export const actions = {
-  fetch( { commit }) {
+  fetch( { commit, dispatch }) {
     let response;
     try {
-      response = window.$nuxt.$yboapiv1.categories().all()
+      response = window.$nuxt.$yboapiv1.device_commands_inputs().allGW()
         .then(response => {
           commit('SET_DATA', response.data['data'])
         });
@@ -19,8 +19,8 @@ export const actions = {
     }
   },
   refresh( { state, dispatch }) {
-    // this.$bus.$emit('messageSent', 'over there');
-    if (state.last_download_at <= Math.floor(Date.now()/1000) - 28800) {
+      // this.$bus.$emit('messageSent', 'over there');
+    if (state.last_download_at <= Math.floor(Date.now()/1000) - 3600) {
       dispatch('fetch');
     }
   }
@@ -28,9 +28,9 @@ export const actions = {
 
 export const mutations = {
   SET_DATA (state, payload) {
-    Category.deleteAll();
+    Device_Command_Input.deleteAll();
     Object.keys(payload).forEach(key => {
-      Category.insert({
+      Device_Command_Input.insert({
         data: payload[key]['attributes'],
       })
     });

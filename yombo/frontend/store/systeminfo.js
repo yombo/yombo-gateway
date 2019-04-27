@@ -40,8 +40,7 @@ export const actions = {
 
 export const mutations = {
   SET_DATA (state, data) {
-    state.label = data['label'];
-
+    // state.label = data['label'];
     Object.keys(state).forEach(key => {
       state[key] = data[key];
     });

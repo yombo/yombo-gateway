@@ -1,5 +1,6 @@
+import Location from '@/models/location'
+
 export const state = () => ({
-  locations: {},
   last_download_at: 0
 });
 
@@ -19,17 +20,19 @@ export const actions = {
   },
   refresh( { state, dispatch }) {
     // this.$bus.$emit('messageSent', 'over there');
-    if (state.last_download_at <= Math.floor(Date.now()/1000) - 60) {
+    if (state.last_download_at <= Math.floor(Date.now()/1000) - 7200) {
       dispatch('fetch');
     }
   }
 };
 
 export const mutations = {
-  SET_DATA (state, data) {
-    state.locations = {}
-    Object.keys(data).forEach(key => {
-      state.locations[data[key]['id']] = data[key]['attributes']
+  SET_DATA (state, payload) {
+    Location.deleteAll();
+    Object.keys(payload).forEach(key => {
+      Location.insert({
+        data: payload[key]['attributes'],
+      })
     });
     state.last_download_at = Math.floor(Date.now() / 1000);
   }

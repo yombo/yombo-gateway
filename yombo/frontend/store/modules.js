@@ -1,4 +1,4 @@
-import Category from '@/models/category'
+import Module from '@/models/module'
 
 export const state = () => ({
   last_download_at: 0
@@ -8,7 +8,7 @@ export const actions = {
   fetch( { commit }) {
     let response;
     try {
-      response = window.$nuxt.$yboapiv1.categories().all()
+      response = window.$nuxt.$yboapiv1.modules().allGW()
         .then(response => {
           commit('SET_DATA', response.data['data'])
         });
@@ -20,7 +20,7 @@ export const actions = {
   },
   refresh( { state, dispatch }) {
     // this.$bus.$emit('messageSent', 'over there');
-    if (state.last_download_at <= Math.floor(Date.now()/1000) - 28800) {
+    if (state.last_download_at <= Math.floor(Date.now()/1000) - 7200) {
       dispatch('fetch');
     }
   }
@@ -28,9 +28,9 @@ export const actions = {
 
 export const mutations = {
   SET_DATA (state, payload) {
-    Category.deleteAll();
+    Module.deleteAll();
     Object.keys(payload).forEach(key => {
-      Category.insert({
+      Module.insert({
         data: payload[key]['attributes'],
       })
     });
