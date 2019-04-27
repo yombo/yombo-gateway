@@ -1,12 +1,124 @@
 export default {
   "state": {
+    "automation": {
+      "off": "關閉",
+      "on": "開啟"
+    },
+    "calendar": {
+      "off": "關閉",
+      "on": "開啟"
+    },
+    "camera": {
+      "idle": "閒"
+    },
+    "climate": {
+      "idle": "閒",
+      "off": "關閉",
+      "on": "開啟"
+    },
+    "cover": {
+      "closed": "关闭",
+      "open": "開啟",
+      "opening": "開啟中",
+      "stopped": "停止"
+    },
     "default": {
+      "closed": "关闭",
+      "idle": "閒",
       "off": "關閉",
       "on": "開啟",
       "open": "開啟",
       "opening": "開啟中",
       "stopped": "停止",
       "unavailable": "不可用"
+    },
+    "digital_sensor": {
+      "cold": {
+        "off": "關閉"
+      },
+      "default": {
+        "off": "關閉",
+        "on": "關閉"
+      },
+      "door": {
+        "off": "关闭",
+        "on": "開啟"
+      },
+      "garage_door": {
+        "off": "关闭",
+        "on": "開啟"
+      },
+      "heat": {
+        "off": "關閉"
+      },
+      "motion": {
+        "off": "關閉",
+        "on": "開啟"
+      },
+      "occupancy": {
+        "off": "關閉",
+        "on": "開啟"
+      },
+      "opening": {
+        "off": "关闭",
+        "on": "開啟"
+      },
+      "smoke": {
+        "off": "關閉",
+        "on": "開啟"
+      },
+      "sound": {
+        "off": "關閉",
+        "on": "開啟"
+      },
+      "vibration": {
+        "off": "關閉",
+        "on": "開啟"
+      },
+      "window": {
+        "off": "关闭",
+        "on": "開啟"
+      }
+    },
+    "fan": {
+      "off": "關閉",
+      "on": "開啟"
+    },
+    "group": {
+      "closed": "关闭",
+      "off": "關閉",
+      "on": "開啟",
+      "open": "開啟",
+      "opening": "開啟中",
+      "stopped": "停止"
+    },
+    "light": {
+      "off": "關閉",
+      "on": "開啟"
+    },
+    "media_player": {
+      "idle": "閒",
+      "off": "關閉",
+      "on": "開啟"
+    },
+    "plant": {
+      "ok": "關閉",
+      "problem": "開啟"
+    },
+    "remote": {
+      "off": "關閉",
+      "on": "開啟"
+    },
+    "script": {
+      "off": "關閉",
+      "on": "開啟"
+    },
+    "sensor": {
+      "off": "關閉",
+      "on": "開啟"
+    },
+    "switch": {
+      "off": "關閉"
     }
   },
   "system": {
@@ -27,13 +139,35 @@ export default {
     "greeting": {
       "welcome": "歡迎"
     },
+    "label": {
+      "actions": "行动",
+      "delete": "刪除",
+      "description": "描述",
+      "disable": "禁用",
+      "edit": "編輯",
+      "enable": "啟用",
+      "label": "标签",
+      "location": "位置",
+      "more": "更多",
+      "more_ddd": "更多...",
+      "search": "搜索",
+      "search_ddd": "搜索...",
+      "updated": "更新"
+    },
     "navigation": {
       "about": "关于",
       "add": "加",
+      "api_auth": "API 认证",
+      "atoms": "原子",
       "automation": "自動化",
       "backup": "备份",
+      "basic_settings": "基本設置",
       "control_tower": "控制塔",
-      "dashboard": "仪表 板"
+      "dashboard": "仪表 板",
+      "info": "信息",
+      "roles": "角色",
+      "rules": "規則",
+      "users": "用戶"
     }
   }
 }

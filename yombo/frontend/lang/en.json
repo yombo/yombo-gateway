@@ -243,6 +243,8 @@
       "stopped": "Stopped"
     },
     "default": {
+      "closed": "Closed",
+      "idle": "Idle",
       "off": "Off",
       "on": "On",
       "open": "Open",
@@ -544,11 +546,9 @@
       "disabled": "Disabled",
       "discovered": "Discovered",
       "documentation": "Documentation",
-      "edit": "Edit",
       "email": "E-Mail",
       "enable": "Enable",
       "enabled": "Enabled",
-      "info": "Info",
       "list": "List",
       "loading": "Loading",
       "name": "Name",
@@ -558,13 +558,9 @@
       "public": "Public",
       "public_pending": "Public pending",
       "restart": "Restart",
-      "roles": "Roles",
-      "rules": "Rules",
       "save": "Save",
-      "shutdown": "Shutdown",
-      "users": "Users"
+      "shutdown": "Shutdown"
     },
-    "common:enable": "Enable",
     "form": {
       "login": {
         "log_in": "Log in",
@@ -579,7 +575,20 @@
       "basic_information": "Basic Information"
     },
     "label": {
-      "more_ddd": "More..."
+      "actions": "Actions",
+      "area": "Area",
+      "delete": "Delete",
+      "description": "Description",
+      "disable": "Disable",
+      "edit": "Edit",
+      "enable": "Enable",
+      "label": "Label",
+      "location": "Location",
+      "more": "More",
+      "more_ddd": "More...",
+      "search": "Search",
+      "search_ddd": "Search...",
+      "updated": "Updated"
     },
     "messages": {
       "rate_limit_exceeded": "Too many attempts, try again later."
