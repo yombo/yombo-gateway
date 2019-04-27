@@ -1,3 +1,5 @@
+import humanizeDuration from 'humanize-duration';
+
 import Device from '@/models/device'
 
 export const state = () => ({
@@ -37,6 +39,16 @@ export const mutations = {
         data: payload[key]['attributes'],
       })
     });
-    state.last_download_at = Math.floor(Date.now() / 1000);
+    state.last_download_at = Number(Date.now());
+    console.log("dvice at: " + state.last_download_at);
+  }
+};
+
+export const getters = {
+  data_age: state => () => {
+    return Date.now() - state.last_download_at;
+  },
+  display_age: (state, getters) => (locale) => {
+    return humanizeDuration(getters['data_age'](), { language: locale, round: true });
   }
 };

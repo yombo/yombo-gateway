@@ -3,38 +3,46 @@
     <div class="col-md-12">
       <card card-body-classes="table-full-width">
         <div slot="header">
-         <h4 class="card-title">
-           {{ $t('ui.navigation.devices') }}
-            <a href="#/devices/add" title="New Device" class="btn btn-info btn-sm fa-pull-right" role="button">
+          <div class="fa-pull-right">
+            <a :href="localePath('dashboard-devices-add')" title="New Device" class="btn btn-info btn-sm fa-pull-right" role="button">
             <i class="fas fa-plus-circle fa-pull-left" style="font-size: 1.5em;"></i> &nbsp; Add new</a>
+          <br>
+           <el-input
+                  class="fa-pull-right"
+                  v-model="search"
+                  size="mini"
+                  :placeholder="$t('ui.label.search_ddd')"/>
+          </div>
+        <h4 class="card-title">
+           {{ $t('ui.navigation.devices') }}
+          {{ this.$i18n.locale }}
          </h4>
-           <div v-on:click="refreshRequest" slot="footer" class="stats">
-             <i class="now-ui-icons arrows-1_refresh-69" style="color: #14375c;"></i> Updated {{data_age}} seconds ago.
+           <div slot="footer" class="stats">
+             <i v-on:click="refreshRequest" class="now-ui-icons arrows-1_refresh-69" style="color: #14375c;"></i>
+             {{$t('ui.label.updated')}} {{display_age}}
            </div>
-
         </div>
-        <el-table
-          :data="devices.filter(data => !search
-           || data.label.toLowerCase().includes(search.toLowerCase())
-           || data.description.toLowerCase().includes(search.toLowerCase())
-           )"
-        >
-          <el-table-column label="Label" property="full_label"></el-table-column>
-          <el-table-column  label="Description" property="description"></el-table-column>
-          <el-table-column  label="Location" property="full_location"></el-table-column>
-          <el-table-column
-            align="right">
-            <template slot="header" slot-scope="scope">
-              <el-input
-                v-model="search"
-                size="mini"
-                placeholder="Type to search"/>
-            </template>
-            <template slot-scope="scope">
-              EDIT DELETE
-            </template>
-          </el-table-column>
-        </el-table>
+        <div class="card-body">
+          <el-table
+            :data="devices.filter(data => !search
+             || data.label.toLowerCase().includes(search.toLowerCase())
+             || data.description.toLowerCase().includes(search.toLowerCase())
+             )"
+          >
+            <el-table-column :label="$t('ui.label.label')" property="full_label"></el-table-column>
+            <el-table-column :label="$t('ui.label.description')" property="description"></el-table-column>
+            <el-table-column :label="$t('ui.label.location')" property="full_location"></el-table-column>
+            <el-table-column
+              align="right">
+              <template slot="header" slot-scope="scope">
+                {{ $t('ui.label.actions')}}
+              </template>
+              <template slot-scope="scope">
+                {{ $t('ui.label.edit')}} {{ $t('ui.label.delete')}}
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
       </card>
     </div>
 
@@ -43,6 +51,8 @@
 <script>
 import { Table, TableColumn } from 'element-ui';
 import _ from 'lodash';
+
+import humanizeDuration from 'humanize-duration';
 
 import Device from '@/models/device'
 
@@ -55,15 +65,12 @@ export default {
   data() {
     return {
       search: '',
-      data_age: 0,
+      display_age: '0 seconds',
     };
   },
   computed: {
     devices () {
       return Device.query().with('locations').orderBy('id', 'desc').get()
-    },
-    last_download_at () {
-      return this.$store.state.devices.last_download_at
     },
   },
 
@@ -95,7 +102,7 @@ export default {
       this.$store.dispatch('devices/refresh');
     },
     updateDeviceAge () {
-      this.data_age = (new Date(Date.now()/1000)) - this.$store.state.devices.last_download_at;
+      this.display_age =  this.$store.getters['devices/display_age'](this.$i18n.locale);
     }
   },
   created () {
@@ -105,7 +112,8 @@ export default {
     this.$store.dispatch('locations/refresh');
   },
   mounted () {
-    this.$options.interval = setInterval(this.updateDeviceAge, 1000);
+    this.updateDeviceAge();
+    this.$options.interval = setInterval(this.updateDeviceAge, 5000);
   },
   beforeDestroy () {
     clearInterval(this.$options.interval);
@@ -114,7 +122,7 @@ export default {
 </script>
 
 <style>
-.table-transparent {
-  background-color: transparent !important;
-}
+/*.table-transparent {*/
+/*  background-color: transparent !important;*/
+/*}*/
 </style>
