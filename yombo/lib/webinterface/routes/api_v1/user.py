@@ -26,7 +26,6 @@ def route_api_v1_user(webapp):
             Gets the current users' access token.
             """
 
-            # request.setHeader("Access-Control-Allow-Origin", "*")
             access_token = yield session.get_access_token(request)
             return webinterface.render_api(request, None,
                                            data_type="user_session_token",

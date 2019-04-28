@@ -64,7 +64,6 @@ def route_user(webapp):
 
         @webapp.route("/auth_sso", methods=["GET"])
         @run_first()
-        @inlineCallbacks
         def page_user_auth_sso_get(webinterface, request, session):
             return webinterface.redirect(request, "/user/login")
 

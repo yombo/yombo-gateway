@@ -1,3 +1,7 @@
+"""
+Handles various system API calls.
+"""
+
 # Import python libraries
 import os
 from time import time
@@ -23,7 +27,6 @@ def route_api_v1_system(webapp):
                                                      detail="Gateway is not ready to process API requests.",
                                                      response_code=503)
 
-            request.setHeader("Access-Control-Allow-Origin", "*")
             return webinterface.render_api(request, None,
                                            data_type="system_awake",
                                            attributes={"id": int(webinterface._Atoms["running_since"])},
