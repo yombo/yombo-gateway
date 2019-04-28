@@ -72,8 +72,7 @@ export default {
     },
     created: function () {
       if (this.gwLabel == null) {
-        this.$store.dispatch('systeminfo/fetch');
-        // this.getSystemInfo()
+        this.$store.dispatch('systeminfo/refresh');
       }
     },
 }

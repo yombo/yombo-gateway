@@ -18,6 +18,13 @@ export const actions = {
       console.log(ex);
       return
     }
+  },
+    // will only refresh if more than 1 hour has elapsed or the token expires within 2 hours.
+    refresh( { state, dispatch }) {
+    if (state.last_download_at <= Math.floor(Date.now()/1000) - 3600
+        || state.access_token_expires <= Math.floor(Date.now()/1000) + 7200) {
+      dispatch('fetch');
+    }
   }
 };
 

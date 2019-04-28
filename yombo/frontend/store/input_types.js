@@ -8,7 +8,7 @@ export const actions = {
   fetch( { commit, dispatch }) {
     let response;
     try {
-      response = window.$nuxt.$yboapiv1.input_type().allGW()
+      response = window.$nuxt.$yboapiv1.input_types().allGW()
         .then(response => {
           commit('SET_DATA', response.data['data'])
         });

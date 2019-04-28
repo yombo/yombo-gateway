@@ -35,6 +35,11 @@ export const actions = {
       console.log(ex);
       return
     }
+  },
+    refresh( { state, dispatch }) {
+    if (state.last_download_at <= Math.floor(Date.now()/1000) - 120 || state.gwLabel == null) {
+      dispatch('fetch');
+    }
   }
 };
 

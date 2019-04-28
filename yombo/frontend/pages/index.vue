@@ -72,9 +72,7 @@
       // this.$bus.$on('messageSent', e => console.log("home: " + e));
       // console.log("setup listener in home....");
       if (this.gwLabel == null) {
-        console.log("pages/index: created");
         this.$store.dispatch('systeminfo/fetch');
-        // this.getSystemInfo()
       }
     },
     mounted(){

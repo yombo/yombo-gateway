@@ -11,4 +11,9 @@ export default {
         // console.log("devices find: " + id);
         return yboapiv1().get('/devices/' + id);
     },
+    patch(id, data) {
+        console.log("devices patch: " + id);
+        console.log(data);
+        return yboapiv1().patch('/devices/' + id, data);
+    },
 }

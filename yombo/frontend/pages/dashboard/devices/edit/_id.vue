@@ -8,7 +8,7 @@
          </h4>
         </div>
         <div class="card-body">
-          Device:
+          Device: {{id}}
         </div>
       </card>
     </div>
@@ -29,8 +29,7 @@ export default {
   },
   data() {
     return {
-      search: '',
-      display_age: '0 seconds',
+      id: this.$route.params.id,
     };
   },
   computed: {
@@ -150,7 +149,7 @@ export default {
   },
   created () {
     this.debouncedRefresh = _.throttle(this.refresh, 5000);
-    this.$store.dispatch('devices/refresh');
+    this.$store.dispatch('devices/fetchOne', );
     this.$store.dispatch('locations/refresh');
   },
   mounted () {

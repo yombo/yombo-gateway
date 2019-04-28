@@ -15,7 +15,6 @@
           </div>
         <h4 class="card-title">
            {{ $t('ui.navigation.devices') }}
-          {{ this.$i18n.locale }}
          </h4>
            <div slot="footer" class="stats">
              <i v-on:click="refreshRequest" class="now-ui-icons arrows-1_refresh-69" style="color: #14375c;"></i>
@@ -33,13 +32,40 @@
             <el-table-column :label="$t('ui.label.description')" property="description"></el-table-column>
             <el-table-column :label="$t('ui.label.location')" property="full_location"></el-table-column>
             <el-table-column
-              align="right">
-              <template slot="header" slot-scope="scope">
-                {{ $t('ui.label.actions')}}
-              </template>
-              <template slot-scope="scope">
-                {{ $t('ui.label.edit')}} {{ $t('ui.label.delete')}}
-              </template>
+              align="right" :label="$t('ui.label.actions')">
+              <div slot-scope="props" class="table-actions">
+                <n-button @click.native="handleEdit(props.$index, props.row)"
+                          class="edit"
+                          type="info"
+                          size="sm" round icon>
+                  <i class="fa fa-edit"></i>
+                </n-button>
+
+                <template v-if="props.row.status == 1">
+                  <n-button @click.native="handleDisable(props.$index, props.row)"
+                            class="enable"
+                            type="success"
+                            size="sm" round icon>
+                    <i class="fa fa-power-off"></i>
+                  </n-button>
+                </template>
+                <template v-else>
+                  <n-button @click.native="handleEnable(props.$index, props.row)"
+                            class="disable"
+                            type="default"
+                            size="sm" round icon
+                            :disabled="props.row.status == 2">
+                    <i class="fa fa-power-off"></i>
+                  </n-button>
+                </template>
+
+                <n-button @click.native="handleDelete(props.$index, props.row)"
+                          class="remove"
+                          type="danger"
+                          size="sm" round icon>
+                  <i class="fa fa-times"></i>
+                </n-button>
+              </div>
             </el-table-column>
           </el-table>
         </div>
@@ -51,8 +77,6 @@
 <script>
 import { Table, TableColumn } from 'element-ui';
 import _ from 'lodash';
-
-import humanizeDuration from 'humanize-duration';
 
 import Device from '@/models/device'
 
@@ -75,6 +99,82 @@ export default {
   },
 
   methods: {
+    handleEdit(index, row) {
+      this.$router.push(this.localePath('dashboard-devices-edit')+"/"+row.id);
+    },
+    handleDelete(index, row) {
+      this.$swal({
+        title: 'Are you sure?',
+        text: `You won't may not be able to revert this!`,
+        type: 'warning',
+        showCancelButton: true,
+        confirmButtonClass: 'btn btn-success btn-fill',
+        cancelButtonClass: 'btn btn-danger btn-fill',
+        confirmButtonText: 'Yes, delete it!',
+        buttonsStyling: false
+      }).then(result => {
+        if (result.value) {
+          this.$store.dispatch('devices/delete', row.id);
+          this.$swal({
+            title: 'Deleted!',
+            text: `You deleted ${row.full_name}`,
+            type: 'success',
+            confirmButtonClass: 'btn btn-success btn-fill',
+            buttonsStyling: false
+          });
+        }
+      });
+    },
+    async handleEnable(index, row) {
+      await this.$swal({
+        title: 'Are you sure?',
+        text: `This will enable the device, the gateway may need to be rebooted.`,
+        type: 'info',
+        showCancelButton: true,
+        confirmButtonClass: 'btn btn-success btn-fill',
+        cancelButtonClass: 'btn btn-danger btn-fill',
+        confirmButtonText: 'Yes, enable it!',
+        buttonsStyling: false
+      }).then(result => {
+        if (result.value) {
+          let results = this.$store.dispatch('devices/enable', row.id);
+          console.log('Enabled status: ' + JSON.stringify(results))
+          this.$swal({
+            title: 'Enabled!',
+            text: `You enabled ${row.full_name}`,
+            type: 'success',
+            confirmButtonClass: 'btn btn-success btn-fill',
+            buttonsStyling: false
+          });
+        }
+      });
+    },
+    async handleDisable(index, row) {
+      await this.$swal({
+        title: 'Are you sure?',
+        text: `This will disable the device, the gateway may need to be rebooted.`,
+        type: 'warning',
+        showCancelButton: true,
+        confirmButtonClass: 'btn btn-success btn-fill',
+        cancelButtonClass: 'btn btn-danger btn-fill',
+        confirmButtonText: 'Yes, disable it!',
+        buttonsStyling: false
+      }).then(result => {
+        if (result.value) {
+          let results = this.$store.dispatch('devices/disable', row.id);
+          console.log('Disabled status: ' + JSON.stringify(results))
+          this.$swal({
+            title: 'Disabled!',
+            text: `You disabled ${row.full_name}`,
+            type: 'success',
+            confirmButtonClass: 'btn btn-success btn-fill',
+            buttonsStyling: false
+          });
+        }
+      });
+    },
+
+
     tableRowClassName({ rowIndex }) {
       if (rowIndex === 0) {
         return 'table-success';
@@ -101,12 +201,16 @@ export default {
     refresh() { // called by debounceRefreshed if the user hasn't clicked on refresh too often.
       this.$store.dispatch('devices/refresh');
     },
-    updateDeviceAge () {
+    updateDeviceAge () { // called by setInterval setup in mounted()
       this.display_age =  this.$store.getters['devices/display_age'](this.$i18n.locale);
+    },
+    device_updated(updated_at) { // called by bus.$on setup in mounted()
+      this.updateDeviceAge();
+      console.log("Devices were updated: " + updated_at);
     }
+
   },
   created () {
-    // this.$bus.$on('messageSent', e => console.log("DB:devices: " + e));
     this.debouncedRefresh = _.throttle(this.refresh, 5000);
     this.$store.dispatch('devices/refresh');
     this.$store.dispatch('locations/refresh');
@@ -114,9 +218,13 @@ export default {
   mounted () {
     this.updateDeviceAge();
     this.$options.interval = setInterval(this.updateDeviceAge, 5000);
+    this.$bus.$on('store_devices_updates', this.device_updated);
+    // console.log("devices mounted....");
   },
   beforeDestroy () {
     clearInterval(this.$options.interval);
+    this.$bus.$off('store_devices_updates', this.device_updated);
+    // console.log("device before destroy")
   },
 };
 </script>
