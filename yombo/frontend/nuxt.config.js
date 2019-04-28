@@ -1,4 +1,5 @@
 import pkg from './package'
+const webpack = require('webpack')
 
 export default {
   mode: 'spa',
@@ -116,6 +117,16 @@ export default {
     ** You can extend webpack config here
     */
     extend(config, ctx) {
+      if (!this.dev) {
+        config.plugins.push(
+          // new webpack.optimize.LimitChunkCountPlugin({
+          // maxChunks: 20
+          //   }),
+            new webpack.optimize.MinChunkSizePlugin({
+            minChunkSize: 15000
+          })
+        )
+      }
     }
   }
 }
