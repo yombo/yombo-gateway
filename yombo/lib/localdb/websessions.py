@@ -24,7 +24,6 @@ class DB_Websessions(object):
             return {
                 "id": data.id,
                 "enabled": coerce_value(data.enabled, "bool"),
-                "gateway_id": data.gateway_id,
                 "user_id": data.user_id,
                 "auth_data": auth_data,
                 "refresh_token": data.refresh_token,
@@ -60,7 +59,6 @@ class DB_Websessions(object):
         args = {
             "id": session._auth_id,
             "enabled": coerce_value(session.enabled, "int"),
-            "gateway_id": session.gateway_id,
             "auth_data": auth_data,
             "refresh_token": session._refresh_token,
             "access_token": session._access_token,
