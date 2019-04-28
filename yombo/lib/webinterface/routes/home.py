@@ -1,17 +1,14 @@
 """
 This file handles the homepage, static files, and misc one-off urls.
 """
-import json
-
 # Import twisted libraries
 from twisted.web.static import File
 
 # Import Yombo libraries
 from yombo.constants import CONTENT_TYPE_JSON
+from yombo.core.log import get_logger
 from yombo.lib.webinterface.auth import require_auth, run_first
 from yombo.utils import random_int
-from yombo.utils.networking import ip_addres_in_local_network
-from yombo.core.log import get_logger
 
 logger = get_logger("library.webinterface.routes.home")
 
@@ -25,13 +22,13 @@ def route_home(webapp):
 
         @webapp.handle_errors(NotFound)
         @require_auth()
-        def notfound(self, request, failure):
+        def home_not_found(self, request, failure):
             """ This shouldn't ever be used....failsafe."""
             request.setResponseCode(404)
             return "Not found, I say!"
 
         @webapp.route("/robots.txt")
-        def robots_txt(webinterface, request):
+        def home_robots_txt(webinterface, request):
             return "User-agent: *\nDisallow: /\n"
 
         @webapp.route("/<path:catchall>", branch=True)
@@ -76,40 +73,11 @@ def route_home(webapp):
         @webapp.route("/nuxt.env")
         @require_auth()
         def home_nuxt_env(webinterface, request, session):
+            print("home_nuxt_env")
             request.responseHeaders.removeHeader("Expires")
             request.setHeader("Content-Type", CONTENT_TYPE_JSON)
-
             request.setHeader("Cache-Control", f"max-age=5")
-            internal_http_port = webinterface._Gateways.local.internal_http_port
-            internal_http_secure_port = webinterface._Gateways.local.internal_http_secure_port
-            external_http_port = webinterface._Gateways.local.external_http_port
-            external_http_secure_port = webinterface._Gateways.local.external_http_secure_port
-
-            internal_http_port = internal_http_port if internal_http_port is not None else \
-                webinterface._Configs.get("webinterface", "nonsecure_port", None, False)
-            internal_http_secure_port = internal_http_secure_port if internal_http_secure_port is not None else \
-                webinterface._Configs.get("webinterface", "secure_port", None, False)
-            external_http_port = external_http_port if external_http_port is not None else \
-                webinterface._Configs.get("webinterface", "nonsecure_port", None, False)
-            external_http_secure_port = external_http_secure_port if external_http_secure_port is not None else \
-                webinterface._Configs.get("webinterface", "secure_port", None, False)
-
-            return json.dumps({
-                "gateway_id": webinterface.gateway_id(),
-                "working_dir": webinterface.working_dir,
-                "internal_http_port": internal_http_port,
-                "internal_http_secure_port": internal_http_secure_port,
-                "external_http_port": external_http_port,
-                "external_http_secure_port": external_http_secure_port,
-                "api_key": webinterface._Configs.get("frontend", "api_key", "4Pz5CwKQCsexQaeUvhJnWAFO6TRa9SafnpAQfAApqy9fsdHTLXZ762yCZOct", False),
-                "mqtt_port": webinterface._MQTT.server_listen_port,
-                "mqtt_port_ssl": webinterface._MQTT.server_listen_port_ss_ssl,
-                "mqtt_port_websockets": webinterface._MQTT.server_listen_port,
-                "mqtt_port_websockets_ssl": webinterface._MQTT.server_listen_port,
-                "mqtt_port": webinterface._MQTT.server_listen_port,
-                "client_location":
-                    "remote" if ip_addres_in_local_network(request.getClientIP()) else "local",
-            })
+            return webinterface.nuxt_env_content(request)
 
         # @webapp.route("/<path:catchall>", branch=True, strict_slashes=False)
         # @require_auth()

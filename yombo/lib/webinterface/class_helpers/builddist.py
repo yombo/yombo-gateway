@@ -9,7 +9,7 @@ Extends the web_interface library class to add support for building the static f
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/webinterface/class_helpers/builddist.html>`_
 """
 # Import python libraries
-import gzip
+import json
 from os import environ, path, makedirs, listdir, walk as oswalk, unlink, stat as osstat
 from PIL import Image
 import shutil
@@ -22,8 +22,9 @@ from twisted.internet.utils import getProcessOutput
 
 # Import Yombo libraries
 from yombo.utils import read_file, download_file
+from yombo.utils.networking import ip_addres_in_local_network
 from yombo.core.log import get_logger
-
+from yombo.utils.filewriter import FileWriter
 logger = get_logger("library.webinterface.class_helpers.builddist")
 
 
@@ -85,8 +86,6 @@ class BuildDistribution:
 
         :return:
         """
-        # print("!@!@!@!@!@ build frontend")
-
         if self.frontend_building is True:
             return
 
@@ -94,7 +93,7 @@ class BuildDistribution:
             logger.warn("Cannot build frontend : already building...")
             return
         start_time = time()
-        print("!!!!!!! Build frontend starting")
+        # print("!!!!!!! Build frontend starting")
         self.frontend_building = True
         yield self.frontend_npm_run()
         self.frontend_building = False
@@ -159,6 +158,41 @@ class BuildDistribution:
                 out = yield threads.deferToThread(full.resize, (size, size), Image.BICUBIC)
                 yield threads.deferToThread(out.save, f"{self.working_dir}/frontend/img/bg/{idx}_{size}.jpg", format="JPEG", subsampling=0, quality=68)
 
+    def nuxt_env_content(self, request=None):
+        internal_http_port = self._Gateways.local.internal_http_port
+        internal_http_secure_port = self._Gateways.local.internal_http_secure_port
+        external_http_port = self._Gateways.local.external_http_port
+        external_http_secure_port = self._Gateways.local.external_http_secure_port
+        internal_http_port = internal_http_port if internal_http_port is not None else \
+            self._Configs.get("self", "nonsecure_port", None, False)
+        internal_http_secure_port = internal_http_secure_port if internal_http_secure_port is not None else \
+            self._Configs.get("self", "secure_port", None, False)
+        external_http_port = external_http_port if external_http_port is not None else \
+            self._Configs.get("self", "nonsecure_port", None, False)
+        external_http_secure_port = external_http_secure_port if external_http_secure_port is not None else \
+            self._Configs.get("self", "secure_port", None, False)
+
+        client_location = "local"
+        if request is not None and ip_addres_in_local_network(request.getClientIP()):
+            client_location = "remote"
+
+        return json.dumps({
+            "gateway_id": self.gateway_id(),
+            "working_dir": self.working_dir,
+            "internal_http_port": internal_http_port,
+            "internal_http_secure_port": internal_http_secure_port,
+            "external_http_port": external_http_port,
+            "external_http_secure_port": external_http_secure_port,
+            "api_key": self._Configs.get("frontend", "api_key",
+                                         "4Pz5CwKQCsexQaeUvhJnWAFO6TRa9SafnpAQfAApqy9fsdHTLXZ762yCZOct", False),
+            "mqtt_port": self._MQTT.server_listen_port,
+            "mqtt_port_ssl": self._MQTT.server_listen_port_ss_ssl,
+            "mqtt_port_websockets": self._MQTT.server_listen_port,
+            "mqtt_port_websockets_ssl": self._MQTT.server_listen_port,
+            "client_location": client_location,
+            "static_data": False,
+        }, indent='\t', separators=(',', ': '))
+
     @inlineCallbacks
     def copy_static_web_items(self):
         """
@@ -166,7 +200,6 @@ class BuildDistribution:
 
         :return:
         """
-        # print("!@!@!@!@!@ Copy static...")
         def do_cat(inputs, output):
             output = f"{self.working_dir}/frontend/{output}"
             makedirs(path.dirname(output), exist_ok=True)
@@ -211,6 +244,23 @@ class BuildDistribution:
         CAT_SCRIPTS_OUT = "js/basic_app.js"
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
+        nuxt_env = self.nuxt_env_content()
+
+        filename = f"{self.working_dir}/frontend/nuxt.env"
+        file_out = FileWriter(filename=filename, mode="w")  # open in append mode.
+        file_out.write(nuxt_env)
+        yield file_out.close_while_waiting()
+
+        filename = f"{self.app_dir}/yombo/frontend/static/nuxt.env"
+        file_out = FileWriter(filename=filename, mode="w")  # open in append mode.
+        file_out.write(nuxt_env)
+        yield file_out.close_while_waiting()
+
+        filename = f"{self.app_dir}/yombo/frontend/dist/nuxt.env"
+        file_out = FileWriter(filename=filename, mode="w")  # open in append mode.
+        file_out.write(nuxt_env)
+        yield file_out.close_while_waiting()
+
         yield self.copytree("yombo/lib/webinterface/static/source/img/", "frontend/img/")
 
     @inlineCallbacks
@@ -219,7 +269,6 @@ class BuildDistribution:
             src = self.app_dir + "/" + src
         if dst.startswith("/") is False:
             dst = self.working_dir + "/" + dst
-        # print(f"!!!!!!! Start copytree....appdir{self.app_dir} {src} -> {dst}")
 
         if not path.exists(dst):
             makedirs(dst)
