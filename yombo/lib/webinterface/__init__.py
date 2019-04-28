@@ -66,6 +66,7 @@ from yombo.lib.webinterface.routes.api_v1.stream import route_api_v1_stream
 from yombo.lib.webinterface.routes.api_v1.statistics import route_api_v1_statistics
 from yombo.lib.webinterface.routes.api_v1.storage import route_api_v1_storage
 from yombo.lib.webinterface.routes.api_v1.system import route_api_v1_system
+from yombo.lib.webinterface.routes.api_v1.user import route_api_v1_user
 from yombo.lib.webinterface.routes.api_v1.webinterface_logs import route_api_v1_webinterface_logs
 
 from yombo.lib.webinterface.routes.home import route_home
@@ -150,6 +151,7 @@ class WebInterface(BuildDistribution, ErrorHandler, Render, YomboLibrary, WebSer
         route_api_v1_system(self.webapp)
         route_api_v1_scene(self.webapp)
         route_api_v1_storage(self.webapp)
+        route_api_v1_user(self.webapp)
         route_api_v1_webinterface_logs(self.webapp)
 
         # Load web server routes

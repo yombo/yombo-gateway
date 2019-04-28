@@ -31,16 +31,16 @@ def update_request(webinterface, request):
     request.setHeader("server", "Apache/2.4.38 (Unix)")
     request.setHeader("X-Powered-By", "YGW")
     request.setHeader("Cache-Control", "no-cache, no-store, must-revalidate")  # don't cache!
-    origin = "*"
+    origin_final = "*"
     if request.requestHeaders.hasHeader("origin"):
         origin = request.requestHeaders.getRawHeaders("origin")[0]
-        origin = urlparse(origin)
-        print(f"got an origin: {origin.scheme} {origin.hostname} {origin.port}")
-        if origin.scheme in ("http", "https") and len(origin.hostname) < 150 \
-                and origin.port > 60 and origin.port < 65535:
-            origin = f"{origin.scheme}://{origin.hostname}:{origin.port}"  # For the API
+        if origin is not None:
+            origin = urlparse(origin)
+            if origin.scheme in ("http", "https") and len(origin.hostname) < 150 \
+                    and origin.port > 60 and origin.port < 65535:
+                origin_final = f"{origin.scheme}://{origin.hostname}:{origin.port}"  # For the API
 
-    request.setHeader("Access-Control-Allow-Origin", origin)  # For the API, TODO: Make this more restrictive.
+    request.setHeader("Access-Control-Allow-Origin", origin_final)  # For the API, TODO: Make this more restrictive.
     request.setHeader("Access-Control-Allow-Credentials", "true")  # For the API, TODO: Make this more restrictive.
 
     request.setHeader("Expires", "-1")  # don't cache!
