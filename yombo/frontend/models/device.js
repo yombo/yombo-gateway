@@ -37,6 +37,7 @@ export default class Device extends Model {
       energy_map: this.string('').nullable(),
       controllable: this.number(0).nullable(),
       allow_direct_control: this.string('').nullable(),
+      status: this.number(1),
       created_at: this.number(0),
       updated_at: this.number(0),
     }

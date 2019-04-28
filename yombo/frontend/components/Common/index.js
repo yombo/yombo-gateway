@@ -6,6 +6,8 @@ import Switch from './Switch.vue';
 import Badge from './Badge';
 import Progress from './Progress.vue';
 import Button from './Button.vue';
+import TimeLine from './Timeline/TimeLine.vue';
+import TimeLineItem from './Timeline/TimeLineItem.vue';
 
 import DropDown from './Dropdown.vue';
 import Table from './Table.vue';
@@ -27,6 +29,8 @@ import Pagination from './Pagination.vue';
 import AnimatedNumber from './AnimatedNumber';
 
 export {
+  TimeLine,
+  TimeLineItem,
   Checkbox,
   IconCheckbox,
   Switch,

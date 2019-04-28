@@ -1,4 +1,4 @@
-import Module_Device_type from '@/models/module_device_type'
+import Module_Device_Type from '@/models/module_device_type'
 
 export const state = () => ({
   last_download_at: 0
@@ -28,13 +28,12 @@ export const actions = {
 
 export const mutations = {
   SET_DATA (state, payload) {
-    Module_Device_type.deleteAll();
+    Module_Device_Type.deleteAll();
     Object.keys(payload).forEach(key => {
-      Module_Device_type.insert({
+      Module_Device_Type.insert({
         data: payload[key]['attributes'],
       })
     });
     state.last_download_at = Math.floor(Date.now() / 1000);
   }
 };
-

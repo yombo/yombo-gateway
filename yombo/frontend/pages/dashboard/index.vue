@@ -164,7 +164,7 @@
 </template>
 <script>
 
-import LineChart from '../../components/Dashboard/Charts/LineChart';
+import LineChart from '../../components/Common/Charts/LineChart';
 import Command from '@/models/command'
 import Device from '@/models/device'
 
