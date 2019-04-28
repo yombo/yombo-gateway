@@ -94,8 +94,8 @@ class Gateway_Communications(YomboLibrary):
         # 1) We prefer localhost with no SSL since it's all internal - less CPU on low end devics.
         # 2) Local network, but with SSL preferred.
         # 3) Remote network, only SSL!
-        fqdn = self._Configs.get("dns", "fqdn", None, False)
         if self.is_master():
+            fqdn = self._Configs.get("dns", "fqdn", None, False)
             if fqdn is not None:
                 mqtt_hosts = [
                     {
@@ -130,7 +130,7 @@ class Gateway_Communications(YomboLibrary):
         else:
             mqtt_hosts = [
                 {
-                    "address": "internal." + fqdn,
+                    "address": "internal." + master_gateway.dns_name,
                     "mqtt": [
                         {"port": master_gateway.internal_mqtt_le, "ssl": True},
                         {"port": master_gateway.internal_mqtt_ss, "ssl": True},
@@ -142,7 +142,7 @@ class Gateway_Communications(YomboLibrary):
                     ]
                 },
                 {
-                    "address": "external." + fqdn,
+                    "address": "external." + master_gateway.dns_name,
                     "mqtt": [
                         {"port": master_gateway.external_mqtt_le, "ssl": True},
                         {"port": master_gateway.external_mqtt_ss, "ssl": True},
