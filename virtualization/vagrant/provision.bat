@@ -29,7 +29,7 @@ if "%*"=="restart" (
     vagrant provision
 ) else (
 if "%*"=="start" (
-    vagrant up --provision
+    vagrant resume
 ) else (
 if "%*"=="stop" (
     vagrant halt
