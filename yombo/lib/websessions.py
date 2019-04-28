@@ -89,7 +89,6 @@ class WebSessions(YomboLibrary):
         return list(self.active_sessions.items())
 
     def _init_(self, **kwargs):
-        self.gateway_id = self._Configs.get("core", "gwid", "local", False)
         cookie_id = self._Configs.get("webinterface", "cookie_id",
                                       sha224_compact(random_string(length=randint(500, 1000))))
 
@@ -293,8 +292,6 @@ class WebSessions(YomboLibrary):
         """
         if data is None:
             data = {}
-        if "gateway_id" not in data or data["gateway_id"] is None:
-            data["gateway_id"] = self.gateway_id
         if "auth_data" not in data:
             data["auth_data"] = {}
 
@@ -477,7 +474,6 @@ class AuthWebsession(UserMixin, AuthMixin):
         self.auth_id: str = record["auth_id"]
         self.source: str = "websessions"
         self.source_type: str = "library"
-        self.gateway_id: str = record["gateway_id"]
 
         self._refresh_token: str = record["refresh_token"]
         self.refresh_token_expires_at: int = record["refresh_token_expires_at"]
@@ -609,7 +605,6 @@ class AuthWebsession(UserMixin, AuthMixin):
             "auth_type": self.auth_type,
             "auth_type_id": self.auth_type_id,
             "enabled": self.enabled,
-            "gateway_id": self.gateway_id,
             "source": self.source,
             "source_type": self.source_type,
             "last_access_at": self.last_access_at,
