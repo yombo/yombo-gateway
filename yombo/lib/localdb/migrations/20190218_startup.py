@@ -533,7 +533,6 @@ steps = [
       step("""CREATE TABLE `webinterface_sessions` (
         `id`                       TEXT NOT NULL,
         `enabled`                  INTEGER NOT NULL,
-        `gateway_id`               TEXT NOT NULL,
         `user_id`                  TEXT NOT NULL,
         `auth_data`                TEXT NOT NULL,
         `refresh_token`            BLOB,
