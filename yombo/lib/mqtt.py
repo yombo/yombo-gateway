@@ -70,7 +70,6 @@ class MQTT(YomboLibrary):
     """
     client_enabled = True
 
-
     def _init_(self, **kwargs):
         """
         Builds the configuration and password files. Also starts the MQTT broker if enabled.

@@ -119,7 +119,6 @@ class WebInterface(BuildDistribution, ErrorHandler, Render, YomboLibrary, WebSer
         self.app_dir = self._Atoms.get("app_dir")
         self.wi_dir = "/lib/webinterface"
 
-        self.build_dist()  # Make all the JS and CSS files
         self.misc_wi_data = {}
 
         self.wi_port_nonsecure = self._Configs.get2("webinterface", "nonsecure_port", 8080)
@@ -181,6 +180,8 @@ class WebInterface(BuildDistribution, ErrorHandler, Render, YomboLibrary, WebSer
     def _load_(self, **kwargs):
         if not self.enabled:
             return
+
+        self.build_dist()  # Make all the JS and CSS files
 
         self.module_config_links = {}
 
