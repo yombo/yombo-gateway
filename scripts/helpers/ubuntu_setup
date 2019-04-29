@@ -73,6 +73,10 @@ chown $SUDO_USER:$SUDO_USER /home/$SUDO_USER/yombo_setup.log
 touch /home/$SUDO_USER/yombo_setup_detailed.log
 chown $SUDO_USER:$SUDO_USER /home/$SUDO_USER/yombo_setup_detailed.log
 
+mkdir /home/$SUDO_USER/.yombo
+mkdir /home/$SUDO_USER/.yombo/log
+chown -R $SUDO_USER:$SUDO_USER /home/$SUDO_USER/.yombo
+
 LOGFILE=/home/$SUDO_USER/yombo_setup.log
 LOGFILEDETAILED=/home/$SUDO_USER/yombo_setup_detailed.log
 echo ""
@@ -108,23 +112,41 @@ log "==> Configuring apt for NodeJS to use version 10."
 
 wget https://deb.nodesource.com/setup_10.x -O - | sudo -E bash - >> $LOGFILEDETAILED 2>&1
 
-log "==> Upgrading OS (apt-get upgrade)."
 sudo apt-mark hold keyboard-configuration >> $LOGFILEDETAILED 2>&1
 sudo apt-mark hold grub-pc >> $LOGFILEDETAILED 2>&1
+log "==> Doing auto-remove to speed things up."
+apt-get autoremove -y >> $LOGFILEDETAILED 2>&1
+log "==> Upgrading OS (apt-get upgrade) - starting downloads"
+apt-get upgrade --download-only -y >> $LOGFILEDETAILED 2>&1
+log "==> Upgrading OS (apt-get upgrade) - starting installation, this will take a few minutes"
 apt-get upgrade -y >> $LOGFILEDETAILED 2>&1
 sudo apt-mark unhold keyboard-configuration >> $LOGFILEDETAILED 2>&1
-sudo apt-mark hold grub-pc >> $LOGFILEDETAILED 2>&1
+sudo apt-mark unhold grub-pc >> $LOGFILEDETAILED 2>&1
 
-log "==> Installing required dependencies (apt-get install). This will take a while."
+log "==> Starting requirements installation. This can take few minutes."
+log "==> agt-get - Starting downloads, speed depends on your internet connection speed."
+apt-get install --download-only -y make g++ build-essential cmake git sqlite3 ntp daemon quilt \
+dirmngr xz-utils rng-tools gnupg2 llvm expect uuid-dev mosquitto libmosquitto-dev \
+libbluetooth3 libbluetooth-dev liblzma-dev libncurses5 libncursesw5 tk-dev \
+libudev-dev libssl-dev zlib1g-dev libbz2-dev \
+libreadline6-dev libreadline-dev libsqlite3-dev libexpat1-dev \
+python-dev python3-dev libncursesw5-dev libyaml-dev  libncurses5-dev \
+libcurl4-openssl-dev libc-ares-dev libavahi-compat-libdnssd-dev  \
+libboost-thread-dev libglib2.0 libcairo2-dev python python3-setuptools \
+python3-pip >> $LOGFILEDETAILED 2>&1
 
-apt-get install make libudev-dev g++ libssl-dev zlib1g-dev libbz2-dev \
-libreadline6-dev libreadline6-dev libreadline-dev libsqlite3-dev libexpat1-dev \
-liblzma-dev python python-dev python3-dev gnupg2 rng-tools build-essential cmake \
-git python3-setuptools python3-pip python-pip libyaml-dev libncurses5 expect \
-libncurses5-dev libncursesw5 libncursesw5-dev xz-utils llvm tk-dev \
-libbluetooth-dev mosquitto libmosquitto-dev libcurl4-openssl-dev libc-ares-dev \
-uuid-dev daemon quilt dirmngr libavahi-compat-libdnssd-dev libbluetooth3 \
-libboost-thread-dev libglib2.0 ntp libcairo2-dev libpython2.7-dev sqlite3 -y >> $LOGFILEDETAILED 2>&1
+log "==> agt-get - Starting installation."
+apt-get install make g++ build-essential cmake git sqlite3 ntp daemon quilt \
+dirmngr xz-utils rng-tools gnupg2 llvm expect uuid-dev mosquitto libmosquitto-dev \
+libbluetooth3 libbluetooth-dev liblzma-dev libncurses5 libncursesw5 tk-dev \
+libudev-dev libssl-dev zlib1g-dev libbz2-dev -y >> $LOGFILEDETAILED 2>&1
+
+log "==> agt-get - About half way done."
+apt-get install libreadline6-dev libreadline-dev libsqlite3-dev libexpat1-dev \
+python-dev python3-dev libncursesw5-dev libyaml-dev  libncurses5-dev \
+libcurl4-openssl-dev libc-ares-dev libavahi-compat-libdnssd-dev  \
+libboost-thread-dev libglib2.0 libcairo2-dev python python3-setuptools \
+python3-pip -y >> $LOGFILEDETAILED 2>&1
 
 log "==> Installing nodejs and npm."
 apt-get install nodejs -y >> $LOGFILEDETAILED 2>&1
@@ -135,7 +157,7 @@ npm install -g --unsafe-perm mdns >> $LOGFILEDETAILED 2>&1
 npm install -g --unsafe-perm homebridge >> $LOGFILEDETAILED 2>&1
 
 log "==> Upgrading system pip3"
-pip3 install --upgrade pip >> $LOGFILEDETAILED 2>&1
+pip3 install --upgrade pip & >> $LOGFILEDETAILED 2>&1
 
 log "==> Adding correct user to dialout for serial/USB port access."
 sudo usermod -a -G dialout $SUDO_USER  >> $LOGFILEDETAILED 2>&1
@@ -189,33 +211,7 @@ log "==> Installing bin links to /etc/usr/local/bin"
 ln -s $YOMBO_ROOT_DIR/ybo /usr/local/bin/ybo
 ln -s $YOMBO_ROOT_DIR/ybo-config /usr/local/bin/ybo-config
 
-log "==> Setting up systemctl service"
-cd /etc/systemd/system/
-wget --quiet -O yombo.service https://get.yombo.net/debian_files/service-systemd >> $LOGFILEDETAILED 2>&1
-sudo chmod 755 yombo.service
-
-log "==> Setting up additional sudoers configs"
-cd /etc/sudoers.d
-cat >yombo_$SUDO_USER <<EOL
-$SUDO_USER ALL= NOPASSWD: /bin/systemctl enable yombo.service
-$SUDO_USER ALL= NOPASSWD: /bin/systemctl disable yombo.service
-$SUDO_USER ALL= NOPASSWD: /bin/systemctl start yombo.service
-$SUDO_USER ALL= NOPASSWD: /bin/systemctl stop yombo.service
-$SUDO_USER ALL= NOPASSWD: /bin/systemctl restart yombo.service
-$SUDO_USER ALL= NOPASSWD: /bin/systemctl enable mosquitto.service
-$SUDO_USER ALL= NOPASSWD: /bin/systemctl disable mosquitto.service
-$SUDO_USER ALL= NOPASSWD: /bin/systemctl start mosquitto.service
-$SUDO_USER ALL= NOPASSWD: /bin/systemctl stop mosquitto.service
-$SUDO_USER ALL= NOPASSWD: /bin/systemctl restart mosquitto.service
-$SUDO_USER ALL= NOPASSWD: /bin/systemctl kill -s HUP mosquitto.service
-
-$SUDO_USER ALL= NOPASSWD: /usr/sbin/service yombo start
-$SUDO_USER ALL= NOPASSWD: /usr/sbin/service yombo stop
-$SUDO_USER ALL= NOPASSWD: /usr/sbin/service yombo restart
-$SUDO_USER ALL= NOPASSWD: /usr/sbin/service mosquitto start
-$SUDO_USER ALL= NOPASSWD: /usr/sbin/service mosquitto stop
-$SUDO_USER ALL= NOPASSWD: /usr/sbin/service mosquitto restart
-EOL
-chown root:root yombo_$SUDO_USER
-chmod 440 yombo_$SUDO_USER
-
+log "==> Calling ybo-config to setup systemd and sudoers"
+cd $YOMBO_ROOT_DIR
+cd $YOMBO_ROOT_DIR
+export RUNAS_USER=$SUDO_USER && $YOMBO_ROOT_DIR/ybo-config install

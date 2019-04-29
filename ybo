@@ -165,7 +165,7 @@ function stop_gateway {
     if [ -e $PID_PATH/$PID_FILE ]; then
         mypid=`cat $PID_PATH/$PID_FILE`
         if kill -0 &>1 > /dev/null $mypid; then
-            /bin/kill -s SIGINT "$mypid"
+            /bin/kill -s SIGTERM "$mypid"
             echo "Request Yombo Gateway service stop."
             exit 0
         fi

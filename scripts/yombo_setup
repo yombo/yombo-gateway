@@ -23,6 +23,12 @@ YOMBO_SCRIPT_DIR="$( cd "$(dirname "$0")" ; pwd -P )"
 YOMBO_ROOT_DIR="$(dirname $YOMBO_SCRIPT_DIR)"
 cd "$YOMBO_SCRIPT_DIR"
 
+touch /home/$SUDO_USER/yombo_setup.log
+chown $SUDO_USER:$SUDO_USER /home/$SUDO_USER/yombo_setup.log
+
+touch /home/$SUDO_USER/yombo_setup_detailed.log
+chown $SUDO_USER:$SUDO_USER /home/$SUDO_USER/yombo_setup_detailed.log
+
 # Determine OS platform
 if [ -f /etc/os-release ]; then
     # freedesktop.org and systemd
@@ -81,7 +87,7 @@ echo "###########################################"
 echo
 if [[ "$OS" == "Debian" ]]; then
     $YOMBO_SCRIPT_DIR/helpers/debian_setup
-    sudo runuser -l $SUDO_USER -c "bash -i $YOMBO_SCRIPT_DIR/helpers/debian_update_user"
+    sudo runuser -l $SUDO_USER -c "bash -i $YOMBO_SCRIPT_DIR/helpers/debian_setup_user"
 
 elif [[ "$OS" == "Ubuntu" ]]; then
     $YOMBO_SCRIPT_DIR/helpers/ubuntu_setup $1
@@ -96,6 +102,8 @@ echo "=  * WARNING * WARNING * WARNING * WARNING * WARNING * WARNING * WARNING *
 echo "======================================================================================"
 echo "=                                                                                    ="
 echo "= You must exit this terminal session and start a new one before using Yombo Gateway ="
+echo "=                                                                                    ="
+echo "= provision.bat and provision.sh (vagrant) users: You can ignore this warning.       ="
 echo "=                                                                                    ="
 echo "======================================================================================"
 echo "=                                                                                    ="

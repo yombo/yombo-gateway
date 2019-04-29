@@ -77,15 +77,17 @@ restart() {
 setup_start() {
     rm -f $SETUP_DONE
     echo
+    echo -e "\e[1mAbout to setup a Vagrant Yombo Gateway installation.\e[0m"
     echo
-    echo "About to setup a Vagrant Yombo Gateway installation."
     echo
-    echo "#################################################################"
-    echo "#                          IMPORTANT                            #"
-    echo "#################################################################"
-    echo "# If you are prompted for a default bridge, select your primary #"
-    echo "# network interface. Usually eth0 or eno1.                      #"
-    echo "#################################################################"
+    echo
+    echo -e "\e[1m#################################################################"
+    echo -e "\e[1m#                          IMPORTANT                            #"
+    echo -e "\e[1m#################################################################"
+    echo -e "\e[1m# If you are prompted for a default bridge, select your primary #"
+    echo -e "\e[1m# network interface. Usually eth0 or eno1.                      #"
+    echo -e "\e[1m#################################################################"
+    echo
     echo
     echo
 }
@@ -93,24 +95,16 @@ setup_start() {
 setup() {
     echo "Starting Yombo Setup...."
     local ygw_path='/yombo-gateway/ybo'
-    local systemd_bin_path='/usr/bin/ybo'
+    local systemd_bin_path='/usr/local/bin/ybo'
 
     touch /home/vagrant/.yombo
     chown vagrant:vagrant /home/vagrant/.yombo
 
-    /yombo-gateway/scripts/helpers/ubuntu_setup vagrant
-    runuser -l vagrant -c "bash -i /yombo-gateway/scripts/helpers/pyenv_setup"
+    /yombo-gateway/scripts/yombo_setup vagrant
     if ! [ -f $systemd_bin_path ]; then
         ln -s $ygw_path $systemd_bin_path
     fi
 
-    # Setup systemd
-    cp /yombo-gateway/virtualization/vagrant/yombo-gateway@.service \
-        /etc/systemd/system/yombo-gateway.service
-#    systemctl --system daemon-reload
-#    systemctl enable yombo-gateway
-#    systemctl stop yombo-gateway
-    # Install packages
     touch $SETUP_DONE
     usage
     ybo motd
@@ -133,7 +127,7 @@ main() {
     if [ $(hostname) != "ubuntu1804.localdomain" ]; then usage; exit; fi
     if ! [ -f $SETUP_DONE ]; then setup; fi
     if [ -f $RESTART ]; then restart; fi
-    if ! systemctl start yombo-gateway; then
+    if ! systemctl start yombo.service; then
         setup_error
     fi
 }

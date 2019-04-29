@@ -3,8 +3,8 @@
 require 'concurrent'
 
 $systemCPU = Concurrent.physical_processor_count
-if $systemCPU >= 4
-  $systemCPU = 4
+if $systemCPU >= 6
+  $systemCPU = 6
 elsif $systemCPU < 1
   $systemCPU = 1
 end
@@ -24,7 +24,7 @@ Vagrant.configure(2) do |config|
   config.vm.provider :virtualbox do |vb|
     vb.name = "yombo_gateway1804"
     vb.cpus = $systemCPU
-    vb.customize ['modifyvm', :id, '--memory', '1536']
+    vb.customize ['modifyvm', :id, '--memory', '1024']
     vb.customize ["modifyvm", :id, "--usb", "on"]
     vb.customize ["modifyvm", :id, "--usbehci", "on"]
   end

@@ -10,17 +10,21 @@ if [ "$USER" = "root" ] && [ "$SUDO_USER" == "" ]; then
   exit
 fi
 
-if [ "$SUDO_USER" != "" ]; then
+if [ "$RUNAS_USER" != "" ]; then
+  REALUSER=$RUNAS_USER
+elif [ "$SUDO_USER" != "" ]; then
   REALUSER=$SUDO_USER
 else
   REALUSER=$USER
 fi
+
 SCRIPTPATH="$(dirname "$(readlink -f "$0")")"
 rc=$?
 if [[ $rc != 0 ]]; then
  SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
 fi
-WORK_DIR="$HOME/.yombo"
+
+WORK_DIR="/home/$REALUSER/.yombo"
 LOGFILE=$WORK_DIR/log/config.log
 LOGYBOFILE=$WORK_DIR/log/service.log
 VERSION="$($SCRIPTPATH/scripts/show_version)"
@@ -32,6 +36,10 @@ FORCE="false"
 YOMBOVERSION=$($SCRIPTPATH/scripts/show_version)
 YOMBOVERSIONHASH=$(git -C "$SCRIPTPATH" log --pretty=format:'%h' -n 1)
 YOMBOFULLVERSION="$YOMBOVERSIONHASH-$YOMBOVERSION"
+
+echo "scriptpath :  $SCRIPTPATH"
+echo "REALUSER :  $REALUSER"
+
 
 function logonly {
   echo "[$(date +'%D %T')] [$YOMBOFULLVERSION] [$1] $2" >> "$LOGFILE"
@@ -66,7 +74,9 @@ function need_sudo {
     echo ""
     echo "Error: ybo-config must be run as root (with sudo) for this request."
     echo "Hint: Run the same same command again with 'sudo' in front:"
+    echo ""
     echo "sudo ybo-config [args]"
+    echo ""
     exit 1
   fi
   return 0
@@ -89,21 +99,23 @@ COMMANDS:
   help, -?,      Show this text
     -h, --help
 
-  disable        Disable Yombo service, prevents Yombo from ruinning on system startup.
-  enable         Enable Yombo service, configures Yombo to run on system startup.
-  sudoers        Manage sudoers control file for user: '$REALUSER'
-                 Options: 'install' to install sudoers file, or 'remove'.
-  update         Upgrade the operating system with 'apt update && apt upgrade'. Also
-                 updates Yombo Gateway software and its dependants.
-  version        Set the Yombo gateway source code branch. **Advanced users only**
-                 Option: The version name, eg: master, develop, tagname
-  install-bash   Install bash completion scripts.
-  log-cfg-clear  Clear configuration log.
-  log-ybo-clear  Clear configuration log.
-  log-cfg-show   Show configuration log.
-  log-ybo-show   Show Yombo service log.
-  log-cfg-share  Share configuration log.
-  log-ybo-share  Share configuration log.
+  install          Install the systemd yombo.service file and enable it.
+  uninstall        Disable the yombo.service from systemd and remove the yombo.service file.
+  enable           Enable Yombo service, configures Yombo to run on system startup.
+  disable          Disable Yombo service, prevents Yombo from running on system startup.
+  sudoers_enable   Enable user access to manage yombo and mosquitto services.
+  sudoers_disble   Disable user access to manage yombo and mosquitto services.
+  update           Upgrade the operating system with 'apt update && apt upgrade'. Also
+                   updates Yombo Gateway software and its dependants.
+  version          Set the Yombo gateway source code branch. **Advanced users only**
+                   Option: The version name, eg: master, develop, tagname
+  install-bash     Install bash completion scripts.
+  log-cfg-clear    Clear configuration log.
+  log-ybo-clear    Clear Yombo service log.
+  log-cfg-show     Show configuration log.
+  log-ybo-show     Show Yombo service log.
+  log-cfg-share    Share configuration log.
+  log-ybo-share    Share service log.
 
 Additional options:
   -Y, --accept   Always accept prompts.
@@ -122,10 +134,23 @@ function run_command {
   return 0
 }
 
+function install_services
+{
+    create_systemd
+    install_sudoers
+}
+
+function uninstall_services
+{
+    remove_systemd
+    remove_sudoers
+}
+
+
 function check_systemd
 {
   need_sudo
-  if [ ! -f /etc/systemd/system/yombo_$REALUSER.service ]; then
+  if [ ! -f /etc/systemd/system/yombo.service ]; then
     if [ "$ACCEPT" == "true" ]; then
       warning "Systemd service control file is missing."
       create_systemd
@@ -155,41 +180,57 @@ function create_systemd
   need_sudo
   info "Creating systemd service control file. This will tell your system how"
   info "to start Yombo Gateway when your device starts up."
-  cat <<- EOF > /etc/systemd/system/yombo_$REALUSER.service
-# This file is managed by yombo, use ybo-config to update.
-
+  cat <<- EOF > /etc/systemd/system/yombo.service
+###############################################
+# This file is managed by yombo - ybo-config  #
+###############################################
+#
+#
+# This file manages the starting and stopping of the Yombo Gateway
+#
+# For details please check https://yombo.net
+#
 [Unit]
-Description=Yombo Home Automation software for user: $REALUSER
-Wants=network.target
+Description=Yombo Gateway Home Automation: https://yombo.net
+After=network.target
 
 [Service]
+Type=forking
 User=$REALUSER
 Group=$REALUSER
 WorkingDirectory=/home/$REALUSER/.yombo/
-PIDFile=/home/yombo/.yombo/yombogateway.pid
-#ExecStartPre=/bin/bash --login -c 'env > /tmp/.yombo-magic-environment-file'
-ExecStart=ybo daemon
-ExecStop=/bin/kill -s SIGINT \$MAINPID
-#EnvironmentFile=-/tmp/.yombo-magic-environment-file
+PIDFile=/home/$REALUSER/.yombo/yombo.pid
+# Enable the following line if you get network-related errors during boot
+#ExecStartPre=/usr/bin/sleep 60
+# Use `whereis ybo` to determine the path of yombo gateway software
+ExecStart=/usr/local/bin/ybo daemon
+ExecStop=/usr/local/bin/ybo stop
+SendSIGKILL=no
+RestartForceExitStatus=100
+
+# on vagrant (vboxfs), disable sendfile https://www.virtualbox.org/ticket/9069
+Environment=AIOHTTP_NOSENDFILE=1
 
 [Install]
 WantedBy=multi-user.target
-
 EOF
-    chmod 440 /etc/sudoers.d/yombo_$REALUSER
-    info "Systemd service control file created."
+    chmod 644 /etc/systemd/system/yombo.service
+    chown root:root  /etc/systemd/system/yombo.service
+    systemctl --system daemon-reload
+    systemctl enable yombo.service
+    systemctl stop yombo.service
+    echo ""
+    info "Systemd service control file created. Run 'sudo systemctl start yombo.service' to start it."
+    echo ""
     return 0
 }
 
-
-function disable_yombo
+function remove_systemd
 {
-  need_sudo
-
-  info "About to disable systemd control Yombo Gateway for user: $REALUSER"
-  run_command "systemctl disable yombo_$REALUSER"
-  info "Yombo has been disabled for startup for user: $REALUSER"
-  exit 0
+    systemctl stop yombo.service
+    systemctl disable yombo.service
+    rm /etc/systemd/system/yombo.service
+    systemctl --system daemon-reload
 }
 
 
@@ -197,32 +238,44 @@ function enable_yombo
 {
   need_sudo
   check_systemd
-  info "About to enable systemd control Yombo Gateway for user: $REALUSER"
-  run_command "systemctl enable yombo_$REALUSER"
-  info "Yombo has been enabled for startup for user: $REALUSER"
+  info "About to enable systemd control of Yombo Gateway."
+  run_command "systemctl enable yombo.service"
+  info "Yombo Gateway has been disabled from systemd control."
+  exit 0
+}
+
+function disable_yombo
+{
+  need_sudo
+
+  info "About to disable systemd control of Yombo Gateway."
+  run_command "systemctl disable yombo.service"
+  info "Yombo Gateway has been disabled from systemd control."
   exit 0
 }
 
 
-function do_sudoers
+function install_sudoers
 {
-  need_sudo
-
-  if [ "$SUDOERSMODE" == "install" ]; then
     info "Updating/creating sudoers file for: $REALUSER"
     cat <<- EOF > /etc/sudoers.d/yombo_$REALUSER
 # This file is managed by yombo, use ybo-config to update.
 
-%$REALUSER ALL=NOPASSWD: /bin/systemctl enable yombo_$REALUSER.service
-%$REALUSER ALL=NOPASSWD: /bin/systemctl disable yombo_$REALUSER.service
-%$REALUSER ALL=NOPASSWD: /bin/systemctl start yombo_$REALUSER.service
-%$REALUSER ALL=NOPASSWD: /bin/systemctl stop yombo_$REALUSER.service
-%$REALUSER ALL=NOPASSWD: /bin/systemctl restart yombo_$REALUSER.service
-%$REALUSER ALL=NOPASSWD: /usr/sbin/service yombo_$REALUSER enable
-%$REALUSER ALL=NOPASSWD: /usr/sbin/service yombo_$REALUSER disable
-%$REALUSER ALL=NOPASSWD: /usr/sbin/service yombo_$REALUSER start
-%$REALUSER ALL=NOPASSWD: /usr/sbin/service yombo_$REALUSER stop
-%$REALUSER ALL=NOPASSWD: /usr/sbin/service yombo_$REALUSER restart
+%$REALUSER ALL=NOPASSWD: /bin/systemctl enable yombo.service
+%$REALUSER ALL=NOPASSWD: /bin/systemctl disable yombo.service
+%$REALUSER ALL=NOPASSWD: /bin/systemctl start yombo.service
+%$REALUSER ALL=NOPASSWD: /bin/systemctl stop yombo.service
+%$REALUSER ALL=NOPASSWD: /bin/systemctl restart yombo.service
+%$REALUSER ALL=NOPASSWD: /bin/systemctl enable yombo
+%$REALUSER ALL=NOPASSWD: /bin/systemctl disable yombo
+%$REALUSER ALL=NOPASSWD: /bin/systemctl start yombo
+%$REALUSER ALL=NOPASSWD: /bin/systemctl stop yombo
+%$REALUSER ALL=NOPASSWD: /bin/systemctl restart yombo
+%$REALUSER ALL=NOPASSWD: /usr/sbin/service yombo enable
+%$REALUSER ALL=NOPASSWD: /usr/sbin/service yombo disable
+%$REALUSER ALL=NOPASSWD: /usr/sbin/service yombo start
+%$REALUSER ALL=NOPASSWD: /usr/sbin/service yombo stop
+%$REALUSER ALL=NOPASSWD: /usr/sbin/service yombo restart
 %$REALUSER ALL=NOPASSWD: /bin/systemctl enable mosquitto.service
 %$REALUSER ALL=NOPASSWD: /bin/systemctl disable mosquitto.service
 %$REALUSER ALL=NOPASSWD: /bin/systemctl start mosquitto.service
@@ -236,14 +289,13 @@ function do_sudoers
 %$REALUSER ALL=NOPASSWD: /usr/sbin/service mosquitto restart
 EOF
     chmod 440 /etc/sudoers.d/yombo_$REALUSER
-  elif [ "$SUDOERSMODE" == "remove" ]; then
+    chown root:root /etc/sudoers.d/yombo_$REALUSER
+}
+
+function remove_sudoers
+{
     info "Removing sudoers file for: $REALUSER"
     rm /etc/sudoers.d/yombo_$REALUSER
-  else
-    echo "'install' or 'remove' must be supplied with 'sudoers'."
-    echo "Example: 'sudo ybo-config sudoers install'"
-    exit 1
-  fi
 }
 
 function clear-log {
@@ -303,6 +355,7 @@ function share-log {
   return 0
 }
 
+
 function share-log {
   if [ ! -f $SHARELOG ];then
     echo "No log entries found."
@@ -312,13 +365,15 @@ function share-log {
   return 0
 }
 
+
 function do_update {
   need_sudo
   info "Calling yombo_update to update the system and Yombo Gateway software."
-  run_command "sudo -H -u $SUDO_USER sudo bash $SCRIPTPATH/scripts/yombo_update yombo_update"
+  run_command "sudo -H -u $SUDO_USER sudo bash $SCRIPTPATH/scripts/yombo_update"
   info "Finised with system and Yombo Gateway software update."
   return 0
 }
+
 
 function update {
   need_sudo
@@ -342,7 +397,7 @@ function install-bash-completion {
   need_sudo
   info "Starting bash completion setup."
   logonly "Starting to instasll /etc/bash_completion.d/ybo-cfg"
-  cat <<- EOF > //etc/bash_completion.d/ybo-config
+  cat <<- EOF > /etc/bash_completion.d/ybo-config
 # This file is managed by yombo, use ybo-config to update.
 
 _ybo-config()
@@ -351,7 +406,7 @@ _ybo-config()
     COMPREPLY=()
     cur="\${COMP_WORDS[COMP_CWORD]}"
     prev="\${COMP_WORDS[COMP_CWORD-1]}"
-    opts="install-bash disable enable sudoers update version log-cfg-clear log-ybo-clear log-cfg-show log-ybo-show log-cfg-share log-ybo-share help"
+    opts="install-bash install uninstall disable enable sudoers_enable sudoers_disble update version log-cfg-clear log-ybo-clear log-cfg-show log-ybo-show log-cfg-share log-ybo-share help"
     altopts="--accept --help"
 
     if [[ \${cur} == -* ]] ; then
@@ -364,9 +419,9 @@ _ybo-config()
 }
 complete -F _ybo-config ybo-config
 EOF
-  logonly "info" "Done with /etc/bash_completion.d/ybo-cfg"
+  logonly "info" "Done with /etc/bash_completion.d/ybo-config"
   . /etc/bash_completion.d/ybo-config
-  logonly "info" "Starting to instasll /etc/bash_completion.d/ybo-cfg"
+  logonly "info" "Starting to instasll /etc/bash_completion.d/ybo-config"
   cat <<- EOF > //etc/bash_completion.d/ybo
 # This file is managed by yombo, use ybo-config to update.
 
@@ -376,8 +431,8 @@ _ybo()
     COMPREPLY=()
     cur="\${COMP_WORDS[COMP_CWORD]}"
     prev="\${COMP_WORDS[COMP_CWORD-1]}"
-    opts="help -help motd daemon start stop urls version -debug -logfile -profiler -pid_path -pid_file -working_dir -version"
-    altopts="--accept --help"
+    opts="help -help daemon help motd cache status start stop version removeini removesqlini"
+    altopts="-debug -logfile -profiler -pid_path -pid_file -working_dir -help"
 
     if [[ \${cur} == -* ]] ; then
       COMPREPLY=( \$(compgen -W "\${altopts}" -- \${cur}) )
@@ -430,11 +485,24 @@ do
         exit 0
         ;;
 
-      "sudoers" )
-        RUN="do_sudoers"
-        SUDOERSMODE=$2
+      "install" )
+        RUN="install_services"
         shift # pass command
-        shift # pass sudoers mode
+        ;;
+
+      "uninstall" )
+        RUN="uninstall_services"
+        shift # pass command
+        ;;
+
+      "sudoers_enable" )
+        RUN="install_sudoers"
+        shift # pass command
+        ;;
+
+      "sudoers_disble" )
+        RUN="remove_sudoers"
+        shift # pass command
         ;;
 
       "log-cfg-clear" )

@@ -15,9 +15,14 @@ YOMBO_SCRIPT_HELPER_DIR="$( cd "$(dirname "$0")" ; pwd -P )"
 YOMBO_SCRIPT_DIR="$(dirname $YOMBO_SCRIPT_HELPER_DIR)"
 YOMBO_ROOT_DIR="$(dirname $YOMBO_SCRIPT_DIR)"
 
-cd /home/$USER/.pyenv && git pull
+bash "$YOMBO_SCRIPT_HELPER_DIR"/pyenv_setup &
 
-cd "$YOMBO_ROOT_DIR"/frontend
-npm install
-npm run build
-"bash $YOMBO_SCRIPT_DIR/helpers/pyenv_setup"
+cd "$YOMBO_ROOT_DIR"/yombo/frontend
+(npm install && npm run build) &
+
+for job in `jobs -p`
+do
+echo $job
+    wait $job || let "FAIL+=1"
+done
+
