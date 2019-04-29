@@ -55,7 +55,6 @@ class BuildDistribution:
             deferreds.append(self.download_background_images())
         if not path.exists(f"{self.working_dir}/frontend/_nuxt"):
             deferreds.append(self.copy_frontend())  # We copy the previously built frontend in case it's new install..
-        deferreds.append(self.load_file_cache())
         deferreds.append(self.build_frontend())
         yield DeferredList(deferreds)
 
@@ -93,12 +92,16 @@ class BuildDistribution:
             logger.warn("Cannot build frontend : already building...")
             return
         start_time = time()
-        # print("!!!!!!! Build frontend starting")
+        print("!!!!!!! Build frontend starting")
         self.frontend_building = True
+
+        # Idea #8953872 - Only build if the files have changed. This will generate a sha1 for an entire directory.
+        # find ./ ! -path "./node_modules/*" ! -path "./dist/*" -type f -print0 | sort -z | xargs -0 sha1sum | sha1sum
         yield self.frontend_npm_run()
         self.frontend_building = False
         logger.info("Finished building frontend app in {seconds}", seconds=round(time() - start_time))
         yield self.copy_frontend()  # now copy the final version...
+        yield self.load_file_cache()
 
     @inlineCallbacks
     def copy_frontend(self, environemnt=None):
@@ -110,7 +113,6 @@ class BuildDistribution:
         yield self.copytree("yombo/frontend/dist/_nuxt/", "frontend/_nuxt/")
         yield threads.deferToThread(shutil.copy2, self.app_dir + "/yombo/frontend/dist/index.html", self.working_dir + "/frontend/")
         yield threads.deferToThread(shutil.copy2, self.app_dir + "/yombo/frontend/dist/sw.js", self.working_dir + "/frontend/")
-        yield self.load_file_cache()
 
     @inlineCallbacks
     def load_file_cache(self):
@@ -187,8 +189,8 @@ class BuildDistribution:
                                          "4Pz5CwKQCsexQaeUvhJnWAFO6TRa9SafnpAQfAApqy9fsdHTLXZ762yCZOct", False),
             "mqtt_port": self._MQTT.server_listen_port,
             "mqtt_port_ssl": self._MQTT.server_listen_port_ss_ssl,
-            "mqtt_port_websockets": self._MQTT.server_listen_port,
-            "mqtt_port_websockets_ssl": self._MQTT.server_listen_port,
+            "mqtt_port_websockets": self._MQTT.server_listen_port_websockets,
+            "mqtt_port_websockets_ssl": self._MQTT.server_listen_port_websockets_ss_ssl,
             "client_location": client_location,
             "static_data": False,
         }, indent='\t', separators=(',', ': '))
