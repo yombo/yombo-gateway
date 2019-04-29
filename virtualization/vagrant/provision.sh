@@ -100,12 +100,14 @@ setup() {
     touch /home/vagrant/.yombo
     chown vagrant:vagrant /home/vagrant/.yombo
 
-    /yombo-gateway/scripts/yombo_setup vagrant
+    if ! [ -f "$SCRIPTPATH/setup_done" ]; then
+        /yombo-gateway/scripts/yombo_setup vagrant
+        touch $SETUP_DONE
+    fi
     if ! [ -f $systemd_bin_path ]; then
         ln -s $ygw_path $systemd_bin_path
     fi
 
-    touch $SETUP_DONE
     usage
     ybo motd
 }
@@ -115,8 +117,8 @@ main() {
     # with the provider script...
     case $1 in
         "setup") rm -f setup_done; setup_start; vagrant up --provision; exit ;;
-        "restart") vagrant halt ; vagrant resume ; exit ;;
-        "start") vagrant resume ; guest_status ; exit ;;
+        "restart") vagrant halt ; sleep 1; vagrant up --provision ; exit ;;
+        "start") vagrant up --provision ; guest_status ; exit ;;
         "stop") vagrant halt ; exit ;;
         "destroy") vagrant destroy -f ; exit ;;
         "recreate") setup_start; rm -f setup_done restart; vagrant destroy -f; \
