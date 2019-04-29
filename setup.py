@@ -102,7 +102,7 @@ setup(
     keywords=['home', 'automation'],
     entry_points={
         'console_scripts': [
-            'hass = homeassistant.__main__:main'
+            'ybo = yombo.__main__:main'
         ]
     },
     classifiers=PROJECT_CLASSIFIERS,
