@@ -67,6 +67,7 @@ export default {
     // Doc: https://bootstrap-vue.js.org/docs/
     'bootstrap-vue/nuxt',
     '@nuxtjs/pwa',
+    '~modules/generate-whitelist.js',
     'vue-sweetalert2/nuxt',
     ['nuxt-i18n', {
       seo: false,
@@ -123,7 +124,7 @@ export default {
           // maxChunks: 20
           //   }),
             new webpack.optimize.MinChunkSizePlugin({
-            minChunkSize: 15000
+            minChunkSize: 18000
           })
         )
       }
