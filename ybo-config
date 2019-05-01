@@ -218,7 +218,6 @@ EOF
     chown root:root  /etc/systemd/system/yombo.service
     systemctl --system daemon-reload
     systemctl enable yombo.service
-    systemctl stop yombo.service
     echo ""
     info "Systemd service control file created. Run 'sudo systemctl start yombo.service' to start it."
     echo ""
