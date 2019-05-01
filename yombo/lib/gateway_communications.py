@@ -223,7 +223,7 @@ class Gateway_Communications(YomboLibrary):
         """
         Tell other gateways we are going offline.
         """
-        if self._Loader.operating_mode != "run":
+        if "_Loader" not in self or self._Loader.operating_mode != "run":
             return
         if hasattr(self, "mqtt"):
             if self.mqtt is not None:
