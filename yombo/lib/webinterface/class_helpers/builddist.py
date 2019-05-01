@@ -51,7 +51,7 @@ class BuildDistribution:
         """
         deferreds = []
         deferreds.append(self.copy_static_web_items())
-        if not path.exists(self.working_dir + "/frontend/img/bg"):
+        if not path.exists(self.working_dir + "/frontend/img/bg/5.jpg"):
             deferreds.append(self.download_background_images())
         if not path.exists(f"{self.working_dir}/frontend/_nuxt"):
             deferreds.append(self.copy_frontend())  # We copy the previously built frontend in case it's new install..
@@ -92,7 +92,7 @@ class BuildDistribution:
             logger.warn("Cannot build frontend : already building...")
             return
         start_time = time()
-        print("!!!!!!! Build frontend starting")
+        # print("!!!!!!! Build frontend starting")
         self.frontend_building = True
 
         # Idea #8953872 - Only build if the files have changed. This will generate a sha1 for an entire directory.
@@ -101,7 +101,6 @@ class BuildDistribution:
         self.frontend_building = False
         logger.info("Finished building frontend app in {seconds}", seconds=round(time() - start_time))
         yield self.copy_frontend()  # now copy the final version...
-        yield self.load_file_cache()
 
     @inlineCallbacks
     def copy_frontend(self, environemnt=None):
@@ -113,6 +112,7 @@ class BuildDistribution:
         yield self.copytree("yombo/frontend/dist/_nuxt/", "frontend/_nuxt/")
         yield threads.deferToThread(shutil.copy2, self.app_dir + "/yombo/frontend/dist/index.html", self.working_dir + "/frontend/")
         yield threads.deferToThread(shutil.copy2, self.app_dir + "/yombo/frontend/dist/sw.js", self.working_dir + "/frontend/")
+        yield self.load_file_cache()
 
     @inlineCallbacks
     def load_file_cache(self):
@@ -120,16 +120,23 @@ class BuildDistribution:
         Loads a few files into memory for faster reply. This used in home_static_frontend_catchall
         :return:
         """
+        logger.debug("LOADING FILE CACHE!!!!!!!!!!!!!!!!!!!!!!!!111111")
         if "index" not in self.file_cache:
             self.file_cache["index"] = {}
-        self.file_cache["index"]["data"] = yield read_file(f"{self.working_dir}/frontend/index.html")
-        self.file_cache["index"]["headers"] = {"Cache-Control": f"max-age=7200",
-                                               "Content-Type": "text/html"}
+        try:
+            self.file_cache["index"]["data"] = yield read_file(f"{self.working_dir}/frontend/index.html")
+            self.file_cache["index"]["headers"] = {"Cache-Control": f"max-age=7200",
+                                                   "Content-Type": "text/html"}
+        except:
+            pass
         if "sw.js" not in self.file_cache:
             self.file_cache["sw.js"] = {}
-        self.file_cache["sw.js"]["data"] = yield read_file(f"{self.working_dir}/frontend/sw.js")
-        self.file_cache["sw.js"]["headers"] = {"Cache-Control": f"max-age=120",
-                                               "Content-Type": "application/javascript"}
+        try:
+            self.file_cache["sw.js"]["data"] = yield read_file(f"{self.working_dir}/frontend/sw.js")
+            self.file_cache["sw.js"]["headers"] = {"Cache-Control": f"max-age=120",
+                                                   "Content-Type": "application/javascript"}
+        except:
+            pass
 
     @inlineCallbacks
     def download_background_images(self):
@@ -153,8 +160,12 @@ class BuildDistribution:
             makedirs(f"{self.working_dir}/frontend/img/bg")
 
         for idx, image in enumerate(background_images):
-            yield download_file(image,
-                                            f"{self.working_dir}/frontend/img/bg/{idx}.jpg")
+            logger.info(f"WebInterface background image: {image}")
+            try:
+                yield download_file(image, f"{self.working_dir}/frontend/img/bg/{idx}.jpg")
+            except:
+                continue
+            logger.info(f"WebInterface background image, done: {image}")
             full = Image.open(f"{self.working_dir}/frontend/img/bg/{idx}.jpg")
             for size in sizes:
                 out = yield threads.deferToThread(full.resize, (size, size), Image.BICUBIC)
