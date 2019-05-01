@@ -120,9 +120,9 @@ main() {
         "restart") vagrant halt ; sleep 1; vagrant up --provision ; exit ;;
         "start") vagrant up --provision ; guest_status ; exit ;;
         "stop") vagrant halt ; exit ;;
-        "destroy") vagrant destroy -f ; exit ;;
+        "destroy") vagrant destroy -f ; rm -rf ./working_dir/* ; touch ./working_dir/.placeholder ; exit ;;
         "recreate") setup_start; rm -f setup_done restart; vagrant destroy -f; \
-                    vagrant up --provision; exit ;;
+                    rm -rf ./working_dir/* ; touch ./working_dir/.placeholder ; vagrant up --provision; exit ;;
         "status") show_status; exit ;;
     esac
     # ...otherwise we assume it's the Vagrant provisioner
