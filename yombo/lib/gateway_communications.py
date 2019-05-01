@@ -199,7 +199,6 @@ class Gateway_Communications(YomboLibrary):
     def _started_(self, **kwargs):
         """
         Publish that this gateway is online, start pinging other gateways.
-
         :param kwargs:
         :return:
         """
@@ -223,7 +222,7 @@ class Gateway_Communications(YomboLibrary):
         """
         Tell other gateways we are going offline.
         """
-        if "_Loader" not in self or self._Loader.operating_mode != "run":
+        if hasattr(self, "_Loader") is False or self._Loader.operating_mode != "run":
             return
         if hasattr(self, "mqtt"):
             if self.mqtt is not None:
