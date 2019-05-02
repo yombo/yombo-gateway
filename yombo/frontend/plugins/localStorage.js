@@ -3,10 +3,10 @@ import LZString from "lz-string";
 
 export default ({store}) => {
   createPersistedState({
-      key: 'ybo_fa_common1',
+      key: 'ybofa_yboapi',
       paths:
         [
-          'access_token', 'categories','commands', 'device_command_inputs', 'device_types', 'device_type_commands',
+          'yombo',
         ],
       storage: {
         getItem: key => LZString.decompressFromUTF16(localStorage.getItem(key)),
@@ -16,10 +16,10 @@ export default ({store}) => {
       }
   )(store);
   createPersistedState({
-      key: 'ybo_fa_common2',
+      key: 'ybofa_gwapi',
       paths:
         [
-          'devices', 'gateways', 'input_types', 'locations', 'modules', 'module_device_types', 'systeminfo',
+          'gateway',
         ],
       storage: {
         getItem: key => LZString.decompressFromUTF16(localStorage.getItem(key)),
@@ -36,8 +36,20 @@ export default ({store}) => {
       ],
     storage: {
         getItem: key => LZString.decompressFromUTF16(localStorage.getItem(key)),
-        setItem: (key, value) => localStorage.setItem(key, LZString.compressToUTF16(value)),
+        setItem: function (key, value) { localStorage.setItem(key, LZString.compressToUTF16(value)) },
         removeItem: key => localStorage.removeItem(key),
         }
     })(store);
+  // createPersistedState({
+  //   key: 'ybo_fa_modules',
+  //   storage: {
+  //       getItem: key => LZString.decompressFromUTF16(localStorage.getItem(key)),
+  //       setItem: function (key, value) {
+  //         if (key.startsWith('modules_')) {
+  //           localStorage.setItem(key, LZString.compressToUTF16(value))
+  //         }
+  //       },
+  //       removeItem: key => localStorage.removeItem(key),
+  //       }
+  //   })(store);
 }

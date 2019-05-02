@@ -577,18 +577,27 @@
     "label": {
       "actions": "Actions",
       "area": "Area",
+      "atom": "Atom",
+      "created_at": "Created At",
       "delete": "Delete",
       "description": "Description",
       "disable": "Disable",
       "edit": "Edit",
       "enable": "Enable",
+      "gateway": "Gateway",
       "label": "Label",
       "location": "Location",
       "more": "More",
       "more_ddd": "More...",
       "search": "Search",
       "search_ddd": "Search...",
-      "updated": "Updated"
+      "source": "Source",
+      "state": "State",
+      "updated": "Updated",
+      "updated_at": "Updated AT",
+      "value": "Value",
+      "value_typ": "Value Type",
+      "value_type": "Value Type"
     },
     "messages": {
       "rate_limit_exceeded": "Too many attempts, try again later."

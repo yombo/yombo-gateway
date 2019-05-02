@@ -49,7 +49,7 @@
        border-bottom-width: 1px;
        font-size: 1.45em;
        font-weight: $font-weight-light;
-       border: 0;
+       border: 0px;
    }
 
    .radio,
@@ -80,6 +80,11 @@
        padding: 12px 7px;
        vertical-align: middle;
    }
+
+   > tbody > tr > td {
+       padding: 3px 5px;
+       border: 1px solid #e5e5e5;
+ }
 
    .th-description{
        max-width: 150px;

@@ -5,10 +5,11 @@
   "author": "Mitch Schwenk",
   "private": true,
   "scripts": {
-    "dev": "nuxt --hostname 0.0.0.0",
+    "dev": "./util/rundev dev",
+    "build": "./util/rundev prod",
+    "build_dev": "nuxt --hostname 0.0.0.0",
+    "build_prod": "nuxt generate",
     "start": "nuxt start",
-    "build": "nuxt generate",
-    "builder": "nuxt build",
     "test": "jest"
   },
   "dependencies": {

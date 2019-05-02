@@ -76,7 +76,6 @@
 </template>
 <script>
 import { Table, TableColumn } from 'element-ui';
-import _ from 'lodash';
 
 import Device from '@/models/device'
 
@@ -114,7 +113,7 @@ export default {
         buttonsStyling: false
       }).then(result => {
         if (result.value) {
-          this.$store.dispatch('devices/delete', row.id);
+          this.$store.dispatch('yombo/devices/delete', row.id);
           this.$swal({
             title: 'Deleted!',
             text: `You deleted ${row.full_name}`,
@@ -137,8 +136,7 @@ export default {
         buttonsStyling: false
       }).then(result => {
         if (result.value) {
-          let results = this.$store.dispatch('devices/enable', row.id);
-          console.log('Enabled status: ' + JSON.stringify(results))
+          let results = this.$store.dispatch('yombo/devices/enable', row.id);
           this.$swal({
             title: 'Enabled!',
             text: `You enabled ${row.full_name}`,
@@ -161,8 +159,7 @@ export default {
         buttonsStyling: false
       }).then(result => {
         if (result.value) {
-          let results = this.$store.dispatch('devices/disable', row.id);
-          console.log('Disabled status: ' + JSON.stringify(results))
+          let results = this.$store.dispatch('yombo/devices/disable', row.id);
           this.$swal({
             title: 'Disabled!',
             text: `You disabled ${row.full_name}`,
@@ -173,22 +170,7 @@ export default {
         }
       });
     },
-
-
-    tableRowClassName({ rowIndex }) {
-      if (rowIndex === 0) {
-        return 'table-success';
-      } else if (rowIndex === 2) {
-        return 'table-info';
-      } else if (rowIndex === 4) {
-        return 'table-danger';
-      } else if (rowIndex === 6) {
-        return 'table-warning';
-      }
-      return '';
-    },
-    refreshRequest() {
-      this.debouncedRefresh();
+    async refreshRequest() {
       this.$swal({
           title: this.$t('ui.modal.titles.on_it'),
           text: this.$t('ui.modal.mesages.refreshing_data'),
@@ -196,41 +178,25 @@ export default {
           showConfirmButton: true,
           timer: 1000
       });
-      this.$store.dispatch('devices/fetch');
-    },
-    refresh() { // called by debounceRefreshed if the user hasn't clicked on refresh too often.
-      this.$store.dispatch('devices/refresh');
+      await this.$store.dispatch('yombo/devices/fetch');
     },
     updateDeviceAge () { // called by setInterval setup in mounted()
-      this.display_age =  this.$store.getters['devices/display_age'](this.$i18n.locale);
+      this.display_age =  this.$store.getters['yombo/devices/display_age'](this.$i18n.locale);
     },
     device_updated(updated_at) { // called by bus.$on setup in mounted()
       this.updateDeviceAge();
-      console.log("Devices were updated: " + updated_at);
     }
 
   },
-  created () {
-    this.debouncedRefresh = _.throttle(this.refresh, 5000);
-    this.$store.dispatch('devices/refresh');
-    this.$store.dispatch('locations/refresh');
-  },
   mounted () {
     this.updateDeviceAge();
-    this.$options.interval = setInterval(this.updateDeviceAge, 5000);
-    this.$bus.$on('store_devices_updates', this.device_updated);
-    // console.log("devices mounted....");
+    this.$options.interval = setInterval(this.updateDeviceAge, 1000);
+    this.$store.dispatch('yombo/devices/refresh');
+    this.$store.dispatch('yombo/locations/refresh');
+    console.log("devices/index mounted....")
   },
   beforeDestroy () {
     clearInterval(this.$options.interval);
-    this.$bus.$off('store_devices_updates', this.device_updated);
-    // console.log("device before destroy")
   },
 };
 </script>
-
-<style>
-/*.table-transparent {*/
-/*  background-color: transparent !important;*/
-/*}*/
-</style>

@@ -13,7 +13,7 @@
   export default {
     computed: {
       systemInfo: function () {
-        return this.$store.state.systeminfo;
+        return this.$store.state.gateway.systeminfo;
       }
     }
   }

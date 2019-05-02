@@ -327,17 +327,17 @@ export default {
   },
   created: function () {
     console.log("dashboard home: created....")
-    this.$store.dispatch('categories/refresh');
-    this.$store.dispatch('commands/refresh');
-    this.$store.dispatch('device_command_inputs/refresh');
-    this.$store.dispatch('device_type_commands/refresh');
-    this.$store.dispatch('device_types/refresh');
-    this.$store.dispatch('devices/refresh');
-    this.$store.dispatch('gateways/refresh');
-    this.$store.dispatch('input_types/refresh');
-    this.$store.dispatch('locations/refresh');
-    this.$store.dispatch('modules/refresh');
-    this.$store.dispatch('module_device_types/refresh');
+    this.$store.dispatch('yombo/categories/refresh');
+    this.$store.dispatch('yombo/commands/refresh');
+    this.$store.dispatch('yombo/device_command_inputs/refresh');
+    this.$store.dispatch('yombo/device_type_commands/refresh');
+    this.$store.dispatch('yombo/device_types/refresh');
+    this.$store.dispatch('yombo/devices/refresh');
+    this.$store.dispatch('yombo/gateways/refresh');
+    this.$store.dispatch('yombo/input_types/refresh');
+    this.$store.dispatch('yombo/locations/refresh');
+    this.$store.dispatch('yombo/modules/refresh');
+    this.$store.dispatch('yombo/module_device_types/refresh');
   },
 };
 </script>

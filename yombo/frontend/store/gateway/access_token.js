@@ -4,6 +4,9 @@ export const state = () => ({
   last_download_at: 0
 });
 
+import Vue from 'vue'
+import YomboApiV1 from '@/services/yboapiv1/YomboApiV1'
+
 export const actions = {
   fetch( { commit }) {
     let response;
@@ -12,6 +15,7 @@ export const actions = {
       response = window.$nuxt.$gwapiv1.user().access_token()
         .then(response => {
           commit('SET_DATA', response.data['data']['attributes'])
+          Object.defineProperty(Vue.prototype, '$yboapiv1', { value: YomboApiV1 });
         });
     } catch (ex) {  // Handle error
       console.log("pages/index: has an error");
@@ -34,6 +38,12 @@ export const mutations = {
     state.access_token = data['access_token'];
     state.access_token_expires = data['access_token_expires'];
     state.last_download_at = Math.floor(Date.now() / 1000);
+  }
+};
+
+export const getters = {
+  token: state => () => {
+    return state.access_token;
   }
 };
 

@@ -30,7 +30,7 @@
               </h3>
             </div>
             <ul style="padding: 0 15px;">
-              <li>Label: <strong>{{ systemInfo.label }}</strong></li>
+<!--              <li>Label: <strong>{{ systemInfo.label }}</strong></li>-->
               <li>Description: <strong>{{ systemInfo.description }}</strong></li>
               <li>DNS Name: <strong>{{ systemInfo.dns_name }}</strong></li>
               <li>Is Master: <strong>{{ systemInfo.is_master }}</strong></li>

@@ -45,7 +45,6 @@
   export default {
     head() {
         return {
-            title: this.systemInfo.label + ": Yombo Gateway",
             meta: [
                 { name: 'description', content: 'Yombo Gateway: ' + this.systemInfo.description},
                 { name: 'keywords', content: 'yombo, gateway, frontend'},
@@ -62,17 +61,15 @@
         return this.gwLabel + " Home";
       },
       systemInfo: function () {
-        return this.$store.state.systeminfo;
+        return this.$store.state.gateway.systeminfo;
       },
       randomBGNumber : function(){
         return Math.floor(Math.random() * (10 - 1 + 1)) + 1;
       }
     },
     created: function () {
-      // this.$bus.$on('messageSent', e => console.log("home: " + e));
-      // console.log("setup listener in home....");
       if (this.gwLabel == null) {
-        this.$store.dispatch('systeminfo/fetch');
+        this.$store.dispatch('gateway/systeminfo/fetch');
       }
     },
     mounted(){
@@ -80,5 +77,4 @@
     methods: {
     }
   }
-  // https://www.thepolyglotdeveloper.com/2018/04/vuejs-app-using-axios-vuex/
 </script>
