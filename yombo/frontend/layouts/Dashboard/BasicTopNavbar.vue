@@ -1,12 +1,8 @@
 <template>
   <navbar :show-navbar="showNavbar">
     <div class="navbar-wrapper">
-      <div class="navbar-toggle" :class="{toggled: $dashboardsidebar.showSidebar}">
-        <navbar-toggle-button @click.native="toggleSidebar">
-        </navbar-toggle-button>
-      </div>
       <a class="navbar-brand" href="#">
-        {{routeName}}
+        <nuxt-link class="nav-link" :to="localePath('')">Yobmo</nuxt-link>
       </a>
     </div>
     <button @click="toggleNavbar" class="navbar-toggler" type="button" data-toggle="collapse"

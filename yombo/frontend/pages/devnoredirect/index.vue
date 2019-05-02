@@ -49,7 +49,7 @@ export default {
     },
     created: function () {
       if (this.gwLabel == null) {
-        this.$store.dispatch('systeminfo/fetch');
+        this.$store.dispatch('gateway/systeminfo/fetch');
       }
     },
 }

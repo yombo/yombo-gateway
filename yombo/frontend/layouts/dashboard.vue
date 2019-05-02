@@ -90,6 +90,7 @@
     </div>
   </div>
 </template>
+
 <script>
 /* eslint-disable no-new */
 import PerfectScrollbar from 'perfect-scrollbar';

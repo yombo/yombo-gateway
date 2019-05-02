@@ -1,23 +1,37 @@
 <template>
-  <div style="background: rgba(0, 0 ,0, 0);" >
-    <GeneralNavbar />
-    <nuxt />
-    <GeneralFooter />
+  <div>
+    <style>
+      body {
+        background-image: url('http://localhost:8080/img/bg/{{bgImageNumber}}_1536.jpg');
+      }
+    </style>
+    <notifications></notifications>
+    <div>
+      <top-navbar></top-navbar>
+      <router-view name="header"></router-view>
+      <div class="panel-header panel-header-sm">
+      </div>
+        <!-- your content here -->
+        <nuxt />
+      <GeneralFooter />
+    </div>
   </div>
 </template>
 
+
 <script>
+  import TopNavbar from '@/layouts/Dashboard/TopNavbar.vue';
+  import BasicTopNavbar from '@/layouts/Dashboard/BasicTopNavbar.vue';
   import GeneralFooter from '@/layouts/partials/GeneralFooter.vue';
-  import GeneralNavbar from '@/layouts/partials/GeneralNavbar'
 
   export default {
     components: {
-      GeneralNavbar,
+      TopNavbar,
       GeneralFooter,
     },
     computed: {
       bgImageNumber: function () {
-        return 1;
+        return Math.floor(new Date()/10000) % 5;
       },
     }
 
@@ -42,7 +56,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
   -webkit-font-smoothing: antialiased;
   /*box-sizing: border-box;*/
-  background-image: url('http://localhost:8080/img/bg/1_1536.jpg');
+  /*background-image: url('http://localhost:8080/img/bg/1_1536.jpg');*/
     /*background-size: contain;*/
   background-repeat: no-repeat;
   -webkit-background-size: cover;

@@ -49,10 +49,8 @@ export default {
         return Math.floor(Math.random() * (10 - 1 + 1)) + 1;
       }
     },
-    created: function () {
-      if (this.gwLabel == null) {
-        this.$store.dispatch('systeminfo/fetch');
-      }
+    moounted: function () {
+      this.$store.dispatch('gateway/systeminfo/fetch');
     },
 }
 </script>

@@ -23,7 +23,7 @@
 <style scoped>
   #footer {
     height:auto;
-    background: #2CA8FF;
+    background: #2a5687;
     text-align:center;
     position:fixed;
     bottom:0px;
