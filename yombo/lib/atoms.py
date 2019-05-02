@@ -280,7 +280,6 @@ class Atoms(YomboLibrary):
         self.os_data()
 
         self.triggers = {}
-        # self._Automation = self._Libraries["automation"]
         self.set("working_dir", settings.arguments["working_dir"], source=self)
         self.set("app_dir", settings.arguments["app_dir"], source=self)
 
@@ -334,6 +333,22 @@ class Atoms(YomboLibrary):
             return self.atoms[gateway_id].copy()
         else:
             return {}
+
+    def get_list(self, gateway_id=None):
+        """
+        Gets Atoms as a list.
+
+        :return:
+        """
+        results = []
+        for found_gateway_id, atoms in self.atoms.items():
+            if gateway_id is not None and found_gateway_id == gateway_id:
+                continue
+            for name, value in atoms.items():
+                atom = value.copy()
+                atom["id"] = name
+                results.append(atom)
+        return results
 
     def get(self, atom_requested, human=None, full=None, gateway_id=None):
         """

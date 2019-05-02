@@ -395,7 +395,7 @@ class States(YomboLibrary, object):
         else:
             return self.states[gateway_id][key]["value"]
 
-    def get_states(self, gateway_id=None):
+    def get_copy(self, gateway_id=None):
         """
         Returns a copy of the active states.
 
@@ -410,6 +410,22 @@ class States(YomboLibrary, object):
             return self.states[gateway_id].copy()
         else:
             return {}
+
+    def get_list(self, gateway_id=None):
+        """
+        Gets States as a list.
+
+        :return:
+        """
+        results = []
+        for found_gateway_id, states in self.states.items():
+            if gateway_id is not None and found_gateway_id == gateway_id:
+                continue
+            for name, value in states.items():
+                state = value.copy()
+                state["id"] = name
+                results.append(state)
+        return results
 
     @inlineCallbacks
     def set(self, key, value, value_type=None, callback=None, arguments=None, gateway_id=None, source=None):
