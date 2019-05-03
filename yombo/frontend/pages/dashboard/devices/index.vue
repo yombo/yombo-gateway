@@ -106,8 +106,8 @@ export default {
     },
     handleDelete(index, row) {
       this.$swal({
-        title: 'Are you sure?',
-        text: `You won't may not be able to revert this!`,
+        title: this.$t('ui.prompt.delete_device'),
+        text: this.$t('ui.phrase.cannot_undo'),
         type: 'warning',
         showCancelButton: true,
         confirmButtonClass: 'btn btn-success btn-fill',
@@ -118,7 +118,7 @@ export default {
         if (result.value) {
           this.$store.dispatch('yombo/devices/delete', row.id);
           this.$swal({
-            title: 'Deleted!',
+            title: this.$t('ui.common.deleted'),
             text: `You deleted ${row.full_name}`,
             type: 'success',
             confirmButtonClass: 'btn btn-success btn-fill',
@@ -129,8 +129,8 @@ export default {
     },
     async handleEnable(index, row) {
       await this.$swal({
-        title: 'Are you sure?',
-        text: `This will enable the device, the gateway may need to be rebooted.`,
+        title: this.$t('ui.prompt.enable_device'),
+        text: this.$t('ui.phrase.gateway_maybe_need_rebooted_after_change'),
         type: 'info',
         showCancelButton: true,
         confirmButtonClass: 'btn btn-success btn-fill',
@@ -141,7 +141,7 @@ export default {
         if (result.value) {
           let results = this.$store.dispatch('yombo/devices/enable', row.id);
           this.$swal({
-            title: 'Enabled!',
+            title: this.$t('ui.common.enabled'),
             text: `You enabled ${row.full_name}`,
             type: 'success',
             confirmButtonClass: 'btn btn-success btn-fill',
@@ -152,8 +152,8 @@ export default {
     },
     async handleDisable(index, row) {
       await this.$swal({
-        title: 'Are you sure?',
-        text: `This will disable the device, the gateway may need to be rebooted.`,
+        title: this.$t('ui.prompt.disable_device'),
+        text: this.$t('ui.phrase.gateway_maybe_need_rebooted_after_change'),
         type: 'warning',
         showCancelButton: true,
         confirmButtonClass: 'btn btn-success btn-fill',
@@ -164,7 +164,7 @@ export default {
         if (result.value) {
           let results = this.$store.dispatch('yombo/devices/disable', row.id);
           this.$swal({
-            title: 'Disabled!',
+            title: this.$t('ui.common.disabled'),
             text: `You disabled ${row.full_name}`,
             type: 'success',
             confirmButtonClass: 'btn btn-success btn-fill',
