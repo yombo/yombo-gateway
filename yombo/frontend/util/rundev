@@ -38,7 +38,7 @@ function setup_watch_files {
       do
         filename="$(dirname $filename)"
       done
-      rsync -a -v -i --exclude "/.nuxt/" --exclude "/dist/" "$filename"/ ~/.yombo/var/frontend
+      rsync -a --exclude "/.nuxt/" --exclude "/dist/" "$filename"/ ~/.yombo/var/frontend
     fi
   done
 }

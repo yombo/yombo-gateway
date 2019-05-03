@@ -22,10 +22,9 @@ export const actions = {
     await a_fetch(store_settings(), commit);
   },
   async fetchOne( { commit, dispatch }, payload) {
-    await a_fetchOne(store_settings(), commit, window.$nuxt.$yboapiv1.atoms(), payload);
+    await a_fetchOne(store_settings(), commit, payload);
   },
   async refresh({ state, dispatch }) {  // Doesn't need api, just calls fetch if needed.
-    console.log("atoms refresh: " + state.last_download_at)
     await a_refresh(store_settings(), state, dispatch);
   },
 };

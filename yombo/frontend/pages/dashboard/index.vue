@@ -325,19 +325,18 @@ export default {
       return Device.query().with('locations').orderBy('id', 'desc').get()
     }
   },
-  created: function () {
-    console.log("dashboard home: created....")
-    this.$store.dispatch('yombo/categories/refresh');
-    this.$store.dispatch('yombo/commands/refresh');
-    this.$store.dispatch('yombo/device_command_inputs/refresh');
-    this.$store.dispatch('yombo/device_type_commands/refresh');
-    this.$store.dispatch('yombo/device_types/refresh');
-    this.$store.dispatch('yombo/devices/refresh');
-    this.$store.dispatch('yombo/gateways/refresh');
-    this.$store.dispatch('yombo/input_types/refresh');
-    this.$store.dispatch('yombo/locations/refresh');
-    this.$store.dispatch('yombo/modules/refresh');
-    this.$store.dispatch('yombo/module_device_types/refresh');
+  async mounted() {
+    await this.$store.dispatch('yombo/devices/refresh');
+    await this.$store.dispatch('yombo/categories/refresh');
+    await this.$store.dispatch('yombo/commands/refresh');
+    await this.$store.dispatch('yombo/device_command_inputs/refresh');
+    await this.$store.dispatch('yombo/device_type_commands/refresh');
+    await this.$store.dispatch('yombo/device_types/refresh');
+    await this.$store.dispatch('yombo/gateways/refresh');
+    await this.$store.dispatch('yombo/input_types/refresh');
+    await this.$store.dispatch('yombo/locations/refresh');
+    await this.$store.dispatch('yombo/modules/refresh');
+    await this.$store.dispatch('yombo/module_device_types/refresh');
   },
 };
 </script>

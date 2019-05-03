@@ -10,9 +10,9 @@ export const state = () => ({
 
 function store_settings() {
   return {
-    api: window.$nuxt.$gwapiv1.auotmationrules(),
-    api_all: window.$nuxt.$gwapiv1.auotmationrules().all,
-    name: 'automationrules',
+    api: window.$nuxt.$gwapiv1.automation_rules(),
+    api_all: window.$nuxt.$gwapiv1.automation_rules().all,
+    name: 'automation_rules',
   };
 }
 

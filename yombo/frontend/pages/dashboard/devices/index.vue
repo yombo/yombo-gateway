@@ -4,8 +4,11 @@
       <card card-body-classes="table-full-width">
         <div slot="header">
           <div class="fa-pull-right">
-            <a :href="localePath('dashboard-devices-add')" title="New Device" class="btn btn-info btn-sm fa-pull-right" role="button">
-            <i class="fas fa-plus-circle fa-pull-left" style="font-size: 1.5em;"></i> &nbsp; Add new</a>
+            <nuxt-link class="navbar-brand fa-pull-right" :to="localePath('dashboard-devices-add')">
+              <button type="button" class="btn btn-info btn-sm" data-dismiss="modal">
+                <i class="fas fa-plus-circle fa-pull-left" style="font-size: 1.5em;"></i> &nbsp; Add new</a>
+                </button>
+            </nuxt-link>
           <br>
            <el-input
                   class="fa-pull-right"
@@ -188,11 +191,11 @@ export default {
     }
 
   },
-  mounted () {
+  async mounted () {
     this.updateDeviceAge();
     this.$options.interval = setInterval(this.updateDeviceAge, 1000);
-    this.$store.dispatch('yombo/devices/refresh');
-    this.$store.dispatch('yombo/locations/refresh');
+    await this.$store.dispatch('yombo/devices/refresh');
+    await this.$store.dispatch('yombo/locations/refresh');
     console.log("devices/index mounted....")
   },
   beforeDestroy () {

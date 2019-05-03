@@ -7,26 +7,55 @@
               Add device
             </h2>
           </div>
-          <p>Content has not been created, this is a simple placeholder.</p>
           <p>
-            Content sources:
+            This new device wizard will get your new device up and running quickly.
           </p>
-          <ul>
-            <li>Logic: </li>
-            <li>Display: </li>
-          </ul>
+          <p>
+            Select a device type to add:
+          </p>
+          <form @submit.prevent>
+          <p>
+             <b-form-select :options="devices_types"></b-form-select>
+             <button class="btn btn-outline-warning btn-info" type="submit">Send<i class="far fa-paper-plane ml-2"></i></button>
+          </p>
+          </form>
         </card>
     </div>
   </div>
 </template>
 <script>
 
+import Device_Type from '@/models/device_type'
+
+import { Select, Option } from 'element-ui';
+
 export default {
   layout: 'dashboard',
+  components: {
+    [Option.name]: Option,
+    [Select.name]: Select,
+  },
+  computed: {
+    devices_types () {
+      var results = [];
+      var device_tyes = Device_Type.query().orderBy('label').get();
+      var arrayLength = device_tyes.length;
+      for (var i = 0; i < arrayLength; i++) {
+        results.push({value: device_tyes[i].id, text: device_tyes[i].label});
+      }
+      return results;
+    },
+  },
+
 };
 </script>
 <style scoped>
-.table-transparent {
-  background-color: transparent !important;
-}
+  element.style {
+    margin-bottom: 0px !important;
+    margin-right: 0px !important;
+  }
+    .el-input__inner {
+      @extend .btn-round, .btn-info;
+    }
+
 </style>
