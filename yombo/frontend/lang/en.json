@@ -576,13 +576,22 @@
     },
     "label": {
       "actions": "Actions",
+      "add_automation_rule": "Add automation rule",
+      "add_device": "Add device",
+      "add_scene": "Add scene",
       "area": "Area",
       "atom": "Atom",
+      "automation_rule": "Automation rule",
+      "automation_rules": "Automation Rules",
       "created_at": "Created At",
       "delete": "Delete",
       "description": "Description",
       "disable": "Disable",
       "edit": "Edit",
+      "edit_automation_rule": "Edit automation rule",
+      "edit_device": "Edit device",
+      "edit_location": "Edit location",
+      "edit_scene": "Edit scene",
       "enable": "Enable",
       "gateway": "Gateway",
       "label": "Label",
@@ -693,6 +702,18 @@
         "dashboard": "Use the {dashboard} to manage the gateway, including any automation devices, rules, and scenes.",
         "welcome": "Welcome to the Yombo Gateway Frontend."
       }
+    },
+    "phrase": {
+      "cannot_undo": "Once complete, you cannot undo this.",
+      "might_not_able_undo": "You may not be able to undo this."
+    },
+    "prompt": {
+      "delete_device": "Delete device?",
+      "delete_rule": "Delete rule?",
+      "disable_device": "Disable device?",
+      "disable_rule": "Disable rule?",
+      "enable_device": "Enable device?",
+      "enable_rule": "Enable rule?"
     },
     "relative_time": {
       "future": "In {time}",
