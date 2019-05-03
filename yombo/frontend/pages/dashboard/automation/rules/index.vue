@@ -121,8 +121,8 @@ export default {
     },
     handleDelete(index, row) {
       this.$swal({
-        title: $t('ui.prompt.delete_rule'),
-        text: $t('ui.phrase.cannot_undo'),
+        title: this.$t('ui.prompt.delete_rule'),
+        text: this.$t('ui.phrase.cannot_undo'),
         type: 'warning',
         showCancelButton: true,
         confirmButtonClass: 'btn btn-success btn-fill',
@@ -133,7 +133,7 @@ export default {
         if (result.value) {
           this.$store.dispatch('yombo/automation_rules/delete', row.id);
           this.$swal({
-            title: $t('ui.common.deleted'),
+            title: this.$t('ui.common.deleted'),
             text: `You deleted ${row.full_name}`,
             type: 'success',
             confirmButtonClass: 'btn btn-success btn-fill',
@@ -144,8 +144,8 @@ export default {
     },
     async handleEnable(index, row) {
       await this.$swal({
-        title: $t('ui.prompt.enable_rule'),
-        text: $t('ui.phrase.maybe_need_rebooted_after'),
+        title: this.$t('ui.prompt.enable_rule'),
+        text: this.$t('ui.phrase.gateway_maybe_need_rebooted_after_change'),
         type: 'info',
         showCancelButton: true,
         confirmButtonClass: 'btn btn-success btn-fill',
@@ -156,7 +156,7 @@ export default {
         if (result.value) {
           let results = this.$store.dispatch('yombo/automation_rules/enable', row.id);
           this.$swal({
-            title: $t('ui.common.enabled'),
+            title: this.$t('ui.common.enabled'),
             text: `You enabled ${row.full_name}`,
             type: 'success',
             confirmButtonClass: 'btn btn-success btn-fill',
@@ -167,8 +167,8 @@ export default {
     },
     async handleDisable(index, row) {
       await this.$swal({
-        title: $t('ui.prompt.enable_rule'),
-        text: $t('ui.phrase.maybe_need_rebooted_after'),
+        title: this.$t('ui.prompt.enable_rule'),
+        text: this.$t('ui.phrase.gateway_maybe_need_rebooted_after_change'),
         type: 'warning',
         showCancelButton: true,
         confirmButtonClass: 'btn btn-success btn-fill',
@@ -179,7 +179,7 @@ export default {
         if (result.value) {
           let results = this.$store.dispatch('yombo/automation_rules/disable', row.id);
           this.$swal({
-            title: $t('ui.common.disabled'),
+            title: this.$t('ui.common.disabled'),
             text: `You disabled ${row.full_name}`,
             type: 'success',
             confirmButtonClass: 'btn btn-success btn-fill',
