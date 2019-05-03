@@ -355,6 +355,30 @@ class Scenes(YomboLibrary, object):
         if action_type in self.scene_types_extra:
             return self.scene_types_extra[action_type]["render_table_column_callback"](scene, action)
 
+    def sorted(self, key=None):
+        """
+        Returns an OrderedDict, sorted by key.  If key is not set, then default is "label".
+
+        :param key: Attribute contained in a scene to sort by.
+        :type key: str
+        :return: All devices, sorted by key.
+        :rtype: OrderedDict
+        """
+        if key is None:
+            key = "label"
+        return dict(sorted(iter(self.scenes.items()), key=lambda i: getattr(i[1], key)))
+
+    def get_list(self, gateway_id=None):
+        """
+        Gets Scenes as a list.
+
+        :return:
+        """
+        results = []
+        for scene_id, scene in self.sorted().items():
+            results.append(self.scene_to_dict(scene))
+        return results
+
     def get(self, requested_scene=None, gateway_id=None):
         """
         Return the requested scene, if it's found.
@@ -952,6 +976,23 @@ class Scenes(YomboLibrary, object):
                                          name=scene.machine_label,
                                          action="stop")
         return results
+
+    def scene_to_dict(self, scene):
+        """
+        Converts a scene to a dict for displaying better.
+
+        :param scene:
+        :return:
+        """
+        return {
+            "id": scene.node_id,
+            "gateway_id": scene.gateway_id,
+            "machine_label": scene.machine_label,
+            "label": scene.label,
+            "scene": scene.data,
+            "created_at": scene.created_at,
+            "updated_at": scene.updated_at,
+        }
 
     def patch_scene(self, scene):
         """

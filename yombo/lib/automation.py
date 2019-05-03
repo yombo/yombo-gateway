@@ -351,6 +351,17 @@ class Automation(YomboLibrary):
             key = "label"
         return OrderedDict(sorted(iter(self.rules.items()), key=lambda i: getattr(i[1], key)))
 
+    def get_list(self, gateway_id=None):
+        """
+        Gets Automation Rules as a list.
+
+        :return:
+        """
+        results = []
+        for rule_id, rule in self.sorted().items():
+            results.append(self.rule_to_dict(rule))
+        return results
+
     def get(self, requested_rule=None):
         """
         Return the requested rule, if it's found.
@@ -1341,6 +1352,22 @@ class Automation(YomboLibrary):
         self.balance_action_weights(rule_id)
         return action
 
+    def rule_to_dict(self, rule):
+        """
+        Converts a rule to a dict for displaying better.
+
+        :param rule:
+        :return:
+        """
+        return {
+            "id": rule.node_id,
+            "gateway_id": rule.gateway_id,
+            "machine_label": rule.machine_label,
+            "label": rule.label,
+            "rule": rule.data,
+            "created_at": rule.created_at,
+            "updated_at": rule.updated_at,
+        }
 
     def patch_automation_rule(self, rule):
         """
