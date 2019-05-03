@@ -107,6 +107,7 @@ def route_api_v1_mqtt(webapp):
             response_code = 403
             user = split_username(request.args[b"username"][0].decode())
             password = request.args[b"password"][0].decode()
+            print(f"api_v1_mqtt_auth_user. User: {user}")
             user_id = user["username"]
             logger.info("mqtt user: {user}", user=user)
             if user["type"] == "yombogw":

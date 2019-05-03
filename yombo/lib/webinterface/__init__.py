@@ -50,8 +50,7 @@ from yombo.lib.webinterface.class_helpers.yombo_site import Yombo_Site
 from yombo.lib.webinterface.class_helpers.webserver import WebServer
 
 from yombo.lib.webinterface.routes.api_v1.atoms import route_api_v1_atoms
-from yombo.lib.webinterface.routes.api_v1.states import route_api_v1_states
-# from yombo.lib.webinterface.routes.api_v1.automation import route_api_v1_automation
+from yombo.lib.webinterface.routes.api_v1.automation import route_api_v1_automation
 # from yombo.lib.webinterface.routes.api_v1.camera import route_api_v1_camera
 # from yombo.lib.webinterface.routes.api_v1.command import route_api_v1_command
 # from yombo.lib.webinterface.routes.api_v1.device import route_api_v1_device
@@ -59,10 +58,11 @@ from yombo.lib.webinterface.routes.api_v1.states import route_api_v1_states
 # from yombo.lib.webinterface.routes.api_v1.events import route_api_v1_events
 # from yombo.lib.webinterface.routes.api_v1.gateway import route_api_v1_gateway
 # from yombo.lib.webinterface.routes.api_v1.module import route_api_v1_module
-# from yombo.lib.webinterface.routes.api_v1.mqtt import route_api_v1_mqtt
+from yombo.lib.webinterface.routes.api_v1.mqtt import route_api_v1_mqtt
 # from yombo.lib.webinterface.routes.api_v1.notification import route_api_v1_notification
-# from yombo.lib.webinterface.routes.api_v1.scenes import route_api_v1_scene
+from yombo.lib.webinterface.routes.api_v1.scenes import route_api_v1_scenes
 # from yombo.lib.webinterface.routes.api_v1.server import route_api_v1_server
+from yombo.lib.webinterface.routes.api_v1.states import route_api_v1_states
 from yombo.lib.webinterface.routes.api_v1.stream import broadcast as route_api_v1_stream_broadcast
 # from yombo.lib.webinterface.routes.api_v1.stream import route_api_v1_stream
 # from yombo.lib.webinterface.routes.api_v1.statistics import route_api_v1_statistics
@@ -137,7 +137,7 @@ class WebInterface(BuildDistribution, ErrorHandler, Render, YomboLibrary, WebSer
 
         # Load API routes
         route_api_v1_atoms(self.webapp)
-        # route_api_v1_automation(self.webapp)
+        route_api_v1_automation(self.webapp)
         # route_api_v1_camera(self.webapp)
         # route_api_v1_command(self.webapp)
         # route_api_v1_device(self.webapp)
@@ -145,14 +145,14 @@ class WebInterface(BuildDistribution, ErrorHandler, Render, YomboLibrary, WebSer
         # route_api_v1_events(self.webapp)
         # route_api_v1_gateway(self.webapp)
         # route_api_v1_module(self.webapp)
-        # route_api_v1_mqtt(self.webapp)
+        route_api_v1_mqtt(self.webapp)
         # route_api_v1_notification(self.webapp)
+        route_api_v1_scenes(self.webapp)
         # route_api_v1_server(self.webapp)
         # route_api_v1_statistics(self.webapp)
         # route_api_v1_stream(self.webapp, self)
         route_api_v1_states(self.webapp)
         route_api_v1_system(self.webapp)
-        # route_api_v1_scene(self.webapp)
         # route_api_v1_storage(self.webapp)
         route_api_v1_user(self.webapp)
         # route_api_v1_webinterface_logs(self.webapp)
