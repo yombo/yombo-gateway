@@ -1,7 +1,7 @@
 <template>
   <navbar :show-navbar="showNavbar">
     <div class="navbar-wrapper">
-      <div class="navbar-toggle" :class="{toggled: $dashboardsidebar.showSidebar}">
+      <div class="navbar-toggle" :class="{toggled: $dashboardsidebar.showDashboardSidebar}">
         <navbar-toggle-button @click.native="toggleSidebar">
         </navbar-toggle-button>
       </div>
@@ -110,13 +110,13 @@ export default {
       this.activeNotifications = false;
     },
     toggleSidebar() {
-      this.$dashboardsidebar.displaySidebar(!this.$dashboardsidebar.showSidebar);
+      this.$dashboardsidebar.displayDashboardSidebar(!this.$dashboardsidebar.showDashboardSidebar);
     },
     toggleNavbar() {
       this.showNavbar = !this.showNavbar;
     },
     hideSidebar() {
-      this.$dashboardsidebar.displaySidebar(false);
+      this.$dashboardsidebar.displayDashboardSidebar(false);
     }
   }
 };

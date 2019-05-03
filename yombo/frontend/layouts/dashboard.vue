@@ -1,5 +1,5 @@
 <template>
-  <div class="wrapper" :class="{'nav-open': $dashboardsidebar.showSidebar}">
+  <div class="wrapper" :class="{'nav-open': $dashboardsidebar.showDashboardSidebar}">
     <notifications></notifications>
     <dashboard-side-bar>
       <template slot-scope="props" slot="links">
@@ -129,8 +129,8 @@ export default {
   },
   methods: {
     toggleSidebar() {
-      if (this.$dashboardsidebar.showSidebar) {
-        this.$dashboardsidebar.displaySidebar(false);
+      if (this.$dashboardsidebar.showDashboardSidebar) {
+        this.$dashboardsidebar.displayDashboardSidebar(false);
       }
     }
   },

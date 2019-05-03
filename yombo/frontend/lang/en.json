@@ -705,6 +705,7 @@
     },
     "phrase": {
       "cannot_undo": "Once complete, you cannot undo this.",
+      "gateway_maybe_need_rebooted_after_change": "The gateway may need to be rebooted after this change.",
       "might_not_able_undo": "You may not be able to undo this."
     },
     "prompt": {

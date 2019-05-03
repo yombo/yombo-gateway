@@ -141,9 +141,9 @@ export default {
       if (
         this.autoClose &&
         this.$dashboardsidebar &&
-        this.$dashboardsidebar.showSidebar === true
+        this.$dashboardsidebar.showDashboardSidebar === true
       ) {
-        this.$dashboardsidebar.displaySidebar(false);
+        this.$dashboardsidebar.displayDashboardSidebar(false);
       }
     },
     collapseMenu() {
