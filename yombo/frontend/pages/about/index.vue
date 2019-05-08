@@ -11,14 +11,13 @@
               <p class="subheading" style="margin-bottom: .5em;">Yombo Gateway Frontend</p>
             </div>
             <p>
-              This website is being hosted by the <a href="https://yombo.net" target="_blank">Yombo Gateway</a>
-              and is used to manage the gateway and any connected automation devices within the
-              gateway cluster.
+              This website is running the <a href="https://yombo.net" target="_blank">Yombo</a> Frontend
+              software. The <router-link to="/dashboard">dashboard</router-link> allows yoiu to manage
+              the devices connected to the gateway, as well as automation rules, scenes in more.
             </p>
             <p>
-              The <router-link to="/dashboard">dashboard</router-link> is used for managing the
-              gateway, while the <router-link to="/controltower">control tower</router-link> is
-              used to manage the devices within the gateway.
+              The <router-link to="/controltower">control tower</router-link> is used to manage the devices
+              within the gateway.
             </p>
           </card>
       </div>
@@ -47,11 +46,7 @@
 export default {
     head() {
         return {
-            title: 'About Gateway',
-            meta: [
-                { name: 'description', content: 'This is my about description here.'},
-                { name: 'keywords', content: 'about nuxt, nuxt info'},
-            ]
+            title: 'About Yombo Frontend',
         }
     },
     data () {
@@ -64,16 +59,14 @@ export default {
         return this.gwLabel + " Home";
       },
       systemInfo: function () {
-        return this.$store.state.systeminfo;
+        return this.$store.state.gateway.systeminfo;
       },
       randomBGNumber : function(){
         return Math.floor(Math.random() * (10 - 1 + 1)) + 1;
       }
     },
     created: function () {
-      if (this.gwLabel == null) {
-        this.$store.dispatch('systeminfo/refresh');
-      }
+      this.$store.dispatch('gateway/systeminfo/fetch');
     },
 }
 </script>

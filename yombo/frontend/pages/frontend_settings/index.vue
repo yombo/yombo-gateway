@@ -11,22 +11,14 @@
               <p class="subheading" style="margin-bottom: .5em;">Various app settings</p>
             </div>
             <p>
-              Below are various settings that are local to <strong>this</strong> instance of the front-end application.
+              Settings for currently logged in user for <strong>this browser.</strong>. Changes here will only affect
+              this browser for the current user.
             </p>
             <p>
               Form items here:
             </p>
             <ul>
-              <li>Nothing yet.</li>
-            </ul>
-            <p>
-              Below are various frontend settings that follow this user within the current gateway cluster.
-            </p>
-            <p>
-              Form items here:
-            </p>
-            <ul>
-              <li>User lock pin.</li>
+              <li>Lock screen pin: (input form)</li>
             </ul>
           </card>
       </div>
@@ -38,11 +30,7 @@
 export default {
     head() {
         return {
-            title: 'About Gateway',
-            meta: [
-                { name: 'description', content: 'This is my about description here.'},
-                { name: 'keywords', content: 'about nuxt, nuxt info'},
-            ]
+            title: 'Frontend Settings',
         }
     },
     data () {

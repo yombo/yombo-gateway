@@ -45,10 +45,7 @@
   export default {
     head() {
         return {
-            meta: [
-                { name: 'description', content: 'Yombo Gateway: ' + this.systemInfo.description},
-                { name: 'keywords', content: 'yombo, gateway, frontend'},
-            ]
+            title: this.systemInfo.label + " - Yombo",
         }
     },
     data () {
@@ -68,9 +65,7 @@
       }
     },
     created: function () {
-      if (this.gwLabel == null) {
-        this.$store.dispatch('gateway/systeminfo/fetch');
-      }
+      this.$store.dispatch('gateway/systeminfo/fetch');
     },
     mounted(){
     },
