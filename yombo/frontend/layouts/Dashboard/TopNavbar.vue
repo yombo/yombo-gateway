@@ -64,7 +64,9 @@
                    class="nav-item"
                    icon="now-ui-icons users_single-02">
 
+          <nuxt-link class="dropdown-item" :to="localePath('dashboard')">About</nuxt-link>
           <a class="dropdown-item" href="https://my.yombo.net">My.Yombo.Net</a>
+          <nuxt-link class="dropdown-item" :to="localePath('frontend_settings')">Frontend Settings</nuxt-link>
           <b-dropdown-divider />
           <a class="dropdown-item" href="/user/logout">{{ $t('ui.navigation.logout')}}</a>
         </drop-down>

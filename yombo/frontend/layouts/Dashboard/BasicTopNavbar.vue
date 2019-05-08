@@ -1,21 +1,19 @@
 <template>
   <navbar :show-navbar="showNavbar">
     <div class="navbar-wrapper">
-      <a class="navbar-brand" href="#">
-        <nuxt-link class="nav-link" :to="localePath('')">Yobmo</nuxt-link>
-      </a>
+      <nuxt-link class="nav-link" :to="localePath('index')">Yombo Gateway</nuxt-link>
     </div>
-    <button @click="toggleNavbar" class="navbar-toggler" type="button" data-toggle="collapse"
-            data-target="#navigation"
-            aria-controls="navigation-index" aria-expanded="false" aria-label="Toggle navigation">
-      <span class="navbar-toggler-bar navbar-kebab"></span>
-      <span class="navbar-toggler-bar navbar-kebab"></span>
-      <span class="navbar-toggler-bar navbar-kebab"></span>
-    </button>
-
     <template slot="navbar-menu">
 
       <ul class="navbar-nav">
+        <li class="nav-item">
+          <nuxt-link class="nav-link" :to="localePath('about')">
+            <i class="fas fa-question" style="font-size: 18px"></i>
+            <p>
+              <span class="d-lg-none d-md-block">Lock</span>
+            </p>
+          </nuxt-link>
+        </li>
         <li class="nav-item">
           <nuxt-link class="nav-link" :to="localePath('lock')">
             <i class="fas fa-lock" style="font-size: 18px"></i>
@@ -61,6 +59,7 @@
                    icon="now-ui-icons users_single-02">
 
           <a class="dropdown-item" href="https://my.yombo.net">My.Yombo.Net</a>
+          <nuxt-link class="dropdown-item" :to="localePath('frontend_settings')">Frontend Settings</nuxt-link>
           <b-dropdown-divider />
           <a class="dropdown-item" href="/user/logout">{{ $t('ui.navigation.logout')}}</a>
         </drop-down>
@@ -105,15 +104,6 @@ export default {
     closeDropDown() {
       this.activeNotifications = false;
     },
-    toggleSidebar() {
-      this.$dashboardsidebar.displayDashboardSidebar(!this.$dashboardsidebar.showDashboardSidebar);
-    },
-    toggleNavbar() {
-      this.showNavbar = !this.showNavbar;
-    },
-    hideSidebar() {
-      this.$dashboardsidebar.displayDashboardSidebar(false);
-    }
   }
 };
 </script>
