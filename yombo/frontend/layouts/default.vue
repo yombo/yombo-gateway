@@ -7,7 +7,7 @@
     </style>
     <notifications></notifications>
     <div>
-      <top-navbar></top-navbar>
+      <basic-top-navbar></basic-top-navbar>
       <router-view name="header"></router-view>
       <div class="panel-header panel-header-sm">
       </div>
@@ -20,13 +20,12 @@
 
 
 <script>
-  import TopNavbar from '@/layouts/Dashboard/TopNavbar.vue';
   import BasicTopNavbar from '@/layouts/Dashboard/BasicTopNavbar.vue';
   import GeneralFooter from '@/layouts/partials/GeneralFooter.vue';
 
   export default {
     components: {
-      TopNavbar,
+      BasicTopNavbar,
       GeneralFooter,
     },
     computed: {
@@ -38,14 +37,13 @@
   }
 </script>
 
+<style scoped>
+.panel-header {
+  height: 10px;
+  padding-top: 20px;
+}
+</style>
 <style>
-     /*html,body{*/
-       /*background-position: center;*/
-       /*background-size: cover;*/
-       /*background-repeat: no-repeat;*/
-       /*height: 100%;*/
-       /*font-family: 'Numans', sans-serif;*/
-   /*}*/
 body {
   font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI',
     Roboto, 'Helvetica Neue', Arial, sans-serif;
