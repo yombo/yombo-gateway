@@ -4,7 +4,7 @@
       <card card-body-classes="table-full-width">
         <div slot="header">
           <div class="fa-pull-right">
-            <nuxt-link class="navbar-brand fa-pull-right" :to="localePath('dashboard-locations-add')">
+            <nuxt-link class="navbar-brand fa-pull-right" :to="localePath('dashboard-gateways-add')">
               <button type="button" class="btn btn-info btn-sm" data-dismiss="modal">
                 <i class="fas fa-plus-circle fa-pull-left" style="font-size: 1.5em;"></i> &nbsp; Add new</a>
                 </button>
@@ -17,7 +17,7 @@
                   :placeholder="$t('ui.label.search_ddd')"/>
           </div>
         <h4 class="card-title">
-           {{ $t('ui.navigation.locations') }}
+           {{ $t('ui.navigation.gateways') }}
          </h4>
            <div slot="footer" class="stats">
              <i v-on:click="refreshRequest" class="now-ui-icons arrows-1_refresh-69" style="color: #14375c;"></i>
@@ -33,6 +33,7 @@
           >
             <el-table-column :label="$t('ui.label.label')" property="label"></el-table-column>
             <el-table-column :label="$t('ui.label.description')" property="description"></el-table-column>
+            <el-table-column :label="$t('ui.navigation.status')" property="status"></el-table-column>
             <el-table-column
               align="right" :label="$t('ui.label.actions')">
               <div slot-scope="props" class="table-actions">
@@ -42,6 +43,25 @@
                           size="sm" round icon>
                   <i class="fa fa-edit"></i>
                 </n-button>
+
+                <template v-if="props.row.status == 1">
+                  <n-button @click.native="handleDisable(props.$index, props.row)"
+                            class="enable"
+                            type="success"
+                            size="sm" round icon>
+                    <i class="fa fa-power-off"></i>
+                  </n-button>
+                </template>
+                <template v-else>
+                  <n-button @click.native="handleEnable(props.$index, props.row)"
+                            class="disable"
+                            type="default"
+                            size="sm" round icon
+                            :disabled="props.row.status == 2">
+                    <i class="fa fa-power-off"></i>
+                  </n-button>
+                </template>
+
                 <n-button @click.native="handleDelete(props.$index, props.row)"
                           class="remove"
                           type="danger"
@@ -60,7 +80,7 @@
 <script>
 import { Table, TableColumn } from 'element-ui';
 
-import Location from '@/models/location'
+import Gateway from '@/models/gateway'
 
 export default {
   layout: 'dashboard',
@@ -76,17 +96,17 @@ export default {
   },
   computed: {
     items () {
-      return Location.query().where('location_type', 'location').orderBy('label', 'desc').get()
+      return Gateway.query().orderBy('label', 'desc').get()
     },
   },
 
   methods: {
     handleEdit(index, row) {
-      this.$router.push(this.localePath('dashboard-locations-edit')+"/"+row.id);
+      this.$router.push(this.localePath('dashboard-gateways-edit')+"/"+row.id);
     },
     handleDelete(index, row) {
       this.$swal({
-        title: this.$t('ui.prompt.delete_location'),
+        title: this.$t('ui.prompt.delete_gateway'),
         text: this.$t('ui.phrase.cannot_undo'),
         type: 'warning',
         showCancelButton: true,
@@ -96,10 +116,56 @@ export default {
         buttonsStyling: false
       }).then(result => {
         if (result.value) {
-          this.$store.dispatch('yombo/locations/delete', row.id);
+          this.$store.dispatch('yombo/gateways/delete', row.id);
           this.$swal({
             title: this.$t('ui.common.deleted'),
             text: `You deleted ${row.full_name}`,
+            type: 'success',
+            confirmButtonClass: 'btn btn-success btn-fill',
+            buttonsStyling: false
+          });
+        }
+      });
+    },
+    async handleEnable(index, row) {
+      await this.$swal({
+        title: this.$t('ui.prompt.enable_gateway'),
+        text: this.$t('ui.phrase.gateway_maybe_need_rebooted_after_change'),
+        type: 'info',
+        showCancelButton: true,
+        confirmButtonClass: 'btn btn-success btn-fill',
+        cancelButtonClass: 'btn btn-danger btn-fill',
+        confirmButtonText: 'Yes, enable it!',
+        buttonsStyling: false
+      }).then(result => {
+        if (result.value) {
+          let results = this.$store.dispatch('yombo/gateways/enable', row.id);
+          this.$swal({
+            title: this.$t('ui.common.enabled'),
+            text: `You enabled ${row.full_name}`,
+            type: 'success',
+            confirmButtonClass: 'btn btn-success btn-fill',
+            buttonsStyling: false
+          });
+        }
+      });
+    },
+    async handleDisable(index, row) {
+      await this.$swal({
+        title: this.$t('ui.prompt.disable_gateway'),
+        text: this.$t('ui.phrase.gateway_maybe_need_rebooted_after_change'),
+        type: 'warning',
+        showCancelButton: true,
+        confirmButtonClass: 'btn btn-success btn-fill',
+        cancelButtonClass: 'btn btn-danger btn-fill',
+        confirmButtonText: 'Yes, disable it!',
+        buttonsStyling: false
+      }).then(result => {
+        if (result.value) {
+          let results = this.$store.dispatch('yombo/gateways/disable', row.id);
+          this.$swal({
+            title: this.$t('ui.common.disabled'),
+            text: `You disabled ${row.full_name}`,
             type: 'success',
             confirmButtonClass: 'btn btn-success btn-fill',
             buttonsStyling: false
@@ -115,18 +181,18 @@ export default {
           showConfirmButton: true,
           timer: 1000
       });
-      await this.$store.dispatch('yombo/locations/fetch');
+      await this.$store.dispatch('yombo/gateways/fetch');
     },
     updateDataAge () { // called by setInterval setup in mounted()
-      this.display_age =  this.$store.getters['yombo/locations/display_age'](this.$i18n.locale);
+      this.display_age =  this.$store.getters['yombo/gateways/display_age'](this.$i18n.locale);
     },
 
   },
   async mounted () {
     this.updateDataAge();
     this.$options.interval = setInterval(this.updateDataAge, 1000);
+    await this.$store.dispatch('yombo/gateways/refresh');
     await this.$store.dispatch('yombo/locations/refresh');
-    console.log("devices/index mounted....")
   },
   beforeDestroy () {
     clearInterval(this.$options.interval);

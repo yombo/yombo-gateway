@@ -7,7 +7,7 @@ export default {
     allGW () {
         return yboapiv1().get('/gateways/'+ window.$nuxt.$gwenv.gateway_id +'/relationships/commands')
     },
-    find(id) {
+    fetchOne(id) {
         return yboapiv1().get('/commands/' + id);
     },
 }

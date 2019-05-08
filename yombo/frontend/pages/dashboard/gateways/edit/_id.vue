@@ -4,7 +4,7 @@
       <card card-body-classes="table-full-width">
         <div slot="header">
         <h4 class="card-title">
-           {{ $t('ui.label.edit_device') }}: {{item.full_label}}
+           {{ $t('ui.label.edit_gateway') }}: {{item.label}}
           <div class="pull-right">
             <template v-if="item.status == 1">
               <n-button @click.native="handleDisable(item)"
@@ -33,7 +33,7 @@
          </h4>
         </div>
         <div class="card-body">
-          Device: {{id}}
+          Gateway: {{id}}
           {{item}}
         </div>
       </card>
@@ -42,7 +42,7 @@
   </div>
 </template>
 <script>
-import Device from '@/models/device'
+import Gateway from '@/models/gateway'
 
 export default {
   layout: 'dashboard',
@@ -56,14 +56,14 @@ export default {
   },
   computed: {
     item () {
-      return Device.find(this.id)
+      return Gateway.find(this.id)
     },
   },
 
   methods: {
     handleDelete(row) {
       this.$swal({
-        title: this.$t('ui.prompt.delete_device'),
+        title: this.$t('ui.prompt.delete_gateway'),
         text: this.$t('ui.phrase.cannot_undo'),
         type: 'warning',
         showCancelButton: true,
@@ -73,7 +73,7 @@ export default {
         buttonsStyling: false
       }).then(result => {
         if (result.value) {
-          this.$store.dispatch('yombo/devices/delete', row.id);
+          this.$store.dispatch('yombo/gateways/delete', row.id);
           this.$swal({
             title: this.$t('ui.common.deleted'),
             text: `You deleted ${row.full_name}`,
@@ -86,7 +86,7 @@ export default {
     },
     async handleEnable(row) {
       await this.$swal({
-        title: this.$t('ui.prompt.enable_device'),
+        title: this.$t('ui.prompt.enable_gateway'),
         text: this.$t('ui.phrase.gateway_maybe_need_rebooted_after_change'),
         type: 'info',
         showCancelButton: true,
@@ -96,7 +96,7 @@ export default {
         buttonsStyling: false
       }).then(result => {
         if (result.value) {
-          let results = this.$store.dispatch('yombo/devices/enable', row.id);
+          let results = this.$store.dispatch('yombo/gateways/enable', row.id);
           this.$swal({
             title: this.$t('ui.common.enabled'),
             text: `You enabled ${row.full_name}`,
@@ -109,7 +109,7 @@ export default {
     },
     async handleDisable(row) {
       await this.$swal({
-        title: this.$t('ui.prompt.disable_device'),
+        title: this.$t('ui.prompt.disable_gateway'),
         text: this.$t('ui.phrase.gateway_maybe_need_rebooted_after_change'),
         type: 'warning',
         showCancelButton: true,
@@ -119,7 +119,7 @@ export default {
         buttonsStyling: false
       }).then(result => {
         if (result.value) {
-          let results = this.$store.dispatch('yombo/devices/disable', row.id);
+          let results = this.$store.dispatch('yombo/gateways/disable', row.id);
           this.$swal({
             title: this.$t('ui.common.disabled'),
             text: `You disabled ${row.full_name}`,
@@ -131,9 +131,41 @@ export default {
       });
     },
 
+    tableRowClassName({ rowIndex }) {
+      if (rowIndex === 0) {
+        return 'table-success';
+      } else if (rowIndex === 2) {
+        return 'table-info';
+      } else if (rowIndex === 4) {
+        return 'table-danger';
+      } else if (rowIndex === 6) {
+        return 'table-warning';
+      }
+      return '';
+    },
+    refreshRequest() {
+      this.debouncedRefresh();
+      this.$swal({
+          title: this.$t('ui.modal.titles.on_it'),
+          text: this.$t('ui.modal.mesages.refreshing_data'),
+          type: 'success',
+          showConfirmButton: true,
+          timer: 1000
+      });
+      this.$store.dispatch('yombo/gateways/refresh');
+    },
+    refresh() { // called by debounceRefreshed if the user hasn't clicked on refresh too often.
+      this.$store.dispatch('yombo/gateways/refresh');    },
+
   },
   mounted () {
-    this.$store.dispatch('yombo/devices/fetchOne', this.id);
+    this.$store.dispatch('yombo/gateways/fetchOne', this.id);
   },
 };
 </script>
+
+<style>
+/*.table-transparent {*/
+/*  background-color: transparent !important;*/
+/*}*/
+</style>

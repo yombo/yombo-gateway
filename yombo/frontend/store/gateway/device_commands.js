@@ -1,27 +1,23 @@
-import Location from '@/models/location'
+import { a_fetch, a_refresh, a_fetchOne } from '@/store_common/db_actions'
 
-import { a_fetch, a_refresh, a_fetchOne, a_update, a_enable, a_delete_with_status,
-         a_disable } from '@/store_common/db_actions'
-
-import { m_set_data, m_update } from '@/store_common/db_mutations'
+import { m_set_data, m_update } from '@/store_common/std_mutations'
 import { g_data_age, g_display_age } from '@/store_common/db_getters'
 
 export const state = () => ({
+  data: {},
   last_download_at: 0
 });
 
 function store_settings() {
   return {
-    api: window.$nuxt.$yboapiv1.locations(),
-    api_all: window.$nuxt.$yboapiv1.locations().all,
-    name: 'locations',
-    model: Location,
+    api: window.$nuxt.$gwapiv1.device_commands(),
+    api_all: window.$nuxt.$gwapiv1.device_commands().all,
+    name: 'device_commands',
   };
 }
 
 export const actions = {
   async fetch( { commit, dispatch }) {
-    // let feters = a_fetch.bind(this);
     await a_fetch(store_settings(), commit);
   },
   async fetchOne( { commit, dispatch }, payload) {
@@ -29,18 +25,6 @@ export const actions = {
   },
   async refresh({ state, dispatch }) {  // Doesn't need api, just calls fetch if needed.
     await a_refresh(store_settings(), state, dispatch);
-  },
-  async update({ commit, state, dispatch }, payload) {
-    await a_delete_with_status(store_settings(), commit, state, dispatch, payload);
-  },
-  async delete({ commit, state, dispatch }, payload) {
-    await a_update(store_settings(), commit, state, dispatch, payload);
-  },
-  async enable({ commit, state, dispatch }, payload) {
-    await a_enable(store_settings(), commit, state, dispatch, payload);
-  },
-  async disable({ commit, state, dispatch }, payload) {
-    await a_disable(store_settings(), commit, state, dispatch, payload);
   },
 };
 

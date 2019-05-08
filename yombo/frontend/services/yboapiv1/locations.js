@@ -4,7 +4,7 @@ export default {
     all () {
         return yboapiv1().get('/locations')
     },
-    find(id) {
+    fetchOne(id) {
         return yboapiv1().get('/locations/' + id);
     },
 }

@@ -26,7 +26,7 @@
         </div>
         <div class="card-body">
           <el-table
-            :data="devices.filter(data => !search
+            :data="items.filter(data => !search
              || data.label.toLowerCase().includes(search.toLowerCase())
              || data.description.toLowerCase().includes(search.toLowerCase())
              )"
@@ -95,8 +95,8 @@ export default {
     };
   },
   computed: {
-    devices () {
-      return Device.query().with('locations').orderBy('id', 'desc').get()
+    items () {
+      return Device.query().orderBy('full_label', 'desc').get()
     },
   },
 
@@ -183,17 +183,14 @@ export default {
       });
       await this.$store.dispatch('yombo/devices/fetch');
     },
-    updateDeviceAge () { // called by setInterval setup in mounted()
+    updateDataAge () { // called by setInterval setup in mounted()
       this.display_age =  this.$store.getters['yombo/devices/display_age'](this.$i18n.locale);
     },
-    device_updated(updated_at) { // called by bus.$on setup in mounted()
-      this.updateDeviceAge();
-    }
 
   },
   async mounted () {
-    this.updateDeviceAge();
-    this.$options.interval = setInterval(this.updateDeviceAge, 1000);
+    this.updateDataAge();
+    this.$options.interval = setInterval(this.updateDataAge, 1000);
     await this.$store.dispatch('yombo/devices/refresh');
     await this.$store.dispatch('yombo/locations/refresh');
     console.log("devices/index mounted....")

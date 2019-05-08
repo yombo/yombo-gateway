@@ -17,7 +17,7 @@
                   :placeholder="$t('ui.label.search_ddd')"/>
           </div>
         <h4 class="card-title">
-           {{ $t('ui.navigation.locations') }}
+           {{ $t('ui.navigation.areas') }}
          </h4>
            <div slot="footer" class="stats">
              <i v-on:click="refreshRequest" class="now-ui-icons arrows-1_refresh-69" style="color: #14375c;"></i>
@@ -76,13 +76,13 @@ export default {
   },
   computed: {
     items () {
-      return Location.query().where('location_type', 'location').orderBy('label', 'desc').get()
+      return Location.query().where('location_type', 'area').orderBy('label', 'desc').get()
     },
   },
 
   methods: {
     handleEdit(index, row) {
-      this.$router.push(this.localePath('dashboard-locations-edit')+"/"+row.id);
+      this.$router.push(this.localePath('dashboard-areas-edit')+"/"+row.id);
     },
     handleDelete(index, row) {
       this.$swal({

@@ -36,9 +36,10 @@
 
         <dashboard-sidebar-item :link="{name: $t('ui.navigation.settings'), icon: 'fas fa-cogs'}">
           <dashboard-sidebar-item :link="{name: $t('ui.navigation.locations'), path: localePath('dashboard-locations')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.areas'), path: localePath('dashboard-areas')}"></dashboard-sidebar-item>
           <dashboard-sidebar-item :link="{name: $t('ui.navigation.dns'), path: localePath('dashboard-settings-dns')}"></dashboard-sidebar-item>
           <dashboard-sidebar-item :link="{name: $t('ui.navigation.encryption'), path: localePath('dashboard-settings-encryption')}"></dashboard-sidebar-item>
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.gateways'), path: localePath('dashboard-settings-gateways')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.gateways'), path: localePath('dashboard-gateways')}"></dashboard-sidebar-item>
           <dashboard-sidebar-item :link="{name: $t('ui.navigation.yombo_ini'), path: localePath('dashboard-settings-yomboini')}"></dashboard-sidebar-item>
         </dashboard-sidebar-item>
 

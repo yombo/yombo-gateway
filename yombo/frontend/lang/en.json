@@ -588,6 +588,7 @@
       "description": "Description",
       "disable": "Disable",
       "edit": "Edit",
+      "edit_area": "Edit area",
       "edit_automation_rule": "Edit automation rule",
       "edit_device": "Edit device",
       "edit_location": "Edit location",
@@ -629,6 +630,7 @@
       "about": "About",
       "add": "Add",
       "api_auth": "API Auth",
+      "areas": "Areas",
       "atoms": "Atoms",
       "authentication_platforms": "Auth Platforms",
       "automation": "Automation",
@@ -710,6 +712,7 @@
     },
     "prompt": {
       "delete_device": "Delete device?",
+      "delete_location": "Delete location?",
       "delete_rule": "Delete rule?",
       "disable_device": "Disable device?",
       "disable_rule": "Disable rule?",

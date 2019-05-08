@@ -9,8 +9,8 @@ async function a_fetch(settings, commit) {
     });
 }
 
-async function a_fetchOne(settings, commit, dispatch, payload) {
-  await settings.api.find(payload)
+async function a_fetchOne(settings, commit, payload) {
+  await settings.api.fetchOne(payload)
     .then(function (response) {
       commit('UPDATE', response.data['data']['attributes']);
       return true;
