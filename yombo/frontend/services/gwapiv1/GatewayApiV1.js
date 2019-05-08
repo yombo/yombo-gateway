@@ -1,6 +1,6 @@
 import atoms from '@/services/gwapiv1/atoms';
 import automation_rules from '@/services/gwapiv1/automation_rules';
-import yombo_ini from '@/services/gwapiv1/yombo_ini';
+import configurations from '@/services/gwapiv1/configurations';
 import states from '@/services/gwapiv1/states';
 
 import user from '@/services/gwapiv1/user';
@@ -13,8 +13,8 @@ export default {
     automation_rules() {
       return automation_rules;
     },
-    yombo_ini() {
-      return yombo_ini;
+    configurations() {
+      return configurations;
     },
     states() {
       return states;

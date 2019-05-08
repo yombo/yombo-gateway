@@ -12,13 +12,12 @@ function store_settings() {
   return {
     api: window.$nuxt.$gwapiv1.atoms(),
     api_all: window.$nuxt.$gwapiv1.atoms().all,
-    name: 'atoms',
+    name: 'configurations',
   };
 }
 
 export const actions = {
   async fetch( { commit, dispatch }) {
-    // console.log(window.$nuxt.$gwapiv1.atoms().all);
     await a_fetch(store_settings(), commit);
   },
   async fetchOne( { commit, dispatch }, payload) {
