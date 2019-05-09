@@ -579,6 +579,28 @@ class Configuration(YomboLibrary):
                 except:
                     pass
 
+    def get_list(self):
+        """
+        Gets configurations as a list.
+
+        :return:
+        """
+        results = []
+        for section, options in self.configs.items():
+            for option, data in options.items():
+                results.append({
+                    "option": option,
+                    "section": section,
+                    "data": data,
+                })
+            if gateway_id is not None and found_gateway_id == gateway_id:
+                continue
+            for name, value in atoms.items():
+                atom = value.copy()
+                atom["id"] = name
+                results.append(atom)
+        return results
+
     def get2(self, section, option, default="7vce#hvjGW%w$~bA6jYv[P:*.kv6mAg934+HQhPpbDFJF2Nw9rU+saNvpVL2",
              set_if_missing=True, set=None, **kwargs):
         """
@@ -773,7 +795,7 @@ class Configuration(YomboLibrary):
         self.configs[section][option] = dict_merge(self.configs[section][option], {
                 "updated_at": int(time()),
                 "value": value,
-                "hash": sha224( str(value).encode("utf-8") ).hexdigest(),
+                "hash": sha224(str(value).encode("utf-8")).hexdigest(),
             })
         self.configs_dirty = True
         if self.loading_yombo_ini is False:

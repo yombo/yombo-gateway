@@ -50,11 +50,11 @@ from yombo.lib.webinterface.class_helpers.yombo_site import Yombo_Site
 from yombo.lib.webinterface.class_helpers.webserver import WebServer
 
 from yombo.lib.webinterface.routes.api_v1.atoms import route_api_v1_atoms
-from yombo.lib.webinterface.routes.api_v1.automation import route_api_v1_automation
+from yombo.lib.webinterface.routes.api_v1.automation_rules import route_api_v1_automation_rules
 # from yombo.lib.webinterface.routes.api_v1.camera import route_api_v1_camera
 # from yombo.lib.webinterface.routes.api_v1.command import route_api_v1_command
 # from yombo.lib.webinterface.routes.api_v1.device import route_api_v1_device
-# from yombo.lib.webinterface.routes.api_v1.device_command import route_api_v1_device_command
+from yombo.lib.webinterface.routes.api_v1.device_command import route_api_v1_device_command
 # from yombo.lib.webinterface.routes.api_v1.events import route_api_v1_events
 # from yombo.lib.webinterface.routes.api_v1.gateway import route_api_v1_gateway
 # from yombo.lib.webinterface.routes.api_v1.module import route_api_v1_module
@@ -137,11 +137,11 @@ class WebInterface(BuildDistribution, ErrorHandler, Render, YomboLibrary, WebSer
 
         # Load API routes
         route_api_v1_atoms(self.webapp)
-        route_api_v1_automation(self.webapp)
+        route_api_v1_automation_rules(self.webapp)
         # route_api_v1_camera(self.webapp)
         # route_api_v1_command(self.webapp)
         # route_api_v1_device(self.webapp)
-        # route_api_v1_device_command(self.webapp)
+        route_api_v1_device_command(self.webapp)
         # route_api_v1_events(self.webapp)
         # route_api_v1_gateway(self.webapp)
         # route_api_v1_module(self.webapp)

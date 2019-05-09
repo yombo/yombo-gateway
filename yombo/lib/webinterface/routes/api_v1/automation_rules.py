@@ -1,10 +1,10 @@
 from yombo.lib.webinterface.auth import require_auth
 
 
-def route_api_v1_automation(webapp):
-    with webapp.subroute("/api/v1/automation") as webapp:
+def route_api_v1_automation_rules(webapp):
+    with webapp.subroute("/api/v1") as webapp:
 
-        @webapp.route("/rules", methods=["GET"])
+        @webapp.route("/automation_rules", methods=["GET"])
         @require_auth(api=True)
         def apiv1_automation_rules_get(webinterface, request, session):
             """ Gets the system automation rules. """
@@ -13,7 +13,7 @@ def route_api_v1_automation(webapp):
                                            attributes=webinterface._Automation.get_list()
                                            )
 
-        @webapp.route("/rules/<string:rule_id>", methods=["GET"])
+        @webapp.route("/automation_rules/<string:rule_id>", methods=["GET"])
         @require_auth(api=True)
         def apiv1_automation_rules_byid_get(webinterface, request, session, rule_id):
             """ Get a single automation rule. """

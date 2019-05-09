@@ -21,6 +21,15 @@ def route_api_v1_device(webapp):
                 payload=webinterface._Devices.full_list_devices(),
             )
 
+        @webapp.route("/device", methods=["GET"])
+        @require_auth(api=True)
+        def apiv1_device_get(webinterface, request, session):
+            session.has_access("device", "*", "view", raise_error=True)
+            return return_good(
+                request,
+                payload=webinterface._Devices.full_list_devices(),
+            )
+
         @webapp.route("/device/<string:device_id>", methods=["GET"])
         @require_auth(api=True)
         def apiv1_device_details_get(webinterface, request, session, device_id):
