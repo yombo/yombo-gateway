@@ -10,7 +10,7 @@
         <div class="card-body">
           {{ $t('ui.label.automation_rule')}}: {{id}}
         </div>
-        <p>{{rule}}</p>
+        <p>{{item}}</p>
       </card>
     </div>
 
@@ -32,7 +32,7 @@ export default {
     };
   },
   computed: {
-    rule () {
+    item () {
       return this.$store.state.gateway.automation_rules.data[this.id];
     },
   },

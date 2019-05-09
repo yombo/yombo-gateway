@@ -13,6 +13,7 @@ function store_settings() {
     api: window.$nuxt.$gwapiv1.scenes(),
     api_all: window.$nuxt.$gwapiv1.scenes().all,
     name: 'scenes',
+    refresh_age: 120,
   };
 }
 

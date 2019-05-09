@@ -17,35 +17,39 @@
                   :placeholder="$t('ui.label.search_ddd')"/>
           </div>
           <h4 class="card-title">
-            {{ $t('ui.navigation.devices') }}
+            {{ $t('ui.navigation.scenes') }}
           </h4>
-          <last-updated refresh="yombo/devices/fetch" getter="yombo/devices/display_age"/>
+          <last-updated refresh="gateway/scenes/fetch" getter="gateway/scenes/display_age"/>
         </div>
         <div class="card-body">
           <el-table
-            :data="items.filter(data => !search
-             || data.label.toLowerCase().includes(search.toLowerCase())
-             || data.description.toLowerCase().includes(search.toLowerCase())
-             )"
+            :data="scenes"
           >
-            <el-table-column :label="$t('ui.label.label')" property="full_label"></el-table-column>
-            <el-table-column :label="$t('ui.label.description')" property="description"></el-table-column>
-            <el-table-column :label="$t('ui.label.location')" property="full_location"></el-table-column>
+            <el-table-column :label="$t('ui.label.label')" property="label"></el-table-column>
+            <el-table-column :label="$t('ui.label.description')" property="rule.config.description"></el-table-column>
+            <el-table-column :label="$t('ui.common.enabled')">
+              <div slot-scope="props">
+                {{props.row.rule.config.enabled == true}}
+              </div>
+            </el-table-column>
+            <el-table-column :label="$t('ui.label.created_at')" property="created_at"></el-table-column>
+            <el-table-column :label="$t('ui.label.updated_at')" property="updated_at"></el-table-column>
             <el-table-column
               align="right" :label="$t('ui.label.actions')">
               <div slot-scope="props" class="table-actions">
-                <action-details path="dashboard-devices-details" :id="props.row.id"/>
-                <action-edit path="dashboard-devices-edit" :id="props.row.id"/>
-                <template v-if="props.row.status == 1">
-                  <action-disable dispatch="yombo/devices/disable" :id="props.row.id"
-                               i18n="device" :item_label="props.full_label"/>
+                <action-details path="dashboard-scenes-details" :id="props.row.id"/>
+                <action-edit path="dashboard-scenes-edit" :id="props.row.id"/>
+                <template v-if="props.row.rule.config.enabled == true">
+                  <action-disable dispatch="yombo/scenes/disable" :id="props.row.id"
+                               i18n="scene" :item_label="props.full_label"/>
                 </template>
                 <template v-else>
-                  <action-enable dispatch="yombo/devices/enable" :id="props.row.id"
-                               i18n="device" :item_label="props.full_label"/>
+                  <action-enable dispatch="yombo/scenes/enable" :id="props.row.id"
+                               i18n="scene" :item_label="props.full_label"/>
                 </template>
-                  <action-delete dispatch="yombo/devices/delete" :id="props.row.id"
-                               i18n="device" :item_label="props.full_label"/>
+
+                <action-delete dispatch="yombo/scenes/delete" :id="props.row.id"
+                               i18n="scene" :item_label="props.full_label"/>
               </div>
             </el-table-column>
           </el-table>
@@ -81,13 +85,22 @@ export default {
     };
   },
   computed: {
-    items () {
-      return Device.query().orderBy('full_label', 'desc').get()
+    scenes () {
+      let source = this.$store.state.gateway.scenes.data;
+      let results = [];
+
+      Object.keys(source).forEach(key => {
+        results.push(source[key]);
+      });
+
+      return results
     },
   },
   mounted () {
-    this.$store.dispatch('yombo/devices/refresh');
-    this.$store.dispatch('yombo/locations/refresh');
+    this.$store.dispatch('gateway/scenes/refresh');
+  },
+  beforeDestroy () {
+    clearInterval(this.$options.interval);
   },
 };
 </script>

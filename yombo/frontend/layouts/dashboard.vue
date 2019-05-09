@@ -13,9 +13,9 @@
         </dashboard-sidebar-item>
 
         <dashboard-sidebar-item :link="{name: $t('ui.navigation.automation'), icon: 'fas fa-random'}">
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.rules'), path: localePath('dashboard-automation-rules')}"></dashboard-sidebar-item>
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.scenes'), path: localePath('dashboard-automation-scenes')}"></dashboard-sidebar-item>
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.crontab'), path: localePath('dashboard-automation-crontab')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.rules'), path: localePath('dashboard-automation_rules')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.scenes'), path: localePath('dashboard-scenes')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.crontab'), path: localePath('dashboard-crontab')}"></dashboard-sidebar-item>
         </dashboard-sidebar-item>
 
         <dashboard-sidebar-item :link="{name: $t('ui.navigation.info'), icon: 'fas fa-info'}">
@@ -47,7 +47,7 @@
           <dashboard-sidebar-item :link="{name: $t('ui.navigation.overview'), path: localePath('dashboard-system-overview')}"></dashboard-sidebar-item>
           <dashboard-sidebar-item :link="{name: $t('ui.navigation.configuration'), path: localePath('dashboard-configuration')}"></dashboard-sidebar-item>
           <dashboard-sidebar-item :link="{name: $t('ui.navigation.backup'), path: localePath('dashboard-system-backup')}"></dashboard-sidebar-item>
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.status'), path: localePath('dashboard-system-status')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.label.status'), path: localePath('dashboard-system-status')}"></dashboard-sidebar-item>
         </dashboard-sidebar-item>
 
         <dashboard-sidebar-item :link="{name: 'MQTT', icon: 'far fa-envelope'}">

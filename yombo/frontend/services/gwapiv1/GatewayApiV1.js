@@ -1,6 +1,8 @@
 import atoms from '@/services/gwapiv1/atoms';
 import automation_rules from '@/services/gwapiv1/automation_rules';
 import configurations from '@/services/gwapiv1/configurations';
+import device_commands from '@/services/gwapiv1/device_commands';
+import scenes from '@/services/gwapiv1/scenes';
 import states from '@/services/gwapiv1/states';
 
 import user from '@/services/gwapiv1/user';
@@ -16,8 +18,14 @@ export default {
     configurations() {
       return configurations;
     },
+    device_commands() {
+      return device_commands;
+    },
     states() {
       return states;
+    },
+    scenes() {
+      return scenes;
     },
 
     user () {

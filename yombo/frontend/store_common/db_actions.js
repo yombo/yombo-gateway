@@ -24,7 +24,11 @@ function a_refresh(settings, state, dispatch) {
   // console.log(state)
   // console.log("a refresh last:" + state.last_download_at)
   // console.log("a refresh curr:" + Math.floor(Date.now() - (120*1000)))
-  if (state.last_download_at <= Math.floor(Date.now() - (120*1000))) {
+  var refresh_age = 120
+  if('refresh_age' in settings) {
+    refresh_age = settings.refresh_age
+  }
+  if (state.last_download_at <= Math.floor(Date.now() - (refresh_age*1000))) {
     dispatch('fetch');
   }
 }

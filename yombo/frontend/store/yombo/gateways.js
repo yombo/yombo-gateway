@@ -1,39 +1,62 @@
 import Gateway from '@/models/gateway'
+import { a_fetch, a_refresh, a_fetchOne, a_update, a_enable, a_delete_with_status,
+         a_disable } from '@/store_common/db_actions'
+
+import { m_set_data, m_update } from '@/store_common/db_mutations'
+import { g_data_age, g_display_age } from '@/store_common/db_getters'
 
 export const state = () => ({
   last_download_at: 0
 });
 
+function store_settings() {
+  return {
+    api: window.$nuxt.$yboapiv1.gateways(),
+    api_all: window.$nuxt.$yboapiv1.gateways().allGW,
+    name: 'gateways',
+    model: Gateway,
+  };
+}
+
 export const actions = {
-  fetch( { commit }) {
-    let response;
-    try {
-      response = window.$nuxt.$yboapiv1.gateways().allGW()
-        .then(response => {
-          commit('SET_DATA', response.data['data'])
-        });
-    } catch (ex) {  // Handle error
-      console.log("pages/index: has an error");
-      console.log(ex);
-      return
-    }
+  async fetch( { commit, dispatch }) {
+    // let feters = a_fetch.bind(this);
+    await a_fetch(store_settings(), commit);
   },
-  refresh( { state, dispatch }) {
-    // this.$bus.$emit('messageSent', 'over there');
-    if (state.last_download_at <= Math.floor(Date.now()/1000) - 120) {
-      dispatch('fetch');
-    }
-  }
+  async fetchOne( { commit, dispatch }, payload) {
+    await a_fetchOne(store_settings(), commit, payload);
+  },
+  async refresh({ state, dispatch }) {  // Doesn't need api, just calls fetch if needed.
+    await a_refresh(store_settings(), state, dispatch);
+  },
+  async update({ commit, state, dispatch }, payload) {
+    await a_delete_with_status(store_settings(), commit, state, dispatch, payload);
+  },
+  async delete({ commit, state, dispatch }, payload) {
+    await a_update(store_settings(), commit, state, dispatch, payload);
+  },
+  async enable({ commit, state, dispatch }, payload) {
+    await a_enable(store_settings(), commit, state, dispatch, payload);
+  },
+  async disable({ commit, state, dispatch }, payload) {
+    await a_disable(store_settings(), commit, state, dispatch, payload);
+  },
 };
 
 export const mutations = {
-  SET_DATA (state, payload) {
-    Gateway.deleteAll();
-    Object.keys(payload).forEach(key => {
-      Gateway.insert({
-        data: payload[key]['attributes'],
-      })
-    });
-    state.last_download_at = Math.floor(Date.now() / 1000);
+  SET_DATA(state, payload) { // Clears all previous data and loads it.
+    m_set_data(store_settings(), state, payload);
+  },
+  UPDATE(state, payload) { // Clears all previous data and loads it.
+    m_update(store_settings(), state, payload);
+  },
+};
+
+export const getters = {
+  data_age: state => () => {
+    return g_data_age(store_settings(), state)
+  },
+  display_age: (state, getters) => (locale) => {
+    return g_display_age(store_settings(), state, getters, locale)
   }
 };

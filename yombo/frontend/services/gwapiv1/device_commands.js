@@ -2,6 +2,6 @@ import gwapiv1 from '@/services/gwapiv1'
 
 export default {
     all() {
-        return gwapiv1().get('automation_rules');
+        return gwapiv1().get('device_command');
     },
 }

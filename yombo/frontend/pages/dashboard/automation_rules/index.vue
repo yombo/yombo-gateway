@@ -9,42 +9,46 @@
                 <i class="fas fa-plus-circle fa-pull-left" style="font-size: 1.5em;"></i> &nbsp; Add new</a>
                 </button>
             </nuxt-link>
-            <br>
-            <el-input
+          <br>
+           <el-input
                   class="fa-pull-right"
                   v-model="search"
                   size="mini"
                   :placeholder="$t('ui.label.search_ddd')"/>
           </div>
           <h4 class="card-title">
-            {{ $t('ui.navigation.devices') }}
+            {{ $t('ui.label.automation_rules') }}
           </h4>
-          <last-updated refresh="yombo/devices/fetch" getter="yombo/devices/display_age"/>
+          <last-updated refresh="gateway/automation_rules/fetch" getter="gateway/automation_rules/display_age"/>
         </div>
         <div class="card-body">
           <el-table
-            :data="items.filter(data => !search
-             || data.label.toLowerCase().includes(search.toLowerCase())
-             || data.description.toLowerCase().includes(search.toLowerCase())
-             )"
+            :data="rules"
           >
-            <el-table-column :label="$t('ui.label.label')" property="full_label"></el-table-column>
-            <el-table-column :label="$t('ui.label.description')" property="description"></el-table-column>
-            <el-table-column :label="$t('ui.label.location')" property="full_location"></el-table-column>
+            <el-table-column :label="$t('ui.label.label')" property="label"></el-table-column>
+            <el-table-column :label="$t('ui.label.description')" property="rule.config.description"></el-table-column>
+            <el-table-column :label="$t('ui.common.enabled')">
+              <div slot-scope="props">
+                {{props.row.rule.config.enabled == true}}
+              </div>
+            </el-table-column>
+            <el-table-column :label="$t('ui.label.created_at')" property="created_at"></el-table-column>
+            <el-table-column :label="$t('ui.label.updated_at')" property="updated_at"></el-table-column>
             <el-table-column
               align="right" :label="$t('ui.label.actions')">
               <div slot-scope="props" class="table-actions">
-                <action-details path="dashboard-devices-details" :id="props.row.id"/>
-                <action-edit path="dashboard-devices-edit" :id="props.row.id"/>
-                <template v-if="props.row.status == 1">
-                  <action-disable dispatch="yombo/devices/disable" :id="props.row.id"
+                <action-details path="dashboard-automation_rules-details" :id="props.row.id"/>
+                <action-edit path="dashboard-automation_rules-edit" :id="props.row.id"/>
+
+                <template v-if="props.row.rule.config.enabled == true">
+                  <action-disable dispatch="yombo/automation_rules/disable" :id="props.row.id"
                                i18n="device" :item_label="props.full_label"/>
                 </template>
                 <template v-else>
-                  <action-enable dispatch="yombo/devices/enable" :id="props.row.id"
+                  <action-enable dispatch="yombo/automation_rules/enable" :id="props.row.id"
                                i18n="device" :item_label="props.full_label"/>
                 </template>
-                  <action-delete dispatch="yombo/devices/delete" :id="props.row.id"
+                <action-delete dispatch="yombo/automation_rules/delete" :id="props.row.id"
                                i18n="device" :item_label="props.full_label"/>
               </div>
             </el-table-column>
@@ -81,13 +85,19 @@ export default {
     };
   },
   computed: {
-    items () {
-      return Device.query().orderBy('full_label', 'desc').get()
+    rules () {
+      let source = this.$store.state.gateway.automation_rules.data;
+      let results = [];
+
+      Object.keys(source).forEach(key => {
+        results.push(source[key]);
+      });
+
+      return results
     },
   },
   mounted () {
-    this.$store.dispatch('yombo/devices/refresh');
-    this.$store.dispatch('yombo/locations/refresh');
+    this.$store.dispatch('gateway/automation_rules/refresh');
   },
 };
 </script>

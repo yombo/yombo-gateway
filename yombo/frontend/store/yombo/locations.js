@@ -16,6 +16,7 @@ function store_settings() {
     api_all: window.$nuxt.$yboapiv1.locations().all,
     name: 'locations',
     model: Location,
+    refresh_age: 7200,
   };
 }
 
