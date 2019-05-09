@@ -608,6 +608,18 @@ class Devices(YomboLibrary, LibrarySearch):
                 results.append(device_command.asdict())
         return results
 
+    def get_device_commands_list(self):
+        """
+        Get a list of all device commands.
+
+        :return:
+        """
+        results = []
+        for device_command_id, device_command in self.device_commands.items():
+            results.append(device_command.asdict())
+        return results
+
+
     def delayed_commands(self, requested_device_id=None):
         """
         Returns only device commands that are delayed.

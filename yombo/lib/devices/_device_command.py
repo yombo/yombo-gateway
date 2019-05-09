@@ -444,6 +444,7 @@ class Device_Command(object):
 
     def asdict(self):
         return {
+            "id": self.request_id,
             "request_id": self.request_id,
             "persistent_request_id": self.persistent_request_id,
             "source_gateway_id": self.source_gateway_id,

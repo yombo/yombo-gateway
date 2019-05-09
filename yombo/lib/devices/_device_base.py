@@ -177,7 +177,7 @@ class Device_Base(object):
                     search_device_command.cancel(message="This device command was superseded by a new persistent request.")
 
         if request_id is None:
-            request_id = random_string(length=10, char_set="extended")
+            request_id = random_string(length=14)
 
         device_command["request_id"] = request_id
 
