@@ -135,15 +135,16 @@ export default {
         "arm_home": "VT Ở nhà"
       }
     },
-    "greeting": {
-      "welcome": "Chào mừng"
-    },
-    "label": {
+    "common": {
       "actions": "Hành động",
+      "add": "Thêm",
+      "allow": "Cho phép",
       "area": "Khu vực",
+      "cancel": "Hủy bỏ",
+      "close": "Gần",
+      "created_at": "Tạo tại",
       "delete": "Xóa bỏ",
       "description": "Mô tả",
-      "disable": "Vô hiệu hóa",
       "edit": "Chỉnh sửa",
       "label": "Nhãn",
       "location": "Vị trí",
@@ -153,14 +154,20 @@ export default {
       "search_ddd": "Tìm kiếm...",
       "updated": "Cập nhật"
     },
+    "greeting": {
+      "welcome": "Chào mừng"
+    },
     "navigation": {
       "about": "Về",
       "add": "Thêm",
       "api_auth": "Xác thực API",
+      "areas": "Khu vực",
       "atoms": "Nguyên tử",
       "automation": "Tự động hóa",
       "basic_settings": "Cài đặt cơ bản",
+      "commands": "Lệnh",
       "control_tower": "Tháp điều khiển",
+      "debug": "Gỡ lỗi",
       "info": "Thông tin",
       "roles": "Vai trò",
       "users": "Người dùng"

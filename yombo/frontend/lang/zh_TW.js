@@ -30,7 +30,8 @@ export default {
       "open": "開啟",
       "opening": "開啟中",
       "stopped": "停止",
-      "unavailable": "不可用"
+      "unavailable": "不可用",
+      "unknown": "未知"
     },
     "digital_sensor": {
       "cold": {
@@ -132,38 +133,46 @@ export default {
       }
     },
     "common": {
-      "disable": "禁用",
-      "enabled": "启用",
-      "none": "沒有"
-    },
-    "greeting": {
-      "welcome": "歡迎"
-    },
-    "label": {
       "actions": "行动",
+      "add": "加",
+      "allow": "允許",
+      "atom": "原子",
+      "cancel": "取消",
+      "created_at": "創建於",
       "delete": "刪除",
+      "deleted": "刪除",
       "description": "描述",
       "disable": "禁用",
       "edit": "編輯",
       "enable": "啟用",
+      "enabled": "启用",
       "label": "标签",
       "location": "位置",
       "more": "更多",
       "more_ddd": "更多...",
+      "none": "沒有",
       "search": "搜索",
       "search_ddd": "搜索...",
       "updated": "更新"
+    },
+    "greeting": {
+      "welcome": "歡迎"
     },
     "navigation": {
       "about": "关于",
       "add": "加",
       "api_auth": "API 认证",
+      "areas": "地區",
       "atoms": "原子",
       "automation": "自動化",
       "backup": "备份",
       "basic_settings": "基本設置",
+      "commands": "命令",
+      "control": "控制",
       "control_tower": "控制塔",
       "dashboard": "仪表 板",
+      "debug": "調試",
+      "devices": "設備",
       "info": "信息",
       "roles": "角色",
       "rules": "規則",

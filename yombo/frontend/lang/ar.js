@@ -35,7 +35,8 @@ export default {
       "open": "فتح",
       "opening": "فتح",
       "stopped": "موقف",
-      "unavailable": "غير متوفر"
+      "unavailable": "غير متوفر",
+      "unknown": "غير معروف"
     },
     "digital_sensor": {
       "cold": {
@@ -131,34 +132,37 @@ export default {
   },
   "ui": {
     "common": {
-      "enabled": "تمكين",
-      "none": "لا شيء"
-    },
-    "greeting": {
-      "welcome": "أهلا بك"
-    },
-    "label": {
       "actions": "الإجراءات",
+      "add": "إضافة",
+      "allow": "السماح",
       "area": "منطقة",
+      "atom": "ذرة",
       "delete": "حذف",
       "description": "وصف",
-      "disable": "تعطيل",
       "edit": "تحرير",
       "enable": "تمكين",
+      "enabled": "تمكين",
       "more": "أكثر من",
       "more_ddd": "أكثر من...",
+      "none": "لا شيء",
       "search": "البحث",
       "search_ddd": "البحث...",
       "updated": "تحديث"
+    },
+    "greeting": {
+      "welcome": "أهلا بك"
     },
     "navigation": {
       "about": "حول",
       "add": "إضافة",
       "api_auth": "مصادقه API",
+      "areas": "المناطق",
       "atoms": "ذرات",
       "automation": "اتمته",
       "backup": "النسخ الاحتياطي",
       "basic_settings": "الإعدادات الأساسية",
+      "commands": "الأوامر",
+      "devices": "الأجهزة",
       "info": "معلومات",
       "panel": "الفريق",
       "roles": "أدوار",

@@ -34,7 +34,8 @@ export default {
       "on": "Ligado",
       "open": "Aberta",
       "opening": "A abrir",
-      "stopped": "Parado"
+      "stopped": "Parado",
+      "unknown": "Desconhecido"
     },
     "digital_sensor": {
       "cold": {
@@ -139,27 +140,32 @@ export default {
       }
     },
     "common": {
-      "disabled": "Desativado",
-      "none": "Nenhum"
-    },
-    "greeting": {
-      "welcome": "Bem-vindo"
-    },
-    "label": {
       "actions": "Ações",
+      "add": "Adicionar",
+      "allow": "Permitir",
       "area": "Área",
+      "atom": "Átomo",
+      "cancel": "Cancelar",
+      "close": "Perto",
+      "created_at": "Criado em",
       "delete": "Excluir",
+      "deleted": "Excluído",
+      "deny": "Negar",
       "description": "Descrição",
-      "disable": "Desativar",
+      "disabled": "Desativado",
       "edit": "Editar",
       "enable": "Activar",
       "label": "Rótulo",
       "location": "Localização",
       "more": "Mais",
       "more_ddd": "Mais...",
+      "none": "Nenhum",
       "search": "Procurar",
       "search_ddd": "Procurar...",
       "updated": "Atualizada"
+    },
+    "greeting": {
+      "welcome": "Bem-vindo"
     },
     "navigation": {
       "about": "Sobre",
@@ -168,7 +174,10 @@ export default {
       "atoms": "Átomos",
       "automation": "Automação",
       "basic_settings": "Configurações básicas",
+      "commands": "Comandos",
+      "control": "Controle",
       "control_tower": "Torre de controle",
+      "debug": "Depurar",
       "roles": "Papéis",
       "rules": "Regras",
       "users": "Usuários"

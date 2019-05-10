@@ -35,7 +35,8 @@ export default {
       "open": "Abierto",
       "opening": "Abriendo",
       "stopped": "Detenido",
-      "unavailable": "Indisponible"
+      "unavailable": "Indisponible",
+      "unknown": "Desconocido"
     },
     "digital_sensor": {
       "cold": {
@@ -131,19 +132,20 @@ export default {
   },
   "ui": {
     "common": {
-      "enabled": "Habilitado"
-    },
-    "greeting": {
-      "welcome": "Bienvenido"
-    },
-    "label": {
       "actions": "Acciones",
+      "add": "Añadir",
+      "allow": "Permitir",
       "area": "Zona",
+      "atom": "Átomo",
+      "cancel": "Cancelar",
+      "close": "Cerrar",
+      "created_at": "Creado en",
       "delete": "Borrar",
+      "deleted": "Eliminado",
       "description": "Descripción",
-      "disable": "Desactivar",
       "edit": "Editar",
       "enable": "Habilitar",
+      "enabled": "Habilitado",
       "label": "Etiqueta",
       "location": "Ubicación",
       "more": "Más",
@@ -152,6 +154,9 @@ export default {
       "search_ddd": "Buscar...",
       "updated": "Actualizado"
     },
+    "greeting": {
+      "welcome": "Bienvenido"
+    },
     "messages": {
       "rate_limit_exceeded": "Demasiados intentos, inténtelo de nuevo más tarde."
     },
@@ -159,11 +164,14 @@ export default {
       "about": "Acerca de",
       "add": "Añadir",
       "api_auth": "API de autenticación",
+      "areas": "Áreas",
       "atoms": "Átomos",
       "automation": "Automatización",
       "basic_settings": "Ajustes básicos",
+      "commands": "Comandos",
       "control_tower": "Torre de control",
       "dashboard": "Tablero",
+      "debug": "Depurar",
       "rules": "Reglas",
       "users": "Usuarios"
     }

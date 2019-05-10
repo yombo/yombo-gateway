@@ -105,21 +105,21 @@ export default {
   },
   "ui": {
     "common": {
-      "disabled": "विकलांग",
-      "enabled": "सक्षम",
-      "none": "कोई नहीं"
-    },
-    "label": {
+      "add": "जोड़ें",
       "area": "क्षेत्र",
+      "cancel": "रद्द करना",
       "delete": "हटाना",
+      "deleted": "हटाए गए",
       "description": "विवरण",
-      "disable": "अक्षम",
+      "disabled": "विकलांग",
       "edit": "संपादित करें",
       "enable": "सक्षम करें",
+      "enabled": "सक्षम",
       "label": "लेबल",
       "location": "स्थान",
       "more": "अधिक",
       "more_ddd": "अधिक...",
+      "none": "कोई नहीं",
       "search": "खोज",
       "search_ddd": "खोज...",
       "updated": "अद्यतन"
@@ -127,9 +127,12 @@ export default {
     "navigation": {
       "about": "के बारे में",
       "add": "जोड़ें",
+      "areas": "क्षेत्रों",
       "atoms": "परमाणुओं",
       "automation": "स्वचालन",
       "backup": "बैकअप",
+      "commands": "आदेश",
+      "control": "नियंत्रण",
       "control_tower": "नियंत्रण टॉवर",
       "dashboard": "डैशबोर्ड",
       "info": "जानकारी",

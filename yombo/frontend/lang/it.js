@@ -34,7 +34,8 @@ export default {
       "on": "Acceso",
       "open": "Aperto",
       "opening": "In apertura",
-      "stopped": "Arrestato"
+      "stopped": "Arrestato",
+      "unknown": "Sconosciuto"
     },
     "digital_sensor": {
       "cold": {
@@ -139,20 +140,20 @@ export default {
       }
     },
     "common": {
-      "disabled": "Disabilitato",
-      "enabled": "Abilitato"
-    },
-    "greeting": {
-      "welcome": "Benvenuto"
-    },
-    "label": {
       "actions": "Azioni",
+      "allow": "Permettere",
       "area": "Zona",
+      "atom": "Atomo",
+      "cancel": "Annulla",
+      "close": "Chiudere",
+      "created_at": "Creato a",
       "delete": "Eliminare",
+      "deny": "Negare",
       "description": "Descrizione",
-      "disable": "Disattivare",
+      "disabled": "Disabilitato",
       "edit": "Modifica",
       "enable": "Attivare",
+      "enabled": "Abilitato",
       "label": "Etichetta",
       "location": "Posizione",
       "more": "Di Più",
@@ -161,14 +162,21 @@ export default {
       "search_ddd": "Ricerca...",
       "updated": "Aggiornato"
     },
+    "greeting": {
+      "welcome": "Benvenuto"
+    },
     "navigation": {
       "about": "Di",
       "api_auth": "Autentica API",
+      "areas": "Le zone",
       "atoms": "Atomi",
       "automation": "Automazione",
       "basic_settings": "Impostazioni Di Base",
+      "commands": "Comandi",
+      "control": "Controllo",
       "control_tower": "Torre Di Controllo",
       "dashboard": "Cruscotto",
+      "devices": "Dispositivi",
       "roles": "Ruoli",
       "rules": "Regole",
       "users": "Utenti"

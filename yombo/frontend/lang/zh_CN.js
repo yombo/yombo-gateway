@@ -49,7 +49,8 @@ export default {
       "open": "开启",
       "opening": "正在打开",
       "stopped": "已停止",
-      "unavailable": "不可用"
+      "unavailable": "不可用",
+      "unknown": "未知"
     },
     "digital_sensor": {
       "cold": {
@@ -154,40 +155,49 @@ export default {
       }
     },
     "common": {
-      "disable": "禁用",
-      "enable": "启用",
-      "enabled": "启用",
-      "none": "没有"
-    },
-    "greeting": {
-      "welcome": "欢迎"
-    },
-    "label": {
       "actions": "行动",
+      "add": "加",
+      "allow": "允许",
       "area": "区域",
+      "atom": "原子",
+      "automation_rules": "自动化规则",
+      "cancel": "取消",
+      "close": "关",
+      "created_at": "创建于",
       "delete": "删除",
+      "deleted": "删除",
       "description": "描述",
       "disable": "禁用",
       "edit": "编辑",
       "enable": "启用",
+      "enabled": "启用",
       "label": "标签",
       "location": "位置",
       "more": "更多",
       "more_ddd": "更多...",
+      "none": "没有",
       "search": "搜索",
       "search_ddd": "搜索...",
       "updated": "更新"
+    },
+    "greeting": {
+      "welcome": "欢迎"
     },
     "navigation": {
       "about": "关于",
       "add": "加",
       "api_auth": "API 认证",
+      "areas": "地区",
       "atoms": "原子",
       "automation": "自动化",
       "backup": "备份",
       "basic_settings": "基本设置",
+      "commands": "命令",
+      "control": "控制",
       "control_tower": "控制塔",
       "dashboard": "仪表板",
+      "debug": "调试",
+      "devices": "设备",
       "info": "信息",
       "roles": "角色",
       "rules": "规则",

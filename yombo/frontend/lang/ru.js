@@ -24,7 +24,8 @@ export default {
       "on": "Включено",
       "open": "Открыта",
       "opening": "Открывается",
-      "stopped": "Остановлено"
+      "stopped": "Остановлено",
+      "unknown": "неизвестный"
     },
     "digital_sensor": {
       "cold": {
@@ -125,20 +126,19 @@ export default {
       }
     },
     "common": {
-      "none": "Никто"
-    },
-    "label": {
       "actions": "действия",
+      "add": "Добавить",
       "area": "Площадь",
+      "atom": "Атом",
       "delete": "удалять",
       "description": "Описание",
-      "disable": "Отключить",
       "edit": "Редактировать",
       "enable": "Включить",
       "label": "Метки",
       "location": "Расположение",
       "more": "Больше",
       "more_ddd": "Больше...",
+      "none": "Никто",
       "search": "Поиск",
       "search_ddd": "Поиск...",
       "updated": "Обновлено"
@@ -148,6 +148,7 @@ export default {
       "add": "Добавить",
       "atoms": "Атомы",
       "automation": "Автоматизация",
+      "commands": "Команды",
       "control_tower": "Диспетчерская вышка",
       "roles": "Роли",
       "rules": "Правила"
