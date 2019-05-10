@@ -46,11 +46,11 @@ export default class Device extends Model {
   get full_label () {
     let location = Location.find(this.location_id);
     let label = "";
-    if (location != null) {
+    if (location !== undefined && location != null && location.label.toLowerCase() != "none") {
       label += location.label + " ";
     }
     location = Location.find(this.area_id);
-    if (location != null) {
+    if (location !== undefined && location != null && location.label.toLowerCase() != "none") {
       label += location.label + " ";
     }
     return `${label}${this.label}`
@@ -59,12 +59,15 @@ export default class Device extends Model {
   get full_location () {
     let location = Location.find(this.location_id);
     let label = "";
-    if (location != null) {
+    if (location !== undefined && location != null && location.label.toLowerCase() != "none") {
       label += location.label + " ";
     }
     location = Location.find(this.area_id);
-    if (location != null) {
+    if (location !== undefined && location != null && location.label.toLowerCase() != "none") {
       label += location.label;
+    }
+    if (label.length == 0) {
+      label = "Unknwon"
     }
     return `${label.trim()}`
   }
@@ -72,7 +75,7 @@ export default class Device extends Model {
   get location_location () {
     let location = Location.find(this.location_id);
     let label = "";
-    if (location != null) {
+    if (location !== undefined && location != null && location.label.toLowerCase() != "none") {
       label += location.label + " ";
     } else {
       label = this.location_id
@@ -83,7 +86,7 @@ export default class Device extends Model {
   get area_location () {
     let location = Location.find(this.area_id);
     let label = "";
-    if (location != null) {
+    if (location !== undefined && location != null && location.label.toLowerCase() != "none") {
       label += location.label + " ";
     } else {
       label = this.area_id
