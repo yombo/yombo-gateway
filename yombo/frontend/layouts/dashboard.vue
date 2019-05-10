@@ -9,7 +9,7 @@
         <dashboard-sidebar-item :link="{name: $t('ui.navigation.devices'), icon: 'fas fa-wifi'}">
           <dashboard-sidebar-item :link="{name: $t('ui.navigation.list'), path: localePath('dashboard-devices')}"></dashboard-sidebar-item>
           <dashboard-sidebar-item :link="{name: $t('ui.navigation.add'), path: localePath('dashboard-devices-add')}"></dashboard-sidebar-item>
-          <dashboard-sidebar-item :link="{name: $t('ui.common.discovered'), path: localePath('dashboard-devices-discovered')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.discovered'), path: localePath('dashboard-devices-discovered')}"></dashboard-sidebar-item>
         </dashboard-sidebar-item>
 
         <dashboard-sidebar-item :link="{name: $t('ui.navigation.automation'), icon: 'fas fa-random'}">
@@ -47,7 +47,7 @@
           <dashboard-sidebar-item :link="{name: $t('ui.navigation.overview'), path: localePath('dashboard-system-overview')}"></dashboard-sidebar-item>
           <dashboard-sidebar-item :link="{name: $t('ui.navigation.configuration'), path: localePath('dashboard-configuration')}"></dashboard-sidebar-item>
           <dashboard-sidebar-item :link="{name: $t('ui.navigation.backup'), path: localePath('dashboard-system-backup')}"></dashboard-sidebar-item>
-          <dashboard-sidebar-item :link="{name: $t('ui.label.status'), path: localePath('dashboard-system-status')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.common.status'), path: localePath('dashboard-system-status')}"></dashboard-sidebar-item>
         </dashboard-sidebar-item>
 
         <dashboard-sidebar-item :link="{name: 'MQTT', icon: 'far fa-envelope'}">

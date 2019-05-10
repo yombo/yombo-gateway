@@ -23,7 +23,7 @@
      </li>
 
      <li class="nav-item">
-      <drop-down tag="div" :title="$t('ui.label.more_ddd')" position="right">
+      <drop-down tag="div" :title="$t('ui.common.more_ddd')" position="right">
        <nuxt-link :to="localePath('lock')" class="dropdown-item">{{ $t('ui.navigation.lockscreen') }}</nuxt-link>
        <nuxt-link :to="localePath('frontend_settings')" class="dropdown-item">{{ $t('ui.navigation.frontend_settings') }}</nuxt-link>
        <nuxt-link to="/system/restart" class="dropdown-item">{{ $t('ui.navigation.restart_gateway') }}</nuxt-link>

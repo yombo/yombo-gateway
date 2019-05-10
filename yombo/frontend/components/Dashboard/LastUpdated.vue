@@ -1,7 +1,7 @@
 <template>
   <div slot="footer" class="stats">
     <i v-on:click="refreshRequest" class="now-ui-icons arrows-1_refresh-69" style="color: #14375c;"></i>
-    {{$t('ui.label.updated')}} {{display_age}}
+    {{$t('ui.common.updated')}} {{display_age}}
   </div>
 </template>
 
