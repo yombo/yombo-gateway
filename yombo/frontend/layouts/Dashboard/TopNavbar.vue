@@ -71,6 +71,24 @@
           <a class="dropdown-item" href="/user/logout">{{ $t('ui.navigation.logout')}}</a>
         </drop-down>
 
+        <drop-down tag="li"
+                   position="right"
+                   class="nav-item"
+                   icon="fas fa-globe fa-lg">
+          <nuxt-link :to="switchLocalePath('ar')" class="dropdown-lang"> العربية</nuxt-link><br>
+          <nuxt-link :to="switchLocalePath('en')" class="dropdown-lang"><span class="flag-icon flag-icon-us"></span>English</nuxt-link><br>
+          <nuxt-link :to="switchLocalePath('es')" class="dropdown-lang">Español</nuxt-link><br>
+          <nuxt-link :to="switchLocalePath('es_419')" class="dropdown-lang">Español - LA</nuxt-link><br>
+          <nuxt-link :to="switchLocalePath('hi_IN')" class="dropdown-lang"> हिन्दी</nuxt-link><br>
+          <nuxt-link :to="switchLocalePath('it')" class="dropdown-lang">Italiano</nuxt-link><br>
+          <nuxt-link :to="switchLocalePath('pt')" class="dropdown-lang">Rortuguês</nuxt-link><br>
+          <nuxt-link :to="switchLocalePath('pt_BR')" class="dropdown-lang">Português - BR</nuxt-link><br>
+          <nuxt-link :to="switchLocalePath('ru')" class="dropdown-lang">Русский язык</nuxt-link><br>
+          <nuxt-link :to="switchLocalePath('vi')" class="dropdown-lang">Tiếng Việt</nuxt-link><br>
+          <nuxt-link :to="switchLocalePath('zh_CN')" class="dropdown-lang">中文 (Simplified)</nuxt-link><br>
+          <nuxt-link :to="switchLocalePath('zh_TW')" class="dropdown-lang">中文 (Traditional)</nuxt-link><br>
+        </drop-down>
+
       </ul>
 
     </template>
