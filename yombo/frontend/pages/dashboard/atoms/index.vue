@@ -11,7 +11,7 @@
                 class="fa-pull-right"
                 v-model="search"
                 size="mini"
-                :placeholder="$t('ui.label.search_ddd')"/>
+                :placeholder="$t('ui.common.search_ddd')"/>
           </div>
           <last-updated refresh="gateway/atoms/fetch" getter="gateway/atoms/display_age"/>
         </div>
@@ -24,12 +24,12 @@
              // || data.value_human.toLowerCase().includes(search.toLowerCase())
              )"
           >
-            <el-table-column :label="$t('ui.label.atom')" property="id"></el-table-column>
-            <el-table-column :label="$t('ui.label.gateway')" property="gateway_id"></el-table-column>
-            <el-table-column :label="$t('ui.label.value')" property="value_human"></el-table-column>
-            <el-table-column :label="$t('ui.label.source')" property="source"></el-table-column>
-            <el-table-column :label="$t('ui.label.created_at')" property="created_at"></el-table-column>
-            <el-table-column :label="$t('ui.label.updated_at')" property="updated_at"></el-table-column>
+            <el-table-column :label="$t('ui.common.atom')" property="id"></el-table-column>
+            <el-table-column :label="$t('ui.common.gateway')" property="gateway_id"></el-table-column>
+            <el-table-column :label="$t('ui.common.value')" property="value_human"></el-table-column>
+            <el-table-column :label="$t('ui.common.source')" property="source"></el-table-column>
+            <el-table-column :label="$t('ui.common.created_at')" property="created_at"></el-table-column>
+            <el-table-column :label="$t('ui.common.updated_at')" property="updated_at"></el-table-column>
           </el-table>
         </div>
       </card>

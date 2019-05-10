@@ -14,7 +14,7 @@
                   class="fa-pull-right"
                   v-model="search"
                   size="mini"
-                  :placeholder="$t('ui.label.search_ddd')"/>
+                  :placeholder="$t('ui.common.search_ddd')"/>
           </div>
           <h4 class="card-title">
             {{ $t('ui.navigation.gateways') }}
@@ -28,14 +28,14 @@
              || data.description.toLowerCase().includes(search.toLowerCase())
              )"
           >
-            <el-table-column :label="$t('ui.label.label')" property="label"></el-table-column>
-            <el-table-column :label="$t('ui.label.description')" property="description"></el-table-column>
-            <el-table-column :label="$t('ui.label.status')" property="status"></el-table-column>
+            <el-table-column :label="$t('ui.common.label')" property="label"></el-table-column>
+            <el-table-column :label="$t('ui.common.description')" property="description"></el-table-column>
+            <el-table-column :label="$t('ui.common.status')" property="status"></el-table-column>
             <el-table-column
-              align="right" :label="$t('ui.label.actions')">
+              align="right" :label="$t('ui.common.actions')">
               <div slot-scope="props" class="table-actions">
-                <action-details path="dashboard-gateways-details" :id="props.row.id"/>
-                <action-edit path="dashboard-gateways-edit" :id="props.row.id"/>
+                <action-details path="dashboard-gateways" :id="props.row.id"/>
+                <action-edit path="dashboard-gateways" :id="props.row.id"/>
 
                 <template v-if="props.row.status == 1">
                   <action-disable dispatch="yombo/gateways/disable" :id="props.row.id"

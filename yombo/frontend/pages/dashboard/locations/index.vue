@@ -14,7 +14,7 @@
                   class="fa-pull-right"
                   v-model="search"
                   size="mini"
-                  :placeholder="$t('ui.label.search_ddd')"/>
+                  :placeholder="$t('ui.common.search_ddd')"/>
           </div>
           <h4 class="card-title">
            {{ $t('ui.navigation.locations') }}
@@ -28,13 +28,13 @@
              || data.description.toLowerCase().includes(search.toLowerCase())
              )"
           >
-            <el-table-column :label="$t('ui.label.label')" property="label"></el-table-column>
-            <el-table-column :label="$t('ui.label.description')" property="description"></el-table-column>
+            <el-table-column :label="$t('ui.common.label')" property="label"></el-table-column>
+            <el-table-column :label="$t('ui.common.description')" property="description"></el-table-column>
             <el-table-column
-              align="right" :label="$t('ui.label.actions')">
+              align="right" :label="$t('ui.common.actions')">
               <div slot-scope="props" class="table-actions">
-                <action-details path="dashboard-locations-details" :id="props.row.id"/>
-                <action-edit path="dashboard-locations-edit" :id="props.row.id"/>
+                <action-details path="dashboard-locations" :id="props.row.id"/>
+                <action-edit path="dashboard-locations" :id="props.row.id"/>
                 <action-delete path="dashboard-locations-delete" :id="props.row.id"
                                i18n="location" :item_label="props.label"/>
               </div>

@@ -4,7 +4,7 @@
       <card card-body-classes="table-full-width">
         <div slot="header">
         <h4 class="card-title">
-           {{ $t('ui.label.edit_gateway') }}: {{item.label}}
+           {{ $t('ui.common.edit_gateway') }}: {{item.label}}
           <div class="pull-right">
             <template v-if="item.status == 1">
               <n-button @click.native="handleDisable(item)"
@@ -27,7 +27,7 @@
                       class="remove"
                       type="danger"
                       size="sm">
-                {{ $t('ui.label.delete') }}
+                {{ $t('ui.common.delete') }}
             </n-button>
           </div>
          </h4>

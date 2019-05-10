@@ -4,11 +4,11 @@
       <card card-body-classes="table-full-width">
         <div slot="header">
         <h4 class="card-title">
-           {{ $t('ui.navigations.devices') }}
+           {{ $t('ui.common.details') }} {{ $t('ui.common.automation_rule') }}
          </h4>
         </div>
         <div class="card-body">
-          {{ $t('ui.common.device')}}: {{id}}
+          {{ $t('ui.common.automation_rule')}}: {{id}}
         </div>
         <p>{{item}}</p>
       </card>
@@ -33,7 +33,7 @@ export default {
   },
   computed: {
     item () {
-      return this.$store.state.gateway.device_commands.data[this.id];
+      return this.$store.state.gateway.automation_rules.data[this.id];
     },
   },
 

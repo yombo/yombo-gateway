@@ -11,11 +11,11 @@
                   class="fa-pull-right"
                   v-model="search"
                   size="mini"
-                  :placeholder="$t('ui.label.search_ddd')"/>
+                  :placeholder="$t('ui.common.search_ddd')"/>
           </div>
            <div slot="footer" class="stats">
              <i v-on:click="refreshRequest" class="now-ui-icons arrows-1_refresh-69" style="color: #14375c;"></i>
-             {{$t('ui.label.updated')}} {{display_age}}
+             {{$t('ui.common.updated')}} {{display_age}}
            </div>
         </div>
         <div class="card-body">
@@ -27,12 +27,12 @@
              // || data.value_human.toLowerCase().includes(search.toLowerCase())
              )"
           >
-            <el-table-column :label="$t('ui.label.state')" property="id"></el-table-column>
-            <el-table-column :label="$t('ui.label.gateway')" property="gateway_id"></el-table-column>
-            <el-table-column :label="$t('ui.label.value')" property="value_human"></el-table-column>
-            <el-table-column :label="$t('ui.label.value_type')" property="value_type"></el-table-column>
-            <el-table-column :label="$t('ui.label.source')" property="source"></el-table-column>
-            <el-table-column :label="$t('ui.label.created_at')" property="created_at"></el-table-column>
+            <el-table-column :label="$t('ui.common.state')" property="id"></el-table-column>
+            <el-table-column :label="$t('ui.common.gateway')" property="gateway_id"></el-table-column>
+            <el-table-column :label="$t('ui.common.value')" property="value_human"></el-table-column>
+            <el-table-column :label="$t('ui.common.value_type')" property="value_type"></el-table-column>
+            <el-table-column :label="$t('ui.common.source')" property="source"></el-table-column>
+            <el-table-column :label="$t('ui.common.created_at')" property="created_at"></el-table-column>
           </el-table>
         </div>
       </card>

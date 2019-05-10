@@ -4,11 +4,11 @@
       <card card-body-classes="table-full-width">
         <div slot="header">
         <h4 class="card-title">
-           {{ $t('ui.label.edit_automation_rule') }}
+          {{ $t('ui.common.edit') }} {{ $t('ui.common.automation_rule') }}
          </h4>
         </div>
         <div class="card-body">
-          {{ $t('ui.label.automation_rule')}}: {{id}}
+          {{ $t('ui.common.automation_rule')}}: {{id}}
         </div>
         <p>{{item}}</p>
       </card>

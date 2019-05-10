@@ -8,7 +8,7 @@
          </h4>
         </div>
         <div class="card-body">
-          {{ $t('ui.label.device_command')}}: {{id}}
+          {{ $t('ui.common.device_command')}}: {{id}}
         </div>
         <p>{{item}}</p>
       </card>

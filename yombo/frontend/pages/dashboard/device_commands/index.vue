@@ -11,7 +11,7 @@
                   class="fa-pull-right"
                   v-model="search"
                   size="mini"
-                  :placeholder="$t('ui.label.search_ddd')"/>
+                  :placeholder="$t('ui.common.search_ddd')"/>
           </div>
           <last-updated refresh="gateway/device_commands/fetch" getter="gateway/device_commands/display_age"/>
         </div>
@@ -24,23 +24,23 @@
              // || data.value_human.toLowerCase().includes(search.toLowerCase())
              )"
           >
-            <el-table-column :label="$t('ui.label.request_id')" property="id"></el-table-column>
-            <el-table-column :label="$t('ui.label.gateway')">
+            <el-table-column :label="$t('ui.common.request_id')" property="id"></el-table-column>
+            <el-table-column :label="$t('ui.common.gateway')">
               <div slot-scope="props" class="table-actions">
                 {{getGateway(props.row.source_gateway_id).label}}
               </div>
             </el-table-column>
-            <el-table-column :label="$t('ui.label.device')">
+            <el-table-column :label="$t('ui.common.device')">
               <div slot-scope="props" class="table-actions">
                 {{getDevice(props.row.device_id).full_label}}
               </div>
             </el-table-column>
-            <el-table-column :label="$t('ui.label.status')" property="status"></el-table-column>
-            <el-table-column :label="$t('ui.label.created_at')" property="created_at"></el-table-column>
+            <el-table-column :label="$t('ui.common.status')" property="status"></el-table-column>
+            <el-table-column :label="$t('ui.common.created_at')" property="created_at"></el-table-column>
             <el-table-column
-              align="right" :label="$t('ui.label.actions')">
+              align="right" :label="$t('ui.common.actions')">
               <div slot-scope="props" class="table-actions">
-                <action-details path="dashboard-device_commands-details" :id="props.row.id"/>
+                <action-details path="dashboard-device_commands" :id="props.row.id"/>
               </div>
             </el-table-column>
 

@@ -12,7 +12,7 @@
             </div>
             <p>
               This website is running the <a href="https://yombo.net" target="_blank">Yombo</a> Frontend
-              software. The <router-link to="/dashboard">dashboard</router-link> allows yoiu to manage
+              software. The <router-link to="/dashboard">dashboard</router-link> allows you to manage
               the devices connected to the gateway, as well as automation rules, scenes in more.
             </p>
             <p>

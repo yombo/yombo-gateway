@@ -4,31 +4,23 @@
       <card card-body-classes="table-full-width">
         <div slot="header">
         <h4 class="card-title">
-           {{ $t('ui.label.edit_device') }}: {{item.full_label}}
+           {{ $t('ui.common.edit_device') }}: {{item.full_label}}
           <div class="pull-right">
+            <action-details path="dashboard-devices" :id="item.id" size="regular"/>
             <template v-if="item.status == 1">
-              <n-button @click.native="handleDisable(item)"
-                        class="enable"
-                        type="warning"
-                        size="sm">
-                {{ $t('ui.common.disable') }}
-              </n-button>
+              <action-disable dispatch="yombo/devices/disable" :id="item.id"
+                           i18n="device" :item_label="item.full_label"
+                           size="regular"/>
             </template>
             <template v-else>
-              <n-button @click.native="handleEnable(item)"
-                        class="disable"
-                        type="success"
-                        size="sm"
-                        :disabled="item.status == 2">
-                {{ $t('ui.common.enable') }}
-              </n-button>
+              <action-enable dispatch="yombo/devices/enable" :id="item.id"
+                           i18n="device" :item_label="item.full_label"
+                           size="regular"/>
             </template>
-            <n-button @click.native="handleDelete(item)"
-                      class="remove"
-                      type="danger"
-                      size="sm">
-                {{ $t('ui.label.delete') }}
-            </n-button>
+            <action-delete dispatch="yombo/devices/delete" :id="item.id"
+             i18n="device" :item_label="item.full_label"
+             size="regular"/>
+
           </div>
          </h4>
         </div>
@@ -42,11 +34,17 @@
   </div>
 </template>
 <script>
+import { ActionDelete, ActionDetails, ActionDisable, ActionEnable } from '@/components/Dashboard/Actions';
+
 import Device from '@/models/device'
 
 export default {
   layout: 'dashboard',
   components: {
+    ActionDelete,
+    ActionDetails,
+    ActionDisable,
+    ActionEnable,
   },
   data() {
     return {

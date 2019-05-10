@@ -14,7 +14,7 @@
                   class="fa-pull-right"
                   v-model="search"
                   size="mini"
-                  :placeholder="$t('ui.label.search_ddd')"/>
+                  :placeholder="$t('ui.common.search_ddd')"/>
           </div>
           <h4 class="card-title">
             {{ $t('ui.navigation.devices') }}
@@ -28,24 +28,24 @@
              || data.description.toLowerCase().includes(search.toLowerCase())
              )"
           >
-            <el-table-column :label="$t('ui.label.label')" property="full_label"></el-table-column>
-            <el-table-column :label="$t('ui.label.description')" property="description"></el-table-column>
-            <el-table-column :label="$t('ui.label.location')" property="full_location"></el-table-column>
+            <el-table-column :label="$t('ui.common.label')" property="full_label"></el-table-column>
+            <el-table-column :label="$t('ui.common.description')" property="description"></el-table-column>
+            <el-table-column :label="$t('ui.common.location')" property="full_location"></el-table-column>
             <el-table-column
-              align="right" :label="$t('ui.label.actions')">
+              align="right" :label="$t('ui.common.actions')">
               <div slot-scope="props" class="table-actions">
-                <action-details path="dashboard-devices-details" :id="props.row.id"/>
-                <action-edit path="dashboard-devices-edit" :id="props.row.id"/>
+                <action-details path="dashboard-devices" :id="props.row.id"/>
+                <action-edit path="dashboard-devices" :id="props.row.id"/>
                 <template v-if="props.row.status == 1">
                   <action-disable dispatch="yombo/devices/disable" :id="props.row.id"
                                i18n="device" :item_label="props.full_label"/>
                 </template>
                 <template v-else>
                   <action-enable dispatch="yombo/devices/enable" :id="props.row.id"
-                               i18n="device" :item_label="props.full_label"/>
+                               i18n="device" :item_label="props.row.full_label"/>
                 </template>
                   <action-delete dispatch="yombo/devices/delete" :id="props.row.id"
-                               i18n="device" :item_label="props.full_label"/>
+                               i18n="device" :item_label="props.row.full_label"/>
               </div>
             </el-table-column>
           </el-table>

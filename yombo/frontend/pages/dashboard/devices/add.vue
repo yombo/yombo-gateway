@@ -4,7 +4,7 @@
         <card class="card-chart" no-footer-line>
           <div slot="header">
             <h2 class="card-title">
-              {{ $t('ui.label.add_device') }}
+              {{ $t('ui.common.add_device') }}
             </h2>
           </div>
           <p>
@@ -16,7 +16,7 @@
           <form @submit.prevent>
           <p>
              <b-form-select :options="devices_types"></b-form-select>
-             <button class="btn btn-outline-warning btn-info" type="submit">{{ $t('ui.label.add_device') }}<i class="far fa-paper-plane ml-2"></i></button>
+             <button class="btn btn-outline-warning btn-info" type="submit">{{ $t('ui.common.add_device') }}<i class="far fa-paper-plane ml-2"></i></button>
           </p>
           </form>
         </card>

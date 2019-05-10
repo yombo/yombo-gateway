@@ -4,7 +4,7 @@
         <card class="card-chart" no-footer-line>
           <div slot="header">
             <h2 class="card-title">
-              {{ $t('ui.label.add_location') }}
+              {{ $t('ui.common.add_location') }}
             </h2>
           </div>
           <p>
@@ -14,7 +14,7 @@
             <b-container fluid>
               <b-row>
                 <b-col class="my-auto" sm="4" md="3" lg="2">
-                  <label for="label">{{$t('ui.label.label')}}:</label>
+                  <label for="label">{{$t('ui.common.label')}}:</label>
                 </b-col>
                 <b-col sm="8" md="9" lg="10">
                   <b-form-input id="label" placeholder="Label: House, Shed, Garage, Pool House"></b-form-input>
@@ -22,7 +22,7 @@
               </b-row>
               <b-row>
                 <b-col class="my-auto" sm="4" md="3" lg="2">
-                  <label for="machine_label">{{$t('ui.label.machine_label')}}:</label>
+                  <label for="machine_label">{{$t('ui.common.machine_label')}}:</label>
                 </b-col>
                 <b-col sm="8" md="9" lg="10">
                       <b-form-input id="machine_label" placeholder="Machine Label: house, shed, garage, pool_house"></b-form-input>
@@ -30,7 +30,7 @@
               </b-row>
               <b-row>
                 <b-col class="my-auto" sm="4" md="3" lg="2">
-                  <label for="description">{{$t('ui.label.description')}}:
+                  <label for="description">{{$t('ui.common.description')}}:
                     <i class="fas fa-question-circle align-right" style="font-size: .9em; color: #2a5586;"></i></label>
                 </b-col>
                 <b-col sm="8" md="9" lg="10">
@@ -38,7 +38,7 @@
                 </b-col>
               </b-row>
             </b-container>
-            <button class="btn btn-outline-warning btn-info" type="submit">{{ $t('ui.label.add_location') }}
+            <button class="btn btn-outline-warning btn-info" type="submit">{{ $t('ui.common.add_location') }}
               <i class="fas fa-plus-circle fa-pull-right" style="font-size: 1.5em;"></i></button>
           </p>
         </card>

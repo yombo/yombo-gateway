@@ -14,10 +14,10 @@
                   class="fa-pull-right"
                   v-model="search"
                   size="mini"
-                  :placeholder="$t('ui.label.search_ddd')"/>
+                  :placeholder="$t('ui.common.search_ddd')"/>
           </div>
           <h4 class="card-title">
-            {{ $t('ui.label.automation_rules') }}
+            {{ $t('ui.common.automation_rules') }}
           </h4>
           <last-updated refresh="gateway/automation_rules/fetch" getter="gateway/automation_rules/display_age"/>
         </div>
@@ -25,20 +25,20 @@
           <el-table
             :data="rules"
           >
-            <el-table-column :label="$t('ui.label.label')" property="label"></el-table-column>
-            <el-table-column :label="$t('ui.label.description')" property="rule.config.description"></el-table-column>
+            <el-table-column :label="$t('ui.common.label')" property="label"></el-table-column>
+            <el-table-column :label="$t('ui.common.description')" property="rule.config.description"></el-table-column>
             <el-table-column :label="$t('ui.common.enabled')">
               <div slot-scope="props">
                 {{props.row.rule.config.enabled == true}}
               </div>
             </el-table-column>
-            <el-table-column :label="$t('ui.label.created_at')" property="created_at"></el-table-column>
-            <el-table-column :label="$t('ui.label.updated_at')" property="updated_at"></el-table-column>
+            <el-table-column :label="$t('ui.common.created_at')" property="created_at"></el-table-column>
+            <el-table-column :label="$t('ui.common.updated_at')" property="updated_at"></el-table-column>
             <el-table-column
-              align="right" :label="$t('ui.label.actions')">
+              align="right" :label="$t('ui.common.actions')">
               <div slot-scope="props" class="table-actions">
-                <action-details path="dashboard-automation_rules-details" :id="props.row.id"/>
-                <action-edit path="dashboard-automation_rules-edit" :id="props.row.id"/>
+                <action-details path="dashboard-automation_rules" :id="props.row.id"/>
+                <action-edit path="dashboard-automation_rules" :id="props.row.id"/>
 
                 <template v-if="props.row.rule.config.enabled == true">
                   <action-disable dispatch="yombo/automation_rules/disable" :id="props.row.id"

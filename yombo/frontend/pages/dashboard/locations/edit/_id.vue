@@ -4,13 +4,13 @@
       <card card-body-classes="table-full-width">
         <div slot="header">
         <h4 class="card-title">
-           {{ $t('ui.label.edit_location') }}: {{item.label}}
+           {{ $t('ui.common.edit_location') }}: {{item.label}}
           <div class="pull-right">
             <n-button @click.native="handleDelete(item)"
                       class="remove"
                       type="danger"
                       size="sm">
-                {{ $t('ui.label.delete') }}
+                {{ $t('ui.common.delete') }}
             </n-button>
           </div>
          </h4>
