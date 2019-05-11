@@ -11,9 +11,9 @@
             margin-right: 5px;
             background-color: $transparent-bg;
             border: 1px solid $transparent-bg;
-            border-radius: 30px;
+            border-radius: 15px;
             font-size: $font-size-base;
-            padding: $padding-btn-vertical $padding-round-horizontal;
+            padding: $padding-btn-vertical/2 $padding-round-horizontal/2;
             line-height: $line-height-general;
 
             &:hover {
@@ -22,7 +22,7 @@
 
             &.active{
                 border: 1px solid $default-color;
-                border-radius: 30px;
+                border-radius: 15px;
             }
 
             i.now-ui-icons{
