@@ -3,7 +3,7 @@
     <template v-if="size == 'small'">
       <n-button @click.native="handleDisable()"
                 class="enable"
-                type="warning"
+                type="success"
                 size="sm" round icon>
         <i class="fa fa-power-off"></i>
       </n-button>
@@ -11,7 +11,7 @@
     <template v-else>
       <n-button @click.native="handleDisable()"
                 class="enable"
-                type="warning"
+                type="success"
                 size="sm">
         {{ $t('ui.common.disable') }}
       </n-button>

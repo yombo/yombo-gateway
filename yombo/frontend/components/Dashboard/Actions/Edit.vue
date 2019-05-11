@@ -3,7 +3,7 @@
     <template v-if="this.size == 'small'">
       <n-button @click.native="handleEdit()"
                 class="edit"
-                type="success"
+                type="default"
                 size="sm" round icon>
         <i class="fa fa-edit"></i>
       </n-button>
