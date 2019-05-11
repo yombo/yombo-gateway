@@ -51,6 +51,8 @@
     "eslint-config-prettier": "^4.2.0",
     "eslint-plugin-prettier": "^3.0.1",
     "jest": "^24.7.1",
+    "less": "^3.9.0",
+    "less-loader": "^5.0.0",
     "node-sass": "^4.12.0",
     "nodemon": "^1.18.11",
     "prettier": "^1.17.0",
