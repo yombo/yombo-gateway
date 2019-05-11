@@ -1,6 +1,29 @@
 import pkg from './package'
 const webpack = require('webpack')
 
+const dateTimeFormats = {
+  'en': {
+    date: {
+      year: 'numeric', month: 'numeric', day: 'numeric'
+    },
+    date_long: {
+      year: 'numeric', month: 'short', day: 'numeric'
+    },
+    datetime: {
+      year: 'numeric', month: 'short', day: 'numeric',
+      hour: 'numeric', minute: 'numeric'
+    },
+    datetime_weekday: {
+      year: 'numeric', month: 'short', day: 'numeric',
+      weekday: 'short', hour: 'numeric', minute: 'numeric'
+    },
+    timestamp: {
+      year: 'numeric', month: 'numeric', day: 'numeric',
+      hour: 'numeric', minute: 'numeric'
+    },
+  },
+};
+
 export default {
   mode: 'spa',
   ssr: false,
@@ -56,6 +79,7 @@ export default {
     { src: '~/plugins/localStorage.js', ssr: false },
     { src:'~/plugins/bus.js', ssr: false },
     { src: '~/plugins/startup.js', ssr: false },
+    { src: '~/plugins/filters.js', ssr: false },
   ],
 
   /*
@@ -93,14 +117,14 @@ export default {
       ],
       lazy: true,
       langDir: 'lang/',
-       vueI18n: {
-         fallbackLocale: 'en',
-         messages: {
-           en: require('./lang/en.json'),
-         }
-       }
+      vueI18n: {
+        dateTimeFormats,
+        fallbackLocale: 'en',
+        messages: {
+          en: require('./lang/en.json'),
+        }
       }
-    ],
+    }],
 
   ],
   /*
@@ -120,9 +144,6 @@ export default {
     extend(config, ctx) {
       if (!this.dev) {
         config.plugins.push(
-          // new webpack.optimize.LimitChunkCountPlugin({
-          // maxChunks: 20
-          //   }),
             new webpack.optimize.MinChunkSizePlugin({
             minChunkSize: 18000
           })
