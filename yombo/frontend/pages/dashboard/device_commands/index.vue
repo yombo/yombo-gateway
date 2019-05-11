@@ -36,7 +36,11 @@
               </div>
             </el-table-column>
             <el-table-column :label="$t('ui.common.status')" property="status"></el-table-column>
-            <el-table-column :label="$t('ui.common.created_at')" property="created_at"></el-table-column>
+            <el-table-column :label="$t('ui.common.created_at')">
+              <div slot-scope="props" class="table-actions">
+                {{ $d(new Date(0).setUTCSeconds(props.row.created_at), 'datetime') }}
+              </div>
+            </el-table-column>
             <el-table-column
               align="right" :label="$t('ui.common.actions')">
               <div slot-scope="props" class="table-actions">

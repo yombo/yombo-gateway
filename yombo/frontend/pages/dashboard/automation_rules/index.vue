@@ -32,10 +32,18 @@
                 {{props.row.rule.config.enabled == true}}
               </div>
             </el-table-column>
-            <el-table-column :label="$t('ui.common.created_at')" property="created_at"></el-table-column>
-            <el-table-column :label="$t('ui.common.updated_at')" property="updated_at"></el-table-column>
+            <el-table-column :label="$t('ui.common.created_at')">
+              <div slot-scope="props" class="table-actions">
+                {{ $d(new Date(0).setUTCSeconds(props.row.created_at), 'datetime') }}
+              </div>
+            </el-table-column>
+            <el-table-column :label="$t('ui.common.updated_at')">
+              <div slot-scope="props" class="table-actions">
+                {{ $d(new Date(0).setUTCSeconds(props.row.updated_at), 'datetime') }}
+              </div>
+            </el-table-column>
             <el-table-column
-              align="right" :label="$t('ui.common.actions')">
+              :label="$t('ui.common.actions')">
               <div slot-scope="props" class="table-actions">
                 <action-details path="dashboard-automation_rules" :id="props.row.id"/>
                 <action-edit path="dashboard-automation_rules" :id="props.row.id"/>

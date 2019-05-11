@@ -30,7 +30,12 @@
           >
             <el-table-column :label="$t('ui.common.label')" property="label"></el-table-column>
             <el-table-column :label="$t('ui.common.description')" property="description"></el-table-column>
-            <el-table-column :label="$t('ui.common.status')" property="status"></el-table-column>
+            <el-table-column :label="$t('ui.common.status')">
+              <div slot-scope="props" class="table-actions">
+                {{ $t($filters.status(props.row.status)) }}
+              </div>
+
+            </el-table-column>
             <el-table-column
               align="right" :label="$t('ui.common.actions')">
               <div slot-scope="props" class="table-actions">
