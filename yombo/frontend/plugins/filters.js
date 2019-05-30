@@ -1,19 +1,58 @@
 /**
  * Various filters used for components.
  */
-import Vue from 'vue'
+import Vue from "vue";
 
 /**
- * Return "yes" if the input seems positive or "no" if it seems negative.
- *
- * Positive can true (bool) or works like: yes, open, on, opened, alive, running.
+ * Converts a null (and hence undefined) value to a blank string.
  */
-function yes_no(value) {
-  if (is_true_false(value)) {
-    return "yes"
-  } else {
-    return "no"
+function hide_null(value) {
+  if (variable == null) {
+    return ""
   }
+  return value
+}
+
+/**
+ * The value is encrypted, this will return ui.common.encrypted_data"
+ */
+function mask_encrypted(value) {
+  if (typeof value === "string" && value.startsWith("-----BEGIN PGP MESSAGE-----")) {
+    return 'ui.common.encrypted_data';
+  }
+  return value
+}
+
+/**
+ * Converts a public field to: private, public_pending, public
+ */
+function publicstr(value) {
+  if (value == 0) {
+    return "ui.common.private"
+  }
+  if (value == 1) {
+    return "ui.common.public_pending"
+  }
+  if (value == 2) {
+    return "ui.common.public"
+  }
+  return "ui.common.unknown"
+}
+
+/**
+ * Converts a status field to disabled, enabled, deleted.
+ */
+function status(value) {
+  if (value == 0) {
+    return "ui.common.disabled"
+  }
+  if (value == 1) {
+    return "ui.common.enabled"
+  }
+  if (value == 2) {
+    return "ui.common.deleted"
+  }
+  return "ui.common.unknown"
 }
 
 /**
@@ -44,38 +83,20 @@ function true_false_string(value) {
 }
 
 /**
- * Converts a status field to disabled, enabled, deleted.
+ * Return "yes" if the input seems positive or "no" if it seems negative.
+ *
+ * Positive can true (bool) or works like: yes, open, on, opened, alive, running.
  */
-function status(value) {
-  if (value == 0) {
-    return "ui.common.disabled"
+function yes_no(value) {
+  if (true_false(value)) {
+    return "yes"
+  } else {
+    return "no"
   }
-  if (value == 1) {
-    return "ui.common.enabled"
-  }
-  if (value == 2) {
-    return "ui.common.deleted"
-  }
-  return "ui.common.unknown"
 }
 
-/**
- * Converts a public field to: private, public_pending, public
- */
-function publicstr(value) {
-  if (value == 0) {
-    return "ui.common.private"
-  }
-  if (value == 1) {
-    return "ui.common.public_pending"
-  }
-  if (value == 2) {
-    return "ui.common.public"
-  }
-  return "ui.common.unknown"
-}
-
-
+Vue.filter('hide_null', hide_null);
+Vue.filter('mask_encrypted', mask_encrypted);
 Vue.filter('public', publicstr);
 Vue.filter('status', status);
 Vue.filter('true_false', true_false);
