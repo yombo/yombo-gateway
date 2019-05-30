@@ -50,6 +50,8 @@ function ctrl_c() {
   echo "Stopping Frontend watches."
   kill $WATCHFILES >/dev/null 2>&1
   kill $BUILDFRONTEND >/dev/null 2>&1
+  rm $YOMBO_SCRIPT_FRONTEND_UTILS/builder.pid
+
 }
 
 function build_dev {
@@ -99,6 +101,14 @@ if [ $# -lt 1 ]; then
   usage
   exit 0
 fi
+
+if test -f "$YOMBO_SCRIPT_FRONTEND_UTILS/builder.pid"; then
+  builder_pid="`cat $YOMBO_SCRIPT_FRONTEND_UTILS/builder.pid`"
+  echo "frontend builder is already running: $builder_pid"
+  exit
+fi
+
+echo "$BASHPID" > $YOMBO_SCRIPT_FRONTEND_UTILS/builder.pid
 
 while true; do
   case "$1" in
