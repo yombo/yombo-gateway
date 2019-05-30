@@ -10,7 +10,7 @@ Extends the web_interface library class to add support for building the static f
 """
 # Import python libraries
 import json
-from os import environ, path, makedirs, listdir, walk as oswalk, unlink, stat as osstat
+from os import environ, path, makedirs, listdir, walk as oswalk, unlink, stat as osstat, kill
 from PIL import Image
 import shutil
 from time import time
@@ -67,10 +67,10 @@ class BuildDistribution:
         :return:
         """
         if arguments is None:
-            arguments = ["run", "build"]
+            arguments = ["npm", "run", "build"]
 
         results = yield getProcessOutput(
-            "npm",
+            "nice",
             arguments,
             path=f"{self.app_dir}/yombo/frontend",
             env=environ.copy(),
@@ -97,10 +97,36 @@ class BuildDistribution:
 
         # Idea #8953872 - Only build if the files have changed. This will generate a sha1 for an entire directory.
         # find ./ ! -path "./node_modules/*" ! -path "./dist/*" -type f -print0 | sort -z | xargs -0 sha1sum | sha1sum
+
+        npm_running = yield self.check_npm_running()
+        if npm_running:
+            logger.info("Frontend builder appears to already be running. Won't build now.")
+            return
+
         yield self.frontend_npm_run()
         self.frontend_building = False
-        logger.info("Finished building frontend app in {seconds}", seconds=round(time() - start_time))
+        logger.info("Finished building frontend app in {seconds} seconds.", seconds=round(time() - start_time))
         yield self.copy_frontend()  # now copy the final version...
+
+    @inlineCallbacks
+    def check_npm_running(self):
+        """
+        Checks if the builder process is running. First, it checks if the PID file is found. It then
+        inspects that file and checks to make sure the actual process is running. If the process is running,
+        return True. If not, remove file the PID file and return False.
+        :return:
+        """
+        # Check if builder is already running:
+        if path.isfile(f"{self.app_dir}/yombo/frontend/util/builder.pid") is False:
+            return False
+
+        pid = yield read_file(f"{self.app_dir}/yombo/frontend/util/builder.pid")
+        try:
+            kill(int(pid), 0)
+            return True
+        except OSError:
+            unlink(f"{self.app_dir}/yombo/frontend/util/builder.pid")
+            return False
 
     @inlineCallbacks
     def copy_frontend(self, environemnt=None):
