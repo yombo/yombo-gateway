@@ -5,8 +5,8 @@
   "author": "Mitch Schwenk",
   "private": true,
   "scripts": {
-    "dev": "./util/rundev dev",
-    "build": "./util/rundev prod",
+    "dev": "./util/builder dev",
+    "build": "./util/builder prod",
     "build_dev": "nuxt --hostname 0.0.0.0",
     "build_prod": "nuxt generate",
     "start": "nuxt start",
@@ -57,6 +57,7 @@
     "nodemon": "^1.18.11",
     "prettier": "^1.17.0",
     "sass-loader": "^7.1.0",
-    "vue-jest": "^3.0.4"
+    "vue-jest": "^3.0.4",
+    "vue-temperature-filter": "^0.1.0"
   }
 }
