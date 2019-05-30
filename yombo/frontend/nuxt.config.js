@@ -1,5 +1,5 @@
-import pkg from './package'
-const webpack = require('webpack')
+import pkg from './package';
+const webpack = require('webpack');
 
 const dateTimeFormats = {
   'en': {
@@ -10,16 +10,20 @@ const dateTimeFormats = {
       year: 'numeric', month: 'short', day: 'numeric'
     },
     datetime: {
+      year: 'numeric', month: 'numeric', day: 'numeric',
+      hour: 'numeric', minute: 'numeric'
+    },
+    datetime_long: {
       year: 'numeric', month: 'short', day: 'numeric',
       hour: 'numeric', minute: 'numeric'
     },
     datetime_weekday: {
-      year: 'numeric', month: 'short', day: 'numeric',
+      year: 'numeric', month: 'numeric', day: 'numeric',
       weekday: 'short', hour: 'numeric', minute: 'numeric'
     },
-    timestamp: {
-      year: 'numeric', month: 'numeric', day: 'numeric',
-      hour: 'numeric', minute: 'numeric'
+    datetime_weekday_long: {
+      year: 'numeric', month: 'short', day: 'numeric',
+      weekday: 'short', hour: 'numeric', minute: 'numeric'
     },
   },
 };
