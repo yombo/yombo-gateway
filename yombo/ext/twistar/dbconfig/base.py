@@ -81,6 +81,9 @@ class InteractionBase(object):
         Registry.debug(f"q: {query}\n")
         Registry.debug(f"args: {args}\n")
         Registry.debug(f"kwargs: {kwargs}\n")
+        # print(f"q: {query}\n")
+        # print(f"args: {args}\n")
+        # print(f"kwargs: {kwargs}\n")
         return txn.execute(query, *args, **kwargs)
 
 
