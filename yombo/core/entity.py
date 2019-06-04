@@ -20,6 +20,6 @@ class Entity(object):
     Define a basic class that setup basic library class variables.
     """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         self._Entity_type = None
-        super().__init__()
+        super().__init__(*args, **kwargs)
