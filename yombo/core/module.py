@@ -1,6 +1,5 @@
 # This file was created by Yombo for use with Yombo Python gateway automation
 # software.  Details can be found at https://yombo.net
-from twisted.internet.defer import inlineCallbacks
 """
 
 .. note::
@@ -98,12 +97,16 @@ documentation.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/core/module.html>`_
 """
+from twisted.internet.defer import inlineCallbacks
+
 
 # Import Yombo libraries
+from yombo.utils.decorators import cached
 from yombo.core.entity import Entity
+from yombo.mixins.magicattributesmixin import MagicAttributesMixin
 
 
-class YomboModule(Entity):
+class YomboModule(Entity, MagicAttributesMixin):
     """
     This class quickly integrates user developed modules into the Yombo framework. It also sets up various
     predefined various and functions.
@@ -128,22 +131,63 @@ class YomboModule(Entity):
     :ivar _Libraries: (dict) A dictionary of all modules. Returns pointers.
     :ivar _Modules: (object/dict) The Modules Library, can be access as dictionary or object. Returns a pointer.
     :ivar _ModuleType: (string) Type of module (Interface, Command, Logic, Other).
-    :ivar _module_variables_cached: (dict) Dictionary of the module level variables as defined online
+    :ivar module_variables: (dict) Live dictionary of the module level variables as defined online
       and set as per the user.
     :ivar _States: (object/dict) The Yombo States library, but can accessed as a dictionary or object.
     """
-    def __init__(self):
+    @property
+    def module_variables(self):
+        variables = self._Variables.data("module", self._module_id)
+        fields = {}
+        field_map = {}
+        for variable_id, variable in variables.items():
+            if variable.variable_field_id not in field_map:
+                field_map[variable.variable_field_id] = self._Variables.field_by_id(variable.variable_field_id)
+            field_name = field_map[variable.variable_field_id].field_machine_label
+
+            if field_name not in fields:
+                fields[field_name] = {"data": [], "decrypted": [], "display": [], "ref": []}
+
+            fields[field_name]["data"].append(variable.data)
+            fields[field_name]["decrypted"].append(variable.decrypted)
+            fields[field_name]["display"].append(variable.display)
+            fields[field_name]["ref"].append(variable)
+        return fields
+
+    # @cached(1)
+    @property
+    def module_devices(self, gateway_id=None):
+        """
+        A list of devices for a given module id.
+
+        :raises YomboWarning: Raised when module_id is not found.
+        :param module_id: The Module ID to return device types for.
+        :return: A dictionary of devices for a given module id.
+        :rtype: list
+        """
+        if gateway_id is None:
+            gateway_id = self.gateway_id
+        devices = {}
+        for device_type_id, device_type in self.module_device_types.items():
+            devices.update(self._DeviceTypes[device_type_id].get_devices(gateway_id=gateway_id))
+        return devices
+
+    @property
+    def module_device_types(self):
+        return self._ModuleDeviceTypes.get(self._module_id)
+
+    def __init__(self, parent):
         """
         Setup basic class items. See variables list for specific information
         variable information.
         """
-        super().__init__()
+        super().__init__(parent)
         self._Entity_type = "yombo_module"
         self._Name = self.__class__.__name__
         self._FullName = f"yombo.gateway.modules.{self.__class__.__name__}"
 
     def _is_my_device(self, device):
-        if device.device_id in self._module_devices_cached and device.gateway_id == self._Devices.gateway_id:
+        if device.device_id in self.module_devices and device.gateway_id == self._Devices.gateway_id:
             return True
         else:
             return False
@@ -177,7 +221,7 @@ class YomboModule(Entity):
 
     def _stop_(self, **kwargs):
         """
-        Phase 1 of 2 for shutdown - Stop sending messages, but can still accept incomming
+        Phase 1 of 2 for shutdown - Stop sending messages, but can still accept incoming
         messages for processing.
         """
         pass
@@ -220,7 +264,6 @@ class YomboModule(Entity):
         :return: A dictionary of core attributes.
         :rtype: dict
         """
-        module_variables = yield self._module_variables()
         module_device_types = yield self._module_device_types()
         module_devices = yield self._module_devices()
         devices = {}
@@ -254,6 +297,6 @@ class YomboModule(Entity):
             "_updated_at": int(self._updated_at),
             "_load_source": str(self._load_source),
             "_device_types": module_device_types,
-            "_module_variables": module_variables,
+            "_module_variables": self.module_variables,
             "_module_devices": devices,
         }

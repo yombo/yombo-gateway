@@ -187,7 +187,7 @@ class GatewaysSchema(YomboSchemaBase):
     user_id = fields.String(required=True)
     mqtt_auth = fields.String(allow_none=True)
     mqtt_auth_next = fields.String(allow_none=True)
-    mqtt_auth_last_rotate_at = fields.String(allow_none=True)
+    mqtt_auth_last_rotate_at = fields.Integer(allow_none=True)
     internal_ipv4 = fields.String(allow_none=True)
     external_ipv4 = fields.String(allow_none=True)
     internal_ipv6 = fields.String(allow_none=True)

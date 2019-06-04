@@ -2,12 +2,15 @@
 Base input type validator.
 """
 
-import types
-
+# Import Yombo libraries
 from yombo.core.log import get_logger
+from yombo.mixins.yombobasemixin import YomboBaseMixin
+from yombo.mixins.synctoeverywhere import SyncToEverywhere
+
 logger = get_logger("library.inputtypes.validator")
 
-class Input_Type(object):
+
+class Input_Type(YomboBaseMixin, SyncToEverywhere):
     """
     A class to manage a single input type.
     :ivar input_type_id: (string) The unique ID.
@@ -38,7 +41,9 @@ class Input_Type(object):
         """
         # logger.debug("input_type info: {input_type}", input_type=input_type)
 
-        self._Parent = parent
+        self._internal_label = "input_types"  # Used by mixins
+        super().__init__(parent)
+
         self.input_type_id = input_type["id"]
         self.machine_label = input_type["machine_label"]
 
@@ -53,37 +58,13 @@ class Input_Type(object):
         self.created = None
         self.updated = None
         # self.validate = lambda x : x  # is set in the load validators up above.
-        self.update_attributes(input_type)
+        self.update_attributes(input_type, source="database")
+        self.start_data_sync()
 
     def validate(self, input, **kwargs):
         logger.warn("Input type doesn't have a validator. Accepting input by default. '{machine_label}",
                     machine_label=self.machine_label)
         return input
-
-    def update_attributes(self, input_type):
-        """
-        Sets various values from a input type dictionary. This can be called when either new or
-        when updating.
-
-        :param input_type: 
-        :return: 
-        """
-        if "category_id" in input_type:
-            self.category_id = input_type["category_id"]
-        if "label" in input_type:
-            self.label = input_type["label"]
-        if "machine_label" in input_type:
-            self.machine_label = input_type["machine_label"]
-        if "description" in input_type:
-            self.description = input_type["description"]
-        if "status" in input_type:
-            self.status = input_type["status"]
-        if "public" in input_type:
-            self.public = input_type["public"]
-        if "created" in input_type:
-            self.created = input_type["created"]
-        if "updated" in input_type:
-            self.updated = input_type["updated"]
 
     def __str__(self):
         """

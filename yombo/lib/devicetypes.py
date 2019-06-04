@@ -18,7 +18,7 @@ This library keeps track of what modules can access what device types, and what 
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/devicetypes.html>`_
 """
-from collections import OrderedDict, Callable
+from collections import Callable
 from functools import reduce
 import os
 from pyclbr import readmodule
@@ -31,6 +31,7 @@ from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.library_search import LibrarySearch
 from yombo.core.log import get_logger
+from yombo.mixins.synctoeverywhere import SyncToEverywhere
 from yombo.utils import global_invoke_all, do_search_instance
 
 logger = get_logger("library.devicetypes")
@@ -174,7 +175,6 @@ class DeviceTypes(YomboLibrary, LibrarySearch):
         """
         Sets up basic attributes.
         """
-        self.gateway_id = self._Configs.gateway_id
         self.platforms = {}  # This is filled in lib.modules::do_import_modules
 
     @inlineCallbacks
@@ -224,7 +224,7 @@ class DeviceTypes(YomboLibrary, LibrarySearch):
         device_types = yield self._LocalDB.get_device_types()
         # logger.debug("device_types: {device_types}", device_types=device_types)
         for device_type in device_types:
-            yield self._load_device_type_into_memory(device_type)
+            yield self._load_device_type_into_memory(device_type.__dict__)
 
     @inlineCallbacks
     def _load_device_type_into_memory(self, device_type, test_device_type=False):
@@ -827,7 +827,7 @@ class DeviceTypes(YomboLibrary, LibrarySearch):
         }
 
 
-class DeviceType(object):
+class DeviceType(SyncToEverywhere):
     """
     A class to manage a single device type.
     :ivar label: Device type label
@@ -847,6 +847,9 @@ class DeviceType(object):
         logger.debug("DeviceType::__init__: {device_type}", device_type=device_type)
 
         self._Parent = parent
+        self._internal_label = "device_types"  # Used by mixins
+        super().__init__()
+
         self.commands = {}
         self.device_type_id = device_type["id"]
 
@@ -861,7 +864,8 @@ class DeviceType(object):
         self.created_at = None
         self.updated_at = None
 
-        self.update_attributes(device_type)
+        self.update_attributes(device_type, source="database")
+        self.start_data_sync()
 
     @inlineCallbacks
     def _init_(self):
@@ -877,10 +881,10 @@ class DeviceType(object):
         notification that device type has been updated, or when device type commands have changed.
         :return:
         """
-        command_ids = yield self._Parent._LocalDB.get_device_type_commands(self.device_type_id)
+        commands = yield self._Parent._DeviceTypeCommands.get(self.device_type_id)
         self.commands.clear()
-        logger.debug("Device type received command ids: {command_ids}", command_ids=command_ids)
-        for command_id in command_ids:
+        logger.debug("Device type received command ids: {commands}", commands=commands)
+        for command_id, command in commands.items():
             try:
                 self.commands[command_id] = {
                     "command": self._Parent._Commands[command_id],
@@ -890,26 +894,11 @@ class DeviceType(object):
                 logger.warn("Device type '{label}' is unable to find command: {command_id}",
                             label=self.label, command_id=command_id)
                 continue
-            inputs = yield self._Parent._LocalDB.device_type_command_inputs_get(self.device_type_id, command_id)
-            for input in inputs:
-                self.commands[command_id]["inputs"][input.machine_label] = {
-                    "input_type_id": input.input_type_id,
-                    "device_type_id": input.device_type_id,
-                    "command_id": input.command_id,
-                    "label": input.label,
-                    "machine_label": input.machine_label,
-                    "live_update": input.live_update,
-                    "value_required": input.value_required,
-                    "value_max": input.value_max,
-                    "value_min": input.value_min,
-                    "value_casing": input.value_casing,
-                    "encryption": input.encryption,
-                    "notes": input.notes,
-                    "updated_at": input.updated_at,
-                    "created_at": input.created_at,
-                }
+            inputs = self._Parent._DeviceCommandInputs.get_by_ids(self.device_type_id, command_id)
+            for dci_id, dci in inputs.items():
+                self.commands[command_id]["inputs"][dci.machine_label] = dci
 
-    def update_attributes(self, device_type):
+    def update_attributes(self, device_type, source=None):
         """
         Sets various values from a device type dictionary. This can be called when either new or
         when updating.
@@ -917,27 +906,10 @@ class DeviceType(object):
         :param device_type: 
         :return: 
         """
-        if "category_id" in device_type:
-            self.category_id = device_type["category_id"]
-        if "label" in device_type:
-            self.label = device_type["label"]
-        if "machine_label" in device_type:
-            self.machine_label = device_type["machine_label"]
-        if "description" in device_type:
-            self.description = device_type["description"]
-        if "status" in device_type:
-            self.status = device_type["status"]
-        if "public" in device_type:
-            self.public = device_type["public"]
-        if "created" in device_type:
-            self.created = device_type["created"]
-        if "updated" in device_type:
-            self.updated = device_type["updated"]
         if "platform" in device_type:
             if device_type["platform"] is None or device_type["platform"] == "":
-                self.platform = "all"
-            else:
-                self.platform = device_type["platform"]
+                device_type["platform"] = "all"
+        super().update_attributes(device_type, source=source)
 
     @inlineCallbacks
     def get_variable_fields(self):
@@ -960,7 +932,7 @@ class DeviceType(object):
         :return:
         """
         # if gateway_id is None:
-        #     gateway_id = self.gateway_id()
+        #     gateway_id = self.gateway_id
 
         search_attributes = [
             {

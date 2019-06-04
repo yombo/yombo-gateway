@@ -1,5 +1,5 @@
 """
-Various sensors. A sensor is considered high if the machine status is 1, other low is 0.
+Various sensors. A sensor is considered high if the machine state is 1, other low is 0.
 """
 from yombo.constants.features import (FEATURE_NUMBER_OF_STEPS, FEATURE_ALL_ON, FEATURE_ALL_OFF, FEATURE_PINGABLE,
                                       FEATURE_POLLABLE, FEATURE_ALLOW_IN_SCENES, FEATURE_CONTROLLABLE,
@@ -34,40 +34,40 @@ class Sensor(Device):
     @property
     def is_high(self):
         """
-        If the status is 1, then it's high. 0 when it's not. If it's unknown, then None.
+        If the state is 1, then it's high. 0 when it's not. If it's unknown, then None.
 
         :return:
         """
-        if self.machine_status > 0:
+        if self.machine_state > 0:
             return True
-        elif self.machine_status == 0:
+        elif self.machine_state == 0:
             return False
         return None
 
     @property
     def is_low(self):
         """
-        If the status is 1, then it's high. 0 when it's not. If it's unknown, then None.
+        If the state is 1, then it's high. 0 when it's not. If it's unknown, then None.
 
         :return:
         """
-        if self.machine_status > 0:
+        if self.machine_state > 0:
             return False
-        elif self.machine_status == 0:
+        elif self.machine_state == 0:
             return True
         return None
 
-    def command_from_status(self, machine_status, machine_status_extra=None):
+    def command_from_state(self, machine_state, machine_state_extra=None):
         """
-        Attempt to find a command based on the status of a device.
-        :param machine_status:
-        :param machine_status_extra:
+        Attempt to find a command based on the state of a device.
+        :param machine_state:
+        :param machine_state_extra:
         :return:
         """
-        # print("attempting to get command_from_status - Sensor: %s - %s" % (machine_status, machine_status_extra))
-        if machine_status == int(1):
+        # print("attempting to get command_from_state - Sensor: %s - %s" % (machine_state, machine_state_extra))
+        if machine_state == int(1):
             return self._Parent._Commands[COMMAND_HIGH]
-        elif machine_status == int(0):
+        elif machine_state == int(0):
             return self._Parent._Commands[COMMAND_LOW]
         return None
 
@@ -83,26 +83,26 @@ class Binary_Sensor(Sensor):
     @property
     def is_high(self):
         """
-        If the status is 1, then it's high. 0 when it's not. If it's unknown, then None.
+        If the state is 1, then it's high. 0 when it's not. If it's unknown, then None.
 
         :return:
         """
-        if self.machine_status == 1:
+        if self.machine_state == 1:
             return True
-        elif self.machine_status == 0:
+        elif self.machine_state == 0:
             return False
         return None
 
     @property
     def is_low(self):
         """
-        If the status is 1, then it's high. 0 when it's not. If it's unknown, then None.
+        If the state is 1, then it's high. 0 when it's not. If it's unknown, then None.
 
         :return:
         """
-        if self.machine_status == 1:
+        if self.machine_state == 1:
             return False
-        elif self.machine_status == 0:
+        elif self.machine_state == 0:
             return True
         return None
 
@@ -139,14 +139,14 @@ class Thermometer(Device):
         """
         Return the temperatures of this thermometer.
         """
-        if len(self.status_history) > 0:
-            return self.status_history[0].machine_status
+        if len(self.state_history) > 0:
+            return self.state_history[0].machine_state
         return None
 
-    def command_from_status(self, machine_status, machine_status_extra=None):
+    def command_from_state(self, machine_state, machine_state_extra=None):
         """
-        Attempt to find a command based on the status of a device.
-        :param machine_status:
+        Attempt to find a command based on the state of a device.
+        :param machine_state:
         :return:
         """
         return None

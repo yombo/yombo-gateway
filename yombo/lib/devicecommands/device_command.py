@@ -22,13 +22,15 @@ from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
-from yombo.utils import is_true_false, data_pickle
-
 from yombo.core.log import get_logger
-logger = get_logger("library.devices.device_command")
+from yombo.mixins.yombobasemixin import YomboBaseMixin
+from yombo.mixins.synctoeverywhere import SyncToEverywhere
+from yombo.utils import is_true_false
+
+logger = get_logger("library.devices.device_commands.device_command")
 
 
-class Device_Command(object):
+class Device_Command(YomboBaseMixin, SyncToEverywhere):
     """
     A class that manages requests for a given device. This class is instantiated by the
     device class. Librarys and modules can use this instance to get the details of a given
@@ -101,6 +103,11 @@ class Device_Command(object):
     def label(self):
         return f"{self.command.label} -> {self.device.full_label}"
 
+    @property
+    def _sync_fields(self):
+        return ["command_status_received", "broadcast_at", "accepted_at", "sent_at", "received_at", "pending_at",
+                "finished_at", "not_before_at", "not_after_at", "history", "status"]
+
     def __init__(self, data, parent, start=None):
         """
         Get the instance setup.
@@ -108,9 +115,14 @@ class Device_Command(object):
         :param data: Basic details about the device command to get started.
         :param parent: A pointer to the device types instance.
         """
-        self._Parent = parent
-        self.source_gateway_id = data.get("source_gateway_id", self._Parent.gateway_id)
-        self.local_gateway_id = self._Parent.gateway_id
+        self._internal_label = "device_commands"  # Used by mixins
+        self._syncs_to_yombo = False
+        super().__init__(parent)
+
+        self._sync_delay = 10
+
+        self.gateway_id = self._Parent.gateway_id
+        self.source_gateway_id = data.get("source_gateway_id", self.gateway_id)
         self.request_id = data["request_id"]
 
         if "device" in data:
@@ -125,6 +137,7 @@ class Device_Command(object):
             self.command = parent._Commands.get(data["command_id"])
         else:
             raise ValueError("Must have either command reference, or command_id")
+
         self.inputs = data.get("inputs", None)
         if "history" in data:
             self.history = data["history"]
@@ -162,22 +175,13 @@ class Device_Command(object):
         self.started = data.get("started", False)
         self.idempotence = data.get("idempotence", None)
 
-        if self.source == "database":
-            self._dirty = False
-            self._in_db = True
-        elif self.source == "gateway_coms":
-            self._dirty = False
-            self._in_db = False
-            reactor.callLater(1, self.check_if_device_command_in_database)
-
-        else:
+        if len(self.history) == 0:
             self.history.append(self.history_dict(self.created_at,
                                                   self.status,
                                                   "Created.",
-                                                  self.local_gateway_id))
-            self._in_db = False
+                                                  self.gateway_id))
 
-        if self.device.gateway_id == self.local_gateway_id:
+        if self.device.gateway_id == self.gateway_id:
             self.started = False
             start = True
 
@@ -222,32 +226,7 @@ class Device_Command(object):
         device_commands = yield self._Parent._LocalDB.get_device_commands(where)
         if len(device_commands) > 0:
             self._in_db = True
-            self.save_to_db()
-
-    def update_attributes(self, data):
-        if "command_status_received" in data:
-            self.command_status_received = data["command_status_received"]
-        if "broadcast_at" in data:
-            self.broadcast_at = data["broadcast_at"]
-        if "accepted_at" in data:
-            self.accepted_at = data["accepted_at"]
-        if "sent_at" in data:
-            self.sent_at = data["sent_at"]
-        if "received_at" in data:
-            self.received_at = data["received_at"]
-        if "pending_at" in data:
-            self.pending_at = data["pending_at"]
-        if "finished_at" in data:
-            self.finished_at = data["finished_at"]
-        if "not_before_at" in data:
-            self.not_before_at = data["not_before_at"]
-            # print("in device command, setting not before: %s (currently: %s_" % (self.not_before_at, time()))
-        if "not_after_at" in data:
-            self.not_after_at = data["not_after_at"]
-        if "history" in data:
-            self.history = data["history"]
-        if "status" in data:
-            self.status = data["status"]
+            self.sync_to_database()
 
     def start(self):
         """
@@ -280,7 +259,7 @@ class Device_Command(object):
                     self.device._do_command(self)
                 else:
                     self.call_later = reactor.callLater(when, self.device._do_command, self)
-                    self.set_status("delayed")
+                    self.set_state("delayed")
                 return True
         else:
             if self.source == "database":  # Nothing should be loaded from the database that not a delayed command.
@@ -294,47 +273,42 @@ class Device_Command(object):
         return self.history[-1]
 
     def set_broadcast(self, broadcast_at=None, message=None):
-        self._dirty = True
         if broadcast_at is None:
             broadcast_at = time()
         self.broadcast_at = broadcast_at
         self.status = "broadcast"
         if message is None:
             message="Command broadcasted to hooks and gateway coms."
-        self.history.append(self.history_dict(broadcast_at, self.status, message, self.local_gateway_id))
+        self.history.append(self.history_dict(broadcast_at, self.status, message, self.gateway_id))
 
     def set_accepted(self, accepted_at=None, message=None):
-        self._dirty = True
         if accepted_at is None:
             accepted_at = time()
         self.accepted_at = accepted_at
         self.status = "accepted"
         if message is None:
             message="Command sent to device or processing sub-system."
-        self.history.append(self.history_dict(accepted_at, self.status, message, self.local_gateway_id))
+        self.history.append(self.history_dict(accepted_at, self.status, message, self.gateway_id))
 
     def set_sent(self, sent_at=None, message=None):
-        self._dirty = True
         if sent_at is None:
             sent_at = time()
         self.sent_at = sent_at
         self.status = "sent"
         if message is None:
             message="Command sent to device or processing sub-system."
-        self.history.append(self.history_dict(sent_at, self.status, message, self.local_gateway_id))
+        self.history.append(self.history_dict(sent_at, self.status, message, self.gateway_id))
 
     def set_received(self, received_at=None, message=None):
-        self._dirty = True
         if received_at is None:
             received_at = time()
         self.received_at = received_at
         self.status = "received"
         if message is None:
             message="Command received by the device or processing sub-system."
-        self.history.append(self.history_dict(received_at, self.status, message, self.local_gateway_id))
+        self.history.append(self.history_dict(received_at, self.status, message, self.gateway_id))
 
     def set_pending(self, pending_at=None, message=None):
-        self._dirty = True
         if pending_at is None:
             pending_at = time()
         self.pending_at = pending_at
@@ -346,17 +320,16 @@ class Device_Command(object):
             self.history.append(self.history_dict(pending_at,
                                                   "sent",
                                                   "Command sent to device or processing sub-system. Back filled by pending action.",
-                                                  self.local_gateway_id))
+                                                  self.gateway_id))
         if self.received_at is None:
             self.received_at = pending_at
             self.history.append(self.history_dict(pending_at,
                                                   "received",
                                                   "Command received by the device or processing sub-system. Back filled by pending action.",
-                                                  self.local_gateway_id))
-        self.history.append(self.history_dict(pending_at, self.status, message, self.local_gateway_id))
+                                                  self.gateway_id))
+        self.history.append(self.history_dict(pending_at, self.status, message, self.gateway_id))
 
     def set_finished(self, finished_at=None, status=None, message=None):
-        self._dirty = True
         if finished_at is None:
             finished_at = time()
         self.finished_at = finished_at
@@ -368,16 +341,16 @@ class Device_Command(object):
             self.history.append(self.history_dict(finished_at,
                                                   "sent",
                                                   "Command sent to device or processing sub-system. Back filled by finished action.",
-                                                  self.local_gateway_id))
+                                                  self.gateway_id))
         if message is None:
             message = "Finished."
-        self.history.append(self.history_dict(finished_at, self.status, message, self.local_gateway_id))
+        self.history.append(self.history_dict(finished_at, self.status, message, self.gateway_id))
 
         try:
             self.call_later.cancel()
         except:
             pass
-        self.save_to_db()
+        self.sync_to_database()
 
     def set_canceled(self, finished_at=None, message=None):
         if message is None:
@@ -397,8 +370,7 @@ class Device_Command(object):
     def set_status(self, status, message=None, log_at=None, gateway_id=None):
         logger.debug("device ({label}) has new status: {status}", label=self.device.full_label, status=status)
         if gateway_id is None:
-            gateway_id = self.local_gateway_id
-        self._dirty = True
+            gateway_id = self.gateway_id
         self.status = status
         if hasattr(self, f"{status}_at"):
             setattr(self, f"status_at", log_at)
@@ -407,9 +379,8 @@ class Device_Command(object):
         self.history.append(self.history_dict(log_at, status, message, gateway_id))
 
     def set_message(self, message):
-        self._dirty = True
         self.message = message
-        self.history.append(self.history_dict(time(), self.status, message, self.local_gateway_id))
+        self.history.append(self.history_dict(time(), self.status, message, self.gateway_id))
 
     def status_received(self):
         self.command_status_received = True
@@ -420,27 +391,10 @@ class Device_Command(object):
             status = "canceled"
         self.set_finished(finished_at, status, message)
 
-    # @inlineCallbacks
-    def save_to_db(self, forced = None):
-        if self.device.gateway_id != self._Parent.gateway_id and self._Parent.is_master is not True:
-            self._dirty = False
-            return
-        if self._dirty or forced is True:
-            data = self.asdict()
-            del data["started"]
-            # if self.inputs is None:
-            #     data["inputs"] = None
-            # else:
-            data["history"] = data_pickle(self.history)
-            data["inputs"] = data_pickle(self.inputs)
-
-            if self._in_db is True:
-                self._Parent._LocalDB.add_bulk_queue("device_commands", "update", data, "request_id")
-            else:
-                self._Parent._LocalDB.add_bulk_queue("device_commands", "insert", data, "request_id")
-
-            self._dirty = False
-            self._in_db = True
+    def sync_allowed(self):
+        if self.device.gateway_id != self.gateway_id and self._Parent.is_master is not True:
+            return False
+        return True
 
     def asdict(self):
         return {

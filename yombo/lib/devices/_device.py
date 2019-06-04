@@ -36,16 +36,16 @@ class Device(Device_Attributes, Device_Base):
     """
     @property
     def is_on(self):
-        if isinstance(self.machine_status, int) is False:
+        if isinstance(self.machine_state, int) is False:
             return False
-        if int(self.machine_status) > 0:
+        if int(self.machine_state) > 0:
             return True
         else:
             return False
 
     @property
     def is_off(self):
-        if isinstance(self.machine_status, int) is False:
+        if isinstance(self.machine_state, int) is False:
             return False
         return not self.is_on()
 
@@ -58,9 +58,9 @@ class Device(Device_Attributes, Device_Base):
         """
         Return the current mode of operation for the device.
         """
-        machine_status_extra = self.machine_status_extra
-        if "mode" in machine_status_extra.machine_status_extra:
-            return machine_status_extra.machine_status_extra["mode"]
+        machine_state_extra = self.machine_state_extra
+        if "mode" in machine_state_extra.machine_state_extra:
+            return machine_state_extra.machine_state_extra["mode"]
         return None
 
     @property
@@ -70,19 +70,19 @@ class Device(Device_Attributes, Device_Base):
         """
         return None
 
-    def generate_human_status(self, machine_status, machine_status_extra):
-        if machine_status == 1:
+    def generate_human_state(self, machine_state, machine_state_extra):
+        if machine_state == 1:
             return "On"
         return "Off"
 
-    def generate_human_message(self, machine_status, machine_status_extra):
-        human_status = self.generate_human_status(machine_status, machine_status_extra)
-        return f"{self.area_label} is now {human_status}"
+    def generate_human_message(self, machine_state, machine_state_extra):
+        human_state = self.generate_human_state(machine_state, machine_state_extra)
+        return f"{self.area_label} is now {human_state}"
 
-    def available_status_modes_values(self):
+    def available_state_modes_values(self):
         return instance_properties(self, startswith_filter="STATUS_MODES_")
 
-    def available_status_extra_attributes(self):
+    def available_state_extra_attributes(self):
         return instance_properties(self, startswith_filter="STATUS_EXTRA_")
 
     def energy_calc(self, **kwargs):
@@ -90,10 +90,10 @@ class Device(Device_Attributes, Device_Base):
         Returns the energy being used based on a percentage the device is on.  Inspired by:
         http://stackoverflow.com/questions/1969240/mapping-a-range-of-values-to-another
 
-        Supply the machine_status, machine_status_extra,and last command. If these are not supplied, it will
+        Supply the machine_state, machine_state_extra,and last command. If these are not supplied, it will
         be taken from teh device history.
 
-        :param machine_status:
+        :param machine_state:
         :param map:
         :return:
         """
@@ -103,20 +103,20 @@ class Device(Device_Attributes, Device_Base):
         #     1: 400,
         # }
 
-        if "machine_status" in kwargs:
-            machine_status = float(kwargs["machine_status"])
+        if "machine_state" in kwargs:
+            machine_state = float(kwargs["machine_state"])
         else:
-            machine_status = float(self.status_history[0]["machine_status"])
+            machine_state = float(self.state_history[0]["machine_state"])
 
-        if "machine_status_extra" in kwargs:
-            machine_status_extra = kwargs["machine_status_extra"]
+        if "machine_state_extra" in kwargs:
+            machine_state_extra = kwargs["machine_state_extra"]
         else:
-            machine_status_extra = self.status_history[0]["machine_status_extra"]
+            machine_state_extra = self.state_history[0]["machine_state_extra"]
 
-        # print("energy_calc: machine_status: %s" % machine_status)
-        # print("energy_calc: machine_status_extra: %s" % machine_status_extra)
+        # print("energy_calc: machine_state: %s" % machine_state)
+        # print("energy_calc: machine_state_extra: %s" % machine_state_extra)
 
-        percent = self.calc_percent(machine_status, machine_status_extra) / 100
+        percent = self.calc_percent(machine_state, machine_state_extra) / 100
         # print("energy_calc: percent: %s" % percent)
 
         if self.energy_tracker_source != "calculated":
@@ -190,22 +190,22 @@ class Device(Device_Attributes, Device_Base):
                 pass
         raise YomboWarning("Unable to turn off device. Device doesn't have any of these commands: off, close")
 
-    def command_from_status(self, machine_status, machine_status_extra=None):
+    def command_from_state(self, machine_state, machine_state_extra=None):
         """
-        Attempt to find a command based on the status of a device.
-        :param machine_status:
-        :param machine_status_extra:
+        Attempt to find a command based on the state of a device.
+        :param machine_state:
+        :param machine_state_extra:
         :return:
         """
-        # print("attempting to get command_from_status - device: %s - %s" % (machine_status, machine_status_extra))
-        if machine_status == int(1):
+        # print("attempting to get command_from_state - device: %s - %s" % (machine_state, machine_state_extra))
+        if machine_state == int(1):
             for item in (COMMAND_ON, COMMAND_OPEN, COMMAND_HIGH):
                 try:
                     command = self.in_available_commands(item)
                     return command
                 except Exception:
                     pass
-        elif machine_status == int(0):
+        elif machine_state == int(0):
             for item in (COMMAND_OFF, COMMAND_CLOSE, COMMAND_LOW):
                 try:
                     command = self.in_available_commands(item)

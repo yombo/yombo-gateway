@@ -140,14 +140,10 @@ class Notifications(YomboLibrary):
         """
         # self.init_deferred = Deferred()  # Prevents loader from moving on past _load_ until we are done.
         self.notifications = SlicableOrderedDict()
-        self.gateway_id = "local"
         self.notification_targets = {}  # tracks available notification targets. This allows subscribers to know whats possible.
 
     @inlineCallbacks
     def _load_(self, **kwargs):
-        self.gateway_id = self._Configs.get("core", "gwid", "local", False)
-
-    # def _start_(self, **kwargs):
         self._checkExpiredLoop = LoopingCall(self.check_expired)
         self._checkExpiredLoop.start(self._Configs.get("notifications", "check_expired", 121, False), False)
         self.load_notifications()

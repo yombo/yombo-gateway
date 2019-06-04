@@ -111,7 +111,6 @@ class GPG(YomboLibrary):
         :param kwargs:
         :return:
         """
-        self.gateway_id = self._Configs.get2("core", "gwid", "local", False)
         self.gwuuid = self._Configs.get2("core", "gwuuid", None, False)
         self.myfingerprint = self._Configs.get2("gpg", "fingerprint", None, False)
         self.debug_mode = self._Configs.get("debug", "testing", False, False)
@@ -190,10 +189,10 @@ class GPG(YomboLibrary):
         if myfingerprint not in self._gpg_keys:
             valid = False
             logger.warn("Cannot find my GPG key!")
-        if myfingerprint in self._gpg_keys and self.gateway_id() != self._gpg_keys[myfingerprint]["endpoint_id"]:
+        if myfingerprint in self._gpg_keys and self.gateway_id != self._gpg_keys[myfingerprint]["endpoint_id"]:
                 valid = False
                 logger.warn("Local gateway_id '{gateway_id}' doesn't match my GPG endpoint id '{endpoint_id}'",
-                            gateway_id=self.gateway_id(), endpoint_id=self._gpg_keys[myfingerprint]["endpoint_id"])
+                            gateway_id=self.gateway_id, endpoint_id=self._gpg_keys[myfingerprint]["endpoint_id"])
         if valid is False:
             logger.info("Gateway doesn't have GPG key, creating one...")
             yield self.generate_key()
@@ -249,7 +248,7 @@ class GPG(YomboLibrary):
 
         logger.debug("Sending my public GPG key to Yombo.")
         logger.debug("sending gpg information: {body}", body=body)
-        gwid = self.gateway_id()
+        gwid = self.gateway_id
         try:
             response = yield self._YomboAPI.request(
                 "POST", f"/v1/gateways/{gwid}/gpg",
@@ -618,7 +617,7 @@ class GPG(YomboLibrary):
         if self._generating_key is True:
             return
         self._generating_key = True
-        gwid = self.gateway_id()
+        gwid = self.gateway_id
         gwuuid = self.gwuuid()
         if gwid is "local" or gwuuid is None:
             self.key_generation_status = "failed: gateway not setup, gatewayid or uuid is missing"
@@ -716,7 +715,6 @@ class GPG(YomboLibrary):
         if "passphrase" in key:
             del key["passphrase"]
         return key
-
 
     # def get_key(self, fingerprint):
     #     asciiArmoredPublicKey = self.gpg.export_keys(fingerprint)

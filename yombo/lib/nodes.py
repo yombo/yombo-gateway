@@ -25,8 +25,8 @@ from copy import deepcopy
 from time import time
 
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks
 from twisted.internet import reactor
+from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
@@ -167,8 +167,6 @@ class Nodes(YomboLibrary, LibrarySearch):
         Setups up the basic framework and loads nodes marked for always load or the gateway_id is
         set for us.
         """
-        self.gateway_id = self._Configs.get2("core", "gwid", "local", False)
-
         yield self._load_nodes_from_database()
 
     @inlineCallbacks
@@ -339,7 +337,7 @@ class Nodes(YomboLibrary, LibrarySearch):
         if source is None:
             source = "local"
 
-        gateway_id = self.gateway_id()
+        gateway_id = self.gateway_id
         if "data" not in node_data or node_data["data"] is None:
             raise YomboWarning("Node must have data!")
 
@@ -415,7 +413,7 @@ class Nodes(YomboLibrary, LibrarySearch):
         :param kwargs:
         :return:
         """
-        gateway_id = self.gateway_id()
+        gateway_id = self.gateway_id
 
         if source is None:
             source = "local"
@@ -798,7 +796,7 @@ class Node(object):
             object.__setattr__(self, "_update_calllater", None)
             if self._update_calllater_time is not None and self._update_calllater_time < time() - 120:
                 # print("forcing save now..!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-                self._update_calllater_time = None
+                object.__setattr__(self, "_update_calllater_time", None)
                 self.save()
             else:
                 # print("saving node later..")
@@ -823,18 +821,18 @@ class Node(object):
         yield self.save_to_db()
 
     def add_to_db(self):
-        if self._Parent.gateway_id() == self.gateway_id:
+        if self._Parent.gateway_id == self.gateway_id:
             self._Parent._LocalDB.add_node(self)
 
     @inlineCallbacks
     def save_to_db(self):
         # print("save_to_db called")
-        if self._Parent.gateway_id() == self.gateway_id:
+        if self._Parent.gateway_id == self.gateway_id:
             # print("save_to_db called....saving node to local sql now...")
             yield self._Parent._LocalDB.update_node(self)
 
     def delete_from_db(self):
-        if self._Parent.gateway_id() == self.gateway_id:
+        if self._Parent.gateway_id == self.gateway_id:
             self._Parent._LocalDB.delete_node(self)
 
     def __str__(self):

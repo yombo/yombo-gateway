@@ -101,7 +101,7 @@ class LogWriter(YomboModule):
              }
         ))
 
-    def _device_status_(self, **kwargs):
+    def _device_state_(self, **kwargs):
         device = kwargs['device']
         status = kwargs['status']
 
@@ -109,7 +109,7 @@ class LogWriter(YomboModule):
             {'time': int(time.time()),
              'type': 'device_command',
              'device_id': device.device_id,
-             'status': status['human_status'],
+             'status': status['human_state'],
              }
         ))
 

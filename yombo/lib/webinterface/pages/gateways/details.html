@@ -121,13 +121,13 @@
                                                     <td data-priority="4">{{ device.location }}</td>
                                                     <td data-priority="5">{{ device.description }}</td>
                                                     <td data-priority="6">{{ _devicetypes[device.device_type_id].label }}</td>
-                                                    <td data-priority="2">{{ device.status_all.human_status }}</td>
+                                                    <td data-priority="2">{{ device.state_all.human_state }}</td>
                                                     <td data-priority="2">
-                                                        {% if device.enabled_status == 0 -%}
+                                                        {% if device.status == 0 -%}
                                                      <a href="/devices/{{ device.device_id }}/edit">Edit</a> &nbsp; <a class="alert-success" href="/devices/{{ device.device_id }}/enable">Enable</a> &nbsp; <a class="alert-danger" href="/devices/{{ device.device_id }}/delete">Delete</a>
-                                                        {% elif device.enabled_status == 1 -%}
+                                                        {% elif device.status == 1 -%}
                                                      <a href="/devices/{{ device.device_id }}/edit">Edit</a> &nbsp; <a class="alert-warning" href="/devices/{{ device.device_id }}/disable">Disable</a> &nbsp; <a class="alert-danger" href="/devices/{{ device.device_id }}/delete">Delete</a>
-                                                        {% elif device.enabled_status == 2 -%}
+                                                        {% elif device.status == 2 -%}
                                                      <a class="alert-success"  href="/devices/{{ device.device_id }}/disable">Enable</a>
                                                         {% endif %}
 

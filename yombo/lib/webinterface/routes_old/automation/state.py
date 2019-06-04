@@ -39,7 +39,7 @@ def route_automation_state(webapp):
             state_name = ""
             state_value = ""
             state_value_type = ""
-            state_gateway_id = webinterface.gateway_id()
+            state_gateway_id = webinterface.gateway_id
 
             trigger_data = rule.data["trigger"]
             print(f"editing automation trigger for state: {trigger_data}")
@@ -82,7 +82,7 @@ def route_automation_state(webapp):
                 "name": webinterface.request_get_default(request, "name", ""),
                 "value": webinterface.request_get_default(request, "value", ""),
                 "value_type": webinterface.request_get_default(request, "value_type", ""),
-                "gateway_id": webinterface.request_get_default(request, "gateway_id", webinterface.gateway_id()),
+                "gateway_id": webinterface.request_get_default(request, "gateway_id", webinterface.gateway_id),
             }
 
             if data["name"] == "":
@@ -126,7 +126,7 @@ def route_automation_state(webapp):
                 "name": webinterface.request_get_default(request, "name", ""),
                 "value": webinterface.request_get_default(request, "value", ""),
                 "value_type": webinterface.request_get_default(request, "value_type", ""),
-                "gateway_id": webinterface.request_get_default(request, "gateway_id", webinterface.gateway_id()),
+                "gateway_id": webinterface.request_get_default(request, "gateway_id", webinterface.gateway_id),
                 "weight": int(webinterface.request_get_default(
                     request, "weight", (len(webinterface._Automation.get_action_items(rule_id)) + 1) * 10)),
             }
@@ -151,7 +151,7 @@ def route_automation_state(webapp):
                 "name": webinterface.request_get_default(request, "name", ""),
                 "value": webinterface.request_get_default(request, "value", ""),
                 "value_type": webinterface.request_get_default(request, "value_type", ""),
-                "gateway_id": webinterface.request_get_default(request, "gateway_id", webinterface.gateway_id()),
+                "gateway_id": webinterface.request_get_default(request, "gateway_id", webinterface.gateway_id),
                 "weight": int(webinterface.request_get_default(
                     request, "weight", (len(webinterface._Automation.get_action_items(rule_id)) + 1) * 10)),
             }
@@ -254,7 +254,7 @@ def route_automation_state(webapp):
                 "name": webinterface.request_get_default(request, "name", ""),
                 "value": webinterface.request_get_default(request, "value", ""),
                 "value_type": webinterface.request_get_default(request, "value_type", ""),
-                "gateway_id": webinterface.request_get_default(request, "gateway_id", webinterface.gateway_id()),
+                "gateway_id": webinterface.request_get_default(request, "gateway_id", webinterface.gateway_id),
                 "weight": int(webinterface.request_get_default(
                     request, "weight", (len(webinterface._Automation.get_action_items(rule_id)) + 1) * 10)),
             }

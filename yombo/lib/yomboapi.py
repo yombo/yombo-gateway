@@ -41,7 +41,6 @@ class YomboAPI(YomboLibrary):
 
     @inlineCallbacks
     def _init_(self, **kwargs):
-        self.gateway_id = self._Configs.get2("core", "gwid", "local", False)
         self.gateway_hash = self._Configs.get2("core", "gwhash", None, False)
 
         self.api_app_key = self._Configs.get("yomboapi", "api_app_key", "4Pz5CwKQCsexQaeUvhJnWAFO6TRa9SafnpAQfAApqy9fsdHTLXZ762yCZOct", False)
@@ -58,7 +57,7 @@ class YomboAPI(YomboLibrary):
         :return:
         """
         logger.debug(f"About to validate gateway credentials")
-        gateway_id = self.gateway_id()
+        gateway_id = self.gateway_id
         gateway_hash = self.gateway_hash()
 
         if gateway_id == "local" or gateway_hash is None:
@@ -99,7 +98,7 @@ class YomboAPI(YomboLibrary):
 
     @inlineCallbacks
     def validate_user_token(self, user_token):
-        gateway_id = self.gateway_id()
+        gateway_id = self.gateway_id
         try:
             response = yield self.request("POST", f"/v1/gateways/{gateway_id}/check_authentication",
                                           {
@@ -209,7 +208,7 @@ class ApiRequest:
             # print("checking auth header 2")
             if self._Parent.gateway_credentials_is_valid is False:
                 return None
-            return {"Authorization": f"YomboGateway {self._Parent.gateway_id()} "
+            return {"Authorization": f"YomboGateway {self._Parent.gateway_id} "
                     f"{self._Parent.gateway_hash()}"}
         else:
             return {"Authorization": incoming}

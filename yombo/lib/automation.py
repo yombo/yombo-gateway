@@ -169,7 +169,6 @@ class Automation(YomboLibrary):
         """
         self.rules = {}   # Store processed / active rules
         self.active_triggers = {}  # Track various triggers - help find what rules to fire when a trigger matches.
-        self.gateway_id = self._Configs.get2("core", "gwid", "local", False)
 
         self.action_types = {  # things that rules can do as a result if it being triggered.
             "device": {
@@ -948,7 +947,7 @@ class Automation(YomboLibrary):
                                             node_type="automation_rules",
                                             data=data,
                                             data_content_type="json",
-                                            gateway_id=self.gateway_id(),
+                                            gateway_id=self.gateway_id,
                                             destination="gw",
                                             status=1)
         new_rule.rule_type = "node"
@@ -1023,7 +1022,7 @@ class Automation(YomboLibrary):
                                             node_type="automation_rules",
                                             data=new_data,
                                             data_content_type="json",
-                                            gateway_id=self.gateway_id(),
+                                            gateway_id=self.gateway_id,
                                             destination="gw",
                                             status=1)
         self.patch_automation_rule(new_rule)

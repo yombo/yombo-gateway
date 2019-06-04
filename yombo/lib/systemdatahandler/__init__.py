@@ -39,24 +39,23 @@ class SystemDataHandler(YomboLibrary, object):
 
     @inlineCallbacks
     def _init_(self):
-        self.gwid = self._Configs.gateway_id()
         self.api_routes = {
             "categories": "/v1/categories",
             "locations": f"/v1/locations",
-            "users": f"/v1/gateways/{self.gwid}/users",
-            "related_commands": f"/v1/gateways/{self.gwid}/relationships/commands",
-            "related_devices": f"/v1/gateways/{self.gwid}/relationships/devices?include=variables",
-            "related_device_command_inputs": f"/v1/gateways/{self.gwid}/relationships/device_command_inputs",
-            "related_device_types": f"/v1/gateways/{self.gwid}/relationships/device_types",
-            "related_device_type_commands": f"/v1/gateways/{self.gwid}/relationships/device_type_commands",
-            "related_gateways": f"/v1/gateways/{self.gwid}/relationships/gateways",
-            "related_input_types": f"/v1/gateways/{self.gwid}/relationships/input_types",
-            "related_modules": f"/v1/gateways/{self.gwid}/relationships/modules",
-            "related_module_commits": f"/v1/gateways/{self.gwid}/relationships/module_commits",
-            "related_module_device_types": f"/v1/gateways/{self.gwid}/relationships/module_device_types",
-            "related_nodes": f"/v1/gateways/{self.gwid}/relationships/nodes",
-            "related_variable_group_devices": f"/v1/gateways/{self.gwid}/relationships/variable_groups_devices",
-            "related_variable_group_modules": f"/v1/gateways/{self.gwid}/relationships/variable_groups_modules",
+            "users": f"/v1/gateways/{self.gateway_id}/users",
+            "related_commands": f"/v1/gateways/{self.gateway_id}/relationships/commands",
+            "related_devices": f"/v1/gateways/{self.gateway_id}/relationships/devices?include=variables",
+            "related_device_command_inputs": f"/v1/gateways/{self.gateway_id}/relationships/device_command_inputs",
+            "related_device_types": f"/v1/gateways/{self.gateway_id}/relationships/device_types",
+            "related_device_type_commands": f"/v1/gateways/{self.gateway_id}/relationships/device_type_commands",
+            "related_gateways": f"/v1/gateways/{self.gateway_id}/relationships/gateways",
+            "related_input_types": f"/v1/gateways/{self.gateway_id}/relationships/input_types",
+            "related_modules": f"/v1/gateways/{self.gateway_id}/relationships/modules",
+            "related_module_commits": f"/v1/gateways/{self.gateway_id}/relationships/module_commits",
+            "related_module_device_types": f"/v1/gateways/{self.gateway_id}/relationships/module_device_types",
+            "related_nodes": f"/v1/gateways/{self.gateway_id}/relationships/nodes",
+            "related_variable_group_devices": f"/v1/gateways/{self.gateway_id}/relationships/variable_groups_devices",
+            "related_variable_group_modules": f"/v1/gateways/{self.gateway_id}/relationships/variable_groups_modules",
         }
         self.download_semaphore = defer.DeferredSemaphore(self.MAX_DOWNLOAD_CONCURRENT)  # used to queue deferreds
         self.download_list = []

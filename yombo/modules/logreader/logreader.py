@@ -39,14 +39,14 @@ class LogReader(YomboModule):
     def _load_(self, **kwargs):
         # Make sure YomboBot is loaded and available.
         try:
-            self.YomboBot = self._Modules['yombobot']
+            self.YomboBot = self._Modules["yombobot"]
         except:
             logger.warn("Logreader module can't start due to no YomboBot module loaded.")
             return
 
         # Get a file name to monitor.
-        if "logfile" in self._module_variables_cached:
-            self.fileName = self._module_variables_cached["logfile"][0]['value']
+        if "logfile" in self.module_variables:
+            self.fileName = self.module_variables["logfile"]["data"][0]
         else:
             logger.warn("No 'logfile' set for logreader, using default: 'logreader.txt'")
             self.fileName = "logreader.txt"

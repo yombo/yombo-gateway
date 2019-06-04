@@ -4,20 +4,22 @@
   * End user documentation: `Auth Keys @ User Documentation <https://yombo.net/docs/gateway/web_interface/authkeys>`_
   * For library documentation, see: `Auth Keys @ Library Documentation <https://yombo.net/docs/libraries/authkeys>`_
 
-Handles auth key items for the webinterface. Auth keys can be used in place of a username/password
-for scripts.
+Handles auth key items for the webinterface, primarily used for accessing API endpoints and are used in
+place of a username/password for scripts.
+
+AuthKeys are only stored within the Yombo.ini file, however, any auth-keys marked with a scope of 'cluster'
+will be usable on other gateways.
+
+To help ensure AuthKey revocations across a cluster, deleted/expired keys are kept for 30 days.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2017-2018 by Yombo.
+:copyright: Copyright 2017-2019 by Yombo.
 :license: LICENSE for details.
 """
 # Import python libraries
 from time import time
 from random import randint
-
-# Import twisted libraries
-from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
 from yombo.constants import AUTH_TYPE_AUTHKEY
@@ -27,7 +29,8 @@ from yombo.core.log import get_logger
 from yombo.mixins.authmixin import AuthMixin
 from yombo.mixins.permissionmixin import PermissionMixin
 from yombo.mixins.rolesmixin import RolesMixin
-from yombo.utils import random_string, random_int, bytes_to_unicode, data_unpickle, data_pickle, sha256_compact
+from yombo.mixins.synctoeverywhere import SyncToEverywhere
+from yombo.utils import random_string, bytes_to_unicode, data_unpickle, data_pickle, sha256_compact
 from yombo.utils.datatypes import coerce_value
 
 logger = get_logger("library.authkey")
@@ -94,20 +97,69 @@ class AuthKeys(YomboLibrary):
         return list(self.authkeys.items())
 
     def _start_(self, **kwargs):
-        self.load_authkeys()
-
-    def _started_(self, **kwargs):
-        self.save_authkeys_loop = LoopingCall(self.save_authkeys)
-        self.save_authkeys_loop.start(random_int(60*60*6, .1))  # Every 6-ish hours. Save auth key records.
+        self._load_authkeys_from_config()
 
     def _unload_(self, **kwargs):
-        self.save_authkeys()
+        """
+        Flush any pending changes to the config file.
 
-    def load_authkeys(self):
+        :param kwargs:
+        :return:
+        """
+        for auth_id, authkey in self.authkeys.items():
+            authkey.flush_sync()
+
+    def _load_authkeys_from_config(self):
+        """ Load authkey from the configuration file. """
         rbac_authkeys = self._Configs.get("rbac_authkeys", "*", {}, False, ignore_case=True)
         for authkey_id, authkey_raw in rbac_authkeys.items():
             authkey_data = data_unpickle(authkey_raw, encoder="msgpack_base64")
-            self.add_authkey(authkey_data, load_source='config')
+            self.add_authkey(authkey_data)
+
+    def _load_authkeys_into_memory(self, data):
+        """
+        Loads a new authkey by creating a new instance based on dictionary items.
+
+        :param data: A dictionary of items required to setup the authkey.
+        :type data: dict
+        :returns:
+        """
+        if "created_by" not in data:
+            raise YomboWarning("created_by is required.")
+        if "created_by_type" not in data:
+            raise YomboWarning("'created_by_type' is required to be one of: system, user, or module")
+        if "label" not in data:
+            raise YomboWarning("Label is required for a role.")
+        label = data["label"]
+        for auth_id, auth in self.authkeys.items():
+            if auth.label.lower() == label.lower():
+                raise YomboWarning("Already exists.")
+
+        if "auth_id" not in data:
+            data["auth_id"] = random_string(length=randint(MIN_AUTHKEYID_LENGTH, MAX_AUTHKEYID_LENGTH))
+        if "description" not in data:
+            data["description"] = ""
+        if "auth_data" not in data:
+            data["auth_data"] = {}
+        if "enabled" not in data:
+            data["enabled"] = True
+        if "item_permissions" not in data:
+            data["item_permissions"] = {}
+        if "roles" not in data:
+            data["roles"] = []
+        if "created_at" not in data:
+            data["created_at"] = time()
+        if "updated_at" not in data:
+            data["updated_at"] = time()
+        if "last_access_at" not in data:
+            data["last_access_at"] = time()
+        if "roles" not in data:
+            data["roles"] = []
+        if "scope" not in data:
+            data["scope"] = "local"
+
+        self.authkeys[data["auth_id"]] = AuthKey(self, data, source="database")
+        return self.authkeys[data["auth_id"]]
 
     def get(self, key):
         """
@@ -174,47 +226,6 @@ class AuthKeys(YomboLibrary):
             raise YomboWarning("Auth Key is no longer enabled.")
         return authkey
 
-    def add_authkey(self, data, load_source=None):
-        """
-        Creates a new authkey (or loads an existing one).
-
-        :return:
-        """
-        if "created_by" not in data:
-            raise YomboWarning("created_by is required.")
-        if "created_by_type" not in data:
-            raise YomboWarning("'created_by_type' is required to be one of: system, user, or module")
-        if "label" not in data:
-            raise YomboWarning("Label is required for a role.")
-        label = data["label"]
-        for auth_id, auth in self.authkeys.items():
-            if auth.label.lower() == label.lower():
-                raise YomboWarning("Already exists.")
-
-        if "auth_id" not in data:
-            data["auth_id"] = random_string(length=randint(MIN_AUTHKEYID_LENGTH, MAX_AUTHKEYID_LENGTH))
-        if "description" not in data:
-            data["description"] = ""
-        if "auth_data" not in data:
-            data["auth_data"] = {}
-        if "enabled" not in data:
-            data["enabled"] = True
-        if "item_permissions" not in data:
-            data["item_permissions"] = {}
-        if "roles" not in data:
-            data["roles"] = []
-        if "created_at" not in data:
-            data["created_at"] = time()
-        if "updated_at" not in data:
-            data["updated_at"] = time()
-        if "last_access_at" not in data:
-            data["last_access_at"] = time()
-        if "roles" not in data:
-            data["roles"] = []
-
-        self.authkeys[data["auth_id"]] = AuthKey(self, data, load_source=load_source)
-        return self.authkeys[data["auth_id"]]
-
     def delete(self, auth_id):
         """
         Deletes an Auth Key.
@@ -278,7 +289,7 @@ class AuthKeys(YomboLibrary):
             authkey.save()
 
 
-class AuthKey(AuthMixin, PermissionMixin, RolesMixin):
+class AuthKey(AuthMixin, PermissionMixin, RolesMixin, SyncToEverywhere):
     """
     A single auth key item.
     """
@@ -292,7 +303,16 @@ class AuthKey(AuthMixin, PermissionMixin, RolesMixin):
             return True
         return False
 
-    def __init__(self, parent, record, load_source=None):
+    @property
+    def _sync_fields(self):
+        return ["auth_data", "enabled", "accepted_at", "scope", "label", "description", "created_by", "created_by_type",
+                "created_at", "updated_at", "last_access_at", "item_permissions", "roles", "auth_id"]
+
+    def __init__(self, parent, record, source=None):
+        self._internal_label = "rbac_authkeys"  # Used by mixins
+        self._syncs_to_db = False
+        self._syncs_to_yombo = False
+        self._syncs_to_config = True
         super().__init__(parent, load_source="database")
 
         # Auth specific attributes
@@ -305,6 +325,7 @@ class AuthKey(AuthMixin, PermissionMixin, RolesMixin):
         self.description = ""
         self.auth_id = record["auth_id"]
         self.last_access_at = 1
+        self.expired_at = None
 
         if "roles" in record:
             roles = record["roles"]
@@ -316,9 +337,10 @@ class AuthKey(AuthMixin, PermissionMixin, RolesMixin):
                         logger.warn("Cannot find role for user, removing from user: {role}", role=role)
                         # Don't have to actually do anything, it won't be added, so it can't be saved. :-)
 
-        self.update_attributes(record, stay_dirty=(load_source == "config"))
+        self.update_attributes(record, source=source)
+        self.start_data_sync()
 
-    def update_attributes(self, record=None, stay_dirty=None):
+    def update_attributes(self, record, source=None):
         """
         Update various attributes
         
@@ -329,26 +351,18 @@ class AuthKey(AuthMixin, PermissionMixin, RolesMixin):
             return
         if "auth_data" in record:
             if isinstance(record["auth_data"], dict):
-                self.auth_data.update(record["auth_data"])
+                temp = self.auth_data.copy()
+                temp.update(record["auth_data"])
+                record["auth_data"] = temp
         if "enabled" in record:
-            self.enabled = coerce_value(record["enabled"], "bool")
-        if "label" in record:
-            self.label = record["label"]
-        if "description" in record:
-            self.description = record["description"]
-        if "created_by" in record:
-            self.created_by = record["created_by"]
-        if "created_by_type" in record:
-            self.created_by_type = record["created_by_type"]
-        if "created_at" in record:
-            self.created_at = record["created_at"]
-        if "updated_at" in record:
-            self.updated_at = record["updated_at"]
-        if "last_access_at" in record:
-            self.last_access_at = record["last_access_at"]
+            record["enabled"] = coerce_value(record["enabled"], "bool")
+        if "scope" in record:
+            if record["scope"] not in ("local", "cluster"):
+                raise YomboWarning(f"Auth key scope must be one of: local, cluster.  '{record['scope']}'"
+                                   " is not permitted.")
         if "item_permissions" in record:
-            if isinstance(record["item_permissions"], dict):
-                self.item_permissions = record["item_permissions"]
+            if isinstance(record["item_permissions"], dict) is False:
+                del record["item_permissions"]
         if "roles" in record:
             if isinstance(record["roles"], list):
                 for role_id in record["roles"]:
@@ -357,8 +371,7 @@ class AuthKey(AuthMixin, PermissionMixin, RolesMixin):
                     except KeyError:
                         logger.warn("Auth key {label} was unable to add role_id (don't exist)", label=self.label)
 
-        if stay_dirty is not True:
-            self.save()
+        super().update_attributes(record, source=source)
 
     def rotate(self):
         """
@@ -381,7 +394,13 @@ class AuthKey(AuthMixin, PermissionMixin, RolesMixin):
             return True
         return False
 
-    def save(self):
+    def expire(self):
+        """ Expire an auth key. """
+        self.enabled = False
+        self.expired_at = int(time())
+
+    def _do_sync_config(self):
+        print("auth key: do_sync_config")
         tosave = {
             "source": self.source,
             "label": self.label,
@@ -401,7 +420,6 @@ class AuthKey(AuthMixin, PermissionMixin, RolesMixin):
         self._Parent._Configs.set("rbac_authkeys", sha256_compact(self.auth_id),
                                   data_pickle(tosave, encoder="msgpack_base64", local=True),
                                   ignore_case=True)
-
 
     def __str__(self):
         return f"AuthKeys - {self.label}"

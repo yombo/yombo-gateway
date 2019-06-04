@@ -35,10 +35,10 @@ def add_devices_breadcrumb(webinterface, request, device_id, session):
     item_keys, permissions = webinterface._Users.get_access(session, "device", "view")
 
     for select_device_id, select_device in webinterface._Devices.sorted().items():
-        if select_device.enabled_status != 1 or select_device.device_id not in item_keys:
+        if select_device.status != 1 or select_device.device_id not in item_keys:
             continue
 
-        if select_device.gateway_id == webinterface.gateway_id():
+        if select_device.gateway_id == webinterface.gateway_id:
             label = select_device.area_label
         else:
             label = select_device.full_label
@@ -48,7 +48,7 @@ def add_devices_breadcrumb(webinterface, request, device_id, session):
         else:
             data = (label, f"/devices/{select_device_id}/details")
 
-        if select_device.gateway_id == webinterface.gateway_id():
+        if select_device.gateway_id == webinterface.gateway_id:
             local_devices.append(data)
         else:
             cluster_devices.append(data)
@@ -594,7 +594,7 @@ def route_devices(webapp):
             webinterface.add_breadcrumb(request, "/info", "Info")
             webinterface.add_breadcrumb(request, "/devices/delayed_commands", "Device Commands")
             return page.render(alerts=webinterface.get_alerts(),
-                               device_commands=webinterface._Devices.device_commands,
+                               device_commands=webinterface._DeviceCommands.device_commands,
                                )
 
         @webapp.route("/device_commands/<string:device_command_id>/details")
@@ -608,7 +608,7 @@ def route_devices(webapp):
             webinterface.add_breadcrumb(request, "/devices/device_commands", "Device Commands")
             webinterface.add_breadcrumb(request, "/devices/device_commands", "Request")
             try:
-                device_command = webinterface._Devices.device_commands[device_command_id]
+                device_command = webinterface._DeviceCommands.device_commands[device_command_id]
             except Exception as e:
                 webinterface.add_alert(f"Cannot find requested id. <br>Error details: {e}")
                 return webinterface.redirect(request, "/devices/device_commands")

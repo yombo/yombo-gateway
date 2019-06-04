@@ -12,7 +12,7 @@
     </div>
     <!-- /.col-lg-12 -->
 </div>
-{% if device.enabled_status == 0 %}
+{% if device.status == 0 %}
 <div class="row">
     <div class="col-lg-12">
         <div class="panel panel-default panel-red">
@@ -28,7 +28,7 @@
     </div>
     <!-- /.col-lg-12 -->
 </div>
-{% elif device.enabled_status == 2  %}
+{% elif device.status == 2  %}
 <div class="row">
     <div class="col-lg-12">
         <div class="panel panel-default panel-red">

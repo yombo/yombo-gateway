@@ -49,7 +49,7 @@ class Gateways(YomboLibrary, LibrarySearch):
 
     @property
     def local(self):
-        return self.gateways[self.gateway_id()]
+        return self.gateways[self.gateway_id]
 
     @local.setter
     def local(self, val):
@@ -57,7 +57,7 @@ class Gateways(YomboLibrary, LibrarySearch):
 
     @property
     def local_id(self):
-        return self.gateway_id()
+        return self.gateway_id
 
     @local.setter
     def local_id(self, val):
@@ -65,9 +65,9 @@ class Gateways(YomboLibrary, LibrarySearch):
 
     @property
     def master_id(self):
-        if self.master_gateway_id() is None:
+        if self.master_gateway_id is None:
             return self.local_id
-        return self.master_gateway_id()
+        return self.master_gateway_id
 
     @master_id.setter
     def master_id(self, val):
@@ -75,9 +75,9 @@ class Gateways(YomboLibrary, LibrarySearch):
 
     @property
     def master(self):
-        if self.master_gateway_id() is None:
-            return self.gateways[self.gateway_id()]
-        return self.gateways[self.master_gateway_id()]
+        if self.master_gateway_id is None:
+            return self.gateways[self.gateway_id]
+        return self.gateways[self.master_gateway_id]
 
     @master.setter
     def master(self, val):
@@ -195,9 +195,6 @@ class Gateways(YomboLibrary, LibrarySearch):
         """
         self.library_phase = 1
         self.gateway_status = yield self._SQLDict.get(self, "gateway_status")
-        self.gateway_id = self._Configs.gateway_id
-        self.is_master = self._Configs.is_master
-        self.master_gateway_id = self._Configs.master_gateway_id
 
         if self._Loader.operating_mode != "run":
             self._load_gateway_into_memory({
@@ -238,13 +235,10 @@ class Gateways(YomboLibrary, LibrarySearch):
         if self._Loader.operating_mode != "run":
             return
 
-    def _stop_(self, **kwargs):
-        """
-        Cleans up any pending deferreds.
-        """
-        if hasattr(self, "load_deferred"):
-            if self.load_deferred is not None and self.load_deferred.called is False:
-                self.load_deferred.callback(1)  # if we don't check for this, we can't stop!
+    def _unload_(self, **kwargs):
+        """Called during the last phase of shutdown. We'll save any pending changes."""
+        for gateway_id, gateway in self.gateways.items():
+            gateway.flush_sync()
 
     @inlineCallbacks
     def _load_gateways_from_database(self):
@@ -257,9 +251,9 @@ class Gateways(YomboLibrary, LibrarySearch):
         """
         gateways = yield self._LocalDB.get_gateways()
         for a_gateway in gateways:
-            self._load_gateway_into_memory(a_gateway)
+            self._load_gateway_into_memory(a_gateway, source="database")
 
-    def _load_gateway_into_memory(self, gateway, test_gateway=False):
+    def _load_gateway_into_memory(self, gateway, source=None):
         """
         Add a new gateways to memory or update an existing gateways.
 
@@ -289,7 +283,7 @@ class Gateways(YomboLibrary, LibrarySearch):
                               )
         except Exception as e:
             pass
-        self.gateways[gateway_id] = Gateway(self, gateway)  # Create a new gateway in memory
+        self.gateways[gateway_id] = Gateway(self, gateway, source=source)  # Create a new gateway in memory
         try:
             global_invoke_all("_gateway_after_load_",
                               called_by=self,
@@ -303,7 +297,7 @@ class Gateways(YomboLibrary, LibrarySearch):
                 current_version=VERSION,
                 details="Use the 'local' property instead.")
     def get_local(self):
-        return self.gateways[self.gateway_id()]
+        return self.gateways[self.gateway_id]
 
     @deprecated(deprecated_in="0.21.0", removed_in="0.25.0",
                 current_version=VERSION,
@@ -313,7 +307,7 @@ class Gateways(YomboLibrary, LibrarySearch):
         For future...
         :return:
         """
-        return self.gateway_id()
+        return self.gateway_id
 
     def get_gateways(self):
         """
@@ -322,7 +316,20 @@ class Gateways(YomboLibrary, LibrarySearch):
         """
         return self.gateways.copy()
 
+    def _configuration_set_(self, **kwargs):
+        """
+        Check for various configurations have changes so we can update ourselves too.
 
+        :param kwargs: section, option(key), value
+        :return:
+        """
+        section = kwargs["section"]
+        option = kwargs["option"]
+        value = kwargs["value"]
+
+        if section == "dns":
+            if option == "fqdn":
+                self.local.dns_name = value
 
     @inlineCallbacks
     def add_gateway(self, api_data, source=None, **kwargs):
@@ -334,7 +341,7 @@ class Gateways(YomboLibrary, LibrarySearch):
         :return:
         """
         if "gateway_id" not in api_data:
-            api_data["gateway_id"] = self.gateway_id()
+            api_data["gateway_id"] = self.gateway_id
 
         if api_data["machine_label"].lower() == "cluster":
             return {

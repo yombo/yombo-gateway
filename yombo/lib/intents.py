@@ -396,9 +396,9 @@ class Intents(YomboLibrary):
         response = intent_request.response()
 
         if not speech_parts:  # No attributes changed
-            speech = f"Turned {request_item.human_status.lower()} {request_item.full_label.lower()}"
+            speech = f"Turned {request_item.human_state.lower()} {request_item.full_label.lower()}"
         else:
-            parts = [f"Changed {request_item.human_status} to"]
+            parts = [f"Changed {request_item.human_state} to"]
             for index, part in enumerate(speech_parts):
                 if index == 0:
                     parts.append(" {}".format(part))

@@ -8,6 +8,9 @@ values. Can not store more than max_len elements - the oldest will be deleted.
 
     .. code-block:: python
 
+       from yombo.ext.expiringdict import ExpiringDict
+
+
        some_values = ExpiringDict(max_len=100, max_age_seconds=10)
 
        # The values stored in the following way:
@@ -26,11 +29,7 @@ NOTE: iteration over dict and also keys() do not remove expired values!
 from time import time
 from threading import RLock
 
-try:
-    from collections import OrderedDict
-except ImportError:
-    # Python < 2.7
-    from ordereddict import OrderedDict
+from collections import OrderedDict
 
 
 class ExpiringDict(OrderedDict):

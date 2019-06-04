@@ -187,7 +187,7 @@
                 <label> Add a device: </label><br>
                 <select name="item" id="device_id" class="selectpicker" data-size="10" data-live-search="true"  title="Select device to add.">
                 {%- for device_id, device in _devices.sorted().items()
-                    if device.enabled_status == 1%}
+                    if device.status == 1%}
                   <option value="{{device.device_id}}" data-subtext="{{device.description|hide_none(default='No device description')|truncate(70)}}">{{device.full_label}}</option>
                 {%- endfor %}
                 </select>

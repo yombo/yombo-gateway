@@ -60,9 +60,9 @@ class Camera(Device):
         # self.MACHINE_STATUS_EXTRA_FIELDS["mode"] = ["idle", "streaming", "recording"]
 
     def toggle(self):
-        if self.status_history[0].machine_status == SEVALUE_IDLE:
+        if self.status_history[0].machine_state == SEVALUE_IDLE:
             return self.command(COMMAND_RECORD)
-        elif self.status_history[0].machine_status == SEVALUE_RECORDING:
+        elif self.status_history[0].machine_state == SEVALUE_RECORDING:
             return self.command(COMMAND_STOP)
 
     def turn_on(self, **kwargs):

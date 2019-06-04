@@ -146,7 +146,6 @@ class Users(YomboLibrary, LibrarySearch):
     def _init_(self, **kwargs):
         self.roles: dict = {}
         self.users: dict = {}
-        self.gateway_id = self._Configs.get("core", "gwid", "local", False)
         self.owner_id = self._Configs.get("core", "owner_id", None, False)
         self.system_seed = self._Configs.get("core", "rand_seed")
 
@@ -491,7 +490,7 @@ class Users(YomboLibrary, LibrarySearch):
             platform_label_attr = "machine_label"
         elif platform == AUTH_PLATFORM_CALLLATER:
             platform_actions = self.auth_platforms[AUTH_PLATFORM_CALLLATER]["actions"]
-            platform_items = self._Calllater.calllater
+            platform_items = self._CallLater.calllater
             platform_label_attr = "description"
         elif platform == AUTH_PLATFORM_DEVICE:
             platform_actions = self.auth_platforms[AUTH_PLATFORM_DEVICE]["actions"]
@@ -499,7 +498,7 @@ class Users(YomboLibrary, LibrarySearch):
             platform_label_attr = "machine_label"
         elif platform == AUTH_PLATFORM_DEVICE_COMMAND:
             platform_actions = self.auth_platforms[AUTH_PLATFORM_DEVICE_COMMAND]["actions"]
-            platform_items = self._Devices.device_commands
+            platform_items = self._DeviceCommands.device_commands
             platform_label_attr = "machine_label"
         elif platform == AUTH_PLATFORM_EVENTS:
             platform_actions = self.auth_platforms[AUTH_PLATFORM_EVENTS]["actions"]
@@ -592,7 +591,7 @@ class Users(YomboLibrary, LibrarySearch):
             platform_item_label = platform_item.machine_label
             platform_label_attr = "machine_label"
         elif platform == AUTH_PLATFORM_CALLLATER:
-            platform_item = self._Calllater.get(item)
+            platform_item = self._CallLater.get(item)
             platform_item_id = item
             platform_item_label = platform_item.description
             platform_label_attr = "description"
@@ -607,7 +606,7 @@ class Users(YomboLibrary, LibrarySearch):
             platform_item_label = platform_item.machine_label
             platform_label_attr = "machine_label"
         elif platform == AUTH_PLATFORM_DEVICE_COMMAND:
-            platform_item = self._Devices.device_commands[item]
+            platform_item = self._DeviceCommands.device_commands[item]
             platform_item_id = platform_item.command_id
             platform_item_label = platform_item.label
             platform_label_attr = "label"

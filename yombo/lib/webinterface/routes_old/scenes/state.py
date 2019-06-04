@@ -39,7 +39,7 @@ def route_scenes_state(webapp):
                 "name": webinterface.request_get_default(request, "name", ""),
                 "value": webinterface.request_get_default(request, "value", ""),
                 "value_type": webinterface.request_get_default(request, "value_type", ""),
-                "gateway_id": webinterface.request_get_default(request, "gateway_id", webinterface.gateway_id()),
+                "gateway_id": webinterface.request_get_default(request, "gateway_id", webinterface.gateway_id),
                 "weight": int(webinterface.request_get_default(
                     request, "weight", (len(webinterface._Scenes.get_action_items(scene_id)) + 1) * 10)),
             }
@@ -63,7 +63,7 @@ def route_scenes_state(webapp):
                 "name": webinterface.request_get_default(request, "name", ""),
                 "value": webinterface.request_get_default(request, "value", ""),
                 "value_type": webinterface.request_get_default(request, "value_type", ""),
-                "gateway_id": webinterface.request_get_default(request, "gateway_id", webinterface.gateway_id()),
+                "gateway_id": webinterface.request_get_default(request, "gateway_id", webinterface.gateway_id),
                 "weight": int(webinterface.request_get_default(
                     request, "weight", (len(webinterface._Scenes.get_action_items(scene_id)) + 1) * 10)),
             }
@@ -166,7 +166,7 @@ def route_scenes_state(webapp):
                 "name": webinterface.request_get_default(request, "name", ""),
                 "value": webinterface.request_get_default(request, "value", ""),
                 "value_type": webinterface.request_get_default(request, "value_type", ""),
-                "gateway_id": webinterface.request_get_default(request, "gateway_id", webinterface.gateway_id()),
+                "gateway_id": webinterface.request_get_default(request, "gateway_id", webinterface.gateway_id),
                 "weight": int(webinterface.request_get_default(
                     request, "weight", (len(webinterface._Scenes.get_action_items(scene_id)) + 1) * 10)),
             }

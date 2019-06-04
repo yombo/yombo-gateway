@@ -83,14 +83,11 @@ class MQTT(YomboLibrary):
         self.server_enabled = self._Configs.get("mqtt", "server_enabled", True)
         self.server_max_connections = self._Configs.get("mqtt", "server_max_connections", 1000)
         self.server_timeout_disconnect_delay = self._Configs.get("mqtt", "server_timeout_disconnect_delay", 2)
-        self.gateway_id = self._Configs.gateway_id
-        self.is_master = self._Configs.is_master
-        self.master_gateway_id = self._Configs.master_gateway_id
 
         self.mqtt_server = None
         self.mqtt_local_client = None
 
-        if self.is_master():
+        if self.is_master:
             self.server_listen_port = self._Configs.get("mqtt", "server_listen_port", 1883)
             self.server_listen_port_ss_ssl = self._Configs.get("mqtt", "server_listen_port_ss_ssl", 1884)
             self.server_listen_port_le_ssl = self._Configs.get("mqtt", "server_listen_port_le_ssl", 8883)
@@ -117,7 +114,7 @@ class MQTT(YomboLibrary):
             logger.info("Embedded MQTT Disabled.")
             return
 
-        if self.is_master() is not True:
+        if self.is_master is not True:
             logger.info("Not managing MQTT broker, we are not the master!")
             if self.mosquitto_enabled is True:
                 logger.info("Disabling mosquitto MQTT broker.")
@@ -365,7 +362,7 @@ class MQTT(YomboLibrary):
             return
 
         if client_id is None:
-            client_id = f"Yombo-{self.gateway_id()}-unknown-{random_string(length=10)}"
+            client_id = f"Yombo-{self.gateway_id}-unknown-{random_string(length=10)}"
         if client_id in self.client_connections:
             logger.warn(f"client_id must be unique. Got: {client_id}")
             raise YomboWarning (f"client_id must be unique. Got: {client_id}", "MQTT::new", "mqtt")
@@ -428,7 +425,7 @@ class MQTTClient(object):
         :param password: Password to use for connection. Default is the local yombo user password.
         :param password2: Second password to try to use for connection. Default is the local yombo user password.
         :param ssl: Use SSL. Default is False. It's recommended to use SSL when connecting to a remote server.
-        :param mqtt_incoming_callback: Callback to send incomming messages to.
+        :param mqtt_incoming_callback: Callback to send incoming messages to.
         :param mqtt_connected_callback: Callback to a method when the MQTT connection is up. Used for notifications or status updates.
         :param mqtt_connection_lost_callback: Callback to a method when the MQTT connection goes down.
         :param will_topic: Last will and testimate topic. Default is None.

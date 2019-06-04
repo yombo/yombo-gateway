@@ -247,7 +247,7 @@ class Light(Device):
     def turn_off(self, **kwargs):
         return self.command(COMMAND_OFF, **kwargs)
 
-    def generate_human_status(self, machine_status, machine_status_extra):
+    def generate_human_state(self, machine_status, machine_status_extra):
         return str(self.calc_percent(machine_status, machine_status_extra)) + "%"
 
     def generate_human_message(self, machine_status, machine_status_extra):

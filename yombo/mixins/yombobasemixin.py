@@ -23,3 +23,4 @@ class YomboBaseMixin(object):
 
     def __init__(self, parent, *args, **kwargs):
         self._Parent = parent
+        super().__init__()

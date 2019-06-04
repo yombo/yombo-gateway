@@ -20,16 +20,19 @@ Used by the Yombo Gateway framework to set up it's libraries.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/core/library.html>`_
 """
+# Import Yombo libraries
 from yombo.core.entity import Entity
+from yombo.mixins.magicattributesmixin import MagicAttributesMixin
 
 
-class YomboLibrary(Entity):
+class YomboLibrary(Entity, MagicAttributesMixin):
     """
     Define a basic class that setup basic library class variables.
+
+    MagicAttributesMixin.__init__ will be called from the loader class.
     """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
         self._Entity_type = "yombo_library"
         self._Name = self.__class__.__name__
         self._FullName = f"yombo.gateway.lib.{self.__class__.__name__}"

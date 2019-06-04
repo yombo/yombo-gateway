@@ -131,7 +131,7 @@ class Climate(Device):
     def target_temperature_step(self):
         """Return the supported step of target temperature."""
         if len(self.status_history) > 0:
-            status_current = self.machine_status_extra[0]
+            status_current = self.machine_state_extra[0]
             if "target_temp_step" in status_current:
                 return status_current[FEATURE_TARGET_TEMPERATURE_STEP]
         return None
@@ -140,7 +140,7 @@ class Climate(Device):
     def target_temperature_high(self):
         """Return the highbound target temperature we try to reach."""
         if len(self.status_history) > 0:
-            status_current = self.machine_status_extra[0]
+            status_current = self.machine_state_extra[0]
             if "target_temp_high" in status_current:
                 return status_current[FEATURE_TARGET_TEMPERATURE_HIGH]
         return None
@@ -149,7 +149,7 @@ class Climate(Device):
     def target_temperature_low(self):
         """Return the lowbound target temperature we try to reach."""
         if len(self.status_history) > 0:
-            status_current = self.machine_status_extra[0]
+            status_current = self.machine_state_extra[0]
             if "target_temp_low" in status_current:
                 return status_current[FEATURE_TARGET_TEMPERATURE_LOW]
         return None
@@ -158,7 +158,7 @@ class Climate(Device):
     def is_away_mode_on(self):
         """Return true if away mode is on."""
         if len(self.status_history) > 0:
-            status_current = self.machine_status_extra[0]
+            status_current = self.machine_state_extra[0]
             if FEATURE_HOLD_MODE in status_current:
                 return status_current[FEATURE_HOLD_MODE] == MODE_AWAY
         return None
@@ -167,7 +167,7 @@ class Climate(Device):
     def current_hold_mode(self):
         """Return the current hold mode, e.g., home, away, temp."""
         if len(self.status_history) > 0:
-            status_current = self.machine_status_extra[0]
+            status_current = self.machine_state_extra[0]
             if FEATURE_HOLD_MODE in status_current:
                 return status_current[FEATURE_HOLD_MODE]
         return None

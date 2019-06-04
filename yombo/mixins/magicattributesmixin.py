@@ -18,49 +18,80 @@ Mixin class to add various Yombo library references.
 class MagicAttributesMixin(object):
 
     def __init__(self, parent, *args, **kwargs):
-        self._AMQP = parent._Loader.loadedLibraries["amqp"]
-        self._AMQPYombo = parent._Loader.loadedLibraries["amqpyombo"]
-        self._Atoms = parent._Loader.loadedLibraries["atoms"]
-        self._AuthKeys = parent._Loader.loadedLibraries["authkeys"]
-        self._Automation = parent._Loader.loadedLibraries["automation"]
-        self._Cache = parent._Loader.loadedLibraries["cache"]
-        self._Calllater = parent._Loader.loadedLibraries["calllater"]
-        self._Commands = parent._Loader.loadedLibraries["commands"]
-        self._Configs = parent._Loader.loadedLibraries["configuration"]
-        self._CronTab = parent._Loader.loadedLibraries["crontab"]
-        self._Devices = parent._Loader.loadedLibraries["devices"]  # Basically, all devices
-        self._DeviceTypes = parent._Loader.loadedLibraries["devicetypes"]  # All device types.
-        self._Discovery = parent._Loader.loadedLibraries["discovery"]
-        self._Events = parent._Loader.loadedLibraries["events"]
-        self._Gateways = parent._Loader.loadedLibraries["gateways"]
-        self._GatewayComs = parent._Loader.loadedLibraries["gateways_communications"]
-        self._GPG = parent._Loader.loadedLibraries["gpg"]
-        self._InputTypes = parent._Loader.loadedLibraries["inputtypes"]  # Input Types
-        self._Intents = parent._Loader.loadedLibraries["intents"]
-        self._Hash = parent._Loader.loadedLibraries["hash"]  # Input Types
-        self._HashIDS = parent._Loader.loadedLibraries["hashids"]
-        self._Libraries = parent._Loader.loadedLibraries
-        self._Localize = parent._Loader.loadedLibraries["localize"]
-        self._LocalDB = parent._Loader.loadedLibraries["localdb"]  # Provided for testing
-        self._Locations = parent._Loader.loadedLibraries["locations"]  # Basically, all devices
+        libraries = parent._Loader.loadedLibraries
+        self._AMQP = libraries["amqp"]
+        self._AMQPYombo = libraries["amqpyombo"]
+        self._Atoms = libraries["atoms"]
+        self._AuthKeys = libraries["authkeys"]
+        self._Automation = libraries["automation"]
+        self._Cache = libraries["cache"]
+        self._Calllater = libraries["calllater"]
+        self._Commands = libraries["commands"]
+        self._Configs = libraries["configuration"]
+        self._CronTab = libraries["crontab"]
+        self._Devices = libraries["devices"]  # Basically, all devices
+        self._DeviceCommands = libraries["devicecommands"]  # Basically, all devices
+        self._DeviceCommandInputs = libraries["devicecommandinputs"]  # Basically, all devices
+        self._DeviceTypeCommands = libraries["devicetypes"]  # All device types.
+        self._DeviceTypes = libraries["devicetypes"]  # All device types.
+        self._Discovery = libraries["discovery"]
+        self._DownloadModules = libraries["downloadmodules"]
+        self._Events = libraries["events"]
+        self._Gateways = libraries["gateways"]
+        self._GatewayComs = libraries["gateways_communications"]
+        self._GPG = libraries["gpg"]
+        self._InputTypes = libraries["inputtypes"]  # Input Types
+        self._Intents = libraries["intents"]
+        self._Hash = libraries["hash"]  # Input Types
+        self._HashIDS = libraries["hashids"]
+        self._Libraries = parent._Loader
+        self._Loader = libraries["loader"]
+        self._Localize = libraries["localize"]
+        self._LocalDB = libraries["localdb"]  # Provided for testing
+        self._Locations = libraries["locations"]  # Basically, all devices
         self._Modules = parent._Loader._moduleLibrary
-        self._MQTT = parent._Loader.loadedLibraries["mqtt"]
-        self._Nodes = parent._Loader.loadedLibraries["nodes"]
-        self._Notifications = parent._Loader.loadedLibraries["notifications"]
-        self._Queue = parent._Loader.loadedLibraries["queue"]
-        self._Requests = parent._Loader.loadedLibraries["requests"]
-        self._Scenes = parent._Loader.loadedLibraries["scenes"]
-        self._SQLDict = parent._Loader.loadedLibraries["sqldict"]
-        self._SSLCerts = parent._Loader.loadedLibraries["sslcerts"]
-        self._States = parent._Loader.loadedLibraries["states"]
-        self._Statistics = parent._Loader.loadedLibraries["statistics"]
-        self._Storage = parent._Loader.loadedLibraries["storage"]
-        self._Tasks = parent._Loader.loadedLibraries["tasks"]
-        self._Template = parent._Loader.loadedLibraries["template"]
-        self._Times = parent._Loader.loadedLibraries["times"]
-        self._Users = parent._Loader.loadedLibraries["users"]
-        self._YomboAPI = parent._Loader.loadedLibraries["yomboapi"]
-        self._Variables = parent._Loader.loadedLibraries["variables"]
-        self._Validate = parent._Loader.loadedLibraries["validate"]
-        self._WebInterface = parent._Loader.loadedLibraries["webinterface"]
-        self._WebSessions = parent._Loader.loadedLibraries["websessions"]
+        self._ModuleDeviceTypes = libraries["moduledevicetypes"]
+        self._MQTT = libraries["mqtt"]
+        self._Nodes = libraries["nodes"]
+        self._Notifications = libraries["notifications"]
+        self._Queue = libraries["queue"]
+        self._Requests = libraries["requests"]
+        self._Scenes = libraries["scenes"]
+        self._SQLDict = libraries["sqldict"]
+        self._SSLCerts = libraries["sslcerts"]
+        self._States = libraries["states"]
+        self._Statistics = libraries["statistics"]
+        self._Storage = libraries["storage"]
+        self._Tasks = libraries["tasks"]
+        self._Template = libraries["template"]
+        self._Times = libraries["times"]
+        self._Users = libraries["users"]
+        self._YomboAPI = libraries["yomboapi"]
+        self._Variables = libraries["variables"]
+        self._Validate = libraries["validate"]
+        self._WebInterface = libraries["webinterface"]
+        self._WebSessions = libraries["websessions"]
+
+    @property
+    def gateway_id(self):
+        return self._Loader.gateway_id
+
+    @gateway_id.setter
+    def gateway_id(self, val):
+        return
+
+    @property
+    def is_master(self):
+        return self._Loader.is_master
+
+    @is_master.setter
+    def is_master(self, val):
+        return
+
+    @property
+    def master_gateway_id(self):
+        return self._Loader.master_gateway_id
+
+    @master_gateway_id.setter
+    def master_gateway_id(self, val):
+        return

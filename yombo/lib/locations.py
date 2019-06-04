@@ -26,6 +26,7 @@ from yombo.core.library import YomboLibrary
 from yombo.core.library_search import LibrarySearch
 from yombo.core.log import get_logger
 from yombo.mixins.yombobasemixin import YomboBaseMixin
+from yombo.mixins.synctoeverywhere import SyncToEverywhere
 from yombo.utils import global_invoke_all
 
 logger = get_logger("library.locations")
@@ -68,7 +69,7 @@ class Locations(YomboLibrary, LibrarySearch):
 
         or:
 
-            >>> if "some_location_name" in self.Locations:
+            >>> if "some_location_name" in self._Locations:
 
         :raises YomboWarning: Raised when request is malformed.
         :raises KeyError: Raised when request is not found.
@@ -87,12 +88,12 @@ class Locations(YomboLibrary, LibrarySearch):
         """
         Attempts to find the location requested using a couple of methods.
 
-            >>> location = self.Locations["0kas02j1zss349k1"]  # by id
-            >>> location = self.Locations["area:0kas02j1zss349k1"]  # include location type
+            >>> location = self._Locations["0kas02j1zss349k1"]  # by id
+            >>> location = self._Locations["area:0kas02j1zss349k1"]  # include location type
 
         or:
 
-            >>> location = self.Locations["alpnum"]  #by name
+            >>> location = self._Locations["alpnum"]  #by name
 
         :raises YomboWarning: Raised when request is malformed.
         :raises KeyError: Raised when request is not found.
@@ -486,7 +487,6 @@ class Locations(YomboLibrary, LibrarySearch):
 
         if location_id in self.locations:
             self.locations[location_id].update_attributes(data)
-            self.locations[location_id].save_to_db()
 
         global_invoke_all("_locations_updated_",
                           called_by=self,
@@ -551,7 +551,7 @@ class Locations(YomboLibrary, LibrarySearch):
         }
 
 
-class Location(YomboBaseMixin):
+class Location(YomboBaseMixin, SyncToEverywhere):
     """
     A class to manage a single location.
 
@@ -569,9 +569,8 @@ class Location(YomboBaseMixin):
         :param location: An location with all required items to create the class.
         :type location: dict
         """
+        self._internal_label = "locations"  # Used by mixins
         super().__init__(parent)
-
-        # logger.debug("Location info: {location}", location=location)
 
         #: str: ID for the location.
         self.location_id = location["id"]
@@ -584,34 +583,24 @@ class Location(YomboBaseMixin):
         self.description = None
         self.updated_at = None
         self.created_at = None
-        self.update_attributes(location)
+        self.update_attributes(location, source="database")
+        self.start_data_sync()
 
-    def update_attributes(self, location):
+    def update_attributes(self, incoming, source=None):
         """
-        Sets various values from a location dictionary. This can be called when either new or
+        Sets various values from an incoming dictionary. This can be called when either new or
         when updating.
 
-        :param location:
+        :param incoming:
         :return:
         """
-        if "location_type" in location:
-            if location["location_type"].lower() not in ("area", "location", "none"):
+        if "incoming_type" in incoming:
+            if incoming["incoming_type"].lower() not in ("area", "incoming", "none"):
                 raise YomboWarning(
-                    f"location_type must be one of: area, location.  Received: {location['location_type']}")
-            self.location_type = location["location_type"].lower()
-        if "machine_label" in location:
-            self.machine_label = location["machine_label"]
-        if "label" in location:
-            self.label = location["label"]
-        if "description" in location:
-            self.description = location["description"]
-        if "created_at" in location:
-            self.created_at = location["created_at"]
-        if "updated_at" in location:
-            self.updated_at = location["updated_at"]
+                    f"incoming_type must be one of: area, incoming.  Received: {incoming['incoming_type']}")
+            incoming["incoming_type"] = incoming["incoming_type"].lower()
 
-    def save_to_db(self):
-        self._Parent._LocalDB.update_locations(self)
+        super().update_attributes(incoming, source=source)
 
     def __str__(self):
         """

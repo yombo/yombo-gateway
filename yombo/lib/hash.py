@@ -26,6 +26,7 @@ from twisted.internet import reactor, threads
 # Import Yombo libraries
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
+from yombo.utils import sleep
 
 logger = get_logger("library.hash")
 
@@ -64,10 +65,10 @@ class Hash(YomboLibrary):
             logger.info("Calculating the size of the earth.")
             yield self.argon2_find_cost()
         else:
-            reactor.callLater(70, self.argon2_find_cost)
+            reactor.callLater(76, self.argon2_find_cost, slow=True)
 
     @inlineCallbacks
-    def argon2_find_cost(self):
+    def argon2_find_cost(self, slow=None):
         results = yield threads.deferToThread(self.argon2_find_cost_calculator)
         self.argon2_rounds = results[0]
         self.argon2_memory = results[1]
@@ -76,6 +77,9 @@ class Hash(YomboLibrary):
         self._Configs.set("hash", "argon2_memory", results[1])
         self._Configs.set("hash", "argon2_duration", results[2])
 
+        if slow is True:
+            yield sleep(16)
+
         results = yield threads.deferToThread(self.argon2_find_cost_calculator, max_time=MAX_DURATION/2)
         self.argon2_rounds_fast = results[0]
         self.argon2_memory_fast = results[1]
@@ -83,11 +87,6 @@ class Hash(YomboLibrary):
         self._Configs.set("hash", "argon2_rounds_fast", results[0])
         self._Configs.set("hash", "argon2_memory_fast", results[1])
         self._Configs.set("hash", "argon2_duration_fast", results[2])
-
-        # hash2 = yield self.hash("asdf")
-        # print("hash = %s" % hash2)
-        # hash2 = yield self.hash("asdf", fast=True)
-        # print("hash = %s" % hash2)
 
     def argon2_find_cost_calculator(self, max_time=None):
         """

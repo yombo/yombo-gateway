@@ -201,16 +201,18 @@ class InputTypes(YomboLibrary, LibrarySearch):
         """
         input_types = yield self._LocalDB.get_input_types()
         logger.debug("input_types: {input_types}", input_types=input_types)
+        # print(input_types)
         validators_loaded = []
 
         for input_type in input_types:
-            if input_type["machine_label"] in self.platforms:
-                self._load_input_type_into_memory(input_type, self.platforms[input_type["machine_label"]])
-                if input_type["machine_label"] not in validators_loaded:
-                    validators_loaded.append(input_type["machine_label"])
+            # print(f"input typoe: {input_type.machine_label}")
+            if input_type.machine_label in self.platforms:
+                self._load_input_type_into_memory(input_type.__dict__, self.platforms[input_type.machine_label])
+                if input_type.machine_label not in validators_loaded:
+                    validators_loaded.append(input_type.machine_label)
             else:
                 # print("111: %s" % input_type)
-                logger.warn("Input Type '{label}' doesn't have a validator.", label=input_type["machine_label"])
+                logger.warn("Input Type '{label}' doesn't have a validator.", label=input_type.machine_label)
                 self._load_input_type_into_memory(input_type, self.platforms["any"])
 
         # now create any input_types for validators where we don't have a DB item - rare

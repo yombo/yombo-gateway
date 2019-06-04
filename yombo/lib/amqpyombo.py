@@ -91,9 +91,6 @@ class AMQPYombo(YomboLibrary):
         self.request_configs = False
         self.controlHandler = AmqpControlHandler(self)
         self.systemHandler = AmqpSystemHandler(self)
-        self.gateway_id = self._Configs.gateway_id
-        self.is_master = self._Configs.is_master
-        self.master_gateway_id = self._Configs.master_gateway_id
 
         self.amqpyombo_options = {   # Stores data from sub-modules
             "connected": [],
@@ -292,8 +289,8 @@ class AMQPYombo(YomboLibrary):
             "external_mqtt_ws_ss": self._Configs.get("mqtt", "server_listen_port_websockets_ss_ssl"),
         }
         if full is True:
-            body["is_master"] = self.is_master()
-            body["master_gateway_id"] = self.master_gateway_id()
+            body["is_master"] = self.is_master
+            body["master_gateway_id"] = self.master_gateway_id
 
             # logger.info("sending local information: {body}", body=body)
 

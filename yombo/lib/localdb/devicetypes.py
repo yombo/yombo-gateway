@@ -16,17 +16,7 @@ logger = get_logger("library.localdb.devicetypes")
 class DB_DeviceTypes(object):
     @inlineCallbacks
     def get_device_types(self):
-        records = yield self.dbconfig.select("device_types")
-        return records
-
-    @inlineCallbacks
-    def get_module_device_types(self, module_id):
-        results = yield ModuleDeviceTypesView.find(where=["module_id = ?", module_id])
-        records = []
-        for item in results:
-            temp = clean_dict(item.__dict__)
-            del temp["errors"]
-            records.append(temp)
+        records = yield DeviceType.find(orderby="label ASC")
         return records
 
     @inlineCallbacks
@@ -35,26 +25,25 @@ class DB_DeviceTypes(object):
         return records
 
     @inlineCallbacks
+    def save_device_types(self, data):
+        """
+        Attempts to find the provided device_type in the database. If it's found, it's updated. Otherwise, a new
+        one is created.
+
+        :param data: A device_type instance.
+        :return:
+        """
+        device_type = yield DeviceType.find(data.device_type_id)
+        if device_type is None:  # If none is found, create a new one.
+            device_type = DeviceType()
+            device_type.id = data.device_type_id
+
+        for field in self.db_fields("device_types"):
+            setattr(device_type, field, getattr(data, field))
+
+        yield device_type.save()
+
+    @inlineCallbacks
     def get_addable_device_types(self):
         records = yield self.dbconfig.select("addable_device_types_view")
         return records
-
-    @inlineCallbacks
-    def get_device_type_commands(self, device_type_id):
-        """
-        Gets available variables for a given device_id.
-
-        Called by: library.Devices::_init_
-
-        :param variable_type:
-        :param foreign_id:
-        :return:
-        """
-        records = yield DeviceTypeCommand.find(
-            where=["device_type_id = ?", device_type_id])
-        commands = []
-        for record in records:
-            if record.command_id not in commands:
-                commands.append(record.command_id)
-
-        return commands

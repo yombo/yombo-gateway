@@ -146,7 +146,7 @@ def translate_int_value(value, fromMin, fromMax, toMin, toMax):
     we want to display this in percent to a human. This function would return 50:
     .. code-block:: python
 
-       human_status = translate_int_value(127.5, 0, 255, 0, 100)
+       human_state = translate_int_value(127.5, 0, 255, 0, 100)
 
     From: https://stackoverflow.com/questions/1969240/mapping-a-range-of-values-to-another
     :param value: The value to translate

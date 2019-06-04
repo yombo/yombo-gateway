@@ -167,7 +167,6 @@ class Scenes(YomboLibrary, object):
                 "note": " Advanced logic control",
             },
         }
-        self.gateway_id = self._Configs.gateway_id
 
     def _load_(self, **kwargs):
         """
@@ -180,7 +179,7 @@ class Scenes(YomboLibrary, object):
         except KeyError:
             self.scenes = {}
         # print(f"scenes._load_ got these scenes back from the node search: {self.scenes}")
-        gateway_id = self.gateway_id()
+        gateway_id = self.gateway_id
         # First, clean out other gateways....
         for scene_id in list(self.scenes.keys()):
             scene = self.scenes[scene_id]
@@ -395,7 +394,7 @@ class Scenes(YomboLibrary, object):
 
         if requested_scene is None:
             if gateway_id is None:
-                gateway_id = self.gateway_id()
+                gateway_id = self.gateway_id
             outgoing = {}
             for scene_id, scene in self.scenes.items():
                 if scene.data["config"]["gateway_id"] == gateway_id:
@@ -531,7 +530,7 @@ class Scenes(YomboLibrary, object):
                                              node_type="scene",
                                              data=data,
                                              data_content_type="json",
-                                             gateway_id=self.gateway_id(),
+                                             gateway_id=self.gateway_id,
                                              destination="gw",
                                              status=1)
         self.patch_scene(new_scene)
@@ -619,7 +618,7 @@ class Scenes(YomboLibrary, object):
                                              node_type="scene",
                                              data=new_data,
                                              data_content_type="json",
-                                             gateway_id=self.gateway_id(),
+                                             gateway_id=self.gateway_id,
                                              destination="gw",
                                              status=1)
         self.patch_scene(new_scene)

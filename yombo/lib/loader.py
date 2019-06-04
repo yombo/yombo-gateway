@@ -59,6 +59,7 @@ from yombo.core.exceptions import YomboCritical, YomboWarning, YomboHookStopProc
 from yombo.classes.fuzzysearch import FuzzySearch
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
+from yombo.mixins.magicattributesmixin import MagicAttributesMixin
 import yombo.utils
 
 logger = get_logger("library.loader")
@@ -90,11 +91,15 @@ HARD_LOAD["AMQP"] = {"operating_mode": "run"}
 HARD_LOAD["CronTab"] = {"operating_mode": "all"}
 HARD_LOAD["Times"] = {"operating_mode": "all"}
 HARD_LOAD["Commands"] = {"operating_mode": "all"}
+HARD_LOAD["DeviceCommandInputs"] = {"operating_mode": "all"}
+HARD_LOAD["DeviceTypeCommands"] = {"operating_mode": "all"}
 HARD_LOAD["DeviceTypes"] = {"operating_mode": "all"}
 HARD_LOAD["InputTypes"] = {"operating_mode": "all"}
 HARD_LOAD["Variables"] = {"operating_mode": "all"}
+HARD_LOAD["ModuleDeviceTypes"] = {"operating_mode": "all"}
 HARD_LOAD["Modules"] = {"operating_mode": "all"}
 HARD_LOAD["Devices"] = {"operating_mode": "all"}
+HARD_LOAD["DeviceCommands"] = {"operating_mode": "all"}
 HARD_LOAD["SystemDataHandler"] = {"operating_mode": "run"}
 HARD_LOAD["AMQPYombo"] = {"operating_mode": "run"}
 HARD_LOAD["Gateways"] = {"operating_mode": "all"}
@@ -129,6 +134,8 @@ HARD_UNLOAD["CronTab"] = {"operating_mode": "all"}
 HARD_UNLOAD["Times"] = {"operating_mode": "all"}
 HARD_UNLOAD["Commands"] = {"operating_mode": "all"}
 HARD_UNLOAD["DeviceTypes"] = {"operating_mode": "all"}
+HARD_UNLOAD["DeviceCommandInputs"] = {"operating_mode": "all"}
+HARD_UNLOAD["DeviceTypeCommands"] = {"operating_mode": "all"}
 HARD_UNLOAD["InputTypes"] = {"operating_mode": "all"}
 HARD_UNLOAD["Devices"] = {"operating_mode": "all"}
 HARD_UNLOAD["Locations"] = {"operating_mode": "all"}
@@ -139,6 +146,7 @@ HARD_UNLOAD["WebInterface"] = {"operating_mode": "all"}
 HARD_UNLOAD["AuthKeys"] = {"operating_mode": "all"}
 HARD_UNLOAD["WebSessions"] = {"operating_mode": "all"}
 HARD_UNLOAD["Devices"] = {"operating_mode": "all"}
+HARD_UNLOAD["DeviceCommands"] = {"operating_mode": "all"}
 HARD_UNLOAD["AMQPYombo"] = {"operating_mode": "run"}
 HARD_UNLOAD["Configuration"] = {"operating_mode": "all"}
 HARD_UNLOAD["Statistics"] = {"operating_mode": "all"}
@@ -178,7 +186,7 @@ RUN_PHASE = {
 }
 
 
-class Loader(YomboLibrary, object):
+class Loader(YomboLibrary, MagicAttributesMixin):
     """
     Responsible for loading libraries, and then delegating loading modules to
     the modules library.
@@ -187,6 +195,30 @@ class Loader(YomboLibrary, object):
     modules are unloaded, and then reloaded after configurations are done
     being downloaded.
     """
+    @property
+    def gateway_id(self):
+        return self._Configs.configs["core"]["gwid"]["value"]  # Shortcut to get the gateway_id directly
+
+    @gateway_id.setter
+    def gateway_id(self, val):
+        return
+
+    @property
+    def is_master(self):
+        return self._Configs.configs["core"]["is_master"]["value"]  # Shortcut to get the gateway_id directly
+
+    @is_master.setter
+    def is_master(self, val):
+        return
+
+    @property
+    def master_gateway_id(self):
+        return self._Configs.configs["core"]["master_gateway_id"]["value"]  # Shortcut to get the gateway_id directly
+
+    @master_gateway_id.setter
+    def master_gateway_id(self, val):
+        return
+
     @property
     def operating_mode(self):
         return self._operating_mode
@@ -213,6 +245,8 @@ class Loader(YomboLibrary, object):
 
     def __getitem__(self, component_requested):
         """
+        Look for a requested component, either a library or a module. This searches thru libraries first, then
+        modules.
         """
         logger.debug("looking for: {component_requested}", component_requested=component_requested)
         if component_requested in self.loadedComponents:
@@ -229,6 +263,7 @@ class Loader(YomboLibrary, object):
                                "101", "__getitem__", "loader")
 
     def __init__(self, testing=False, loop=None):
+        self._Loader = self  # needed for reference when for modules -> magic attributes mixin.
         self.startup_events_queue = []
         self._operating_mode = "system_init"
         self._run_phase = "system_init"
@@ -237,7 +272,6 @@ class Loader(YomboLibrary, object):
         self.event_loop = None
         self.force_python_module_upgrade = False
         YomboLibrary.__init__(self)
-
         self.requirements = {}  # Track which python modules are required
 
         self.loadedComponents = FuzzySearch({self._FullName.lower(): self}, .95)
@@ -246,7 +280,8 @@ class Loader(YomboLibrary, object):
         self._invoke_list_cache = {}  # Store a list of hooks that exist or not. A cache.
         self._operating_mode = None  # One of: first_run, config, run
         self.sigint = False  # will be set to true if SIGINT is received
-        self.hook_counts = OrderedDict()  # keep track of hook names, and how many times it's called.
+        self.hook_counts = {}  # keep track of hook names, and how many times it's called.
+
         reactor.addSystemEventTrigger("before", "shutdown", self.shutdown)
 
     def shutdown(self):
@@ -287,6 +322,7 @@ class Loader(YomboLibrary, object):
 
         yield self.import_libraries()  # import and init all libraries
         logger.info("Importing libraries, this can take a few moments.")
+
         self._Configs = self.loadedLibraries["configuration"]
 
         if self.sigint:
@@ -508,6 +544,12 @@ class Loader(YomboLibrary, object):
                 d.callback(1)
                 yield d
 
+        for name, config in HARD_LOAD.items():
+            component = name.lower()
+            library = self.loadedLibraries[component]
+            # self._log_loader("debug", name, "library", "_init_", "About to call MagicAttributesMixin._init_.")
+            MagicAttributesMixin.__init__(self, self)
+
         logger.debug("Calling init functions of libraries.")
         self._run_phase = "libraries_init"
         for name, config in HARD_LOAD.items():
@@ -524,12 +566,15 @@ class Loader(YomboLibrary, object):
             library._AuthKeys = self.loadedLibraries["authkeys"]
             library._Automation = self.loadedLibraries["automation"]
             library._Cache = self.loadedLibraries["cache"]
-            library._Calllater = self.loadedLibraries["calllater"]
+            library._CallLater = self.loadedLibraries["calllater"]
             library._Commands = self.loadedLibraries["commands"]
             library._Configs = self.loadedLibraries["configuration"]
             library._CronTab = self.loadedLibraries["crontab"]
             library._Events = self.loadedLibraries["events"]
             library._Devices = self.loadedLibraries["devices"]
+            library._DeviceCommands = self.loadedLibraries["devicecommands"]
+            library._DeviceCommandInputs = self.loadedLibraries["devicecommandinputs"]
+            library._DeviceTypeCommands = self.loadedLibraries["devicetypecommands"]
             library._DeviceTypes = self.loadedLibraries["devicetypes"]
             library._Discovery = self.loadedLibraries["discovery"]
             library._DownloadModules = self.loadedLibraries["downloadmodules"]
@@ -547,6 +592,7 @@ class Loader(YomboLibrary, object):
             library._LocalDB = self.loadedLibraries["localdb"]
             library._Locations = self.loadedLibraries["locations"]
             library._Modules = self._moduleLibrary
+            library._ModuleDeviceTypes = self.loadedLibraries["moduledevicetypes"]
             library._MQTT = self.loadedLibraries["mqtt"]
             library._Nodes = self.loadedLibraries["nodes"]
             library._Notifications = self.loadedLibraries["notifications"]
@@ -770,8 +816,8 @@ class Loader(YomboLibrary, object):
         try:
             # Instantiate the class
             logger.debug("Instantiate class: {pyclassname}", pyclassname=pyclassname)
-            moduleinst = klass()  # start the class, only libraries get the loader
             if componentType == "library":
+                moduleinst = klass()  # Start the library class
                 if componentName.lower() == "modules":
                     self._moduleLibrary = moduleinst
                 self.loadedComponents["yombo.gateway.lib." + str(componentName.lower())] = moduleinst
@@ -780,6 +826,7 @@ class Loader(YomboLibrary, object):
                 temp = componentName.split(".")
                 self.libraryNames[temp[-1]] = moduleinst
             else:
+                moduleinst = klass(self)  # Start the modules class, send the parent.
                 self.loadedComponents["yombo.gateway.modules." + str(componentName.lower())] = moduleinst
                 return moduleinst, componentName.lower()
 

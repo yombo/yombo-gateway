@@ -1,13 +1,13 @@
-.. index:: devices_device_status
+.. index:: devices_device_states
 
-.. _devices_device_status:
+.. _devices_device_states:
 
-.. currentmodule:: yombo.lib.devices.fan
+.. currentmodule:: yombo.lib.devices.device_states
 
 =================================================================
-Devices::Device Status (yombo.lib.devices._device_status)
+Devices::Device Status (yombo.lib.devices._device_states)
 =================================================================
-.. automodule:: yombo.lib.devices._device_status
+.. automodule:: yombo.lib.devices._device_states
    :members:
    :special-members:
    :private-members:

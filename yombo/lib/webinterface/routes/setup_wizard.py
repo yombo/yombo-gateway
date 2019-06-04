@@ -480,9 +480,9 @@ def route_setup_wizard(webapp):
                     authorization_header=auth_header)
             except YomboWarning as e:
                 response = e.meta
-                webinterface._Configs.set("dns", "dname", None)
-                webinterface._Configs.set("dns", "dns_domain", None)
-                webinterface._Configs.set("dns", "dns_domain_id", None)
+                webinterface._Configs.set("dns", "name", None)
+                webinterface._Configs.set("dns", "domain", None)
+                webinterface._Configs.set("dns", "domain_id", None)
                 webinterface._Configs.set("dns", "allow_change_at", 0)
                 webinterface._Configs.set("dns", "fqdn", None)
                 if response.response_code != 404:
@@ -494,9 +494,9 @@ def route_setup_wizard(webapp):
                     return webinterface.redirect(request, "/setup_wizard/dns")
             else:
                 dns_data = response.content["data"]["attributes"]
-                webinterface._Configs.set("dns", "dns_name", dns_data["name"])
-                webinterface._Configs.set("dns", "dns_domain", dns_data["domain"])
-                webinterface._Configs.set("dns", "dns_domain_id", dns_data["dns_domain_id"])
+                webinterface._Configs.set("dns", "name", dns_data["name"])
+                webinterface._Configs.set("dns", "domain", dns_data["domain"])
+                webinterface._Configs.set("dns", "domain_id", dns_data["dns_domain_id"])
                 webinterface._Configs.set("dns", "allow_change_at", dns_data["allow_change_at"])
                 webinterface._Configs.set("dns", "fqdn", f'{dns_data["name"]}.{dns_data["domain"]}')
 

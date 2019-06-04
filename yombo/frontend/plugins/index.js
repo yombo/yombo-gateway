@@ -24,6 +24,13 @@ import lang from 'element-ui/lib/locale/lang/en';
 import locale from 'element-ui/lib/locale';
 locale.use(lang);
 
+import VueTemperatureFilter from 'vue-temperature-filter';
+// Add Global Configuration
+Vue.use(VueTemperatureFilter, {
+  fromFahrenheit: true,
+  showText: true
+});
+
 import axios from 'axios'
 
 async function getEnv() {

@@ -8,7 +8,7 @@ from yombo.lib.webinterface.auth import require_auth
 from yombo.utils import unicode_to_bytes, random_string
 
 HOOK_NAME_TO_PATH = {
-    "_device_status_": {
+    "_device_state_": {
         "path": "device:",
         "allow_non_wildcard": True,
         "id_field": "device_id",
@@ -66,7 +66,7 @@ def hook_was_called(webinterface, hook_name, **kwargs):
     broadcast(webinterface, hook_name, kwargs["event"])
 
 def route_api_v1_stream(webapp, webinterface_local):
-    webinterface_local.register_hook("_device_status_", hook_was_called)
+    webinterface_local.register_hook("_device_state_", hook_was_called)
     webinterface_local.register_hook("_notification_add_", hook_was_called)
     webinterface_local.register_hook("_notification_delete_", hook_was_called)
     webinterface_local.register_hook("_notification_acked_", hook_was_called)

@@ -10,15 +10,15 @@
         <h1 class="page-header"><a class="success" href="/devices/index">
 </a> Device Information<br>
 {% if device.source == "database" %}
-    {% if device.enabled_status == 0 %}
+    {% if device.status == 0 %}
             <a class="btn btn-md btn-primary" href="/devices/{{device.device_id}}/edit">Edit Device</a>
             <a class="btn btn-md btn-success" href="/devices/{{device.device_id}}/enable">Enable Device</a>
             <a class="btn btn-md btn-danger" href="/devices/{{device.device_id}}/delete">Delete Device</a>
-    {% elif device.enabled_status == 1  %}
+    {% elif device.status == 1  %}
             <a class="btn btn-md btn-primary" href="/devices/{{device.device_id}}/edit">Edit Device</a>
             <a class="btn btn-md btn-warning" href="/devices/{{device.device_id}}/disable">Disable Device</a>
             <a class="btn btn-md btn-danger" href="/devices/{{device.device_id}}/delete">Delete Device</a>
-    {% elif device.enabled_status == 2  %}
+    {% elif device.status == 2  %}
             <a class="btn btn-md btn-danger" href="/devices/{{device.device_id}}/enable">Enable Device</a>
     {% endif %}
 {% endif %}
@@ -27,7 +27,7 @@
     </div>
     <!-- /.col-lg-12 -->
 </div>
-{% if device.enabled_status == 0 %}
+{% if device.status == 0 %}
 <div class="row">
     <div class="col-lg-12">
         <div class="panel panel-default panel-red">
@@ -43,7 +43,7 @@
     </div>
     <!-- /.col-lg-12 -->
 </div>
-{% elif device.enabled_status == 2  %}
+{% elif device.status == 2  %}
 <div class="row">
     <div class="col-lg-12">
         <div class="panel panel-default panel-red">
@@ -154,7 +154,7 @@
                             <label style="margin-top: 15px; margin-bottom: 0px">Description: </label><br>
                             {{ device.description }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Status:</label><br>
-                            {{ _(device.enabled_status|status_to_string) }}<br>
+                            {{ _(device.status|status_to_string) }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Pin Required // Pin Code: </label><br>
                             {{ device.pin_required|yes_no }} // {{ device.pin_code }} <br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Device Type: </label><br>
@@ -221,26 +221,26 @@
                             {% if device.status_history|length == 0 %} No status data available.
                             {% else %}
                             <label style="margin-top: 0px; margin-bottom: 0px">Human Message: </label><br>
-                            {{ device.status_all.human_message }}<br>
+                            {{ device.state_all.human_message }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Human Status: </label><br>
-                            {{ device.status_all.human_status }}<br>
+                            {{ device.state_all.human_state }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Current Energy Usage: </label><br>
-                            {{ device.status_all.energy_usage }} {% if device.energy_type == 'electric' %} watts {% endif %}<br>
+                            {{ device.state_all.energy_usage }} {% if device.energy_type == 'electric' %} watts {% endif %}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Machine: </label><br>
-                            {{ device.status_all.machine_status }}<br>
+                            {{ device.state_all.machine_status }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Extra status attributes: </label><br>
                             {%- for label, values in device.MACHINE_STATUS_EXTRA_FIELDS|dictsort %}
                             {% if device.MACHINE_STATUS_EXTRA_FIELDS[label] is none %}{% continue %}{% endif %}
                             <em>{{ label }}</em>:
-                            {%- if label in device.status_all.machine_status_extra %}
-                            {{device.status_all.machine_status_extra[label]}}
+                            {%- if label in device.state_all.machine_status_extra %}
+                            {{device.state_all.machine_status_extra[label]}}
                             {%- endif %}<br>
                             {%- endfor %}
                             <label style="margin-top: 15px; margin-bottom: 0px">Requested By: </label><br>
-                            <em>User ID:</em> {{ device.status_all.user_id }}<br>
-                            <em>User Type:</em> {{ device.status_all.auth_id }}<br>
+                            <em>User ID:</em> {{ device.state_all.user_id }}<br>
+                            <em>User Type:</em> {{ device.state_all.auth_id }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Reported By: </label><br>
-                            {{ device.status_all.reporting_source }}<br>
+                            {{ device.state_all.reporting_source }}<br>
                             {% endif %}
                         </div>
                     </div>
@@ -270,7 +270,7 @@
                                         <td> {{ history.set_at|epoch_to_string }}<br>{{history.set_at}}</td>
                                         <td> Auth ID: {{ history.auth_id }}</td>
                                         <td> Requesting: {{ history.requesting_source }} <br> Reporting: {{ history.reporting_source }}</td>
-                                        <td> {{ history.human_status }}</td>
+                                        <td> {{ history.human_state }}</td>
                                         <td> {{ history.energy_usage }}</td>
                                         <td> {{ history.machine_status }}</td>
                                         <td> {{ history.machine_status_extra }}</td>

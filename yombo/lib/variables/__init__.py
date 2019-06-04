@@ -4,7 +4,7 @@
 
 .. note::
 
-  * For library documentation, see: `Variables @ Library Documentation <https://yombo.net/docs/libraries/variables>`_
+  For library documentation, see: `Variables @ Library Documentation <https://yombo.net/docs/libraries/variables>`_
 
 
 A library to get variables in various formats. Also used to send updates to Yombo API.
@@ -16,11 +16,6 @@ A library to get variables in various formats. Also used to send updates to Yomb
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/variables.html>`_
 """
-# Import python libraries
-
-from functools import partial
-from time import time
-
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks
 
@@ -28,6 +23,11 @@ from twisted.internet.defer import inlineCallbacks
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
+from yombo.utils import global_invoke_all
+
+from .variable_data import  VariableData
+from .variable_fields import VariableField
+from .variable_groups import VariableGroup
 
 logger = get_logger("library.devices")
 
@@ -45,278 +45,241 @@ class Variables(YomboLibrary):
         """
         return "Yombo variables library"
 
+    @inlineCallbacks
     def _init_(self, **kwargs):
         """
         Setups up the basic framework. Nothing is loaded in here until the
         Load() stage.
         """
+        self.variable_data = {}
+        self.variable_fields = {}
+        self.variable_groups = {}
+        self._started = False
+
+        yield self._load_variable_data_from_database()
+        yield self._load_variable_fields_from_database()
+        yield self._load_variable_groups_from_database()
+
         self.load_deferred = None  # Prevents loader from moving on past _load_ until we are done.
 
-        self.gateway_id = self._Configs.get("core", "gwid", "local", False)
+    def _start_(self, **kwargs):
+        self._started = True
 
     @inlineCallbacks
-    def get_variable_data(self, variable_relation_type=None, variable_field_id=None, **kwargs):
+    def _load_variable_data_from_database(self):
         """
-        Gets available variable data for a given device_id or module_id. Any additional named arguments
-        will be used as key/value pairs in the where statement.
+        Loads variable data from database and sends them to
+        :py:meth:`_load_variable_data_into_memory <Variables._load_variable_data_into_memory>`
+
+        This can be triggered either on system startup or when new/updated variables have been saved to the
+        database and we need to refresh existing variables.
+        """
+        data = yield self._LocalDB.get_variable_data()
+        for item in data:
+            # print(f"load var: data: {item.__dict__}")
+            yield self._load_variable_data_into_memory(item.__dict__, source="database")
+
+    @inlineCallbacks
+    def _load_variable_data_into_memory(self, data, source=None):
+        """
+        Add a new variable data to memory or update an existing variable data.
+
+        :param data: A dictionary of items required to either setup a new variable data or update an existing one.
+        :type data: dict
+        :param source: Where the data is coming from.
+        :type source: string
+        :returns: Pointer to new / update variable data
+        """
+        var_data = self._generic_load_into_memory(self.variable_data, 'variable_data', VariableData, data, source)
+        yield var_data._init_()
+        return var_data
+
+    @inlineCallbacks
+    def _load_variable_fields_from_database(self):
+        """
+        Loads variable data from database and sends them to
+        :py:meth:`_load_variable_fields_into_memory <Variables._load_variable_fields_into_memory>`
+
+        This can be triggered either on system startup or when new/updated variables have been saved to the
+        database and we need to refresh existing variables.
+        """
+        data = yield self._LocalDB.get_variable_fields()
+        for item in data:
+            self._load_variable_fields_into_memory(item.__dict__, source="database")
+
+    def _load_variable_fields_into_memory(self, data, source=None):
+        """
+        Add a new variable field to memory or update an existing variable field.
+
+        :param data: A dictionary of items required to either setup a new variable field or update an existing one.
+        :type data: dict
+        :param source: Where the field is coming from.
+        :type source: string
+        :returns: Pointer to new / update variable field
+        """
+        return self._generic_load_into_memory(self.variable_fields, 'variable_field', VariableField, data, source)
+
+    @inlineCallbacks
+    def _load_variable_groups_from_database(self):
+        """
+        Loads variable data from database and sends them to
+        :py:meth:`_load_variable_groups_into_memory <Variables._load_variable_groups_into_memory>`
+
+        This can be triggered either on system startup or when new/updated variables have been saved to the
+        database and we need to refresh existing variables.
+        """
+        data = yield self._LocalDB.get_variable_groups()
+        for item in data:
+            # print(f"load var: group: {item.__dict__}")
+            self._load_variable_groups_into_memory(item.__dict__, source="database")
+
+    def _load_variable_groups_into_memory(self, data, source=None):
+        """
+        Add a new variable group to memory or update an existing variable group.
+
+        :param data: A dictionary of items required to either setup a new variable group or update an existing one.
+        :type data: dict
+        :param source: Where the field is coming from.
+        :type source: string
+        :returns: Pointer to new / update variable group
+        """
+        return self._generic_load_into_memory(self.variable_groups, 'variable_group', VariableGroup, data, source)
+
+    def _generic_load_into_memory(self, storage, hook_name, klass, incoming, source):
+        """
+        Loads data into memory using basic hook calls.
+
+        :param storage: Dictionary to store new data in.
+        :param hook_name: name of the hook to publish
+        :param klass: The class to use to store the data
+        :param incoming: Data to be saved
+        :return:
+        """
+        logger.debug("Generic storage, incoming data: {incoming}", incoming=incoming)
+        # print(f"{hook_name} : {incoming}")
+        storage_id = incoming["id"]
+        if storage_id not in storage:
+            if self._started is True:
+                global_invoke_all(f"_{hook_name}_before_load_",
+                                  called_by=self,
+                                  id=storage_id,
+                                  data=incoming,
+                                  )
+            storage[storage_id] = klass(self,
+                                        incoming,
+                                        source=source)
+            if self._started is True:
+                global_invoke_all(f"_{hook_name}_loaded_",
+                                  called_by=self,
+                                  id=storage_id,
+                                  data=storage[storage_id],
+                                  )
+
+        else:
+            if self._started is True:
+                global_invoke_all(f"_{hook_name}_before_update_",
+                                  called_by=self,
+                                  id=storage_id,
+                                  data=storage[storage_id],
+                                  )
+            storage[storage_id].update_attributes(incoming, source=source)
+            if self._started is True:
+                global_invoke_all(f"_{hook_name}_updated_",
+                                  called_by=self,
+                                  id=storage_id,
+                                  data=storage[storage_id],
+                                  )
+        if self._started is True:
+            global_invoke_all(f"_{hook_name}_imported_",
+                              called_by=self,
+                              id=storage_id,
+                              data=storage[storage_id],
+                              )
+        return storage[storage_id]
+
+    def data_by_id(self, variable_data_id):
+        """
+        Gets variable data by it's id.
+
+        :param variable_data_id:
+        :return:
+        """
+        if variable_data_id in self.variable_data:
+            return self.variable_data[variable_data_id]
+        raise KeyError(f"Variable data id not found: {variable_data_id}")
+
+    def data(self, variable_relation_type=None, variable_relation_id=None):
+        """
+        Gets available variable data for a given device_id or module_id.
 
         :param variable_relation_type: Either "module" or "device".
         :type variable_relation_type: str
-        :param variable_field_id: The id of the module or device to find.
-        :type variable_field_id: str
+        :param variable_relation_id: The id of the module or device to find.
+        :type variable_relation_id: str
         :return: Available variable data.
-        :rtype: list
+        :rtype: dict
         """
-        if variable_relation_type is not None:
-            kwargs["variable_relation_type"] = variable_relation_type
-        if variable_field_id is not None:
-            kwargs["variable_field_id"] = variable_field_id
-
-        results = yield self._LocalDB.get_variable_data(**kwargs)
+        results = {}
+        for item_id, item in self.variable_data.items():
+            if (variable_relation_type is None or item.variable_relation_type == variable_relation_type) and \
+                    (variable_relation_id is None or item.variable_relation_id == variable_relation_id):
+                results[item_id] = item
         return results
 
-    @inlineCallbacks
-    def get_variable_fields(self, group_id=None, **kwargs):
+    def field_by_id(self, variable_field_id):
         """
-        Gets available variable fields for a given group_id. Any additional named arguments
-        will be used as key/value pairs in the where statement.
+        Gets variable field by it's id.
+
+        :param variable_field_id:
+        :return:
+        """
+        if variable_field_id in self.variable_fields:
+            return self.variable_fields[variable_field_id]
+        raise KeyError(f"Variable field id not found: {variable_field_id}")
+
+    def field(self, group_id=None):
+        """
+        Gets available variable data for a given group_id.
 
         :param group_id: Field group_id to search for.
         :type group_id: str
         :return: Available variable fields.
-        :rtype: list
+        :rtype: dict
         """
-        if group_id is not None:
-            kwargs["group_id"] = group_id
-        results = yield self._LocalDB.get_variable_fields(**kwargs)
+        results = {}
+        for item_id, item in self.variable_fields.items():
+            if (group_id is None or item.group_id == group_id):
+                results[item_id] = item
         return results
 
-    @inlineCallbacks
-    def get_variable_fields_encrypted(self):
+    def group_by_id(self, variable_group_id):
         """
-        Get all field id's that should be encrypted.
+        Gets variable group by it's id.
 
-        :return: Field id's that have encryption set to suggested or always.
-        :rtype: list
+        :param variable_field_id:
+        :return:
         """
-        results = yield self._LocalDB.get_variable_fields_encrypted()
-        return results
+        if variable_group_id in self.variable_groups:
+            return self.variable_groups[variable_group_id]
+        raise KeyError(f"Variable group id not found: {variable_group_id}")
 
     @inlineCallbacks
-    def get_variable_groups(self, group_relation_type=None, group_relation_id=None, **kwargs):
+    def group(self, group_relation_type=None, group_relation_id=None):
         """
-        Gets available variable groups for a given module_id or device_type_id. Any additional named arguments
-        will be used as key/value pairs in the where statement.
+        Gets available variable data for a given group_relation_type or relation_id.
 
         :param group_relation_type: Either "module" or "device".
         :type group_relation_type: str
-        :param relation_id: The id of the module or device to find.
-        :type relation_id: str
+        :param group_relation_id: The id of the module or device to find.
+        :type group_relation_id: str
         :return: Available variable groups.
         :rtype: list
         """
-        if group_relation_type is not None:
-            kwargs["group_relation_type"] = group_relation_type
-        if group_relation_id is not None:
-            kwargs["group_relation_id"] = group_relation_id
-
-        results = yield self._LocalDB.get_variable_groups(**kwargs)
-        return results
-
-    @inlineCallbacks
-    def get_variable_fields_data(self, **kwargs):
-        """
-        Used to get the fields and data. Named arguments needs to be variable_field_id and variable_relation_type.
-        
-        This method returns a deferred.
-        
-        :param kwargs: 
-        :return: 
-        """
-        data = yield self._LocalDB.get_variable_fields_data(**kwargs)
-        # print("variables library: get_groups_fields: groups: %s" % groups)
-        return data
-
-    def get_variable_fields_data_callable(self, **kwargs):
-        """
-        Like get_variable_fields_data, but returns a callable. This callable can be used to get the latest
-        information. The callable is called, it will return a deferred.
-        
-        :param kwargs: 
-        :return: 
-        """
-        return partial(self.get_variable_fields_data, **kwargs)
-
-    @inlineCallbacks
-    def get_variable_groups_fields(self, group_relation_type=None, group_relation_id=None, variable_data=None):
-        """
-        Returns groups and fields for a given group_relation_id and group_relation_type.
-        
-        This method returns a deferred.
-        
-        :param group_relation_type: 
-        :param group_relation_id: 
-        :param variable_data: 
-        :return: 
-        """
-
-        # print("get group fields: %s %s" % (group_relation_type, group_relation_id))
-        groups = yield self._LocalDB.get_variable_groups_fields(group_relation_type=group_relation_type,
-                                                                group_relation_id=group_relation_id)
-        if variable_data is not None:
-            for group in groups:
-                fields = group["fields"]
-                for field in fields:
-                    if group["id"] in variable_data:
-                        if field["id"] in variable_data[group["id"]]:
-                            groups[group["id"]][field["id"]] = variable_data[group["id"]][field["id"]]
-        return groups
-
-    @inlineCallbacks
-    def get_variable_groups_fields_data(self, **kwargs):
-        """
-        Returns groups, fields, and data. Usually variable_field_id and variable_relation_type is submitted.
-        
-        This returns a deferred.
-
-        :param kwargs: 
-        :return: 
-        """
-        # print("variables library: get_variable_groups_fields_data: kwargs: %s" % kwargs)
-        groups = yield self._LocalDB.get_variable_groups_fields_data(**kwargs)
-        # print("variables library: get_variable_groups_fields_data: groups: %s" % groups)
-        return groups
-
-    def merge_variable_fields_data_data(self, fields, new_data_items):
-        """
-        Merge the results from get_variable_fields_data and a dictiionary of data times, usually
-        the response from a web post.
-        :param groups: 
-        :param data: 
-        :return: 
-        """
-        for field_name, field in fields:
-            if field_name in new_data_items:
-                new_data = new_data_items["field_name"]
-                # print("new_data: %s" % new_data)
-                if field["id"] in new_data:
-                    field["id"]["value"] = new_data[field["id"]]
-                else:
-                    field[field["id"]] = {
-                        "id": field["id"],
-                        "value": new_data[field["id"]],
-                    }
-
-                # for data in field["data"]:
-                #     if data["name"]
-
-            field["values"] = []
-            for data_id, data in field["data"].items():
-                field["values"].append(data["value"])
-
-    @inlineCallbacks
-    def merge_variable_groups_fields_data_data(self, groups, new_data_items, relation_type = None):
-        """
-        Merge the results from get_variable_groups_fields_data and a dictiionary of data times, usually
-        the response from a web post or get_variable_data.
-        :param groups: 
-        :param data: 
-        :return: 
-        """
-        # print("merge_variable_data. Groups: %s" % groups)
-        # print("merge_variable_data. new_data_items: %s" % new_data_items)
-        for group_name, group in groups.items():
-            for field_name, field in group["fields"].items():
-                # print("111 field %s" % field )
-                # print("111 field_name %s" % field )
-                found_field_id = None
-                found_field_key = None
-                if field_name in new_data_items:
-                    found_field_id = field["id"]
-                    found_field_key = field_name
-                elif field["id"] in new_data_items:
-                    found_field_id = field["id"]
-                    found_field_key = field["id"]
-                if found_field_id is not None:
-                    new_data_item = new_data_items[found_field_key]
-                    # print("222 new_data: %s" % new_data_item)
-                    # print("222 field["id"]: %s" % field["id"])
-                    for data_id, data in new_data_item.items():
-                        data_items = {
-                            "id": data_id,
-                            "relation_id": None,
-                            "relation_type": relation_type,
-                            "weight": 0,
-                            "created_at": time(),
-                            "updated_at": time(),
-                        }
-                        # print("zzzzz")
-                        if data is not None:
-                            data_items["value"] = yield self._GPG.decrypt(data)
-                            data_items["value_display"] = yield self._GPG.display_encrypted(data)
-                        else:
-                            data_items["value"] = None
-                            data_items["value_display"] = ""
-
-                        data_items["value_orig"] = data
-                        # print("zzzzz 10")
-                        groups[group_name]["fields"][field_name]["data"][data_id] = data_items
-                        # print("zzzzz 11")
-                        groups[group_name]["fields"][field_name]["values"].append(data_items["value"])
-                        # print("zzzzz 12")
-                        groups[group_name]["fields"][field_name]["values_display"].append(data_items["value_display"])
-                        # print("zzzzz 13")
-                        groups[group_name]["fields"][field_name]["values_orig"].append(data_items["value_orig"])
-
-                        # print("newdata: %s" % data_items)
-
-        # print("merge_variable_data. groups_done: %s" % groups)
-        return groups
-
-    @inlineCallbacks
-    def extract_variables_from_web_data(self, new_data_items, encrypt=None):
-        """
-        Extract values posted from webinterface pages into something that can be submitted to either
-        modules or devices to the Yombo API.
-        :param new_data_items: 
-        :return: 
-        """
-        if encrypt is None:
-            encrypt = True
-
-        if encrypt is True:
-            encrypt_fields = yield self.get_variable_fields_encrypted()
-        else:
-            encrypt_fields = []
-
-        # print("extract_variables_from_web_data: %s" % encrypt_fields)
-        results = new_data_items.copy()
-        # print("extract_variables_from_web_data1: %s" % new_data_items)
-
-        for field_id, data in results.items():
-            for data_id, value in data.items():
-                final_value = ""
-                if isinstance(value, dict):
-                    # print("processing from dict..")
-                    if value["input"] == "-----ENCRYPTED DATA-----":
-                        # print("encry: %s" % value["orig"].startswith("-----BEGIN PGP MESSAGE-----"))
-                        # print("encry: %s" % value["orig"])
-                        if value["orig"].startswith("-----BEGIN PGP MESSAGE-----") is False:
-                            raise YomboWarning("Invalid variable data.")
-                        else:
-                            # print("final_value: value["orig"]")
-                            final_value = value["orig"]
-                    else:
-                        # print("final_value: value["input"]")
-                        final_value = value["input"]
-                else:
-                    # print("processing else")
-                    final_value = value
-                # print("final_value: %s" % final_value)
-                if field_id in encrypt_fields:
-                    final_value = yield self._GPG.encrypt(final_value)
-                results[field_id][data_id] = final_value
-        # print("extract_variables_from_web_data: %s" % results)
+        results = {}
+        for item_id, item in self.variable_data.items():
+            if (group_relation_type is None or item.group_relation_type == group_relation_type) and \
+                    (group_relation_id is None or item.group_relation_id == group_relation_id):
+                results[item_id] = item
         return results
 
     @inlineCallbacks

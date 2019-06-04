@@ -40,7 +40,8 @@ from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 import yombo.core.settings as settings
-from yombo.utils import instance_properties, data_pickle, data_unpickle
+# from yombo.lib.systemdatahandler.constants import CONFIG_ITEMS
+from yombo.utils import data_pickle, data_unpickle
 
 logger = get_logger("library.localdb")
 
@@ -71,9 +72,9 @@ class EventTypes(DBObject):
 
 
 class Device(DBObject):
-    #    HASMANY = [{"name":"device_status", "class_name":"DeviceStatus", "foreign_key":"id", "association_foreign_key":"device_id"},
+    #    HASMANY = [{"name":"device_states", "class_name":"DeviceStatus", "foreign_key":"id", "association_foreign_key":"device_id"},
     #               {"name":"device_variables", "class_name":"DeviceVariable", "foreign_key":"id", "association_foreign_key":"device_id"}]
-    HASMANY = [{"name": "device_status", "class_name": "DeviceStatus", "foreign_key": "device_id"},
+    HASMANY = [{"name": "device_states", "class_name": "DeviceState", "foreign_key": "device_id"},
                {"name": "device_variables", "class_name": "DeviceVariable", "association_foreign_key": "device_id"}]
     HASONE = [{"name": "device_types", "class_name": "DeviceType", "foreign_key": "device_id",
                "association_foreign_key": "device_type_id"}]
@@ -89,12 +90,14 @@ class DeviceCommand(DBObject):
     TABLENAME = "device_commands"
     BELONGSTO = ["devices"]
 
+
 class Location(DBObject):
     TABLENAME = "locations"
     BELONGSTO = ["devices"]
 
-class DeviceStatus(DBObject):
-    TABLENAME = "device_status"
+
+class DeviceState(DBObject):
+    TABLENAME = "device_states"
     BELONGSTO = ["devices"]
 
 
@@ -231,7 +234,7 @@ class ModuleRoutingView(DBObject):
 
 
 Registry.SCHEMAS["PRAGMA_table_info"] = ["cid", "name", "type", "notnull", "dft_value", "pk"]
-Registry.register(Device, DeviceStatus, VariableData, DeviceType, Command)
+Registry.register(Device, DeviceState, VariableData, DeviceType, Command)
 Registry.register(Modules, ModuleInstalled, ModuleDeviceTypes)
 Registry.register(VariableGroups, VariableData)
 Registry.register(Category)
@@ -252,19 +255,38 @@ del TEMP_MODULE_CLASSES
 from yombo.lib.localdb._tools import DB_Tools
 from yombo.lib.localdb.commands import DB_Commands
 from yombo.lib.localdb.devices import DB_Devices
+from yombo.lib.localdb.devicecommands import DB_DeviceCommands
+from yombo.lib.localdb.devicecommandinputs import DB_DeviceCommandInputs
 from yombo.lib.localdb.devicetypes import DB_DeviceTypes
+from yombo.lib.localdb.devicetypecommands import DB_DeviceTypeCommands
+from yombo.lib.localdb.devicestates import DB_DevicesStates
 from yombo.lib.localdb.events import DB_Events
+from yombo.lib.localdb.gateways import DB_Gateways
+from yombo.lib.localdb.gpg import DB_GPG
+from yombo.lib.localdb.locations import DB_Locations
+from yombo.lib.localdb.inputtypes import DB_InputTypes
 from yombo.lib.localdb.modules import DB_Modules
+from yombo.lib.localdb.moduledevicetypes import DB_ModuleDeviceTypes
 from yombo.lib.localdb.nodes import DB_Nodes
+from yombo.lib.localdb.notifications import DB_Notifications
+from yombo.lib.localdb.sqldict import DB_SqlDict
 from yombo.lib.localdb.states import DB_States
 from yombo.lib.localdb.statistics import DB_Statistics
 from yombo.lib.localdb.storage import DB_Storage
+from yombo.lib.localdb.tasks import DB_Tasks
+from yombo.lib.localdb.users import DB_Users
 from yombo.lib.localdb.variables import DB_Variables
 from yombo.lib.localdb.websessions import DB_Websessions
+from yombo.lib.localdb.webinterfacelogs import DB_WebinterfaceLogs
 
 
-class LocalDB(YomboLibrary, DB_Tools, DB_Commands, DB_Devices, DB_DeviceTypes, DB_Events, DB_Modules,
-              DB_Nodes, DB_States, DB_Statistics, DB_Storage, DB_Variables, DB_Websessions):
+class LocalDB(
+    YomboLibrary,
+    DB_Tools, DB_Commands, DB_Devices, DB_DeviceCommands, DB_DeviceCommandInputs, DB_DeviceTypes,
+    DB_DeviceTypeCommands, DB_DevicesStates, DB_Events,
+    DB_Gateways, DB_GPG, DB_Locations, DB_InputTypes, DB_Modules, DB_ModuleDeviceTypes,
+    DB_Nodes, DB_Notifications, DB_SqlDict, DB_States,
+    DB_Statistics, DB_Storage, DB_Tasks, DB_Users, DB_Variables, DB_Websessions, DB_WebinterfaceLogs):
     """
     Manages all database interactions.
     """
@@ -306,6 +328,7 @@ class LocalDB(YomboLibrary, DB_Tools, DB_Commands, DB_Devices, DB_DeviceTypes, D
         # self._Events.new("localdb", "connected", (start_schema_version, current_schema_version))
 
         yield self._load_db_model()
+        # print(self.db_model)
         Registry.DBPOOL.runOperation("PRAGMA synchronous=2;")
 
         # used to cache datatables lookups for the webinterface viewers
@@ -314,7 +337,6 @@ class LocalDB(YomboLibrary, DB_Tools, DB_Commands, DB_Devices, DB_DeviceTypes, D
         self.webinterface_counts = self._Cache.ttl(ttl=15, tags="webinterface_logs")
 
     def _start_(self, **kwargs):
-        self.gateway_id = self._Configs.get("core", "gwid", "local", False)
         self.save_bulk_queue_loop = LoopingCall(self.save_bulk_queue)
         self.save_bulk_queue_loop.start(17, False)
         self.cleanup_database_loop = LoopingCall(self.cleanup_database)
@@ -352,7 +374,6 @@ class LocalDB(YomboLibrary, DB_Tools, DB_Commands, DB_Devices, DB_DeviceTypes, D
             records = yield MODULE_CLASSES[dbitem].select(where=dictToWhere(where))
         return records
 
-    #######
     @inlineCallbacks
     def get_ids_for_remote_tables(self):
         """
@@ -377,435 +398,6 @@ class LocalDB(YomboLibrary, DB_Tools, DB_Commands, DB_Devices, DB_DeviceTypes, D
 
             # print(f"get_ids_for_remote_tables Table: {table}, data: {ids[table]}")
         return ids
-
-    ###########################
-    ###     Locations     #####
-    ###########################
-
-    @inlineCallbacks
-    def get_locations(self, where=None):
-        if where is not None:
-            find_where = dictToWhere(where)
-            records = yield Location.find(where=find_where)
-        else:
-            records = yield Location.find(orderby="label")
-        return records
-
-    @inlineCallbacks
-    def insert_locations(self, data, **kwargs):
-        location = Location()
-        location.id = data["id"]
-        location.location_type = data["location_type"]
-        location.label = data["label"]
-        location.machine_label = data["machine_label"]
-        location.description = data.get("description", None)
-        location.created_at = data["created_at"]
-        location.updated_at = data["updated_at"]
-        yield location.save()
-
-    @inlineCallbacks
-    def update_locations(self, location, **kwargs):
-        args = {
-            "location_type": location.location_type,
-            "label": location.label,
-            "machine_label": location.machine_label,
-            "description": location.description,
-            "updated_at": location.updated_at,
-        }
-        # print("saving notice update_locations: %s" % args)
-        results = yield self.dbconfig.update("locations", args, where=["id = ?", location.location_id])
-        return results
-
-    @inlineCallbacks
-    def delete_locations(self, location_id, **kwargs):
-        results = yield self.dbconfig.delete("locations", where=["id = ?", location_id])
-        return results
-
-
-    ###########################################
-    ###    Device Type Command Inputs     #####
-    ###########################################
-    @inlineCallbacks
-    def device_type_command_inputs_get(self, device_type_id, command_id):
-        records = yield DeviceCommandInput.find(
-            where=["device_type_id = ? and command_id = ?", device_type_id, command_id])
-        return records
-
-    #########################
-    ###    Gateways     #####
-    #########################
-    @inlineCallbacks
-    def get_gateways(self, status=None):
-        if status is True:
-            records = yield self.dbconfig.select("gateways")
-            return records
-        elif status is None:
-            records = yield self.dbconfig.select("gateways", where=["status = ? OR status = ?", 1, 0])
-            return records
-        else:
-            records = yield self.dbconfig.select("gateways", where=["status = ?", status])
-            return records
-
-    #################
-    ### GPG     #####
-    #################
-    @inlineCallbacks
-    def delete_gpg_key(self, fingerprint):
-        results = yield self.dbconfig.delete("gpg_keys",
-                                             where=["fingerprint = ?", fingerprint])
-        return results
-
-    @inlineCallbacks
-    def get_gpg_key(self, **kwargs):
-        if "gwid" in kwargs:
-            records = yield self.dbconfig.select(
-                "gpg_keys",
-                where=["endpoint_type = ? endpoint_id = ?", "gw", kwargs["gwid"]]
-            )
-        elif "keyid" in kwargs:
-            records = yield self.dbconfig.select(
-                "gpg_keys",
-                where=["keyid = ?", kwargs["keyid"]])
-        elif "fingerprint" in kwargs:
-            records = yield self.dbconfig.select(
-                "gpg_keys",
-                where=["fingerprint = ?", kwargs["fingerprint"]])
-        else:
-            records = yield self.dbconfig.select("gpg_keys")
-
-        keys = {}
-        for record in records:
-            key = {
-                "fullname": record["fullname"],
-                "comment": record["comment"],
-                "email": record["email"],
-                "endpoint_id": record["endpoint_id"],
-                "endpoint_type": record["endpoint_type"],
-                "fingerprint": record["fingerprint"],
-                "keyid": record["keyid"],
-                "publickey": record["publickey"],
-                "length": record["length"],
-                "have_private": record["have_private"],
-                "ownertrust": record["ownertrust"],
-                "trust": record["trust"],
-                "algo": record["algo"],
-                "type": record["type"],
-                "expires_at": record["expires_at"],
-                "created_at": record["created_at"],
-            }
-            keys[record["fingerprint"]] = key
-        return keys
-
-    @inlineCallbacks
-    def insert_gpg_key(self, gwkey, **kwargs):
-        key = GpgKey()
-        key.keyid = gwkey["keyid"]
-        key.fullname = gwkey["fullname"]
-        key.comment = gwkey["comment"]
-        key.email = gwkey["email"]
-        key.endpoint_id = gwkey["endpoint_id"]
-        key.endpoint_type = gwkey["endpoint_type"]
-        key.fingerprint = gwkey["fingerprint"]
-        key.publickey = gwkey["publickey"]
-        key.length = gwkey["length"]
-        key.ownertrust = gwkey["ownertrust"]
-        key.trust = gwkey["trust"]
-        key.algo = gwkey["algo"]
-        key.type = gwkey["type"]
-        key.expires_at = gwkey["expires_at"]
-        key.created_at = gwkey["created_at"]
-        key.have_private = gwkey["have_private"]
-        if "notes" in gwkey:
-            key.notes = gwkey["notes"]
-        yield key.save()
-        #        yield self.dbconfig.insert("gpg_keys", args, None, "OR IGNORE" )
-
-    #############################
-    ###    Input Types      #####
-    #############################
-    @inlineCallbacks
-    def get_input_types(self):
-        records = yield self.dbconfig.select("input_types", orderby="label")
-        return records
-
-    #############################
-    ###    Notifications    #####
-    #############################
-    @inlineCallbacks
-    def get_notifications(self):
-        cur_time = int(time())
-        records = yield Notifications.find(where=["expire_at > ?", cur_time], orderby="created_at DESC")
-        return records
-
-    @inlineCallbacks
-    def delete_notification(self, id):
-        try:
-            records = yield self.dbconfig.delete("notifications", where=["id = ?", id])
-        except Exception as e:
-            pass
-
-    @inlineCallbacks
-    def add_notification(self, notice, **kwargs):
-        args = {
-            "id": notice["id"],
-            "gateway_id": notice["gateway_id"],
-            "type": notice["type"],
-            "priority": notice["priority"],
-            "source": notice["source"],
-            "expire_at": notice["expire_at"],
-            "always_show": notice["always_show"],
-            "always_show_allow_clear": notice["always_show_allow_clear"],
-            "acknowledged": notice["acknowledged"],
-            "acknowledged_at": notice["acknowledged_at"],
-            "user": notice["user"],
-            "title": notice["title"],
-            "message": notice["message"],
-            "local": notice["local"],
-            "targets": data_pickle(notice["targets"], encoder="json"),
-            "meta": data_pickle(notice["meta"], encoder="json"),
-            "created_at": notice["created_at"],
-        }
-        results = yield self.dbconfig.insert("notifications", args, None, "OR IGNORE")
-        return results
-
-    @inlineCallbacks
-    def update_notification(self, notice, **kwargs):
-        args = {
-            "type": notice.type,
-            "priority": notice.priority,
-            "source": notice.source,
-            "expire_at": notice.expire_at,
-            "always_show": notice.always_show,
-            "always_show_allow_clear": notice.always_show_allow_clear,
-            "acknowledged": notice.acknowledged,
-            "acknowledged_at": notice.acknowledged_at,
-            "user": notice.user,
-            "title": notice.title,
-            "message": notice.message,
-            "meta": data_pickle(notice.meta, encoder="json"),
-            "targets": data_pickle(notice.targets, encoder="json"),
-        }
-        results = yield self.dbconfig.update("notifications", args, where=["id = ?", notice.notification_id])
-        return results
-
-    @inlineCallbacks
-    def select_notifications(self, where):
-        find_where = dictToWhere(where)
-        records = yield Notifications.find(where=find_where)
-        items = []
-        for record in records:
-            items.append(instance_properties(record, "_"))
-
-        return items
-
-    #################
-    ### SQLDict #####
-    #################
-    @inlineCallbacks
-    def get_sql_dict(self, component, dict_name):
-        records = yield self.dbconfig.select("sqldict", select="dict_data",
-                                             where=["component = ? AND dict_name = ?", component, dict_name])
-        for record in records:
-            try:
-                before = len(record["dict_data"])
-                record["dict_data"] = data_unpickle(record["dict_data"], "msgpack_base85_zip")
-                logger.debug("SQLDict Compression. With: {withcompress}, Without: {without}",
-                             without=len(record["dict_data"]), withcompress=before)
-            except:
-                pass
-        return records
-
-    @inlineCallbacks
-    def set_sql_dict(self, component, dict_name, dict_data):
-        """
-        Used to save SQLDicts to the database. This is from a loopingcall as well as
-        shutdown of the gateway.
-
-        Called by: lib.Loader::save_sql_dict
-
-        :param component: Module/Library that is storing the data.
-        :param dictname: Name of the dictionary that is used within the module/library
-        :param key1: Key
-        :param data1: Data
-        :return: None
-        """
-        dict_data = data_pickle(dict_data, "msgpack_base85_zip")
-
-        args = {"component": component,
-                "dict_name": dict_name,
-                "dict_data": dict_data,
-                "updated_at": int(time()),
-                }
-        records = yield self.dbconfig.select("sqldict", select="dict_name",
-                                             where=["component = ? AND dict_name = ?", component, dict_name])
-        if len(records) > 0:
-            results = yield self.dbconfig.update("sqldict", args,
-                                                 where=["component = ? AND dict_name = ?", component, dict_name])
-        else:
-            args["created_at"] = args["updated_at"]
-            results = yield self.dbconfig.insert("sqldict", args, None, "OR IGNORE")
-        return results
-
-    #########################
-    ###    Tasks        #####
-    #########################
-    @inlineCallbacks
-    def get_tasks(self, section):
-        """
-        Get all tasks for a given section.
-
-        :return:
-        """
-        records = yield Tasks.find(where=["run_section = ?", section])
-
-        results = []
-        for record in records:
-            data = record.__dict__
-            data["task_arguments"] = data_unpickle(data["task_arguments"], "msgpack_base85_zip")
-            results.append(data)  # we need a dictionary, not an object
-        return results
-
-    @inlineCallbacks
-    def del_task(self, id):
-        """
-        Delete a task id.
-
-        :return:
-        """
-        records = yield self.dbconfig.delete("tasks", where=["id = ?", id])
-        return records
-
-    @inlineCallbacks
-    def add_task(self, data):
-        """
-        Get all tasks for a given section.
-
-        :return:
-        """
-        data["task_arguments"] = data_pickle(data["task_arguments"], "msgpack_base85_zip")
-        results = yield self.dbconfig.insert("tasks", data, None, "OR IGNORE")
-        return results
-
-    ###########################
-    ###  Users              ###
-    ###########################
-    @inlineCallbacks
-    def get_users(self):
-        records = yield Users.all()
-        for record in records:
-            record = record.__dict__
-        return records
-
-    @inlineCallbacks
-    def update_user(self, user):
-        """
-        Updates the user in the database. This receives a User() instance from the Users library.
-
-        :param user: User instance from the User library.
-        :type user: User instance
-        :param kwargs:
-        :return:
-        """
-        args = {
-            "refresh_token": user.refresh_token,
-            "access_token": user.access_token,
-        }
-        results = yield self.dbconfig.update("users", args, where=["id = ?", user.user_id])
-        return results
-
-    ################################
-    ###   Webinterface logs    #####
-    ################################
-    @inlineCallbacks
-    def webinterface_save_logs(self, logs):
-        yield self.dbconfig.insertMany("webinterface_logs", logs)
-
-    @inlineCallbacks
-    def search_webinterface_logs_for_datatables(self, order_column, order_direction, start, length, search=None):
-        # print("search weblogs... order_column: %s, order_direction: %s, start: %s, length: %s, search:%s" %
-        #       (order_column, order_direction, start, length, search))
-
-        select_fields = [
-            "request_at",
-            '(CASE secure WHEN 1 THEN \'TLS/SSL\' ELSE \'Unsecure\' END || "<br>" || method || "<br>" || hostname || "<br>" || path) as request_info',
-            # '(method || "<br>" || hostname || "<br>" || path) as request_info',
-            "auth_id as user",
-            '(ip || "<br>" || agent || "<br>" || referrer) as client_info',
-            '(response_code || "<br>" || response_size) as response',
-        ]
-
-        if search in (None, ""):
-            records = yield self.dbconfig.select(
-                "webinterface_logs",
-                select=", ".join(select_fields),
-                limit=(length, start),
-                orderby=f"{order_column} {order_direction}",
-            )
-
-            cache_name_total = "total"
-            if cache_name_total in self.webinterface_counts:
-                total_count = self.webinterface_counts[cache_name_total]
-            else:
-                total_count_results = yield self.dbconfig.select(
-                    "webinterface_logs",
-                    select="count(*) as count",
-                )
-                total_count = total_count_results[0]["count"]
-                self.webinterface_counts[cache_name_total] = total_count
-            return records, total_count, total_count
-
-        else:
-            where_fields = [f"request_at LIKE '%%{search}%%'",
-                            f"request_protocol LIKE '%%{search}%%'",
-                            f"referrer LIKE '%%{search}%%'",
-                            f"agent LIKE '%%{search}%%'",
-                            f"ip LIKE '%%{search}%%'",
-                            f"hostname LIKE '%%{search}%%'",
-                            f"method LIKE '%%{search}%%'",
-                            f"path LIKE '%%{search}%%'",
-                            f"secure LIKE '%%{search}%%'",
-                            f"auth_id LIKE '%%{search}%%'",
-                            f"response_code LIKE '%%{search}%%'",
-                            f"response_size LIKE '%%{search}%%'"]
-
-            if re.match("^[ \w-]+$", search) is None:
-                raise YomboWarning("Invalid search string contents.")
-            where_attrs_str = " OR ".join(where_fields)
-
-            records = yield self.dbconfig.select(
-                "webinterface_logs",
-                select=", ".join(select_fields),
-                where=[str(where_attrs_str)],
-                limit=(length, start),
-                orderby=f"{order_column} {order_direction}",
-                debug=True
-            )
-
-            cache_name_total = "total"
-            if cache_name_total in self.webinterface_counts:
-                total_count = self.webinterface_counts[cache_name_total]
-            else:
-                total_count_results = yield self.dbconfig.select(
-                    "webinterface_logs",
-                    select="count(*) as count",
-                )
-                total_count = total_count_results[0]["count"]
-                self.webinterface_counts[cache_name_total] = total_count
-
-            cache_name_filtered = f"filtered {search}"
-            if cache_name_filtered in self.webinterface_counts:
-                filtered_count = self.webinterface_counts[cache_name_filtered]
-            else:
-                filtered_count_results = yield self.dbconfig.select(
-                    "webinterface_logs",
-                    select="count(*) as count",
-                    where=[str(where_attrs_str)],
-                    limit=(length, start),
-                )
-                filtered_count = filtered_count_results[0]["count"]
-                self.webinterface_counts[cache_name_filtered] = filtered_count
-
-            return records, total_count, filtered_count
 
     #############################
     ## Generic SQL ##############

@@ -69,7 +69,7 @@ class Alarm(Device):
             return False
         return None
 
-    def generate_human_status(self, machine_status, machine_status_extra):
+    def generate_human_state(self, machine_status, machine_status_extra):
         if machine_status == 1:
             return _("state::alarm_control_panel::armed", "Armed")
         return _("state::alarm_control_panel::disarmed", "Disarmed")

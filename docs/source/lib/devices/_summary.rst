@@ -25,7 +25,7 @@ Devices Library Components
    device_attributes.rst
    device_base.rst
    device_command.rst
-   device_status.rst
+   device_states.rst
 
 Device Types
 ==========================

@@ -20,7 +20,6 @@ Also calls module hooks as requested by other libraries and modules.
 """
 # Import python libraries
 import configparser
-from hashlib import sha224
 from functools import partial, reduce
 import os.path
 from pyclbr import readmodule
@@ -38,7 +37,7 @@ from yombo.core.library import YomboLibrary
 from yombo.core.library_search import LibrarySearch
 from yombo.core.log import get_logger
 import yombo.core.settings as settings
-from yombo.utils import dict_merge, read_file, bytes_to_unicode, global_invoke_all
+from yombo.utils import read_file, bytes_to_unicode, global_invoke_all, sha224_compact, random_string
 
 from yombo.classes.maxdict import MaxDict
 import collections
@@ -81,14 +80,10 @@ class Modules(YomboLibrary, LibrarySearch):
     A single place for modudule management and reference.
     """
 
-    _rawModulesList = {}
-    disabled_modules = {}
-
     modules = {}  # Stores a list of modules. Populated by the loader module at startup.
 
-    _localModuleVars = {}  # Used to store modules variables from file import
-
-    modules = {}
+    _rawModulesList = {}  # used during boot-up. Combined system modules, localmodules.ini, and DB loaded modules.
+    disabled_modules = {}  # List of modules that are blacklisted from the server.
 
     # The following are used by get(), get_advanced(), search(), and search_advanced()
     item_search_attribute = "modules"
@@ -257,8 +252,6 @@ class Modules(YomboLibrary, LibrarySearch):
 
         :return:
         """
-        yield self.update_module_cache()
-
         # Pre-Load
         logger.debug("starting modules::pre-load....")
         self._Loader.run_phase = "modules_preload"
@@ -409,9 +402,11 @@ class Modules(YomboLibrary, LibrarySearch):
                 else:
                     mod_doc_link = ""
 
-                newUUID = sha224(str(mod_machine_label).encode()).hexdigest()
-                self._rawModulesList[newUUID] = {
-                  "id": newUUID, # module_id
+                logger.info("Adding module from localmodule.ini: {item}", item=mod_machine_label)
+
+                new_module_id = sha224_compact(str(mod_machine_label).encode())
+                self._rawModulesList[new_module_id] = {
+                  "id": new_module_id, # module_id
                   "gateway_id": "local",
                   "module_type": mod_module_type,
                   "machine_label": mod_machine_label,
@@ -436,52 +431,52 @@ class Modules(YomboLibrary, LibrarySearch):
                   "load_source": "localmodules.ini"
                 }
 
-                self._localModuleVars[mod_label] = {}
-                for item in options:
-                    logger.info("Adding module from localmodule.ini: {item}", item=mod_machine_label)
-                    if item not in self._localModuleVars[mod_label]:
-                        self._localModuleVars[mod_label][item] = {}
-                    values = ini.get(section, item)
-                    values = values.split(":::")
-                    data = {}
-                    for value in values:
-                        value_hash = sha224(str(value).encode()).hexdigest()
-                        data[value_hash] = {
-                            "id": value_hash,
-                            "weight": 0,
-                            "created_at": int(time()),
-                            "updated_at": int(time()),
-                            "relation_id": newUUID,
-                            "relation_type": "module",
-                            "value": value,
-                            "value_display": value,
-                            "value_orig": value,
-                        }
-
-                    variable = {
-                        "variable_field_id": newUUID,
-                        "variable_relation_type": "module",
-                        "field_machine_label": item,
-                        "field_label": item,
-                        "data": data,
-                        "values": [value, ],
-                        "values_display": [value, ],
-                        "values_orig": [value, ],
-                        "data_weight": 0,
+                for field_label in options:
+                    variable_field_id = random_string(length=25)
+                    field = {
+                        "id": variable_field_id,
+                        "user_id": self.gateway_id,
+                        "variable_group_id": None,
+                        "field_machine_label": field_label,
+                        "field_label": field_label,
+                        "field_description": mod_machine_label,
                         "field_weight": 0,
+                        "value_required": 1,
+                        "value_max": -8388600,
+                        "value_min": 8388600,
+                        "value_casing": None,
                         "encryption": "nosuggestion",
-                        "input_min": -8388600,
-                        "input_max": 8388600,
-                        "input_casing": "none",
-                        "input_required": 0,
-                        "input_type_id": "any",
-                        "variable_id": "xxx",
+                        # "input_type_id": self._InputTypes.get("string"),
+                        "default_value": "",
+                        "field_help_text": "localmodules.ini supplied value. Cannot be edited.",
+                        "multiple": 1,
                         "created_at": int(time()),
                         "updated_at": int(time()),
+                        "_fake_data": True,
                     }
-                    self._localModuleVars[mod_label][variable["field_machine_label"]] = variable
+                    logger.info(" - Module variable field: {label}", label=field_label)
 
-                logger.debug("Done importing variables frmom localmodule.ini")
+                    self._Variables._load_variable_fields_into_memory(field, source="database")
+
+                    values = ini.get(section, field_label)
+                    values = values.split(":::")
+                    for value in values:
+                        value_hash = random_string(length=10)
+                        data = {
+                            "id": value_hash,
+                            "user_id": self.gateway_id,
+                            "gateway_id": self.gateway_id,
+                            "variable_field_id": variable_field_id,
+                            "variable_relation_id": new_module_id,
+                            "variable_relation_type": "module",
+                            "data": value,
+                            "data_weight": 0,
+                            "created_at": int(time()),
+                            "updated_at": int(time()),
+                        }
+                        logger.info(" - Module variable data, value: {value}", value=value)
+                        yield self._Variables._load_variable_data_into_memory(data, source="database")
+
         except IOError as xxx_todo_changeme:
             (errno, strerror) = xxx_todo_changeme.args
             logger.debug("localmodule.ini error: I/O error({errornumber}): {error}", errornumber=errno, error=strerror)
@@ -530,7 +525,6 @@ class Modules(YomboLibrary, LibrarySearch):
 
         :return:
         """
-
         for module_id, module in self._rawModulesList.items():
             module_path_name = f"yombo.modules.{module['machine_label']}"
             logger.debug("Importing module: {label}", label=module_path_name)
@@ -558,7 +552,6 @@ class Modules(YomboLibrary, LibrarySearch):
             self.add_imported_module(module["id"], module_name, module_instance)
             self.modules[module_id]._hooks_called = {}
             self.modules[module_id]._module_id = module["id"]
-            self.modules[module_id]._module_id2 = module["id"]
             self.modules[module_id]._module_type = module["module_type"]
             self.modules[module_id]._machine_label = module["machine_label"]
             self.modules[module_id]._label = module["label"]
@@ -580,15 +573,8 @@ class Modules(YomboLibrary, LibrarySearch):
             self.modules[module_id]._created_at = module["created_at"]
             self.modules[module_id]._updated_at = module["updated_at"]
             self.modules[module_id]._load_source = module["load_source"]
-            self.modules[module_id]._device_types = None  # populated by Modules::module_init_invoke
 
-            #  The following caches are built on module_init_invoke and whenever the
-            #  non-cached version of the function is called.
-            self.modules[module_id]._module_device_types_cached = {}  # populated by Modules::module_init_invoke
-            self.modules[module_id]._module_devices_cached = {}
-            self.modules[module_id]._module_variables_cached = {}
-
-            possible_module_files = ["_devices", "_input_types"]
+            possible_module_files = ["_devices", "_input_types"]  # Load some magic files within a module directory.
             for possible_file_name in possible_module_files:
                 try:
                     file_path = module_path_name.lower() + "." + possible_file_name
@@ -621,22 +607,6 @@ class Modules(YomboLibrary, LibrarySearch):
         """
         for module_id, module in self.modules.items():
             logger.debug("Starting module_init_invoke for module: {module}", module=module)
-            module._module_variables = partial(
-                self.module_variables,
-                module._Name,
-                module_id,
-            )
-
-            module._module_devices = partial(
-                self.module_devices,
-                module_id,
-                self.gateway_id,
-            )
-
-            module._module_device_types = partial(
-                self.module_device_types,
-                module_id,
-            )
 
             module._module_starting = partial(
                 self.module_starting,
@@ -647,58 +617,8 @@ class Modules(YomboLibrary, LibrarySearch):
                 self.module_started,
                 module,
             )
-            # logger.debug("Starting module_init_invoke for module: {module} - init cache start", module=module)
-
-            yield self.do_update_module_cache(module)
-            # logger.debug("Starting module_init_invoke for module: {module} - init cache done", module=module)
 
             module._event_loop = self._Loader.event_loop
-            module._AMQP = self._Loader.loadedLibraries["amqp"]
-            module._AMQPYombo = self._Loader.loadedLibraries["amqpyombo"]
-            module._Atoms = self._Loader.loadedLibraries["atoms"]
-            module._AuthKeys = self._Loader.loadedLibraries["authkeys"]
-            module._Automation = self._Loader.loadedLibraries["automation"]
-            module._Cache = self._Loader.loadedLibraries["cache"]
-            module._DownloadModules = self._Loader.loadedLibraries["downloadmodules"]
-            module._Calllater = self._Loader.loadedLibraries["calllater"]
-            module._Commands = self._Loader.loadedLibraries["commands"]
-            module._Configs = self._Loader.loadedLibraries["configuration"]
-            module._CronTab = self._Loader.loadedLibraries["crontab"]
-            module._Devices = self._Loader.loadedLibraries["devices"]  # Basically, all devices
-            module._DeviceTypes = self._Loader.loadedLibraries["devicetypes"]  # All device types.
-            module._Discovery = self._Loader.loadedLibraries["discovery"]
-            module._Gateways = self._Loader.loadedLibraries["gateways"]
-            module._GatewayComs = self._Loader.loadedLibraries["gateways_communications"]
-            module._GPG = self._Loader.loadedLibraries["gpg"]
-            module._InputTypes = self._Loader.loadedLibraries["inputtypes"]  # Input Types
-            module._Intents = self._Loader.loadedLibraries["intents"]
-            module._Hash = self._Loader.loadedLibraries["hash"]  # Input Types
-            module._HashIDS = self._Loader.loadedLibraries["hashids"]
-            module._Libraries = self._Loader.loadedLibraries
-            module._Localize = self._Loader.loadedLibraries["localize"]
-            module._LocalDB = self._Loader.loadedLibraries["localdb"] # Provided for testing
-            module._Locations = self._Loader.loadedLibraries["locations"]  # Basically, all devices
-            module._Modules = self
-            module._MQTT = self._Loader.loadedLibraries["mqtt"]
-            module._Nodes = self._Loader.loadedLibraries["nodes"]
-            module._Notifications = self._Loader.loadedLibraries["notifications"]
-            module._Queue = self._Loader.loadedLibraries["queue"]
-            module._Requests = self._Loader.loadedLibraries["requests"]
-            module._Scenes = self._Loader.loadedLibraries["scenes"]
-            module._SQLDict = self._Loader.loadedLibraries["sqldict"]
-            module._SSLCerts = self._Loader.loadedLibraries["sslcerts"]
-            module._States = self._Loader.loadedLibraries["states"]
-            module._Statistics = self._Loader.loadedLibraries["statistics"]
-            module._Storage = self._Loader.loadedLibraries["storage"]
-            module._Tasks = self._Loader.loadedLibraries["tasks"]
-            module._Template = self._Loader.loadedLibraries["template"]
-            module._Times = self._Loader.loadedLibraries["times"]
-            module._Users = self._Loader.loadedLibraries["users"]
-            module._YomboAPI = self._Loader.loadedLibraries["yomboapi"]
-            module._Variables = self._Loader.loadedLibraries["variables"]
-            module._Validate = self._Loader.loadedLibraries["validate"]
-            module._WebSessions = self._Loader.loadedLibraries["websessions"]
-            module._WebInterface = self._Loader.loadedLibraries["webinterface"]
 
             module._hooks_called["_init_"] = 0
             if int(module._status) != 1:
@@ -732,29 +652,6 @@ class Modules(YomboLibrary, LibrarySearch):
             "called_by": calling_component,
         }
         return results
-
-    @inlineCallbacks
-    def update_module_cache(self, **kwargs):
-        # print("starting update_module_cache: %0.3f " % time())
-        for module_id, module in self.modules.items():
-            yield self.do_update_module_cache(module)
-
-    @inlineCallbacks
-    def do_update_module_cache(self, module):
-        """
-        Updates various cache items. Can't replace the variable, want to keep the same
-        memory pointer. So, we empty it and then append new entries to it.
-        :param module:
-        :return:
-        """
-        logger.debug("Starting do_update_module_cache: _module_device_types")
-
-        yield module._module_device_types()
-        logger.debug("Starting do_update_module_cache: _module_variables")
-        yield module._module_variables()
-        logger.debug("Starting do_update_module_cache: _module_devices")
-        yield module._module_devices()
-        logger.debug("Starting do_update_module_cache: _module_devices done")
 
     def module_invoke(self, requested_module, hook_name, **kwargs):
         """
@@ -900,58 +797,6 @@ class Modules(YomboLibrary, LibrarySearch):
         logit = getattr(logger, level)
         logit("({log_source}) {label}({type})::{method} - {msg}", label=label, type=type, method=method, msg=msg)
 
-    def _device_changed_(self, **kwargs):
-        """
-        We listen for device updates so we can update module device caches.
-
-        :param kwargs:
-        :return:
-        """
-        for module_id, module in self.modules.items():
-            self.module_devices(module_id, self.gateway_id)
-
-    @inlineCallbacks
-    def module_devices(self, module_id, gateway_id=None):
-        """
-        A list of devices for a given module id.
-
-        :raises YomboWarning: Raised when module_id is not found.
-        :param module_id: The Module ID to return device types for.
-        :return: A dictionary of devices for a given module id.
-        :rtype: list
-        """
-        if module_id not in self.modules:
-            logger.warn("module_devices cannot find '{module_id}' in available modules.", module_id=module_id)
-            return {}
-
-        if gateway_id is None:
-            gateway_id = self.gateway_id
-        temp = {}
-        module_device_types = yield self.module_device_types(module_id)
-        # print(f"module_devices: 22, gateway_id: {gateway_id}, device_type_id: {device_type_id}")
-        for device_type_id, device_type in module_device_types.items():
-            # print(f"module_devices: 22, gateway_id: {gateway_id}, device_type_id: {device_type_id}")
-            # print(self._DeviceTypes[device_type_id].get_devices(gateway_id=gateway_id))
-            temp.update(self._DeviceTypes[device_type_id].get_devices(gateway_id=gateway_id))
-
-        module = self.modules[module_id]
-        module._module_devices_cached.clear()
-        module._module_devices_cached.update(temp)
-        # for device_id, device in temp.items():
-        #     module._module_devices_cached[device_id] = device
-
-        return module._module_devices_cached
-
-    @inlineCallbacks
-    def module_device_types(self, module_id):
-        module_device_types = yield self._LocalDB.get_module_device_types(module_id)
-        module = self.modules[module_id]
-        module._module_device_types_cached.clear()
-        for device_type_db in module_device_types:
-            id = device_type_db["id"]
-            module._module_device_types_cached[id] = self._DeviceTypes.get(id)
-        return module._module_device_types_cached
-
     def module_starting(self, module_id):
         self.modules_that_are_starting[module_id] = True
         self.update_starting_modules_notification()
@@ -977,29 +822,8 @@ class Modules(YomboLibrary, LibrarySearch):
                                      "always_show_allow_clear": False,
                                      "id": "modules_that_are_starting",
                                      "local": True,
-                                    })
-
-    @inlineCallbacks
-    def module_variables(self, module_name, module_id):
-        logger.debug("modules::module_variables - start: {module_name}, {module_id}",
-                     module_name=module_name, module_id=module_id)
-        variables = yield self._Variables.get_variable_fields_data(
-            group_relation_type="module",
-            group_relation_id=module_id,
-            variable_field_id=module_id,
-        )
-            #
-            # variable_relation_type=variable_relation_type,
-            # variable_field_id=variable_field_id)
-        logger.debug("modules::module_variables - variables: {variables}", variables=variables)
-
-        if module_name in self._localModuleVars:
-            variables = dict_merge(variables, self._localModuleVars[module_name])
-
-        module = self.modules[module_id]
-        module._module_variables_cached.clear()
-        module._module_variables_cached.update(variables)
-        return module._module_variables_cached
+                                     }
+                                    )
 
     @inlineCallbacks
     def full_list_modules(self):

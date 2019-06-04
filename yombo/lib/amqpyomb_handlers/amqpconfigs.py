@@ -254,9 +254,9 @@ class AmqpConfigHandler(YomboLibrary):
 
         elif config_item == "gateway_dns_name":
             payload = msg["data"]
-            self.parent._Configs.set("dns", "dns_name", payload["dns_name"])
-            self.parent._Configs.set("dns", "dns_domain", payload["dns_domain"])
-            self.parent._Configs.set("dns", "dns_domain_id", payload["dns_domain_id"])
+            self.parent._Configs.set("dns", "name", payload["dns_name"])
+            self.parent._Configs.set("dns", "domain", payload["dns_domain"])
+            self.parent._Configs.set("dns", "domain_id", payload["dns_domain_id"])
             self.parent._Configs.set("dns", "allow_change_at", payload["allow_change_at"])
             self.parent._Configs.set("dns", "fqdn", payload["fqdn"])
 

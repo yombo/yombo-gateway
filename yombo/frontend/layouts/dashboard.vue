@@ -70,6 +70,10 @@
           <dashboard-sidebar-item :link="{name: $t('ui.navigation.sslcerts'), path: localePath('dashboard-debug-sslcerts')}"></dashboard-sidebar-item>
           <dashboard-sidebar-item :link="{name: $t('ui.navigation.statistic_bucket_lifetimes'), path: localePath('dashboard-debug-statistic_bucket_lifetimes')}"></dashboard-sidebar-item>
           <dashboard-sidebar-item :link="{name: $t('ui.navigation.requirements'), path: localePath('dashboard-debug-requirements')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.requirements'), path: localePath('dashboard-debug-requirements')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.variables_groups'), path: localePath('dashboard-debug-variables_groups')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.variables_fields'), path: localePath('dashboard-debug-variables_fields')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.variables_data'), path: localePath('dashboard-debug-variables_data')}"></dashboard-sidebar-item>
         </dashboard-sidebar-item>
 
       </template>

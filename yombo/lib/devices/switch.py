@@ -31,7 +31,7 @@ class Switch(Device):
         return True
 
     def toggle(self):
-        if self.status_history[0].machine_status == 0:
+        if self.status_history[0].machine_state == 0:
             return self.command(COMMAND_ON)
         else:
             return self.command(COMMAND_OFF)
@@ -42,16 +42,16 @@ class Switch(Device):
     def turn_off(self, **kwargs):
         return self.command(COMMAND_OFF, **kwargs)
 
-    def command_from_status(self, machine_status, machine_status_extra=None):
+    def command_from_status(self, machine_state, machine_state_extra=None):
         """
         Attempt to find a command based on the status of a device.
-        :param machine_status:
+        :param machine_state:
         :return:
         """
-        # print("attempting to get command_from_status - relay: %s - %s" % (machine_status, machine_status_extra))
-        if machine_status == int(1):
+        # print("attempting to get command_from_status - relay: %s - %s" % (machine_state, machine_state_extra))
+        if machine_state == int(1):
             return self._Commands[COMMAND_ON]
-        elif machine_status == int(0):
+        elif machine_state == int(0):
             return self._Commands[COMMAND_OFF]
         return None
 
@@ -67,7 +67,7 @@ class Relay(Switch):
         self.TOGGLE_COMMANDS = [COMMAND_OPEN, COMMAND_CLOSE]  # Put two command machine_labels in a list to enable toggling.
 
     def toggle(self):
-        if self.status_history[0].machine_status == 0:
+        if self.status_history[0].machine_state == 0:
             return self.command(COMMAND_OPEN)
         else:
             return self.command(COMMAND_CLOSE)

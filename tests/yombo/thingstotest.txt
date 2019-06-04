@@ -1,0 +1,7 @@
+logger.info("Validating GPG AES encryption...")
+encrypted = yield self.encrypt_aes("mykey", "the data")
+print(f"encrypted: {encrypted}")
+decrypted = yield self.decrypt_aes("mykey", encrypted)
+print(f"decrypted: {decrypted}")
+
+

@@ -11,7 +11,7 @@ The gateway class.
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.19.1
 
-:copyright: Copyright 2018 by Yombo.
+:copyright: Copyright 2018-2019 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/gateways.html>`_
 """
@@ -20,11 +20,13 @@ from time import time
 
 # Import Yombo libraries
 from yombo.core.log import get_logger
+from yombo.mixins.yombobasemixin import YomboBaseMixin
+from yombo.mixins.synctoeverywhere import SyncToEverywhere
 
 logger = get_logger("library.gateways.gateway")
 
 
-class Gateway:
+class Gateway(YomboBaseMixin, SyncToEverywhere):
     """
     A class to manage a single gateway.
     :ivar gateway_id: (string) The unique ID.
@@ -43,7 +45,7 @@ class Gateway:
             return False
         return True
     
-    def __init__(self, parent, gateway):
+    def __init__(self, parent, gateway, source=None):
         """
         Setup the gateway object using information passed in.
 
@@ -51,8 +53,10 @@ class Gateway:
         :type gateway: dict
 
         """
+        self._internal_label = "gateways"  # Used by mixins
+        super().__init__(parent)
+
         logger.debug("gateway info: {gateway}", gateway=gateway)
-        self._Parent = parent
         self.gateway_id = gateway["id"]
         self.machine_label = gateway["machine_label"]
 
@@ -65,10 +69,12 @@ class Gateway:
         self.mqtt_auth = None
         self.mqtt_auth_prev = None
         self.mqtt_auth_next = None
-        self.mqtt_auth_last_rotate = None
+        self.mqtt_auth_last_rotate_at = None
         self.dns_name = None
         self.internal_ipv4 = None
         self.external_ipv4 = None
+        self.internal_ipv6 = None
+        self.external_ipv6 = None
         self.internal_http_port = None
         self.external_http_port = None
         self.internal_http_secure_port = None
@@ -98,78 +104,8 @@ class Gateway:
         # communications information
         self.last_communications = deque([], 30)  # stores times and topics of the last few communications
 
-        self.update_attributes(gateway)
-
-    def update_attributes(self, gateway):
-        """
-        Sets various values from a gateway dictionary. This can be called when either new or
-        when updating.
-
-        :param gateway:
-        :return: 
-        """
-        if "gateway_id" in gateway:
-            self.gateway_id = gateway["gateway_id"]
-        if "is_master" in gateway:
-            self.is_master = gateway["is_master"]
-        if "master_gateway_id" in gateway:
-            self.master_gateway_id = gateway["master_gateway_id"]
-        if "label" in gateway:
-            self.label = gateway["label"]
-        if "description" in gateway:
-            self.description = gateway["description"]
-        if "user_id" in gateway:
-            self.user_id = gateway["user_id"]
-        if "mqtt_auth" in gateway:
-            self.mqtt_auth = gateway["mqtt_auth"]
-        if "mqtt_auth_next" in gateway:
-            self.mqtt_auth_next = gateway["mqtt_auth_next"]
-        if "internal_ipv4" in gateway:
-            self.internal_ipv4 = gateway["internal_ipv4"]
-        if "external_ipv4" in gateway:
-            self.external_ipv4 = gateway["external_ipv4"]
-        if "internal_http_port" in gateway:
-            self.internal_http_port = gateway["internal_http_port"]
-        if "external_http_port" in gateway:
-            self.external_http_port = gateway["external_http_port"]
-        if "dns_name" in gateway:
-            self.dns_name = gateway["dns_name"]
-        if "internal_http_secure_port" in gateway:
-            self.internal_http_secure_port = gateway["internal_http_secure_port"]
-        if "external_http_secure_port" in gateway:
-            self.external_http_secure_port = gateway["external_http_secure_port"]
-        if "internal_mqtt" in gateway:
-            self.internal_mqtt = gateway["internal_mqtt"]
-        if "internal_mqtt_le" in gateway:
-            self.internal_mqtt_le = gateway["internal_mqtt_le"]
-        if "internal_mqtt_ss" in gateway:
-            self.internal_mqtt_ss = gateway["internal_mqtt_ss"]
-        if "internal_mqtt_ws" in gateway:
-            self.internal_mqtt_ws = gateway["internal_mqtt_ws"]
-        if "internal_mqtt_ws_le" in gateway:
-            self.internal_mqtt_ws_le = gateway["internal_mqtt_ws_le"]
-        if "internal_mqtt_ws_ss" in gateway:
-            self.internal_mqtt_ws_ss = gateway["internal_mqtt_ws_ss"]
-        if "external_mqtt" in gateway:
-            self.external_mqtt = gateway["external_mqtt"]
-        if "external_mqtt_le" in gateway:
-            self.external_mqtt_le = gateway["external_mqtt_le"]
-        if "external_mqtt_ss" in gateway:
-            self.external_mqtt_ss = gateway["external_mqtt_ss"]
-        if "external_mqtt_ws" in gateway:
-            self.external_mqtt_ws = gateway["external_mqtt_ws"]
-        if "external_mqtt_ws_le" in gateway:
-            self.external_mqtt_ws_le = gateway["external_mqtt_ws_le"]
-        if "external_mqtt_ws_ss" in gateway:
-            self.external_mqtt_ws_ss = gateway["external_mqtt_ws_ss"]
-        if "status" in gateway:
-            self.status = gateway["status"]
-        if "created_at" in gateway:
-            self.created_at = gateway["created_at"]
-        if "updated_at" in gateway:
-            self.updated_at = gateway["updated_at"]
-        if "version" in gateway:
-            self.version = gateway["version"]
+        self.update_attributes(gateway, source="database")
+        self.start_data_sync()
 
     def __str__(self):
         """

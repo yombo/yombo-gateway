@@ -1,5 +1,4 @@
 # Import python libraries
-from collections import OrderedDict
 from os import listdir, remove, rename
 from os.path import isfile, join
 from sqlite3 import IntegrityError
@@ -9,10 +8,11 @@ from time import time
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.utils import getProcessOutput
 
-# Import Yombo libraries
-from yombo.core.log import get_logger
 # Import 3rd-party libs
 from yombo.ext.twistar.registry import Registry
+
+# Import Yombo libraries
+from yombo.core.log import get_logger
 from yombo.lib.localdb import Device, Command, DeviceType
 from yombo.utils import sleep
 
@@ -31,9 +31,17 @@ class DB_Tools(object):
         tables = yield self.dbconfig.select("sqlite_master", select="tbl_name", where=["type = ?", "table"])
         for table in tables:
             columns = yield self.dbconfig.pragma(f"table_info({table['tbl_name']})")
-            self.db_model[table["tbl_name"]] = OrderedDict()
+            self.db_model[table["tbl_name"]] = {}
             for column in columns:
                 self.db_model[table["tbl_name"]][column["name"]] = column
+
+    def get_table_fields(self, table):
+        if table in self.db_model:
+            fields = list(self.db_model[table].keys())
+            if "id" in fields:
+                fields.remove("id")
+            return fields
+        raise KeyError(f"Table not found: {table}")
 
     @inlineCallbacks
     def load_test_data(self):
@@ -172,8 +180,8 @@ class DB_Tools(object):
         if section in ("device_commands", "all"):
             yield sleep(5)
             start_time = time()
-            for request_id in list(self._Devices.device_commands.keys()):
-                device_command = self._Devices.device_commands[request_id]
+            for request_id in list(self._DeviceCommands.device_commands.keys()):
+                device_command = self._DeviceCommands.device_commands[request_id]
                 if device_command.finished_at is not None:
                     if device_command.finished_at > start_time - 3600:  # keep 60 minutes worth.
                         found_dc = False
@@ -183,15 +191,15 @@ class DB_Tools(object):
                                 break
                         if found_dc is False:
                             yield device_command.save_to_db()
-                            del self._Devices.device_commands[request_id]
+                            del self._DeviceCommands.device_commands[request_id]
             yield self.dbconfig.delete("device_commands", where=["created_at < ?", time() - (86400 * 45)])
             timer += time() - start_time
 
         # Lets delete any device status after 90 days. Long term data should be in the statistics.
-        if section in ("device_status", "all"):
+        if section in ("device_states", "all"):
             yield sleep(5)
             start_time = time()
-            yield self.dbconfig.delete("device_status", where=["set_at < ?", time() - (86400 * 90)])
+            yield self.dbconfig.delete("device_states", where=["set_at < ?", time() - (86400 * 90)])
             timer += time() - start_time
 
         # Cleanup events.

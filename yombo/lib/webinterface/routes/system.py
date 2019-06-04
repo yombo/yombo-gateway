@@ -49,7 +49,7 @@ def route_system(webapp):
         #         "gpg_fingerprint": key["fingerprint"],
         #         "gpg_keys": webinterface._GPG._gpg_keys,
         #         "gpg_trust": gpg_trust,
-        #         "gw_id": webinterface.gateway_id(),
+        #         "gw_id": webinterface.gateway_id,
         #         "sslcerts": sslcerts,
         #         "configs": {
         #             "dns": webinterface._Configs.get("dns", "*")

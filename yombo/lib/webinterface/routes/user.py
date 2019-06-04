@@ -58,7 +58,7 @@ def route_user(webapp):
                                        secure=1 if request.isSecure() else 0,
                                        hostname=hostname,
                                        port=host.port,
-                                       gateway_id=webinterface.gateway_id(),
+                                       gateway_id=webinterface.gateway_id,
                                        autoredirect=auto_login_redirect,
                                        )
 
@@ -71,7 +71,7 @@ def route_user(webapp):
         @run_first(create_session=True)
         @inlineCallbacks
         def page_user_auth_sso_post(webinterface, request, session):
-            gateway_id = webinterface.gateway_id()
+            gateway_id = webinterface.gateway_id
             if "token" not in request.args:
                 session.add_alert("Error with incoming SSO request: token is missing")
                 return webinterface.redirect(request, "/user/auth_sso")

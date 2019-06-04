@@ -99,7 +99,6 @@ class SSLCerts(YomboLibrary):
         self.generate_csr_queue = self._Queue.new("library.sslcerts.generate_csr", self.generate_csr)
         self.hostname = gethostname()
 
-        self.gateway_id = self._Configs.get("core", "gwid", "local", False)
         self.local_gateway = self._Gateways.local
 
         self.self_signed_cert_file = self._Atoms.get("working_dir") + "/etc/certs/sslcert_selfsigned.cert.pem"
@@ -125,9 +124,8 @@ class SSLCerts(YomboLibrary):
             serializer=self.sslcert_serializer,
             unserializer=self.sslcert_unserializer
         )
-        # for key, item in self.managed_certs.items():
-
-            # print(f"Managed certs: {self.managed_certs}")
+        for key, item in self.managed_certs.items():
+            print(f"Managed certs: {self.managed_certs}")
 
         self.check_if_certs_need_update_loop = None
 
@@ -192,6 +190,7 @@ class SSLCerts(YomboLibrary):
         :param item:
         :return:
         """
+        # print(f"sslcert unserialze: {item}")
         results = SSLCert(self, "sqldict", DictObject(item))
         yield results.start()
         return results

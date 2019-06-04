@@ -18,7 +18,7 @@ class Lock(Device):
         self.FEATURES[FEATURE_ALLOW_IN_SCENES] = False
 
     def toggle(self, **kwargs):
-        if self.status_history[0].machine_status == 0:
+        if self.state_history[0].machine_state == 0:
             return self.command(COMMAND_LOCK)
         else:
             return self.command(COMMAND_UNLOCK)
@@ -31,22 +31,22 @@ class Lock(Device):
 
     @property
     def is_locked(self):
-        if self.status_history[0].machine_status == 1:
+        if self.state_history[0].machine_state == 1:
             return True
-        elif self.status_history[0].machine_status == 0:
+        elif self.state_history[0].machine_state == 0:
             return False
         return None
 
     @property
     def is_unlocked(self):
-        if self.status_history[0].machine_status == 0:
+        if self.state_history[0].machine_state == 0:
             return True
-        elif self.status_history[0].machine_status == 1:
+        elif self.state_history[0].machine_state == 1:
             return False
         return None
 
-    def generate_human_status(self, machine_status, machine_status_extra):
-        if machine_status == 1:
+    def generate_human_state(self, machine_state, machine_state_extra):
+        if machine_state == 1:
             return _("state::lock::locked", "Locked")
         return _("state::lock::unlocked", "Unlocked")
 

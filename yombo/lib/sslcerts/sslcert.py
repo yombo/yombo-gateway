@@ -49,7 +49,7 @@ import collections
 logger = get_logger("library.sslcerts.sslcert")
 
 
-def human_status(valid):
+def human_state(valid):
     """
     Simply converts a next or current status to a human readable form
     :param valid:
@@ -69,11 +69,11 @@ class SSLCert(object):
     """
     # @property
     # def current_status(self):
-    #     return human_status(self.current_is_valid)
+    #     return human_state(self.current_is_valid)
     #
     # @property
     # def next_status(self):
-    #     return human_status(self.next_is_valid)
+    #     return human_state(self.next_is_valid)
 
     def __str__(self):
         """
@@ -360,7 +360,11 @@ class SSLCert(object):
         certificate, then we will mark any requested certs as being bad/empty.
         :return: 
         """
+        logger.warn("check_if_fqdn_updated")
         system_fqdn = self._Parent.local_gateway.dns_name
+        print(f"system_fqdn: {system_fqdn}")
+        print(f"current_fqdn: {self.current_fqdn}")
+        print(f"next_fqdn: {self.next_fqdn}")
         if system_fqdn != self.current_fqdn and self.current_fqdn is not None:
             logger.warn("System FQDN doesn't match current requested cert for: {sslname}", sslname=self.sslname)
             self.current_is_valid = None

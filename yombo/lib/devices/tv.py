@@ -20,7 +20,7 @@ class TV(Device):
         self.FEATURES[FEATURE_CHANNEL_CONTROL] = True
 
     def toggle(self):
-        if self.status_history[0].machine_status == 0:
+        if self.state_history[0].machine_state == 0:
             return self.command(COMMAND_ON)
         else:
             return self.command(COMMAND_OFF)

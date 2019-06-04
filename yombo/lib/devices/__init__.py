@@ -64,7 +64,6 @@ import sys
 import traceback
 
 from time import time
-from collections import OrderedDict
 
 # Import twisted libraries
 from twisted.internet import reactor
@@ -76,10 +75,9 @@ from yombo.core.exceptions import YomboWarning, YomboHookStopProcessing
 from yombo.core.library import YomboLibrary
 from yombo.core.library_search import LibrarySearch
 from yombo.core.log import get_logger
-from yombo.utils import global_invoke_all, generate_source_string, sleep
+from yombo.utils import global_invoke_all, generate_source_string
 
 from ._device import Device
-from ._device_command import Device_Command
 
 logger = get_logger("library.devices")
 
@@ -222,18 +220,6 @@ class Devices(YomboLibrary, LibrarySearch):
         """
         Sets up basic attributes.
         """
-        self.gateway_id = self._Configs.get("core", "gwid", "local", False)
-        self.is_master = self._Configs.get("core", "is_master", "local", False)
-        self.master_gateway_id = self._Configs.get2("core", "master_gateway_id", "local", False)
-
-        # used to store delayed queue for restarts. It'll be a bare, dehydrated version.
-        # store the above, but after hydration.
-        self.device_commands = OrderedDict()  # tracks commands being sent to devices. Also tracks if a command is delayed
-          # the automation system can always request the same command to be performed but ensure only one is
-          # is n the queue between restarts.
-        self.clean_device_commands_loop = None
-
-        self.startup_queue = {}  # Place device commands here until we are ready to process device commands
         self.processing_commands = False
 
         self.mqtt = None
@@ -249,10 +235,6 @@ class Devices(YomboLibrary, LibrarySearch):
         :return:
         """
         yield self._load_devices_from_database()
-        yield self._load_device_commands()
-        if self._Loader.operating_mode == "run":
-            self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming,
-                                       client_id=f"Yombo-devices-{self.gateway_id}")
 
     def _started_(self, **kwargs):
         """
@@ -262,18 +244,9 @@ class Devices(YomboLibrary, LibrarySearch):
         :return: 
         """
         if self._Loader.operating_mode == "run":
+            self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming,
+                                       client_id=f"Yombo-devices-{self.gateway_id}")
             self.mqtt.subscribe("yombo/devices/+/get")
-            self.mqtt.subscribe("yombo/devices/+/cmd")
-
-    def _modules_started_(self, **kwargs):
-        """
-        Tells any applicable device commands to fire.
-
-        :param kwargs:
-        :return:
-        """
-        for request_id, device_command in self.device_commands.items():
-            device_command.start()
 
     def _unload_(self, **kwargs):
         """
@@ -283,30 +256,14 @@ class Devices(YomboLibrary, LibrarySearch):
         """
         for device_id, device in self.devices.items():
             device._unload_()
-        for request_id, device_command in self.device_commands.items():
-            device_command.save_to_db(True)
 
     def _reload_(self):
         return self._load_()
 
-    def _modules_prestarted_(self, **kwargs):
-        """
-        On start, sends all queued messages. Then, check delayed messages for any messages that were missed. Send
-        old messages and prepare future messages to run.
-        """
-        self.processing_commands = True
-        for command, request in self.startup_queue.items():
-            self.command(request["device_id"],
-                         request["command_id"],
-                         not_before=request["not_before"],
-                         max_delay=request["max_delay"],
-                         **request["kwargs"])
-        self.startup_queue.clear()
-
-    def _device_status_(self, **kwargs):
+    def _device_state_(self, **kwargs):
         """
         Sets up the callLater to calculate total energy usage.
-        Called by send_status when a devices status changes.
+        Called by send_state when a devices status changes.
 
         :param kwargs:
         :return:
@@ -320,7 +277,7 @@ class Devices(YomboLibrary, LibrarySearch):
         """
         Iterates thru all the devices and adds up the energy usage across all devices.
 
-        This function is called after a 1 second delay by _device_status_ hook.
+        This function is called after a 1 second delay by _device_state_ hook.
 
         :return:
         """
@@ -335,12 +292,12 @@ class Devices(YomboLibrary, LibrarySearch):
         }
 
         for device_id, device in self.devices.items():
-            status_all = device.status_all
-            if status_all["fake_data"] is True:
+            state_all = device.state_all
+            if "_fake_data" in state_all and state_all["_fake_data"] is True:
                 continue
-            if status_all["energy_type"] not in ENERGY_TYPES or status_all["energy_type"] == "none":
+            if state_all["energy_type"] not in ENERGY_TYPES or state_all["energy_type"] == "none":
                 continue
-            energy_usage = status_all["energy_usage"]
+            energy_usage = state_all["energy_usage"]
             if isinstance(energy_usage, int) or isinstance(energy_usage, float):
                 usage = energy_usage
             elif isinstance(energy_usage, Number):
@@ -351,8 +308,8 @@ class Devices(YomboLibrary, LibrarySearch):
             location_label = location_id.machine_label
             if location_label not in all_energy_usage:
                 all_energy_usage[location_label] = deepcopy(usage_types)
-            all_energy_usage[location_label][status_all["energy_type"]] += usage
-            all_energy_usage["total"][status_all["energy_type"]] += usage
+            all_energy_usage[location_label][state_all["energy_type"]] += usage
+            all_energy_usage["total"][state_all["energy_type"]] += usage
 
         logger.debug("All energy usage: {all_energy_usage}", all_energy_usage=all_energy_usage)
 
@@ -546,99 +503,10 @@ class Devices(YomboLibrary, LibrarySearch):
         new_device.parent_id = existing.device_id
         return new_device
 
-    @inlineCallbacks
-    def _load_device_commands(self):
-        """
-        Actually loads the device commands from the database.
-        :return:
-        """
-        where = {
-            "created_at": [time() - 60*60*24, ">"],
-        }
-        device_commands = yield self._LocalDB.get_device_commands(where)
-        for device_command in device_commands:
-            if device_command["device_id"] not in self.devices:
-                logger.warn("Seems a device id we were tracking is gone..{id}", id=device_command["device_id"])
-                continue
-
-            self.device_commands[device_command["request_id"]] = Device_Command(device_command, self, start=False)
-        return None
-
-    def add_device_command_by_object(self, device_command):
-        """
-        Simply append a device command object to the list of tracked device commands.
-
-        :param device_command:
-        :return:
-        """
-        self.device_commands[device_command.request_id] = device_command
-        self.device_commands.move_to_end(device_command.request_id, last=False)  # move to the front.
-
-    def add_device_command(self, device_command):
-        """
-        Insert a new device command from a dictionary. Usually called by the gateways coms system.
-
-        :param device_command:
-        :param called_from_mqtt_coms:
-        :return:
-        """
-        self.device_commands[device_command["request_id"]] = Device_Command(device_command, self, start=True)
-        self.device_commands.move_to_end(device_command["request_id"], last=False)  # move to the front.
-
-    def update_device_command(self, request_id, status, message=None, log_time=None, gateway_id=None):
-        """
-        Update device command information based on dictionary items. Usually called by the gateway coms systems.
-
-        :param device_command:
-        :return:
-        """
-        if request_id in self.device_commands:
-            self.device_commands[request_id].set_status(status, message, log_time, gateway_id)
-
-    def get_gateway_device_commands(self, gateway_id):
-        """
-        Gets all the device command for a gateway_id.
-
-        :param dest_gateway_id:
-        :return:
-        """
-        results = []
-        for device_command_id, device_command in self.device_commands.items():
-            if device_command.device.gateway_id == gateway_id:
-                results.append(device_command.asdict())
-        return results
-
-    def get_device_commands_list(self):
-        """
-        Get a list of all device commands.
-
-        :return:
-        """
-        results = []
-        for device_command_id, device_command in self.device_commands.items():
-            results.append(device_command.asdict())
-        return results
-
-
-    def delayed_commands(self, requested_device_id=None):
-        """
-        Returns only device commands that are delayed.
-
-        :return: 
-        """
-        if requested_device_id is not None:
-            requested_device = self.get(requested_device_id)
-            return requested_device.delayed_commands()
-        else:
-            commands = {}
-            for device_id, device in self.devices.items():
-                commands.update(device.delayed_commands())
-            return commands
-
     def command(self, device, cmd, **kwargs):
         """
-        Tells the device to a command. This in turn calls the hook _device_command_ so modules can process the command
-        if they are supposed to.
+        Tells the device to do a command. This in turn calls the hook _device_command_ so modules can process the
+        command if they are supposed to.
 
         If a pin is required, "pin" must be included as one of the arguments. All kwargs are sent with the
         hook call.
@@ -717,18 +585,18 @@ class Devices(YomboLibrary, LibrarySearch):
             return
 
         if parts[3] == "get":
-            status = device.status_all
+            status = device.state_all
 
             if len(parts) == 5:
                 if payload == "all":
                     self.mqtt.publish(f"yombo/devices/{device.machine_label}/status",
-                                      json.dumps(device.status_all))
+                                      json.dumps(device.state_all))
                 elif payload in status:
                     self.mqtt.publish(f"yombo/devices/{device.machine_label}/status/{payload}",
                                       str(getattr(payload, status)))
             else:
                 self.mqtt.publish(f"yombo/devices/{device.machine_label}/status",
-                                  json.dumps(device.status_all))
+                                  json.dumps(device.state_all))
 
         elif parts[3] == "cmd":
             try:
@@ -738,16 +606,16 @@ class Devices(YomboLibrary, LibrarySearch):
                             command=parts[4], reason=e)
 
             if len(parts) == 6:
-                status = device.status_all
+                status = device.state_all
                 if parts[4] == "all":
                     self.mqtt.publish(f"yombo/devices/{device.machine_label}/status",
-                                      json.dumps(device.status_all))
+                                      json.dumps(device.state_all))
                 elif payload in status:
                     self.mqtt.publish(f"yombo/devices/{device.machine_label}/status/{payload}",
                                       getattr(payload, status))
             else:
                 self.mqtt.publish(f"yombo/devices/{device.machine_label}/status",
-                                  json.dumps(device.status_all))
+                                  json.dumps(device.state_all))
 
     def device_user_access(self, device_id, access_type=None):
         """
@@ -890,7 +758,7 @@ class Devices(YomboLibrary, LibrarySearch):
 
         logger.debug("device add results: {device_results}", device_results=device_results)
 
-        self._load_node_into_memory(new_device, source)
+        new_device = yield self._load_node_into_memory(new_device, source)
 
         try:
             yield global_invoke_all("_device_added_",
@@ -1062,29 +930,3 @@ class Devices(YomboLibrary, LibrarySearch):
 
         results = yield device.update_attributes({"status": 2}, source=source, session=session)
         return results
-
-    @inlineCallbacks
-    def wait_for_command_to_finish(self, request_id, timeout=1):
-        """
-        Simply waits for a command to finish by monitoring the device command
-        request status.
-
-        :param request_id:
-        :param timeout:
-        :return:
-        """
-        if request_id not in self.device_commands:
-            return True
-        device_command = self.device_commands[request_id]
-        waiting = True
-        waited_time = 0
-        while(waiting):
-            status_id = device_command.status_id
-            if status_id == 100:
-                return True
-            if status_id > 100:
-                return False
-            yield sleep(0.05)
-            waited_time += 0.05
-            if waited_time > timeout:
-                return False

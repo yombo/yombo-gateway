@@ -64,7 +64,6 @@ class Storage(YomboLibrary):
     def _init_(self, **kwargs):
         self.storage = {}
         self.mime = MimeTypes()
-        self.gateway_id = self._Configs.get("core", "gwid", "local", False)
         self.purge_expired_running = False
 
     @inlineCallbacks

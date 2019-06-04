@@ -83,7 +83,7 @@
                                         <th>Name</th><th>Location</th><th>Area</th><th>Description</th><th>Device Type</th><th>Device Status</th><th>Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody>{% for device_id, device in _devices.devices.items() if device.enabled_status == 1
+                                <tbody>{% for device_id, device in _devices.devices.items() if device.status == 1
                                             and device.gateway_id == _local_gateway.gateway_id
                                             and device.device_id in item_keys
                                         %}
@@ -95,13 +95,13 @@
                                         <td data-priority="3">{{ device.area }}</td>
                                         <td data-priority="5">{{ device.description }}</td>
                                         <td data-priority="6">{{ _devicetypes[device.device_type_id].label }}</td>
-                                        <td data-priority="2">{{ device.status_all.human_status }}</td>
+                                        <td data-priority="2">{{ device.state_all.human_status }}</td>
                                         <td data-priority="2">
-                                            {%- if device.enabled_status == 0 -%}
+                                            {%- if device.status == 0 -%}
                                          <a href="/devices/{{ device.device_id }}/edit">Edit</a> &nbsp; <a class="alert-success" href="/devices/{{ device.device_id }}/enable">Enable</a> &nbsp; <a class="alert-danger" href="/devices/{{ device.device_id }}/delete">Delete</a>
-                                            {%- elif device.enabled_status == 1 -%}
+                                            {%- elif device.status == 1 -%}
                                          <a href="/devices/{{ device.device_id }}/edit">Edit</a> &nbsp; <a class="alert-warning" href="/devices/{{ device.device_id }}/disable">Disable</a> &nbsp; <a class="alert-danger" href="/devices/{{ device.device_id }}/delete">Delete</a>
-                                            {%- elif device.enabled_status == 2 -%}
+                                            {%- elif device.status == 2 -%}
                                          <a class="alert-success"  href="/devices/{{ device.device_id }}/disable">Enable</a>
                                             {%- endif %}
                                         </td>
@@ -119,7 +119,7 @@
                                         <th>Gateway</th><th>Name</th><th>Location</th><th>Area</th><th>Description</th><th>Device Type</th><th>Device Status</th>
                                     </tr>
                                 </thead>
-                                <tbody>{% for device_id, device in _devices.items() if device.enabled_status == 1
+                                <tbody>{% for device_id, device in _devices.items() if device.status == 1
                                             and device.gateway_id != _local_gateway.gateway_id
                                             and device.device_id in item_keys
                                         %}
@@ -132,7 +132,7 @@
                                         <td>{{ device.area }}</td>
                                         <td>{{ device.description }}</td>
                                         <td>{{ _devicetypes[device.device_type_id].label }}</td>
-                                        <td>{{ device.status_all.human_status }}</td>
+                                        <td>{{ device.state_all.human_status }}</td>
                                      </tr>{% endfor %}
                                 </tbody>
                             </table>
@@ -147,7 +147,7 @@
                                         <th>Name</th><th>Gateway</th><th>Area</th><th>Location</th><th>Description</th><th>Device Type</th><th>Device Status</th><th>Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody>{% for device_id, device in _devices.items() if device.enabled_status == 0
+                                <tbody>{% for device_id, device in _devices.items() if device.status == 0
                                             and device.device_id in item_keys
                                         %}
                                      <tr>
@@ -159,13 +159,13 @@
                                         <td data-priority="4">{{ device.location }}</td>
                                         <td data-priority="5">{{ device.description }}</td>
                                         <td data-priority="6">{{ _devicetypes[device.device_type_id].label }}</td>
-                                        <td data-priority="2">{{ device.status_all.human_status }}</td>
+                                        <td data-priority="2">{{ device.state_all.human_status }}</td>
                                         <td data-priority="2">
-                                            {% if device.enabled_status == 0 -%}
+                                            {% if device.status == 0 -%}
                                          <a href="/devices/{{ device.device_id }}/edit">Edit</a> &nbsp; <a class="alert-success" href="/devices/{{ device.device_id }}/enable">Enable</a> &nbsp; <a class="alert-danger" href="/devices/{{ device.device_id }}/delete">Delete</a>
-                                            {% elif device.enabled_status == 1 -%}
+                                            {% elif device.status == 1 -%}
                                          <a href="/devices/{{ device.device_id }}/edit">Edit</a> &nbsp; <a class="alert-warning" href="/devices/{{ device.device_id }}/disable">Disable</a> &nbsp; <a class="alert-danger" href="/devices/{{ device.device_id }}/delete">Delete</a>
-                                            {% elif device.enabled_status == 2 -%}
+                                            {% elif device.status == 2 -%}
                                          <a class="alert-success"  href="/devices/{{ device.device_id }}/disable">Enable</a>
                                             {% endif %}
 

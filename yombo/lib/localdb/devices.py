@@ -15,12 +15,12 @@ class DB_Devices(object):
     @inlineCallbacks
     def get_devices(self, status=None):
         if status == True:
-            records = yield Device.all()
+            records = yield Device.find(orderby="label ASC")
         #            return records
         elif status is None:
-            records = yield Device.find(where=["status = ? OR status = ?", 1, 0])
+            records = yield Device.find(where=["status = ? OR status = ?", 1, 0], orderby="label ASC")
         else:
-            records = yield Device.find(where=["status = ? ", status])
+            records = yield Device.find(where=["status = ? ", status], orderby="label ASC")
         if len(records) > 0:
             for record in records:
                 record = record.__dict__
@@ -55,7 +55,7 @@ class DB_Devices(object):
             "pin_required": device.pin_required,
             "pin_code": device.pin_code,
             "pin_timeout": device.pin_timeout,
-            "status": device.enabled_status,
+            "status": device.status,
             "created_at": device.created_at,
             "updated_at": device.updated_at,
         }
@@ -75,26 +75,6 @@ class DB_Devices(object):
         for record in records:
             results.append(record.__dict__)  # we need a dictionary, not an object
         return results
-
-    @inlineCallbacks
-    def get_device_status(self, where, **kwargs):
-        limit = self._get_limit(**kwargs)
-
-        records = yield self.dbconfig.select("device_status",
-                                             where=dictToWhere(where),
-                                             orderby="set_at DESC",
-                                             limit=limit)
-        data = []
-        for record in records:
-            record["source"] = "database"
-            machine_status_extra = record["machine_status_extra"]
-            if machine_status_extra is None:
-                record["machine_status_extra"] = None
-            else:
-                record["machine_status_extra"] = data_unpickle(machine_status_extra)
-
-            data.append(record)
-        return data
 
     @inlineCallbacks
     def get_device_commands(self, where, **kwargs):

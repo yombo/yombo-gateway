@@ -272,7 +272,6 @@ class Atoms(YomboLibrary):
         """
         self.library_state = 1
         # self.gateway_id = "local"
-        self.gateway_id = self._Configs.get("core", "gwid", "local", False)
         self._loaded = False
         self.atoms = {self.gateway_id: {}}
         # if "local" not in self.atoms:

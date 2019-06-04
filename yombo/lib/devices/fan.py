@@ -112,9 +112,9 @@ class Fan(Device):
         Return the current speed of a fan.
         """
         if len(self.status_history) > 0:
-            machine_status_extra = self.status_history[0].machine_status_extra
-            if STATUS_EXTRA_SPEED in machine_status_extra:
-                return machine_status_extra[STATUS_EXTRA_SPEED]
+            machine_state_extra = self.status_history[0].machine_state_extra
+            if STATUS_EXTRA_SPEED in machine_state_extra:
+                return machine_state_extra[STATUS_EXTRA_SPEED]
             else:
                 return 0
         return None
@@ -125,9 +125,9 @@ class Fan(Device):
         Return the current speed of a fan.
         """
         if len(self.status_history) > 0:
-            machine_status_extra = self.status_history[0].machine_status_extra
-            if STATUS_EXTRA_SPEED_LABEL in machine_status_extra:
-                return machine_status_extra[STATUS_EXTRA_SPEED_LABEL]
+            machine_state_extra = self.status_history[0].machine_state_extra
+            if STATUS_EXTRA_SPEED_LABEL in machine_state_extra:
+                return machine_state_extra[STATUS_EXTRA_SPEED_LABEL]
         return None
 
     @property
@@ -136,9 +136,9 @@ class Fan(Device):
         Return the current direction of a fan.
         """
         if len(self.status_history) > 0:
-            machine_status_extra = self.status_history[0].machine_status_extra
-            if STATUS_EXTRA_DIRECTION in machine_status_extra:
-                return machine_status_extra[STATUS_EXTRA_DIRECTION]
+            machine_state_extra = self.status_history[0].machine_state_extra
+            if STATUS_EXTRA_DIRECTION in machine_state_extra:
+                return machine_state_extra[STATUS_EXTRA_DIRECTION]
             else:
                 return None
         return None
@@ -149,15 +149,15 @@ class Fan(Device):
         Return the current direction of a fan.
         """
         if len(self.status_history) > 0:
-            machine_status_extra = self.status_history[0].machine_status_extra
-            if STATUS_EXTRA_OSCILLATING in machine_status_extra:
-                return machine_status_extra[STATUS_EXTRA_OSCILLATING]
+            machine_state_extra = self.status_history[0].machine_state_extra
+            if STATUS_EXTRA_OSCILLATING in machine_state_extra:
+                return machine_state_extra[STATUS_EXTRA_OSCILLATING]
             else:
                 return None
         return None
 
     def toggle(self, **kwargs):
-        if self.status_history[0].machine_status == 0:
+        if self.status_history[0].machine_state == 0:
             if "previous_on_speed" in self.meta:
                 return self.command(COMMAND_ON, inputs={INPUT_SPEED: self.meta["previous_on_speed"]})
             else:

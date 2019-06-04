@@ -106,14 +106,11 @@ class WebInterface(BuildDistribution, ErrorHandler, Render, YomboLibrary, WebSer
 
         self.fqdn = self._Configs.get2("dns", "fqdn", None, False)
 
-        self.gateway_id = self._Configs.gateway_id
-        self.is_master = self._Configs.is_master
-        self.master_gateway_id = self._Configs.master_gateway_id
         self.enabled = self._Configs.get("core", "enabled", True)
         if not self.enabled:
             return
 
-        self.file_cache = {}  # used to load a few static files into memory that are commonly used.
+        self.file_cache = ExpiringDict(max_len=100, max_age_seconds=120) # used to load a few static files into memory that are commonly used.
         self.translators = {}
         self.idempotence = self._Cache.ttl(name="lib.webinterface.idempotence", ttl=300)
 
@@ -211,7 +208,7 @@ class WebInterface(BuildDistribution, ErrorHandler, Render, YomboLibrary, WebSer
         self.webapp.templates.globals["_atoms"] = self._Atoms
         self.webapp.templates.globals["_automation"] = self._Automation
         self.webapp.templates.globals["_cache"] = self._Cache
-        self.webapp.templates.globals["_calllater"] = self._Calllater
+        self.webapp.templates.globals["_calllater"] = self._CallLater
         self.webapp.templates.globals["_commands"] = self._Commands
         self.webapp.templates.globals["_configs"] = self._Configs
         self.webapp.templates.globals["_crontab"] = self._CronTab
@@ -502,7 +499,7 @@ class WebInterface(BuildDistribution, ErrorHandler, Render, YomboLibrary, WebSer
         # build menu tree
         self.misc_wi_data["nav_side"] = {}
 
-        is_master = self.is_master()
+        is_master = self.is_master
         # temp_list = sorted(nav_side_menu, key=itemgetter("priority1", "priority2", "label1"))
         temp_list = sorted(nav_side_menu, key=itemgetter("priority1", "label1", "priority2", "label2"))
         for item in temp_list:

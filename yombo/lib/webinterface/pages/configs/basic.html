@@ -109,10 +109,10 @@
 						<select name="master_gateway_id" id="master_gateway_id" required
 								class="selectpicker show-tick" title="Select...">
 							<option value="{{_local_gateway.gateway_id}}"
-									{%- if _gateways.is_master() == true -%}selected{% endif %}>{{_local_gateway.label}}</option>
+									{%- if _gateways.is_master == true -%}selected{% endif %}>{{_local_gateway.label}}</option>
 							<option data-divider="true"></option>
 							{% for gateway in master_gateways if gateway['id'] != _local_gateway.gateway_id %}
-							<option value="{{ gateway['id'] }}"{% if gateway['id'] == master_gateway_id() %} selected{% endif %}>{{ gateway.label }}
+							<option value="{{ gateway['id'] }}"{% if gateway['id'] == master_gateway_id %} selected{% endif %}>{{ gateway.label }}
 							{% if id == _local_gateway.gateway_id %} (This gateway){%endif%}</option>
 							{%- endfor %}
 						</select>

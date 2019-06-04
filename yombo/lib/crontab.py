@@ -54,7 +54,7 @@ Usage example
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2013-2018 by Yombo.
+:copyright: Copyright 2013-2019 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/crontab.html>`_
 """
@@ -225,7 +225,6 @@ class CronTab(YomboLibrary, LibrarySearch):
         :param loader: A pointer to the Loader library.
         :type loader: Instance of Loader
         """
-        self.gateway_id = self._Configs.get2("core", "gwid", "local", False)
         self.check_cron_tabs_loop = None  # a simple loop that checks all cron tabs to see if they need to run.
         self.check_cron_tabs_loop = LoopingCall(self.check_cron_tabs)
 
@@ -234,7 +233,7 @@ class CronTab(YomboLibrary, LibrarySearch):
         Start the looping call to check for cron every minute.
         """
         now = datetime.now()
-        cron_next_minute =  now - timedelta(seconds=now.second - 61)  # we always run cron near the top of the minute
+        cron_next_minute = now - timedelta(seconds=now.second - 61)  # we always run cron near the top of the minute
         cron_start = float(cron_next_minute.strftime("%s.%f")) - float(now.strftime("%s.%f")) - 0.2
 
         reactor.callLater(cron_start, self.start_cron_loop)
@@ -291,7 +290,7 @@ class CronTab(YomboLibrary, LibrarySearch):
         if source is None:
             source = "system"
         if gateway_id is None:
-            gateway_id = self.gateway_id()
+            gateway_id = self.gateway_id
 
         newCron = CronTask(self, crontab_callback, min=min, hour=hour, day=day, month=month,
             dow=dow, label=label, enabled=enabled, crontab_library=self, args=args,
@@ -465,7 +464,7 @@ class CronTask(object):
         self.args = args
         self.kwargs = kwargs
         self.source = source
-        self.gateway_id = gateway_id or parent.gateway_id()
+        self.gateway_id = gateway_id or parent.gateway_id
 
     def __del__(self):
         """

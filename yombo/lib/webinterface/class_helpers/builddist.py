@@ -92,8 +92,6 @@ class BuildDistribution:
             logger.warn("Cannot build frontend : already building...")
             return
         start_time = time()
-        # print("!!!!!!! Build frontend starting")
-        self.frontend_building = True
 
         # Idea #8953872 - Only build if the files have changed. This will generate a sha1 for an entire directory.
         # find ./ ! -path "./node_modules/*" ! -path "./dist/*" -type f -print0 | sort -z | xargs -0 sha1sum | sha1sum
@@ -103,10 +101,12 @@ class BuildDistribution:
             logger.info("Frontend builder appears to already be running. Won't build now.")
             return
 
+        # print("!!!!!!! Build frontend starting")
+        self.frontend_building = True
         yield self.frontend_npm_run()
-        self.frontend_building = False
         logger.info("Finished building frontend app in {seconds} seconds.", seconds=round(time() - start_time))
         yield self.copy_frontend()  # now copy the final version...
+        self.frontend_building = False
 
     @inlineCallbacks
     def check_npm_running(self):
@@ -138,31 +138,6 @@ class BuildDistribution:
         yield self.copytree("yombo/frontend/dist/_nuxt/", "frontend/_nuxt/")
         yield threads.deferToThread(shutil.copy2, self.app_dir + "/yombo/frontend/dist/index.html", self.working_dir + "/frontend/")
         yield threads.deferToThread(shutil.copy2, self.app_dir + "/yombo/frontend/dist/sw.js", self.working_dir + "/frontend/")
-        yield self.load_file_cache()
-
-    @inlineCallbacks
-    def load_file_cache(self):
-        """
-        Loads a few files into memory for faster reply. This used in home_static_frontend_catchall
-        :return:
-        """
-        logger.debug("LOADING FILE CACHE!!!!!!!!!!!!!!!!!!!!!!!!111111")
-        if "index" not in self.file_cache:
-            self.file_cache["index"] = {}
-        try:
-            self.file_cache["index"]["data"] = yield read_file(f"{self.working_dir}/frontend/index.html")
-            self.file_cache["index"]["headers"] = {"Cache-Control": f"max-age=7200",
-                                                   "Content-Type": "text/html"}
-        except:
-            pass
-        if "sw.js" not in self.file_cache:
-            self.file_cache["sw.js"] = {}
-        try:
-            self.file_cache["sw.js"]["data"] = yield read_file(f"{self.working_dir}/frontend/sw.js")
-            self.file_cache["sw.js"]["headers"] = {"Cache-Control": f"max-age=120",
-                                                   "Content-Type": "application/javascript"}
-        except:
-            pass
 
     @inlineCallbacks
     def download_background_images(self):
@@ -216,7 +191,7 @@ class BuildDistribution:
             client_location = "remote"
 
         return json.dumps({
-            "gateway_id": self.gateway_id(),
+            "gateway_id": self.gateway_id,
             "working_dir": self.working_dir,
             "internal_http_port": internal_http_port,
             "internal_http_secure_port": internal_http_secure_port,

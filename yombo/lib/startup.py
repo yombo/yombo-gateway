@@ -67,7 +67,6 @@ class Startup(YomboLibrary):
         self.gwhash = self._Configs.get2("core", "gwhash", None, False)
         self.has_valid_gw_auth = False
 
-        self.cache_updater_running = False
         self.system_stopping = False
         if self._Loader.operating_mode == "first_run":  # will know if first_run already or yombo.ini is missing.
             self.configs_needed = ['gwid', 'gwhash']
@@ -133,14 +132,13 @@ class Startup(YomboLibrary):
                         self.configs_needed_human.append("Gateway password is missing.")
                         return
                     gateway_dns = response.content["data"]["attributes"]
-                    print(f"gateway_dns: {gateway_dns}")
                     self._Configs.set("dns", "domain_id", gateway_dns["dns_domain_id"])
                     self._Configs.set("dns", "name", gateway_dns["name"])
                     self._Configs.set("dns", "allow_change_at", gateway_dns["allow_change_at"])
                     self._Configs.set("dns", "domain", gateway_dns["domain"])
                     self._Configs.set("dns", "fqdn", f"{gateway_dns['name']}.{gateway_dns['domain']}")
                 else:
-                    self._Configs.set("dns", "dns_domain_id", None)
+                    self._Configs.set("dns", "domain_id", None)
                     self._Configs.set("dns", "name", None)
                     self._Configs.set("dns", "allow_change_at", None)
                     self._Configs.set("dns", "domain", None)
@@ -176,51 +174,3 @@ class Startup(YomboLibrary):
         self._Atoms.set("ffmpeg_bin", results, source=self)
         results = yield threads.deferToThread(search_for_executable, 'ffprobe')
         self._Atoms.set("ffprobe_bin", results, source=self)
-
-    def _start_(self, **kwargs):
-        """
-        Handles making sure caches are regularly updated and cleaned.
-        :return:
-        """
-        self.update_caches_loop = LoopingCall(self.update_caches)
-        self.update_caches_loop.start(60*60*6, False)
-
-    def _stop_(self, **kwargs):
-        self.system_stopping = True
-
-    @inlineCallbacks
-    def update_caches(self, force=None, quick=False):
-        """
-        Iterates through all libraries to update the cache, then tells the modules to do the same.
-
-        This will be removed in a future version due the new caching library.
-        :return:
-        """
-        if self.cache_updater_running is True and force is True:
-            self.cache_updater_running == None
-            return
-
-        if self._Loader.operating_mode != "run" or self.cache_updater_running is not False or \
-                self.system_stopping is True:
-            return
-
-        logger.info("Starting cache updates.")
-
-        # Copied from Modules library, but with sleeps and checks.
-        for module_id, module in self._Modules.modules.items():
-            if self.cache_updater_running is None or self.system_stopping is True:
-                self.cache_updater_running = False
-                self.update_caches_loop.reset()
-                return
-
-            yield self._Modules.do_update_module_cache(module)
-            yield sleep(1)
-
-        for device_id, device in self._Devices.devices.items():
-            if self.cache_updater_running is None or self.system_stopping is True:
-                self.cache_updater_running = False
-                self.update_caches_loop.reset()
-                return
-
-            yield device.device_variables()
-            yield sleep(0.5)

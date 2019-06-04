@@ -89,8 +89,8 @@ def run_first(create_session=None, *args, **kwargs):
 
             if len(host_info) > 1:
                 request.requestHeaders.setRawHeaders("host_port", [host_info[1]])
-            else:
-                request.requestHeaders.setRawHeaders("host_port", [None])
+            # else:
+            #     request.requestHeaders.setRawHeaders("host_port", [None])
 
             try:
                 session = webinterface._AuthKeys.get_session_from_request(request)
@@ -154,8 +154,8 @@ def require_auth(roles=None, login_redirect=None, access_platform=None, access_i
 
             if len(host_info) > 1:
                 request.requestHeaders.setRawHeaders("host_port", [host_info[1]])
-            else:
-                request.requestHeaders.setRawHeaders("host_port", [None])
+            # else:
+            #     request.requestHeaders.setRawHeaders("host_port", [None])
 
             if hasattr(request, "breadcrumb") is False:
                 request.breadcrumb = []
@@ -164,7 +164,6 @@ def require_auth(roles=None, login_redirect=None, access_platform=None, access_i
             # Try to find a session id from the client.
             if "api" in kwargs and kwargs["api"] is True:
                 if webinterface.web_interface_fully_started is False:
-                    # print("auth get session: api request")
                     return webinterface.render_api_error(request, None,
                                                          code="booting-1",
                                                          title="Still loading",
@@ -194,7 +193,7 @@ def require_auth(roles=None, login_redirect=None, access_platform=None, access_i
                     # print(f"require_auth: created new session: {session.asdict()}")
                     setup_login_redirect(webinterface, request, session, login_redirect)
                     logger.info("Discarding request, api requests not accepted: {e}", e=e)
-                    logger.debug("Request: {request}", request=request)
+                    logger.info("Request: {request}", request=request)
                     return return_need_login(webinterface, request, None,
                                              api_message=f"Discarding request, api requests not accepted: {e}",
                                              **kwargs)

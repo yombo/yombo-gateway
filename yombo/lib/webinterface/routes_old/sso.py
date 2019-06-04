@@ -46,7 +46,7 @@ def route_sso(webapp):
         @webapp.route("/gateway_user_login")
         @inlineCallbacks
         def page_devices_index(webinterface, request, session):
-            gateway_id = webinterface.gateway_id()
+            gateway_id = webinterface.gateway_id
             if "token" not in request.args:
                 print("token is required....")
                 return webinterface.redirect(request, "/")
@@ -578,7 +578,7 @@ def route_sso(webapp):
             webinterface.add_breadcrumb(request, "/info", "Info")
             webinterface.add_breadcrumb(request, "/devices/delayed_commands", "Device Commands")
             return page.render(alerts=webinterface.get_alerts(),
-                               device_commands=webinterface._Devices.device_commands,
+                               device_commands=webinterface._DeviceCommands.device_commands,
                                )
 
         @webapp.route("/device_commands/<string:device_command_id>/details")
@@ -592,7 +592,7 @@ def route_sso(webapp):
             webinterface.add_breadcrumb(request, "/devices/device_commands", "Device Commands")
             webinterface.add_breadcrumb(request, "/devices/device_commands", "Request")
             try:
-                device_command = webinterface._Devices.device_commands[device_command_id]
+                device_command = webinterface._DeviceCommands.device_commands[device_command_id]
             except Exception as e:
                 webinterface.add_alert(f"Cannot find requested id. <br>Error details: {e}")
                 return webinterface.redirect(request, "/devices/device_commands")

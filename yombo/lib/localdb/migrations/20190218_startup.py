@@ -7,22 +7,6 @@ from yombo.lib.localdb.migrations import create_index
 print("Creating new database file. This will take a bit of time on Raspberry Pi like devices.")
 steps = [
    group([
-      # Nearly the same as webinterface_sessions, but for auth keys
-      step("""CREATE TABLE `auth_keys` (
-        `id`              TEXT NOT NULL,
-        `label`           TEXT NOT NULL,
-        `description`     TEXT NOT NULL,
-        `enabled`         INTEGER NOT NULL,
-        `roles`           TEXT,
-        `auth_data`       TEXT NOT NULL,
-        `created_by`      TEXT NOT NULL,
-        `created_by_type` TEXT NOT NULL,
-        `created_at`      INTEGER NOT NULL,
-        `last_access_at`  INTEGER NOT NULL,
-        `updated_at`      INTEGER NOT NULL,
-        PRIMARY KEY(id));"""),
-      step(create_index("auth_keys", "created_at")),
-
       # System categories
       step("""CREATE TABLE `categories` (
         `id`            TEXT NOT NULL,
@@ -52,6 +36,23 @@ steps = [
       step(create_index("commands", "id", unique=True)),
       step(create_index("commands", "machine_label", unique=True)),
       step(create_index("commands", "id", unique=True)),
+
+      # Stores user defined crontabs.
+      step("""CREATE TABLE `crontab` (
+        `id`           TEXT NOT NULL,
+        `minute`       TEXT NOT NULL,
+        `hour`         TEXT,
+        `day`          TEXT NOT NULL,
+        `month`        TEXT NOT NULL,
+        `dow`          TEXT NOT NULL,
+        `label`        TEXT,
+        `enabled`      TEXT,
+        `args`         TEXT,
+        `kwargs`       FLOAT,
+        `created_at`   FLOAT,
+        `updated_at`   FLOAT
+        );"""),
+      # step(create_index("crontab", "id")),
 
       # Defines the devices table. Lists all possible devices for local gateway and related remote gateways.
       step("""CREATE TABLE `devices` (
@@ -141,45 +142,27 @@ steps = [
       step(create_index("device_commands", "request_id", unique=True)),
       step(create_index("device_commands", "finished_at")),
 
-      # Stores user defined crontabs.
-      step("""CREATE TABLE `crontab` (
-        `id`           TEXT NOT NULL,
-        `minute`       TEXT NOT NULL,
-        `hour`         TEXT,
-        `day`          TEXT NOT NULL,
-        `month`        TEXT NOT NULL,
-        `dow`          TEXT NOT NULL,
-        `label`        TEXT,
-        `enabled`      TEXT,
-        `args`         TEXT,
-        `kwargs`       FLOAT,
-        `created_at`   FLOAT,
-        `updated_at`   FLOAT
-        );"""),
-      # step(create_index("crontab", "id")),
-
-      # Defines the device status table. Stores device status information.
-      step("""CREATE TABLE `device_status` (
-        `id`                   INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-        `status_id`            TEXT NOT NULL,
+      # Defines the device states table to store device state history
+      step("""CREATE TABLE `device_states` (
+        `id`                   TEXT NOT NULL,
         `device_id`            TEXT NOT NULL, /* device_id */
         `command_id`           TEXT,
         `request_id`           TEXT,
         `set_at`               REAL NOT NULL,
         `energy_usage`         INTEGER NOT NULL,
         `energy_type`          TEXT,
-        `human_status`         TEXT NOT NULL,
+        `human_state`          TEXT NOT NULL,
         `human_message`        TEXT NOT NULL,
-        `machine_status`       TEXT NOT NULL,
-        `machine_status_extra` TEXT,
+        `machine_state`        TEXT NOT NULL,
+        `machine_state_extra`  TEXT,
         `auth_id`              TEXT NOT NULL,
         `requesting_source`    TEXT,
         `reporting_source`     TEXT NOT NULL,
         `uploaded`             INTEGER NOT NULL DEFAULT 0,
         `uploadable`           INTEGER NOT NULL DEFAULT 0 /* For security, only items marked as 1 can be sent externally */
         );"""),
-      step(create_index("device_status", "status_id", unique=True)),
-      step(create_index("device_status", "uploaded")),
+      step(create_index("device_states", "id", unique=True)),
+      step(create_index("device_statese ", "uploaded")),
 
       # Device types defines the features of a device. For example, all X10 appliances or Insteon Lamps.
       step("""CREATE TABLE `device_types` (

@@ -210,7 +210,7 @@ def route_modules(webapp):
                 return webinterface.redirect(request, "/modules/index")
 
             page = webinterface.get_template(request, webinterface.wi_dir + "/pages/modules/details.html")
-            module_device_types = yield webinterface._Modules.module_device_types(module_id)
+            module_device_types = webinterface._Modules.module_device_types(module_id)
             module_variables = yield module._module_variables()
             # print("module_variables: %s" % module_variables)
             webinterface.home_breadcrumb(request)

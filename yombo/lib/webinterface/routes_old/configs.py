@@ -38,7 +38,7 @@ def route_configs(webapp):
             return page.render(alerts=webinterface.get_alerts(),
                                config=configs,
                                master_gateways=master_gateways,
-                               master_gateway_id=webinterface.master_gateway_id(),
+                               master_gateway_id=webinterface.master_gateway_id,
                                )
 
         @webapp.route("/basic", methods=["POST"])
@@ -72,7 +72,7 @@ def route_configs(webapp):
                 webinterface.add_alert(e.html_message, "warning")
                 return webinterface.redirect(request, "/")
             new_master = None
-            if submitted_master_gateway_id == webinterface.gateway_id():
+            if submitted_master_gateway_id == webinterface.gateway_id:
                 new_master = True
             else:
                 for gateway in master_gateways_results["data"]:
@@ -108,7 +108,7 @@ def route_configs(webapp):
 
             if valid_submit:
                 try:
-                    if submitted_master_gateway_id == webinterface.gateway_id():
+                    if submitted_master_gateway_id == webinterface.gateway_id:
                         is_master = True
                     else:
                         is_master = False
@@ -120,7 +120,7 @@ def route_configs(webapp):
                     }
                     # print("data: %s" % data)
                     results = yield webinterface._YomboAPI.request("PATCH",
-                                                                   f"/v1/gateway/{webinterface.gateway_id()}",
+                                                                   f"/v1/gateway/{webinterface.gateway_id}",
                                                                    data,
                                                                    session=session["yomboapi_session"])
                     # print("api results: %s" % results)
@@ -313,7 +313,7 @@ def route_configs(webapp):
 
             try:
                 dns_results = yield webinterface._YomboAPI.request("POST",
-                                                                   f"/v1/gateway/{webinterface.gateway_id()}/dns_name",
+                                                                   f"/v1/gateway/{webinterface.gateway_id}/dns_name",
                                                                    data,
                                                                    session=session["yomboapi_session"])
             except YomboWarning as e:
@@ -333,9 +333,9 @@ def route_configs(webapp):
                                              "local": True,
                                              })
 
-            webinterface._Configs.set("dns", "dns_name", dns_results["data"]["dns_name"])
-            webinterface._Configs.set("dns", "dns_domain", dns_results["data"]["dns_domain"])
-            webinterface._Configs.set("dns", "dns_domain_id", dns_results["data"]["dns_domain_id"])
+            webinterface._Configs.set("dns", "name", dns_results["data"]["dns_name"])
+            webinterface._Configs.set("dns", "domain", dns_results["data"]["dns_domain"])
+            webinterface._Configs.set("dns", "domain_id", dns_results["data"]["dns_domain_id"])
             webinterface._Configs.set("dns", "allow_change_at", dns_results["data"]["allow_change_at"])
             webinterface._Configs.set("dns", "fqdn", dns_results["data"]["fqdn"])
 

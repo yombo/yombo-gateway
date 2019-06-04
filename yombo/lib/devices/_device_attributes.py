@@ -20,6 +20,7 @@ from copy import deepcopy
 from time import time
 
 # Import twisted libraries
+from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks, maybeDeferred, Deferred
 
 # Yombo Constants
@@ -31,14 +32,14 @@ from yombo.constants.features import (FEATURE_ALL_OFF, FEATURE_ALL_ON, FEATURE_P
 from yombo.utils import is_true_false
 from yombo.core.log import get_logger
 from yombo.mixins.magicattributesmixin import MagicAttributesMixin
+from yombo.mixins.synctoeverywhere import SyncToEverywhere
 from yombo.utils import global_invoke_all
 
-from ._device_command import Device_Command
-from ._device_status import Device_Status
+from ._device_state import Device_State
 logger = get_logger("library.devices.device_attributes")
 
 
-class Device_Attributes(MagicAttributesMixin):
+class Device_Attributes(MagicAttributesMixin, SyncToEverywhere):
     """
     This base class is the main bootstrap and is responsible for settings up all core attributes.
 
@@ -50,8 +51,8 @@ class Device_Attributes(MagicAttributesMixin):
         * :py:meth:`device_command_failed <Device.device_command_failed>` - When a module is unable to process a command.
         * :py:meth:`device_command_done <Device.device_command_done>` - When a command has completed..
         * :py:meth:`energy_get_usage <Device.energy_get_usage>` - Get current energy being used by a device.
-        * :py:meth:`get_status <Device.get_status>` - Get a latest device status object.
-        * :py:meth:`set_status <Device.set_status>` - Set the device status.
+        * :py:meth:`get_state <Device.get_state>` - Get a latest device state object.
+        * :py:meth:`set_state <Device.set_state>` - Set the device state.
     """
     @property
     def area(self) -> str:
@@ -177,29 +178,29 @@ class Device_Attributes(MagicAttributesMixin):
             return self.statistic_label
 
     @property
-    def status(self):
+    def state(self):
         """
-        Return the machine status of the device.
+        Return the machine state of the device.
         """
-        return self.status_all.machine_status
+        return self.state_all.machine_state
 
     @property
-    def machine_status(self):
+    def machine_state(self):
         """
-        Get the current machine status for a device. This is an alias for 'status' property.
+        Get the current machine state for a device. This is an alias for 'state' property.
 
         :return:
         """
-        return self.status_all.machine_status
+        return self.state_all.machine_state
 
     @property
-    def human_status(self):
+    def human_state(self):
         """
-        Get the current human status.
+        Get the current human state.
 
         :return:
         """
-        return self.status_all.human_status
+        return self.state_all.human_state
 
     @property
     def human_message(self):
@@ -208,42 +209,42 @@ class Device_Attributes(MagicAttributesMixin):
 
         :return:
         """
-        return self.status_all.human_message
+        return self.state_all.human_message
 
     @property
-    def machine_status_extra(self):
+    def machine_state_extra(self):
         """
-        Get the current machine status extra details for a device.
+        Get the current machine state extra details for a device.
 
         :return:
         """
-        return self.status_all.machine_status_extra
+        return self.state_all.machine_state_extra
 
     @property
-    def status_all(self):
+    def state_all(self):
         """
-        Return the device's current status. Will return fake status of
-        there is no current status which basically says the status is unknown.
+        Return the device's current state. Will return fake state of
+        there is no current state which basically says the state is unknown.
         """
-        if len(self.status_history) == 0:
-            return Device_Status(self._Parent, self, {
+        if len(self.state_history) == 0:
+            return Device_State(self._Parent, self, {
                 "command": None,
                 "set_at": time(),
                 "energy_usage": 0,
                 "energy_type": self.energy_type,
-                "human_status": "Unknown",
-                "human_message": "Unknown status for device",
-                "machine_status": None,
-                "machine_status_extra": {},
+                "human_state": "Unknown",
+                "human_message": "Unknown state for device",
+                "machine_state": None,
+                "machine_state_extra": {},
                 "gateway_id": self.gateway_id,
                 "auth_id": "unknown",
                 "reporting_source": "unknown",
                 "request_id": None,
                 "uploaded": 0,
                 "uploadable": 1,
-                "fake_data": True,
+                "_fake_data": True,
             })
-        return self.status_history[0]
+        return self.state_history[0]
 
     @property
     def features(self) -> list:
@@ -311,21 +312,21 @@ class Device_Attributes(MagicAttributesMixin):
         """
         This should be overridden by the device types themselves. This is simply a fallback.
 
-        If the machine_status is 0, returns. Otherwise returns 100.
+        If the machine_state is 0, returns. Otherwise returns 100.
         """
-        if len(self.status_history) > 0:
-            machine_status = self.status_history[0].machine_status
-            return self.calc_percent(machine_status, self.machine_status_extra)
+        if len(self.state_history) > 0:
+            machine_state = self.state_history[0].machine_state
+            return self.calc_percent(machine_state, self.machine_state_extra)
         return 0
 
-    def calc_percent(self, machine_status, machine_status_extra):
+    def calc_percent(self, machine_state, machine_state_extra):
         """
-        Like percent property, but accepts machine_status as input
+        Like percent property, but accepts machine_state as input
         """
-        if machine_status == 0:
+        if machine_state == 0:
             return 0
-        elif machine_status <= 1:
-            return round(machine_status*100)
+        elif machine_state <= 1:
+            return round(machine_state*100)
         else:
             return 100
 
@@ -363,13 +364,33 @@ class Device_Attributes(MagicAttributesMixin):
     def __iter__(self):
         return iter(self.__dict__)
 
+    # @cached(5)
+    @property
+    def device_variables(self):
+        data = self._Parent._Variables.data("device", self.device_id)
+        variables = {}
+        field_map = {}
+        for variable_id, variable in data.items():
+            if variable.variable_field_id not in field_map:
+                field_map[variable.variable_field_id] = self._Parent._Variables.field_by_id(variable.variable_field_id)
+            field_name = field_map[variable.variable_field_id].field_machine_label
+
+            if field_name not in variables:
+                variables[field_name] = {"data": [], "decrypted": [], "display": [], "ref": []}
+
+            variables[field_name]["data"].append(variable.data)
+            variables[field_name]["decrypted"].append(variable.decrypted)
+            variables[field_name]["display"].append(variable.display)
+            variables[field_name]["ref"].append(variable)
+        return variables
+
     def __init__(self, _Parent, device, **kwargs):
         """
         :param device: *(list)* - A device as passed in from the devices class. This is a
             dictionary with various device attributes.
-        :ivar callBeforeChange: *(list)* - A list of functions to call before this device has it's status
+        :ivar callBeforeChange: *(list)* - A list of functions to call before this device has it's state
             changed. (Not implemented.)
-        :ivar callAfterChange: *(list)* - A list of functions to call after this device has it's status
+        :ivar callAfterChange: *(list)* - A list of functions to call after this device has it's state
             changed. (Not implemented.)
         :ivar device_id: *(string)* - The UUID of the device.
         :type device_id: string
@@ -378,14 +399,15 @@ class Device_Attributes(MagicAttributesMixin):
         :ivar description: *(string)* - Device description as defined by the user.
         :ivar pin_required: *(bool)* - If a pin is required to access this device.
         :ivar pin_code: *(string)* - The device pin number.
-            system to deliver commands and status update requests.
+            system to deliver commands and state update requests.
         :ivar created_at: *(int)* - When the device was created; in seconds since EPOCH.
         :ivar updated_at: *(int)* - When the device was last updated; in seconds since EPOCH.
-        :ivar status_history: *(dict)* - A dictionary of strings for current and up to the last 30 status values.
-        :ivar device_variables_cached: *(dict)* - The device variables as defined by various modules, with
+        :ivar state_history: *(dict)* - A dictionary of strings for current and up to the last 30 state values.
+        :ivar device_variables: *(dict)* - The device variables as defined by various modules, with
             values entered by the user.
         :ivar available_commands: *(list)* - A list of command_id's that are valid for this device.
         """
+        self._internal_label = "devices"  # Used by mixins
         super().__init__(_Parent)
         self.PLATFORM_BASE = "device"
         self.PLATFORM = "device"
@@ -402,7 +424,7 @@ class Device_Attributes(MagicAttributesMixin):
             FEATURE_CONTROLLABLE: True,
             FEATURE_ALLOW_DIRECT_CONTROL: True,
         }
-        self.MACHINE_STATUS_EXTRA_FIELDS = {}  # Track what fields in status extra are allowed.
+        self.MACHINE_STATUS_EXTRA_FIELDS = {}  # Track what fields in state extra are allowed.
         self.TOGGLE_COMMANDS = False  # Put two command machine_labels in a list to enable toggling.
 
         self._FullName = "yombo.gateway.lib.Devices.Device"
@@ -410,7 +432,7 @@ class Device_Attributes(MagicAttributesMixin):
         self._Parent = _Parent
         self.call_before_command = []
         self.call_after_command = []
-        self._security_send_device_status = self._Configs.get2("security", "amqpsenddevicestatus", True)
+        self._security_send_device_states = self._Configs.get2("security", "amqpsenddevicestate", True)
 
         self.device_id = device["id"]
         test_device = kwargs.get("test_device", None)
@@ -421,86 +443,82 @@ class Device_Attributes(MagicAttributesMixin):
 
         memory_sizing = {
             "x_small": {"other_device_commands": 5,  #less then 512mb
-                        "other_status_history": 5,
+                        "other_state_history": 5,
                         "local_device_commands": 10,
-                        "local_status_history": 10},
+                        "local_state_history": 10},
             "small": {"other_device_commands": 15,  #About 1024mb
-                      "other_status_history": 15,
+                      "other_state_history": 15,
                       "local_device_commands": 40,
-                      "local_status_history": 40},
+                      "local_state_history": 40},
             "medium": {"other_device_commands": 40,  # About 1536mb
-                       "other_status_history": 40,
+                       "other_state_history": 40,
                        "local_device_commands": 80,
-                       "local_status_history": 80},
+                       "local_state_history": 80},
             "large": {"other_device_commands": 75,  # About 2048mb
-                      "other_status_history": 75,
+                      "other_state_history": 75,
                       "local_device_commands": 150,
-                      "local_status_history": 150},
+                      "local_state_history": 150},
             "x_large": {"other_device_commands": 150,  # About 4096mb
-                        "other_status_history": 150,
+                        "other_state_history": 150,
                         "local_device_commands": 300,
-                        "local_status_history": 300},
+                        "local_state_history": 300},
             "xx_large": {"other_device_commands": 300,  # More than 4096mb
-                         "other_status_history": 300,
+                         "other_state_history": 300,
                          "local_device_commands": 600,
-                         "local_status_history": 600},
+                         "local_state_history": 600},
         }
 
         sizes = memory_sizing[self._Parent._Atoms["mem.sizing"]]
         self.device_commands = deque({}, sizes["other_device_commands"])
-        self.status_history = deque({}, sizes["other_status_history"])
+        self.state_history = deque({}, sizes["other_state_history"])
 
-        self.device_variables_cached = {}
-        self.device_variable_fields_cached = {}
-
-        self.device_type_id = None
+        # Database backed items
         self.gateway_id = None
-        self.location_id = None
-        self.area_id = None
+        self.user_id = None
+        self.device_type_id = None
         self.machine_label = None
         self.label = None
         self.description = None
+        self.location_id = None
+        self.area_id = None
         self.notes = None
+        self.attributes = None
+        self.intent_allow = None
+        self.intent_text = None
         self.pin_required = None
         self.pin_code = None
         self.pin_timeout = None
-        self.intent_allow = None
-        self.intent_text = None
         self.statistic_label = None
+        self.statistic_lifetime = None
         self.statistic_type = None
         self.statistic_bucket_size = None
-        self.statistic_lifetime = None
-        self.enabled_status = 1  # not to be confused for device state. see status_history
+        self.energy_type = None
+        self.energy_tracker_source = None
+        self.energy_tracker_device = None
+        self.energy_map = None
+        self.controllable = None
+        self.allow_direct_control = None
+        self.status = None
         self.created_at = None
         self.updated_at = None
-        self.energy_tracker_device = None
-        self.energy_tracker_source = None
-        self.energy_map = None
-        self.energy_type = None
-        self.allow_direct_control = None
-        self.controllable = None
-        self.energy_type = None
+
+        # misc other attributes
         self.device_is_new = True
         self.device_serial = device["id"]
         self.device_mfg = "Yombo"
         self.device_model = "Yombo"
-        self.status_delayed = {}
-        self.status_delayed_calllater = None
+        self.state_delayed = {}
+        self.state_delayed_calllater = None
         self.source = kwargs.get("source", "database")
         self.parent = None  # Only set if this device is a child to anther device.
         self.parent_id = None  # Only set if this device is a child to anther device.
-        if self.source == "database":
-            self.is_in_db = True
-        else:
-            self.is_in_db = False
-        self.is_dirty = False
 
         if device["gateway_id"] != self.gateway_id:
             self.device_commands = deque({}, sizes["other_device_commands"])
-            self.status_history = deque({}, sizes["other_status_history"])
+            self.state_history = deque({}, sizes["other_state_history"])
         else:
             self.device_commands = deque({}, sizes["local_device_commands"])
-            self.status_history = deque({}, sizes["local_status_history"])
+            self.state_history = deque({}, sizes["local_state_history"])
 
     @inlineCallbacks
     def _system_init_(self, device, source):
@@ -511,7 +529,6 @@ class Device_Attributes(MagicAttributesMixin):
         """
         yield self.update_attributes(device, source=source, broadcast=False)
 
-        yield self.device_variable_fields()
         if self.test_device is None or self.test_device is False:
             self.meta = yield self._SQLDict.get("yombo.lib.device", "meta_" + self.device_id)
         else:
@@ -521,7 +538,7 @@ class Device_Attributes(MagicAttributesMixin):
             self.device_is_new = False
             device_history = self._Configs.get("devices", "load_history_depth", 30)
 
-            yield self.load_status_history(device_history)
+            yield self.load_state_history(device_history)
             yield self.load_device_commands_history(device_history)
 
     def _init_(self, **kwargs):
@@ -553,13 +570,13 @@ class Device_Attributes(MagicAttributesMixin):
 
     def _unload_(self, **kwargs):
         """
-        About to unload. Lets save all the device status items.
+        About to unload. Lets save all the device state items.
 
         :param kwargs:
         :return:
         """
-        for status in self.status_history:
-            status.save_to_db()
+        for state in self.state_history:
+            state.save_to_db()
 
     def _reload_(self, **kwargs):
         """
@@ -577,15 +594,15 @@ class Device_Attributes(MagicAttributesMixin):
         """
         Export device variables as a dictionary.
         """
-        if len(self.status_history) > 0:
-            status_current = self.status_history[0].asdict()
+        if len(self.state_history) > 0:
+            state_current = self.state_history[0].asdict()
         else:
-            status_current = None
+            state_current = None
 
-        if len(self.status_history) > 1:
-            status_previous = self.status_history[1].asdict()
+        if len(self.state_history) > 1:
+            state_previous = self.state_history[1].asdict()
         else:
-            status_previous = None
+            state_previous = None
 
         def clean_device_variables(device_variables):
             variables = deepcopy(device_variables)
@@ -622,8 +639,8 @@ class Device_Attributes(MagicAttributesMixin):
             "created_at": int(self.created_at),
             "updated_at": int(self.updated_at),
             "device_commands": list(self.device_commands),
-            "status_current": status_current,
-            "status_previous": status_previous,
+            "state_current": state_current,
+            "state_previous": state_previous,
             "controllable": self.controllable,
             "allow_direct_control": self.allow_direct_control,
             "device_serial": self.device_serial,
@@ -632,13 +649,12 @@ class Device_Attributes(MagicAttributesMixin):
             "device_platform": self.PLATFORM,
             "device_sub_platform": self.SUB_PLATFORM,
             "device_features": self.FEATURES,
-            "device_variables": clean_device_variables(self.device_variables_cached),
-            "device_variable_fields": self.device_variable_fields_cached,
+            "device_variables": clean_device_variables(self.device_variables),
             "energy_tracker_device": self.energy_tracker_device,
             "energy_tracker_source": self.energy_tracker_source,
             "energy_type": self.energy_type,
             "energy_map": self.energy_map,
-            "enabled_status": self.enabled_status,
+            "status": self.status,
             }
 
 
@@ -667,7 +683,7 @@ class Device_Attributes(MagicAttributesMixin):
             "intent_text": str(self.intent_text) if self.intent_text is not None else self.area_label,
             "controllable": self.controllable,
             "allow_direct_control": self.allow_direct_control,
-            "status": self.enabled_status,
+            "status": self.status,
 
         }
 
@@ -677,91 +693,28 @@ class Device_Attributes(MagicAttributesMixin):
         Sets various values from a device dictionary. This can be called when the device is first being setup or
         when being updated by the AMQP service.
 
-        This does not set any device state or status attributes.
+        This does not set any device state attributes.
 
         :param device:
         :return:
         """
-        try:
-            yield global_invoke_all("_device_before_edit_",
-                                    called_by=self,
-                                    id=self.device_id,
-                                    data=device,
-                                    device=self,
-                                    )
-        except Exception as e:
-            pass
+        if broadcast in (None, True):
+            try:
+                yield global_invoke_all("_device_before_edit_",
+                                        called_by=self,
+                                        id=self.device_id,
+                                        data=device,
+                                        device=self,
+                                        )
+            except Exception as e:
+                pass
 
-        if "device_type_id" in device:
-            self.device_type_id = device["device_type_id"]
-            self.is_dirty = True
-        if "gateway_id" in device:
-            self.gateway_id = device["gateway_id"]
-            self.is_dirty = True
-        if "location_id" in device:
-            self.location_id = device["location_id"]
-            self.is_dirty = True
-        if "area_id" in device:
-            self.area_id = device["area_id"]
-            self.is_dirty = True
-        if "machine_label" in device:
-            self.machine_label = device["machine_label"]
-            self.is_dirty = True
-        if "label" in device:
-            self.label = device["label"]
-            self.is_dirty = True
-        if "description" in device:
-            self.description = device["description"]
-            self.is_dirty = True
-        if "pin_required" in device:
-            self.pin_required = int(device["pin_required"])
-            self.is_dirty = True
-        if "pin_code" in device:
-            self.pin_code = device["pin_code"]
-            self.is_dirty = True
         if "pin_timeout" in device:
             try:
-                self.pin_timeout = int(device["pin_timeout"])
-                self.is_dirty = True
+                device["pin_timeout"] = int(device["pin_timeout"])
             except:
                 self.pin_timeout = None
-                self.is_dirty = True
-        if "intent_allow" in device:
-            self.intent_allow = device["intent_allow"]
-            self.is_dirty = True
-        if "intent_text" in device:
-            self.intent_text = device["intent_text"]
-            self.is_dirty = True
-        if "statistic_label" in device:
-            self.statistic_label = device["statistic_label"]  # "myhome.groundfloor.kitchen"
-            self.is_dirty = True
-        if "statistic_type" in device:
-            self.statistic_type = device["statistic_type"]
-            self.is_dirty = True
-        if "statistic_bucket_size" in device:
-            self.statistic_bucket_size = device["statistic_bucket_size"]
-            self.is_dirty = True
-        if "statistic_lifetime" in device:
-            self.statistic_lifetime = device["statistic_lifetime"]
-            self.is_dirty = True
-        if "status" in device:
-            self.enabled_status = int(device["status"])
-            self.is_dirty = True
-        if "created_at" in device:
-            self.created_at = int(device["created_at"])
-            self.is_dirty = True
-        if "updated_at" in device:
-            self.updated_at = int(device["updated_at"])
-            self.is_dirty = True
-        if "energy_tracker_device" in device:
-            self.energy_tracker_device = device["energy_tracker_device"]
-            self.is_dirty = True
-        if "energy_tracker_source" in device:
-            self.energy_tracker_source = device["energy_tracker_source"]
-            self.is_dirty = True
-        if "energy_type" in device:
-            self.energy_type = device["energy_type"]
-            self.is_dirty = True
+
         if "energy_map" in device:
             if device["energy_map"] is not None:
                 # create an energy map from a dictionary
@@ -770,34 +723,13 @@ class Device_Attributes(MagicAttributesMixin):
                     device["energy_map"] = {"0.0": 0, "1.0": 0}
 
                 for percent, rate in device["energy_map"].items():
-                    energy_map_final[self._Parent._InputTypes.check("percent", percent)] = self._Parent._InputTypes.check("number" , rate)
+                    energy_map_final[self._Parent._InputTypes.check("percent", percent)] = self._Parent._InputTypes.check("number", rate)
                 energy_map_final = OrderedDict(sorted(list(energy_map_final.items()), key=lambda x_y: float(x_y[0])))
-                self.energy_map = energy_map_final
+                device["energy_map"] = energy_map_final
             else:
-                self.energy_map = None
-            self.is_dirty = True
-        if "controllable" in device:
-            self.controllable = device["controllable"]
-            self.is_dirty = True
-        if "allow_direct_control" in device:
-            self.allow_direct_control = device["allow_direct_control"]
-            self.is_dirty = True
+                device["energy_map"] = None
 
-        if source == "database":
-            self.is_dirty = False
-            save_results = {
-                "status": "success",
-                "msg": "Device saved.",
-                "device_id": self.device_id
-            }
-        else:
-            save_results = yield self.save(source=source, session=session)
-
-        if "variable_data" in device:
-            yield self._Parent.set_device_variables(self.device_id, device["variable_data"], session=session)
-
-        yield self.device_variable_fields()  #refresh the cache
-        yield self.device_variables()  #refresh the cache
+        super().update_attributes(device, source=source, session=session)
 
         if broadcast in (None, True):
             try:
@@ -817,8 +749,6 @@ class Device_Attributes(MagicAttributesMixin):
             d.addErrback(device_reload_failure)
             d.callback(1)
             yield d
-
-        return save_results
 
     def has_device_feature(self, feature_name, value=None):
         """
@@ -843,46 +773,19 @@ class Device_Attributes(MagicAttributesMixin):
             return True
         return False
 
-    def get_status_extra(self, property_name):
+    def get_state_extra(self, property_name):
         """
-        Lookup a status extra value by property
+        Lookup a state extra value by property
         :param property_name:
         :return:
         """
-        if len(self.status_history) > 0:
-            status_current = self.status_history[0]
-            if property_name in status_current.machine_status_extra:
-                return status_current.machine_status_extra[property_name]
-            raise KeyError("Property name not in machine status extra.")
+        if len(self.state_history) > 0:
+            state_current = self.state_history[0]
+            if property_name in state_current.machine_state_extra:
+                return state_current.machine_state_extra[property_name]
+            raise KeyError("Property name not in machine state extra.")
         else:
-            raise KeyError("Device has no status.")
-
-    @inlineCallbacks
-    def device_variables(self):
-        """
-        Gets all device variables, non-cached version. Will update the cached version.
-
-        :return:
-        """
-        self.device_variables_cached = yield self._Parent._Variables.get_variable_fields_data(
-            group_relation_type="device_type",
-            group_relation_id=self.device_type_id,
-            variable_field_id=self.device_id
-        )
-        # print(f"Looking for device vars: get_variable_fields_data: group_relation_type='device_type'")
-        # print(f"device_type_id={self.device_type_id}, device_id={self.device_id}")
-        # print(f"!@!@ device_variables: {self.full_label} - {self.device_variables_cached}")
-        return self.device_variables_cached
-
-    @inlineCallbacks
-    def device_variable_fields(self):
-        """
-        Get the device variable field
-
-        :return:
-        """
-        self.device_variable_fields_cached = yield self._Parent._DeviceTypes[self.device_type_id].get_variable_fields()
-        return self.device_variable_fields_cached
+            raise KeyError("Device has no state.")
 
     def available_commands(self):
         """
@@ -906,7 +809,7 @@ class Device_Attributes(MagicAttributesMixin):
         return command.comamnd_id in self.available_commands()
 
     @inlineCallbacks
-    def load_status_history(self, limit=None):
+    def load_state_history(self, limit=None):
         """
         Loads device history into the device instance. This method gets the
          data from the db to actually set the values.
@@ -920,10 +823,10 @@ class Device_Attributes(MagicAttributesMixin):
         where = {
             "device_id": self.device_id,
         }
-        records = yield self._Parent._Libraries["LocalDB"].get_device_status(where, limit=limit)
+        records = yield self._Parent._LocalDB.get_device_states(where, limit=limit)
         if len(records) > 0:
             for record in records:
-                self.status_history.append(Device_Status(self._Parent, self, record, source="database"))
+                self.state_history.append(Device_State(self._Parent, self, record, source="database"))
 
     @inlineCallbacks
     def load_device_commands_history(self, limit=None):
@@ -940,11 +843,11 @@ class Device_Attributes(MagicAttributesMixin):
         where = {
             "id": self.device_id,
         }
-        records = yield self._Parent._Libraries["LocalDB"].get_device_commands(where, limit=limit)
+        records = yield self._Parent._LocalDB.get_device_commands(where, limit=limit)
         if len(records) > 0:
             for record in records:
                 if record["request_id"] not in self._Parent.device_commands:
-                    self._Parent.add_device_command_by_object(Device_Command(record, self, start=False))
+                    self._Parent._DeviceCommands.add_device_command_by_object(record, start=False)
 
     def add_device_features(self, features):
         """
@@ -982,9 +885,9 @@ class Device_Attributes(MagicAttributesMixin):
         elif isinstance(features, str):
             remove_feature(features)
 
-    def add_machine_status_fields(self, fields):
+    def add_machine_state_fields(self, fields):
         """
-        Adds machine status fields in bulks.
+        Adds machine state fields in bulks.
 
         :param fields: A string, list, or dictionary of additional fields.
         :return:
@@ -998,7 +901,7 @@ class Device_Attributes(MagicAttributesMixin):
         elif isinstance(fields, str):
             self.MACHINE_STATUS_EXTRA_FIELDS[fields] = True
 
-    def remove_machine_status_fields(self, features):
+    def remove_machine_state_fields(self, features):
         """
         Removes features from a device. Accepts a list or a string for a single item.
 

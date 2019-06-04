@@ -12,7 +12,7 @@ The command (singular) class represents one command.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2012-2018 by Yombo.
+:copyright: Copyright 2012-2019 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/commands.html>`_
 """
@@ -20,12 +20,14 @@ The command (singular) class represents one command.
 from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
+from yombo.classes.fuzzysearch import FuzzySearch
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.library_search import LibrarySearch
 from yombo.core.log import get_logger
+from yombo.mixins.yombobasemixin import YomboBaseMixin
+from yombo.mixins.synctoeverywhere import SyncToEverywhere
 from yombo.utils import global_invoke_all
-from yombo.classes.fuzzysearch import FuzzySearch
 
 logger = get_logger("library.commands")
 
@@ -183,6 +185,11 @@ class Commands(YomboLibrary, LibrarySearch):
         """
         self.__yombocommandsByVoice.clear()
 
+    def _unload_(self, **kwargs):
+        """Called during the last phase of shutdown. We'll save any pending changes."""
+        for command_id, command in self.commands.items():
+            command.flush_sync()
+
     def _reload_(self):
         self._load_()
 
@@ -197,7 +204,7 @@ class Commands(YomboLibrary, LibrarySearch):
         commands = yield self._LocalDB.get_commands()
         logger.debug("commands: {commands}", commands=commands)
         for command in commands:
-            yield self._load_command_into_memory(command)
+            yield self._load_command_into_memory(command.__dict__)
 
     @inlineCallbacks
     def _load_command_into_memory(self, command, test_command=False):
@@ -229,7 +236,7 @@ class Commands(YomboLibrary, LibrarySearch):
                                     )
         except Exception:
             pass
-        self.commands[command_id] = Command(command)
+        self.commands[command_id] = Command(self, command)
         try:
             yield global_invoke_all("_command_loaded_",
                                     called_by=self,
@@ -462,13 +469,12 @@ class Commands(YomboLibrary, LibrarySearch):
         return items
 
 
-class Command:
+class Command(YomboBaseMixin, SyncToEverywhere):
     """
     A command is represented by this class is is returned to callers of the
     :py:meth:`get() <Commands.get>` or :py:meth:`__getitem__() <Commands.__getitem__>` functions.
     """
-
-    def __init__(self, command):
+    def __init__(self, parent, command, save=None):
         """
         Setup the command object using information passed in.
 
@@ -476,7 +482,8 @@ class Command:
         :type command: dict
         :return: None
         """
-        logger.debug("command info: {command}", command=command)
+        self._internal_label = "commands"  # Used by mixins
+        super().__init__(parent)
 
         self.command_id = command["id"]
         self.machine_label = command["machine_label"]
@@ -488,24 +495,8 @@ class Command:
         self.status = None
         self.created_at = None
         self.updated_at = None
-        self.update_attributes(command)
-
-    def update_attributes(self, command):
-        """
-        Sets various values from a command dictionary. This can be called when either new or
-        when updating.
-
-        :param command: A dictionary containing attributes to update.
-        :type command: dict
-        :return: None
-        """
-        self.label = command["label"]
-        self.description = command["description"]
-        self.voice_cmd = command["voice_cmd"]
-        self.public = command["public"]
-        self.status = command["status"]
-        self.created_at = command["created_at"]
-        self.updated_at = command["updated_at"]
+        self.update_attributes(command, source="database")
+        self.start_data_sync()
 
     def __str__(self):
         """

@@ -59,6 +59,7 @@
                       <!-- /.panel-heading -->
                           <label class="detail-label-first">Gateway: </label><br>
                           {{ gateway.label }} <br>
+                          {{ 32.5 | temperature}}
                           <label class="detail-label">Label: </label><br>
                           {{ item.label }} <br>
                           <i>Effective:</i> {{ location(item.area_id).label }} {{item.label}}<br>
@@ -112,9 +113,10 @@
 
   </div>
 </template>
+
 <script>
 import { Actions } from '@/components/Dashboard/Actions';
-import { ActionDelete, ActionDetails, ActionDisable, ActionEdit, ActionEnable } from '@/components/Dashboard/Actions';
+// import { ActionDelete, ActionDetails, ActionDisable, ActionEdit, ActionEnable } from '@/components/Dashboard/Actions';
 
 import { Table, TableColumn } from 'element-ui';
 
@@ -128,7 +130,6 @@ export default {
     [Table.name]: Table,
     [TableColumn.name]: TableColumn,
     Actions,
-    ActionEdit,
   },
   data() {
     return {
@@ -143,19 +144,15 @@ export default {
   },
   methods: {
     location: function(id) {
-      console.log("location id: " + id);
-      console.log(Location.query().where('id', id).first());
       return Location.query().where('id', id).first();
     }
   },
   mounted () {
+    console.log(this);
     this.$store.dispatch('yombo/devices/refresh');
-    this.$store.dispatch('yombo/locations/fetch');
+    this.$store.dispatch('yombo/locations/refresh');
 
     this.gateway = Gateway.query().where('id', this.item.gateway_id).first()
-  },
-  beforeDestroy () {
-    // console.log("device before destroy")
   },
 };
 </script>

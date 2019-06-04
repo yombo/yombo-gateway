@@ -12,9 +12,9 @@ class DB_Modules(object):
     @inlineCallbacks
     def get_modules(self, get_all=False):
         if get_all is False:
-            records = yield Modules.find(where=["status = ? OR status = ?", 1, 0])
+            records = yield Modules.find(where=["status = ? OR status = ?", 1, 0], orderby="label ASC")
         else:
-            records = yield Modules.all()
+            records = yield Modules.find(orderby="label ASC")
         return records
 
     @inlineCallbacks
@@ -24,7 +24,7 @@ class DB_Modules(object):
         elif get_all is False:
             records = yield ModulesView.find(where=["status = ?", 1])
         else:
-            records = yield ModulesView.all()
+            records = yield ModulesView.find(orderby="label ASC")
         return records
 
     @inlineCallbacks

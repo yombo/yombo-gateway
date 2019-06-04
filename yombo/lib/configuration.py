@@ -334,10 +334,6 @@ class Configuration(YomboLibrary):
         self.cfg_loaded = True
 
         # We define commonly used items here, so a single pointer to the function be use re-used
-        self.gateway_id = self._Configs.get2("core", "gwid", "local", False)
-        self.is_master = self._Configs.get2("core", "is_master", True, False)
-        self.master_gateway_id = self._Configs.get2("core", "master_gateway_id", "local", False)
-        self.gateway_id = self.get2("core", "gwid", "local", False)  # Referenced from multiple libraries.
 
     def _started_(self, **kwargs):
         self.save(True, display_extra_warning=True)
@@ -357,15 +353,13 @@ class Configuration(YomboLibrary):
         """
         yield self.save(True)
 
-
-
     def Configuration_i18n_atoms(self, **kwargs):
-       return [
-           {"configuration.yombo_ini.found": {
-               "en": "True if yombo.ini was found on startup.",
-               },
-           },
-       ]
+        return [
+            {"configuration.yombo_ini.found": {
+                "en": "True if yombo.ini was found on startup.",
+                },
+            },
+        ]
 
     def restore_backup_yombi_ini(self):
         path = f"{self.working_dir}/bak/yombo_ini/"
@@ -578,28 +572,6 @@ class Configuration(YomboLibrary):
                     self.configs[section][option]["details"] = self.configs_details[section][option]
                 except:
                     pass
-
-    def get_list(self):
-        """
-        Gets configurations as a list.
-
-        :return:
-        """
-        results = []
-        for section, options in self.configs.items():
-            for option, data in options.items():
-                results.append({
-                    "option": option,
-                    "section": section,
-                    "data": data,
-                })
-            if gateway_id is not None and found_gateway_id == gateway_id:
-                continue
-            for name, value in atoms.items():
-                atom = value.copy()
-                atom["id"] = name
-                results.append(atom)
-        return results
 
     def get2(self, section, option, default="7vce#hvjGW%w$~bA6jYv[P:*.kv6mAg934+HQhPpbDFJF2Nw9rU+saNvpVL2",
              set_if_missing=True, set=None, **kwargs):

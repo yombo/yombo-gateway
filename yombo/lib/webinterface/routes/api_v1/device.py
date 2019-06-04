@@ -97,7 +97,7 @@ def route_api_v1_device(webapp):
                 print(f"error with apiv1_device_command_get_post warning: {e}")
                 return return_error(request, f"Error with command: {e}")
 
-            DC = webinterface._Devices.device_commands[request_id]
+            DC = webinterface._DeviceCommands.device_commands[request_id]
             if wait_time > 0:
                 exit_while = False
                 start_time = time()
