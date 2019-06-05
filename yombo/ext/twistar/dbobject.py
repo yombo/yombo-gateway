@@ -1,7 +1,6 @@
 """
 Code relating to the base L{DBObject} object.
 """
-from __future__ import absolute_import
 from twisted.internet import defer
 
 from yombo.ext.twistar.registry import Registry
@@ -11,7 +10,6 @@ from yombo.ext.twistar.utils import createInstances, deferredDict, dictToWhere, 
 from yombo.ext.twistar.validation import Validator, Errors
 
 from yombo.ext.BermiInflector.Inflector import Inflector
-import six
 
 
 class DBObject(Validator):
@@ -88,7 +86,7 @@ class DBObject(Validator):
         @param kwargs: A C{dict} whose keys will be turned into properties and whose values
         will then be assigned to those properties.
         """
-        for k, v in six.iteritems(kwargs):
+        for k, v in kwargs.items():
             setattr(self, k, v)
 
     def save(self):

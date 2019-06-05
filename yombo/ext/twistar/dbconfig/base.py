@@ -25,10 +25,8 @@ class InteractionBase(object):
     LOG = False
     includeBlankInInsert = True
 
-
     def __init__(self):
         self.txn = None
-
 
     def log(self, query, args, kwargs):
         """
@@ -47,7 +45,6 @@ class InteractionBase(object):
         elif len(kwargs) > 0:
             log.msg("TWISTAR kargs: %s" % str(kwargs))
 
-
     def executeOperation(self, query, *args, **kwargs):
         """
         Simply makes same C{twisted.enterprise.dbapi.ConnectionPool.runOperation} call, but
@@ -60,7 +57,6 @@ class InteractionBase(object):
 
         return Registry.DBPOOL.runOperation(query, *args, **kwargs)
 
-
     def execute(self, query, *args, **kwargs):
         """
         Simply makes same C{twisted.enterprise.dbapi.ConnectionPool.runQuery} call, but
@@ -70,8 +66,10 @@ class InteractionBase(object):
         Registry.debug(f"q: {query}\n")
         Registry.debug(f"args: {args}\n")
         Registry.debug(f"kwargs: {kwargs}\n")
+        # print(f"q: {query}\n")
+        # print(f"args: {args}\n")
+        # print(f"kwargs: {kwargs}\n")
         return Registry.DBPOOL.runQuery(query, *args, **kwargs)
-
 
     def executeTxn(self, txn, query, *args, **kwargs):
         """
@@ -85,7 +83,6 @@ class InteractionBase(object):
         # print(f"args: {args}\n")
         # print(f"kwargs: {kwargs}\n")
         return txn.execute(query, *args, **kwargs)
-
 
     def select(self, tablename, id=None, where=None, group=None, limit=None, orderby=None, select=None, debug=None):
         """
@@ -144,7 +141,6 @@ class InteractionBase(object):
         # Registry.debug("args: %s\n" % args)
         return self.runInteraction(self._doselect, q, args, tablename, one, cacheTableStructure)
 
-
     def _doselect(self, txn, q, args, tablename, one=False, cacheable=True):
         """
         Private callback for actual select query call.
@@ -167,13 +163,11 @@ class InteractionBase(object):
             results.append(vals)
         return results
 
-
     def insertArgsToString(self, vals):
         """
         Convert C{{'name': value}} to an insert "values" string like C{"(%s,%s,%s)"}.
         """
         return "(" + ",".join(["%s" for _ in vals.items()]) + ")"
-
 
     def insert(self, tablename, vals, txn=None, prefix=None):
         """
@@ -212,7 +206,6 @@ class InteractionBase(object):
             return self.getLastInsertID(txn)
         return self.runInteraction(_insert, q, vals)
 
-
     def escapeColNames(self, colnames):
         """
         Escape column names for insertion into SQL statement.
@@ -222,7 +215,6 @@ class InteractionBase(object):
         @return: A C{List} of string escaped column names.
         """
         return ["`%s`" % x for x in colnames]
-
 
     def insertMany(self, tablename, vals):
         """
@@ -244,7 +236,6 @@ class InteractionBase(object):
         # Registry.debug("q: %s\n" % q)
         return self.executeOperation(q, args)
 
-
     def getLastInsertID(self, txn):
         """
         Using the given txn, get the id of the last inserted row.
@@ -252,7 +243,6 @@ class InteractionBase(object):
         @return: The integer id of the last inserted row.
         """
         return txn.lastrowid
-
 
     def delete(self, tablename, where=None):
         """
@@ -272,7 +262,6 @@ class InteractionBase(object):
         # Registry.debug("args: %s\n" % args)
         return self.executeOperation(q, args)
 
-
     def deleteMany(self, tablename, ids):
         """
         Delete many values into a table.
@@ -284,7 +273,6 @@ class InteractionBase(object):
         q = "DELETE FROM %s WHERE id IN ('%s')" % (tablename, "', '".join(ids))
         # Registry.debug("q: %s\n" % q)
         return self.executeOperation(q)
-
 
     def update(self, tablename, args, where=None, txn=None, limit=None, string_only=None):
         """
@@ -317,7 +305,7 @@ class InteractionBase(object):
         if string_only is True:
             return q
 
-        # print("base about to update record: %s -> %s = %s" % (tablename, q, args) )
+        # print("base about to update record: %s ---> %s ->> %s" % (tablename, q, args))
 
         # Registry.debug("q: %s\n" % q)
         # Registry.debug("args: %s\n" % args)
@@ -344,7 +332,6 @@ class InteractionBase(object):
             where = ["%s = ?" % where_column, item[where_column]]
             self.update(tablename, item, where)
 
-
     def valuesToHash(self, txn, values, tablename, cacheable=True):
         """
         Given a row from a database query (values), create
@@ -369,7 +356,6 @@ class InteractionBase(object):
             h[colname] = values[index]
         return h
 
-
     def getSchema(self, tablename, txn=None):
         """
         Get the schema (in the form of a list of column names) for
@@ -377,8 +363,8 @@ class InteractionBase(object):
         """
         if tablename not in Registry.SCHEMAS and txn is not None:
             try:
-                self.executeTxn(txn, f"SELECT rowid as _rowid, * FROM {tablename} LIMIT 1")
-                # self.executeTxn(txn, "SELECT * FROM %s LIMIT 1" % tablename)
+                # self.executeTxn(txn, f"SELECT rowid as _rowid, * FROM {tablename} LIMIT 1")
+                self.executeTxn(txn, "SELECT * FROM %s LIMIT 1" % tablename)
             except Exception as e:
                 print("---------------==(Traceback)==--------------------------")
                 print(f"{traceback.format_exc()}")
@@ -388,12 +374,10 @@ class InteractionBase(object):
             Registry.SCHEMAS[tablename] = [row[0] for row in txn.description]
         return Registry.SCHEMAS.get(tablename, [])
 
-
     def runInteraction(self, interaction, *args, **kwargs):
         if self.txn is not None:
             return defer.succeed(interaction(self.txn, *args, **kwargs))
         return Registry.DBPOOL.runInteraction(interaction, *args, **kwargs)
-
 
     def insertObj(self, obj):
         """
@@ -414,7 +398,6 @@ class InteractionBase(object):
 
         return self.runInteraction(_doinsert)
 
-
     def updateObj(self, obj):
         """
         Update the given object's row in the object's table.
@@ -422,15 +405,16 @@ class InteractionBase(object):
         @return: A C{Deferred} that sends a callback the updated object.
         """
         def _doupdate(txn):
+            print(f"updateObj - start")
             klass = obj.__class__
             tablename = klass.tablename()
             cols = self.getSchema(tablename, txn)
 
             vals = obj.toHash(cols, includeBlank=True, exclude=['_rowid'])
-            return self.update(tablename, vals, where=['rowid = ?', obj._rowid], txn=txn)
+            # print(f"updateObj - table {tablename}, vals {vals}, txn: {txn}")
+            return self.update(tablename, vals, where=['id = ?', obj._rowid], txn=txn)
         # We don't want to return the cursor - so add a blank callback returning the obj
         return self.runInteraction(_doupdate).addCallback(lambda _: obj)
-
 
     def refreshObj(self, obj):
         """
@@ -444,7 +428,6 @@ class InteractionBase(object):
             for key in newobj.keys():
                 setattr(obj, key, newobj[key])
         return self.select(obj.tablename(), obj._rowid).addCallback(_dorefreshObj)
-
 
     def whereToString(self, where):
         """
@@ -461,7 +444,6 @@ class InteractionBase(object):
         args = where[1:]
         return (query, args)
 
-
     def updateArgsToString(self, args):
         """
         Convert dictionary of arguments to form needed for DB update query.  This method will
@@ -475,7 +457,6 @@ class InteractionBase(object):
         colnames = self.escapeColNames(list(args.keys()))
         setstring = ",".join([key + " = %s" for key in colnames])
         return (setstring, list(args.values()))
-
 
     def count(self, tablename, where=None):
         """
