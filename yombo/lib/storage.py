@@ -44,8 +44,9 @@ from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.lib.localdb.storage import Storage as StorageDB
-from yombo.utils import (mime_type_from_file, mime_type_from_buffer, global_invoke_all, random_string,
+from yombo.utils import (mime_type_from_file, mime_type_from_buffer, random_string,
                          sha224_compact, sha256_compact, file_size, data_pickle, clean_dict, sleep)
+from yombo.utils.hookinvoke import global_invoke_all
 
 logger = get_logger("library.storage")
 

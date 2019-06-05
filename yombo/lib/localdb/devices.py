@@ -9,6 +9,9 @@ from yombo.lib.localdb import Device
 # Import Yombo libraries
 from yombo.utils import data_pickle, data_unpickle
 
+PICKLED_FIELDS = [
+    "machine_state_extra", "energy_map"
+]
 
 class DB_Devices(object):
 
@@ -21,72 +24,39 @@ class DB_Devices(object):
             records = yield Device.find(where=["status = ? OR status = ?", 1, 0], orderby="label ASC")
         else:
             records = yield Device.find(where=["status = ? ", status], orderby="label ASC")
-        if len(records) > 0:
-            for record in records:
-                record = record.__dict__
-                if record["energy_map"] is None:
-                    record["energy_map"] = {"0.0": 0, "1.0": 0}
-                else:
+        if records is None:
+            return []
+
+        for record in records:
+            record = record.__dict__
+            if record["energy_map"] is None:
+                record["energy_map"] = {"0.0": 0, "1.0": 0}
+            else:
+                try:
                     record["energy_map"] = data_unpickle(record["energy_map"], encoder="json")
+                except:
+                    record["energy_map"] = {"0.0": 0, "1.0": 0}
         return records
 
     @inlineCallbacks
-    def upsert_device(self, device, **kwargs):
-        args = {
-            "gateway_id": device.gateway_id,
-            "device_type_id": device.device_type_id,
-            "location_id": device.location_id,
-            "area_id": device.area_id,
-            "machine_label": device.machine_label,
-            "label": device.label,
-            "description": device.description,
-            "notes": device.notes,
-            "statistic_label": device.statistic_label,
-            "statistic_lifetime": device.statistic_lifetime,
-            # "data": device.data,
-            # "attributes": device.attributes,
-            "energy_type": device.energy_type,
-            "energy_tracker_source": device.energy_tracker_source,
-            "energy_tracker_device": device.energy_tracker_device,
-            "energy_map": data_pickle(device.energy_map, encoder="json"),
-            "controllable": device.controllable,
-            "allow_direct_control": device.allow_direct_control,
-            "controllable": device.controllable,
-            "pin_required": device.pin_required,
-            "pin_code": device.pin_code,
-            "pin_timeout": device.pin_timeout,
-            "status": device.status,
-            "created_at": device.created_at,
-            "updated_at": device.updated_at,
-        }
-        if device.is_in_db:
-            # print(f"updating device db: {args}")
-            results = yield self.dbconfig.update("devices", args, where=["id = ?", device.device_id])
-        else:
-            # print(f"inserting device into db: {args}")
-            results = yield self.dbconfig.insert("devices", args)
+    def save_devices(self, data):
+        """
+        Attempts to find the provided device in the database. If it's found, update it. Otherwise, a new
+        one is created.
 
-        return results
+        :param data: A device state instance.
+        :return:
+        """
+        device = yield Device.find(data.device_id)
+        if device is None:  # If none is found, create a new one.
+            device = Device()
+            device.id = data.device_id
 
-    @inlineCallbacks
-    def get_device_by_id(self, device_id, status=1):
-        records = yield Device.find(where=["id = ? and status = ?", device_id, status])
-        results = []
-        for record in records:
-            results.append(record.__dict__)  # we need a dictionary, not an object
-        return results
-
-    @inlineCallbacks
-    def get_device_commands(self, where, **kwargs):
-        limit = self._get_limit(**kwargs)
-        records = yield self.dbconfig.select("device_commands",
-                                             where=dictToWhere(where),
-                                             orderby="created_at DESC",
-                                             limit=limit)
-        data = []
-        for record in records:
-            record["source"] = "database"
-            record["inputs"] = data_unpickle(record["inputs"])
-            record["history"] = data_unpickle(record["history"])
-            data.append(record)
-        return data
+        fields = self.get_table_fields("devices")
+        for field in fields:
+            if field in PICKLED_FIELDS:
+                setattr(device, field, data_pickle(getattr(data, field), encoder="json"))
+            else:
+                setattr(device, field, getattr(data, field))
+        results = yield device.save()
+        new_device = yield Device.find("aWpBzyrK0WQUZwgdvmZ4")

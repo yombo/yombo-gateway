@@ -41,6 +41,8 @@ from yombo.core.log import get_logger
 import yombo.utils
 import yombo.utils.converters as converters
 import yombo.utils.datetime as dt_util
+from yombo.utils.hookinvoke import global_invoke_all
+
 from yombo.lib.webinterface.auth import require_auth
 
 from yombo.lib.webinterface.class_helpers.builddist import BuildDistribution
@@ -461,9 +463,9 @@ class WebInterface(BuildDistribution, ErrorHandler, Render, YomboLibrary, WebSer
         """
         # first, lets get the top levels already defined so children don"t re-arrange ours.
         top_levels = {}
-        add_on_menus = yield yombo.utils.global_invoke_all("_webinterface_add_routes_",
-                                                           called_by=self,
-                                                           )
+        add_on_menus = yield global_invoke_all("_webinterface_add_routes_",
+                                               called_by=self,
+                                               )
         logger.debug("_webinterface_add_routes_ results: {add_on_menus}", add_on_menus=add_on_menus)
         nav_side_menu = deepcopy(NAV_SIDE_MENU)
         for component, options in add_on_menus.items():

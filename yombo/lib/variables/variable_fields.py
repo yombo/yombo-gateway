@@ -17,13 +17,13 @@ The variable field class.
 """
 # Import Yombo libraries
 from yombo.core.log import get_logger
-from yombo.mixins.yombobasemixin import YomboBaseMixin
-from yombo.mixins.synctoeverywhere import SyncToEverywhere
+from yombo.core.entity import Entity
+from yombo.mixins.sync_to_everywhere import SyncToEverywhere
 
 logger = get_logger("library.variables.groups")
 
 
-class VariableField(YomboBaseMixin, SyncToEverywhere):
+class VariableField(Entity, SyncToEverywhere):
     """
     A class to manage a single variable field item.
     """

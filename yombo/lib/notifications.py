@@ -39,7 +39,8 @@ from twisted.internet.task import LoopingCall
 from yombo.core.exceptions import YomboWarning, YomboHookStopProcessing
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import random_string, is_true_false, global_invoke_all
+from yombo.utils import random_string, is_true_false
+from yombo.utils.hookinvoke import global_invoke_all
 
 logger = get_logger("library.notifications")
 

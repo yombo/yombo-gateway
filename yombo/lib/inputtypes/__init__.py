@@ -27,9 +27,9 @@ from twisted.internet.defer import inlineCallbacks
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
-from yombo.core.library_search import LibrarySearch
+from yombo.mixins.library_search_mixin import LibrarySearchMixin
 from yombo.core.log import get_logger
-from yombo.utils import global_invoke_all
+from yombo.utils.hookinvoke import global_invoke_all
 
 logger = get_logger("library.inputtypes")
 
@@ -46,7 +46,7 @@ BASE_INPUT_TYPE_PLATFORMS = {
                                          "Yombo_Device"],
 }
 
-class InputTypes(YomboLibrary, LibrarySearch):
+class InputTypes(YomboLibrary, LibrarySearchMixin):
     """
     Manages all input types available for input types.
 
@@ -56,8 +56,8 @@ class InputTypes(YomboLibrary, LibrarySearch):
     input_types = {}
 
     # The following are used by get(), get_advanced(), search(), and search_advanced()
-    item_search_attribute = "input_types"
-    item_searchable_attributes = [
+    _class_storage_attribute_name = "input_types"
+    _class_storage_fields = [
         "input_type_id", "category_id", "label", "machine_label", "description", "status", "public"
     ]
 

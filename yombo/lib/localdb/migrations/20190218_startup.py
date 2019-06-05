@@ -162,7 +162,7 @@ steps = [
         `uploadable`           INTEGER NOT NULL DEFAULT 0 /* For security, only items marked as 1 can be sent externally */
         );"""),
       step(create_index("device_states", "id", unique=True)),
-      step(create_index("device_statese ", "uploaded")),
+      step(create_index("device_states", "uploaded")),
 
       # Device types defines the features of a device. For example, all X10 appliances or Insteon Lamps.
       step("""CREATE TABLE `device_types` (

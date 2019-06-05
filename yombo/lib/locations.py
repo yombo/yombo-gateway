@@ -21,28 +21,28 @@ from time import time
 from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
+from yombo.core.entity import Entity
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
-from yombo.core.library_search import LibrarySearch
+from yombo.mixins.library_search_mixin import LibrarySearchMixin
 from yombo.core.log import get_logger
-from yombo.mixins.yombobasemixin import YomboBaseMixin
-from yombo.mixins.synctoeverywhere import SyncToEverywhere
-from yombo.utils import global_invoke_all
+from yombo.mixins.sync_to_everywhere import SyncToEverywhere
+from yombo.utils.hookinvoke import global_invoke_all
 
 logger = get_logger("library.locations")
 
-class Locations(YomboLibrary, LibrarySearch):
+class Locations(YomboLibrary, LibrarySearchMixin):
     """
     Manages locations for a gateway.
     """
     locations = {}
 
     # The following are used by get(), get_advanced(), search(), and search_advanced()
-    item_search_attribute = "locations"
-    item_searchable_attributes = [
+    _class_storage_attribute_name = "locations"
+    _class_storage_fields = [
         "location_id", "label", "machine_label"
     ]
-    item_sort_key = "machine_label"
+    _class_storage_sort_key = "machine_label"
 
     @property
     def location_id(self):
@@ -551,7 +551,7 @@ class Locations(YomboLibrary, LibrarySearch):
         }
 
 
-class Location(YomboBaseMixin, SyncToEverywhere):
+class Location(Entity, SyncToEverywhere):
     """
     A class to manage a single location.
 

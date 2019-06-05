@@ -46,18 +46,16 @@ import zlib
 from twisted.internet import reactor, threads
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.task import deferLater
-# from twisted.internet.defer import Deferred
-from twisted.internet.fdesc import writeToFD, setNonBlocking
 
 # Import 3rd-party libs
 from yombo.ext.hashids import Hashids
 import yombo.ext.magic as magicfile
 
 # Import Yombo libraries
+from yombo.core.entity import Entity
+from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.module import YomboModule
-from yombo.core.exceptions import YomboWarning
-from yombo.mixins.magicattributesmixin import MagicAttributesMixin
 from yombo.utils.decorators import cached, memoize_
 import yombo.ext.base62 as base62
 
@@ -171,7 +169,7 @@ def setup_yombo_references(loader):
     :return:
     """
     global _Yombo
-    _Yombo = MagicAttributesMixin(loader)
+    _Yombo = Entity(loader)
 
 
 def generate_source_string(gateway_id=None, offset=None):
@@ -1337,49 +1335,6 @@ def display_hide_none(value, allow_string=None, default=None):
 def human_alphabet():
     """ A subset of the alphabet, but with 1 (one), l (ele)...etc, removed."""
     return "ABCDEFGHJKLMNPQRTSUVWXYZabcdefghkmnopqrstuvwxyz23456789"
-
-
-@inlineCallbacks
-def global_invoke_all(hook, **kwargs):
-    """
-    Call all hooks in libraries and modules. Basically a shortcut for calling module_invoke_all and libraries_invoke_all
-    methods.
-
-    :param hook: The hook name to call.
-    :param kwargs: kwargs to send to the function.
-    :return: a dictionary of results.
-    """
-    lib_results = yield get_component("yombo.gateway.lib.loader").library_invoke_all(hook, True, **kwargs)
-    modules_results = yield get_component("yombo.gateway.lib.modules").module_invoke_all(hook, True, **kwargs)
-    return dict_merge(modules_results, lib_results)
-
-
-@inlineCallbacks
-def global_invoke_libraries(hook, **kwargs):
-    """
-    Call all hooks in libraries and modules. Basically a shortcut for calling module_invoke_all and libraries_invoke_all
-    methods.
-
-    :param hook: The hook name to call.
-    :param kwargs: kwargs to send to the function.
-    :return: a dictionary of results.
-    """
-    lib_results = yield get_component("yombo.gateway.lib.loader").library_invoke_all(hook, True, **kwargs)
-    return lib_results
-
-
-@inlineCallbacks
-def global_invoke_modules(hook, **kwargs):
-    """
-    Call all hooks in libraries and modules. Basically a shortcut for calling module_invoke_all and libraries_invoke_all
-    methods.
-
-    :param hook: The hook name to call.
-    :param kwargs: kwargs to send to the function.
-    :return: a dictionary of results.
-    """
-    modules_results = yield get_component("yombo.gateway.lib.modules").module_invoke_all(hook, True, **kwargs)
-    return modules_results
 
 
 def get_public_gw_id():

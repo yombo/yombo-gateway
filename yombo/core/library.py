@@ -22,20 +22,20 @@ Used by the Yombo Gateway framework to set up it's libraries.
 """
 # Import Yombo libraries
 from yombo.core.entity import Entity
-from yombo.mixins.magicattributesmixin import MagicAttributesMixin
+from yombo.utils.hookinvoke import global_invoke_all
 
 
-class YomboLibrary(Entity, MagicAttributesMixin):
+class YomboLibrary(Entity):
     """
     Define a basic class that setup basic library class variables.
 
-    MagicAttributesMixin.__init__ will be called from the loader class.
+    This is the only class where the Entity class won't fully populate this class.
     """
-
-    def __init__(self, *args, **kwargs):
+    def __init__(self, parent, *args, **kwargs):
         self._Entity_type = "yombo_library"
         self._Name = self.__class__.__name__
         self._FullName = f"yombo.gateway.lib.{self.__class__.__name__}"
+        super().__init__(parent, *args, **kwargs)
 
     def _init_(self, **kwargs):
         """
@@ -89,3 +89,58 @@ class YomboLibrary(Entity, MagicAttributesMixin):
         This method should be implemented by any modules expecting to receive amqp incoming responses.
         """
         pass
+
+    def _generic_load_into_memory(self, storage, hook_name, klass, incoming, source, **kwargs):
+        """
+        Loads data into memory using basic hook calls.
+
+        :param storage: Dictionary to store new data in.
+        :param hook_name: name of the hook to publish
+        :param klass: The class to use to store the data
+        :param incoming: Data to be saved
+        :return:
+        """
+        run_phase_name, run_phase_int = self._Loader.run_phase
+        if run_phase_int < 4000:  # just before 'libraries_started' is when we start processing automation triggers.
+            call_hooks = False
+        else:
+            call_hooks = True
+        storage_id = incoming["id"]
+        if storage_id not in storage:
+            if call_hooks:
+                global_invoke_all(f"_{hook_name}_before_load_",
+                                  called_by=self,
+                                  id=storage_id,
+                                  data=incoming,
+                                  )
+            storage[storage_id] = klass(self,
+                                        incoming,
+                                        source=source, **kwargs)
+            if call_hooks:
+                global_invoke_all(f"_{hook_name}_loaded_",
+                                  called_by=self,
+                                  id=storage_id,
+                                  data=storage[storage_id],
+                                  )
+
+        else:
+            if call_hooks:
+                global_invoke_all(f"_{hook_name}_before_update_",
+                                  called_by=self,
+                                  id=storage_id,
+                                  data=storage[storage_id],
+                                  )
+            storage[storage_id].update_attributes(incoming, source=source)
+            if call_hooks:
+                global_invoke_all(f"_{hook_name}_updated_",
+                                  called_by=self,
+                                  id=storage_id,
+                                  data=storage[storage_id],
+                                  )
+        if call_hooks:
+            global_invoke_all(f"_{hook_name}_imported_",
+                              called_by=self,
+                              id=storage_id,
+                              data=storage[storage_id],
+                              )
+        return storage[storage_id]

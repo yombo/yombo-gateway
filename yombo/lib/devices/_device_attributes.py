@@ -29,17 +29,17 @@ from yombo.constants.features import (FEATURE_ALL_OFF, FEATURE_ALL_ON, FEATURE_P
                                       FEATURE_CONTROLLABLE, FEATURE_ALLOW_DIRECT_CONTROL)
 
 # Import Yombo libraries
-from yombo.utils import is_true_false
+from yombo.core.entity import Entity
 from yombo.core.log import get_logger
-from yombo.mixins.magicattributesmixin import MagicAttributesMixin
-from yombo.mixins.synctoeverywhere import SyncToEverywhere
-from yombo.utils import global_invoke_all
+from yombo.mixins.sync_to_everywhere import SyncToEverywhere
+from yombo.utils import is_true_false
+from yombo.utils.hookinvoke import global_invoke_all
 
 from ._device_state import Device_State
 logger = get_logger("library.devices.device_attributes")
 
 
-class Device_Attributes(MagicAttributesMixin, SyncToEverywhere):
+class Device_Attributes(Entity, SyncToEverywhere):
     """
     This base class is the main bootstrap and is responsible for settings up all core attributes.
 
@@ -528,6 +528,7 @@ class Device_Attributes(MagicAttributesMixin, SyncToEverywhere):
         :return:
         """
         yield self.update_attributes(device, source=source, broadcast=False)
+        self.start_data_sync()
 
         if self.test_device is None or self.test_device is False:
             self.meta = yield self._SQLDict.get("yombo.lib.device", "meta_" + self.device_id)
@@ -656,7 +657,6 @@ class Device_Attributes(MagicAttributesMixin, SyncToEverywhere):
             "energy_map": self.energy_map,
             "status": self.status,
             }
-
 
     def asdict_short(self):
         """

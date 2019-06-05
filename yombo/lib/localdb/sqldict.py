@@ -28,7 +28,7 @@ class DB_SqlDict(object):
                 #              without=len(record["dict_data"]), withcompress=before)
             except:
                 pass
-        return records
+        return self._return_empty_if_none(records)
 
     @inlineCallbacks
     def set_sql_dict(self, component, dict_name, dict_data):

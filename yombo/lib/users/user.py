@@ -7,17 +7,18 @@ A class to represent a user.
 :copyright: Copyright 2018 by Yombo.
 :license: LICENSE for details.
 """
+from yombo.core.entity import Entity
 from yombo.constants import AUTH_TYPE_USER
 from yombo.core.log import get_logger
-from yombo.mixins.authmixin import AuthMixin
-from yombo.mixins.permissionmixin import PermissionMixin
-from yombo.mixins.rolesmixin import RolesMixin
+from yombo.mixins.auth_mixin import AuthMixin
+from yombo.mixins.permission_mixin import PermissionMixin
+from yombo.mixins.roles_mixin import RolesMixin
 from yombo.utils import data_pickle, data_unpickle
 
 logger = get_logger("library.users.user")
 
 
-class User(AuthMixin, PermissionMixin, RolesMixin):
+class User(Entity, AuthMixin, PermissionMixin, RolesMixin):
     """
     User class to manage role membership, etc.
     """

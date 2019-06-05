@@ -29,28 +29,29 @@ from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
+from yombo.classes.triggerdict import TriggerDict
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
-from yombo.core.library_search import LibrarySearch
 from yombo.core.log import get_logger
-from yombo.utils import bytes_to_unicode, global_invoke_all, data_pickle, sleep
-from yombo.classes.triggerdict import TriggerDict
+from yombo.mixins.library_search_mixin import LibrarySearchMixin
+from yombo.utils import bytes_to_unicode, data_pickle, sleep
+from yombo.utils.hookinvoke import global_invoke_all
 
 logger = get_logger("library.nodes")
 
 
-class Nodes(YomboLibrary, LibrarySearch):
+class Nodes(YomboLibrary, LibrarySearchMixin):
     """
     Manages nodes for a gateway.
     """
     nodes = {}
 
     # The following are used by get(), get_advanced(), search(), and search_advanced()
-    item_search_attribute = "nodes"
-    item_searchable_attributes = [
+    _class_storage_attribute_name = "nodes"
+    _class_storage_fields = [
         "node_id", "machine_label", "label", "parent_id", "user_id", "node_type", "destination"
     ]
-    item_sort_key = "node_type"
+    _class_storage_sort_key = "node_type"
 
     def __contains__(self, node_requested):
         """

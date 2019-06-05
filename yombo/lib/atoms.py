@@ -53,6 +53,7 @@ from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 import yombo.utils
 import yombo.utils.converters as converters
+from yombo.utils.hookinvoke import global_invoke_all
 
 SUPPORTED_DISTS = platform._supported_dists + ("arch", "mageia", "meego", "vmware", "bluewhite64",
                      "slamd64", "ovs", "system", "mint", "oracle")
@@ -458,16 +459,16 @@ class Atoms(YomboLibrary):
             self.atoms[gateway_id][key]["value_human"] = self.convert_to_human(value, value_type)
 
         # Call any hooks
-        yield yombo.utils.global_invoke_all("_atoms_set_",
-                                            called_by=self,
-                                            key=key,
-                                            value=value,
-                                            value_type=value_type,
-                                            value_full=self.atoms[gateway_id][key],
-                                            gateway_id=gateway_id,
-                                            source=source,
-                                            source_label=source_label,
-                                            )
+        yield global_invoke_all("_atoms_set_",
+                                called_by=self,
+                                key=key,
+                                value=value,
+                                value_type=value_type,
+                                value_full=self.atoms[gateway_id][key],
+                                gateway_id=gateway_id,
+                                source=source,
+                                source_label=source_label,
+                                )
 
     @inlineCallbacks
     def set_from_gateway_communications(self, key, data, source):
@@ -493,16 +494,16 @@ class Atoms(YomboLibrary):
             "updated_at": data["updated_at"],
         }
 
-        yield yombo.utils.global_invoke_all("_atoms_set_",
-                                            called_by=self,
-                                            key=key,
-                                            value=data["value"],
-                                            value_type=data["value_type"],
-                                            value_full=self.atoms[gateway_id][key],
-                                            gateway_id=gateway_id,
-                                            source=source,
-                                            source_label=source_label,
-                                            )
+        yield global_invoke_all("_atoms_set_",
+                                called_by=self,
+                                key=key,
+                                value=data["value"],
+                                value_type=data["value_type"],
+                                value_full=self.atoms[gateway_id][key],
+                                gateway_id=gateway_id,
+                                source=source,
+                                source_label=source_label,
+                                )
 
     def convert_to_human(self, value, value_type):
         """

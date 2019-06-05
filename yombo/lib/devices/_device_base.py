@@ -34,8 +34,9 @@ from yombo.constants.commands import (COMMAND_COMPONENT_CALLED_BY, COMMAND_COMPO
 from yombo.core.exceptions import YomboPinCodeError, YomboWarning
 from yombo.core.log import get_logger
 from yombo.lib.commands import Command  # used only to determine class type
-from yombo.utils import (random_string, global_invoke_all, do_search_instance, dict_merge, dict_diff,
+from yombo.utils import (random_string, do_search_instance, dict_merge, dict_diff,
     generate_source_string, data_pickle)
+from yombo.utils.hookinvoke import global_invoke_all
 
 # Import local items
 # from ._device_attributes import Device_Attributes
@@ -1001,8 +1002,8 @@ class Device_Base(object):
                 logger.debug("Get is about to call search...: {command_requested}", command_requested=command_requested)
                 results = do_search_instance(search_attributes,
                                              commands,
-                                             self._Parent.item_searchable_attributes,
-                                             allowed_keys=self._Parent._Commands.item_searchable_attributes,
+                                             self._Parent._class_storage_fields,
+                                             allowed_keys=self._Parent._Commands._class_storage_fields,
                                              limiter=.89,
                                              max_results=1)
 

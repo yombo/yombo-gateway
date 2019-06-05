@@ -49,6 +49,11 @@ class BuildDistribution:
            and renders various sizes to be displayed as needed.
         :return:
         """
+        filename = f"{self.app_dir}/yombo/frontend/static/nuxt.env"
+        file_out = FileWriter(filename=filename, mode="w")  # open in append mode.
+        file_out.write(self.nuxt_env_content())
+        yield file_out.close_while_waiting()
+
         deferreds = []
         deferreds.append(self.copy_static_web_items())
         if not path.exists(self.working_dir + "/frontend/img/bg/5.jpg"):
@@ -67,7 +72,7 @@ class BuildDistribution:
         :return:
         """
         if arguments is None:
-            arguments = ["npm", "run", "build"]
+            arguments = ["npm", "run", "build", "--", self.working_dir]
 
         results = yield getProcessOutput(
             "nice",
@@ -101,11 +106,13 @@ class BuildDistribution:
             logger.info("Frontend builder appears to already be running. Won't build now.")
             return
 
-        # print("!!!!!!! Build frontend starting")
+
+        logger.warn("Web Frontend: Starting build. This may take a while to complete. Will notify when done.")
         self.frontend_building = True
-        yield self.frontend_npm_run()
-        logger.info("Finished building frontend app in {seconds} seconds.", seconds=round(time() - start_time))
-        yield self.copy_frontend()  # now copy the final version...
+        yield self.frontend_npm_run()  # THe build script copies to the final destination.
+        logger.warn("Web Frontend: Finished building in {seconds} seconds. Ready to use.", seconds=round(time() - start_time))
+
+        self.display_how_to_access()
         self.frontend_building = False
 
     @inlineCallbacks
@@ -258,21 +265,9 @@ class BuildDistribution:
         CAT_SCRIPTS_OUT = "js/basic_app.js"
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
-        nuxt_env = self.nuxt_env_content()
-
         filename = f"{self.working_dir}/frontend/nuxt.env"
         file_out = FileWriter(filename=filename, mode="w")  # open in append mode.
-        file_out.write(nuxt_env)
-        yield file_out.close_while_waiting()
-
-        filename = f"{self.app_dir}/yombo/frontend/static/nuxt.env"
-        file_out = FileWriter(filename=filename, mode="w")  # open in append mode.
-        file_out.write(nuxt_env)
-        yield file_out.close_while_waiting()
-
-        filename = f"{self.app_dir}/yombo/frontend/dist/nuxt.env"
-        file_out = FileWriter(filename=filename, mode="w")  # open in append mode.
-        file_out.write(nuxt_env)
+        file_out.write(self.nuxt_env_content())
         yield file_out.close_while_waiting()
 
         yield self.copytree("yombo/lib/webinterface/static/source/img/", "frontend/img/")

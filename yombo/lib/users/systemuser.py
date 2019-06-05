@@ -9,12 +9,14 @@ Simply base system class to represent a system user.
 :license: LICENSE for details.
 """
 from time import time
-from yombo.mixins.authmixin import AuthMixin
-from yombo.mixins.permissionmixin import PermissionMixin
-from yombo.mixins.rolesmixin import RolesMixin
+
+from yombo.core.entity import Entity
+from yombo.mixins.auth_mixin import AuthMixin
+from yombo.mixins.permission_mixin import PermissionMixin
+from yombo.mixins.roles_mixin import RolesMixin
 
 
-class SystemUser(AuthMixin, PermissionMixin, RolesMixin):
+class SystemUser(Entity, AuthMixin, PermissionMixin, RolesMixin):
 
     def __contains__(self, data_requested):
         return False

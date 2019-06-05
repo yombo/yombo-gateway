@@ -23,9 +23,16 @@ PICKLED_FIELDS = [
 
 class DB_DeviceCommands(object):
 
+
     @inlineCallbacks
-    def get_device_commands(self):
-        records = yield DeviceCommand.all(orderby="created_at DESC")
+    def get_device_commands(self, where, **kwargs):
+        limit = self._get_limit(**kwargs)
+        records = yield DeviceCommand.find("device_commands",
+                                           where=dictToWhere(where),
+                                           orderby="created_at DESC",
+                                           limit=limit)
+        if records is None:
+            return []
         for record in records:
             for pickled in PICKLED_FIELDS:
                 setattr(record, pickled, data_unpickle(getattr(record, pickled)))

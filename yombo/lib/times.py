@@ -48,8 +48,9 @@ from twisted.internet import reactor
 from yombo.core.exceptions import YomboInvalidArgument, YomboHookStopProcessing
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import is_one_zero, global_invoke_all
+from yombo.utils import is_one_zero
 import yombo.utils.datetime as dt
+from yombo.utils.hookinvoke import global_invoke_all
 
 
 logger = get_logger("library.times")

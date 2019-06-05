@@ -16,13 +16,13 @@ class DB_Gateways(object):
     def get_gateways(self, status=None):
         if status is True:
             records = yield self.dbconfig.select("gateways")
-            return records
+            return self._return_empty_if_none(records)
         elif status is None:
             records = yield self.dbconfig.select("gateways", where=["status = ? OR status = ?", 1, 0])
-            return records
+            return self._return_empty_if_none(records)
         else:
             records = yield self.dbconfig.select("gateways", where=["status = ?", status])
-            return records
+            return self._return_empty_if_none(records)
 
     @inlineCallbacks
     def save_gateways(self, data):

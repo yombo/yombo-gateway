@@ -68,7 +68,7 @@ from twisted.internet import reactor
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning, YomboCronTabError
 from yombo.core.library import YomboLibrary
-from yombo.core.library_search import LibrarySearch
+from yombo.mixins.library_search_mixin import LibrarySearchMixin
 from yombo.core.log import get_logger
 from yombo.utils import random_string
 
@@ -94,7 +94,7 @@ def conv_to_set(obj):  # Allow single integer to be provided
     return obj
 
 
-class CronTab(YomboLibrary, LibrarySearch):
+class CronTab(YomboLibrary, LibrarySearchMixin):
     """
     Manages all cron jobs.
 
@@ -104,11 +104,11 @@ class CronTab(YomboLibrary, LibrarySearch):
     cron_tasks = {}
 
     # The following are used by get(), get_advanced(), search(), and search_advanced()
-    item_search_attribute = "cron_tasks"
-    item_searchable_attributes = [
+    _class_storage_attribute_name = "cron_tasks"
+    _class_storage_fields = [
         "cron_id", "label", "enabled"
     ]
-    item_sort_key = "machine_label"
+    _class_storage_sort_key = "machine_label"
 
     def __contains__(self, cron_task_requested):
         """

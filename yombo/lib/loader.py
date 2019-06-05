@@ -59,7 +59,6 @@ from yombo.core.exceptions import YomboCritical, YomboWarning, YomboHookStopProc
 from yombo.classes.fuzzysearch import FuzzySearch
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.mixins.magicattributesmixin import MagicAttributesMixin
 import yombo.utils
 
 logger = get_logger("library.loader")
@@ -163,30 +162,30 @@ HARD_UNLOAD["LocalDB"] = {"operating_mode": "all"}
 
 RUN_PHASE = {
     "system_init": 0,
-    "libraries_import": 200,
-    "libraries_init": 400,
-    "modules_import": 600,
-    "libraries_load": 800,
-    "modules_pre_init": 1000,
-    "modules_init": 1200,
-    "libraries_start": 1400,
-    "modules_preload": 1600,
-    "modules_load": 1600,
-    "modules_prestart": 1800,
-    "modules_start": 2000,
-    "modules_started": 2200,
-    "libraries_started": 2400,
-    "system_started": 2600,
-    "gateway_running": 2800,
-    "shutdown": 5000,
-    "modules_stop": 5200,
-    "modules_unload": 5400,
-    "libraries_stop": 5600,
-    "libraries_unload": 5800,
+    "libraries_import": 500,
+    "libraries_init": 1000,
+    "modules_import": 1500,
+    "libraries_load": 2000,
+    "modules_pre_init": 2500,
+    "modules_init": 3000,
+    "libraries_start": 3500,
+    "libraries_started": 4000,
+    "modules_preload": 4500,
+    "modules_load": 5000,
+    "modules_prestart": 5500,
+    "modules_start": 6000,
+    "modules_started": 6500,
+    "system_loaded": 7000,
+    "gateway_running": 10000,
+    "shutdown": 15000,
+    "modules_stop": 15500,
+    "modules_unload": 16000,
+    "libraries_stop": 16500,
+    "libraries_unload": 17000,
 }
 
 
-class Loader(YomboLibrary, MagicAttributesMixin):
+class Loader(YomboLibrary):
     """
     Responsible for loading libraries, and then delegating loading modules to
     the modules library.
@@ -225,7 +224,7 @@ class Loader(YomboLibrary, MagicAttributesMixin):
 
     @operating_mode.setter
     def operating_mode(self, val):
-        if RUN_PHASE[self._run_phase] > 200:
+        if RUN_PHASE[self.__run_phase] > 500:
             self.loadedLibraries["states"]["loader.operating_mode"] = val
             if val == 'run':
                 logger.debug("Operating mode set to: {mode}", mode=val)
@@ -235,13 +234,21 @@ class Loader(YomboLibrary, MagicAttributesMixin):
 
     @property
     def run_phase(self):
-        return (self._run_phase, RUN_PHASE[self._run_phase])
+        return (self.__run_phase, RUN_PHASE[self.__run_phase])
 
     @run_phase.setter
     def run_phase(self, val):
-        if RUN_PHASE[val] > 200:
+        raise AttributeError("Unable to set this attribute: _Loader.run_phase.")
+
+    @property
+    def _run_phase(self):
+        return self.__run_phase
+
+    @_run_phase.setter
+    def _run_phase(self, val):
+        if RUN_PHASE[val] > 500:
             self.loadedLibraries["states"]["loader.run_phase"] = val
-        self._run_phase = val
+        self.__run_phase = val
 
     def __getitem__(self, component_requested):
         """
@@ -264,14 +271,15 @@ class Loader(YomboLibrary, MagicAttributesMixin):
 
     def __init__(self, testing=False, loop=None):
         self._Loader = self  # needed for reference when for modules -> magic attributes mixin.
+        super().__init__(self, _dont_call_entity_init=True)
         self.startup_events_queue = []
         self._operating_mode = "system_init"
-        self._run_phase = "system_init"
+        self.__run_phase = "system_init"
         self.unittest = testing
         self._moduleLibrary = None
         self.event_loop = None
         self.force_python_module_upgrade = False
-        YomboLibrary.__init__(self)
+
         self.requirements = {}  # Track which python modules are required
 
         self.loadedComponents = FuzzySearch({self._FullName.lower(): self}, .95)
@@ -289,7 +297,7 @@ class Loader(YomboLibrary, MagicAttributesMixin):
         This is called if SIGINT (ctrl-c) was caught. Very useful incase it was called during startup.
         :return:
         """
-        self.run_phase = "shutdown"
+        self._run_phase = "shutdown"
         self.sigint = True
 
     @inlineCallbacks
@@ -329,7 +337,7 @@ class Loader(YomboLibrary, MagicAttributesMixin):
             return
         logger.debug("Calling load functions of libraries.")
 
-        self.run_phase = "modules_import"
+        self._run_phase = "modules_import"
         self.operating_mode = self.operating_mode  # so we can update the State!
         if self.operating_mode == "run":
             yield self._moduleLibrary.prepare_modules()
@@ -347,7 +355,7 @@ class Loader(YomboLibrary, MagicAttributesMixin):
                 HARD_LOAD[name]["_modules_imported_"] = False
             self._log_loader("debug", name, "library", "modules_imported", "Finished call to _modules_imported_.")
 
-        self.run_phase = "libraries_load"
+        self._run_phase = "libraries_load"
         for name, config in HARD_LOAD.items():
             if self.sigint:
                 return
@@ -366,7 +374,7 @@ class Loader(YomboLibrary, MagicAttributesMixin):
         # Sets run phase to modules_pre_init and then modules_init'
         yield self._moduleLibrary.init_modules()
 
-        self.run_phase = "libraries_start"
+        self._run_phase = "libraries_start"
         for name, config in HARD_LOAD.items():
             if self.sigint:
                 return
@@ -381,7 +389,7 @@ class Loader(YomboLibrary, MagicAttributesMixin):
 
         yield self._moduleLibrary.load_modules()  #includes load & start
 
-        self.run_phase = "libraries_started"
+        self._run_phase = "libraries_started"
         for name, config in HARD_LOAD.items():
             if self.sigint:
                 return
@@ -393,7 +401,7 @@ class Loader(YomboLibrary, MagicAttributesMixin):
             else:
                 HARD_LOAD[name]["_started_"] = False
 
-        self.run_phase = "system_started"
+        self._run_phase = "system_loaded"
         for name, config in HARD_LOAD.items():
             if self.sigint:
                 return
@@ -419,7 +427,7 @@ class Loader(YomboLibrary, MagicAttributesMixin):
             created_at=event.pop()
             self.loadedLibraries["events"].new(*event, created_at=created_at)
         self.startup_events_queue = None
-        self.run_phase = "gateway_running"
+        self._run_phase = "gateway_running"
         logger.info("Yombo Gateway started.")
 
     @inlineCallbacks
@@ -526,6 +534,7 @@ class Loader(YomboLibrary, MagicAttributesMixin):
         """
         logger.debug("Importing gateway libraries.")
         self._run_phase = "libraries_import"
+        logger.debug("Importing gateway libraries.2")
         for name, config in HARD_LOAD.items():
             if self.sigint:
                 return
@@ -547,8 +556,8 @@ class Loader(YomboLibrary, MagicAttributesMixin):
         for name, config in HARD_LOAD.items():
             component = name.lower()
             library = self.loadedLibraries[component]
-            # self._log_loader("debug", name, "library", "_init_", "About to call MagicAttributesMixin._init_.")
-            MagicAttributesMixin.__init__(self, self)
+            self._log_loader("debug", name, "library", "_init_", "About to call _entity_init_")
+            self._entity_init_()
 
         logger.debug("Calling init functions of libraries.")
         self._run_phase = "libraries_init"
@@ -817,7 +826,7 @@ class Loader(YomboLibrary, MagicAttributesMixin):
             # Instantiate the class
             logger.debug("Instantiate class: {pyclassname}", pyclassname=pyclassname)
             if componentType == "library":
-                moduleinst = klass()  # Start the library class
+                moduleinst = klass(self, _dont_call_entity_init=True)  # Start the library class
                 if componentName.lower() == "modules":
                     self._moduleLibrary = moduleinst
                 self.loadedComponents["yombo.gateway.lib." + str(componentName.lower())] = moduleinst
@@ -843,13 +852,13 @@ class Loader(YomboLibrary, MagicAttributesMixin):
         Only called when server is doing shutdown. Stops controller, server control and server data..
         """
         logger.debug("Stopping libraries: {stuff}", stuff=HARD_UNLOAD)
-        self.run_phase = "libraries_stop"
+        self._run_phase = "libraries_stop"
         for name, config in HARD_UNLOAD.items():
             if self.check_operating_mode(config["operating_mode"]):
                 logger.debug("stopping: {name}", name=name)
                 yield self.library_invoke(name, "_stop_", called_by=self)
 
-        self.run_phase = "libraries_unload"
+        self._run_phase = "libraries_unload"
         for name, config in HARD_UNLOAD.items():
             if self.check_operating_mode(config["operating_mode"]):
                 logger.debug("_unload_: {name}", name=name)

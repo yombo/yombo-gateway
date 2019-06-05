@@ -23,13 +23,14 @@ from random import randint
 
 # Import Yombo libraries
 from yombo.constants import AUTH_TYPE_AUTHKEY
+from yombo.core.entity import Entity
 from yombo.core.library import YomboLibrary
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
-from yombo.mixins.authmixin import AuthMixin
-from yombo.mixins.permissionmixin import PermissionMixin
-from yombo.mixins.rolesmixin import RolesMixin
-from yombo.mixins.synctoeverywhere import SyncToEverywhere
+from yombo.mixins.auth_mixin import AuthMixin
+from yombo.mixins.permission_mixin import PermissionMixin
+from yombo.mixins.roles_mixin import RolesMixin
+from yombo.mixins.sync_to_everywhere import SyncToEverywhere
 from yombo.utils import random_string, bytes_to_unicode, data_unpickle, data_pickle, sha256_compact
 from yombo.utils.datatypes import coerce_value
 
@@ -289,7 +290,7 @@ class AuthKeys(YomboLibrary):
             authkey.save()
 
 
-class AuthKey(AuthMixin, PermissionMixin, RolesMixin, SyncToEverywhere):
+class AuthKey(Entity, AuthMixin, PermissionMixin, RolesMixin, SyncToEverywhere):
     """
     A single auth key item.
     """

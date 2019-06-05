@@ -21,16 +21,16 @@ from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
+from yombo.core.entity import Entity
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
-from yombo.mixins.yombobasemixin import YomboBaseMixin
-from yombo.mixins.synctoeverywhere import SyncToEverywhere
+from yombo.mixins.sync_to_everywhere import SyncToEverywhere
 from yombo.utils import is_true_false
 
 logger = get_logger("library.devices.device_commands.device_command")
 
 
-class Device_Command(YomboBaseMixin, SyncToEverywhere):
+class Device_Command(Entity, SyncToEverywhere):
     """
     A class that manages requests for a given device. This class is instantiated by the
     device class. Librarys and modules can use this instance to get the details of a given
@@ -108,13 +108,14 @@ class Device_Command(YomboBaseMixin, SyncToEverywhere):
         return ["command_status_received", "broadcast_at", "accepted_at", "sent_at", "received_at", "pending_at",
                 "finished_at", "not_before_at", "not_after_at", "history", "status"]
 
-    def __init__(self, data, parent, start=None):
+    def __init__(self, data, parent, start=None, **kwargs):
         """
         Get the instance setup.
 
         :param data: Basic details about the device command to get started.
         :param parent: A pointer to the device types instance.
         """
+        print(f"device command __init__: kwargs: {kwargs}")
         self._internal_label = "device_commands"  # Used by mixins
         self._syncs_to_yombo = False
         super().__init__(parent)

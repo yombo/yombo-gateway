@@ -16,14 +16,14 @@ The variable group class.
 :view-source: `View Source Code <https://yombo.net/Docs/data/html/current/_modules/yombo/lib/variables.html>`_
 """
 # Import Yombo libraries
+from yombo.core.entity import Entity
 from yombo.core.log import get_logger
-from yombo.mixins.yombobasemixin import YomboBaseMixin
-from yombo.mixins.synctoeverywhere import SyncToEverywhere
+from yombo.mixins.sync_to_everywhere import SyncToEverywhere
 
 logger = get_logger("library.variables.groups")
 
 
-class VariableGroup(YomboBaseMixin, SyncToEverywhere):
+class VariableGroup(Entity, SyncToEverywhere):
     """
     A class to manage a single variable group item.
     """

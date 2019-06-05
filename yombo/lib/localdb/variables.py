@@ -23,7 +23,7 @@ class DB_Variables(object):
         Gets all variable data, but ordered in data weight.
         """
         records = yield VariableData.find(orderby="data_weight ASC")
-        return records
+        return self._return_empty_if_none(records)
 
     @inlineCallbacks
     def get_variable_fields(self):
@@ -31,7 +31,7 @@ class DB_Variables(object):
         Gets all variable data, but ordered in data weight.
         """
         records = yield VariableFields.find(orderby="field_weight ASC")
-        return records
+        return self._return_empty_if_none(records)
 
     @inlineCallbacks
     def get_variable_groups(self):
@@ -39,7 +39,7 @@ class DB_Variables(object):
         Gets all variable data, but ordered in data weight.
         """
         records = yield VariableGroups.find(orderby="group_weight ASC")
-        return records
+        return self._return_empty_if_none(records)
 
     @inlineCallbacks
     def save_variable_data(self, data):

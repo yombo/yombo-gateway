@@ -17,20 +17,16 @@ The device state class manages a single state entry for a device.
 # Import python libraries
 from time import time
 
-# Import twisted libraries
-from twisted.internet import reactor
-from twisted.internet.defer import inlineCallbacks
-
 # Import Yombo libraries
+from yombo.core.entity import Entity
 from yombo.core.log import get_logger
-from yombo.mixins.yombobasemixin import YomboBaseMixin
-from yombo.mixins.synctoeverywhere import SyncToEverywhere
-from yombo.utils import random_string, data_pickle
+from yombo.mixins.sync_to_everywhere import SyncToEverywhere
+from yombo.utils import random_string
 
 logger = get_logger("library.devices.device")
 
 
-class Device_State(YomboBaseMixin, SyncToEverywhere):
+class Device_State(Entity, SyncToEverywhere):
     """
     The device state class represents a single state data point for a device.
     """

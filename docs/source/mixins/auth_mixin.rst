@@ -1,17 +1,17 @@
-.. index:: authmixin
+.. index:: auth_mixin
 
-.. _authmixin:
+.. _auth_mixin:
 
-.. currentmodule:: yombo.mixins.authmixin
+.. currentmodule:: yombo.mixins.auth_mixin
 
 .. meta::
    :description: Mixin class for anything can act like an authentication. For example, users, websession, authkeys.
    :keywords: auth, mixin, class, authentication
 
 ================================================================
-AuthMixin (yombo.mixins.authmixin)
+AuthMixin (yombo.mixins.auth_mixin)
 ================================================================
-.. automodule:: yombo.mixins.authmixin
+.. automodule:: yombo.mixins.auth_mixin
 
 AuthMixin Class
 ================================================================

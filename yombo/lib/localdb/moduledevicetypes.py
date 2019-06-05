@@ -18,7 +18,7 @@ class DB_ModuleDeviceTypes(object):
     @inlineCallbacks
     def get_module_device_types(self):
         records = yield ModuleDeviceTypes.find()
-        return records
+        return self._return_empty_if_none(records)
 
     @inlineCallbacks
     def save_module_device_types(self, data):

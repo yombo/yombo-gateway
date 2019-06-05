@@ -101,12 +101,11 @@ from twisted.internet.defer import inlineCallbacks
 
 
 # Import Yombo libraries
-from yombo.utils.decorators import cached
 from yombo.core.entity import Entity
-from yombo.mixins.magicattributesmixin import MagicAttributesMixin
+# from yombo.utils.decorators import cached
 
 
-class YomboModule(Entity, MagicAttributesMixin):
+class YomboModule(Entity):
     """
     This class quickly integrates user developed modules into the Yombo framework. It also sets up various
     predefined various and functions.

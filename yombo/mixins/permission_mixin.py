@@ -11,17 +11,16 @@ library.
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.22.0
 
-:copyright: Copyright 2018 by Yombo.
+:copyright: Copyright 2018-2019 by Yombo.
 :license: LICENSE for details.
 """
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
-from yombo.mixins.yombobasemixin import YomboBaseMixin
 
-logger = get_logger("mixins.permissionmixin")
+logger = get_logger("mixins.permission_mixin")
 
 
-class PermissionMixin(YomboBaseMixin):
+class PermissionMixin(object):
     @property
     def item_permissions(self):
         return self._item_permissions
@@ -30,8 +29,8 @@ class PermissionMixin(YomboBaseMixin):
     def item_permissions(self, val):
         self._item_permissions = val
 
-    def __init__(self, parent, *args, **kwargs):
-        super().__init__(parent, *args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._item_permissions: dict = {}  # {"device": {"allow": {"view": {"garage_door": True}}}}
 
     def add_item_permission(self, platform, item, access, actions, save=None, flush_cache=None):

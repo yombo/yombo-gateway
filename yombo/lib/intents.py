@@ -27,10 +27,10 @@ from yombo.constants.platforms import PLATFORM_LIGHT, PLATFORM_SWITCH
 from yombo.constants.devicetypes.light import ATR_RGB_COLOR
 from yombo.constants.features import FEATURE_SUPPORT_COLOR, FEATURE_BRIGHTNESS
 from yombo.constants.intents import *
+from yombo.core.entity import Entity
 from yombo.core.exceptions import YomboWarning, IntentHandleError
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.mixins.yombobasemixin import YomboBaseMixin
 from yombo.utils import generate_source_string, sha224_compact, random_string
 import yombo.utils.validators as val
 import yombo.utils.color as color_util
@@ -598,7 +598,7 @@ class Intents(YomboLibrary):
         raise KeyError("Invalid intent id")
 
 
-class Intent(YomboBaseMixin):
+class Intent(Entity):
     @property
     def statements(self):
         return self._statements

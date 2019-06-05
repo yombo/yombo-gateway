@@ -23,7 +23,6 @@ from twisted.internet.defer import inlineCallbacks
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import global_invoke_all
 
 from .variable_data import  VariableData
 from .variable_fields import VariableField
@@ -76,7 +75,6 @@ class Variables(YomboLibrary):
         """
         data = yield self._LocalDB.get_variable_data()
         for item in data:
-            # print(f"load var: data: {item.__dict__}")
             yield self._load_variable_data_into_memory(item.__dict__, source="database")
 
     @inlineCallbacks
@@ -144,58 +142,6 @@ class Variables(YomboLibrary):
         :returns: Pointer to new / update variable group
         """
         return self._generic_load_into_memory(self.variable_groups, 'variable_group', VariableGroup, data, source)
-
-    def _generic_load_into_memory(self, storage, hook_name, klass, incoming, source):
-        """
-        Loads data into memory using basic hook calls.
-
-        :param storage: Dictionary to store new data in.
-        :param hook_name: name of the hook to publish
-        :param klass: The class to use to store the data
-        :param incoming: Data to be saved
-        :return:
-        """
-        logger.debug("Generic storage, incoming data: {incoming}", incoming=incoming)
-        # print(f"{hook_name} : {incoming}")
-        storage_id = incoming["id"]
-        if storage_id not in storage:
-            if self._started is True:
-                global_invoke_all(f"_{hook_name}_before_load_",
-                                  called_by=self,
-                                  id=storage_id,
-                                  data=incoming,
-                                  )
-            storage[storage_id] = klass(self,
-                                        incoming,
-                                        source=source)
-            if self._started is True:
-                global_invoke_all(f"_{hook_name}_loaded_",
-                                  called_by=self,
-                                  id=storage_id,
-                                  data=storage[storage_id],
-                                  )
-
-        else:
-            if self._started is True:
-                global_invoke_all(f"_{hook_name}_before_update_",
-                                  called_by=self,
-                                  id=storage_id,
-                                  data=storage[storage_id],
-                                  )
-            storage[storage_id].update_attributes(incoming, source=source)
-            if self._started is True:
-                global_invoke_all(f"_{hook_name}_updated_",
-                                  called_by=self,
-                                  id=storage_id,
-                                  data=storage[storage_id],
-                                  )
-        if self._started is True:
-            global_invoke_all(f"_{hook_name}_imported_",
-                              called_by=self,
-                              id=storage_id,
-                              data=storage[storage_id],
-                              )
-        return storage[storage_id]
 
     def data_by_id(self, variable_data_id):
         """

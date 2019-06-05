@@ -28,9 +28,10 @@ from yombo.core.exceptions import YomboWarning, YomboAPICredentials
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 
+from .generic import YA_Commands
 logger = get_logger("library.yomboapi")
 
-class YomboAPI(YomboLibrary):
+class YomboAPI(YomboLibrary, YA_Commands):
     def __str__(self):
         """
         Returns the name of the library.
@@ -45,10 +46,10 @@ class YomboAPI(YomboLibrary):
 
         self.api_app_key = self._Configs.get("yomboapi", "api_app_key", "4Pz5CwKQCsexQaeUvhJnWAFO6TRa9SafnpAQfAApqy9fsdHTLXZ762yCZOct", False)
         self.gateway_credentials_is_valid = False
-        yield self.check_gateway_credentials()
+        yield self._check_gateway_credentials()
 
     @inlineCallbacks
-    def check_gateway_credentials(self):
+    def _check_gateway_credentials(self):
         """
         Talks to the Yombo API and validates the current gateway ID / Gateway Hash (password) and
         the API Auth Key is valid. Sometimes a new API auth key is returned during this check, it
@@ -126,10 +127,10 @@ class YomboAPI(YomboLibrary):
         logger.debug("yombo api request request_data: {request_data}", request_data=request_data)
         response = yield request.request()
 
-        self.check_results(response, method, url, request_data)
+        self._check_results(response, method, url, request_data)
         return response
 
-    def check_results(self, response, method, url, request_data):
+    def _check_results(self, response, method, url, request_data):
         if response.content_type == "string":
             logger.warn("-----==( Error: API received an invalid response, got a string back )==----")
             logger.warn("Request: {request}", request=response.request.__dict__)

@@ -21,29 +21,26 @@ from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
 from yombo.constants import VERSION
-from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
-from yombo.core.library_search import LibrarySearch
+from yombo.mixins.library_search_mixin import LibrarySearchMixin
 from yombo.core.log import get_logger
 from yombo.lib.gateways.gateway import Gateway
-from yombo.utils import global_invoke_all
-from yombo.utils.decorators import deprecated
 
 logger = get_logger("library.gateways")
 
 
-class Gateways(YomboLibrary, LibrarySearch):
+class Gateways(YomboLibrary, LibrarySearchMixin):
     """
     Manages information about gateways.
     """
     gateways = {}
 
     # The following are used by get(), get_advanced(), search(), and search_advanced()
-    item_search_attribute = "gateways"
-    item_searchable_attributes = [
+    _class_storage_attribute_name = "gateways"
+    _class_storage_fields = [
         "gateway_id", "gateway_id", "label", "machine_label", "status"
     ]
-    item_sort_key = "machine_label"
+    _class_storage_sort_key = "machine_label"
 
     library_phase = 0
 
@@ -253,61 +250,16 @@ class Gateways(YomboLibrary, LibrarySearch):
         for a_gateway in gateways:
             self._load_gateway_into_memory(a_gateway, source="database")
 
-    def _load_gateway_into_memory(self, gateway, source=None):
+    def _load_gateway_into_memory(self, gateway, source=None, **kwargs):
         """
         Add a new gateways to memory or update an existing gateways.
 
-        **Hooks called**:
-
-        * _gateway_before_load_ : Called before the gateway is loaded into memory.
-        * _gateway_after_load_ : Called after the gateway is loaded into memory.
 
         :param gateway: A dictionary of items required to either setup a new gateway or update an existing one.
         :type gateway: dict
-        :param test_gateway: Used for unit testing.
-        :type test_gateway: bool
         :returns: Pointer to new gateway. Only used during unittest
         """
-        # print(f"gateway keys installed: {list(self.gateways.keys())}")
-        logger.debug("gateway: {gateway}", gateway=gateway)
-
-        gateway_id = gateway["id"]
-        if gateway_id in self.gateways:
-            raise YomboWarning(f"Cannot add gateway to memory, already exists: {gateway_id}")
-
-        try:
-            global_invoke_all("_gateway_before_load_",
-                              called_by=self,
-                              gateway_id=gateway_id,
-                              gateway=gateway,
-                              )
-        except Exception as e:
-            pass
-        self.gateways[gateway_id] = Gateway(self, gateway, source=source)  # Create a new gateway in memory
-        try:
-            global_invoke_all("_gateway_after_load_",
-                              called_by=self,
-                              gateway_id=gateway_id,
-                              gateway=self.gateways[gateway_id],
-                              )
-        except Exception as e:
-            pass
-
-    @deprecated(deprecated_in="0.21.0", removed_in="0.25.0",
-                current_version=VERSION,
-                details="Use the 'local' property instead.")
-    def get_local(self):
-        return self.gateways[self.gateway_id]
-
-    @deprecated(deprecated_in="0.21.0", removed_in="0.25.0",
-                current_version=VERSION,
-                details="Use the 'local_id' property instead.")
-    def get_local_id(self):
-        """
-        For future...
-        :return:
-        """
-        return self.gateway_id
+        gateway = self._generic_load_into_memory(self.gateways, 'gateway', Gateway, gateway, source=source, **kwargs)
 
     def get_gateways(self):
         """
@@ -330,217 +282,6 @@ class Gateways(YomboLibrary, LibrarySearch):
         if section == "dns":
             if option == "fqdn":
                 self.local.dns_name = value
-
-    @inlineCallbacks
-    def add_gateway(self, api_data, source=None, **kwargs):
-        """
-        Add a new gateway. Updates Yombo servers and creates a new entry locally.
-
-        :param api_data:
-        :param kwargs:
-        :return:
-        """
-        if "gateway_id" not in api_data:
-            api_data["gateway_id"] = self.gateway_id
-
-        if api_data["machine_label"].lower() == "cluster":
-            return {
-                "status": "failed",
-                "msg": "Couldn't add gateway: machine_label cannot be 'cluster' or 'all'",
-                "apimsg": "Couldn't add gateway: machine_label cannot be 'cluster' or 'all'",
-                "apimsghtml": "Couldn't add gateway: machine_label cannot be 'cluster' or 'all'",
-            }
-        if api_data["label"].lower() == "cluster":
-            return {
-                "status": "failed",
-                "msg": "Couldn't add gateway: label cannot be 'cluster' or 'all'",
-                "apimsg": "Couldn't add gateway: label cannot be 'cluster' or 'all'",
-                "apimsghtml": "Couldn't add gateway: label cannot be 'cluster' or 'all'",
-            }
-        if source != "amqp":
-            try:
-                if "session" in kwargs:
-                    session = kwargs["session"]
-                else:
-                    session = None
-
-                gateway_results = yield self._YomboAPI.request("POST", "/v1/gateway",
-                                                               api_data,
-                                                               session=session)
-            except YomboWarning as e:
-                return {
-                    "status": "failed",
-                    "msg": f"Couldn't add gateway: {e.message}",
-                    "apimsg": f"Couldn't add gateway: {e.message}",
-                    "apimsghtml": f"Couldn't add gateway: {e.html_message}",
-                }
-            gateway_id = gateway_results["data"]["id"]
-
-        new_gateway = gateway_results["data"]
-        self._load_gateway_into_memory(new_gateway)
-        return {
-            "status": "success",
-            "msg": "Gateway added.",
-            "gateway_id": gateway_id,
-        }
-
-    @inlineCallbacks
-    def edit_gateway(self, gateway_id, api_data, called_from_gateway=None, source=None, **kwargs):
-        """
-        Edit a gateway at the Yombo server level, not at the local gateway level.
-
-        :param data:
-        :param kwargs:
-        :return:
-        """
-        if api_data["machine_label"].lower() == "cluster":
-            return {
-                "status": "failed",
-                "msg": "Couldn't add gateway: machine_label cannot be 'cluster' or 'all'",
-                "apimsg": "Couldn't add gateway: machine_label cannot be 'cluster' or 'all'",
-                "apimsghtml": "Couldn't add gateway: machine_label cannot be 'cluster' or 'all'",
-            }
-        if api_data["label"].lower() == "cluster":
-            return {
-                "status": "failed",
-                "msg": "Couldn't add gateway: label cannot be 'cluster' or 'all'",
-                "apimsg": "Couldn't add gateway: label cannot be 'cluster' or 'all'",
-                "apimsghtml": "Couldn't add gateway: label cannot be 'cluster' or 'all'",
-            }
-        try:
-            if "session" in kwargs:
-                session = kwargs["session"]
-            else:
-                session = None
-
-            gateway_results = yield self._YomboAPI.request("PATCH",
-                                                           f"/v1/gateway/{gateway_id}",
-                                                           api_data,
-                                                           session=session)
-        except YomboWarning as e:
-            return {
-                "status": "failed",
-                "msg": f"Couldn't edit gateway: {e.message}",
-                "apimsg": f"Couldn't edit gateway: {e.message}",
-                "apimsghtml": f"Couldn't edit gateway: {e.html_message}",
-            }
-
-        gateway = self.gateways[gateway_id]
-        if called_from_gateway is not True:
-            gateway.update_attributes(api_data)
-            gateway.save_to_db()
-
-        return {
-            "status": "success",
-            "msg": "Device type edited.",
-            "gateway_id": gateway_results["data"]["id"],
-        }
-
-    @inlineCallbacks
-    def delete_gateway(self, gateway_id, **kwargs):
-        """
-        Delete a gateway at the Yombo server level, not at the local gateway level.
-
-        :param gateway_id: The gateway ID to delete.
-        :param kwargs:
-        :return:
-        """
-        try:
-            if "session" in kwargs:
-                session = kwargs["session"]
-            else:
-                session = None
-
-            yield self._YomboAPI.request("DELETE",
-                                         f"/v1/gateway/{gateway_id}",
-                                         session=session)
-        except YomboWarning as e:
-            return {
-                "status": "failed",
-                "msg": f"Couldn't delete gateway: {e.message}",
-                "apimsg": f"Couldn't delete gateway: {e.message}",
-                "apimsghtml": f"Couldn't delete gateway: {e.html_message}",
-            }
-
-        return {
-            "status": "success",
-            "msg": "Gateway deleted.",
-            "gateway_id": gateway_id,
-        }
-
-    @inlineCallbacks
-    def enable_gateway(self, gateway_id, **kwargs):
-        """
-        Enable a gateway at the Yombo server level, not at the local gateway level.
-
-        :param gateway_id: The gateway ID to enable.
-        :param kwargs:
-        :return:
-        """
-        api_data = {
-            "status": 1,
-        }
-
-        try:
-            if "session" in kwargs:
-                session = kwargs["session"]
-            else:
-                session = None
-
-            yield self._YomboAPI.request("PATCH",
-                                         f"/v1/gateway/{gateway_id}|",
-                                         api_data,
-                                         session=session)
-        except YomboWarning as e:
-            return {
-                "status": "failed",
-                "msg": f"Couldn't enable gateway: {e.message}|",
-                "apimsg": f"Couldn't enable gateway: {e.message}",
-                "apimsghtml": f"Couldn't enable gateway: {e.html_message}",
-            }
-
-        return {
-            "status": "success",
-            "msg": "Gateway enabled.",
-            "gateway_id": gateway_id,
-        }
-
-    @inlineCallbacks
-    def disable_gateway(self, gateway_id, **kwargs):
-        """
-        Enable a gateway at the Yombo server level, not at the local gateway level.
-
-        :param gateway_id: The gateway ID to disable.
-        :param kwargs:
-        :return:
-        """
-        api_data = {
-            "status": 0,
-        }
-
-        try:
-            if "session" in kwargs:
-                session = kwargs["session"]
-            else:
-                session = None
-
-            yield self._YomboAPI.request("PATCH",
-                                         f"/v1/gateway/{gateway_id}",
-                                         api_data,
-                                         session=session)
-        except YomboWarning as e:
-            return {
-                "status": "failed",
-                "msg": f"Couldn't disable gateway: {e.message}",
-                "apimsg": f"Couldn't disable gateway: {e.message}",
-                "apimsghtml": f"Couldn't disable gateway: {e.html_message}",
-            }
-
-        return {
-            "status": "success",
-            "msg": "Gateway disabled.",
-            "gateway_id": gateway_id,
-        }
 
     def full_list_gateways(self):
         """

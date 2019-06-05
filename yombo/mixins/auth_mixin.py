@@ -10,18 +10,18 @@ Mixin class for anything can act like an authentication. For example, users, web
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.22.0
 
-:copyright: Copyright 2018 by Yombo.
+:copyright: Copyright 2018-2019 by Yombo.
 :license: LICENSE for details.
 """
 from time import time
+
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
-from yombo.mixins.yombobasemixin import YomboBaseMixin
 
-logger = get_logger("mixins.authmixin")
+logger = get_logger("mixins.auth_mixin")
 
 
-class AuthMixin(YomboBaseMixin):
+class AuthMixin(object):
 
     def __contains__(self, element):
         """
@@ -161,10 +161,17 @@ class AuthMixin(YomboBaseMixin):
     def enabled(self, val):
         self._enabled = val
 
-    def __init__(self, parent, *args, **kwargs):
-        super().__init__(parent, *args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        # print(f"authmixin args: {args}")
+        # print(f"authmixin kwargs: {kwargs}")
+        if "load_source" in kwargs:
+            load_source = kwargs["load_source"]
+            del kwargs["load_source"]
+        else:
+            load_source = "database"
+        super().__init__(*args, **kwargs)
         self._enabled = True
-        load_source = kwargs.get("load_source", "database")
+
         if load_source == "database":
             self.in_db = True
             self.is_dirty = 0

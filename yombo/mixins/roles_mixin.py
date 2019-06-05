@@ -10,18 +10,15 @@ Mixin class to support roles for users, authkeys, etc.
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.22.0
 
-:copyright: Copyright 2018 by Yombo.
+:copyright: Copyright 2018-2019 by Yombo.
 :license: LICENSE for details.
 """
-from time import time
-from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
-from yombo.mixins.yombobasemixin import YomboBaseMixin
 
-logger = get_logger("mixins.rolesmixin")
+logger = get_logger("mixins.roles_mixin")
 
 
-class RolesMixin(YomboBaseMixin):
+class RolesMixin(object):
     @property
     def roles(self):
         return self._roles
@@ -30,8 +27,8 @@ class RolesMixin(YomboBaseMixin):
     def roles(self, val):
         self._roles = val
 
-    def __init__(self, parent, *args, **kwargs):
-        super().__init__(parent, *args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.available_roles: dict = self._Parent._Users.roles
         self._roles: dict = {}
 

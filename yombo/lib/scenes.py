@@ -28,8 +28,8 @@ from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
 from yombo.lib.nodes import Node
-from yombo.utils import (random_string, sleep, is_true_false, global_invoke_all, dict_filter, dict_merge,
-                         bytes_to_unicode)
+from yombo.utils import random_string, sleep, is_true_false, dict_filter, bytes_to_unicode
+from yombo.utils.hookinvoke import global_invoke_all
 
 logger = get_logger("library.scenes")
 

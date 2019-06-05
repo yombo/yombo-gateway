@@ -27,17 +27,19 @@ from pyclbr import readmodule
 from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
+from yombo.core.entity import Entity
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
-from yombo.core.library_search import LibrarySearch
+from yombo.mixins.library_search_mixin import LibrarySearchMixin
 from yombo.core.log import get_logger
-from yombo.mixins.synctoeverywhere import SyncToEverywhere
-from yombo.utils import global_invoke_all, do_search_instance
+from yombo.mixins.sync_to_everywhere import SyncToEverywhere
+from yombo.utils import do_search_instance
+from yombo.utils.hookinvoke import global_invoke_all
 
 logger = get_logger("library.devicetypes")
 
 
-class DeviceTypes(YomboLibrary, LibrarySearch):
+class DeviceTypes(YomboLibrary, LibrarySearchMixin):
     """
     Manages device type database tabels. Just simple update a module"s device types or device type"s available commands
     and any required database tables are updated. Also maintains a list of module device types and device type commands
@@ -46,12 +48,12 @@ class DeviceTypes(YomboLibrary, LibrarySearch):
     device_types = {}
 
     # The following are used by get(), get_advanced(), search(), and search_advanced()
-    item_search_attribute = "device_types"
-    item_searchable_attributes = [
+    _class_storage_attribute_name = "device_types"
+    _class_storage_fields = [
         "device_type_id", "input_type_id", "category_id", "label", "machine_label", "description",
         "status", "always_load", "public"
     ]
-    item_sort_key = "node_type"
+    _class_storage_sort_key = "node_type"
 
     def __contains__(self, device_type_requested):
         """
@@ -827,7 +829,7 @@ class DeviceTypes(YomboLibrary, LibrarySearch):
         }
 
 
-class DeviceType(SyncToEverywhere):
+class DeviceType(Entity, SyncToEverywhere):
     """
     A class to manage a single device type.
     :ivar label: Device type label
@@ -845,10 +847,8 @@ class DeviceType(SyncToEverywhere):
             dictionary with various device type attributes.
         """
         logger.debug("DeviceType::__init__: {device_type}", device_type=device_type)
-
-        self._Parent = parent
         self._internal_label = "device_types"  # Used by mixins
-        super().__init__()
+        super().__init__(parent)
 
         self.commands = {}
         self.device_type_id = device_type["id"]
@@ -945,7 +945,7 @@ class DeviceType(SyncToEverywhere):
         try:
             results = do_search_instance(search_attributes,
                                          self._Parent._Devices.devices,
-                                         self._Parent.item_searchable_attributes)
+                                         self._Parent._class_storage_fields)
 
             if results["was_found"]:
                 devices = {}

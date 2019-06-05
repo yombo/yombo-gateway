@@ -18,7 +18,7 @@ class DB_Commands(object):
     @inlineCallbacks
     def get_commands(self):
         records = yield Command.find(orderby="label ASC")
-        return records
+        return self._return_empty_if_none(records)
 
     @inlineCallbacks
     def save_commands(self, data):

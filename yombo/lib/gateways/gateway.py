@@ -19,14 +19,14 @@ from collections import deque
 from time import time
 
 # Import Yombo libraries
+from yombo.core.entity import Entity
 from yombo.core.log import get_logger
-from yombo.mixins.yombobasemixin import YomboBaseMixin
-from yombo.mixins.synctoeverywhere import SyncToEverywhere
+from yombo.mixins.sync_to_everywhere import SyncToEverywhere
 
 logger = get_logger("library.gateways.gateway")
 
 
-class Gateway(YomboBaseMixin, SyncToEverywhere):
+class Gateway(Entity, SyncToEverywhere):
     """
     A class to manage a single gateway.
     :ivar gateway_id: (string) The unique ID.

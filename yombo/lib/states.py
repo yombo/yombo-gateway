@@ -69,10 +69,11 @@ from twisted.internet.task import LoopingCall
 from yombo.core.exceptions import YomboWarning, YomboHookStopProcessing
 from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
-from yombo.utils import (global_invoke_all, pattern_search, is_true_false, random_string, random_int, memory_usage,
+from yombo.utils import (pattern_search, is_true_false, random_string, random_int, memory_usage,
                          get_yombo_instance_type)
 from yombo.utils.datatypes import coerce_value
 from yombo.utils.converters import epoch_to_string
+from yombo.utils.hookinvoke import global_invoke_all
 
 logger = get_logger("library.states")
 

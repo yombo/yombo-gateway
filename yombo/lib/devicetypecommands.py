@@ -21,29 +21,29 @@ from time import time
 from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
+from yombo.core.entity import Entity
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
-from yombo.core.library_search import LibrarySearch
+from yombo.mixins.library_search_mixin import LibrarySearchMixin
 from yombo.core.log import get_logger
-from yombo.mixins.yombobasemixin import YomboBaseMixin
-from yombo.mixins.synctoeverywhere import SyncToEverywhere
-from yombo.utils import global_invoke_all
+from yombo.mixins.sync_to_everywhere import SyncToEverywhere
+from yombo.utils.hookinvoke import global_invoke_all
 
 logger = get_logger("library.device_type_commands")
 
 
-class DeviceTypeCommands(YomboLibrary, LibrarySearch):
+class DeviceTypeCommands(YomboLibrary, LibrarySearchMixin):
     """
     Manages device type commands.
     """
     device_type_commands = {}
 
     # The following are used by get(), get_advanced(), search(), and search_advanced()
-    item_search_attribute = "device_type_commands"
-    item_searchable_attributes = [
+    _class_storage_attribute_name = "device_type_commands"
+    _class_storage_fields = [
         "device_type_id", "command_id"
     ]
-    item_sort_key = "device_type_id"
+    _class_storage_sort_key = "device_type_id"
 
     def __contains__(self, device_type_command_requested):
         """
@@ -419,7 +419,7 @@ class DeviceTypeCommands(YomboLibrary, LibrarySearch):
         }
 
 
-class DeviceCommandInput(YomboBaseMixin, SyncToEverywhere):
+class DeviceCommandInput(Entity, SyncToEverywhere):
     """
     A class to manage a single device type command.
     """

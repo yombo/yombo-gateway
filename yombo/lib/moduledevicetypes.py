@@ -21,29 +21,29 @@ from time import time
 from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
+from yombo.core.entity import Entity
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
-from yombo.core.library_search import LibrarySearch
+from yombo.mixins.library_search_mixin import LibrarySearchMixin
 from yombo.core.log import get_logger
-from yombo.mixins.yombobasemixin import YomboBaseMixin
-from yombo.mixins.synctoeverywhere import SyncToEverywhere
-from yombo.utils import global_invoke_all
+from yombo.mixins.sync_to_everywhere import SyncToEverywhere
+from yombo.utils.hookinvoke import global_invoke_all
 
 logger = get_logger("library.module_device_types")
 
 
-class ModuleDeviceTypes(YomboLibrary, LibrarySearch):
+class ModuleDeviceTypes(YomboLibrary, LibrarySearchMixin):
     """
     Manages module device types.
     """
     module_device_types = {}
 
     # The following are used by get(), get_advanced(), search(), and search_advanced()
-    item_search_attribute = "module_device_types"
-    item_searchable_attributes = [
+    _class_storage_attribute_name = "module_device_types"
+    _class_storage_fields = [
         "device_type_id", "command_id"
     ]
-    item_sort_key = "device_type_id"
+    _class_storage_sort_key = "device_type_id"
 
     def __contains__(self, module_device_type_requested):
         """
@@ -412,7 +412,7 @@ class ModuleDeviceTypes(YomboLibrary, LibrarySearch):
         }
 
 
-class ModuleDeviceType(YomboBaseMixin, SyncToEverywhere):
+class ModuleDeviceType(Entity, SyncToEverywhere):
     """
     A class to manage a single module device type.
     """

@@ -12,21 +12,22 @@ THIS MIXIN MUST BE LISTED BEFORE AUTHMIXIN!
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.22.0
 
-:copyright: Copyright 2018 by Yombo.
+:copyright: Copyright 2018-2019 by Yombo.
 :license: LICENSE for details.
 """
 from time import time
+
+from yombo.core.entity import Entity
 from yombo.core.log import get_logger
-from yombo.mixins.yombobasemixin import YomboBaseMixin
 
 
 from yombo.core.exceptions import YomboWarning
-from yombo.mixins.rolesmixin import RolesMixin
+from yombo.mixins.roles_mixin import RolesMixin
 
-logger = get_logger("mixins.usermixin")
+logger = get_logger("mixins.user_mixin")
 
 
-class UserMixin(RolesMixin, YomboBaseMixin):
+class UserMixin(Entity, RolesMixin):
 
     @property
     def display(self):
@@ -60,9 +61,8 @@ class UserMixin(RolesMixin, YomboBaseMixin):
 
     @user.setter
     def user(self, val):
-        print("usermixin: setting user: %s" % val)
         if self._user is not None:
-            raise YomboWarning("Unable to set user (from usermixin), already have a user.")
+            raise YomboWarning("Unable to set user (from user_mixin), already have a user.")
         self.auth_at = time()
         self._user = val
 
@@ -95,8 +95,8 @@ class UserMixin(RolesMixin, YomboBaseMixin):
     def user(self, val):
         self._user = val
 
-    def __init__(self, parent, *args, **kwargs):
-        super().__init__(parent, *args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._user = None
 
     def has_role(self, requested_role_id):

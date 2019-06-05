@@ -10,15 +10,16 @@ Resounce syntax:
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.20.0
 """
+from yombo.core.entity import Entity
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
-from yombo.mixins.permissionmixin import PermissionMixin
+from yombo.mixins.permission_mixin import PermissionMixin
 from yombo.utils import data_pickle
 
 logger = get_logger("library.users.role")
 
 
-class Role(PermissionMixin):
+class Role(Entity, PermissionMixin):
     """
     Roles are associated to permissions. Users are added to roles. Resources are protected by permissions.
     """

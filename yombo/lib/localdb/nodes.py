@@ -18,7 +18,7 @@ class DB_Nodes(object):
                                              where=["destination = ? or always_load = 1", "gw"])
         for record in records:
             record["data"] = data_unpickle(record["data"], record["data_content_type"])
-        return records
+        return self._return_empty_if_none(records)
 
     @inlineCallbacks
     def get_node_by_id(self, node_id):

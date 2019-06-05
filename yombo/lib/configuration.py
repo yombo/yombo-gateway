@@ -81,7 +81,8 @@ from yombo.utils.networking import get_local_network_info
 from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
 import yombo.core.settings as settings
-from yombo.utils import dict_merge, global_invoke_all, save_file, data_pickle, data_unpickle, random_string
+from yombo.utils import dict_merge, save_file, data_pickle, data_unpickle, random_string
+from yombo.utils.hookinvoke import global_invoke_all
 from yombo.utils.location import detect_location_info
 
 logger = get_logger("library.configuration")

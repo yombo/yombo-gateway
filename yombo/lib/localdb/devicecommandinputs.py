@@ -18,7 +18,7 @@ class DB_DeviceCommandInputs(object):
     @inlineCallbacks
     def get_device_command_inputs(self):
         records = yield DeviceCommandInput.find(orderby="label ASC")
-        return records
+        return self._return_empty_if_none(records)
 
     @inlineCallbacks
     def save_device_command_inputs(self, data):

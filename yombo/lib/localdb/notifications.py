@@ -26,7 +26,7 @@ class DB_Notifications(object):
     def get_notifications(self):
         cur_time = int(time())
         records = yield Notifications.find(where=["expire_at > ?", cur_time], orderby="created_at DESC")
-        return records
+        return self._return_empty_if_none(records)
 
     @inlineCallbacks
     def delete_notification(self, id):

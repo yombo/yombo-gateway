@@ -44,11 +44,12 @@ from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks, Deferred, maybeDeferred
 
 # Import Yombo libraries
+from yombo.constants import CONTENT_TYPE_JSON, CONTENT_TYPE_MSGPACK, CONTENT_TYPE_TEXT_PLAIN
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import percentage, random_string, random_int, bytes_to_unicode, global_invoke_all, sleep
-from yombo.constants import CONTENT_TYPE_JSON, CONTENT_TYPE_MSGPACK, CONTENT_TYPE_TEXT_PLAIN
+from yombo.utils import percentage, random_string, random_int, bytes_to_unicode, sleep
+from yombo.utils.hookinvoke import global_invoke_all
 
 # Handlers for processing various messages.
 from yombo.lib.amqpyomb_handlers.amqpcontrol import AmqpControlHandler

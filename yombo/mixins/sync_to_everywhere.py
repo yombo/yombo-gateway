@@ -3,6 +3,8 @@
 """
 Mixin class to sync changes to Yombo Cloud and local database, maybe other places too in the future.
 
+This mixin must be the last in the chain.
+
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.24.0
 
@@ -19,7 +21,7 @@ from twisted.internet.defer import inlineCallbacks
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
 
-logger = get_logger("mixins.synctoeverywhere")
+logger = get_logger("mixins.sync_to_everywhere")
 
 SYNC_TO_DB = 1
 SYNC_TO_YOMBO = 2
@@ -44,8 +46,12 @@ class SyncToEverywhere(object):
         return fields
 
     def __init__(self, *args, **kwargs):
+        # if self._internal_label == "devices": print("sync everywhere init..... 1")
         self._sync_enabled = False
+        # if self._internal_label == "devices": print(f"sync everywhere init.....enabled: {self._sync_enabled}")
         self._sync_delay = 5
+        self._sync_enabled = True
+        self._sync_enabled = False
         self._sync_max_delay = 30
         self._sync_calllater_db_time = None
         self._sync_calllater_db = None
@@ -70,15 +76,26 @@ class SyncToEverywhere(object):
             self._sync_mode |= SYNC_TO_CONFIG
 
         # print(f"sync mode for: {self._internal_label} = {self._sync_mode}")
+        # print(f"sync fields:{self._sync_fields}")
 
         if hasattr(self, "_can_have_fake_data") and self._can_have_fake_data is True:
             self._fake_data = False
-        super().__init__(*args, **kwargs)
+        super().__init__()
 
     def __setattr__(self, name, value):
-        if hasattr(self, '_sync_enabled') and self._sync_enabled is True and name in self._sync_fields:
-            if (not hasattr(self, name) or getattr(self, name) != value):
-                self.sync_item_data(self._sync_mode)
+        if hasattr(self, '_internal_label'):
+            # if self._internal_label == "devices": print(f"Sync start: name2: {name}")
+            # logger.debug("Sync start: '{internal}', name: {name}",
+            #              internal='ll', name=name)
+            if hasattr(self, '_sync_enabled'):
+                # if self._internal_label == "devices": print(f"Sync start: name2.1:  enabled: {self._sync_enabled} , {name} = {value}")
+                if self._sync_enabled is True and name in self._sync_fields:
+                    # if self._internal_label == "devices": print(f"Sync start: name3: {name}")
+                    if not hasattr(self, name) or getattr(self, name) != value:
+                        # if self._internal_label == "devices": print(f"Sync start: name5: {name}")
+                        # logger.debug("Sync sending: '{internal}', name: {name} label: {label}",
+                        #              internal=self._internal_label, name=name, label=self.__str__())
+                        self.sync_item_data(self._sync_mode)
         super(SyncToEverywhere, self).__setattr__(name, value)
 
     def set(self, name, value, source=None, session=None):
@@ -188,6 +205,7 @@ class SyncToEverywhere(object):
         if hasattr(self, "_fake_data") and self._fake_data is True:
             self._sync_enabled = False
         self._sync_enabled = True
+        # if self._internal_label == "devices": print(f"start_data_sync: {self._sync_enabled}, label: {self.label}")
 
     def stop_data_sync(self):
         """ Disable syncing. """
@@ -204,7 +222,7 @@ class SyncToEverywhere(object):
 
         :return:
         """
-        logger.info("sync_to_database starting...")
+        logger.info("sync_to_database starting. Mode: {mode}", mode=sync_mode)
         if self.sync_allowed() is False or (hasattr(self, "_fake_data") and self._fake_data is True):
             return
 

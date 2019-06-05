@@ -41,7 +41,7 @@ from twisted.internet.defer import inlineCallbacks
 from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
 from yombo.utils import random_string
-from yombo.utils import global_invoke_modules, global_invoke_libraries
+from yombo.utils.hookinvoke import global_invoke_modules, global_invoke_libraries
 
 logger = get_logger("library.hashids")
 

@@ -102,9 +102,10 @@ from twisted.internet import reactor
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
-from yombo.utils import percentile, global_invoke_all, pattern_search, random_int, dict_merge
-from yombo.utils.decorators import cached
 from yombo.core.log import get_logger
+from yombo.utils import percentile, pattern_search, random_int, dict_merge
+from yombo.utils.decorators import cached
+from yombo.utils.hookinvoke import global_invoke_all
 
 from yombo.lib.statistics.buckets_manager import BucketsManager
 logger = get_logger("library.statistics")

@@ -25,27 +25,28 @@ from twisted.internet.defer import inlineCallbacks
 from yombo.constants.users import *
 from yombo.core.exceptions import YomboWarning, YomboNoAccess
 from yombo.core.library import YomboLibrary
-from yombo.core.library_search import LibrarySearch
+from yombo.mixins.library_search_mixin import LibrarySearchMixin
 from yombo.core.log import get_logger
 from yombo.lib.users.role import Role
 from yombo.lib.users.user import User
 from yombo.lib.users.systemuser import SystemUser
-from yombo.mixins.authmixin import AuthMixin
-from yombo.utils import global_invoke_all, data_unpickle, sha256_compact, random_string
+from yombo.mixins.auth_mixin import AuthMixin
+from yombo.utils import data_unpickle, sha256_compact, random_string
+from yombo.utils.hookinvoke import global_invoke_all
 
 logger = get_logger("library.users")
 
 
-class Users(YomboLibrary, LibrarySearch):
+class Users(YomboLibrary, LibrarySearchMixin):
     """
     Maintains a list of users and what they can do.
     """
     users = {}
     # The following are used by get(), get_advanced(), search(), and search_advanced()
-    item_search_attribute = "users"
-    item_searchable_attributes = ["id", "user_id", "email", "label", "name"]
-    item_sort_key = "machine_label"
-    item_criteria_keys = ["user_id", "email", "name"]
+    _class_storage_attribute_name = "users"
+    _class_storage_fields = ["id", "user_id", "email", "label", "name"]
+    _class_storage_sort_key = "machine_label"
+    _class_storage_default_search_fields = ["user_id", "email", "name"]
 
     def __contains__(self, user_requested):
         """

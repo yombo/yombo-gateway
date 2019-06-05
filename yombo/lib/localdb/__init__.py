@@ -311,7 +311,7 @@ class LocalDB(
         self.cleanup_database_loop = None
         self.cleanup_database_running = False
         self.db_model = {}  # store generated database model here.
-        self.remote_tables = ['auth_keys', 'categories', 'commands', 'devices', 'device_command_inputs',
+        self.remote_tables = ['categories', 'commands', 'devices', 'device_command_inputs',
                               'device_commands', 'device_types', 'device_type_commands', 'gateways', 'input_types',
                               'locations', 'modules', 'module_commits', 'module_device_types', 'nodes', 'users',
                               'variable_groups', 'variable_fields', 'variable_data']

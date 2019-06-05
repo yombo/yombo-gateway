@@ -21,17 +21,17 @@ from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
 from yombo.classes.fuzzysearch import FuzzySearch
+from yombo.core.entity import Entity
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
-from yombo.core.library_search import LibrarySearch
+from yombo.mixins.library_search_mixin import LibrarySearchMixin
 from yombo.core.log import get_logger
-from yombo.mixins.yombobasemixin import YomboBaseMixin
-from yombo.mixins.synctoeverywhere import SyncToEverywhere
-from yombo.utils import global_invoke_all
+from yombo.mixins.sync_to_everywhere import SyncToEverywhere
+from yombo.utils.hookinvoke import global_invoke_all
 
 logger = get_logger("library.commands")
 
-class Commands(YomboLibrary, LibrarySearch):
+class Commands(YomboLibrary, LibrarySearchMixin):
     """
     Manages all commands available for devices.
 
@@ -41,11 +41,11 @@ class Commands(YomboLibrary, LibrarySearch):
     commands = {}
 
     # The following are used by get(), get_advanced(), search(), and search_advanced()
-    item_search_attribute = "commands"
-    item_searchable_attributes = [
+    _class_storage_attribute_name = "commands"
+    _class_storage_fields = [
         "command_id", "label", "machine_label", "description", "voice_cmd", "cmd", "status"
     ]
-    item_sort_key = "machine_label"
+    _class_storage_sort_key = "machine_label"
 
     def __contains__(self, command_requested):
         """
@@ -246,218 +246,6 @@ class Commands(YomboLibrary, LibrarySearch):
         except Exception:
             pass
 
-    @inlineCallbacks
-    def dev_command_add(self, data, **kwargs):
-        """
-        Used to interact with the Yombo API to add a new command. This doesn't add a new command
-        to the local gateway.
-
-        :param data: Fields to send to the Yombo API. See https://yg2.in/api for details.
-        :type data: dict
-        :param kwargs: Currently unused.
-        :return: Results on the success/fail of the add request.
-        :rtype: dict
-        """
-        try:
-            if "session" in kwargs:
-                session = kwargs["session"]
-            else:
-                return {
-                    "status": "failed",
-                    "msg": "Couldn't add command: User session missing.",
-                    "apimsg": "Couldn't add command: User session missing.",
-                    "apimsghtml": "Couldn't add command: User session missing.",
-                }
-            command_results = yield self._YomboAPI.request("POST", "/v1/command",
-                                                           data,
-                                                           session=session)
-        except YomboWarning as e:
-            return {
-                "status": "failed",
-                "msg": f"Couldn't add command: {e.message}",
-                "apimsg": f"Couldn't add command: {e.message}",
-                "apimsghtml": f"Couldn't add command: {e.html_message}",
-            }
-
-        # print("command edit results: %s" % command_results)
-
-        return {
-            "status": "success",
-            "msg": "Command added.",
-            "data": command_results["data"],
-        }
-
-    @inlineCallbacks
-    def dev_command_edit(self, command_id, data, **kwargs):
-        """
-        Used to interact with the Yombo API to edit a command. This doesn't edit the command
-        on the local gateway.
-
-        :param data: Fields to send to the Yombo API. See https://yombo.net/API:Commands for details.
-        :type data: dict
-        :param kwargs: Currently unused.
-        :return: Results on the success/fail of the request.
-        :rtype: dict
-        """
-        try:
-            if "session" in kwargs:
-                session = kwargs["session"]
-            else:
-                return {
-                    "status": "failed",
-                    "msg": "Couldn't edit command: User session missing.",
-                    "apimsg": "Couldn't edit command: User session missing.",
-                    "apimsghtml": "Couldn't edit command: User session missing.",
-                }
-            command_results = yield self._YomboAPI.request("PATCH", f"/v1/command/{command_id}",
-                                                           data,
-                                                           session=session)
-        except YomboWarning as e:
-            return {
-                "status": "failed",
-                "msg": f"Couldn't edit command: {e.message}",
-                "apimsg": f"Couldn't edit command: {e.message}",
-                "apimsghtml": f"Couldn't edit command: {e.html_message}",
-            }
-
-        # print("command edit results: %s" % command_results)
-
-        return {
-            "status": "success",
-            "msg": "Command edited.",
-            "data": command_results["data"],
-        }
-
-    @inlineCallbacks
-    def dev_command_delete(self, command_id, **kwargs):
-        """
-        Used to interact with the Yombo API to delete a command. This doesn't delete the command
-        on the local gateway.
-
-        :param data: Fields to send to the Yombo API. See https://yombo.net/API:Commands for details.
-        :type data: dict
-        :param kwargs: Currently unused.
-        :return: Results on the success/fail of the request.
-        :rtype: dict
-        """
-        try:
-            if "session" in kwargs:
-                session = kwargs["session"]
-            else:
-                return {
-                    "status": "failed",
-                    "msg": "Couldn't delete command: User session missing.",
-                    "apimsg": "Couldn't delete command: User session missing.",
-                    "apimsghtml": "Couldn't delete command: User session missing.",
-                }
-
-            command_results = yield self._YomboAPI.request("DELETE",
-                                                           f"/v1/command/{command_id}",
-                                                           session=session)
-        except YomboWarning as e:
-            return {
-                "status": "failed",
-                "msg": f"Couldn't delete command: {e.message}",
-                "apimsg": f"Couldn't delete command: {e.message}",
-                "apimsghtml": f"Couldn't delete command: {e.html_message}",
-            }
-
-        return {
-            "status": "success",
-            "msg": "Command deleted.",
-            "data": command_results["data"],
-        }
-
-    @inlineCallbacks
-    def dev_command_enable(self, command_id, **kwargs):
-        """
-        Used to interact with the Yombo API to enable a command. This doesn't enable the command
-        on the local gateway.
-
-        :param data: Fields to send to the Yombo API. See https://yombo.net/API:Commands for details.
-        :type data: dict
-        :param kwargs: Currently unused.
-        :return: Results on the success/fail of the request.
-        :rtype: dict
-        """
-        api_data = {
-            "status": 1,
-        }
-
-        try:
-            if "session" in kwargs:
-                session = kwargs["session"]
-            else:
-                return {
-                    "status": "failed",
-                    "msg": "Couldn't enable command: User session missing.",
-                    "apimsg": "Couldn't enable command: User session missing.",
-                    "apimsghtml": "Couldn't enable command: User session missing.",
-                }
-
-            command_results = yield self._YomboAPI.request("PATCH",
-                                                           f"/v1/command/{command_id}",
-                                                           api_data,
-                                                           session=session)
-        except YomboWarning as e:
-            return {
-                "status": "failed",
-                "msg": f"Couldn't enable command: {e.message}",
-                "apimsg": f"Couldn't enable command: {e.message}",
-                "apimsghtml": f"Couldn't enable command: {e.html_message}",
-            }
-
-        return {
-            "status": "success",
-            "msg": "Command enabled.",
-            "data": command_results["data"],
-        }
-
-    @inlineCallbacks
-    def dev_command_disable(self, command_id, **kwargs):
-        """
-        Used to interact with the Yombo API to disable a command. This doesn't diable the command
-        on the local gateway.
-
-        :param data: Fields to send to the Yombo API. See https://yombo.net/API:Commands for details.
-        :type data: dict
-        :param kwargs: Currently unused.
-        :return: Results on the success/fail of the request.
-        :rtype: dict
-        """
-        api_data = {
-            "status": 0,
-        }
-
-        try:
-            if "session" in kwargs:
-                session = kwargs["session"]
-            else:
-                return {
-                    "status": "failed",
-                    "msg": "Couldn't disable command: User session missing.",
-                    "apimsg": "Couldn't disable command: User session missing.",
-                    "apimsghtml": "Couldn't disable command: User session missing.",
-                }
-
-            command_results = yield self._YomboAPI.request("PATCH",
-                                                           f"/v1/command/{command_id}",
-                                                           api_data,
-                                                           session=session)
-        except YomboWarning as e:
-            return {
-                "status": "failed",
-                "msg": f"Couldn't disable command: {e.message}",
-                "apimsg": f"Couldn't disable command: {e.message}",
-                "apimsghtml": f"Couldn't disable command: {e.html_message}",
-            }
-
-        return {
-            "status": "success",
-            "msg": "Command disabled.",
-            "data": command_results["data"],
-        }
-
     def full_list_commands(self):
         """
         Return a list of dictionaries representing all known commands to this gateway.
@@ -469,7 +257,7 @@ class Commands(YomboLibrary, LibrarySearch):
         return items
 
 
-class Command(YomboBaseMixin, SyncToEverywhere):
+class Command(Entity, SyncToEverywhere):
     """
     A command is represented by this class is is returned to callers of the
     :py:meth:`get() <Commands.get>` or :py:meth:`__getitem__() <Commands.__getitem__>` functions.

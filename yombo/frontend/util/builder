@@ -1,27 +1,50 @@
 #!/usr/bin/env bash
 
-# This file starts up the dev build process. Usually called by 'npm run dev'
+# This file is responsible for building both production and development frontend builds.
+# This will collect the primary source from the Yombo directory as well as all the
+# module directories. Once combined, it will start to build for either prod or dev.
 #
-# The difference: This collects all the frontend components into a single
-# place: '$working_dir'/var/frontend
+# The working dir for this: $working_dir'/var/frontend Eg: /home/user/.yombo/var/frontend
 #
-# From here, npm will actually run.
+#
+# To run the build process, goto the frontend directory within the gateway repo, then:
+# npm run dev
+#     or
+# npm run build
+
+WORKING_DIR="$HOME/.yombo"
+if ! [ -z "$2" ]
+  then
+    WORKING_DIR=$2
+fi
+#WORKING_DIR="$WORKING_DIR/"
 
 YOMBO_SCRIPT_FRONTEND_UTILS="$( cd "$(dirname "$0")" ; pwd -P )"
 YOMBO_SCRIPT_FRONTEND="$(dirname $YOMBO_SCRIPT_FRONTEND_UTILS)"
 YOMBO_ROOT="$(dirname $YOMBO_SCRIPT_FRONTEND)"
 YOMBO_ROOT="$(dirname $YOMBO_ROOT)"
 
-function copy_files {
+
+function copy_source_files {
   # Copies all the files from the core frontend and the modules
 
   echo "Copying frontend core directory..."
-  rsync -a --delete --exclude "/.nuxt/" --exclude "/dist/" "$YOMBO_SCRIPT_FRONTEND"/ ~/.yombo/var/frontend/
+  DESTINATION=$WORKING_DIR/var/frontend
+  mkdir -p $DESTINATION
+  rsync -a "$YOMBO_SCRIPT_FRONTEND/" --exclude '/.nuxt/' --exclude '/dist/' "$DESTINATION"
 
   echo "Copying frontend files from various modules..."
   cd "$YOMBO_ROOT"/yombo/modules
 
-  for d in **/*frontend*/; do rsync -a $d ~/.yombo/var/frontend/ ; done
+  for d in **/*frontend*/; do rsync -a "$d/" "$WORKING_DIR"/var/frontend/ ; done
+}
+
+function copy_to_destination {
+  # For production builds, copy the files to the final resting place when done.
+
+  echo "Copying final destination."
+  mkdir -p "$WORKING_DIR"/frontend/
+  rsync -a "$WORKING_DIR"/var/frontend/dist/* "$WORKING_DIR"/frontend/
 }
 
 function setup_watch_files {
@@ -38,7 +61,8 @@ function setup_watch_files {
       do
         filename="$(dirname $filename)"
       done
-      rsync -a --exclude "/.nuxt/" --exclude "/dist/" "$filename"/ ~/.yombo/var/frontend
+      DESTINATION=$WORKING_DIR/var/frontend
+      rsync -a "$filename/" --exclude '/.nuxt/' --exclude '/dist/' "$DESTINATION"
     fi
   done
 }
@@ -60,7 +84,7 @@ function build_dev {
   echo "Starting Yombo Frontend Dev Build."
   echo
 
-  copy_files
+  copy_source_files
 
   # trap ctrl-c and call ctrl_c()
   trap ctrl_c INT
@@ -68,7 +92,7 @@ function build_dev {
   setup_watch_files &
   WATCHFILES=$!
 
-  cd ~/.yombo/var/frontend/
+  cd "$WORKING_DIR"/var/frontend/
   npm run build_dev &
   BUILDFRONTEND=$!
 
@@ -86,9 +110,12 @@ function build_prod {
   echo "Starting Yombo Frontend Production Build."
   echo
 
-  copy_files
-  cd ~/.yombo/var/frontend/
+  copy_source_files
+  cd "$WORKING_DIR"/var/frontend/
   npm run build_prod
+  copy_to_destination
+  rm $YOMBO_SCRIPT_FRONTEND_UTILS/builder.pid
+
 }
 
 function usage
@@ -104,8 +131,14 @@ fi
 
 if test -f "$YOMBO_SCRIPT_FRONTEND_UTILS/builder.pid"; then
   builder_pid="`cat $YOMBO_SCRIPT_FRONTEND_UTILS/builder.pid`"
-  echo "frontend builder is already running: $builder_pid"
-  exit
+  if ps -p $builder_pid > /dev/null 2>&1
+  then
+      echo "Frontend builder is already running: $builder_pid"
+      exit
+  else
+      echo "Removing stale pid file."
+      rm $YOMBO_SCRIPT_FRONTEND_UTILS/builder.pid
+  fi
 fi
 
 echo "$BASHPID" > $YOMBO_SCRIPT_FRONTEND_UTILS/builder.pid

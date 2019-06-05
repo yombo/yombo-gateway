@@ -43,9 +43,10 @@ from yombo.classes.dictobject import DictObject
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import (save_file, read_file, global_invoke_all, random_int, unicode_to_bytes,
-                         bytes_to_unicode, sha256_compact)
 from yombo.ext.expiringdict import ExpiringDict
+from yombo.utils import (save_file, read_file, random_int, unicode_to_bytes,
+                         bytes_to_unicode, sha256_compact)
+from yombo.utils.hookinvoke import global_invoke_all
 
 from .sslcert import SSLCert
 

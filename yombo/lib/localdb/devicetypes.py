@@ -17,7 +17,7 @@ class DB_DeviceTypes(object):
     @inlineCallbacks
     def get_device_types(self):
         records = yield DeviceType.find(orderby="label ASC")
-        return records
+        return self._return_empty_if_none(records)
 
     @inlineCallbacks
     def get_device_type(self, devicetype_id):

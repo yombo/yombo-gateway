@@ -3,14 +3,14 @@ Base input type validator.
 """
 
 # Import Yombo libraries
+from yombo.core.entity import Entity
 from yombo.core.log import get_logger
-from yombo.mixins.yombobasemixin import YomboBaseMixin
-from yombo.mixins.synctoeverywhere import SyncToEverywhere
+from yombo.mixins.sync_to_everywhere import SyncToEverywhere
 
 logger = get_logger("library.inputtypes.validator")
 
 
-class Input_Type(YomboBaseMixin, SyncToEverywhere):
+class Input_Type(Entity, SyncToEverywhere):
     """
     A class to manage a single input type.
     :ivar input_type_id: (string) The unique ID.

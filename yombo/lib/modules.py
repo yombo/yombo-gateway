@@ -34,10 +34,11 @@ from twisted.internet.defer import inlineCallbacks, maybeDeferred, Deferred, Def
 from yombo.constants import MODULE_API_VERSION
 from yombo.core.exceptions import YomboHookStopProcessing, YomboWarning
 from yombo.core.library import YomboLibrary
-from yombo.core.library_search import LibrarySearch
+from yombo.mixins.library_search_mixin import LibrarySearchMixin
 from yombo.core.log import get_logger
 import yombo.core.settings as settings
-from yombo.utils import read_file, bytes_to_unicode, global_invoke_all, sha224_compact, random_string
+from yombo.utils import read_file, bytes_to_unicode, sha224_compact, random_string
+from yombo.utils.hookinvoke import global_invoke_all
 
 from yombo.classes.maxdict import MaxDict
 import collections
@@ -75,7 +76,7 @@ SYSTEM_MODULES = {
     }
 
 
-class Modules(YomboLibrary, LibrarySearch):
+class Modules(YomboLibrary, LibrarySearchMixin):
     """
     A single place for modudule management and reference.
     """
@@ -86,12 +87,12 @@ class Modules(YomboLibrary, LibrarySearch):
     disabled_modules = {}  # List of modules that are blacklisted from the server.
 
     # The following are used by get(), get_advanced(), search(), and search_advanced()
-    item_search_attribute = "modules"
-    item_searchable_attributes = [
+    _class_storage_attribute_name = "modules"
+    _class_storage_fields = [
         "_module_id", "_module_type", "_label", "_machine_label", "_description", "_short_description",
         "_medium_description", "_public", "_status"
     ]
-    item_sort_key = "machine_label"
+    _class_storage_sort_key = "machine_label"
 
     def __contains__(self, module_requested):
         """
@@ -222,10 +223,10 @@ class Modules(YomboLibrary, LibrarySearch):
 
     @inlineCallbacks
     def init_modules(self):
-        self._Loader.run_phase = "modules_pre_init"
+        self._Loader._run_phase = "modules_pre_init"
         yield self._Loader.library_invoke_all("_modules_pre_init_", called_by=self)
         logger.debug("starting modules::init....")
-        self._Loader.run_phase = "modules_init"
+        self._Loader._run_phase = "modules_init"
         yield self.module_init_invoke()  # Call "_init_" of modules
         yield self._Loader.library_invoke_all("_modules_inited_", called_by=self)
 
@@ -254,29 +255,29 @@ class Modules(YomboLibrary, LibrarySearch):
         """
         # Pre-Load
         logger.debug("starting modules::pre-load....")
-        self._Loader.run_phase = "modules_preload"
+        self._Loader._run_phase = "modules_preload"
         yield self.module_invoke_all("_preload_yombo_internal_", called_by=self, allow_disable=True)
         yield self.module_invoke_all("_preload_", called_by=self, allow_disable=True)
         yield self._Loader.library_invoke_all("_modules_preloaded_", called_by=self)
         # Load
-        self._Loader.run_phase = "modules_load"
+        self._Loader._run_phase = "modules_load"
         yield self.module_invoke_all("_load_yombo_internal_", called_by=self, allow_disable=True)
         yield self.module_invoke_all("_load_", called_by=self, allow_disable=True)
         yield self._Loader.library_invoke_all("_modules_loaded_", called_by=self)
 
         # Pre-Start
-        self._Loader.run_phase = "modules_prestart"
+        self._Loader._run_phase = "modules_prestart"
         yield self.module_invoke_all("_prestart_yombo_internal_", called_by=self, allow_disable=True)
         yield self.module_invoke_all("_prestart_", called_by=self, allow_disable=True)
         yield self._Loader.library_invoke_all("_modules_prestarted_", called_by=self)
 
         # Start
-        self._Loader.run_phase = "modules_start"
+        self._Loader._run_phase = "modules_start"
         yield self.module_invoke_all("_start_yombo_internal_", called_by=self, allow_disable=True)
         yield self.module_invoke_all("_start_", called_by=self, allow_disable=True)
         yield self._Loader.library_invoke_all("_modules_started_", called_by=self)
 
-        self._Loader.run_phase = "modules_started"
+        self._Loader._run_phase = "modules_started"
         yield self.module_invoke_all("_started_yombo_internal_", called_by=self, allow_disable=True)
         yield self.module_invoke_all("_started_", called_by=self, allow_disable=True)
         yield self._Loader.library_invoke_all("_modules_start_finished_", called_by=self)
@@ -296,13 +297,13 @@ class Modules(YomboLibrary, LibrarySearch):
         :return:
         """
         yield self._Loader.library_invoke_all("_modules_stop_", called_by=self)
-        self._Loader.run_phase = "modules_stop"
+        self._Loader._run_phase = "modules_stop"
         yield self.module_invoke_all("_stop_")
         yield self._Loader.library_invoke_all("_modules_stopped_", called_by=self)
 
         yield self._Loader.library_invoke_all("_modules_unload_", called_by=self)
 
-        self._Loader.run_phase = "modules_unload"
+        self._Loader._run_phase = "modules_unload"
         for module_id in self.modules.keys():
             module = self.modules[module_id]
             if int(module._status) != 1:
@@ -454,7 +455,7 @@ class Modules(YomboLibrary, LibrarySearch):
                         "updated_at": int(time()),
                         "_fake_data": True,
                     }
-                    logger.info(" - Module variable field: {label}", label=field_label)
+                    logger.debug(" - Module variable field: {label}", label=field_label)
 
                     self._Variables._load_variable_fields_into_memory(field, source="database")
 
@@ -474,7 +475,7 @@ class Modules(YomboLibrary, LibrarySearch):
                             "created_at": int(time()),
                             "updated_at": int(time()),
                         }
-                        logger.info(" - Module variable data, value: {value}", value=value)
+                        logger.debug(" - Module variable data, value: {value}", value=value)
                         yield self._Variables._load_variable_data_into_memory(data, source="database")
 
         except IOError as xxx_todo_changeme:

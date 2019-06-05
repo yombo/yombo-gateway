@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `Library Search @ Module Development <https://yombo.net/docs/core/library_search>`_
+  For more information see: `Library Search @ Module Development <https://yombo.net/docs/mixins/library_search_mixin>`_
 
 
 Add get, get_advanced, search, and search_advanced functions to libraries.
@@ -18,16 +18,14 @@ Add get, get_advanced, search, and search_advanced functions to libraries.
 
 :copyright: Copyright 2019 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/core/library_search.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/mixins/library_search_mixin.html>`_
 """
-from collections import OrderedDict
-
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 from yombo.utils import do_search_instance
 
 
-class LibrarySearch(object):
+class LibrarySearchMixin(object):
     """
     Implements get and search functions.
     """
@@ -36,22 +34,22 @@ class LibrarySearch(object):
         Returns a copy of the items list.  Be careful, this is not a deepcopy!
         :return:
         """
-        return getattr(self, self.item_search_attribute).copy()
+        return getattr(self, self._class_storage_attribute_name).copy()
 
     def sorted(self, key=None):
         """
-        Returns an OrderedDict, sorted by "key". The key can be any attribute within the device object, such as
+        Returns a sorted dictionary that is by "key". The key can be any attribute within the device object, such as
         label, area_label, etc.
 
         :param key: Attribute contained in a device to sort by, default: area_label
         :type key: str
         :return: All devices, sorted by key.
-        :rtype: OrderedDict
+        :rtype: dict
         """
-        items_to_sort = getattr(self, self.item_search_attribute)
+        items_to_sort = getattr(self, self._class_storage_attribute_name)
         if key is None:
-            key = self.item_sort_key
-        return OrderedDict(sorted(iter(items_to_sort.items()), key=lambda i: getattr(i[1], key)))
+            key = self._class_storage_sort_key
+        return dict(sorted(iter(items_to_sort.items()), key=lambda i: getattr(i[1], key)))
 
     def get(self, item_requested):
         """
@@ -62,8 +60,8 @@ class LibrarySearch(object):
         :param multiple: If multiple items should be returned, default is False.
         :return:
         """
-        items_to_search = getattr(self, self.item_search_attribute)
-        # print(f"library search: get: item_search_attribute {items_to_search}")
+        items_to_search = getattr(self, self._class_storage_attribute_name)
+        # print(f"library search: get: _class_storage_attribute_name {items_to_search}")
 
         if isinstance(item_requested, str) is False:
             raise YomboWarning("item_requested must be a string.")
@@ -71,9 +69,9 @@ class LibrarySearch(object):
         if item_requested in items_to_search:
             return items_to_search[item_requested]
 
-        if hasattr(self, "item_criteria_keys"):
+        if hasattr(self, "_class_storage_default_search_fields"):
             criteria = {}
-            for key in self.item_criteria_keys:
+            for key in self._class_storage_default_search_fields:
                 criteria[key] = item_requested
         else:
             criteria = {
@@ -83,7 +81,7 @@ class LibrarySearch(object):
         try:
             return self.get_advanced(criteria, multiple=False)
         except KeyError:
-            raise KeyError(f"No matching {self.item_search_attribute} found: {item_requested}")
+            raise KeyError(f"No matching {self._class_storage_attribute_name} found: {item_requested}")
 
 
     def get_advanced(self, criteria, multiple=None):
@@ -99,13 +97,13 @@ class LibrarySearch(object):
         :param multiple: If multiple items should be returned, default is False.
         :return:
         """
-        items_to_search = getattr(self, self.item_search_attribute)
+        items_to_search = getattr(self, self._class_storage_attribute_name)
         if multiple is None:
             multiple = True
         results = {}
         for item_id, item in items_to_search.items():
             for key, value in criteria.items():
-                if key not in self.item_searchable_attributes:
+                if key not in self._class_storage_fields:
                     continue
 
                 # print("searching: %s" % item._instance)
@@ -115,7 +113,7 @@ class LibrarySearch(object):
                         return item
                     results[item_id] = item
         if len(results) == 0:
-            raise KeyError(f"No matching {self.item_search_attribute} found.")
+            raise KeyError(f"No matching {self._class_storage_attribute_name} found.")
         return results
 
     def search(self, item_requested, limiter=None, max_results=None, status=None):
@@ -156,9 +154,9 @@ class LibrarySearch(object):
         if max_results is None:
             max_results = 1
 
-        if hasattr(self, "item_criteria_keys"):
+        if hasattr(self, "_class_storage_default_search_fields"):
             search_attributes = {}
-            for key in self.item_criteria_keys:
+            for key in self._class_storage_default_search_fields:
                 search_attributes.append({
                     "field": key,
                     "value": item_requested,
@@ -235,13 +233,13 @@ class LibrarySearch(object):
         :return: Pointer to requested item.
         :rtype: dict
         """
-        items_to_search = getattr(self, self.item_search_attribute)
+        items_to_search = getattr(self, self._class_storage_attribute_name)
 
         try:
             # logger.debug("item.search() is about to call do_search_instance...: %s" % item_requested)
             results = do_search_instance(search_attributes,
                                          items_to_search,
-                                         allowed_keys=self.item_searchable_attributes,
+                                         allowed_keys=self._class_storage_fields,
                                          limiter=limiter,
                                          max_results=max_results,
                                          required_field=required_field,
@@ -255,4 +253,4 @@ class LibrarySearch(object):
 
             raise KeyError(f"item not found.")
         except YomboWarning as e:
-            raise KeyError(f"Searched for {self.item_search_attribute}, but had problems: {e}")
+            raise KeyError(f"Searched for {self._class_storage_attribute_name}, but had problems: {e}")

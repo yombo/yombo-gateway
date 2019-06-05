@@ -653,7 +653,7 @@ class Automation(YomboLibrary):
         if hasattr(self, '_Loader') is False:
             return
         run_phase_name, run_phase_int = self._Loader.run_phase
-        if run_phase_int < 1400:  # 'modules_preload' is when we start processing automation triggers.
+        if run_phase_int < 5500:  # 'modules_prestart' is when we start processing automation triggers.
             return
         if trigger_type not in self.startup_items_checked:
             self.startup_items_checked[trigger_type] = []

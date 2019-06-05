@@ -55,7 +55,6 @@ To send a command to a device is simple.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/devices.html>`_
 """
 # Import python libraries
-
 from copy import deepcopy
 import json
 import msgpack
@@ -73,16 +72,18 @@ from twisted.internet.defer import inlineCallbacks, maybeDeferred, Deferred
 from yombo.constants import ENERGY_NONE, ENERGY_ELECTRIC, ENERGY_GAS, ENERGY_WATER, ENERGY_NOISE, ENERGY_TYPES
 from yombo.core.exceptions import YomboWarning, YomboHookStopProcessing
 from yombo.core.library import YomboLibrary
-from yombo.core.library_search import LibrarySearch
+from yombo.mixins.library_search_mixin import LibrarySearchMixin
 from yombo.core.log import get_logger
-from yombo.utils import global_invoke_all, generate_source_string
+from yombo.utils import generate_source_string
+from yombo.utils.hookinvoke import global_invoke_all
+
 
 from ._device import Device
 
 logger = get_logger("library.devices")
 
 
-class Devices(YomboLibrary, LibrarySearch):
+class Devices(YomboLibrary, LibrarySearchMixin):
     """
     Manages all devices and provides the primary interaction interface. The
     primary functions developers should use are:
@@ -93,14 +94,13 @@ class Devices(YomboLibrary, LibrarySearch):
     """
     devices = {}
     # The following are used by get(), get_advanced(), search(), and search_advanced()
-    item_search_attribute = "devices"
-    item_searchable_attributes = [
+    _class_storage_attribute_name = "devices"
+    _class_storage_fields = [
         "device_id", "device_type_id", "machine_label", "label", "area_label_lower", "full_label_lower",
         "area_label", "full_label", "description"
     ]
-    item_sort_key = "machine_label"
-    item_criteria_keys = ["device_id", "machine_label", "label"]
-
+    _class_storage_sort_key = "machine_label"
+    _class_storage_default_search_fields = ["device_id", "machine_label", "label"]
 
     def __contains__(self, device_requested):
         """
@@ -225,6 +225,18 @@ class Devices(YomboLibrary, LibrarySearch):
         self.mqtt = None
         self.all_energy_usage = yield self._SQLDict.get("yombo.lib.device", "all_energy_usage")
         self.all_energy_usage_calllater = None
+
+        # reactor.callLater(10, self.test_change_device)
+
+    def test_change_device(self):
+        print("test change device starting.")
+        # print(f"sync enabled: {self._sync_enabled}")
+        # device_id = random.choice(list(self.devices))
+        print(list(self.devices.keys()))
+        device = self.devices['aWpBzyrK0WQUZwgdvmZ4']
+        print(f"changing device label: {device.label}")
+        device.label = f"{device.label}2"
+        print(f"changing device new device label: {device.label}")
 
     @inlineCallbacks
     def _start_(self, **kwags):
@@ -372,23 +384,13 @@ class Devices(YomboLibrary, LibrarySearch):
         if len(devices) > 0:
             for record in devices:
                 record = record.__dict__
-                if record["energy_map"] is None:
-                    record["energy_map"] = {"0.0": 0, "1.0": 0}
-                # record["energy_map"] = json.loads(str(record["energy_map"]))
                 new_map = {}
                 for key, value in record["energy_map"].items():
                     new_map[float(key)] = float(value)
                 record["energy_map"] = new_map
                 logger.debug("Loading device: {record}", record=record)
                 new_device = yield self._load_node_into_memory(record, source="database")
-                try:
-                    global_invoke_all("_device_imported_",
-                                      called_by=self,
-                                      id=new_device.device_id,
-                                      device=new_device,
-                                      )
-                except YomboHookStopProcessing as e:
-                    pass
+                # yield sleep(1)
 
     @inlineCallbacks
     def _load_node_into_memory(self, device, source=None, test_device=None):  # load or re-load if there was an update.
@@ -497,6 +499,7 @@ class Devices(YomboLibrary, LibrarySearch):
             "statistic_label": f"{existing.statistic_label}.{machine_label}",
             "created_at": time(),
             "updated_at": time(),
+            "_fake_data": True,
         })
         new_device = yield self._load_node_into_memory(new_data, source="child")
         new_device.parent = existing

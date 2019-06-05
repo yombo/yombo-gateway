@@ -21,6 +21,11 @@ logger = get_logger("library.localdb._tools")
 
 class DB_Tools(object):
 
+    def _return_empty_if_none(self, records):
+        if records is None:
+            return []
+        return records
+
     @inlineCallbacks
     def _load_db_model(self):
         """

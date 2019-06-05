@@ -24,28 +24,29 @@ from twisted.internet.defer import inlineCallbacks
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
-from yombo.core.library_search import LibrarySearch
+from yombo.mixins.library_search_mixin import LibrarySearchMixin
 from yombo.core.log import get_logger
-from yombo.utils import global_invoke_all, sleep
+from yombo.utils import sleep
+from yombo.utils.hookinvoke import global_invoke_all
 
 from .device_command import Device_Command
 
 logger = get_logger("library.device_commands")
 
 
-class DeviceCommands(YomboLibrary, LibrarySearch):
+class DeviceCommands(YomboLibrary, LibrarySearchMixin):
     """
     Stores and track commands sent to devices. This also tracks across gateways within the cluster.
     """
     device_commands = {}  # tracks commands being sent to devices. Also tracks if a command is delayed.
 
     # The following are used by get(), get_advanced(), search(), and search_advanced()
-    item_search_attribute = "device_commands"
-    item_searchable_attributes = [
+    _class_storage_attribute_name = "device_commands"
+    _class_storage_fields = [
         "device_type_id", "label", "machine_label", "command_id", "input_type_id", "machine_label", "label",
         "live_update", "value_required", "encryption"
     ]
-    item_sort_key = "machine_label"
+    _class_storage_sort_key = "machine_label"
 
     def __contains__(self, device_command_requested):
         """
@@ -156,8 +157,6 @@ class DeviceCommands(YomboLibrary, LibrarySearch):
 
         # used to store delayed queue for restarts. It'll be a bare, dehydrated version.
         # store the above, but after hydration.
-          # the automation system can always request the same command to be performed but ensure only one is
-          # is n the queue between restarts.
         self.clean_device_commands_loop = None
 
     @inlineCallbacks
@@ -227,20 +226,11 @@ class DeviceCommands(YomboLibrary, LibrarySearch):
         }
         device_commands = yield self._LocalDB.get_device_commands(where)
         for device_command in device_commands:
-            self._load_device_commands_into_memory(device_command.__dict__)
+            self._load_device_commands_into_memory(device_command.__dict__, source="database")
 
-    def _load_device_commands_into_memory(self, device_command):
+    def _load_device_commands_into_memory(self, data, source="", **kwargs):
         """
         Add a new device commands to memory or update an existing.
-
-        **Hooks called**:
-
-        * _device_command_before_import_ : When this function starts.
-        * _device_command_imported_ : When this function finishes.
-        * _device_command_before_load_ : If added, sends DCI dictionary as "device_command"
-        * _device_command_before_update_ : If updated, sends DCI dictionary as "device_command"
-        * _device_command_loaded_ : If added, send the DCI instance as "device_command"
-        * _device_command_updated_ : If updated, send the DCI instance as "device_command"
 
         :param device_command: A dictionary of items required to either setup a new device_command or update an existing one.
         :type device_command: dict
@@ -249,50 +239,8 @@ class DeviceCommands(YomboLibrary, LibrarySearch):
             logger.warn("Seems a device id we were tracking is gone..{id}", id=device_command["device_id"])
             return
 
-        device_command_id = device_command["id"]
-
-        # Stop here if not in run mode.
-        if self._started is True:
-            global_invoke_all("_device_command_before_import_",
-                              called_by=self,
-                              device_command_id=device_command_id,
-                              device_command=device_command,
-                              )
-        if device_command_id not in self.device_commands:
-            if self._started is True:
-                global_invoke_all("_device_command_before_load_",
-                              called_by=self,
-                              device_command_id=device_command_id,
-                              device_command=device_command,
-                              )
-            self.device_commands[device_command_id] = Device_Command(device_command, self, start=False)
-            if self._started is True:
-                global_invoke_all("_device_command_loaded_",
-                              called_by=self,
-                              device_command_id=device_command_id,
-                              device_command=self.device_commands[device_command_id],
-                              )
-
-        elif device_command_id not in self.device_commands:
-            if self._started is True:
-                global_invoke_all("_device_command_before_update_",
-                              called_by=self,
-                              device_command_id=device_command_id,
-                              device_command=self.device_commands[device_command_id],
-                              )
-            self.device_commands[device_command_id].update_attributes(device_command)
-            if self._started is True:
-                global_invoke_all("_device_command_updated_",
-                              called_by=self,
-                              device_command_id=device_command_id,
-                              device_command=self.device_commands[device_command_id],
-                              )
-        if self._started is True:
-            global_invoke_all("_device_command_imported_",
-                          called_by=self,
-                          device_command_id=device_command_id,
-                              device_command=self.device_commands[device_command_id],
-                              )
+        return self._generic_load_into_memory(self.device_commands, 'device_command', Device_Command, data,
+                                              source=source, **kwargs)
 
     def mqtt_incoming(self, topic, payload, qos, retain):
         pass
@@ -304,7 +252,7 @@ class DeviceCommands(YomboLibrary, LibrarySearch):
         :param device_command:
         :return:
         """
-        device_command = Device_Command(input, self, start)
+        device_command = Device_Command(input, self, start=start)
         self.device_commands[device_command.request_id] = device_command
 
     def add_device_command(self, device_command):

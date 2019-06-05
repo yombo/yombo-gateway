@@ -149,7 +149,7 @@ export default {
       if (!this.dev) {
         config.plugins.push(
             new webpack.optimize.MinChunkSizePlugin({
-            minChunkSize: 18000
+            minChunkSize: 20000
           })
         )
       }

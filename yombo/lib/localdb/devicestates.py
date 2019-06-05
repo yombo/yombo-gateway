@@ -42,7 +42,7 @@ class DB_DevicesStates(object):
     def save_device_states(self, data):
         """
         Attempts to find the provided device state in the database. If it's found, update it. Otherwise, a new
-        one is created.devicecommandinputs.py
+        one is created.
 
         :param data: A device state instance.
         :return:

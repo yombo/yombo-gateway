@@ -34,8 +34,8 @@ from yombo.constants import AUTH_TYPE_WEBSESSION
 from yombo.core.library import YomboLibrary
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
-from yombo.mixins.authmixin import AuthMixin
-from yombo.mixins.usermixin import UserMixin
+from yombo.mixins.auth_mixin import AuthMixin
+from yombo.mixins.user_mixin import UserMixin
 from yombo.utils import random_string, random_int, sha224_compact
 
 logger = get_logger("library.websessions")
