@@ -39,6 +39,7 @@ from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks, maybeDeferred, Deferred
 
 # Import Yombo libraries
+from yombo.core.entity import Entity
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
 import yombo.core.settings as settings
@@ -63,7 +64,7 @@ def human_state(valid):
         return "None"
 
 
-class SSLCert(object):
+class SSLCert(Entity):
     """
     A class representing a single cert.
     """
@@ -94,9 +95,10 @@ class SSLCert(object):
         :ivar key_size: *(int)* - Size of the key in bits.
         :ivar key_type: *(string)* - Either rsa or dsa.
         """
-        self._FullName = "yombo.gateway.lib.SSLCerts.SSLCert"
-        self._Name = "SSLCerts.SSLCert"
-        self._Parent = _parent_library
+        self._Entity_type = "SSL Certificate"
+        self._Entity_label_attribute = "sslname"
+
+        super().__init__(_parent_library)
         self.source = source
         self.working_dir = settings.arguments["working_dir"]
 

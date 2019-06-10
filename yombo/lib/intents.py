@@ -44,14 +44,6 @@ class Intents(YomboLibrary):
     """
     Accepts intents and tries to match them.  More details to come.
     """
-    def __str__(self):
-        """
-        Returns the name of the library.
-        :return: Name of the library
-        :rtype: string
-        """
-        return "Yombo intents library"
-
     def _init_(self, **kwargs):
         self.intents = {}
         self.history = deque([], 100)

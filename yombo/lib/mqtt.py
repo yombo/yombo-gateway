@@ -68,7 +68,13 @@ class MQTT(YomboLibrary):
     """
     Manages MQTT broker and client connections.
     """
-    client_enabled = True
+    # def __init__(self, *args, **kwargs):
+    #     super().__init__(*args, **kwargs)
+
+    def _import_init_(self):
+        self.client_enabled = True
+        self.mqtt_server = None
+        self.mqtt_local_client = None
 
     def _init_(self, **kwargs):
         """
@@ -84,8 +90,6 @@ class MQTT(YomboLibrary):
         self.server_max_connections = self._Configs.get("mqtt", "server_max_connections", 1000)
         self.server_timeout_disconnect_delay = self._Configs.get("mqtt", "server_timeout_disconnect_delay", 2)
 
-        self.mqtt_server = None
-        self.mqtt_local_client = None
 
         if self.is_master:
             self.server_listen_port = self._Configs.get("mqtt", "server_listen_port", 1883)

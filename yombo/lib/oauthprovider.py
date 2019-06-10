@@ -32,14 +32,6 @@ class Tasks(YomboLibrary):
     """
     Performs various tasks at startup.
     """
-    def __str__(self):
-        """
-        Returns the name of the library.
-        :return: Name of the library
-        :rtype: string
-        """
-        return "Yombo tasks library"
-
     @inlineCallbacks
     def _init_(self, **kwargs):
         self.loop_tasks = {}

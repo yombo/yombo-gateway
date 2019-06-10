@@ -16,27 +16,20 @@ from yombo.lib.localdb import DeviceCommand
 # Import Yombo libraries
 from yombo.utils import data_pickle, data_unpickle
 
-PICKLED_FIELDS = [
+PICKLED_COLUMNS = [
     "history", "inputs"
 ]
 
 
 class DB_DeviceCommands(object):
-
-
     @inlineCallbacks
-    def get_device_commands(self, where, **kwargs):
+    def get_device_commands(self, **kwargs):
         limit = self._get_limit(**kwargs)
         records = yield DeviceCommand.find("device_commands",
-                                           where=dictToWhere(where),
+                                           where=dictToWhere(kwargs["where"]),
                                            orderby="created_at DESC",
                                            limit=limit)
-        if records is None:
-            return []
-        for record in records:
-            for pickled in PICKLED_FIELDS:
-                setattr(record, pickled, data_unpickle(getattr(record, pickled)))
-        return records
+        return self.process_get_results(records, PICKLED_COLUMNS)
 
     @inlineCallbacks
     def save_device_commands(self, data):
@@ -52,9 +45,9 @@ class DB_DeviceCommands(object):
             device_command = DeviceCommand()
             device_command.request_id = data.request_id
 
-        fields = self.get_table_fields("device_commands")
+        fields = self.get_table_columns("device_commands")
         for field in fields:
-            if field in PICKLED_FIELDS:
+            if field in PICKLED_COLUMNS:
                 setattr(device_command, field, data_pickle(getattr(data, field)))
             else:
                 setattr(device_command, field, getattr(data, field))

@@ -76,14 +76,6 @@ class SSLCerts(YomboLibrary):
         else:
             return False
 
-    def __str__(self):
-        """
-        Returns the name of the library.
-        :return: Name of the library
-        :rtype: string
-        """
-        return "Yombo sslcerts library"
-
     @inlineCallbacks
     def _init_(self, **kwargs):
         """

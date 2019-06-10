@@ -24,49 +24,71 @@ from twisted.internet.defer import inlineCallbacks
 from yombo.core.entity import Entity
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
-from yombo.mixins.sync_to_everywhere import SyncToEverywhere
+from yombo.mixins.library_db_child_mixin import LibraryDBChildMixin
+from yombo.mixins.sync_to_everywhere_mixin import SyncToEverywhereMixin
 from yombo.utils import is_true_false
 
 logger = get_logger("library.devices.device_commands.device_command")
 
+STATUS_IDS = {
+    "unknown": 0,
+    "new": 100,
+    "accepted": 200,
+    "broadcast": 300,
+    "sent": 400,
+    "received": 500,
+    "delayed": 600,
+    "pending": 700,
+    "done": 1000,
+    "canceled": 2000,
+    "failed": 2100,
+    "expired": 2200,
+}
 
-class Device_Command(Entity, SyncToEverywhere):
+STATUS_TEXT = {
+    0: "unknown",
+    100: "new",
+    200: "accepted",
+    300: "broadcast",
+    400: "sent",
+    500: "received",
+    600: "delayed",
+    700: "pending",
+    1000: "done",
+    2000: "canceled",
+    2100: "failed",
+    2200: "expired",
+}
+
+
+class DeviceCommand(Entity, LibraryDBChildMixin, SyncToEverywhereMixin):
     """
     A class that manages requests for a given device. This class is instantiated by the
     device class. Librarys and modules can use this instance to get the details of a given
     request.
     """
-    status_ids = {
-        "unknown": 0,
-        "new": 10,
-        "accepted": 20,
-        "broadcast": 30,
-        "sent": 40,
-        "received": 50,
-        "delayed": 55,
-        "pending": 60,
-        "done": 100,
-        "canceled": 200,
-        "failed": 220,
-        "expired": 240,
-    }
+    _primary_column = "device_command_id"  # Used by mixins
 
     @property
     def status_id(self):
-        if self._status not in self.status_ids:
+        if self._status not in STATUS_IDS:
             logger.warn("Device command {id} has invalid status: {status}",
                         id=self.request_id, status=self._status)
             self.status = "unknown"
             return 0
         else:
-            return self.status_ids[self._status]
+            return STATUS_IDS[self._status]
 
     @status_id.setter
     def status_id(self, val):
-        for key, key_id in self.status_ids.items():
-            if key_id == val:
-                self._status = key
-                break
+        if val in STATUS_IDS:
+            self.status = STATUS_IDS[val]
+            return
+        if val in STATUS_TEXT:
+            self.status = val
+            return
+        logger.warn("Device command {id} tried to set an invalid status: {status}",
+                    id=self.request_id, status=val)
         raise Exception(f"Invalid status_id: {val}")
 
     @property
@@ -75,18 +97,14 @@ class Device_Command(Entity, SyncToEverywhere):
 
     @status.setter
     def status(self, val):
-        try:
-            status = val.lower()
-            if status not in self.status_ids:
-                logger.warn("Device command {id} tried to set an invalid status: {status}",
-                            id=self.request_id, status=val)
-                self._status = "unknown"
-            else:
-                self._status = status
-        except AttributeError as e:
-            logger.warn("Error setting device command {id} tried to set an invalid status: {status}, error: {error}",
-                        id=self.request_id, status=val, error=e)
-            self._status = "unknown"
+        if val in STATUS_TEXT:
+            self.status = val
+        elif val in STATUS_IDS:
+            self.status = STATUS_IDS[val]
+        else:
+            logger.warn("Device command {id} tried to set an invalid status: {status}",
+                        id=self.request_id, status=val)
+            raise Exception(f"Invalid status_id: {val}")
 
         if val in self.callbacks:
             if len(self.callbacks[val]) > 0:
@@ -100,50 +118,27 @@ class Device_Command(Entity, SyncToEverywhere):
         return self.command.command_id
 
     @property
+    def device_id(self):
+        if self.device is None:
+            return None
+        return self.device.device_id
+
+    @property
     def label(self):
         return f"{self.command.label} -> {self.device.full_label}"
 
-    @property
-    def _sync_fields(self):
-        return ["command_status_received", "broadcast_at", "accepted_at", "sent_at", "received_at", "pending_at",
-                "finished_at", "not_before_at", "not_after_at", "history", "status"]
-
-    def __init__(self, data, parent, start=None, **kwargs):
+    def __init__(self, parent, incoming, source=None, start=None):
         """
         Get the instance setup.
 
         :param data: Basic details about the device command to get started.
         :param parent: A pointer to the device types instance.
         """
-        print(f"device command __init__: kwargs: {kwargs}")
-        self._internal_label = "device_commands"  # Used by mixins
+        self._Entity_type = "Device command"
+        self._Entity_label_attribute = "machine_label"
         self._syncs_to_yombo = False
+
         super().__init__(parent)
-
-        self._sync_delay = 10
-
-        self.gateway_id = self._Parent.gateway_id
-        self.source_gateway_id = data.get("source_gateway_id", self.gateway_id)
-        self.request_id = data["request_id"]
-
-        if "device" in data:
-            self.device = data["device"]
-        elif "device_id" in data:
-            self.device = parent.get(data["device_id"])
-        else:
-            raise ValueError("Must have either device reference, or device_id")
-        if "command" in data:
-            self.command = data["command"]
-        elif "command_id" in data:
-            self.command = parent._Commands.get(data["command_id"])
-        else:
-            raise ValueError("Must have either command reference, or command_id")
-
-        self.inputs = data.get("inputs", None)
-        if "history" in data:
-            self.history = data["history"]
-        else:
-            self.history = []
         self.callbacks = {
             "broadcast": [],
             "accepted": [],
@@ -154,27 +149,52 @@ class Device_Command(Entity, SyncToEverywhere):
             "canceled": [],
             "done": [],
         }
-        self.auth_id = data["auth_id"]
-        self.requesting_source = data["requesting_source"]
-        self._status = data.get("status", "new")
 
-        self.command_status_received = is_true_false(data.get("command_status_received", False))  # if a status has been reported against this request
-        self.persistent_request_id = data.get("persistent_request_id", None)
-        self.broadcast_at = data.get("broadcast_at", None)  # time when command was sent through hooks.
-        self.accepted_at = data.get("accepted_at", None)  # when a module accepts the device command for processing
-        self.sent_at = data.get("sent_at", None)  # when a module or receiver sent the command to final end-point
-        self.received_at = data.get("received_at", None)  # when the command was received by the final end-point
-        self.pending_at = data.get("pending_at", None)  # if command takes a while to process time, this is the timestamp of last update
-        self.finished_at = data.get("finished_at", None)  # when the command is finished and end-point has changed state
-        self.not_before_at = data.get("not_before_at", None)
-        self.not_after_at = data.get("not_after_at", None)
-        self.pin = data.get("pin", None)
+        self.source_gateway_id = incoming.get("source_gateway_id", self.gateway_id)
+        self._setup_class_model(incoming, source=source)
+        if self.source != "database":
+            self.sync_item_data()
+
+    def update_attributes_postprocess(self, incoming):
+        try:
+            if "device" in incoming:
+                self.device_id = incoming["device"].device_id
+            elif "device_id" in incoming:
+                self.device = self._Devices.get(incoming["device_id"])
+            else:
+                raise YomboWarning("Device command must have either a device instance or device_id.")
+        except:
+            raise YomboWarning("Device command is unable to find a matching device for the provided device command.")
+
+        try:
+            if "command" in incoming:
+                self.command_id = incoming["command"].command_id
+            elif "command_id" in incoming:
+                self.command = self._Commands.get(incoming["command_id"])
+            else:
+                raise YomboWarning("Device command must have either a command instance or command_id.")
+        except:
+            raise YomboWarning("Device command is unable to find a matching command for the provided device command.")
+
+        if self.history is None:
+            self.history = []
+
+        # TODO: Check to make sure there's some from of auth_id - system or user.
+        # if "auth_id" in incoming:
+        #     self.auth_id = incoming["auth_id"]
+
+        if self.status is None:
+            self.status = "new"
+        if self.created_at is None:
+            self.created_at = time()
+
+        if isinstance(self.command_status_received, bool) is False:
+            self.command_status_received = is_true_false(self.command_status_received)
+
         self.call_later = None
-        self.created_at = data.get("created_at", time())
-        self._dirty = is_true_false(data.get("dirty", True))
-        self.source = data.get("source", None)
-        self.started = data.get("started", False)
-        self.idempotence = data.get("idempotence", None)
+
+        self.started = incoming.get("started", False)
+        self.idempotence = incoming.get("idempotence", None)
 
         if len(self.history) == 0:
             self.history.append(self.history_dict(self.created_at,
@@ -187,8 +207,8 @@ class Device_Command(Entity, SyncToEverywhere):
             start = True
 
         # Allows various callbacks to be called when status changes.
-        if "callbacks" in data and data["callbacks"] is not None:
-            for cb_status, cb_callback in data["callbacks"].items():
+        if "callbacks" in incoming and incoming["callbacks"] is not None:
+            for cb_status, cb_callback in incoming["callbacks"].items():
                 self.add_callback(cb_status, cb_callback)
 
         if start is None or start is True:
@@ -219,16 +239,6 @@ class Device_Command(Entity, SyncToEverywhere):
             else:
                 self.callbacks[status].append(callback)
 
-    @inlineCallbacks
-    def check_if_device_command_in_database(self):
-        where = {
-            "request_id": self.request_id,
-        }
-        device_commands = yield self._Parent._LocalDB.get_device_commands(where)
-        if len(device_commands) > 0:
-            self._in_db = True
-            self.sync_to_database()
-
     def start(self):
         """
         Send the device command to the device's command processor, which calls the "_device_command_".
@@ -243,6 +253,7 @@ class Device_Command(Entity, SyncToEverywhere):
                 "Discarding a device command message loaded from database it's already been sent.")
             self.set_sent()
             return
+
         if self.broadcast_at is not None:
             return
 
@@ -423,6 +434,3 @@ class Device_Command(Entity, SyncToEverywhere):
             "requesting_source": self.requesting_source,
             "idempotence": self.idempotence,
         }
-
-    def __repr__(self):
-        return f"Device command for '{self.device.label}': {self.command.label}"

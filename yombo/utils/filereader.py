@@ -104,12 +104,12 @@ class FileReader:
         self.fileid = kwargs.get("fileid", self.filename)
         self.make_if_missing = kwargs.get("make_if_missing", True)
         self.frequency = kwargs.get("frequency", 1)
-        self._SQLDict = get_component("yombo.gateway.lib.sqldict")
+        self._SQLDict = get_component("yombo.lib.sqldict")
         reactor.callLater(0.001, self.start)
 
     @inlineCallbacks
     def start(self):
-        self.fileInfo = yield self._SQLDict.get("yombo.gateway.utils-filereader", "fileInfo")
+        self.fileInfo = yield self._SQLDict.get("yombo.utils-filereader", "fileInfo")
 
         if "startLocation" not in self.fileInfo:
             self.fileInfo["startLocation"] = 0

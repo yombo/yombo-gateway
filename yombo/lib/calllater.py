@@ -37,15 +37,6 @@ class Calllater(YomboLibrary):
     """
     Tracks callLater calls.
     """
-    def __str__(self):
-        """
-        Returns the name of the library.
-
-        :return: Name of the library
-        :rtype: string
-        """
-        return "Yombo call later library"
-
     def _init_(self, **kwargs):
         self.calllater = {}
         self.all_calls = reactor._delayedCalls  # used by the web interface to list all unregistered call later's.

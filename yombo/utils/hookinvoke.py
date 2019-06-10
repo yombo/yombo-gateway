@@ -10,8 +10,8 @@ def global_invoke_all(hook, **kwargs):
     :param kwargs: kwargs to send to the function.
     :return: a dictionary of results.
     """
-    lib_results = yield get_component("yombo.gateway.lib.loader").library_invoke_all(hook, True, **kwargs)
-    modules_results = yield get_component("yombo.gateway.lib.modules").module_invoke_all(hook, True, **kwargs)
+    lib_results = yield get_component("yombo.lib.loader").library_invoke_all(hook, True, **kwargs)
+    modules_results = yield get_component("yombo.lib.modules").module_invoke_all(hook, True, **kwargs)
     # print(f"hook lib_results: {lib_results}")
     # print(f"hook modules_results: {modules_results}")
     return dict_merge(modules_results, lib_results)
@@ -27,7 +27,7 @@ def global_invoke_libraries(hook, **kwargs):
     :param kwargs: kwargs to send to the function.
     :return: a dictionary of results.
     """
-    lib_results = yield get_component("yombo.gateway.lib.loader").library_invoke_all(hook, True, **kwargs)
+    lib_results = yield get_component("yombo.lib.loader").library_invoke_all(hook, True, **kwargs)
     return lib_results
 
 
@@ -41,7 +41,7 @@ def global_invoke_modules(hook, **kwargs):
     :param kwargs: kwargs to send to the function.
     :return: a dictionary of results.
     """
-    modules_results = yield get_component("yombo.gateway.lib.modules").module_invoke_all(hook, True, **kwargs)
+    modules_results = yield get_component("yombo.lib.modules").module_invoke_all(hook, True, **kwargs)
     return modules_results
 
 def get_component(name):

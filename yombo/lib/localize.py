@@ -58,14 +58,6 @@ class Localize(YomboLibrary):
     Provides internaltionalization and localization where possible.  Default language is "en" (English). System and
     debug messages are never translated.
     """
-    def __str__(self):
-        """
-        Returns the name of the library.
-        :return: Name of the library
-        :rtype: string
-        """
-        return "Yombo localization and translation library"
-
     def _init_(self, **kwargs):
         self.working_dir = settings.arguments["working_dir"]
         self.default_lang = self._Configs.get2("localize", "default_lang", self.get_system_language(), False)

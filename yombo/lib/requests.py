@@ -43,14 +43,6 @@ logger = get_logger("library.requests")
 
 class Requests(YomboLibrary):
 
-    def __str__(self):
-        """
-        Returns the name of the library.
-        :return: Name of the library
-        :rtype: string
-        """
-        return "Yombo Requests library"
-
     def make_headers(self, session, session_type):
         headers = {
             HEADER_CONTENT_TYPE: self.contentType,

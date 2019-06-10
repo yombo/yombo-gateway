@@ -365,7 +365,7 @@ def route_configs(webapp):
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/configs/basic", "Yombo.ini")
             return page.render(alerts=webinterface.get_alerts(),
-                               configs=webinterface._Libraries["configuration"].configs
+                               configs=webinterface._Configs.configs
                                )
 
         @webapp.route("/gpg/index")
@@ -403,6 +403,6 @@ def route_configs(webapp):
             session.has_access("system_setting", "*", "view")
 
             page = webinterface.get_template(request, webinterface.wi_dir + "/pages/configs/gpg_generate_key_status.html")
-            return page.render(atoms=webinterface._Libraries["atoms"].get_copy(),
+            return page.render(atoms=webinterface._Atoms.get_copy(),
                                getattr=getattr,
                                type=type)

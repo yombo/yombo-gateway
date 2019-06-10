@@ -18,7 +18,7 @@ class DB_Locations(object):
     @inlineCallbacks
     def get_locations(self):
         records = yield Location.all()
-        return self._return_empty_if_none(records)
+        return self.process_get_results(records)
 
     @inlineCallbacks
     def save_locations(self, data):

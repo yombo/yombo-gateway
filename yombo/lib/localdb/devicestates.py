@@ -6,10 +6,11 @@ from twisted.internet.defer import inlineCallbacks
 # Import 3rd-party libs
 from yombo.ext.twistar.utils import dictToWhere
 from yombo.lib.localdb import DeviceState
+
 # Import Yombo libraries
 from yombo.utils import data_pickle, data_unpickle
 
-PICKLED_FIELDS = [
+PICKLED_COLUMNS = [
     "machine_state_extra"
 ]
 
@@ -24,19 +25,7 @@ class DB_DevicesStates(object):
                                          where=dictToWhere(where),
                                          orderby="set_at DESC",
                                          limit=limit)
-        if records is None:
-            return []
-
-        data = []
-        for record in records:
-            machine_status_extra = record["machine_status_extra"]
-            if machine_status_extra is None:
-                record["machine_status_extra"] = None
-            else:
-                record["machine_status_extra"] = data_unpickle(machine_status_extra)
-
-            data.append(record)
-        return data
+        return self.process_get_results(records, PICKLED_COLUMNS)
 
     @inlineCallbacks
     def save_device_states(self, data):
@@ -52,12 +41,12 @@ class DB_DevicesStates(object):
             device_command = DeviceState()
             device_command.id = data.state_id
 
-        fields = self.get_table_fields("device_states")
+        fields = self.get_table_columns("device_states")
         print(f"device state fields: {fields}")
         print(f"data: {data.__dict__}")
         print(f"data: fake data: {data._fake_data}")
         for field in fields:
-            if field in PICKLED_FIELDS:
+            if field in PICKLED_COLUMNS:
                 setattr(device_command, field, data_pickle(getattr(data, field)))
             else:
                 setattr(device_command, field, getattr(data, field))

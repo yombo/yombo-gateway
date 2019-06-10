@@ -52,7 +52,7 @@ steps = [
         `created_at`   FLOAT,
         `updated_at`   FLOAT
         );"""),
-      # step(create_index("crontab", "id")),
+      step(create_index("crontab", "id", unique=True)),
 
       # Defines the devices table. Lists all possible devices for local gateway and related remote gateways.
       step("""CREATE TABLE `devices` (
@@ -88,8 +88,6 @@ steps = [
 /*     FOREIGN KEY(device_type_id) REFERENCES artist(device_types) */
        PRIMARY KEY(id));"""),
       step(create_index("devices", "id", unique=True)),
-      step(create_index("devices", "device_type_id")),
-      step(create_index("devices", "gateway_id")),
 
       # All possible inputs for a given device type/command/input.
       step("""CREATE TABLE `device_command_inputs` (
@@ -110,36 +108,35 @@ steps = [
         `created_at`     INTEGER NOT NULL,
         PRIMARY KEY(id));"""),
         # UNIQUE (id) ON CONFLICT IGNORE);"""),
-      step(create_index("device_command_inputs", "device_type_id")),
+      step(create_index("device_command_inputs", "id", unique=True)),
 
       # Defines the device command table to store command history and various info.
       step("""CREATE TABLE `device_commands` (
-        `id`                    INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-        `request_id`            TEXT NOT NULL,
-        `persistent_request_id` TEXT,
-        `source_gateway_id`     TEXT NOT NULL,
-        `device_id`             TEXT NOT NULL,
-        `command_id`            TEXT NOT NULL,
-        `inputs`                TEXT,
-        `created_at`            FLOAT NOT NULL,
-        `broadcast_at`          FLOAT,
-        `accepted_at`           FLOAT,
-        `sent_at`               FLOAT,
-        `received_at`           FLOAT,
-        `pending_at`            FLOAT,
-        `finished_at`           FLOAT,
-        `not_before_at`         FLOAT,
-        `not_after_at`          FLOAT,
+        `id`                      TEXT NOT NULL,
+        `persistent_request_id`   TEXT,
+        `source_gateway_id`       TEXT NOT NULL,
+        `device_id`               TEXT NOT NULL,
+        `command_id`              TEXT NOT NULL,
+        `inputs`                  TEXT,
+        `created_at`              FLOAT NOT NULL,
+        `broadcast_at`            FLOAT,
+        `accepted_at`             FLOAT,
+        `sent_at`                 FLOAT,
+        `received_at`             FLOAT,
+        `pending_at`              FLOAT,
+        `finished_at`             FLOAT,
+        `not_before_at`           FLOAT,
+        `not_after_at`            FLOAT,
         `command_status_received` INT NOT NULL DEFAULT 0,
-        `history`               TEXT NOT NULL,
-        `status`                TEXT NOT NULL,
-        `auth_id`               TEXT NOT NULL,
-        `requesting_source`     TEXT NOT NULL,
-        `idempotence`           TEXT,
-        `uploaded`              INTEGER NOT NULL DEFAULT 0,
-        `uploadable`            INTEGER NOT NULL DEFAULT 0 /* For security, only items marked as 1 can be sent externally */
+        `history`                 TEXT NOT NULL,
+        `status`                  TEXT NOT NULL,
+        `auth_id`                 TEXT NOT NULL,
+        `requesting_source`       TEXT NOT NULL,
+        `idempotence`             TEXT,
+        `uploaded`                INTEGER NOT NULL DEFAULT 0,
+        `uploadable`              INTEGER NOT NULL DEFAULT 0 /* For security, only items marked as 1 can be sent externally */
         );"""),
-      step(create_index("device_commands", "request_id", unique=True)),
+      step(create_index("device_commands", "id", unique=True)),
       step(create_index("device_commands", "finished_at")),
 
       # Defines the device states table to store device state history
@@ -188,7 +185,7 @@ steps = [
         `command_id`     TEXT NOT NULL,
         `created_at`     INTEGER NOT NULL,
         UNIQUE (device_type_id, command_id) ON CONFLICT IGNORE);"""),
-      step(create_index("device_type_commands", "device_type_id")),
+      step(create_index("device_type_commands", "id", unique=True)),
 
       # System events
       step("""CREATE TABLE `events` (
@@ -254,7 +251,7 @@ steps = [
 
       # Used for quick access to GPG keys instead of key ring.
       step("""CREATE TABLE `gpg_keys` (
-        `keyid`          TEXT NOT NULL,
+        `keyid`         TEXT NOT NULL,
         `fullname`      TEXT,
         `comment`       TEXT,
         `email`         TEXT NOT NULL,
@@ -290,6 +287,7 @@ steps = [
         UNIQUE (label) ON CONFLICT IGNORE,
         UNIQUE (machine_label) ON CONFLICT IGNORE,
         PRIMARY KEY(id) ON CONFLICT IGNORE);"""),
+      step(create_index("input_types", "id", unique=True)),
 
       # All locations configured for an account.
       step("""CREATE TABLE `locations` (
@@ -301,7 +299,7 @@ steps = [
         `description`    TEXT,
         `updated_at`     INTEGER NOT NULL,
         `created_at`     INTEGER NOT NULL);"""),
-      step(create_index("locations", "id")),
+      step(create_index("locations", "id", unique=True)),
 
       # Stores module information
       step("""CREATE TABLE `modules` (
@@ -329,6 +327,7 @@ steps = [
         `created_at`         INTEGER NOT NULL,
         `updated_at`         INTEGER NOT NULL,
         PRIMARY KEY(id));"""),
+      step(create_index("modules", "id", unique=True)),
       step(create_index("modules", "status")),
 
       #  Stores module installation information
@@ -352,6 +351,7 @@ steps = [
         `device_type_id` TEXT NOT NULL,
         `created_at`     INTEGER NOT NULL,
         UNIQUE (module_id, device_type_id) ON CONFLICT IGNORE);"""),
+      step(create_index("module_device_types", "id", unique=True)),
 
       # Tracks what versions of a module is installed, when it was installed, and last checked for new version.
       step("""CREATE TABLE `module_installed` (
@@ -379,7 +379,7 @@ steps = [
         `status`            INTEGER NOT NULL, /* Timestemp when msg was ack'd by the user. */
         `updated_at`        INTEGER NOT NULL,
         `created_at`        INTEGER NOT NULL );"""),
-      step(create_index("nodes", "id")),
+      step(create_index("nodes", "id", unique=True)),
       step(create_index("nodes", "parent_id")),
 
       # Defines the notifications data table. Stores notifications.
@@ -401,7 +401,7 @@ steps = [
         `local`                   BOOL,
         `expire_at`               INTEGER, /* timestamp when msg should expire */
         `created_at`              INTEGER NOT NULL);"""),
-      # step(create_index("notifications", "id")),
+      step(create_index("notifications", "id", unique=True)),
 
       # Used to store access tokens
       step("""CREATE TABLE `oauth_access_tokens` (
@@ -416,7 +416,7 @@ steps = [
       step("""CREATE TABLE `sqldict` (
         `id`         INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
         `component`  TEXT NOT NULL,
-        `dict_name`  INTEGER NOT NULL,
+        `dict_name`  TEXT NOT NULL,
         `dict_data`  BLOB,
         `created_at` INTEGER NOT NULL,
         `updated_at` INTEGER NOT NULL);"""),

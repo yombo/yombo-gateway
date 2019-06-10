@@ -113,7 +113,7 @@ def route_api_v1_mqtt(webapp):
             if user["type"] == "yombogw":
                 if user_id in webinterface._Gateways.gateways:
                     gateway = webinterface._Gateways.gateways[user_id]
-                    if password in (gateway.mqtt_auth, gateway.mqtt_auth_prev, gateway.mqtt_auth_next):
+                    if password in (gateway.mqtt_auth, gateway.mqtt_auth_next):
                         response_code = 200
 
             elif user["type"] == AUTH_TYPE_WEBSESSION:

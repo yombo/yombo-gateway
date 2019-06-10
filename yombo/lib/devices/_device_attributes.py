@@ -20,7 +20,6 @@ from copy import deepcopy
 from time import time
 
 # Import twisted libraries
-from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks, maybeDeferred, Deferred
 
 # Yombo Constants
@@ -31,7 +30,8 @@ from yombo.constants.features import (FEATURE_ALL_OFF, FEATURE_ALL_ON, FEATURE_P
 # Import Yombo libraries
 from yombo.core.entity import Entity
 from yombo.core.log import get_logger
-from yombo.mixins.sync_to_everywhere import SyncToEverywhere
+from yombo.mixins.library_db_child_mixin import LibraryDBChildMixin
+from yombo.mixins.sync_to_everywhere_mixin import SyncToEverywhereMixin
 from yombo.utils import is_true_false
 from yombo.utils.hookinvoke import global_invoke_all
 
@@ -39,7 +39,7 @@ from ._device_state import Device_State
 logger = get_logger("library.devices.device_attributes")
 
 
-class Device_Attributes(Entity, SyncToEverywhere):
+class Device_Attributes(Entity, LibraryDBChildMixin, SyncToEverywhereMixin):
     """
     This base class is the main bootstrap and is responsible for settings up all core attributes.
 
@@ -330,18 +330,18 @@ class Device_Attributes(Entity, SyncToEverywhere):
         else:
             return 100
 
-    def __str__(self):
-        """
-        Print a string when printing the class.  This will return the device_id so that
-        the device can be identified and referenced easily.
-        """
-        return self.device_id
+    # def __str__(self):
+    #     """
+    #     Print a string when printing the class.  This will return the device_id so that
+    #     the device can be identified and referenced easily.
+    #     """
+    #     return f"Device: {self.label}"
 
     def __getitem__(self, key):
         return self.__dict__[key]
 
     def __repr__(self):
-        return repr(self.__dict__)
+        return f"<Device {self.device_id}:{self.machine_label}>"
 
     def __len__(self):
         return len(self.__dict__)
@@ -367,26 +367,15 @@ class Device_Attributes(Entity, SyncToEverywhere):
     # @cached(5)
     @property
     def device_variables(self):
-        data = self._Parent._Variables.data("device", self.device_id)
-        variables = {}
-        field_map = {}
-        for variable_id, variable in data.items():
-            if variable.variable_field_id not in field_map:
-                field_map[variable.variable_field_id] = self._Parent._Variables.field_by_id(variable.variable_field_id)
-            field_name = field_map[variable.variable_field_id].field_machine_label
+        return self._VariableGroups.data("device", self.device_id)
 
-            if field_name not in variables:
-                variables[field_name] = {"data": [], "decrypted": [], "display": [], "ref": []}
+    @property
+    def device_variable_fieldss(self):
+        return self._VariableGroups.fields("device", self.device_id)
 
-            variables[field_name]["data"].append(variable.data)
-            variables[field_name]["decrypted"].append(variable.decrypted)
-            variables[field_name]["display"].append(variable.display)
-            variables[field_name]["ref"].append(variable)
-        return variables
-
-    def __init__(self, _Parent, device, **kwargs):
+    def __init__(self, parent, incoming, source=None, **kwargs):
         """
-        :param device: *(list)* - A device as passed in from the devices class. This is a
+        :param incoming: *(dict)* - A device as passed in from the devices class. This is a
             dictionary with various device attributes.
         :ivar callBeforeChange: *(list)* - A list of functions to call before this device has it's state
             changed. (Not implemented.)
@@ -407,8 +396,9 @@ class Device_Attributes(Entity, SyncToEverywhere):
             values entered by the user.
         :ivar available_commands: *(list)* - A list of command_id's that are valid for this device.
         """
-        self._internal_label = "devices"  # Used by mixins
-        super().__init__(_Parent)
+        self._Entity_type = "Device"
+        self._Entity_label_attribute = "machine_label"
+        super().__init__(parent)
         self.PLATFORM_BASE = "device"
         self.PLATFORM = "device"
         self.SUB_PLATFORM = None
@@ -427,14 +417,11 @@ class Device_Attributes(Entity, SyncToEverywhere):
         self.MACHINE_STATUS_EXTRA_FIELDS = {}  # Track what fields in state extra are allowed.
         self.TOGGLE_COMMANDS = False  # Put two command machine_labels in a list to enable toggling.
 
-        self._FullName = "yombo.gateway.lib.Devices.Device"
-        self._Name = "Devices.Device"
-        self._Parent = _Parent
         self.call_before_command = []
         self.call_after_command = []
         self._security_send_device_states = self._Configs.get2("security", "amqpsenddevicestate", True)
 
-        self.device_id = device["id"]
+        self.device_id = incoming["id"]
         test_device = kwargs.get("test_device", None)
         if test_device is None:
             self.test_device = False
@@ -468,62 +455,32 @@ class Device_Attributes(Entity, SyncToEverywhere):
                          "local_state_history": 600},
         }
 
-        sizes = memory_sizing[self._Parent._Atoms["mem.sizing"]]
-        self.device_commands = deque({}, sizes["other_device_commands"])
-        self.state_history = deque({}, sizes["other_state_history"])
-
-        # Database backed items
-        self.gateway_id = None
-        self.user_id = None
-        self.device_type_id = None
-        self.machine_label = None
-        self.label = None
-        self.description = None
-        self.location_id = None
-        self.area_id = None
-        self.notes = None
-        self.attributes = None
-        self.intent_allow = None
-        self.intent_text = None
-        self.pin_required = None
-        self.pin_code = None
-        self.pin_timeout = None
-        self.statistic_label = None
-        self.statistic_lifetime = None
-        self.statistic_type = None
-        self.statistic_bucket_size = None
-        self.energy_type = None
-        self.energy_tracker_source = None
-        self.energy_tracker_device = None
-        self.energy_map = None
-        self.controllable = None
-        self.allow_direct_control = None
-        self.status = None
-        self.created_at = None
-        self.updated_at = None
 
         # misc other attributes
         self.device_is_new = True
-        self.device_serial = device["id"]
+        self.device_serial = incoming["id"]
         self.device_mfg = "Yombo"
         self.device_model = "Yombo"
         self.state_delayed = {}
         self.state_delayed_calllater = None
-        self.source = kwargs.get("source", "database")
+        self.source = source
         self.parent = None  # Only set if this device is a child to anther device.
         self.parent_id = None  # Only set if this device is a child to anther device.
 
-        if device["gateway_id"] != self.gateway_id:
+        sizes = memory_sizing[self._Parent._Atoms["mem.sizing"]]
+        if incoming["gateway_id"] != self.gateway_id:
             self.device_commands = deque({}, sizes["other_device_commands"])
             self.state_history = deque({}, sizes["other_state_history"])
         else:
             self.device_commands = deque({}, sizes["local_device_commands"])
             self.state_history = deque({}, sizes["local_state_history"])
 
+        self._setup_class_model(incoming, source=source)
+
     @inlineCallbacks
     def _system_init_(self, device, source):
         """
-        Performs items that require deferreds. This is for system use only.
+        Performs items that require deferreds'. This is for system use only.
 
         :return:
         """
@@ -578,18 +535,6 @@ class Device_Attributes(Entity, SyncToEverywhere):
         """
         for state in self.state_history:
             state.save_to_db()
-
-    def _reload_(self, **kwargs):
-        """
-        Called when a device is edited and should be reloaded.
-
-        The device can update itself if possible, or the controlling module can do it using the
-        the hook '_device_edited_'.
-
-        :param kwargs:
-        :return:
-        """
-        pass
 
     def asdict(self):
         """
@@ -687,68 +632,32 @@ class Device_Attributes(Entity, SyncToEverywhere):
 
         }
 
-    @inlineCallbacks
-    def update_attributes(self, device, source=None, session=None, broadcast=None):
+    def update_attributes_preprocess(self, incoming):
         """
-        Sets various values from a device dictionary. This can be called when the device is first being setup or
-        when being updated by the AMQP service.
+        Change some basic values before the input is processed.
 
-        This does not set any device state attributes.
-
-        :param device:
+        :param incoming:
         :return:
         """
-        if broadcast in (None, True):
+        if "pin_timeout" in incoming:
             try:
-                yield global_invoke_all("_device_before_edit_",
-                                        called_by=self,
-                                        id=self.device_id,
-                                        data=device,
-                                        device=self,
-                                        )
-            except Exception as e:
-                pass
-
-        if "pin_timeout" in device:
-            try:
-                device["pin_timeout"] = int(device["pin_timeout"])
+                incoming["pin_timeout"] = int(incoming["pin_timeout"])
             except:
-                self.pin_timeout = None
+                incoming["pin_timeout"] = 0
 
-        if "energy_map" in device:
-            if device["energy_map"] is not None:
+        elif "energy_map" in incoming:
+            if incoming["energy_map"] is not None:
                 # create an energy map from a dictionary
                 energy_map_final = {}
-                if isinstance(device["energy_map"], dict) is False:
-                    device["energy_map"] = {"0.0": 0, "1.0": 0}
+                if isinstance(incoming["energy_map"], dict) is False:
+                    incoming["energy_map"] = {"0.0": 0, "1.0": 0}
 
-                for percent, rate in device["energy_map"].items():
-                    energy_map_final[self._Parent._InputTypes.check("percent", percent)] = self._Parent._InputTypes.check("number", rate)
+                for percent, rate in incoming["energy_map"].items():
+                    energy_map_final[self._InputTypes.check("percent", percent)] = self._Parent._InputTypes.check("number", rate)
                 energy_map_final = OrderedDict(sorted(list(energy_map_final.items()), key=lambda x_y: float(x_y[0])))
-                device["energy_map"] = energy_map_final
+                incoming["energy_map"] = energy_map_final
             else:
-                device["energy_map"] = None
-
-        super().update_attributes(device, source=source, session=session)
-
-        if broadcast in (None, True):
-            try:
-                yield global_invoke_all("_device_edited_",
-                                        called_by=self,
-                                        id=self.device_id,
-                                        device=self,
-                                        )
-            except:
-                pass
-
-            def device_reload_failure(failure):
-                logger.info("Got failure while calling device reload '{label}': {failure}",
-                            failure=failure, label=self.full_label)
-            d = Deferred()
-            d.addCallback(lambda ignored: maybeDeferred(self._reload_))
-            d.addErrback(device_reload_failure)
-            d.callback(1)
-            yield d
+                incoming["energy_map"] = {"0.0": 0, "1.0": 0}
 
     def has_device_feature(self, feature_name, value=None):
         """
@@ -823,7 +732,7 @@ class Device_Attributes(Entity, SyncToEverywhere):
         where = {
             "device_id": self.device_id,
         }
-        records = yield self._Parent._LocalDB.get_device_states(where, limit=limit)
+        records = yield self._Parent._LocalDB.generic_item_get("device_states", where=where, limit=limit)
         if len(records) > 0:
             for record in records:
                 self.state_history.append(Device_State(self._Parent, self, record, source="database"))
@@ -843,7 +752,7 @@ class Device_Attributes(Entity, SyncToEverywhere):
         where = {
             "id": self.device_id,
         }
-        records = yield self._Parent._LocalDB.get_device_commands(where, limit=limit)
+        records = yield self._Parent._LocalDB.generic_item_get("device_type_commands", where=where, limit=limit)
         if len(records) > 0:
             for record in records:
                 if record["request_id"] not in self._Parent.device_commands:

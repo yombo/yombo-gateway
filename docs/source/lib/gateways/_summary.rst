@@ -14,9 +14,6 @@ Gateways (yombo.lib.gateways)
 
 Maintains gateway information for the current cluster.
 
-**See the `sslcerts developer docs <https://yombo.net/docs/libraries/sslcerts`_ for more
-details.**
-
 Gateway Library
 =========================
 
@@ -34,6 +31,6 @@ Represents a single gateway.
 .. toctree::
    :maxdepth: 1
 
-   sslcert.rst
+   gateway.rst
 
 Last updated: |today|

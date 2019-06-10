@@ -42,14 +42,6 @@ class Startup(YomboLibrary):
 
     Checks to make sure basic configurations are valid and other start-up operations.
     """
-    def __str__(self):
-        """
-        Returns the name of the library.
-        :return: Name of the library
-        :rtype: string
-        """
-        return "Yombo startup library"
-
     @inlineCallbacks
     def _init_(self, **kwargs):
         """

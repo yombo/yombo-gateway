@@ -41,14 +41,6 @@ class Hash(YomboLibrary):
     * bcrypt
 
     """
-    def __str__(self):
-        """
-        Returns the name of the library.
-        :return: Name of the library
-        :rtype: string
-        """
-        return "Yombo hash library"
-
     @inlineCallbacks
     def _init_(self, **kwargs):
         self.argon2_rounds = self._Configs.get("hash", "argon2_rounds", None, False)

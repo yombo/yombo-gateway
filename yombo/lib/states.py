@@ -78,7 +78,7 @@ from yombo.utils.hookinvoke import global_invoke_all
 logger = get_logger("library.states")
 
 
-class States(YomboLibrary, object):
+class States(YomboLibrary):
     """
     Provides a base API to store common states among libraries and modules.
     """
@@ -165,13 +165,6 @@ class States(YomboLibrary, object):
         """
         return len(self.states[self.gateway_id])
 
-    def __str__(self):
-        """
-        Returns the name of the library.
-        :return: Name of the library
-        :rtype: string
-        """
-        return "Yombo states library"
 
     def keys(self, gateway_id=None):
         """
@@ -462,21 +455,22 @@ class States(YomboLibrary, object):
 
         source_type, source_label = get_yombo_instance_type(source)
 
-        try:
-            yield global_invoke_all("_states_preset_",
-                                    called_by=self,
-                                    key=key,
-                                    value=value,
-                                    value_type=value_type,
-                                    gateway_id=gateway_id,
-                                    stoponerror=True,
-                                    source=source,
-                                    source_label=source_label,
-                                    )
-        except YomboHookStopProcessing as e:
-            logger.warn("Not saving state '{state}'. Resource '{resource}' raised' YomboHookStopProcessing exception.",
-                         state=key, resource=e.by_who)
-            return None
+        if self._Loader.run_phase[1] >= 6000:
+                try:
+                    yield global_invoke_all("_states_preset_",
+                                            called_by=self,
+                                            key=key,
+                                            value=value,
+                                            value_type=value_type,
+                                            gateway_id=gateway_id,
+                                            stoponerror=True,
+                                            source=source,
+                                            source_label=source_label,
+                                            )
+                except YomboHookStopProcessing as e:
+                    logger.warn("Not saving state '{state}'. Resource '{resource}' raised' YomboHookStopProcessing exception.",
+                                 state=key, resource=e.by_who)
+                    return None
 
         if key in self.states[gateway_id]:
             is_new = False
@@ -534,16 +528,17 @@ class States(YomboLibrary, object):
                                          source_label=source_label,
                                          )
         # Call any hooks
-        yield global_invoke_all("_states_set_",
-                                called_by=self,
-                                key=key,
-                                value=value,
-                                value_type=value_type,
-                                value_full=self.states[gateway_id][key],
-                                gateway_id=gateway_id,
-                                source=source,
-                                source_label=source_label,
-                                )
+        if self._Loader.run_phase[1] >= 6000:
+            yield global_invoke_all("_states_set_",
+                                    called_by=self,
+                                    key=key,
+                                    value=value,
+                                    value_type=value_type,
+                                    value_full=self.states[gateway_id][key],
+                                    gateway_id=gateway_id,
+                                    source=source,
+                                    source_label=source_label,
+                                    )
 
         if (gateway_id == self.gateway_id or gateway_id == "cluster") and gateway_id != "local":
             self.db_save_states_data.append([key, deepcopy(self.states[gateway_id][key])])

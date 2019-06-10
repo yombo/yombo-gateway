@@ -16,19 +16,10 @@ def route_api_v1_device(webapp):
         @require_auth(api=True)
         def apiv1_device_get(webinterface, request, session):
             session.has_access("device", "*", "view", raise_error=True)
-            return return_good(
-                request,
-                payload=webinterface._Devices.full_list_devices(),
-            )
-
-        @webapp.route("/device", methods=["GET"])
-        @require_auth(api=True)
-        def apiv1_device_get(webinterface, request, session):
-            session.has_access("device", "*", "view", raise_error=True)
-            return return_good(
-                request,
-                payload=webinterface._Devices.full_list_devices(),
-            )
+            return webinterface.render_api(request, None,
+                                           data_type="devices",
+                                           attributes=webinterface._Devices.class_storage_as_list()
+                                           )
 
         @webapp.route("/device/<string:device_id>", methods=["GET"])
         @require_auth(api=True)
@@ -79,7 +70,7 @@ def route_api_v1_device(webapp):
             else:
                 return return_not_found(request, "Device not found")
             try:
-                request_id = device.command(
+                device_command_id = device.command(
                     cmd=command_id,
                     auth=session,
                     pin=pin_code,
@@ -97,7 +88,7 @@ def route_api_v1_device(webapp):
                 print(f"error with apiv1_device_command_get_post warning: {e}")
                 return return_error(request, f"Error with command: {e}")
 
-            DC = webinterface._DeviceCommands.device_commands[request_id]
+            DC = webinterface._DeviceCommands.device_commands[device_command_id]
             if wait_time > 0:
                 exit_while = False
                 start_time = time()
@@ -118,7 +109,7 @@ def route_api_v1_device(webapp):
             return return_good(
                 request,
                 payload={
-                    "device_command_id": request_id,
+                    "device_command_id": device_command_id,
                     "device_command": DC.asdict(),
                     "status_current": status_current,
                     "status_previous": status_previous,

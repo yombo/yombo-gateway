@@ -26,19 +26,11 @@ from yombo.utils.decorators import setup_cache
 
 logger = get_logger("library.cache")
 
+
 class Cache(YomboLibrary):
     """
     Create and manage caches for various items.
     """
-    def __str__(self):
-        """
-        Returns the name of the library.
-
-        :return: Name of the library
-        :rtype: string
-        """
-        return "Yombo cache library"
-
     def _pre_init_(self, **kwargs):
         """
         Setup the cache decorator.

@@ -29,28 +29,6 @@ class LibrarySearchMixin(object):
     """
     Implements get and search functions.
     """
-    def get_all(self):
-        """
-        Returns a copy of the items list.  Be careful, this is not a deepcopy!
-        :return:
-        """
-        return getattr(self, self._class_storage_attribute_name).copy()
-
-    def sorted(self, key=None):
-        """
-        Returns a sorted dictionary that is by "key". The key can be any attribute within the device object, such as
-        label, area_label, etc.
-
-        :param key: Attribute contained in a device to sort by, default: area_label
-        :type key: str
-        :return: All devices, sorted by key.
-        :rtype: dict
-        """
-        items_to_sort = getattr(self, self._class_storage_attribute_name)
-        if key is None:
-            key = self._class_storage_sort_key
-        return dict(sorted(iter(items_to_sort.items()), key=lambda i: getattr(i[1], key)))
-
     def get(self, item_requested):
         """
         Get an item by it's ID or machine_label. Unlike search(), this doesn't use any fuzzy logic to search
@@ -69,9 +47,10 @@ class LibrarySearchMixin(object):
         if item_requested in items_to_search:
             return items_to_search[item_requested]
 
-        if hasattr(self, "_class_storage_default_search_fields"):
+        # print(f"Building criteria from these fileds: {self._class_storage_search_fields}")
+        if hasattr(self, "_class_storage_search_fields"):
             criteria = {}
-            for key in self._class_storage_default_search_fields:
+            for key in self._class_storage_search_fields:
                 criteria[key] = item_requested
         else:
             criteria = {
@@ -82,7 +61,6 @@ class LibrarySearchMixin(object):
             return self.get_advanced(criteria, multiple=False)
         except KeyError:
             raise KeyError(f"No matching {self._class_storage_attribute_name} found: {item_requested}")
-
 
     def get_advanced(self, criteria, multiple=None):
         """
@@ -103,16 +81,19 @@ class LibrarySearchMixin(object):
         results = {}
         for item_id, item in items_to_search.items():
             for key, value in criteria.items():
-                if key not in self._class_storage_fields:
+                if key not in self._class_storage_search_fields:
                     continue
 
-                # print("searching: %s" % item._instance)
+                # print(f"get_advanced searching: {key}:{item}")
+
                 # if value == item._instance[key]:
                 if value == getattr(item, key):
                     if multiple is False:
                         return item
                     results[item_id] = item
         if len(results) == 0:
+            # for item_id, item in items_to_search.items():
+            #     print(f"Searching: {item_id}: {item.__dict__}")
             raise KeyError(f"No matching {self._class_storage_attribute_name} found.")
         return results
 
@@ -142,7 +123,7 @@ class LibrarySearchMixin(object):
         :type item_requested: string
         :param limiter: Default: .90 - A value between .5 and .99. Sets how close of a match it the search should be.
         :type limiter: float
-        :param max_results: How many results to return.
+        :param max_results: How many results to return, 0 = unlimited above cutoff.
         :type max_results: int
         :param status: Default: 1 - The status of the item to check for.
         :type status: int
@@ -152,11 +133,11 @@ class LibrarySearchMixin(object):
         if isinstance(item_requested, str) is False:
             raise YomboWarning("item_requested must be a string.")
         if max_results is None:
-            max_results = 1
+            max_results = 0
 
-        if hasattr(self, "_class_storage_default_search_fields"):
-            search_attributes = {}
-            for key in self._class_storage_default_search_fields:
+        if hasattr(self, "_class_storage_search_fields"):
+            search_attributes = []
+            for key in self._class_storage_search_fields:
                 search_attributes.append({
                     "field": key,
                     "value": item_requested,
@@ -192,7 +173,7 @@ class LibrarySearchMixin(object):
 
         return self.search_advanced(search_attributes, limiter, max_results=max_results,
                                     required_field=required_field, required_value=required_value
-                                    )["items"]
+                                    )["values"]
 
     def search_advanced(self, search_attributes, limiter=None, max_results=None,
                         required_field=None, required_value=None,
@@ -220,7 +201,7 @@ class LibrarySearchMixin(object):
         :type search_attributes: list, dict
         :param limiter: Default: .90 - A value between .5 and .99. Sets how close of a match it the search should be.
         :type limiter: float
-        :param max_results: How many results to return, defaults to found items above the limiter.
+        :param max_results: How many results to return, defaults to 0 to find items above the limiter.
         :type max_results: int
         :param required_field: If set, this field will be required to match. Typically used for status.
         :type required_field: str
@@ -239,7 +220,7 @@ class LibrarySearchMixin(object):
             # logger.debug("item.search() is about to call do_search_instance...: %s" % item_requested)
             results = do_search_instance(search_attributes,
                                          items_to_search,
-                                         allowed_keys=self._class_storage_fields,
+                                         allowed_keys=self._class_storage_search_fields,
                                          limiter=limiter,
                                          max_results=max_results,
                                          required_field=required_field,

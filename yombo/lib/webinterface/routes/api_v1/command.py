@@ -1,7 +1,6 @@
 # Import python libraries
 
 from yombo.lib.webinterface.auth import require_auth
-from yombo.lib.webinterface.routes.api_v1.__init__ import return_good\
 
 
 def route_api_v1_command(webapp):
@@ -9,4 +8,7 @@ def route_api_v1_command(webapp):
         @webapp.route("/commands", methods=["GET"])
         @require_auth(api=True)
         def apiv1_command_get(webinterface, request, session):
-            return return_good(request, payload=webinterface._Commands.full_list_commands())
+            return webinterface.render_api(request, None,
+                                           data_type="command",
+                                           attributes=webinterface._Commands.class_storage_as_list()
+                                           )

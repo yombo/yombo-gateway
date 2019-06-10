@@ -61,14 +61,6 @@ class DownloadModules(YomboLibrary):
     """
     MAX_DOWNLOAD_CONCURRENT = 3  # config: misc:downloadmodulesconcurrent
 
-    def __str__(self):
-        """
-        Returns the name of the library.
-        :return: Name of the library
-        :rtype: string
-        """
-        return "Yombo download modules library"
-
     @inlineCallbacks
     def _init_(self, **kwargs):
         """

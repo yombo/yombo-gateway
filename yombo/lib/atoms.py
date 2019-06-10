@@ -205,14 +205,6 @@ class Atoms(YomboLibrary):
         """
         return len(self.atoms[self.gateway_id])
 
-    def __str__(self):
-        """
-        Returns the name of the library.
-        :return: Name of the library
-        :rtype: string
-        """
-        return "Yombo atoms library"
-
     def keys(self, gateway_id=None):
         """
         Returns the keys of the atoms that are defined.
@@ -334,7 +326,7 @@ class Atoms(YomboLibrary):
         else:
             return {}
 
-    def get_list(self, gateway_id=None):
+    def class_storage_as_list(self, gateway_id=None):
         """
         Gets Atoms as a list.
 
@@ -459,16 +451,17 @@ class Atoms(YomboLibrary):
             self.atoms[gateway_id][key]["value_human"] = self.convert_to_human(value, value_type)
 
         # Call any hooks
-        yield global_invoke_all("_atoms_set_",
-                                called_by=self,
-                                key=key,
-                                value=value,
-                                value_type=value_type,
-                                value_full=self.atoms[gateway_id][key],
-                                gateway_id=gateway_id,
-                                source=source,
-                                source_label=source_label,
-                                )
+        if self._Loader.run_phase[1] >= 6000:
+            yield global_invoke_all("_atoms_set_",
+                                    called_by=self,
+                                    key=key,
+                                    value=value,
+                                    value_type=value_type,
+                                    value_full=self.atoms[gateway_id][key],
+                                    gateway_id=gateway_id,
+                                    source=source,
+                                    source_label=source_label,
+                                    )
 
     @inlineCallbacks
     def set_from_gateway_communications(self, key, data, source):

@@ -15,7 +15,7 @@ class DB_Modules(object):
             records = yield Modules.find(where=["status = ? OR status = ?", 1, 0], orderby="label ASC")
         else:
             records = yield Modules.find(orderby="label ASC")
-        return self._return_empty_if_none(records)
+        return self.process_get_results(records)
 
     @inlineCallbacks
     def get_modules_view(self, get_all=False, where=None):
@@ -25,7 +25,7 @@ class DB_Modules(object):
             records = yield ModulesView.find(where=["status = ?", 1])
         else:
             records = yield ModulesView.find(orderby="label ASC")
-        return self._return_empty_if_none(records)
+        return self.process_get_results(records)
 
     @inlineCallbacks
     def get_module_commits(self, module_id, branch, approved=None, aslist=None):

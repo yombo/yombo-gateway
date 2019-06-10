@@ -21,6 +21,8 @@ Used by the Yombo Gateway framework to set up it's libraries.
 :view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/core/library.html>`_
 """
 # Import Yombo libraries
+from yombo.core.exceptions import YomboWarning
+
 from yombo.core.entity import Entity
 from yombo.utils.hookinvoke import global_invoke_all
 
@@ -31,42 +33,52 @@ class YomboLibrary(Entity):
 
     This is the only class where the Entity class won't fully populate this class.
     """
-    def __init__(self, parent, *args, **kwargs):
-        self._Entity_type = "yombo_library"
-        self._Name = self.__class__.__name__
-        self._FullName = f"yombo.gateway.lib.{self.__class__.__name__}"
-        super().__init__(parent, *args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        try:  # Some exceptions not being caught. So, catch, display and release.
+            if hasattr(self, '_import_init_'):
+                self._import_init_(**kwargs)
+
+            self._Entity_type = "library"
+            super().__init__(self, **kwargs)
+        except Exception as e:
+            print(f"YomboLibrary caught init exception: {e}")
+            raise e
 
     def _init_(self, **kwargs):
         """
         Called to init the library, at the yombo gateway level.
         """
-        pass
+        if hasattr(super(), '_init_'):
+            super()._init_(**kwargs)
 
     def _load_(self, **kwargs):
         """
         Called when a library should start running its process
         operations.
         """
-        pass
+        if hasattr(super(), '_load_'):
+            super()._load_(**kwargs)
 
     def _start_(self, **kwargs):
         """
         Called when a library can now send requests externally.
         """
-        pass
+        if hasattr(super(), '_start_'):
+            super()._start_(**kwargs)
 
     def _stop_(self, **kwargs):
         """
         Called when a library is about to be stopped..then unloaded.
         """
-        pass
+        if hasattr(super(), '_stop_'):
+            super()._stop_(**kwargs)
 
     def _unload_(self, **kwargs):
         """
         Called when a library is about to be unloaded. 
         """
-        pass
+        if hasattr(super(), '_unload_'):
+            super()._unload_(**kwargs)
 
     def amqp_incoming(self, headers, **kwargs):
         """

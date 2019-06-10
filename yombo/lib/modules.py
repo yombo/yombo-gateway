@@ -34,9 +34,10 @@ from twisted.internet.defer import inlineCallbacks, maybeDeferred, Deferred, Def
 from yombo.constants import MODULE_API_VERSION
 from yombo.core.exceptions import YomboHookStopProcessing, YomboWarning
 from yombo.core.library import YomboLibrary
-from yombo.mixins.library_search_mixin import LibrarySearchMixin
 from yombo.core.log import get_logger
 import yombo.core.settings as settings
+from yombo.mixins.library_search_mixin import LibrarySearchMixin
+from yombo.mixins.library_db_model_mixin import LibraryDBModelMixin
 from yombo.utils import read_file, bytes_to_unicode, sha224_compact, random_string
 from yombo.utils.hookinvoke import global_invoke_all
 
@@ -76,135 +77,32 @@ SYSTEM_MODULES = {
     }
 
 
-class Modules(YomboLibrary, LibrarySearchMixin):
+class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
     """
     A single place for modudule management and reference.
     """
 
     modules = {}  # Stores a list of modules. Populated by the loader module at startup.
+    loaded_modules = {}  # Stores the machine label with a reference to the module instance
 
     _rawModulesList = {}  # used during boot-up. Combined system modules, localmodules.ini, and DB loaded modules.
     disabled_modules = {}  # List of modules that are blacklisted from the server.
 
     # The following are used by get(), get_advanced(), search(), and search_advanced()
+    _class_storage_load_hook_prefix = "module"
+    _class_storage_load_db_class = None
     _class_storage_attribute_name = "modules"
-    _class_storage_fields = [
+    _class_storage_search_fields = [
         "_module_id", "_module_type", "_label", "_machine_label", "_description", "_short_description",
-        "_medium_description", "_public", "_status"
+        "_medium_description"
     ]
     _class_storage_sort_key = "machine_label"
-
-    def __contains__(self, module_requested):
-        """
-        .. note:: The command must be enabled to be found using this method. Use :py:meth:`get <Commands.get>`
-           to set status allowed.
-
-        Checks to if a provided command id, label, or machine_label exists.
-
-            >>> if "137ab129da9318" in self._Commands:
-
-        or:
-
-            >>> if "living room light" in self._Commands:
-
-        :raises YomboWarning: Raised when request is malformed.
-        :param module_requested: The command ID, label, or machine_label to search for.
-        :type module_requested: string
-        :return: Returns true if exists, otherwise false.
-        :rtype: bool
-        """
-        try:
-            self.get(module_requested)
-            return True
-        except Exception as e:
-            return False
-
-    def __getitem__(self, module_requested):
-        """
-        .. note:: The module must be enabled to be found using this method. Use :py:meth:`get <Modules.get>`
-           to set status allowed.
-
-        Attempts to find the device requested using a couple of methods.
-
-            >>> off_cmd = self._Modules["Sjho381jSASD013ug"]  #by id
-
-        or:
-
-            >>> off_cmd = self._Modules["homevision"]  #by label & machine_label
-
-        :raises YomboWarning: Raised when request is malformed.
-        :raises KeyError: Raised when request is not found.
-        :param module_requested: The module ID, label, or machine_label to search for.
-        :type module_requested: string
-        :return: A pointer to the module instance.
-        :rtype: instance
-        """
-        return self.get(module_requested)
-
-    def __setitem__(self, module_requested, value):
-        """
-        Sets are not allowed. Raises exception.
-
-        :raises Exception: Always raised.
-        """
-        raise Exception("Not allowed.")
-
-    def __delitem__(self, module_requested):
-        """
-        Deletes are not allowed. Raises exception.
-
-        :raises Exception: Always raised.
-        """
-        raise Exception("Not allowed.")
-
-    def __iter__(self):
-        """ iter modules. """
-        return self.modules.__iter__()
-
-    def __len__(self):
-        """
-        Returns an int of the number of modules configured.
-
-        :return: The number of modules configured.
-        :rtype: int
-        """
-        return len(self.modules)
-
-    def __str__(self):
-        """
-        Returns the name of the library.
-        :return: Name of the library
-        :rtype: string
-        """
-        return "Yombo modules library"
-
-    def keys(self):
-        """
-        Returns the keys (module ID's) that are configured.
-
-        :return: A list of module IDs. 
-        :rtype: list
-        """
-        return list(self.modules.keys())
-
-    def items(self):
-        """
-        Gets a list of tuples representing the modules configured.
-
-        :return: A list of tuples.
-        :rtype: list
-        """
-        return list(self.modules.items())
-
-    def values(self):
-        return list(self.modules.values())
 
     def _init_(self, **kwargs):
         """
         Init doesn't do much. Just setup a few variables. Things really happen in start.
         """
         self.module_api_version = MODULE_API_VERSION
-        self.gateway_id = self._Configs.get("core", "gwid", "local", False)
         self._invoke_list_cache = {}  # Store a list of hooks that exist or not. A cache.
         self.hook_counts = {}  # keep track of hook names, and how many times it"s called.
         self.hooks_called = MaxDict(400, {})
@@ -457,7 +355,7 @@ class Modules(YomboLibrary, LibrarySearchMixin):
                     }
                     logger.debug(" - Module variable field: {label}", label=field_label)
 
-                    self._Variables._load_variable_fields_into_memory(field, source="database")
+                    self._VariableFields._class_storage_load_db_items_to_memory(field, source="database")
 
                     values = ini.get(section, field_label)
                     values = values.split(":::")
@@ -476,7 +374,7 @@ class Modules(YomboLibrary, LibrarySearchMixin):
                             "updated_at": int(time()),
                         }
                         logger.debug(" - Module variable data, value: {value}", value=value)
-                        yield self._Variables._load_variable_data_into_memory(data, source="database")
+                        yield self._VariableData._class_storage_load_db_items_to_memory(data, source="database")
 
         except IOError as xxx_todo_changeme:
             (errno, strerror) = xxx_todo_changeme.args
@@ -550,30 +448,35 @@ class Modules(YomboLibrary, LibrarySearchMixin):
                 logger.error("Not loading module: {label}", label=module["machine_label"])
                 continue
 
-            self.add_imported_module(module["id"], module_name, module_instance)
-            self.modules[module_id]._hooks_called = {}
-            self.modules[module_id]._module_id = module["id"]
-            self.modules[module_id]._module_type = module["module_type"]
-            self.modules[module_id]._machine_label = module["machine_label"]
-            self.modules[module_id]._label = module["label"]
-            self.modules[module_id]._short_description = module["short_description"]
-            self.modules[module_id]._medium_description = module["medium_description"]
-            self.modules[module_id]._description = module["description"]
-            self.modules[module_id]._medium_description_html = module["medium_description_html"]
-            self.modules[module_id]._description_html = module["description_html"]
-            self.modules[module_id]._install_count = module["install_count"]
-            self.modules[module_id]._see_also = module["see_also"]
-            self.modules[module_id]._repository_link = module["repository_link"]
-            self.modules[module_id]._issue_tracker_link = module["issue_tracker_link"]
-            self.modules[module_id]._doc_link = module["doc_link"]
-            self.modules[module_id]._git_link = module["git_link"]
-            self.modules[module_id]._install_branch = module["install_branch"]
-            self.modules[module_id]._require_approved = module["require_approved"]
-            self.modules[module_id]._public = module["public"]
-            self.modules[module_id]._status = module["status"]
-            self.modules[module_id]._created_at = module["created_at"]
-            self.modules[module_id]._updated_at = module["updated_at"]
-            self.modules[module_id]._load_source = module["load_source"]
+            try:
+                module_instance._hooks_called = {}
+                module_instance._module_id = module["id"]
+                module_instance._module_type = module["module_type"]
+                module_instance._machine_label = module["machine_label"]
+                module_instance._label = module["label"]
+                module_instance._short_description = module["short_description"]
+                module_instance._medium_description = module["medium_description"]
+                module_instance._description = module["description"]
+                module_instance._medium_description_html = module["medium_description_html"]
+                module_instance._description_html = module["description_html"]
+                module_instance._install_count = module["install_count"]
+                module_instance._see_also = module["see_also"]
+                module_instance._repository_link = module["repository_link"]
+                module_instance._issue_tracker_link = module["issue_tracker_link"]
+                module_instance._doc_link = module["doc_link"]
+                module_instance._git_link = module["git_link"]
+                module_instance._install_branch = module["install_branch"]
+                module_instance._require_approved = module["require_approved"]
+                module_instance._public = module["public"]
+                module_instance._status = module["status"]
+                module_instance._created_at = module["created_at"]
+                module_instance._updated_at = module["updated_at"]
+                module_instance._load_source = module["load_source"]
+
+                self.add_imported_module(module["id"], module_name, module_instance)
+            except Exception as e:
+                print(f"Yombo Library Modules issue loading module magic vars: {e}")
+                raise e
 
             possible_module_files = ["_devices", "_input_types"]  # Load some magic files within a module directory.
             for possible_file_name in possible_module_files:
@@ -590,7 +493,7 @@ class Modules(YomboLibrary, LibrarySearchMixin):
                         if possible_file_name == "_input_types":
                             self._InputTypes.platforms[name.lower()] = klass
                 except Exception as e:
-                    logger.debug("Unable to import magic file {file_path}, reason: {e}", file_path=file_path, e=e)
+                    # logger.debug("M: Unable to import magic file {file_path}, reason: {e}", file_path=file_path, e=e)
                     pass
 
     def module_invoke_failure(self, failure, module_name, hook_name):
@@ -747,6 +650,7 @@ class Modules(YomboLibrary, LibrarySearchMixin):
             if module_id in self.disabled_modules:
                 continue
 
+            # print(f"module._Status.... {module.__dict__.keys()}")
             if int(module._status) != 1:
                 continue
 
@@ -772,13 +676,10 @@ class Modules(YomboLibrary, LibrarySearchMixin):
         yield dl
         return results
 
-    @inlineCallbacks
-    def load_module_data(self):
-        self.startDefer.callback(10)
-
     def add_imported_module(self, module_id, module_label, module_instance):
-        logger.debug("adding module: {module_id}:{module_label}", module_id=module_id, module_label=module_label)
+        # logger.debug("adding module: {module_id}:{module_label}", module_id=module_id, module_label=module_label)
         self.modules[module_id] = module_instance
+        self.loaded_modules[module_instance] = module_instance._machine_label
 
     def del_imported_module(self, module_id, module_label):
         logger.debug("deleting module_id: {module_id} from this list: {list}", module_id=module_id, list=self.modules)

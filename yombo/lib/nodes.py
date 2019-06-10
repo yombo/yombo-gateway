@@ -22,17 +22,18 @@ for local data.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/nodes.html>`_
 """
 from copy import deepcopy
-from time import time
 
 # Import twisted libraries
-from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
-from yombo.classes.triggerdict import TriggerDict
+from yombo.core.entity import Entity
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
+from yombo.mixins.library_db_child_mixin import LibraryDBChildMixin
+from yombo.mixins.sync_to_everywhere_mixin import SyncToEverywhereMixin
+from yombo.mixins.library_db_model_mixin import LibraryDBModelMixin
 from yombo.mixins.library_search_mixin import LibrarySearchMixin
 from yombo.utils import bytes_to_unicode, data_pickle, sleep
 from yombo.utils.hookinvoke import global_invoke_all
@@ -40,198 +41,60 @@ from yombo.utils.hookinvoke import global_invoke_all
 logger = get_logger("library.nodes")
 
 
-class Nodes(YomboLibrary, LibrarySearchMixin):
+class Node(Entity, LibraryDBChildMixin, SyncToEverywhereMixin):
+    """
+    A class to manage a single node.
+
+    :ivar node_id: (string) The unique ID.
+    :ivar label: (string) Human label
+    :ivar machine_label: (string) A non-changable machine label.
+    :ivar category_id: (string) Reference category id.
+    :ivar input_regex: (string) A regex to validate if user input is valid or not.
+    :ivar always_load: (int) 1 if this item is loaded at startup, otherwise 0.
+    :ivar status: (int) 0 - disabled, 1 - enabled, 2 - deleted
+    :ivar public: (int) 0 - private, 1 - public pending approval, 2 - public
+    :ivar created_at: (int) EPOCH time when created
+    :ivar updated_at: (int) EPOCH time when last updated
+    """
+    _primary_column = "node_id"  # Used by mixins
+
+    def __init__(self, parent, incoming, source=None):
+        """
+        Setup the node object using information passed in.
+
+        :param parent: Reference to the Node library.
+        :param node: A dictionary containing all the required values to create a node instance.
+        :param source: Where the data is coming from. Should be: local, remote, database
+        :type node: dict
+        """
+        self._Entity_type = "Node"
+        self._Entity_label_attribute = "node_id"
+
+        super().__init__(parent)
+        self._setup_class_model(incoming, source=source)
+
+
+class Nodes(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
     """
     Manages nodes for a gateway.
     """
     nodes = {}
 
     # The following are used by get(), get_advanced(), search(), and search_advanced()
+    _class_storage_load_hook_prefix = "node"
+    _class_storage_load_db_class = Node
     _class_storage_attribute_name = "nodes"
-    _class_storage_fields = [
-        "node_id", "machine_label", "label", "parent_id", "user_id", "node_type", "destination"
+    _class_storage_search_fields = [
+        "node_id", "node_type", "machine_label", "label"
     ]
-    _class_storage_sort_key = "node_type"
-
-    def __contains__(self, node_requested):
-        """
-
-        .. note::
-
-          The node must be enabled and loaded in order to be found using this method.
-
-        Checks to if a provided node ID or machine_label exists.
-
-            >>> if "0kas02j1zss349k1" in self._Nodes:
-
-        or:
-
-            >>> if "some_node_name" in self._Nodes:
-
-        :raises YomboWarning: Raised when request is malformed.
-        :raises KeyError: Raised when request is not found.
-        :param node_requested: The node id or machine_label to search for.
-        :type node_requested: string
-        :return: Returns true if exists, otherwise false.
-        :rtype: bool
-        """
-        try:
-            self.get(node_requested)
-            return True
-        except:
-            return False
-
-    def __getitem__(self, node_requested):
-        """
-        .. note::
-
-          The node must be enabled and loaded in order to be found using this method.
-
-        Attempts to find the device requested using a couple of methods.
-
-            >>> node = self._Nodes["0kas02j1zss349k1"]  #by uuid
-
-        or:
-
-            >>> node = self._Nodes["alpnum"]  #by name
-
-        :raises YomboWarning: Raised when request is malformed.
-        :raises KeyError: Raised when request is not found.
-        :param node_requested: The node ID or machine_label to search for.
-        :type node_requested: string
-        :return: A pointer to the device type instance.
-        :rtype: instance
-        """
-        return self.get(node_requested)
-
-    def __setitem__(self, **kwargs):
-        """
-        Sets are not allowed. Raises exception.
-
-        :raises Exception: Always raised.
-        """
-        raise Exception("Not allowed.")
-
-    def __delitem__(self, **kwargs):
-        """
-        Deletes are not allowed. Raises exception.
-
-        :raises Exception: Always raised.
-        """
-        raise Exception("Not allowed.")
-
-    def __iter__(self):
-        """ iter device types. """
-        return self.nodes.__iter__()
-
-    def __len__(self):
-        """
-        Returns an int of the number of device types configured.
-
-        :return: The number of nodes configured.
-        :rtype: int
-        """
-        return len(self.nodes)
-
-    def __str__(self):
-        """
-        Returns the name of the library.
-        :return: Name of the library
-        :rtype: string
-        """
-        return "Yombo nodes library"
-
-    def keys(self):
-        """
-        Returns the keys (device type ID's) that are configured.
-
-        :return: A list of device type IDs. 
-        :rtype: list
-        """
-        return list(self.nodes.keys())
-
-    def items(self):
-        """
-        Gets a list of tuples representing the device types configured.
-
-        :return: A list of tuples.
-        :rtype: list
-        """
-        return list(self.nodes.items())
-
-    def values(self):
-        return list(self.nodes.values())
+    _class_storage_sort_key = "machine_label"
 
     @inlineCallbacks
     def _init_(self, **kwargs):
         """
-        Setups up the basic framework and loads nodes marked for always load or the gateway_id is
-        set for us.
+        Loads nodes from the database and imports them.
         """
-        yield self._load_nodes_from_database()
-
-    @inlineCallbacks
-    def _stop_(self, **kwargs):
-        """
-        Cleans up any pending deferreds.
-        """
-        for node_id, node in self.nodes.items():
-            yield node._stop_()
-
-    @inlineCallbacks
-    def _load_nodes_from_database(self):
-        """
-        Loads nodes from database and sends them to :py:meth:`_load_node_into_memory <Nodes._load_node_into_memory>`. This only
-        loads nodes marked as 'always_load' = 1, or the gateway_id matches this gateway and the
-        destination is 'gw'.
-
-        This function shuold only be be called on system startup by the nodes _init_ function.
-        """
-        nodes = yield self._LocalDB.get_nodes()
-        for node in nodes:
-            self._load_node_into_memory(node)
-
-    def _load_node_into_memory(self, node, test_node=False):
-        """
-        Loads a dictionary representing a node into memory. This should only be used by this library to
-        import from the database or after 'add_node' has completed.
-
-        **Hooks called**:
-
-        * _node_before_load_ : Called before the node is loaded into memory.
-        * _node_after_load_ : Called after the node is loaded into memory.
-
-        :param node: A dictionary of items required to either setup a new node or update an existing one.
-        :type node: dict
-        :param test_node: Used for unit testing.
-        :type test_node: bool
-        :returns: Pointer to new node. Only used during unittest
-        """
-        # print(f"Node keys installed: {list(self.nodes.keys())}")
-        logger.debug("node: {node}", node=node)
-
-        node_id = node["id"]
-        if node_id in self.nodes:
-            raise YomboWarning(f"Cannot add node to memory, already exists: {node_id}")
-
-        try:
-            global_invoke_all("_node_before_load_",
-                              called_by=self,
-                              node_id=node_id,
-                              node=node,
-                              )
-        except Exception as e:
-            pass
-        self.nodes[node_id] = Node(self, node)  # Create a new node in memory
-        try:
-            global_invoke_all("_node_after_load_",
-                              called_by=self,
-                              node_id=node_id,
-                              node=self.nodes[node_id],
-                              )
-        except Exception as e:
-            pass
-
+        yield self._class_storage_load_from_database()
 
     def get_parent(self, node_requested, limiter=None):
         """
@@ -550,325 +413,3 @@ class Nodes(YomboLibrary, LibrarySearchMixin):
         #                                         api_data,
         #                                         authorization_header=authorization)
         # return response
-
-
-class Node(object):
-    """
-    A class to manage a single node.
-
-    :ivar node_id: (string) The unique ID.
-    :ivar label: (string) Human label
-    :ivar machine_label: (string) A non-changable machine label.
-    :ivar category_id: (string) Reference category id.
-    :ivar input_regex: (string) A regex to validate if user input is valid or not.
-    :ivar always_load: (int) 1 if this item is loaded at startup, otherwise 0.
-    :ivar status: (int) 0 - disabled, 1 - enabled, 2 - deleted
-    :ivar public: (int) 0 - private, 1 - public pending approval, 2 - public
-    :ivar created_at: (int) EPOCH time when created
-    :ivar updated_at: (int) EPOCH time when last updated
-    """
-    @property
-    def parent_id(self):
-        return self._parent_id
-
-    @parent_id.setter
-    def parent_id(self, val):
-        self._parent_id = val
-        self.on_change()
-        return
-
-    @property
-    def gateway_id(self):
-        return self._gateway_id
-
-    @gateway_id.setter
-    def gateway_id(self, val):
-        self._gateway_id = val
-        self.on_change()
-        return
-
-    @property
-    def node_type(self):
-        return self._node_type
-
-    @node_type.setter
-    def node_type(self, val):
-        self._node_type = val
-        self.on_change()
-        return
-
-    @property
-    def weight(self):
-        return self._weight
-
-    @weight.setter
-    def weight(self, val):
-        self._weight = val
-        self.on_change()
-        return
-
-    @property
-    def gw_always_load(self):
-        return self._gw_always_load
-
-    @gw_always_load.setter
-    def gw_always_load(self, val):
-        self._gw_always_load = val
-        self.on_change()
-        return
-
-    @property
-    def destination(self):
-        return self._destination
-
-    @destination.setter
-    def destination(self, val):
-        self._destination = val
-        self.on_change()
-        return
-
-    @property
-    def data(self):
-        return self._data
-
-    @data.setter
-    def data(self, val):
-        self._data = val
-        self.on_change()
-        return
-
-    @property
-    def data_content_type(self):
-        return self._data_content_type
-
-    @data_content_type.setter
-    def data_content_type(self, val):
-        self._data_content_type = val
-        self.on_change()
-        return
-
-    @property
-    def status(self):
-        """int: If the node is enabled. 1 for yes, 0 for no, 2 for about to be deleted."""
-        return self._status
-
-    @status.setter
-    def status(self, val):
-        self._status = val
-        self.on_change()
-        return
-
-    @property
-    def updated_at(self):
-        """int: When the node was last updated."""
-        return self._updated_at
-
-    @updated_at.setter
-    def updated_at(self, val):
-        return
-
-    @property
-    def created_at(self):
-        return self._created_at
-
-    @created_at.setter
-    def created_at(self, val):
-        return
-
-    @property
-    def node_id(self):
-        return self._node_id
-
-    @node_id.setter
-    def node_id(self, val):
-        return
-
-    def __init__(self, parent, node):
-        """
-        Setup the node object using information passed in.
-
-        :param parent: Reference to the Node library.
-        :param node: A dictionary containing all the required values to create a node instance.
-        :param source: Where the data is coming from. Should be: local, remote, database
-        :type node: dict
-        """
-        logger.debug("node info: {node}", node=node)
-        self._startup = True
-        self._update_calllater_time = None
-        self._update_calllater = None
-        self._Parent = parent
-        self._node_id = node["id"]
-        self.machine_label = node.get("machine_label", None)
-
-        # below are configure in update_attributes()
-        self._parent_id = None
-        self._gateway_id = None
-        self._node_type = None
-        self._weight = 0
-        self._gw_always_load = 1
-        self._destination = None
-        self._data = TriggerDict(callback=self.on_change)
-        self._data_content_type = None
-        self._status = 1
-        self._updated_at = time()
-        self._created_at = time()
-        self.update_attributes(node)
-
-    @inlineCallbacks
-    def _stop_(self):
-        """
-        Called when the system is shutting down. If a save is pending, we save the current state to Yombo API
-        and SQL.
-
-        :return:
-        """
-        if self._update_calllater is not None and self._update_calllater.active():
-            self._update_calllater.cancel()
-            yield self.save()
-            object.__setattr__(self, "_update_calllater", None)
-
-    def update_attributes(self, new_data, force_save=None):
-        """
-        Sets various values from a new_data dictionary.
-
-        This is primarily used internally to bulk set attributes on startup and when data arrives from
-        the Yombo cloud so that it won't create a circle and update Yombo API of any changes.
-
-        :param new_data: Any new data attributes to set in bulk
-        :type new_data: dict
-        :param force_save: If this function is called outside of the nodes library, set this to true to save it!
-        :return:
-        """
-        if "parent_id" in new_data:
-            self.parent_id = new_data["parent_id"]
-        if "gateway_id" in new_data:
-            self.gateway_id = new_data["gateway_id"]
-        if "node_type" in new_data:
-            self.node_type = new_data["node_type"]
-        if "weight" in new_data:
-            self.weight = new_data["weight"]
-        if "label" in new_data:
-            self.label = new_data["label"]
-        if "machine_label" in new_data:
-            self.machine_label = new_data["machine_label"]
-        if "always_load" in new_data:
-            self.always_load = new_data["always_load"]
-        if "destination" in new_data:
-            self.destination = new_data["destination"]
-        if "data" in new_data:
-            if isinstance(new_data["data"], dict):
-                self.data = TriggerDict(new_data["data"], callback=self.on_change)
-            else:
-                self.data = new_data["data"]
-        if "data_content_type" in new_data:
-            self.data_content_type = new_data["data_content_type"]
-        if "status" in new_data:
-            self.status = new_data["status"]
-        if "created_at" in new_data:
-            self.created_at = new_data["created_at"]
-        if "updated_at" in new_data:
-            self.updated_at = new_data["updated_at"]
-
-        if force_save is True:  # Tell Yombo cloud, save to database
-            self.on_change()
-
-    def on_change(self, *args, **kwargs):
-        """
-        This function is called whenever something changes. We wait for 10 seconds of no updates,
-        with a max delay of 120 seconds, even if the node is still being updated.
-
-        This saves to the database as well as to Yombo API.
-
-        Simply calls self.save() when it's time to do the actual save.
-
-        :param args:
-        :param kwargs:
-        :return:
-        """
-        global_invoke_all("_node_updated_",
-                          called_by=self._Parent,
-                          node_id=self.node_id,
-                          node=self,
-                          )
-        # print("Node onchange: %s: on_change called: %s" % (self.node_id, self._update_calllater))
-        if self._update_calllater is not None and self._update_calllater.active():
-            # print("%s: on_change called.. still active.")
-            self._update_calllater.cancel()
-            object.__setattr__(self, "_update_calllater", None)
-            if self._update_calllater_time is not None and self._update_calllater_time < time() - 120:
-                # print("forcing save now..!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-                object.__setattr__(self, "_update_calllater_time", None)
-                self.save()
-            else:
-                # print("saving node later..")
-                object.__setattr__(self, "_update_calllater", reactor.callLater(10, self.save))
-        else:
-            self._update_calllater_time = time()
-            object.__setattr__(self, "_update_calllater", reactor.callLater(10, self.save))
-
-    @inlineCallbacks
-    def save(self):
-        """
-        Updates the Yombo API and saves the current information to the SQL database.
-
-        :return:
-        """
-        # print("%s: save" % self.node_id)
-        if self._update_calllater is not None and self._update_calllater.active():
-            self._update_calllater.cancel()
-        response = yield self._Parent.patch_node(node_id=self.node_id,
-                                                 api_data=self.asdict(include_id=False, pickle_data=True),
-                                                 )
-        yield self.save_to_db()
-
-    def add_to_db(self):
-        if self._Parent.gateway_id == self.gateway_id:
-            self._Parent._LocalDB.add_node(self)
-
-    @inlineCallbacks
-    def save_to_db(self):
-        # print("save_to_db called")
-        if self._Parent.gateway_id == self.gateway_id:
-            # print("save_to_db called....saving node to local sql now...")
-            yield self._Parent._LocalDB.update_node(self)
-
-    def delete_from_db(self):
-        if self._Parent.gateway_id == self.gateway_id:
-            self._Parent._LocalDB.delete_node(self)
-
-    def __str__(self):
-        """
-        Print a string when printing the class.  This will return the node id so that
-        the node can be identified and referenced easily.
-        """
-        return f"Node {self.node_id}: {self.label}"
-
-    def asdict(self, include_id=None, pickle_data=None):
-        """
-        Export node variables as a dictionary.
-        """
-        data = {
-            "id": str(self.node_id),
-            "parent_id": str(self.parent_id),
-            "gateway_id": str(self.gateway_id),
-            "node_type": str(self.node_type),
-            "weight": int(self.weight),
-            "machine_label": self.machine_label,
-            "label": self.label,
-            "always_load": int(self.always_load),
-            "destination": self.destination,
-            "data": self.data,
-            "data_content_type": str(self.data_content_type),
-            "status": int(self.status),
-            "created_at": int(self.created_at),
-            "updated_at": int(self.updated_at),
-        }
-        # print(f"asdict for node: {data}")
-        if include_id is False:
-            del data["id"]
-        if pickle_data is True:
-            data["data"] = data_pickle(data["data"], data["data_content_type"])
-        return data
-
-    def __repl__(self):
-        return self.asdict()

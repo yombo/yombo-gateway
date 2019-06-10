@@ -15,14 +15,14 @@ class DB_Gateways(object):
     @inlineCallbacks
     def get_gateways(self, status=None):
         if status is True:
-            records = yield self.dbconfig.select("gateways")
-            return self._return_empty_if_none(records)
+            records = yield Gateway.find()
+            return self.process_get_results(records)
         elif status is None:
-            records = yield self.dbconfig.select("gateways", where=["status = ? OR status = ?", 1, 0])
-            return self._return_empty_if_none(records)
+            records = yield Gateway.find(where=["status = ? OR status = ?", 1, 0])
+            return self.process_get_results(records)
         else:
-            records = yield self.dbconfig.select("gateways", where=["status = ?", status])
-            return self._return_empty_if_none(records)
+            records = yield Gateway.find(where=["status = ?", status])
+            return self.process_get_results(records)
 
     @inlineCallbacks
     def save_gateways(self, data):

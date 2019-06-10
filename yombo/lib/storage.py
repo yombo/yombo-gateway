@@ -53,17 +53,9 @@ logger = get_logger("library.storage")
 
 class Storage(YomboLibrary):
 
-    def __str__(self):
-        """
-        Returns the name of the library.
-        :return: Name of the library
-        :rtype: string
-        """
-
-        return "Yombo Storage library"
+    storage = {}
 
     def _init_(self, **kwargs):
-        self.storage = {}
         self.mime = MimeTypes()
         self.purge_expired_running = False
 

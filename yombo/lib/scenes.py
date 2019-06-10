@@ -28,6 +28,8 @@ from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
 from yombo.lib.nodes import Node
+from yombo.mixins.accessors_mixin import AccessorsMixin
+from yombo.mixins.library_search_mixin import LibrarySearchMixin
 from yombo.utils import random_string, sleep, is_true_false, dict_filter, bytes_to_unicode
 from yombo.utils.hookinvoke import global_invoke_all
 
@@ -37,115 +39,28 @@ REQUIRED_ACTION_KEYS = ["platform", "webroutes", "render_table_column_callback",
                         "add_url", "note", "handle_trigger_callback"]
 REQUIRED_ACTION_RENDER_TABLE_COLUMNS = ["action_type", "attributes", "edit_url", "delete_url"]
 
-class Scenes(YomboLibrary, object):
+
+class Scenes(YomboLibrary, AccessorsMixin, LibrarySearchMixin):
     """
     Handles activities relating to scenes.
     """
-    def __contains__(self, scene_requested):
-        """
-        Looks for a scene by it's ID or machine_label and returns true or false.
+    scenes = {}  # store all scenes
 
-            >>> if "137ab129da9318" in self._Scenes:
+    # The following are used by get(), get_advanced(), search(), and search_advanced()
+    _class_storage_load_hook_prefix = "scene"
+    _class_storage_load_db_class = None
+    _class_storage_attribute_name = "scenes"
+    _class_storage_search_fields = [
+        "scene_id", "node_type", "machine_label", "label"
+    ]
+    _class_storage_sort_key = "machine_label"
 
-        or:
-
-            >>> if "tv time" in self._Scenes:
-
-        :raises YomboWarning: Raised when request is malformed.
-        :param scene_requested: The scene ID or machine_label to search for.
-        :type scene_requested: string
-        :return: Returns true if exists, otherwise false.
-        :rtype: bool
-        """
-        try:
-            self.get(scene_requested)
-            return True
-        except:
-            return False
-
-    def __getitem__(self, scene_requested):
-        """
-        Looks for a scene based on trigger ID or trigger machine_label and returns the scene.
-
-        Attempts to find the device requested using a couple of methods.
-
-            >>> off_cmd = self._Scenes["137ab129da9318"]  #by id
-
-        or:
-
-            >>> off_cmd = self._Scenes["bed_time"]  #by label & machine_label
-
-        :raises YomboWarning: Raised when request is malformed.
-        :raises KeyError: Raised when request is not found.
-        :param scene_requested: The scene ID or machine_label to search for.
-        :type scene_requested: string
-        :return: A pointer to the scene instance.
-        :rtype: instance
-        """
-        return self.get(scene_requested)
-
-    def __setitem__(self, scene_requested, value):
-        """
-        Sets are not allowed. Raises exception.
-
-        :raises Exception: Always raised.
-        """
-        raise Exception("Not allowed.")
-
-    def __delitem__(self, scene_requested):
-        """
-        Deletes are not allowed. Raises exception.
-
-        :raises Exception: Always raised.
-        """
-        raise Exception("Not allowed.")
-
-    def __iter__(self):
-        """ iter scenes. """
-        return self.scenes.__iter__()
-
-    def __len__(self):
-        """
-        Returns an int of the number of scenes configured.
-
-        :return: The number of scenes configured.
-        :rtype: int
-        """
-        return len(self.scenes)
-
-    def __str__(self):
-        """
-        Returns the name of the library.
-        :return: Name of the library
-        :rtype: string
-        """
-        return "Yombo scenes library"
-
-    def keys(self):
-        """
-        Returns the keys (scene ID's) that are configured.
-
-        :return: A list of scene IDs.
-        :rtype: list
-        """
-        return list(self.scenes.keys())
-
-    def items(self):
-        """
-        Gets a list of tuples representing the scenes configured.
-
-        :return: A list of tuples.
-        :rtype: list
-        """
-        return list(self.scenes.items())
-    
     def _init_(self):
         """
         Defines library variables.
 
         :return:
         """
-        self.scenes = {}  # store all scenes
         self.scenes_running = {}  # tracks if scene is running, stopping, or stopped
         self.scene_templates = {}  # hold any templates for scenes here for caching.
         self.scene_types_extra = {}  # any addition action types, fill by _scene_action_list_ hook.

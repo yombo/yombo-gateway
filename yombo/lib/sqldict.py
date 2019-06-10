@@ -61,14 +61,6 @@ class SQLDict(YomboLibrary):
     """
     Provide a database backed persistent dictionary.
     """
-    def __str__(self):
-        """
-        Returns the name of the library.
-        :return: Name of the library
-        :rtype: string
-        """
-        return "Yombo sql dictionary library"
-
     def _init_(self,):
         """
         Sets up a few variables. Doesn't do much.
@@ -150,7 +142,7 @@ class SQLDict(YomboLibrary):
                     else:
                         safe_data[key] = item
 
-                yield self._Libraries["localdb"].set_sql_dict(di["component_name"],
+                yield self._LocalDB.set_sql_dict(di["component_name"],
                         di["dict_name"], safe_data)
                 di["dirty"] = False
 
@@ -205,7 +197,7 @@ class SQLDictionary(dict):
     @inlineCallbacks
     def load(self):
         self.__load = True  # only true when loaded, don't save what was just loaded.
-        results = yield self._Parent._Libraries["localdb"].get_sql_dict(self.__component_name, self.__dict_name)
+        results = yield self._Parent._LocalDB.get_sql_dict(self.__component_name, self.__dict_name)
         if len(results) != 1:
             return None
 

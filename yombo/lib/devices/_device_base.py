@@ -1002,8 +1002,8 @@ class Device_Base(object):
                 logger.debug("Get is about to call search...: {command_requested}", command_requested=command_requested)
                 results = do_search_instance(search_attributes,
                                              commands,
-                                             self._Parent._class_storage_fields,
-                                             allowed_keys=self._Parent._Commands._class_storage_fields,
+                                             self._Parent._class_storage_search_fields,
+                                             allowed_keys=self._Parent._Commands._class_storage_search_fields,
                                              limiter=.89,
                                              max_results=1)
 
@@ -1120,7 +1120,6 @@ class Device_Base(object):
                 }
 
         yield self._Parent._LocalDB.upsert_device(self)
-        yield self.device_variables()  # Update device variables cache
 
         return {
             "status": "success",

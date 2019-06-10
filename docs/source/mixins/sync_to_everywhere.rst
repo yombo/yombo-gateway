@@ -1,21 +1,21 @@
-.. index:: magicattributesmixin
+.. index:: sync_to_everywhere_mixin
 
-.. _magicattributesmixin:
+.. _sync_to_everywhere_mixin:
 
-.. currentmodule:: yombo.mixins.magicattributesmixin
+.. currentmodule:: yombo.mixins.sync_to_everywhere_mixin
 
 .. meta::
-   :description: Mixin class to add various Yombo library references.
-   :keywords: mixin, libraries, magic attributes
+   :description: Syncs the class database attribute to multiple places.
+   :keywords: mixin, libraries, amqp, database,  yombo api
 
 ================================================================
-MagicAttributesMixin (yombo.mixins.magicattributesmixin)
+SyncToEverywhereMixin (yombo.mixins.sync_to_everywhere_mixin)
 ================================================================
-.. automodule:: yombo.mixins.magicattributesmixin
+.. automodule:: yombo.mixins.sync_to_everywhere_mixin
 
-MagicAttributesMixin Class
+SyncToEverywhereMixin Class
 ================================================================
-.. autoclass:: MagicAttributesMixin
+.. autoclass:: SyncToEverywhereMixin
    :members:
    :special-members:
    :private-members:

@@ -39,7 +39,7 @@ Stops components in the following phases. Modules first, then libraries.
 """
 # Import python libraries
 import asyncio
-from collections import OrderedDict, Callable
+from collections import Callable
 import os.path
 from packaging.requirements import Requirement as pkg_requirement
 from random import randint
@@ -55,6 +55,7 @@ from functools import reduce
 client._HTTP11ClientFactory.noisy = False
 
 # Import Yombo libraries
+from yombo.core.entity import Entity
 from yombo.core.exceptions import YomboCritical, YomboWarning, YomboHookStopProcessing
 from yombo.classes.fuzzysearch import FuzzySearch
 from yombo.core.library import YomboLibrary
@@ -63,7 +64,7 @@ import yombo.utils
 
 logger = get_logger("library.loader")
 
-HARD_LOAD = OrderedDict()
+HARD_LOAD = {}
 HARD_LOAD["Events"] = {"operating_mode": "all"}
 HARD_LOAD["Calllater"] = {"operating_mode": "all"}
 HARD_LOAD["Cache"] = {"operating_mode": "all"}
@@ -90,11 +91,13 @@ HARD_LOAD["AMQP"] = {"operating_mode": "run"}
 HARD_LOAD["CronTab"] = {"operating_mode": "all"}
 HARD_LOAD["Times"] = {"operating_mode": "all"}
 HARD_LOAD["Commands"] = {"operating_mode": "all"}
+HARD_LOAD["VariableData"] = {"operating_mode": "all"}
+HARD_LOAD["VariableFields"] = {"operating_mode": "all"}
+HARD_LOAD["VariableGroups"] = {"operating_mode": "all"}
 HARD_LOAD["DeviceCommandInputs"] = {"operating_mode": "all"}
 HARD_LOAD["DeviceTypeCommands"] = {"operating_mode": "all"}
 HARD_LOAD["DeviceTypes"] = {"operating_mode": "all"}
 HARD_LOAD["InputTypes"] = {"operating_mode": "all"}
-HARD_LOAD["Variables"] = {"operating_mode": "all"}
 HARD_LOAD["ModuleDeviceTypes"] = {"operating_mode": "all"}
 HARD_LOAD["Modules"] = {"operating_mode": "all"}
 HARD_LOAD["Devices"] = {"operating_mode": "all"}
@@ -102,7 +105,7 @@ HARD_LOAD["DeviceCommands"] = {"operating_mode": "all"}
 HARD_LOAD["SystemDataHandler"] = {"operating_mode": "run"}
 HARD_LOAD["AMQPYombo"] = {"operating_mode": "run"}
 HARD_LOAD["Gateways"] = {"operating_mode": "all"}
-HARD_LOAD["Gateway_Communications"] = {"operating_mode": "all"}
+HARD_LOAD["GatewayCommunications"] = {"operating_mode": "all"}
 HARD_LOAD["DownloadModules"] = {"operating_mode": "run"}
 HARD_LOAD["Nodes"] = {"operating_mode": "all"}
 HARD_LOAD["MQTT"] = {"operating_mode": "run"}
@@ -117,10 +120,10 @@ HARD_LOAD["AuthKeys"] = {"operating_mode": "all"}
 HARD_LOAD["Intents"] = {"operating_mode": "all"}
 HARD_LOAD["Storage"] = {"operating_mode": "all"}
 
-HARD_UNLOAD = OrderedDict()
+HARD_UNLOAD = {}
 HARD_UNLOAD["Users"] = {"operating_mode": "all"}
 HARD_UNLOAD["Gateways"] = {"operating_mode": "all"}
-HARD_UNLOAD["Gateway_Communications"] = {"operating_mode": "all"}
+HARD_UNLOAD["GatewayCommunications"] = {"operating_mode": "all"}
 HARD_UNLOAD["SSLCerts"] = {"operating_mode": "all"}
 HARD_UNLOAD["Scenes"] = {"operating_mode": "all"}
 HARD_UNLOAD["Automation"] = {"operating_mode": "all"}
@@ -154,7 +157,9 @@ HARD_UNLOAD["MQTT"] = {"operating_mode": "run"}
 HARD_UNLOAD["SQLDict"] = {"operating_mode": "all"}
 HARD_UNLOAD["AMQP"] = {"operating_mode": "run"}
 HARD_UNLOAD["Modules"] = {"operating_mode": "all"}
-HARD_UNLOAD["Variables"] = {"operating_mode": "all"}
+HARD_UNLOAD["VariableData"] = {"operating_mode": "all"}
+HARD_UNLOAD["VariableFields"] = {"operating_mode": "all"}
+HARD_UNLOAD["VariableGroups"] = {"operating_mode": "all"}
 HARD_UNLOAD["DownloadModules"] = {"operating_mode": "run"}
 HARD_UNLOAD["Queue"] = {"operating_mode": "all"}
 HARD_UNLOAD["Events"] = {"operating_mode": "all"}
@@ -225,7 +230,7 @@ class Loader(YomboLibrary):
     @operating_mode.setter
     def operating_mode(self, val):
         if RUN_PHASE[self.__run_phase] > 500:
-            self.loadedLibraries["states"]["loader.operating_mode"] = val
+            self.loaded_libraries["states"]["loader.operating_mode"] = val
             if val == 'run':
                 logger.debug("Operating mode set to: {mode}", mode=val)
             else:
@@ -247,7 +252,7 @@ class Loader(YomboLibrary):
     @_run_phase.setter
     def _run_phase(self, val):
         if RUN_PHASE[val] > 500:
-            self.loadedLibraries["states"]["loader.run_phase"] = val
+            self.loaded_libraries["states"]["loader.run_phase"] = val
         self.__run_phase = val
 
     def __getitem__(self, component_requested):
@@ -256,12 +261,12 @@ class Loader(YomboLibrary):
         modules.
         """
         logger.debug("looking for: {component_requested}", component_requested=component_requested)
-        if component_requested in self.loadedComponents:
-            logger.debug("found by loadedComponents! {component_requested}", component_requested=component_requested)
-            return self.loadedComponents[component_requested]
-        elif component_requested in self.loadedLibraries:
-            logger.debug("found by loadedLibraries! {component_requested}", component_requested=component_requested)
-            return self.loadedLibraries[component_requested]
+        if component_requested in self.loaded_components:
+            logger.debug("found by loaded_components! {component_requested}", component_requested=component_requested)
+            return self.loaded_components[component_requested]
+        elif component_requested in self.loaded_libraries:
+            logger.debug("found by loaded_libraries! {component_requested}", component_requested=component_requested)
+            return self.loaded_libraries[component_requested]
         elif component_requested in self._moduleLibrary:
             logger.debug("found by self._moduleLibrary! {component_requested}", component_requested=self._moduleLibrary)
             return self._moduleLibrary[component_requested]
@@ -269,9 +274,10 @@ class Loader(YomboLibrary):
             raise YomboWarning(f"Loader could not find requested component: {{component_requested}}",
                                "101", "__getitem__", "loader")
 
-    def __init__(self, testing=False, loop=None):
-        self._Loader = self  # needed for reference when for modules -> magic attributes mixin.
-        super().__init__(self, _dont_call_entity_init=True)
+    def __init__(self, testing=False):
+        # self._Loader = self  # needed for reference when for modules -> magic attributes mixin.
+        super().__init__(self)
+        Entity._Root = self  # Configures the _Root attributes within the Entity class.
         self.startup_events_queue = []
         self._operating_mode = "system_init"
         self.__run_phase = "system_init"
@@ -282,9 +288,8 @@ class Loader(YomboLibrary):
 
         self.requirements = {}  # Track which python modules are required
 
-        self.loadedComponents = FuzzySearch({self._FullName.lower(): self}, .95)
-        self.loadedLibraries = FuzzySearch({self._Name.lower(): self}, .95)
-        self.libraryNames = {}
+        self.loaded_components = FuzzySearch({self._ClassPath.lower(): self}, .95)
+        self.loaded_libraries = FuzzySearch({self._Name.lower(): self}, .95)
         self._invoke_list_cache = {}  # Store a list of hooks that exist or not. A cache.
         self._operating_mode = None  # One of: first_run, config, run
         self.sigint = False  # will be set to true if SIGINT is received
@@ -292,13 +297,16 @@ class Loader(YomboLibrary):
 
         reactor.addSystemEventTrigger("before", "shutdown", self.shutdown)
 
+    # @inlineCallbacks
     def shutdown(self):
         """
         This is called if SIGINT (ctrl-c) was caught. Very useful incase it was called during startup.
         :return:
         """
+        # logger.info("Yombo Gateway stopping.")
         self._run_phase = "shutdown"
         self.sigint = True
+        # yield self.unload()
 
     @inlineCallbacks
     def start(self):  # on startup, load libraries, then modules
@@ -331,7 +339,7 @@ class Loader(YomboLibrary):
         yield self.import_libraries()  # import and init all libraries
         logger.info("Importing libraries, this can take a few moments.")
 
-        self._Configs = self.loadedLibraries["configuration"]
+        self._Configs = self.loaded_libraries["configuration"]
 
         if self.sigint:
             return
@@ -369,7 +377,7 @@ class Loader(YomboLibrary):
                 HARD_LOAD[name]["_load_"] = False
             self._log_loader("debug", name, "library", "load", "Finished call to _load_.")
 
-        self._moduleLibrary = self.loadedLibraries["modules"]
+        self._moduleLibrary = self.loaded_libraries["modules"]
 
         # Sets run phase to modules_pre_init and then modules_init'
         yield self._moduleLibrary.init_modules()
@@ -413,7 +421,7 @@ class Loader(YomboLibrary):
             else:
                 HARD_LOAD[name]["_started_"] = False
 
-        self.loadedLibraries["notifications"].add(
+        self.loaded_libraries["notifications"].add(
             {"title": "System started",
              "message": "System successfully started.",
              "timeout": 300,
@@ -425,7 +433,7 @@ class Loader(YomboLibrary):
 
         for event in self.startup_events_queue:
             created_at=event.pop()
-            self.loadedLibraries["events"].new(*event, created_at=created_at)
+            self.loaded_libraries["events"].new(*event, created_at=created_at)
         self.startup_events_queue = None
         self._run_phase = "gateway_running"
         logger.info("Yombo Gateway started.")
@@ -470,12 +478,12 @@ class Loader(YomboLibrary):
 
         try:
             pkg_info = yield yombo.utils.get_python_package_info(line, events_queue=self.startup_events_queue)
-            logger.debug("Processing requirement: results: {results}", results=pkg_info)
+            # logger.debug("Processing requirement: results: {results}", results=pkg_info)
             if pkg_info is None:
                 return
         except YomboWarning as e:
             raise YomboCritical(e.message)
-        logger.debug("Have requirement details...")
+        # logger.debug("Have requirement details...")
         if pkg_info is not None:
             save_info = {
                 "name": pkg_info.project_name,
@@ -534,7 +542,6 @@ class Loader(YomboLibrary):
         """
         logger.debug("Importing gateway libraries.")
         self._run_phase = "libraries_import"
-        logger.debug("Importing gateway libraries.2")
         for name, config in HARD_LOAD.items():
             if self.sigint:
                 return
@@ -544,7 +551,7 @@ class Loader(YomboLibrary):
             HARD_LOAD[name]["__init__"] = True
 
             component = name.lower()
-            library = self.loadedLibraries[component]
+            library = self.loaded_libraries[component]
             if hasattr(library, "_pre_init_") and isinstance(library._pre_init_, Callable) \
                     and yombo.utils.get_method_definition_level(library._pre_init_) != "yombo.core.module.YomboModule":
                 d = Deferred()
@@ -553,76 +560,79 @@ class Loader(YomboLibrary):
                 d.callback(1)
                 yield d
 
-        for name, config in HARD_LOAD.items():
-            component = name.lower()
-            library = self.loadedLibraries[component]
-            self._log_loader("debug", name, "library", "_init_", "About to call _entity_init_")
-            self._entity_init_()
+        logger.debug("Done importing, about to setup Entity class.")
+        Entity._Configure_Entity_Class_Do_Not_Call_Me_By_My_Name_()  # Configures the _Root attributes within the Entity class.
+
+        logger.debug("Done with Entity setup, about to start _init_'s.")
 
         logger.debug("Calling init functions of libraries.")
         self._run_phase = "libraries_init"
         for name, config in HARD_LOAD.items():
+            # logger.debug("Library: {name}", name=name)
             if self.sigint:
                 return
             HARD_LOAD[name]["_init_"] = False
             # self._log_loader("debug", name, "library", "init", "About to call _init_.")
             component = name.lower()
-            library = self.loadedLibraries[component]
+            library = self.loaded_libraries[component]
             library._event_loop = self.event_loop
-            library._AMQP = self.loadedLibraries["amqp"]
-            library._AMQPYombo = self.loadedLibraries["amqpyombo"]
-            library._Atoms = self.loadedLibraries["atoms"]
-            library._AuthKeys = self.loadedLibraries["authkeys"]
-            library._Automation = self.loadedLibraries["automation"]
-            library._Cache = self.loadedLibraries["cache"]
-            library._CallLater = self.loadedLibraries["calllater"]
-            library._Commands = self.loadedLibraries["commands"]
-            library._Configs = self.loadedLibraries["configuration"]
-            library._CronTab = self.loadedLibraries["crontab"]
-            library._Events = self.loadedLibraries["events"]
-            library._Devices = self.loadedLibraries["devices"]
-            library._DeviceCommands = self.loadedLibraries["devicecommands"]
-            library._DeviceCommandInputs = self.loadedLibraries["devicecommandinputs"]
-            library._DeviceTypeCommands = self.loadedLibraries["devicetypecommands"]
-            library._DeviceTypes = self.loadedLibraries["devicetypes"]
-            library._Discovery = self.loadedLibraries["discovery"]
-            library._DownloadModules = self.loadedLibraries["downloadmodules"]
-            library._Gateways = self.loadedLibraries["gateways"]
-            library._GatewayComs = self.loadedLibraries["gateways_communications"]
-            library._GPG = self.loadedLibraries["gpg"]
-            library._Hash = self.loadedLibraries["hash"]
-            library._HashIDS = self.loadedLibraries["hashids"]
-            library._InputTypes = self.loadedLibraries["inputtypes"]
-            library._Intents = self.loadedLibraries["intents"]
-            library._Locations = self.loadedLibraries["locations"]
-            library._Libraries = self.loadedLibraries
+            library._AMQP = self.loaded_libraries["amqp"]
+            library._AMQPYombo = self.loaded_libraries["amqpyombo"]
+            library._Atoms = self.loaded_libraries["atoms"]
+            library._AuthKeys = self.loaded_libraries["authkeys"]
+            library._Automation = self.loaded_libraries["automation"]
+            library._Cache = self.loaded_libraries["cache"]
+            library._CallLater = self.loaded_libraries["calllater"]
+            library._Commands = self.loaded_libraries["commands"]
+            library._Configs = self.loaded_libraries["configuration"]
+            library._CronTab = self.loaded_libraries["crontab"]
+            library._Events = self.loaded_libraries["events"]
+            library._Devices = self.loaded_libraries["devices"]
+            library._DeviceCommands = self.loaded_libraries["devicecommands"]
+            library._DeviceCommandInputs = self.loaded_libraries["devicecommandinputs"]
+            library._DeviceTypeCommands = self.loaded_libraries["devicetypecommands"]
+            library._DeviceTypes = self.loaded_libraries["devicetypes"]
+            library._Discovery = self.loaded_libraries["discovery"]
+            library._DownloadModules = self.loaded_libraries["downloadmodules"]
+            library._Gateways = self.loaded_libraries["gateways"]
+            library._GatewayComs = self.loaded_libraries["gatewayscommunications"]
+            library._GPG = self.loaded_libraries["gpg"]
+            library._Hash = self.loaded_libraries["hash"]
+            library._HashIDS = self.loaded_libraries["hashids"]
+            library._InputTypes = self.loaded_libraries["inputtypes"]
+            library._Intents = self.loaded_libraries["intents"]
+            library._Locations = self.loaded_libraries["locations"]
             library._Loader = self
-            library._Localize = self.loadedLibraries["localize"]
-            library._LocalDB = self.loadedLibraries["localdb"]
-            library._Locations = self.loadedLibraries["locations"]
+            library._Localize = self.loaded_libraries["localize"]
+            library._LocalDB = self.loaded_libraries["localdb"]
+            library._Locations = self.loaded_libraries["locations"]
             library._Modules = self._moduleLibrary
-            library._ModuleDeviceTypes = self.loadedLibraries["moduledevicetypes"]
-            library._MQTT = self.loadedLibraries["mqtt"]
-            library._Nodes = self.loadedLibraries["nodes"]
-            library._Notifications = self.loadedLibraries["notifications"]
-            library._Queue = self.loadedLibraries["queue"]
-            library._Requests = self.loadedLibraries["requests"]
-            library._Scenes = self.loadedLibraries["scenes"]
-            library._SQLDict = self.loadedLibraries["sqldict"]
-            library._SSLCerts = self.loadedLibraries["sslcerts"]
-            library._Startup = self.loadedLibraries["startup"]
-            library._States = self.loadedLibraries["states"]
-            library._Statistics = self.loadedLibraries["statistics"]
-            library._Storage = self.loadedLibraries["storage"]
-            library._Tasks = self.loadedLibraries["tasks"]
-            library._Template = self.loadedLibraries["template"]
-            library._Times = self.loadedLibraries["times"]
-            library._YomboAPI = self.loadedLibraries["yomboapi"]
-            library._Users = self.loadedLibraries["users"]
-            library._Variables = self.loadedLibraries["variables"]
-            library._Validate = self.loadedLibraries["validate"]
-            library._WebInterface = self.loadedLibraries["webinterface"]
-            library._WebSessions = self.loadedLibraries["websessions"]
+            library._ModuleDeviceTypes = self.loaded_libraries["moduledevicetypes"]
+            library._MQTT = self.loaded_libraries["mqtt"]
+            library._Nodes = self.loaded_libraries["nodes"]
+            library._Notifications = self.loaded_libraries["notifications"]
+            library._Queue = self.loaded_libraries["queue"]
+            library._Requests = self.loaded_libraries["requests"]
+            library._Scenes = self.loaded_libraries["scenes"]
+            library._SQLDict = self.loaded_libraries["sqldict"]
+            library._SSLCerts = self.loaded_libraries["sslcerts"]
+            library._Startup = self.loaded_libraries["startup"]
+            library._States = self.loaded_libraries["states"]
+            library._Statistics = self.loaded_libraries["statistics"]
+            library._Storage = self.loaded_libraries["storage"]
+            library._Tasks = self.loaded_libraries["tasks"]
+            library._Template = self.loaded_libraries["template"]
+            library._Times = self.loaded_libraries["times"]
+            library._YomboAPI = self.loaded_libraries["yomboapi"]
+            library._Users = self.loaded_libraries["users"]
+            library._VariableData = self.loaded_libraries["variabledata"]
+            library._VariableFields = self.loaded_libraries["variablefields"]
+            library._VariableGroups = self.loaded_libraries["variablegroups"]
+            library._Validate = self.loaded_libraries["validate"]
+            library._WebInterface = self.loaded_libraries["webinterface"]
+            library._WebSessions = self.loaded_libraries["websessions"]
+
+            # self._log_loader("debug", name, "library", "init", "Done with load magic attributes.")
 
             if self.check_operating_mode(config["operating_mode"]) is False:
                 continue
@@ -649,7 +659,7 @@ class Loader(YomboLibrary):
                 d.callback(1)
                 yield d
 
-        yombo.utils.setup_yombo_references(self.loadedLibraries["amqp"])
+        yombo.utils.setup_yombo_references(self.loaded_libraries["amqp"])
 
     def check_operating_mode(self, allowed):
         """
@@ -689,7 +699,7 @@ class Loader(YomboLibrary):
         Invokes a hook for a a given library. Passes kwargs in, returns the results to caller.
         """
         requested_library = requested_library.lower()
-        if requested_library not in self.loadedLibraries:
+        if requested_library not in self.loaded_libraries:
             raise YomboWarning(f"Requested library is missing: {requested_library}")
 
         if "called_by" not in kwargs:
@@ -704,7 +714,7 @@ class Loader(YomboLibrary):
                 if self._invoke_list_cache[cache_key] is False:
                     # logger.warn("Cache hook ({cache_key})...SKIPPED", cache_key=cache_key)
                     continue  # skip. We already know function doesn"t exist.
-            library = self.loadedLibraries[requested_library]
+            library = self.loaded_libraries[requested_library]
             if requested_library == "Loader":
                 return
             if not (hook.startswith("_") and hook.endswith("_")):
@@ -759,7 +769,7 @@ class Loader(YomboLibrary):
         if "components" in kwargs:
             to_process = kwargs["components"]
         else:
-            for library_name, library in self.loadedLibraries.items():
+            for library_name, library in self.loaded_libraries.items():
                 label = library._FullName.lower() if fullName else library._Name.lower()
                 to_process[library_name] = label
         if "stoponerror" in kwargs:
@@ -768,7 +778,7 @@ class Loader(YomboLibrary):
             kwargs["stoponerror"] = False
             stoponerror = False
 
-        for library_name, library in self.loadedLibraries.items():
+        for library_name, library in self.loaded_libraries.items():
             # logger.debug("invoke all:{libraryName} -> {hook}", libraryName=library_name, hook=hook )
             try:
                 result = yield self.library_invoke(library_name, hook, **kwargs)
@@ -796,6 +806,7 @@ class Loader(YomboLibrary):
         except AttributeError:
             self._log_loader("error", componentName, componentType, "import", f"Not found. Path: {pathName}")
             logger.error("Library or Module not found: {pathName}", pathName=pathName)
+            return
         try:
             module_root = __import__(pymodulename, globals(), locals(), [], 0)
         except ImportError as detail:
@@ -814,6 +825,7 @@ class Loader(YomboLibrary):
                         etype=type(e), msg=e)
             logger.error("--------------------------------------------------------")
             raise ImportError(e)
+
         module_tail = reduce(lambda p1, p2: getattr(p1, p2), [module_root, ]+pymodulename.split(".")[1:])
         klass = getattr(module_tail, pyclassname)
 
@@ -824,20 +836,20 @@ class Loader(YomboLibrary):
 
         try:
             # Instantiate the class
-            logger.debug("Instantiate class: {pyclassname}", pyclassname=pyclassname)
+            # logger.debug("Instantiate class: {pyclassname}", pyclassname=pyclassname)
             if componentType == "library":
-                moduleinst = klass(self, _dont_call_entity_init=True)  # Start the library class
+                moduleinst = klass()  # Start the library class
                 if componentName.lower() == "modules":
                     self._moduleLibrary = moduleinst
-                self.loadedComponents["yombo.gateway.lib." + str(componentName.lower())] = moduleinst
-                self.loadedLibraries[str(componentName.lower())] = moduleinst
+                self.loaded_components["yombo.lib." + str(componentName.lower())] = moduleinst
+                self.loaded_libraries[str(componentName.lower())] = moduleinst
                 # this is mostly for manhole module, but maybe useful elsewhere?
                 temp = componentName.split(".")
-                self.libraryNames[temp[-1]] = moduleinst
             else:
                 moduleinst = klass(self)  # Start the modules class, send the parent.
-                self.loadedComponents["yombo.gateway.modules." + str(componentName.lower())] = moduleinst
+                self.loaded_components["yombo.modules." + str(componentName.lower())] = moduleinst
                 return moduleinst, componentName.lower()
+            # logger.debug("Instantiate class: {pyclassname}, done.", pyclassname=pyclassname)
 
         except YomboCritical as e:
             logger.debug("@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
@@ -869,17 +881,33 @@ class Loader(YomboLibrary):
 #        logger.error("Error type: %s  %s", err.type, err.value)
         err.raiseException()
 
+    def get_library(self, name):
+        """ Get a library by it's name. """
+        try:
+            return self.loaded_libraries(name.lower())
+        except KeyError:
+            raise KeyError("No such library: " + str(name))
+
+
+    def get_module(self, name):
+        """ Get a module by it's name. """
+        try:
+            return self._Modules.loaded_modules(name.lower())
+        except KeyError:
+            raise KeyError("No such module: " + str(name))
+
+
     def get_loaded_component(self, name):
         """
         Returns loaded module object by name. Module must be loaded.
         """
-        return self.loadedComponents[name.lower()]
+        return self.loaded_components[name.lower()]
 
     def get_all_loaded_components(self):
         """
         Returns loaded module object by name. Module must be loaded.
         """
-        return self.loadedComponents
+        return self.loaded_components
 
     def find_function(self, component_type, component_name, component_function):
         """
@@ -896,13 +924,13 @@ class Loader(YomboLibrary):
         """
 
         if component_type == "library":
-            if component_name not in self.loadedLibraries:
-                logger.info("Library not found: {loadedLibraries}", loadedLibraries=self.loadedLibraries)
+            if component_name not in self.loaded_libraries:
+                logger.info("Library not found: {loaded_libraries}", loaded_libraries=self.loaded_libraries)
                 raise YomboWarning("Cannot library name.")
 
             if isinstance(component_function, list):
-                if hasattr(self.loadedLibraries[component_name], component_function[0]):
-                    remote_attribute = getattr(self.loadedLibraries[component_name], component_function[0]) # the dictionary
+                if hasattr(self.loaded_libraries[component_name], component_function[0]):
+                    remote_attribute = getattr(self.loaded_libraries[component_name], component_function[0]) # the dictionary
                     if component_function[1] in remote_attribute:
                         if not isinstance(remote_attribute[component_function[1]], Callable): # the key should be callable.
                             logger.info(
@@ -913,8 +941,8 @@ class Loader(YomboLibrary):
                             logger.info("Look ma, I found a cool function here.")
                             return remote_attribute[component_function[1]]
             else:
-                if hasattr(self.loadedLibraries[component_name], component_function):
-                    method = getattr(self.loadedLibraries[component_name], component_function)
+                if hasattr(self.loaded_libraries[component_name], component_function):
+                    method = getattr(self.loaded_libraries[component_name], component_function)
                     if not isinstance(method, Callable):
                         logger.info(
                             "Could not find callable modoule function by name: '{component_type} :: {component_name} :: {component_function}'",
@@ -973,6 +1001,16 @@ def get_loader():
 def get_the_loaded_components():
     global _loader
     return _loader.get_all_loaded_components()
+
+
+def get_library(name):
+    global _loader
+    return _loader.get_library(name)
+
+
+def get_module(name):
+    global _loader
+    return _loader.get_module(name)
 
 
 def stop_loader():

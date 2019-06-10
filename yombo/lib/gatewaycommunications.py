@@ -43,7 +43,7 @@ from yombo.utils import random_int, data_pickle, data_unpickle, random_string, s
 logger = get_logger("library.gateway_communications")
 
 
-class Gateway_Communications(YomboLibrary):
+class GatewayCommunications(YomboLibrary):
     ok_to_publish_updates = False
 
     def _init_(self, **kwargs):

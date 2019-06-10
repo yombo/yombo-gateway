@@ -20,13 +20,13 @@ from time import time
 # Import Yombo libraries
 from yombo.core.entity import Entity
 from yombo.core.log import get_logger
-from yombo.mixins.sync_to_everywhere import SyncToEverywhere
+from yombo.mixins.sync_to_everywhere_mixin import SyncToEverywhereMixin
 from yombo.utils import random_string
 
 logger = get_logger("library.devices.device")
 
 
-class Device_State(Entity, SyncToEverywhere):
+class Device_State(Entity, SyncToEverywhereMixin):
     """
     The device state class represents a single state data point for a device.
     """
@@ -65,9 +65,6 @@ class Device_State(Entity, SyncToEverywhere):
         self._internal_label = "device_states"  # Used by mixins
         self._can_have_fake_data = True
         super().__init__(parent)
-
-        self._FullName = "yombo.gateway.lib.Devices.DeviceStatus"
-        self._Name = "Devices.DeviceStatus"
 
         self.device = device
         self.command = None

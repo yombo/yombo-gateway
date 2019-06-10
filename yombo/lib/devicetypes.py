@@ -30,16 +30,138 @@ from twisted.internet.defer import inlineCallbacks
 from yombo.core.entity import Entity
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
-from yombo.mixins.library_search_mixin import LibrarySearchMixin
 from yombo.core.log import get_logger
-from yombo.mixins.sync_to_everywhere import SyncToEverywhere
+from yombo.mixins.library_db_child_mixin import LibraryDBChildMixin
+from yombo.mixins.sync_to_everywhere_mixin import SyncToEverywhereMixin
+from yombo.mixins.library_db_model_mixin import LibraryDBModelMixin
+from yombo.mixins.library_search_mixin import LibrarySearchMixin
 from yombo.utils import do_search_instance
-from yombo.utils.hookinvoke import global_invoke_all
 
 logger = get_logger("library.devicetypes")
 
 
-class DeviceTypes(YomboLibrary, LibrarySearchMixin):
+class DeviceType(Entity, LibraryDBChildMixin, SyncToEverywhereMixin):
+    """
+    A class to manage a single device type.
+    :ivar label: Device type label
+    :ivar description: The description of the device type.
+    :ivar inputTypeID: The type of input that is required as a variable.
+    """
+    _primary_column = "device_type_id"  # Used by mixins
+
+    def __init__(self, parent, incoming, source=None):
+        """
+        A device type object used to lookup more information. Any changes to this record will be updated
+        into the database.
+
+        :cvar device_type_id: (string) The id of the device type.
+
+        :param incoming: A device type as passed in from the device types class. This is a
+            dictionary with various device type attributes.
+        """
+        self._Entity_type = "Device type"
+        self._Entity_label_attribute = "machine_label"
+
+        super().__init__(parent)
+        self._setup_class_model(incoming, source=source)
+
+    @property
+    def commands(self):
+        """
+        Gets available commands for the device type.
+        Loads available commands from the database. This should only be called when a device type is loaded,
+        notification that device type has been updated, or when device type commands have changed.
+        :return:
+        """
+        return self._Parent._DeviceTypeCommands.get_commands(self.device_type_id)
+        # logger.debug("Device type received command ids: {commands}", commands=commands)
+        # for command_id, command in commands.items():
+        #     try:
+        #         self.commands[command_id] = {
+        #             "command": self._Parent._Commands[command_id],
+        #             "inputs": {}
+        #         }
+        #     except KeyError:
+        #         logger.warn("Device type '{label}' is unable to find command: {command_id}",
+        #                     label=self.label, command_id=command_id)
+        #         continue
+        #     inputs = self._Parent._DeviceCommandInputs.get_by_ids(self.device_type_id, command_id)
+        #     for dci_id, dci in inputs.items():
+        #         self.commands[command_id]["inputs"][dci.machine_label] = dci
+
+    def update_attributes_preprocess(self, incoming):
+        """
+        Modify the incoming values before its saved.
+
+        :param device_type:
+        :return:
+        """
+        if "platform" in incoming:
+            if incoming["platform"] is None or incoming["platform"] == "":
+                incoming["platform"] = "all"
+
+    @property
+    def variable_fields(self):
+        """
+        Get variable fields for the current device type.
+
+        :return: Dictionary of dicts containing variable fields.
+        """
+        return self._VariableGroups.fields(
+            group_relation_type="device",
+            group_relation_id=self.device_type_id
+        )
+
+    def get_devices(self, gateway_id=None):
+        """
+        Return a dictionary of devices for a given device_type. Can be restricted to a specific gateway_id
+        if it's provided.
+
+        :return:
+        """
+        # if gateway_id is None:
+        #     gateway_id = self.gateway_id
+
+        search_attributes = [
+            {
+                "field": "device_type_id",
+                "value": self.device_type_id,
+                "limiter": 1,
+            }
+        ]
+
+        try:
+            results = do_search_instance(search_attributes,
+                                         self._Parent._Devices.devices,
+                                         self._Parent._class_storage_search_fields)
+
+            if results["was_found"]:
+                devices = {}
+                for device_id, device in results['values'].items():
+                    if gateway_id is not None:
+                        if device.gateway_id != gateway_id:
+                            continue
+                    devices[device_id] = device
+                return devices
+            else:
+                return {}
+        except YomboWarning as e:
+            raise KeyError(f"Get devices had problems: {e}")
+
+    def get_modules(self, return_value="id"):
+        """
+        Return a list of modules for a given device_type
+        :return:
+        """
+        if return_value == "id":
+            return list(self.registered_modules.keys())
+        elif return_value == "label":
+            return list(self.registered_modules.values())
+        else:
+            raise YomboWarning("get_modules requires either 'id' or 'label'")
+
+
+class DeviceTypes(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
     """
     Manages device type database tabels. Just simple update a module"s device types or device type"s available commands
     and any required database tables are updated. Also maintains a list of module device types and device type commands
@@ -48,130 +170,13 @@ class DeviceTypes(YomboLibrary, LibrarySearchMixin):
     device_types = {}
 
     # The following are used by get(), get_advanced(), search(), and search_advanced()
+    _class_storage_load_hook_prefix = "device_type"
+    _class_storage_load_db_class = DeviceType
     _class_storage_attribute_name = "device_types"
-    _class_storage_fields = [
-        "device_type_id", "input_type_id", "category_id", "label", "machine_label", "description",
-        "status", "always_load", "public"
+    _class_storage_search_fields = [
+        "device_type_id", "machine_label", "label", "category_id", "description", "platform"
     ]
-    _class_storage_sort_key = "node_type"
-
-    def __contains__(self, device_type_requested):
-        """
-        .. note:: The device type must be enabled to be found using this method. Use :py:meth:`get <DeviceTypes.get>`
-           to set status allowed.
-
-        Checks to if a provided device type id, label, or machine_label exists.
-
-        Simulate a dictionary when requested with:
-
-            >>> if "SDjs2a01k7czf12" in self._DeviceTypes:  #by id
-
-        or:
-
-            >>> if "x10_appliance" in self._DeviceTypes:  #by label
-
-        :raises YomboWarning: Raised when request is malformed.
-        :param device_type_requested: The device type ID, label, or machine_label to search for.
-        :type device_type_requested: string
-        :return: Returns true if exists, otherwise false.
-        :rtype: bool
-        """
-        try:
-            self.get(device_type_requested)
-            return True
-        except:
-            return False
-
-    def __getitem__(self, device_type_requested):
-        """
-        .. note:: The device type must be enabled to be found using this method. Use :py:meth:`get <DeviceTypes.get>`
-           to set status allowed.
-
-        Attempts to find the device type requested using a couple of methods.
-
-        Simulate a dictionary when requested with:
-
-            >>> my_light = self._Devices["SDjs2a01k7czf12"]  #by id
-
-        or:
-
-            >>> my_light = self._Devices["x10_appliance"]  #by name
-
-        :raises YomboWarning: Raised when request is malformed.
-        :raises KeyError: Raised when request is not found.
-        :param device_type_requested: The device type ID, label, or machine_label to search for.
-        :type device_type_requested: string
-        :return: A pointer to the device type instance.
-        :rtype: instance
-        """
-        return self.get(device_type_requested)
-
-    def __setitem__(self, device_type_requested, value):
-        """
-        Sets are not allowed. Raises exception.
-
-        :raises Exception: Always raised.
-        """
-        raise Exception("Not allowed.")
-
-    def __delitem__(self, **kwargs):
-        """
-        Deletes are not allowed. Raises exception.
-
-        :raises Exception: Always raised.
-        """
-        raise Exception("Not allowed.")
-
-    def __iter__(self):
-        """ iter device_types. """
-        return self.device_types.__iter__()
-
-    def __len__(self):
-        """
-        Returns an int of the number of device types configured.
-
-        :return: The number of device types configured.
-        :rtype: int
-        """
-        return len(self.device_types)
-
-    def __str__(self):
-        """
-        Returns the name of the library.
-        :return: Name of the library
-        :rtype: string
-        """
-        return "Yombo device types library"
-
-    def keys(self):
-        """
-        Returns the keys (device type ID's) that are configured.
-
-        :return: A list of device types IDs. 
-        :rtype: list
-        """
-        return list(self.device_types.keys())
-
-    def items(self):
-        """
-        Gets a list of tuples representing the device types configured.
-
-        :return: A list of tuples.
-        :rtype: list
-        """
-        return list(self.device_types.items())
-
-    def iteritems(self):
-        return iter(self.device_types.items())
-
-    def iterkeys(self):
-        return iter(self.device_types.keys())
-
-    def itervalues(self):
-        return iter(self.device_types.values())
-
-    def values(self):
-        return list(self.device_types.values())
+    _class_storage_sort_key = "machine_label"
 
     def _init_(self, **kwargs):
         """
@@ -208,68 +213,11 @@ class DeviceTypes(YomboLibrary, LibrarySearchMixin):
                         device_type_platforms[file_path] = []
                     device_type_platforms[file_path].append(name)
             except Exception as e:
-                logger.debug("Unable to import magic file {file_path}, reason: {e}", file_path=file_path, e=e)
+                logger.debug("D: Unable to import magic file {file_path}, reason: {e}", file_path=file_path, e=e)
                 pass
 
-        yield self._load_device_types_from_database()
+        yield self._class_storage_load_from_database()
         self.load_platforms(device_type_platforms)
-
-    @inlineCallbacks
-    def _load_device_types_from_database(self):
-        """
-        Loads device types from database and sends them to
-        :py:meth:`_load_device_type_into_memory <DeviceTypes._load_device_type_into_memory>`
-
-        This can be triggered either on system startup or when new/updated device types have been saved to the
-        database and we need to refresh existing device types.
-        """
-        device_types = yield self._LocalDB.get_device_types()
-        # logger.debug("device_types: {device_types}", device_types=device_types)
-        for device_type in device_types:
-            yield self._load_device_type_into_memory(device_type.__dict__)
-
-    @inlineCallbacks
-    def _load_device_type_into_memory(self, device_type, test_device_type=False):
-        """
-        Add a new device types to memory or update an existing device types.
-
-        **Hooks called**:
-
-        * _device_type_before_load_ : Called before the device type is loaded into memory
-        * _device_type_after_load_ : Called after the device type is loaded into memory
-
-        :param device_type: A dictionary of items required to either setup a new device type or update an existing one.
-        :type device_type: dict
-        :param test_device_type: Used for unit testing.
-        :type test_device_type: bool
-        :returns: Pointer to new device. Only used during unittest
-        """
-        logger.debug("device_type: {device_type}", device_type=device_type)
-
-        device_type_id = device_type["id"]
-        if device_type_id in self.device_types:
-            raise YomboWarning(f"Cannot add device type to memory, already exists: {device_type_id}")
-
-        try:
-            yield global_invoke_all("_device_types_before_load",
-                                    called_by=self,
-                                    device_type_id=device_type_id,
-                                    device_type=device_type,
-                                    )
-        except Exception:
-            pass
-        logger.debug("load: device_type: {device_type}", device_type=device_type)
-
-        self.device_types[device_type_id] = DeviceType(self, device_type)
-        yield self.device_types[device_type_id]._init_()  # Adds available commands to this.
-        try:
-            yield global_invoke_all("_device_types_after_load",
-                                    called_by=self,
-                                    device_type_id=device_type_id,
-                                    device_type=device_type,
-                                    )
-        except Exception:
-            pass
 
     def load_platforms(self, platforms):
         """
@@ -371,628 +319,3 @@ class DeviceTypes(YomboLibrary, LibrarySearchMixin):
 
         input_type_id = self.device_types[device_type_id].commands[command_id]["inputs"][dtc_machine_label]["input_type_id"]
         return self._InputTypes[input_type_id].validate(value)
-
-    @inlineCallbacks
-    def dev_device_type_add(self, data, **kwargs):
-        """
-        Add a module at the Yombo server level, not at the local gateway level.
-
-        :param data:
-        :param kwargs:
-        :return:
-        """
-        try:
-            for key in list(data.keys()):
-                if data[key] == "":
-                    data[key] = None
-                elif key in ["status"]:
-                    if data[key] is None or (isinstance(data[key], str) and data[key].lower() == "none"):
-                        del data[key]
-                    else:
-                        data[key] = int(data[key])
-        except Exception as e:
-            return {
-                "status": "failed",
-                "msg": "Couldn't add device type",
-                "apimsg": e,
-                "apimsghtml": e,
-                "device_id": "",
-            }
-
-        try:
-            if "session" in kwargs:
-                session = kwargs["session"]
-            else:
-                return {
-                    "status": "failed",
-                    "msg": "Couldn't add device type: User session missing.",
-                    "apimsg": "Couldn't add device type: User session missing.",
-                    "apimsghtml": "Couldn't add device type: User session missing.",
-                }
-
-            device_type_results = yield self._YomboAPI.request("POST", "/v1/device_type",
-                                                               data,
-                                                               session=session)
-        except YomboWarning as e:
-            return {
-                "status": "failed",
-                "msg": f"Couldn't add device type: {e.message}",
-                "apimsg": f"Couldn't add device type: {e.message}",
-                "apimsghtml": f"Couldn't add device type: {e.html_message}",
-            }
-
-        return {
-            "status": "success",
-            "msg": "Device type added.",
-            "data": device_type_results["data"],
-        }
-
-    @inlineCallbacks
-    def dev_device_type_edit(self, device_type_id, data, **kwargs):
-        """
-        Edit a module at the Yombo server level, not at the local gateway level.
-
-        :param data:
-        :param kwargs:
-        :return:
-        """
-        try:
-            for key in list(data.keys()):
-                if data[key] == "":
-                    data[key] = None
-                elif key in ["status"]:
-                    if data[key] is None or (isinstance(data[key], str) and data[key].lower() == "none"):
-                        del data[key]
-                    else:
-                        data[key] = int(data[key])
-        except Exception as e:
-            return {
-                "status": "failed",
-                "msg": "Couldn't add device type",
-                "apimsg": e,
-                "apimsghtml": e,
-                "device_id": "",
-            }
-
-        try:
-            if "session" in kwargs:
-                session = kwargs["session"]
-            else:
-                return {
-                    "status": "failed",
-                    "msg": "Couldn't edit device type: User session missing.",
-                    "apimsg": "Couldn't edit device type: User session missing.",
-                    "apimsghtml": "Couldn't edit device type: User session missing.",
-                }
-
-            device_type_results = yield self._YomboAPI.request("PATCH", f"/v1/device_type/{device_type_id}",
-                                                               data,
-                                                               session=session)
-        except YomboWarning as e:
-            return {
-                "status": "failed",
-                "msg": f"Couldn't edit device type: {e.message}",
-                "apimsg": f"Couldn't edit device type: {e.message}",
-                "apimsghtml": f"Couldn't edit device type: {e.html_message}",
-            }
-
-        return {
-            "status": "success",
-            "msg": "Device type edited.",
-            "data": device_type_results["data"],
-        }
-
-    @inlineCallbacks
-    def dev_device_type_delete(self, device_type_id, **kwargs):
-        """
-        Delete a device_type at the Yombo server level, not at the local gateway level.
-
-        :param device_type_id: The device_type ID to delete.
-        :param kwargs:
-        :return:
-        """
-        try:
-            if "session" in kwargs:
-                session = kwargs["session"]
-            else:
-                return {
-                    "status": "failed",
-                    "msg": "Couldn't delete device type: User session missing.",
-                    "apimsg": "Couldn't delete device type: User session missing.",
-                    "apimsghtml": "Couldn't delete device type: User session missing.",
-                }
-
-            results = yield self._YomboAPI.request("DELETE",
-                                                   f"/v1/device_type/{device_type_id}",
-                                                   session=session)
-        except YomboWarning as e:
-             return {
-                "status": "failed",
-                "msg": f"Couldn't delete device type: {e.message}",
-                "apimsg": f"Couldn't delete device type: {e.message}",
-                "apimsghtml": f"Couldn't delete device type: {e.html_message}",
-            }
-
-        return {
-            "status": "success",
-            "msg": "Device type deleted.",
-            "data": results["data"],
-        }
-
-    @inlineCallbacks
-    def dev_device_type_enable(self, device_type_id, **kwargs):
-        """
-        Enable a device_type at the Yombo server level, not at the local gateway level.
-
-        :param device_type_id: The device_type ID to enable.
-        :param kwargs:
-        :return:
-        """
-        api_data = {
-            "status": 1,
-        }
-
-        try:
-            if "session" in kwargs:
-                session = kwargs["session"]
-            else:
-                return {
-                    "status": "failed",
-                    "msg": "Couldn't enable device type: User session missing.",
-                    "apimsg": "Couldn't enable device type: User session missing.",
-                    "apimsghtml": "Couldn't enable device type: User session missing.",
-                }
-
-            results = yield self._YomboAPI.request("PATCH", f"/v1/device_type/{device_type_id}",
-                                                   api_data,
-                                                   session=session)
-        except YomboWarning as e:
-            return {
-                "status": "failed",
-                "msg": f"Couldn't enable device type: {e.message}",
-                "apimsg": f"Couldn't enable device type: {e.message}",
-                "apimsghtml": f"Couldn't enable device type: {e.html_message}",
-            }
-
-        return {
-            "status": "success",
-            "msg": "Device type enabled.",
-            "data": results["data"],
-        }
-
-    @inlineCallbacks
-    def dev_device_type_disable(self, device_type_id, **kwargs):
-        """
-        Enable a device_type at the Yombo server level, not at the local gateway level.
-
-        :param device_type_id: The device_type ID to disable.
-        :param kwargs:
-        :return:
-        """
-        api_data = {
-            "status": 0,
-        }
-
-        try:
-            if "session" in kwargs:
-                session = kwargs["session"]
-            else:
-                return {
-                    "status": "failed",
-                    "msg": "Couldn't disable device type: User session missing.",
-                    "apimsg": "Couldn't disable device type: User session missing.",
-                    "apimsghtml": "Couldn't disable device type: User session missing.",
-                }
-
-            results = yield self._YomboAPI.request("PATCH", f"/v1/device_type/{device_type_id}",
-                                                   api_data,
-                                                   session=session)
-        except YomboWarning as e:
-            return {
-                "status": "failed",
-                "msg": f"Couldn't disable device type: {e.message}",
-                "apimsg": f"Couldn't disable device type: {e.message}",
-                "apimsghtml": f"Couldn't disable device type: {e.html_message}",
-            }
-
-        return {
-            "status": "success",
-            "msg": "Device type disabled.",
-            "data": results["data"],
-        }
-
-    @inlineCallbacks
-    def dev_command_add(self, device_type_id, command_id, **kwargs):
-        """
-        Add a command to device type at the Yombo server level, not at the local gateway level.
-
-        :param device_type_id: The device_type ID to enable.
-        :param command_id: The command_id ID to add/associate.
-        :param kwargs:
-        :return:
-        """
-        api_data = {
-            "device_type_id": device_type_id,
-            "command_id": command_id,
-        }
-
-        try:
-            if "session" in kwargs:
-                session = kwargs["session"]
-            else:
-                return {
-                    "status": "failed",
-                    "msg": "Couldn't associate command to device type: User session missing.",
-                    "apimsg": "Couldn't associate command to device type: User session missing.",
-                    "apimsghtml": "Couldn't associate command to device type: User session missing.",
-                }
-
-            results = yield self._YomboAPI.request("POST", "/v1/device_type_command",
-                                                   api_data,
-                                                   session=session)
-        except YomboWarning as e:
-            return {
-                "status": "failed",
-                "msg": f"Couldn't associate command to device type: {e.message}",
-                "apimsg": f"Couldn't associate command to device type: {e.message}",
-                "apimsghtml": f"Couldn't associate command to device type: {e.message}",
-            }
-
-        return {
-            "status": "success",
-            "msg": "Associated command to device type.",
-            "data": results["data"],
-        }
-
-    @inlineCallbacks
-    def dev_command_input_add(self, device_type_id, command_id, input_type_id, data, **kwargs):
-        """
-        Associate an input type to a device type command at the Yombo server level, not at the local gateway level.
-
-        :param device_type_id: The device_type ID to enable.
-        :param command_id: The command_id ID to add/associate.
-        :param kwargs:
-        :return:
-        """
-        api_data = {
-            "device_type_id": device_type_id,
-            "command_id": command_id,
-            "input_type_id": input_type_id,
-            "label": data["label"],
-            "machine_label": data["machine_label"],
-            "encryption": data["encryption"],
-            "value_casing": data["value_casing"],
-            "live_update": data["live_update"],
-            "value_required":  data["value_required"],
-            "value_max":  data["value_max"],
-            "value_min":  data["value_min"],
-            "notes": data["notes"],
-        }
-
-        try:
-            if "session" in kwargs:
-                session = kwargs["session"]
-            else:
-                return {
-                    "status": "failed",
-                    "msg": "Couldn't associate input to device type command: User session missing.",
-                    "apimsg": "Couldn't associate input to device type command: User session missing.",
-                    "apimsghtml": "Couldn't associate input to device type command: User session missing.",
-                }
-
-            results = yield self._YomboAPI.request("POST", "/v1/device_command_input",
-                                                   api_data,
-                                                   session=session)
-        except YomboWarning as e:
-            return {
-                "status": "failed",
-                "msg": f"Couldn't associate input to device type command: {e.message}",
-                "apimsg": f"Couldn't associate input to device type command: {e.message}",
-                "apimsghtml": f"Couldn't associate input to device type command: {e.html_message}",
-            }
-
-        # print("dev_command_input_add results: %s" % results)
-
-        return {
-            "status": "success",
-            "msg": "Associated input to device type command",
-            "data": results["data"],
-        }
-
-    @inlineCallbacks
-    def dev_command_input_edit(self, device_command_input_id, data, **kwargs):
-        """
-        Associate an input type to a device type command at the Yombo server level, not at the local gateway level.
-
-        :param device_command_input_id: The device_command_input ID to edit.
-        :param kwargs:
-        :return:
-        """
-        api_data = {
-            # "device_type_id": device_type_id,
-            # "command_id": command_id,
-            # "input_type_id": input_type_id,
-            "label": data["label"],
-            "machine_label": data["machine_label"],
-            "encryption": data["encryption"],
-            "value_casing": data["value_casing"],
-            "live_update": data["live_update"],
-            "value_required":  data["value_required"],
-            "value_max":  data["value_max"],
-            "value_min":  data["value_min"],
-            "value_casing":  data["value_casing"],
-            "encryption":  data["encryption"],
-            "notes": data["notes"],
-        }
-
-        try:
-            if "session" in kwargs:
-                session = kwargs["session"]
-            else:
-                return {
-                    "status": "failed",
-                    "msg": "Couldn't update device type command input: User session missing.",
-                    "apimsg": "Couldn't update device type command input: User session missing.",
-                    "apimsghtml": "Couldn't update device type command input: User session missing.",
-                }
-
-            results = yield self._YomboAPI.request("PATCH",
-                                                   f"/v1/device_command_input/{device_command_input_id}",
-                                                   api_data,
-                                                   session=session
-                                                   )
-        except YomboWarning as e:
-            return {
-                "status": "failed",
-                "msg": f"Couldn't update device type command input: {e.message}",
-                "apimsg": f"Couldn't update device type command input: {e.message}",
-                "apimsghtml": f"Couldn't update device type command input: {e.html_message}",
-            }
-
-        return {
-            "status": "success",
-            "msg": "Updated associated input to device type command",
-            "data": results["content"]["response"]["device_command_input"],
-        }
-
-    @inlineCallbacks
-    def dev_command_input_remove(self, device_command_input_id, **kwargs):
-        """
-        Associate an input type to a device type command at the Yombo server level, not at the local gateway level.
-
-        :param device_command_input_id: The device_command_input ID to delete.
-        :param command_id: The command_id ID to add/associate.
-        :param kwargs:
-        :return:
-        """
-        try:
-            if "session" in kwargs:
-                session = kwargs["session"]
-            else:
-                return {
-                    "status": "failed",
-                    "msg": "Couldn't remove input from device type command: User session missing.",
-                    "apimsg": "Couldn't remove input from device type command: User session missing.",
-                    "apimsghtml": "Couldn't remove input from device type command: User session missing.",
-                }
-
-            yield self._YomboAPI.request("DELETE",
-                                         f"/v1/device_command_input/{device_command_input_id}",
-                                         session=session)
-        except YomboWarning as e:
-            return {
-                "status": "failed",
-                "msg": f"Couldn't remove input from device type command: {e.message}",
-                "apimsg": f"Couldn't remove input from device type command: {e.message}",
-                "apimsghtml": f"Couldn't remove input from device type command: {e.html_message}",
-            }
-
-        return {
-            "status": "success",
-            "msg": "Removed input from device type command",
-        }
-
-    @inlineCallbacks
-    def dev_command_remove(self, device_type_command_id, **kwargs):
-        """
-        Remove a command from device type at the Yombo server level, not at the local gateway level.
-
-        :param device_type_command_id: The device_type_command ID to delete.
-        :param kwargs:
-        :return:
-        """
-        try:
-            if "session" in kwargs:
-                session = kwargs["session"]
-            else:
-                return {
-                    "status": "failed",
-                    "msg": "Couldn't remove command from device type: User session missing.",
-                    "apimsg": "Couldn't remove command from device type: User session missing.",
-                    "apimsghtml": "Couldn't remove command from device type: User session missing.",
-                }
-
-            yield self._YomboAPI.request("DELETE",
-                                         f"/v1/device_type_command/{device_type_command_id}",
-                                         session=session)
-        except YomboWarning as e:
-            return {
-                "status": "failed",
-                "msg": f"Couldn't remove command from device type: {e.message}",
-                "apimsg": f"Couldn't remove command from device type: {e.message}",
-                "apimsghtml": f"Couldn't remove command from device type: {e.html_message}",
-            }
-
-        return {
-            "status": "success",
-            "msg": "Removed command from device type.",
-        }
-
-
-class DeviceType(Entity, SyncToEverywhere):
-    """
-    A class to manage a single device type.
-    :ivar label: Device type label
-    :ivar description: The description of the device type.
-    :ivar inputTypeID: The type of input that is required as a variable.
-    """
-    def __init__(self, parent, device_type):
-        """
-        A device type object used to lookup more information. Any changes to this record will be updated
-        into the database.
-
-        :cvar device_type_id: (string) The id of the device type.
-
-        :param device_type: A device type as passed in from the device types class. This is a
-            dictionary with various device type attributes.
-        """
-        logger.debug("DeviceType::__init__: {device_type}", device_type=device_type)
-        self._internal_label = "device_types"  # Used by mixins
-        super().__init__(parent)
-
-        self.commands = {}
-        self.device_type_id = device_type["id"]
-
-        # the below are setup during update_attributes()
-        self.category_id = None
-        self.platform = "device"
-        self.machine_label = None
-        self.label = None
-        self.description = None
-        self.public = None
-        self.status = None
-        self.created_at = None
-        self.updated_at = None
-
-        self.update_attributes(device_type, source="database")
-        self.start_data_sync()
-
-    @inlineCallbacks
-    def _init_(self):
-        """
-        Simply calls reload.
-        """
-        yield self.reload()
-
-    @inlineCallbacks
-    def reload(self):
-        """
-        Loads available commands from the database. This should only be called when a device type is loaded,
-        notification that device type has been updated, or when device type commands have changed.
-        :return:
-        """
-        commands = yield self._Parent._DeviceTypeCommands.get(self.device_type_id)
-        self.commands.clear()
-        logger.debug("Device type received command ids: {commands}", commands=commands)
-        for command_id, command in commands.items():
-            try:
-                self.commands[command_id] = {
-                    "command": self._Parent._Commands[command_id],
-                    "inputs": {}
-                }
-            except KeyError:
-                logger.warn("Device type '{label}' is unable to find command: {command_id}",
-                            label=self.label, command_id=command_id)
-                continue
-            inputs = self._Parent._DeviceCommandInputs.get_by_ids(self.device_type_id, command_id)
-            for dci_id, dci in inputs.items():
-                self.commands[command_id]["inputs"][dci.machine_label] = dci
-
-    def update_attributes(self, device_type, source=None):
-        """
-        Sets various values from a device type dictionary. This can be called when either new or
-        when updating.
-
-        :param device_type: 
-        :return: 
-        """
-        if "platform" in device_type:
-            if device_type["platform"] is None or device_type["platform"] == "":
-                device_type["platform"] = "all"
-        super().update_attributes(device_type, source=source)
-
-    @inlineCallbacks
-    def get_variable_fields(self):
-        """
-        Get variable groups and fields from the database.
-        :return: Dictionary of dicts containing variable fields.
-        """
-        variables = yield self._Parent._Variables.get_variable_fields_data(
-            group_relation_type="device",
-            group_relation_id=self.device_type_id
-        )
-        return variables
-
-    def __getitem__(self, key):
-        return getattr(self, key)
-
-    def get_devices(self, gateway_id=None):
-        """
-        Return a dictionary of devices for a given device_type
-        :return:
-        """
-        # if gateway_id is None:
-        #     gateway_id = self.gateway_id
-
-        search_attributes = [
-            {
-                "field": "device_type_id",
-                "value": self.device_type_id,
-                "limiter": 1,
-            }
-        ]
-
-        try:
-            results = do_search_instance(search_attributes,
-                                         self._Parent._Devices.devices,
-                                         self._Parent._class_storage_fields)
-
-            if results["was_found"]:
-                devices = {}
-                for device_id, device in results['values'].items():
-                    if gateway_id is not None:
-                        if device.gateway_id != gateway_id:
-                            continue
-                    devices[device_id] = device
-                return devices
-            else:
-                return {}
-        except YomboWarning as e:
-            raise KeyError(f"Get devices had problems: {e}")
-
-    def get_modules(self, return_value="id"):
-        """
-        Return a list of modules for a given device_type
-        :return:
-        """
-        if return_value == "id":
-            return list(self.registered_modules.keys())
-        elif return_value == "label":
-            return list(self.registered_modules.values())
-        else:
-            raise YomboWarning("get_modules requires either 'id' or 'label'")
-
-    def __str__(self):
-        """
-        Print a string when printing the class.  This will return the device type id so that
-        the device type can be identified and referenced easily.
-        """
-        return self.device_type_id
-
-    def asdict(self):
-        return {
-            "device_type_id": str(self.device_type_id),
-            "machine_label": str(self.machine_label),
-            "label": str(self.label),
-            "description": str(self.description),
-            "public": int(self.public),
-            "status": int(self.status),
-            "created_at": int(self.created_at),
-            "updated_at": int(self.updated_at),
-        }
-
-    def __repl__(self):
-        """
-        Export device type variables as a dictionary.
-        """
-        return self.asdict()

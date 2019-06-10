@@ -25,7 +25,7 @@ from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
 
 from yombo.lib.systemdatahandler.constants import CONFIG_ITEM_MAP, CONFIG_ITEMS
-from yombo.lib.localdb.schemas import *
+from yombo.core.schemas import *
 
 logger = get_logger("library.systemdatahandler")
 

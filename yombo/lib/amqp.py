@@ -31,6 +31,7 @@ from collections import deque
 from hashlib import sha256
 import pika
 from pika.exceptions import ChannelClosed
+from os import getcwd
 import sys
 import traceback
 from time import time
@@ -42,6 +43,7 @@ from twisted.internet.defer import inlineCallbacks, Deferred
 from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
+from yombo.core.entity import Entity
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
@@ -55,14 +57,6 @@ class AMQP(YomboLibrary):
     """
     Base, or root class that manages all AMQP connections.
     """
-    def __str__(self):
-        """
-        Returns the name of the library.
-        :return: Name of the library
-        :rtype: string
-        """
-        return "Yombo amqp library"
-
     def _init_(self, **kwargs):
         """
         Loads previously saved message information.
@@ -267,7 +261,7 @@ class AMQP(YomboLibrary):
         return self.client_connections[client_id]
 
 
-class AMQPClient(object):
+class AMQPClient(Entity):
     def __init__(self, _AMQP, client_id, hostname, port, virtual_host, username, password, use_ssl,
                  connected_callback, disconnected_callback, error_callback, keepalive, prefetch_count,
                  critical_connection):
@@ -296,8 +290,7 @@ class AMQPClient(object):
         :param prefetch_count: Int (default 10) - How many outstanding messages the client should have at any
           given time.
         """
-        self._FullName = "yombo.gateway.lib.AMQP.AMQPClient"
-        self._Name = "AMQP.AMQPClient"
+        super().__init__(_AMQP)
 
         self._AMQP = _AMQP
         self.client_id = client_id
@@ -530,8 +523,10 @@ class PikaFactory(protocol.ReconnectingClientFactory):
     """
     def __init__(self, AMQPClient):
         self._local_log("debug", "PikaFactory::__init__")
-        self._Name = "PikaFactory"
-        self._FullName = "yombo.gateway.lib.PikaFactory"
+        self._Name = self.__class__.__name__
+        self._ClassPath = __file__[len(getcwd())+1:].split(".")[0].replace("/", ".")
+        self._FullName = f"{self._ClassPath}:{self._Name}"
+
         # DO NOT CHANGE THESE!  Mitch Schwenk @ yombo.net
         # Reconnect sort-of fast, but random. ~25 second max wait
         # This is set in-case a server reboots, don't DDOS the servers!
@@ -543,7 +538,7 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         self.AMQPClient = AMQPClient
         self.AMQPProtocol = None
 
-        self.send_queue = deque() # stores any received items like publish and subscribe until fully connected
+        self.send_queue = deque()  # stores any received items like publish and subscribe until fully connected
         self.exchanges = {}  # store a list of exchanges, will try to re-establish on reconnect.
         self.queues = {}  # store a list of queue, will try to re-establish on reconnect.
         self.exchange_queue_bindings = {}  # store a list of exchange queue bindings, will try to re-establish.

@@ -14,5 +14,5 @@ def route_api_v1_atoms(webapp):
             """ Gets the system atoms. """
             return webinterface.render_api(request, None,
                                            data_type="atoms",
-                                           attributes=webinterface._Atoms.get_list()
+                                           attributes=webinterface._Atoms.class_storage_as_list()
                                            )

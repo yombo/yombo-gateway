@@ -45,9 +45,9 @@
                 <label style="margin-top: 15px; margin-bottom: 0px">Not After Time: </label><br>
                 {{ device_command.not_after_at|epoch_to_string }} ({{device_command.not_after_at|epoch_get_age}})<br>
                 <label style="margin-top: 15px; margin-bottom: 0px">Request Id: </label><br>
-                {{ device_command.request_id }}<br>
+                {{ device_command.device_command_id }}<br>
                 <label style="margin-top: 15px; margin-bottom: 0px">Persistent Request Id: </label><br>
-                {{ device_command.persistent_request_id }}<br>
+                {{ device_command.persistent_device_command_id }}<br>
                 <label style="margin-top: 15px; margin-bottom: 0px">Command Status Received:</label><br>
                 {{ device_command.command_status_received|yes_no }}<br>
                 <label style="margin-top: 15px; margin-bottom: 0px">Dirty Bit:</label><br>

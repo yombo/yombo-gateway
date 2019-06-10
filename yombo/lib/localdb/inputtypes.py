@@ -18,7 +18,7 @@ class DB_InputTypes(object):
     @inlineCallbacks
     def get_input_types(self):
         records = yield InputType.find(orderby="label ASC")
-        return self._return_empty_if_none(records)
+        return self.process_get_results(records)
 
     @inlineCallbacks
     def save_input_types(self, data):

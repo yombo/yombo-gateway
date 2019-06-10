@@ -54,8 +54,8 @@ from yombo.lib.webinterface.class_helpers.webserver import WebServer
 from yombo.lib.webinterface.routes.api_v1.atoms import route_api_v1_atoms
 from yombo.lib.webinterface.routes.api_v1.automation_rules import route_api_v1_automation_rules
 # from yombo.lib.webinterface.routes.api_v1.camera import route_api_v1_camera
-# from yombo.lib.webinterface.routes.api_v1.command import route_api_v1_command
-# from yombo.lib.webinterface.routes.api_v1.device import route_api_v1_device
+from yombo.lib.webinterface.routes.api_v1.command import route_api_v1_command
+from yombo.lib.webinterface.routes.api_v1.device import route_api_v1_device
 from yombo.lib.webinterface.routes.api_v1.device_command import route_api_v1_device_command
 # from yombo.lib.webinterface.routes.api_v1.events import route_api_v1_events
 # from yombo.lib.webinterface.routes.api_v1.gateway import route_api_v1_gateway
@@ -82,7 +82,7 @@ from yombo.lib.webinterface.constants import NAV_SIDE_MENU, DEFAULT_NODE, NOTIFI
 logger = get_logger("library.webinterface")
 
 
-class WebInterface(BuildDistribution, ErrorHandler, Render, YomboLibrary, WebServer):
+class WebInterface(YomboLibrary, BuildDistribution, ErrorHandler, Render, WebServer):
     """
     Web interface framework.
     """
@@ -92,14 +92,6 @@ class WebInterface(BuildDistribution, ErrorHandler, Render, YomboLibrary, WebSer
     starting = True
     already_starting_web_servers = False
     hook_listeners = {}  # special way to toss hook calls to routes.
-
-    def __str__(self):
-        """
-        Returns the name of the library.
-        :return: Name of the library
-        :rtype: string
-        """
-        return "Yombo web interface library"
 
     def _init_(self, **kwargs):
         self.frontend_building = False
@@ -138,8 +130,8 @@ class WebInterface(BuildDistribution, ErrorHandler, Render, YomboLibrary, WebSer
         route_api_v1_atoms(self.webapp)
         route_api_v1_automation_rules(self.webapp)
         # route_api_v1_camera(self.webapp)
-        # route_api_v1_command(self.webapp)
-        # route_api_v1_device(self.webapp)
+        route_api_v1_command(self.webapp)
+        route_api_v1_device(self.webapp)
         route_api_v1_device_command(self.webapp)
         # route_api_v1_events(self.webapp)
         # route_api_v1_gateway(self.webapp)
@@ -223,7 +215,6 @@ class WebInterface(BuildDistribution, ErrorHandler, Render, YomboLibrary, WebSer
         self.webapp.templates.globals["_gpg"] = self._GPG
         self.webapp.templates.globals["_inputtypes"] = self._InputTypes
         self.webapp.templates.globals["_intents"] = self._Intents
-        self.webapp.templates.globals["_libraries"] = self._Libraries
         self.webapp.templates.globals["_localize"] = self._Localize
         self.webapp.templates.globals["_locations"] = self._Locations
         self.webapp.templates.globals["_locations"] = self._Locations
@@ -242,7 +233,9 @@ class WebInterface(BuildDistribution, ErrorHandler, Render, YomboLibrary, WebSer
         self.webapp.templates.globals["_storage"] = self._Storage
         self.webapp.templates.globals["_tasks"] = self._Tasks
         self.webapp.templates.globals["_times"] = self._Times
-        self.webapp.templates.globals["_variables"] = self._Variables
+        self.webapp.templates.globals["_variabledata"] = self._VariableData
+        self.webapp.templates.globals["_variablefields"] = self._VariableFields
+        self.webapp.templates.globals["_variablegroups"] = self._VariableGroups
         self.webapp.templates.globals["_validate"] = self._Validate
         self.webapp.templates.globals["_webinterface"] = self
         self.webapp.templates.globals["py_randint"] = randint

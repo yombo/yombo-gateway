@@ -57,10 +57,10 @@
                                         <th>Device</th><th>Command</th><th>Status</th><th>Requested By</th><th>Created</th>
                                     </tr>
                                 </thead>
-                                <tbody>{% for request_id, command in device_commands.items()
+                                <tbody>{% for device_command_id, command in device_commands.items()
                                 if command.status == 'delayed' %}
                                      <tr>
-                                        <td><a href="/devices/device_commands/{{ request_id }}/details">{{ command.device.full_label }}</a></td>
+                                        <td><a href="/devices/device_commands/{{ device_command_id }}/details">{{ command.device.full_label }}</a></td>
                                         <td>{{ command.command.label }}</td>
                                         <td>{{ command.status }}</td>
                                         <td>{{ command.auth_id }} / {{ command.requesting_source }}</td>
@@ -78,10 +78,10 @@
                                         <th>Device</th><th>Command</th><th>Status</th><th>Requested By</th><th>Created</th>
                                     </tr>
                                 </thead>
-                                <tbody>{% for request_id, command in device_commands.items()
+                                <tbody>{% for device_command_id, command in device_commands.items()
                                 if command.status == 'finished' %}
                                      <tr>
-                                        <td><a href="/devices/device_commands/{{ request_id }}/details">{{ command.device.full_label }}</a></td>
+                                        <td><a href="/devices/device_commands/{{ device_command_id }}/details">{{ command.device.full_label }}</a></td>
                                         <td>{{ command.command.label }}</td>
                                         <td>{{ command.status }}</td>
                                         <td>{{ command.auth_id }} / {{ command.requesting_source }}</td>
@@ -99,10 +99,10 @@
                                         <th>Device</th><th>Command</th><th>Status</th><th>Requested By</th><th>Created</th>
                                     </tr>
                                 </thead>
-                                <tbody>{% for request_id, command in device_commands.items()
+                                <tbody>{% for device_command_id, command in device_commands.items()
                                 if command.status in ('new', 'sent', 'received', 'pending') %}
                                      <tr>
-                                        <td><a href="/devices/device_commands/{{ request_id }}/details">{{ command.device.full_label }}</a></td>
+                                        <td><a href="/devices/device_commands/{{ device_command_id }}/details">{{ command.device.full_label }}</a></td>
                                         <td>{{ command.command.label }}</td>
                                         <td>{{ command.status }}</td>
                                         <td>{{ command.auth_id }} / {{ command.requesting_source }}</td>
@@ -120,10 +120,10 @@
                                         <th>Device</th><th>Command</th><th>Status</th><th>Requested By</th><th>Created</th>
                                     </tr>
                                 </thead>
-                                <tbody>{% for request_id, command in device_commands.items()
+                                <tbody>{% for device_command_id, command in device_commands.items()
                                 if command.status in ('failed', 'delay_expired') %}
                                      <tr>
-                                        <td><a href="/devices/device_commands/{{ request_id }}/details">{{ command.device.full_label }}</a></td>
+                                        <td><a href="/devices/device_commands/{{ device_command_id }}/details">{{ command.device.full_label }}</a></td>
                                         <td>{{ command.command.label }}</td>
                                         <td>{{ command.status }}</td>
                                         <td>{{ command.auth_id }} / {{ command.requesting_source }}</td>
@@ -142,11 +142,11 @@
                                         <th>Device</th><th>Command</th><th>Status</th><th>Requested By</th><th>Created</th>
                                     </tr>
                                 </thead>
-                                <tbody>{% for request_id, command in device_commands.items()
+                                <tbody>{% for device_command_id, command in device_commands.items()
                                 if command.status not in ('delayed', 'new', 'sent', 'received', 'pending',
                                     'failed', 'delay_expired', 'finished') %}
                                      <tr>
-                                        <td><a href="/devices/device_commands/{{ request_id }}/details">{{ command.device.full_label }}</a></td>
+                                        <td><a href="/devices/device_commands/{{ device_command_id }}/details">{{ command.device.full_label }}</a></td>
                                         <td>{{ command.command.label }}</td>
                                         <td>{{ command.status }}</td>
                                         <td>{{ command.auth_id }} / {{ command.requesting_source }}</td>

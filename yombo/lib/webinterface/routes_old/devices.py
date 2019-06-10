@@ -238,7 +238,6 @@ def route_devices(webapp):
 
         @webapp.route("/<string:device_id>/details")
         @require_auth()
-        @inlineCallbacks
         def page_devices_details(webinterface, request, session, device_id):
             session.has_access("device", device_id, "view")
 
@@ -252,10 +251,9 @@ def route_devices(webapp):
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/devices/index", "Devices")
             add_devices_breadcrumb(webinterface, request, device_id, session)
-            device_variables = yield device.device_variables()
             return page.render(alerts=webinterface.get_alerts(),
                                device=device,
-                               device_variables=device_variables,
+                               device_variables=device.device_variables,
                                states=webinterface._States.get("#")
                                )
 

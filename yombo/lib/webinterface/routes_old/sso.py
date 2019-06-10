@@ -236,7 +236,7 @@ def route_sso(webapp):
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/devices/index", "Devices")
             add_devices_breadcrumb(webinterface, request, device_id, session)
-            device_variables = yield device.device_variables()
+            device_variables = device.device_variables
             return page.render(alerts=webinterface.get_alerts(),
                                device=device,
                                device_variables=device_variables,

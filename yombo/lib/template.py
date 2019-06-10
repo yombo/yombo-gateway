@@ -83,7 +83,6 @@ class Template(YomboLibrary):
         self.environment.globals["gateways"] = self._Gateways
         self.environment.globals["gpg"] = self._GPG
         self.environment.globals["inputtypes"] = self._InputTypes
-        self.environment.globals["libraries"] = self._Libraries
         self.environment.globals["localize"] = self._Localize
         self.environment.globals["locations"] = self._Locations
         self.environment.globals["modules"] = self._Modules
@@ -99,7 +98,9 @@ class Template(YomboLibrary):
         self.environment.globals["tasks"] = self._Tasks
         self.environment.globals["times"] = self._Times
         self.environment.globals["users"] = self._Users
-        self.environment.globals["variables"] = self._Variables
+        self.environment.globals["variabledata"] = self._VariableData
+        self.environment.globals["variablefields"] = self._VariableFields
+        self.environment.globals["variablegroups"] = self._VariableGroups
         self.environment.globals["validate"] = self._Validate
         self._refresh_jinja2_globals_()
 

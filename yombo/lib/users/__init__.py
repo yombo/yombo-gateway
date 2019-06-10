@@ -25,128 +25,36 @@ from twisted.internet.defer import inlineCallbacks
 from yombo.constants.users import *
 from yombo.core.exceptions import YomboWarning, YomboNoAccess
 from yombo.core.library import YomboLibrary
-from yombo.mixins.library_search_mixin import LibrarySearchMixin
 from yombo.core.log import get_logger
 from yombo.lib.users.role import Role
 from yombo.lib.users.user import User
 from yombo.lib.users.systemuser import SystemUser
 from yombo.mixins.auth_mixin import AuthMixin
+from yombo.mixins.library_db_model_mixin import LibraryDBModelMixin
+from yombo.mixins.library_search_mixin import LibrarySearchMixin
 from yombo.utils import data_unpickle, sha256_compact, random_string
 from yombo.utils.hookinvoke import global_invoke_all
 
 logger = get_logger("library.users")
 
 
-class Users(YomboLibrary, LibrarySearchMixin):
+class Users(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
     """
     Maintains a list of users and what they can do.
     """
-    users = {}
+    users: dict = {}
+    roles: dict = {}
+
     # The following are used by get(), get_advanced(), search(), and search_advanced()
+    _class_storage_load_hook_prefix = "user"
+    _class_storage_load_db_class = User
     _class_storage_attribute_name = "users"
-    _class_storage_fields = ["id", "user_id", "email", "label", "name"]
+    _class_storage_search_fields = [
+        "user_id", "email", "name"
+    ]
     _class_storage_sort_key = "machine_label"
-    _class_storage_default_search_fields = ["user_id", "email", "name"]
-
-    def __contains__(self, user_requested):
-        """
-        Checks to if a provided user exists.
-
-            >>> if "mitch@example" in self._Users:
-            >>>    print("mitch@example.com is able to login.")
-
-        :raises YomboWarning: Raised when request is malformed.
-        :param user_requested: The user key to search for.
-        :type user_requested: string
-        :return: Returns true if exists, otherwise false.
-        :rtype: bool
-        """
-        try:
-            self.get(user_requested)
-            return True
-        except Exception as e:
-            return False
-
-    def __getitem__(self, user_requested):
-        """
-        Attempts to find the user requested.
-
-            >>> user_mitch = self._Users["mitch@example.com"]
-
-        :raises YomboWarning: Raised when request is malformed.
-        :raises KeyError: Raised when request is not found.
-        :param user_requested: The user key to search for.
-        :type user_requested: string
-        :return: The value assigned to the user.
-        :rtype: mixed
-        """
-        return self.get(user_requested)
-
-    def __setitem__(self, user_requested, value):
-        """
-        Sets are not allowed. Raises exception.
-
-        :raises Exception: Always raised.
-        """
-        raise Exception("Not allowed.")
-
-    def __delitem__(self, user_requested):
-        """
-        Deletes are not allowed. Raises exception.
-
-        :raises Exception: Always raised.
-        """
-        raise Exception("Not allowed.")
-
-    def __iter__(self):
-        """ iter users. """
-        return self.users.__iter__()
-
-    def __len__(self):
-        """
-        Returns an int of the number of users defined.
-
-        :return: The number of users defined.
-        :rtype: int
-        """
-        return len(self.users)
-
-    def __str__(self):
-        """
-        Returns the name of the library.
-        :return: Name of the library
-        :rtype: string
-        """
-        return "Yombo users library"
-
-    def keys(self, gateway_id=None):
-        """
-        Returns the keys of the users that are defined.
-
-        :return: A list of users defined.
-        :rtype: list
-        """
-        return self.users.keys()
-
-    def items(self, gateway_id=None):
-        """
-        Gets a list of tuples representing the users defined.
-
-        :return: A list of tuples.
-        :rtype: list
-        """
-        return self.users.items()
-
-    def values(self):
-        """
-        Gets a list of user values
-        :return: list
-        """
-        return self.users.values()
 
     def _init_(self, **kwargs):
-        self.roles: dict = {}
-        self.users: dict = {}
         self.owner_id = self._Configs.get("core", "owner_id", None, False)
         self.system_seed = self._Configs.get("core", "rand_seed")
 
@@ -236,7 +144,8 @@ class Users(YomboLibrary, LibrarySearchMixin):
         if self._Loader.operating_mode != "run":
             return
 
-        yield self._load_users_from_database()
+        yield self._class_storage_load_from_database()
+
         if self.owner_id is not None:
             self.owner_user = self.get(self.owner_id)
             self.owner_user.attach_role("admin")
@@ -252,13 +161,6 @@ class Users(YomboLibrary, LibrarySearchMixin):
             role_data = data_unpickle(role_data_raw, encoder="msgpack_base64")
             self.add_role(role_data, source="user", flush_cache=False)
         self._Cache.flush(tags=("user", "role"))
-
-    @inlineCallbacks
-    def _load_users_from_database(self):
-        db_users = yield self._LocalDB.get_users()
-        for record in db_users:
-            self.users[record.user_id] = User(self, record, flush_cache=False)
-
 
     @inlineCallbacks
     def api_search_user(self, requested_user, session=None):

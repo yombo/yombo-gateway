@@ -19,7 +19,7 @@ def route_api_v1_statistics(webapp):
         @inlineCallbacks
         def apiv1_statistics_names(webinterface, request, session):
             session.has_access("statistic", "*", "view", raise_error=True)
-            records = yield webinterface._Libraries["localdb"].get_distinct_stat_names()
+            records = yield webinterface._LocalDB.get_distinct_stat_names()
             request.setHeader("Content-Type", CONTENT_TYPE_JSON)
             return json.dumps(records)
 
@@ -142,7 +142,7 @@ def route_api_v1_statistics(webapp):
                 except Exception as e:
                     my_bucket_size = bucket_size
 
-                records = yield webinterface._Libraries["localdb"].get_stats_sums(my_stat_name,
+                records = yield webinterface._LocalDB.get_stats_sums(my_stat_name,
                                                                                   bucket_size=my_bucket_size,
                                                                                   bucket_type=my_stat_type,
                                                                                   time_start=my_time_start,

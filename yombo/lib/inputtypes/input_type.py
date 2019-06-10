@@ -5,12 +5,13 @@ Base input type validator.
 # Import Yombo libraries
 from yombo.core.entity import Entity
 from yombo.core.log import get_logger
-from yombo.mixins.sync_to_everywhere import SyncToEverywhere
+from yombo.mixins.sync_to_everywhere_mixin import SyncToEverywhereMixin
+from yombo.mixins.library_db_child_mixin import LibraryDBChildMixin
 
 logger = get_logger("library.inputtypes.validator")
 
 
-class Input_Type(Entity, SyncToEverywhere):
+class Input_Type(Entity, LibraryDBChildMixin, SyncToEverywhereMixin):
     """
     A class to manage a single input type.
     :ivar input_type_id: (string) The unique ID.
@@ -31,64 +32,25 @@ class Input_Type(Entity, SyncToEverywhere):
     MAX = None
     CONVERT = True
 
-    def __init__(self, parent, input_type):
+    _primary_column = "input_type_id"  # Used by mixins
+
+    def __init__(self, parent, incoming, source=None):
         """
         Setup the input type object using information passed in.
 
-        :param input_type: An input type with all required items to create the class.
-        :type input_type: dict
-
+        :param incoming: An input type with all required items to create the class.
+        :type incoming: dict
         """
-        # logger.debug("input_type info: {input_type}", input_type=input_type)
-
-        self._internal_label = "input_types"  # Used by mixins
+        self._Entity_type = "Input type"
+        self._Entity_label_attribute = "machine_label"
         super().__init__(parent)
 
-        self.input_type_id = input_type["id"]
-        self.machine_label = input_type["machine_label"]
-
-        # below are configure in update_attributes()
-        self.category_id = None
-        self.label = None
-        self.machine_label = None
-        self.description = None
-        self.input_regex = None
-        self.status = None
-        self.public = None
-        self.created = None
-        self.updated = None
-        # self.validate = lambda x : x  # is set in the load validators up above.
-        self.update_attributes(input_type, source="database")
-        self.start_data_sync()
+        self._setup_class_model(incoming, source=source)
 
     def validate(self, input, **kwargs):
         logger.warn("Input type doesn't have a validator. Accepting input by default. '{machine_label}",
                     machine_label=self.machine_label)
         return input
-
-    def __str__(self):
-        """
-        Print a string when printing the class.  This will return the input type id so that
-        the input type can be identified and referenced easily.
-        """
-        return self.input_type_id
-
-    def __repl__(self):
-        """
-        Export input type variables as a dictionary.
-        """
-        return {
-            "input_type_id": str(self.input_type_id),
-            "category_id": str(self.category_id),
-            "machine_label": str(self.machine_label),
-            "label": str(self.label),
-            "description": str(self.description),
-            "input_regex": str(self.input_regex),
-            "public": int(self.public),
-            "status": int(self.status),
-            "created": int(self.created),
-            "updated": int(self.updated),
-        }
 
     def pre_validate(self, value, **kwargs):
         return value

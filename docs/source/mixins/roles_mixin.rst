@@ -1,6 +1,6 @@
-.. index:: rolesmixin
+.. index:: roles_mixin
 
-.. _rolesmixin:
+.. _roles_mixin:
 
 .. currentmodule:: yombo.mixins.rolesmixin
 
@@ -9,9 +9,9 @@
    :keywords: auth, mixin, class, authentication, roles, permissions
 
 ================================================================
-RolesMixin (yombo.mixins.rolesmixin)
+RolesMixin (yombo.mixins.roles_mixin)
 ================================================================
-.. automodule:: yombo.mixins.rolesmixin
+.. automodule:: yombo.mixins.roles_mixin
 
 RolesMixin Class
 ================================================================

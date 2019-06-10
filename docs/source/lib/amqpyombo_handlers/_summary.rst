@@ -10,7 +10,7 @@
    :keywords: amqp, handlers
 
 ============================================
-AMQP Handlers (yombo.lib.amqpyomb_handlers)
+AMQP Handlers (yombo.lib.amqpyombo_handlers)
 ============================================
 
 Handles interactions with Yombo AMQP servers. These handlers are used by the

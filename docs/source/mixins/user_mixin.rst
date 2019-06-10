@@ -1,17 +1,17 @@
-.. index:: usermixin
+.. index:: user_mixin
 
-.. _usermixin:
+.. _user_mixin:
 
-.. currentmodule:: yombo.mixins.usermixin
+.. currentmodule:: yombo.mixins.user_mixin
 
 .. meta::
    :description: Mixin class to represent users.
    :keywords: auth, mixin, class, users
 
 ================================================================
-UserMixin (yombo.mixins.usermixin)
+UserMixin (yombo.mixins.user_mixin)
 ================================================================
-.. automodule:: yombo.mixins.usermixin
+.. automodule:: yombo.mixins.user_mixin
 
 UserMixin Class
 ================================================================

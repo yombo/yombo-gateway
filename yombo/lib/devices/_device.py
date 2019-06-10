@@ -34,6 +34,8 @@ class Device(Device_Attributes, Device_Base):
     """
     The parent to all child device types.
     """
+    _primary_column = "device_id"  # Used by mixins
+
     @property
     def is_on(self):
         if isinstance(self.machine_state, int) is False:

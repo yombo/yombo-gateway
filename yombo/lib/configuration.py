@@ -182,14 +182,6 @@ class Configuration(YomboLibrary):
         """
         raise Exception("Not allowed.")
 
-    def __str__(self):
-        """
-        Returns the name of the library.
-        :return: Name of the library
-        :rtype: string
-        """
-        return "Yombo configuration library"
-
     @inlineCallbacks
     def _init_(self, **kwargs):
         """
@@ -263,11 +255,11 @@ class Configuration(YomboLibrary):
 
         # Perform DB cleanup activites based on local section.
         if self.get("local", "deletedelayedmessages", False, False) is True:
-            self._Libraries["localdb"].delete("sqldict", ["module = ?", "yombo.gateway.lib.messages"])
+            self._LocalDB.delete("sqldict", ["module = ?", "yombo.lib.messages"])
             self.set("local", "deletedelayedmessages", False)
 
         if self.get("local", "deletedevicehistory", False, False) is True:
-            self._Libraries["localdb"].truncate("devicestatus")
+            self._LocalDB.truncate("devicestatus")
             self.set("local", "deletedevicehistory", False)
 
         current_time = int(time())

@@ -30,7 +30,7 @@ from yombo.core.log import get_logger
 from yombo.mixins.auth_mixin import AuthMixin
 from yombo.mixins.permission_mixin import PermissionMixin
 from yombo.mixins.roles_mixin import RolesMixin
-from yombo.mixins.sync_to_everywhere import SyncToEverywhere
+from yombo.mixins.sync_to_everywhere_mixin import SyncToEverywhereMixin
 from yombo.utils import random_string, bytes_to_unicode, data_unpickle, data_pickle, sha256_compact
 from yombo.utils.datatypes import coerce_value
 
@@ -45,6 +45,14 @@ class AuthKeys(YomboLibrary):
     Auth Key management.
     """
     authkeys = {}
+
+    _class_storage_load_hook_prefix = "authkey"
+    _class_storage_attribute_name = "authkeys"
+
+    _class_storage_search_fields = [
+        "auth_id", "label"
+    ]
+    _class_storage_sort_key = "machine_label"
 
     def __delitem__(self, key):
         """
@@ -117,6 +125,15 @@ class AuthKeys(YomboLibrary):
             authkey_data = data_unpickle(authkey_raw, encoder="msgpack_base64")
             self.add_authkey(authkey_data)
 
+    def add_authkey(self, data):
+        """
+        Create a new auth_key.
+
+        :param data:
+        :return:
+        """
+        return self._load_authkeys_into_memory(data)
+
     def _load_authkeys_into_memory(self, data):
         """
         Loads a new authkey by creating a new instance based on dictionary items.
@@ -140,8 +157,8 @@ class AuthKeys(YomboLibrary):
             data["auth_id"] = random_string(length=randint(MIN_AUTHKEYID_LENGTH, MAX_AUTHKEYID_LENGTH))
         if "description" not in data:
             data["description"] = ""
-        if "auth_data" not in data:
-            data["auth_data"] = {}
+        # if "auth_data" not in data:
+        #     data["auth_data"] = {}
         if "enabled" not in data:
             data["enabled"] = True
         if "item_permissions" not in data:
@@ -290,7 +307,7 @@ class AuthKeys(YomboLibrary):
             authkey.save()
 
 
-class AuthKey(Entity, AuthMixin, PermissionMixin, RolesMixin, SyncToEverywhere):
+class AuthKey(Entity, AuthMixin, PermissionMixin, RolesMixin, SyncToEverywhereMixin):
     """
     A single auth key item.
     """
@@ -306,14 +323,17 @@ class AuthKey(Entity, AuthMixin, PermissionMixin, RolesMixin, SyncToEverywhere):
 
     @property
     def _sync_fields(self):
-        return ["auth_data", "enabled", "accepted_at", "scope", "label", "description", "created_by", "created_by_type",
+        return ["enabled", "accepted_at", "scope", "label", "description", "created_by", "created_by_type",
                 "created_at", "updated_at", "last_access_at", "item_permissions", "roles", "auth_id"]
 
     def __init__(self, parent, record, source=None):
-        self._internal_label = "rbac_authkeys"  # Used by mixins
         self._syncs_to_db = False
         self._syncs_to_yombo = False
         self._syncs_to_config = True
+        self._Entity_type = "Authentication key"
+        self._Entity_label_attribute = "label"
+        self._fake_data = False
+
         super().__init__(parent, load_source="database")
 
         # Auth specific attributes
@@ -350,11 +370,11 @@ class AuthKey(Entity, AuthMixin, PermissionMixin, RolesMixin, SyncToEverywhere):
         """
         if record is None:
             return
-        if "auth_data" in record:
-            if isinstance(record["auth_data"], dict):
-                temp = self.auth_data.copy()
-                temp.update(record["auth_data"])
-                record["auth_data"] = temp
+        # if "auth_data" in record:
+        #     if isinstance(record["auth_data"], dict):
+        #         temp = self.auth_data.copy()
+        #         temp.update(record["auth_data"])
+        #         record["auth_data"] = temp
         if "enabled" in record:
             record["enabled"] = coerce_value(record["enabled"], "bool")
         if "scope" in record:
@@ -406,7 +426,7 @@ class AuthKey(Entity, AuthMixin, PermissionMixin, RolesMixin, SyncToEverywhere):
             "source": self.source,
             "label": self.label,
             "description": self.description,
-            "auth_data": self.auth_data,
+            # "auth_data": self.auth_data,
             "enabled": self.enabled,
             "roles": list(self.roles),
             "auth_id": self.auth_id,

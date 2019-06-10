@@ -27,13 +27,13 @@ from twisted.internet.defer import inlineCallbacks
 from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
-from yombo.lib.amqpyomb_handlers.constants import CONFIG_ITEM_MAP, CONFIG_ITEMS
+from yombo.lib.amqpyombo_handlers.constants import CONFIG_ITEM_MAP, CONFIG_ITEMS
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import random_string, dict_has_key, is_true_false
 
-logger = get_logger("library.amqpyomb_handlers.amqpconfigs")
+logger = get_logger("library.amqpyombo_handlers.amqpconfigs")
 
 class AmqpConfigHandler(YomboLibrary):
     """
@@ -271,7 +271,7 @@ class AmqpConfigHandler(YomboLibrary):
 #                 print("add_update_delete start object")
                 yield self.add_update_delete(msg, data, config_item, config_type, True)
                 # print("fadd_update_delete stop object")
-                # self._Loader.loadedLibraries["devices"].add_update_delete(new_data)
+                # self._Devices.add_update_delete(new_data)
                 self.process_config(data, config_item)
             else:
                 # print("add_update_delete start list")
@@ -443,7 +443,7 @@ class AmqpConfigHandler(YomboLibrary):
 
                 library = None
                 if config_data["library"] is not None:
-                    library = self.parent._Loader.loadedLibraries[config_data["library"]]
+                    library = self.parent._Loader.loaded_libraries[config_data["library"]]
 
                 if config_type == "full":
                     records = []

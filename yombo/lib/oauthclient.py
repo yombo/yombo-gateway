@@ -32,15 +32,6 @@ class OauthEndpoint(YomboLibrary):
     """
 
     """
-    def __str__(self):
-        """
-        Returns the name of the library.
-        :return: Name of the library
-        :rtype: string
-        """
-        return "Yombo oauth client library"
-
-    # @inlineCallbacks
     def _init_(self, **kwargs):
         self.clients = {}
         self.new(client_id=self.gateway_id,

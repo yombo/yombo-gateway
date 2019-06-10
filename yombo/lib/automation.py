@@ -136,14 +136,6 @@ class Automation(YomboLibrary):
         """
         return len(self.rules)
 
-    def __str__(self):
-        """
-        Returns the name of the library.
-        :return: Name of the library
-        :rtype: string
-        """
-        return "Yombo automation library"
-
     def keys(self):
         """
         Returns the keys (automation rule ID's) that are configured.

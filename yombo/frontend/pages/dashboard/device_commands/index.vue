@@ -24,7 +24,7 @@
              // || data.value_human.toLowerCase().includes(search.toLowerCase())
              )"
           >
-            <el-table-column :label="$t('ui.common.request_id')" property="id"></el-table-column>
+            <el-table-column :label="$t('ui.common.device_command_id')" property="id"></el-table-column>
             <el-table-column :label="$t('ui.common.gateway')">
               <div slot-scope="props" class="table-actions">
                 {{getGateway(props.row.source_gateway_id).label}}

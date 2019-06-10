@@ -10,7 +10,6 @@ from time import time
 from twisted.internet.defer import inlineCallbacks
 
 # Import 3rd-party libs
-from yombo.lib.localdb import Tasks
 from yombo.utils import instance_properties, data_pickle, data_unpickle
 
 
@@ -28,7 +27,7 @@ class DB_SqlDict(object):
                 #              without=len(record["dict_data"]), withcompress=before)
             except:
                 pass
-        return self._return_empty_if_none(records)
+        return self.process_get_results(records)
 
     @inlineCallbacks
     def set_sql_dict(self, component, dict_name, dict_data):

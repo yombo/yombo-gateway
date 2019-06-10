@@ -22,11 +22,10 @@ import json
 # Import 3rd party extensions
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 
-logger = get_logger("library.amqpyomb_handlers.amqpsystem")
+logger = get_logger("library.amqpyombo_handlers.amqpsystem")
 
 
 class AmqpSystemHandler(YomboLibrary):

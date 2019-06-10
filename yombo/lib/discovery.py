@@ -105,14 +105,6 @@ class Discovery(YomboLibrary):
         """
         return len(self.discovered)
 
-    def __str__(self):
-        """
-        Returns the name of the library.
-        :return: Name of the library
-        :rtype: string
-        """
-        return "Yombo discovered devices library"
-
     def keys(self):
         """
         Returns the keys (discovered device ID's) that are configured.

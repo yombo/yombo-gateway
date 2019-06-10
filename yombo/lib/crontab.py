@@ -105,7 +105,7 @@ class CronTab(YomboLibrary, LibrarySearchMixin):
 
     # The following are used by get(), get_advanced(), search(), and search_advanced()
     _class_storage_attribute_name = "cron_tasks"
-    _class_storage_fields = [
+    _class_storage_search_fields = [
         "cron_id", "label", "enabled"
     ]
     _class_storage_sort_key = "machine_label"
@@ -188,14 +188,6 @@ class CronTab(YomboLibrary, LibrarySearchMixin):
         :rtype: int
         """
         return len(self.cron_tasks)
-
-    def __str__(self):
-        """
-        Returns the name of the library.
-        :return: Name of the library
-        :rtype: string
-        """
-        return "Yombo cron tasks library"
 
     def keys(self):
         """

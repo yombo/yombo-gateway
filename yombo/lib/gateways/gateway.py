@@ -21,12 +21,13 @@ from time import time
 # Import Yombo libraries
 from yombo.core.entity import Entity
 from yombo.core.log import get_logger
-from yombo.mixins.sync_to_everywhere import SyncToEverywhere
+from yombo.mixins.library_db_child_mixin import LibraryDBChildMixin
+from yombo.mixins.sync_to_everywhere_mixin import SyncToEverywhereMixin
 
 logger = get_logger("library.gateways.gateway")
 
 
-class Gateway(Entity, SyncToEverywhere):
+class Gateway(Entity, LibraryDBChildMixin, SyncToEverywhereMixin):
     """
     A class to manage a single gateway.
     :ivar gateway_id: (string) The unique ID.
@@ -39,13 +40,15 @@ class Gateway(Entity, SyncToEverywhere):
     :ivar created_at: (int) EPOCH time when created
     :ivar updated: (int) EPOCH time when last updated
     """
+    _primary_column = "gateway_id"  # Used by mixins
+
     @property
     def is_real(self):
         if self.machine_label in ("local", "cluster"):
             return False
         return True
-    
-    def __init__(self, parent, gateway, source=None):
+
+    def __init__(self, parent, incoming, source=None):
         """
         Setup the gateway object using information passed in.
 
@@ -53,47 +56,11 @@ class Gateway(Entity, SyncToEverywhere):
         :type gateway: dict
 
         """
-        self._internal_label = "gateways"  # Used by mixins
+        self._Entity_type = "Yombo Gateway"
+        self._Entity_label_attribute = "machine_label"
+
         super().__init__(parent)
 
-        logger.debug("gateway info: {gateway}", gateway=gateway)
-        self.gateway_id = gateway["id"]
-        self.machine_label = gateway["machine_label"]
-
-        # below are configure in update_attributes()
-        self.is_master = None
-        self.master_gateway_id = None
-        self.label = None
-        self.description = None
-        self.user_id = None
-        self.mqtt_auth = None
-        self.mqtt_auth_prev = None
-        self.mqtt_auth_next = None
-        self.mqtt_auth_last_rotate_at = None
-        self.dns_name = None
-        self.internal_ipv4 = None
-        self.external_ipv4 = None
-        self.internal_ipv6 = None
-        self.external_ipv6 = None
-        self.internal_http_port = None
-        self.external_http_port = None
-        self.internal_http_secure_port = None
-        self.external_http_secure_port = None
-        self.internal_mqtt = None
-        self.internal_mqtt_le = None
-        self.internal_mqtt_ss = None
-        self.internal_mqtt_ws = None
-        self.internal_mqtt_ws_le = None
-        self.internal_mqtt_ws_ss = None
-        self.external_mqtt = None
-        self.external_mqtt_le = None
-        self.external_mqtt_ss = None
-        self.external_mqtt_ws = None
-        self.external_mqtt_ws_le = None
-        self.external_mqtt_ws_ss = None
-        self.status = None
-        self.updated_at = None
-        self.created_at = None
         self.version = None
         self.ping_request_id = None  # The last ID for the ping request
         self.ping_request_at = None  # Time the ping was requested
@@ -101,18 +68,8 @@ class Gateway(Entity, SyncToEverywhere):
         self.ping_time_offset = None  # Time offset relating to current gateway
         self.ping_roundtrip = None  # How many millisecond for last round trip.
 
-        # communications information
         self.last_communications = deque([], 30)  # stores times and topics of the last few communications
-
-        self.update_attributes(gateway, source="database")
-        self.start_data_sync()
-
-    def __str__(self):
-        """
-        Print a string when printing the class.  This will return the gateway id so that
-        the gateway can be identified and referenced easily.
-        """
-        return self.gateway_id
+        self._setup_class_model(incoming, source=source)
 
     def asdict(self):
         """
@@ -147,24 +104,6 @@ class Gateway(Entity, SyncToEverywhere):
             "external_mqtt_ws_ss": str(self.external_mqtt_ws_ss),
             "version": str(self.version),
             "status": str(self.status),
-            "created_at": int(self.created_at),
-            "updated_at": int(self.updated_at),
-        }
-
-    def __repl__(self):
-        """
-        Export gateway variables as a dictionary.
-        """
-        return {
-            "gateway_id": str(self.gateway_id),
-            "dns_name": str(self.dns_name),
-            "is_master": self.is_master,
-            "master_gateway_id": str(self.master_gateway_id),
-            "machine_label": str(self.machine_label),
-            "label": str(self.label),
-            "description": str(self.description),
-            "status": int(self.status),
-            "com_status": str(self.com_status),
             "created_at": int(self.created_at),
             "updated_at": int(self.updated_at),
         }

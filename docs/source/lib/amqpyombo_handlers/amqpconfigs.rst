@@ -2,16 +2,16 @@
 
 .. _handlers_amqpconfigs:
 
-.. currentmodule:: yombo.lib.amqpyomb_handlers.amqpconfigs
+.. currentmodule:: yombo.lib.amqpyombo_handlers.amqpconfigs
 
 =================================================================
-Handler::AMQPConfigs (yombo.lib.amqpyomb_handlers.amqpconfigs)
+Handler::AMQPConfigs (yombo.lib.amqpyombo_handlers.amqpconfigs)
 =================================================================
 
 **See the `Web Interface developer docs <https://yombo.net/docs/libraries/handlers`_ for more
 details.**
 
-.. automodule:: yombo.lib.amqpyomb_handlers.amqpconfigs
+.. automodule:: yombo.lib.amqpyombo_handlers.amqpconfigs
    :members:
    :special-members:
    :private-members:

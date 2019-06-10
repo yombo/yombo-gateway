@@ -1071,33 +1071,6 @@ def percentile(data_list, percent, key=lambda x:x):
     return d0+d1
 
 
-# def search_instance(arguments, haystack, allowed_keys, limiter, max_results=None):
-#     if limiter is None:
-#         limiter = .89
-#
-#     if limiter > .99999999:
-#         limiter = .99
-#     elif limiter < .10:
-#         limiter = .10
-#
-#     attrs = []
-#     for attr, value in arguments.items():
-#         if attr in allowed_keys:
-#             attrs.append(
-#                 {
-#                     "field": attr,
-#                     "value": value,
-#                     "limiter": limiter,
-#                 }
-#             )
-#
-#     return do_search_instance(attrs,
-#                               haystack,
-#                               allowed_keys,
-#                               limiter=limiter,
-#                               max_results=max_results)
-
-
 def do_search_instance(attributes, haystack, allowed_keys, limiter=None, max_results=None,
                        required_field=None, required_value=None,
                        ignore_field=None, ignore_value=None):
@@ -1143,9 +1116,12 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, max_res
             raise YomboWarning("Attribute dictionary doesn't have required keys.")
         if attr["field"] not in allowed_keys:
             raise YomboWarning(f"Field is not a valid searchable item: {attr['field']}")
+
         if "limiter" not in attr:
-            attr["limiter"] = .90
+            attr["limiter"] = limiter
         else:
+            if attr["limiter"] is None:
+                attr["limiter"] = limiter
             if attr["limiter"] > .99999999999:
                 attr["limiter"] = .99
             elif attr["limiter"] < .10:
@@ -1199,7 +1175,7 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, max_res
         result_ratios[item["key"]] = item["ratio"]
 
         # count += 1
-        if isinstance(max_results, int) and len(result_values) == max_results:
+        if isinstance(max_results, int) and (len(result_values) == max_results and max_results > 0):
             break
 
     if best_ratio is None:
@@ -1338,12 +1314,55 @@ def human_alphabet():
 
 
 def get_public_gw_id():
-    configs = get_component("yombo.gateway.lib.configuration")
+    configs = get_component("yombo.lib.configuration")
     try:
         gwid = configs.get("core", "gwid")[0:6] + ":" + configs.get("core", "gwuuid")[0:5]
         return gwid
     except:
         return "unknown"
+
+#
+# def get_library(name):
+#     """
+#     Returns the requested library by it's name using :ref:`FuzzySearch <fuzzysearch>`. This
+#     allows the name to be off by one or two letters.
+#
+#     :raises KeyError: When the requested component cannot be found.
+#     :param name: The name of the component (library or module) to find.  Returns a
+#         pointer to the object so it's functions and attributes can be accessed.
+#     :type name: string
+#     :return: Pointer to requested library or module.
+#     :rtype: Object reference
+#     """
+#     get_library.asdfsadf = 'asdfasdf'
+#     if not hasattr(get_library, "library"):
+#         from yombo.lib.loader import get_library
+#         get_library.library = get_library
+#     try:
+#         return get_library.library(name)
+#     except KeyError:
+#         raise KeyError("No such library" + str(name))
+#
+#
+# def get_module(name):
+#     """
+#     Returns the requested library by it's name using :ref:`FuzzySearch <fuzzysearch>`. This
+#     allows the name to be off by one or two letters.
+#
+#     :raises KeyError: When the requested component cannot be found.
+#     :param name: The name of the component (library or module) to find.  Returns a
+#         pointer to the object so it's functions and attributes can be accessed.
+#     :type name: string
+#     :return: Pointer to requested library or module.
+#     :rtype: Object reference
+#     """
+#     if not hasattr(get_module, "module"):
+#         from yombo.lib.loader import get_module
+#         get_module.library = get_library
+#     try:
+#         return get_module.library(name)
+#     except KeyError:
+#         raise KeyError("No such library" + str(name))
 
 
 def get_component(name):

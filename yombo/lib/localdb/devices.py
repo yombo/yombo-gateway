@@ -9,9 +9,10 @@ from yombo.lib.localdb import Device
 # Import Yombo libraries
 from yombo.utils import data_pickle, data_unpickle
 
-PICKLED_FIELDS = [
+PICKLED_COLUMNS = [
     "machine_state_extra", "energy_map"
 ]
+
 
 class DB_Devices(object):
 
@@ -37,26 +38,26 @@ class DB_Devices(object):
                 except:
                     record["energy_map"] = {"0.0": 0, "1.0": 0}
         return records
-
-    @inlineCallbacks
-    def save_devices(self, data):
-        """
-        Attempts to find the provided device in the database. If it's found, update it. Otherwise, a new
-        one is created.
-
-        :param data: A device state instance.
-        :return:
-        """
-        device = yield Device.find(data.device_id)
-        if device is None:  # If none is found, create a new one.
-            device = Device()
-            device.id = data.device_id
-
-        fields = self.get_table_fields("devices")
-        for field in fields:
-            if field in PICKLED_FIELDS:
-                setattr(device, field, data_pickle(getattr(data, field), encoder="json"))
-            else:
-                setattr(device, field, getattr(data, field))
-        results = yield device.save()
-        new_device = yield Device.find("aWpBzyrK0WQUZwgdvmZ4")
+    #
+    # @inlineCallbacks
+    # def save_devices(self, data):
+    #     """
+    #     Attempts to find the provided device in the database. If it's found, update it. Otherwise, a new
+    #     one is created.
+    #
+    #     :param data: A device state instance.
+    #     :return:
+    #     """
+    #     device = yield Device.find(data.device_id)
+    #     if device is None:  # If none is found, create a new one.
+    #         device = Device()
+    #         device.id = data.device_id
+    #
+    #     fields = self.get_table_columns("devices")
+    #     for field in fields:
+    #         if field in PICKLED_COLUMNS:
+    #             setattr(device, field, data_pickle(getattr(data, field), encoder="json"))
+    #         else:
+    #             setattr(device, field, getattr(data, field))
+    #     results = yield device.save()
+    #     new_device = yield Device.find("aWpBzyrK0WQUZwgdvmZ4")

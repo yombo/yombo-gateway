@@ -16,7 +16,7 @@ above or below the horizon (saturn, moon, sun, etc), and then they will transiti
 
 .. code-block:: python
 
-   times = self._Libraries["Times"]
+   times = self._Times
    moonrise = times.item_rise(dayOffset=1, item="Moon") # 1 - we want the next moon rise
 
 
@@ -60,15 +60,6 @@ class Times(YomboLibrary, object):
     Provides light/dark/dusk/dawn status, times, and events. Also provides various rise/set of the sun, moon, and all
     things heavenly.
     """
-
-    def __str__(self):
-        """
-        Returns the name of the library.
-        :return: Name of the library
-        :rtype: string
-        """
-        return "Yombo times library"
-
     def _init_(self, PatchEnvironment = False):
         """
         Setup various common objects, setup frame work if isday/night/dark/twilight.

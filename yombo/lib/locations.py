@@ -24,23 +24,75 @@ from twisted.internet.defer import inlineCallbacks
 from yombo.core.entity import Entity
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
-from yombo.mixins.library_search_mixin import LibrarySearchMixin
 from yombo.core.log import get_logger
-from yombo.mixins.sync_to_everywhere import SyncToEverywhere
-from yombo.utils.hookinvoke import global_invoke_all
+from yombo.mixins.library_db_child_mixin import LibraryDBChildMixin
+from yombo.mixins.sync_to_everywhere_mixin import SyncToEverywhereMixin
+from yombo.mixins.library_db_model_mixin import LibraryDBModelMixin
+from yombo.mixins.library_search_mixin import LibrarySearchMixin
 
 logger = get_logger("library.locations")
 
-class Locations(YomboLibrary, LibrarySearchMixin):
+
+class Location(Entity, LibraryDBChildMixin, SyncToEverywhereMixin):
+    """
+    A class to manage a single location.
+
+    :ivar machine_label: (string) A non-changable machine label.
+    :ivar label: (string) Human label
+    :ivar description: (string) Description of the location or area.
+    :ivar created_at: (int) EPOCH time when created
+    :ivar updated_at: (int) EPOCH time when last updated
+    """
+    _primary_column = "location_id"  # Used by mixins
+
+    def __init__(self, parent, incoming, source=None):
+        """
+        Setup the location object using information passed in.
+
+        :param location: An location with all required items to create the class.
+        :type location: dict
+        """
+        self._Entity_type = "Location"
+        self._Entity_label_attribute = "machine_label"
+        super().__init__(parent)
+        self._setup_class_model(incoming, source=source)
+
+    def __repr__(self):
+        """
+        Returns some info about the current child object.
+
+        :return: Returns some info about the current child object.
+        :rtype: string
+        """
+        return f"<Location: {self.location_id}:{self.machine_label}>"
+
+    def update_attributes_preprocess(self, incoming):
+        """
+        Sets various values from an incoming dictionary. This can be called when either new or
+        when updating.
+
+        :param incoming:
+        :return:
+        """
+        if "incoming_type" in incoming:
+            if incoming["incoming_type"].lower() not in ("area", "incoming", "none"):
+                raise YomboWarning(
+                    f"incoming_type must be one of: area, incoming.  Received: {incoming['incoming_type']}")
+            incoming["incoming_type"] = incoming["incoming_type"].lower()
+
+
+class Locations(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
     """
     Manages locations for a gateway.
     """
     locations = {}
 
     # The following are used by get(), get_advanced(), search(), and search_advanced()
+    _class_storage_load_hook_prefix = "location"
+    _class_storage_load_db_class = Location
     _class_storage_attribute_name = "locations"
-    _class_storage_fields = [
-        "location_id", "label", "machine_label"
+    _class_storage_search_fields = [
+        "location_id", "machine_label", "label"
     ]
     _class_storage_sort_key = "machine_label"
 
@@ -60,107 +112,6 @@ class Locations(YomboLibrary, LibrarySearchMixin):
     def area(self):
         return self.gateway_area.location_id
 
-    def __contains__(self, location_requested):
-        """
-        Checks to if a provided location ID or machine_label exists.
-
-            >>> if "0kas02j1zss349k1" in self._Locations:
-            >>> if "area:0kas02j1zss349k1" in self._Locations:
-
-        or:
-
-            >>> if "some_location_name" in self._Locations:
-
-        :raises YomboWarning: Raised when request is malformed.
-        :raises KeyError: Raised when request is not found.
-        :param location_requested: The location id or machine_label to search for.
-        :type location_requested: string
-        :return: Returns true if exists, otherwise false.
-        :rtype: bool
-        """
-        try:
-            self.get(location_requested)
-            return True
-        except:
-            return False
-
-    def __getitem__(self, location_requested):
-        """
-        Attempts to find the location requested using a couple of methods.
-
-            >>> location = self._Locations["0kas02j1zss349k1"]  # by id
-            >>> location = self._Locations["area:0kas02j1zss349k1"]  # include location type
-
-        or:
-
-            >>> location = self._Locations["alpnum"]  #by name
-
-        :raises YomboWarning: Raised when request is malformed.
-        :raises KeyError: Raised when request is not found.
-        :param location_requested: The location ID or machine_label to search for.
-        :type location_requested: string
-        :return: A pointer to the location type instance.
-        :rtype: instance
-        """
-        return self.get(location_requested)
-
-    def __setitem__(self, **kwargs):
-        """
-        Sets are not allowed. Raises exception.
-
-        :raises Exception: Always raised.
-        """
-        raise Exception("Not allowed.")
-
-    def __delitem__(self, **kwargs):
-        """
-        Deletes are not allowed. Raises exception.
-
-        :raises Exception: Always raised.
-        """
-        raise Exception("Not allowed.")
-
-    def __iter__(self):
-        """ iter locations. """
-        return self.locations.__iter__()
-
-    def __len__(self):
-        """
-        Returns an int of the number of locations configured.
-
-        :return: The number of locations configured.
-        :rtype: int
-        """
-        return len(self.locations)
-
-    def __str__(self):
-        """
-        Returns the name of the library.
-        :return: Name of the library
-        :rtype: string
-        """
-        return "Yombo locations library"
-
-    def keys(self):
-        """
-        Returns the keys (location ID's) that are configured.
-
-        :return: A list of location IDs.
-        :rtype: list
-        """
-        return list(self.locations.keys())
-
-    def items(self):
-        """
-        Gets a list of tuples representing the locations configured.
-
-        :return: A list of tuples.
-        :rtype: list
-        """
-        return list(self.locations.items())
-
-    def values(self):
-        return list(self.locations.values())
 
     @inlineCallbacks
     def _load_(self, **kwargs):
@@ -168,9 +119,27 @@ class Locations(YomboLibrary, LibrarySearchMixin):
         Setups up the basic framework. Nothing is loaded in here until the
         Load() stage.
         """
-        self._started = False
+        yield self._class_storage_load_from_database()
 
-        yield self._load_locations_from_database()
+        # Have "none" site location and area locations as defaults.
+        self.locations["area_none"] = Location(self, {
+            "id": "area_none",
+            "location_type": "area",
+            "machine_label": "none",
+            "label": "None",
+            "description": "Default when no 'area' location is assigned.",
+            "updated_at": int(time()),
+            "created_at": int(time()),
+        })
+        self.locations["location_none"] = Location(self, {
+            "id": "location_none",
+            "location_type": "location",
+            "machine_label": "none",
+            "label": "None",
+            "description": "Default when no 'location' location is assigned.",
+            "updated_at": int(time()),
+            "created_at": int(time()),
+        })
 
         detected_location_info = self._Configs.detected_location_info
         if detected_location_info["ip"] is not None:
@@ -243,104 +212,6 @@ class Locations(YomboLibrary, LibrarySearchMixin):
         self.gateway_location = self.get_default("location")
         self.gateway_area = self.get_default("area")
 
-    def _start_(self, **kwargs):
-        self._started = True
-
-    @inlineCallbacks
-    def _load_locations_from_database(self):
-        """
-        Loads locations from database and sends them to
-        :py:meth:`_load_location_into_memory <Locations._load_location_into_memory>`
-
-        This can be triggered either on system startup or when new/updated locations have been saved to the
-        database and we need to refresh existing locations.
-        """
-        locations = yield self._LocalDB.get_locations()
-        for location in locations:
-            self._load_location_into_memory(location.__dict__)
-
-        # Have "none" site location and area locations as defaults.
-        self.locations["area_none"] = Location(self, {
-            "id": "area_none",
-            "location_type": "area",
-            "machine_label": "none",
-            "label": "None",
-            "description": "Default when no 'area' location is assigned.",
-            "updated_at": int(time()),
-            "created_at": int(time()),
-        })
-        self.locations["location_none"] = Location(self, {
-            "id": "location_none",
-            "location_type": "location",
-            "machine_label": "none",
-            "label": "None",
-            "description": "Default when no 'location' location is assigned.",
-            "updated_at": int(time()),
-            "created_at": int(time()),
-        })
-
-    def _load_location_into_memory(self, location, test_location=False):
-        """
-        Add a new locations to memory or update an existing locations.
-
-        **Hooks called**:
-
-        * _location_before_load_ : If added, sends location dictionary as "location"
-        * _location_before_update_ : If updated, sends location dictionary as "location"
-        * _location_loaded_ : If added, send the location instance as "location"
-        * _location_updated_ : If updated, send the location instance as "location"
-
-        :param location: A dictionary of items required to either setup a new location or update an existing one.
-        :type input: dict
-        :param test_location: Used for unit testing.
-        :type test_location: bool
-        :returns: Pointer to new input. Only used during unittest
-        """
-        # logger.debug("location: {location}", location=location)
-
-        location_id = location["id"]
-        # Stop here if not in run mode.
-        if self._started is True:
-            global_invoke_all("_locations_before_import_",
-                              called_by=self,
-                              location_id=location_id,
-                              location=location,
-                              )
-        if location_id not in self.locations:
-            if self._started is True:
-                global_invoke_all("_location_before_load_",
-                              called_by=self,
-                              location_id=location_id,
-                              location=location,
-                              )
-            self.locations[location_id] = Location(self, location)
-            if self._started is True:
-                global_invoke_all("_location_loaded_",
-                              called_by=self,
-                              location_id=location_id,
-                              location=self.locations[location_id],
-                              )
-
-        elif location_id not in self.locations:
-            if self._started is True:
-                global_invoke_all("_location_before_update_",
-                              called_by=self,
-                              location_id=location_id,
-                              location=self.locations[location_id],
-                              )
-            self.locations[location_id].update_attributes(location)
-            if self._started is True:
-                global_invoke_all("_location_updated_",
-                              called_by=self,
-                              location_id=location_id,
-                              location=self.locations[location_id],
-                              )
-        if self._started is True:
-            global_invoke_all("_locations_imported_",
-                          called_by=self,
-                          location_id=location_id,
-                          location=location,
-                          )
 
     def area_label(self,
                    area_id: {'type': str, 'help': "Area ID (location) to use for prepending to label"},
@@ -410,215 +281,7 @@ class Locations(YomboLibrary, LibrarySearchMixin):
                 return location
 
         if none_id is None:
+            print(self.__repr__)
+            print(self.locations)
             raise KeyError("Unknown location...")
         return none_id
-
-    @inlineCallbacks
-    def add_location(self, data, **kwargs):
-        """
-        Add a location at the Yombo server level, not at the local gateway level.
-
-        :param data:
-        :param kwargs:
-        :return:
-        """
-        try:
-            if "session" in kwargs:
-                session = kwargs["session"]
-            else:
-                session = None
-
-            location_results = yield self._YomboAPI.request("POST", "/v1/location",
-                                                            data,
-                                                            session=session)
-        except YomboWarning as e:
-            return {
-                "status": "failed",
-                "msg": f"Couldn't add location: {e.message}",
-                "apimsg": f"Couldn't add location: {e.message}",
-                "apimsghtml": f"Couldn't add location: {e.html_message}",
-            }
-
-        data["id"] = location_results["data"]["id"]
-        data["updated_at"] = time()
-        data["created_at"] = time()
-        self._LocalDB.insert_locations(data)
-        self._load_location_into_memory(data)
-
-        return {
-            "status": "success",
-            "msg": "Location type added.",
-            "location_id": location_results["data"]["id"],
-        }
-
-    @inlineCallbacks
-    def edit_location(self, location_id, data, **kwargs):
-        """
-        Edit a location at the Yombo server level, not at the local gateway level.
-
-        :param data:
-        :param kwargs:
-        :return:
-        """
-        if data["machine_label"] == "none":
-            return {
-                "status": "failed",
-                "msg": "Cannot edit default locations.",
-                "apimsg": "Cannot edit default locations.",
-                "apimsghtml": "Cannot edit default locations.",
-            }
-
-        try:
-            if "session" in kwargs:
-                session = kwargs["session"]
-            else:
-                session = None
-
-            location_results = yield self._YomboAPI.request("PATCH", f"/v1/location/{location_id}",
-                                                            data,
-                                                            session=session)
-        except YomboWarning as e:
-            return {
-                "status": "failed",
-                "msg": f"Couldn't edit location: {e.message}",
-                "apimsg": f"Couldn't edit location: {e.message}",
-                "apimsghtml": f"Couldn't edit location: {e.html_message}",
-            }
-
-        if location_id in self.locations:
-            self.locations[location_id].update_attributes(data)
-
-        global_invoke_all("_locations_updated_",
-                          called_by=self,
-                          location_id=location_id,
-                          location=self.locations[location_id],
-                          )
-
-        return {
-            "status": "success",
-            "msg": "Device type edited.",
-            "location_id": location_results["data"]["id"],
-        }
-
-    @inlineCallbacks
-    def delete_location(self, location_id, **kwargs):
-        """
-        Delete a location at the Yombo server level, not at the local gateway level.
-
-        :param location_id: The location ID to delete.
-        :param kwargs:
-        :return:
-        """
-        location = self.get(location_id)
-        if location["machine_label"] == "none":
-            return {
-                "status": "failed",
-                "msg": "Cannot delete default locations.",
-                "apimsg": "Cannot delete default locations.",
-                "apimsghtml": "Cannot delete default locations.",
-            }
-
-        try:
-            if "session" in kwargs:
-                session = kwargs["session"]
-            else:
-                session = None
-
-            yield self._YomboAPI.request("DELETE", f"/v1/location/{location.location_id}",
-                                         session=session)
-        except YomboWarning as e:
-            return {
-                "status": "failed",
-                "msg": f"Couldn't delete location: {e.message}",
-                "apimsg": f"Couldn't delete location: {e.message}",
-                "apimsghtml": f"Couldn't delete location: {e.html_message}",
-            }
-
-        if location_id in self.locations:
-            del self.locations[location_id]
-
-        global_invoke_all("_locations_deleted_",
-                          called_by=self,
-                          location_id=location_id,
-                          location=self.locations[location_id],
-                          )
-
-        self._LocalDB.delete_locations(location_id)
-        return {
-            "status": "success",
-            "msg": "Location deleted.",
-            "location_id": location_id,
-        }
-
-
-class Location(Entity, SyncToEverywhere):
-    """
-    A class to manage a single location.
-
-    :ivar machine_label: (string) A non-changable machine label.
-    :ivar label: (string) Human label
-    :ivar description: (string) Description of the location or area.
-    :ivar created_at: (int) EPOCH time when created
-    :ivar updated_at: (int) EPOCH time when last updated
-    """
-
-    def __init__(self, parent, location):
-        """
-        Setup the location object using information passed in.
-
-        :param location: An location with all required items to create the class.
-        :type location: dict
-        """
-        self._internal_label = "locations"  # Used by mixins
-        super().__init__(parent)
-
-        #: str: ID for the location.
-        self.location_id = location["id"]
-
-        # below are configure in update_attributes()
-        #: str: Type of location, one of: area, location
-        self.location_type = None
-        self.machine_label = None
-        self.label = None
-        self.description = None
-        self.updated_at = None
-        self.created_at = None
-        self.update_attributes(location, source="database")
-        self.start_data_sync()
-
-    def update_attributes(self, incoming, source=None):
-        """
-        Sets various values from an incoming dictionary. This can be called when either new or
-        when updating.
-
-        :param incoming:
-        :return:
-        """
-        if "incoming_type" in incoming:
-            if incoming["incoming_type"].lower() not in ("area", "incoming", "none"):
-                raise YomboWarning(
-                    f"incoming_type must be one of: area, incoming.  Received: {incoming['incoming_type']}")
-            incoming["incoming_type"] = incoming["incoming_type"].lower()
-
-        super().update_attributes(incoming, source=source)
-
-    def __str__(self):
-        """
-        Print a string when printing the class.  This will return the location id so that
-        the location can be identified and referenced easily.
-        """
-        return self.machine_label
-
-    # def __repl__(self):
-    #     """
-    #     Export location variables as a dictionary.
-    #     """
-    #     return {
-    #         "location_id": str(self.location_id),
-    #         "location_type": str(self.location_type),
-    #         "machine_label": str(self.machine_label),
-    #         "label": str(self.label),
-    #         "description": int(self.description),
-    #         "created_at": int(self.created_at),
-    #         "updated_at": str(self.updated_at),
-    #     }

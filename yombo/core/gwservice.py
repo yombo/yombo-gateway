@@ -31,7 +31,7 @@ from yombo.utils.decorators.deprecation import set_twisted_logger as utils_decor
 
 logger = get_logger("core.gwservice")
 
-
+from os import getcwd
 class GWService(Service):
     """
     Responsible for starting/stopping the entire Yombo Gateway service.  This is called from Yombo.tac.

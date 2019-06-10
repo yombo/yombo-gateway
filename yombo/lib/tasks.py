@@ -32,14 +32,6 @@ class Tasks(YomboLibrary):
     """
     Performs various tasks at startup.
     """
-    def __str__(self):
-        """
-        Returns the name of the library.
-        :return: Name of the library
-        :rtype: string
-        """
-        return "Yombo tasks library"
-
     @inlineCallbacks
     def _init_(self, **kwargs):
         self.loop_tasks = {}
@@ -65,7 +57,7 @@ class Tasks(YomboLibrary):
 
     @inlineCallbacks
     def check_tasks(self, section):
-        tasks = yield self._LocalDB.get_tasks(section)
+        tasks = yield self._LocalDB.generic_item_get("tasks", where={"run_section": section})
         for task in tasks:
             try:
                 component = getattr(self, task["task_component"])

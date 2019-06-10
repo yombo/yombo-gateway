@@ -43,14 +43,6 @@ class Events(YomboLibrary):
     A common location to collect system events. Not to be confused with notifications to display to users
     as a push notification. However, it may be common to create an event and a notification if it's urgent.
     """
-    def __str__(self):
-        """
-        Returns the name of the library.
-        :return: Name of the library
-        :rtype: string
-        """
-        return "Yombo events library"
-
     def _init_(self, **kwargs):
         """
         Setup the queue so events can be saved right away.

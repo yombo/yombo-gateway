@@ -52,8 +52,8 @@ from yombo.utils import percentage, random_string, random_int, bytes_to_unicode,
 from yombo.utils.hookinvoke import global_invoke_all
 
 # Handlers for processing various messages.
-from yombo.lib.amqpyomb_handlers.amqpcontrol import AmqpControlHandler
-from yombo.lib.amqpyomb_handlers.amqpsystem import AmqpSystemHandler
+from yombo.lib.amqpyombo_handlers.amqpcontrol import AmqpControlHandler
+from yombo.lib.amqpyombo_handlers.amqpsystem import AmqpSystemHandler
 
 logger = get_logger("library.amqpyombo")
 
@@ -73,13 +73,14 @@ class AMQPYombo(YomboLibrary):
     def connected(self, val):
         return self._States.set("amqp.amqpyombo.state", val, value_type="bool", source=self)
 
-    def __str__(self):
-        """
-        Returns the name of the library.
-        :return: Name of the library
-        :rtype: string
-        """
-        return "Yombo amqp yombo library"
+    def _import_init_(self):
+        self.request_configs = False
+        self.amqp = None  # holds our pointer for out amqp connection.
+        # self.connected = False
+        self._getAllConfigsLoggerLoop = None
+        self.send_local_information_loop = None  # used to periodically send yombo servers updated information
+        self.controlHandler = None
+        self.systemHandler = None
 
     def _init_(self, **kwargs):
         """
@@ -89,7 +90,6 @@ class AMQPYombo(YomboLibrary):
         """
         self.user_id = "gw_" + self._Configs.get("core", "gwid", "local", False)
         self.amqp_loginid = self.user_id + "_" + self._Configs.get("core", "gwuuid")
-        self.request_configs = False
         self.controlHandler = AmqpControlHandler(self)
         self.systemHandler = AmqpSystemHandler(self)
 
@@ -103,11 +103,7 @@ class AMQPYombo(YomboLibrary):
             },
         }
 
-        self.amqp = None  # holds our pointer for out amqp connection.
-        self._getAllConfigsLoggerLoop = None
-        self.send_local_information_loop = None  # used to periodically send yombo servers updated information
 
-        self.connected = False
         self.init_deferred = Deferred()
         self.connect()
         return self.init_deferred
@@ -131,14 +127,17 @@ class AMQPYombo(YomboLibrary):
         Called by the Yombo system when it's time to shutdown. This in turn calls the disconnect.
         :return:
         """
-        self.controlHandler._stop_()
-        self.systemHandler._stop_()
+        if self.controlHandler is not None:
+            self.controlHandler._stop_()
+        if self.systemHandler is not None:
+            self.systemHandler._stop_()
         self.disconnect()  # will be cleaned up by amqp library anyways, but it's good to be nice.
         if self.init_deferred is not None and self.init_deferred.called is False:
             self.init_deferred.callback(1)  # if we don't check for this, we can't stop!
 
     def _unload_(self, **kwargs):
-        self.amqp.disconnect()
+        if self.amqp is not None:
+            self.amqp.disconnect()
 
     @inlineCallbacks
     def connect(self):

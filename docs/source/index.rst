@@ -114,6 +114,7 @@ IoT devices, etc.
    ../lib/commands.rst
    ../lib/configuration.rst
    ../lib/crontab.rst
+   ../lib/devicecommands/_summary.rst
    ../lib/devices/_summary.rst
    ../lib/devicetypes.rst
    ../lib/downloadmodules.rst
@@ -162,12 +163,15 @@ the object as something can be used for authentication.
 .. toctree::
    :maxdepth: 1
 
-   ../mixins/authmixin.rst
-   ../mixins/magicattributesmixin.rst
-   ../mixins/permissionmixin.rst
-   ../mixins/rolesmixin.rst
-   ../mixins/usermixin.rst
-   ../mixins/yombobasemixin.rst
+   ../mixins/accessor_mixin.rst
+   ../mixins/auth_mixin.rst
+   ../mixins/library_db_child_mixin.rst
+   ../mixins/library_db_model_mixin.rst
+   ../mixins/library_search_mixin.rst
+   ../mixins/permission_mixin.rst
+   ../mixins/roles_mixin.rst
+   ../mixins/sync_to_everywhere.rst
+   ../mixins/user_mixin.rst
 
 .. _framework_constants:
 

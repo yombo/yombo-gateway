@@ -10,21 +10,207 @@ from twisted.internet.utils import getProcessOutput
 
 # Import 3rd-party libs
 from yombo.ext.twistar.registry import Registry
+from yombo.ext.twistar.utils import dictToWhere
 
 # Import Yombo libraries
 from yombo.core.log import get_logger
-from yombo.lib.localdb import Device, Command, DeviceType
-from yombo.utils import sleep
-
+from yombo.lib.localdb import (Command, Device, DeviceCommandInput, DeviceCommand, DeviceState, DeviceType,
+                               DeviceTypeCommand, Gateway, InputType, Location, ModuleDeviceType,
+                               Node, Notification, Task, User, VariableData, VariableFields, VariableGroups)
+from yombo.utils import sleep, data_pickle, data_unpickle
 logger = get_logger("library.localdb._tools")
+
+GENERIC_ATTRIBUTES = {
+    "commands": {
+        "class": Command,
+        "pickled_columns": [],
+        "orderby": "label ASC",
+        "primary_column_name": "command_id",
+    },
+    "device_command_inputs": {
+        "class": DeviceCommandInput,
+        "pickled_columns": [],
+        "orderby": "label ASC",
+        "primary_column_name": "device_type_id",
+    },
+    "devices": {
+        "class": Device,
+        "pickled_columns": ["energy_map"],
+        "orderby": "label ASC",
+        "primary_column_name": "device_id",
+    },
+    "device_commands": {
+        "class": DeviceCommand,
+        "pickled_columns": [],
+        "orderby": "created_at DESC",
+        "primary_column_name": "device_commnad_id",
+    },
+    "device_states": {
+        "class": DeviceState,
+        "pickled_columns": ["machine_state_extra"],
+        "orderby": "set_at ASC",
+        "primary_column_name": "device_state_id",
+    },
+    "device_types": {
+        "class": DeviceType,
+        "pickled_columns": [],
+        "orderby": "label ASC",
+        "primary_column_name": "device_type_id",
+    },
+    "device_type_commands": {
+        "class": DeviceTypeCommand,
+        "pickled_columns": [],
+        "orderby": None,
+        "primary_column_name": "device_type_command_id",
+    },
+    "gateways": {
+        "class": Gateway,
+        "pickled_columns": [],
+        "orderby": "label ASC",
+        "primary_column_name": "gateway_id",
+    },
+    "input_types": {
+        "class": InputType,
+        "pickled_columns": [],
+        "orderby": "label ASC",
+        "primary_column_name": "input_type_id",
+    },
+    "locations": {
+        "class": Location,
+        "pickled_columns": [],
+        "orderby": "label ASC",
+        "primary_column_name": "location_id",
+    },
+    "module_device_types": {
+        "class": ModuleDeviceType,
+        "pickled_columns": [],
+        "orderby": None,
+        "primary_column_name": "module_device_type_id",
+    },
+    "notifications": {
+        "class": Notification,
+        "pickled_columns": ["meta", "targets"],
+        "orderby": "created_at DESC",
+        "primary_column_name": "notification_id",
+    },
+    "tasks": {
+        "class": Task,
+        "pickled_columns": [],
+        "orderby": "task_name ASC",
+        "primary_column_name": "task_id",
+    },
+    "users": {
+        "class": User,
+        "pickled_columns": [],
+        "orderby": "name ASC",
+        "primary_column_name": "user_id",
+    },
+    "variable_data": {
+        "class": VariableData,
+        "pickled_columns": [],
+        "orderby": "data_weight ASC",
+        "primary_column_name": "variable_data_id",
+    },
+    "variable_fields": {
+        "class": VariableFields,
+        "pickled_columns": [],
+        "orderby": "field_weight ASC",
+        "primary_column_name": "variable_field_id",
+    },
+    "variable_groups": {
+        "class": VariableGroups,
+        "pickled_columns": [],
+        "orderby": "group_weight ASC",
+        "primary_column_name": "variable_group_id",
+    },
+}
 
 
 class DB_Tools(object):
+    def generic_item_functions_available(self, name):
+        """ Check if generic getters/settings for db is available for a name. Returns bool. """
+        return name in GENERIC_ATTRIBUTES
 
-    def _return_empty_if_none(self, records):
-        if records is None:
-            return []
-        return records
+    @inlineCallbacks
+    def generic_item_get(self, name, **kwargs):
+        """
+        Replaces many generic database interactions for getting various items.
+        :return:
+        """
+        attrs = GENERIC_ATTRIBUTES[name]
+
+        if "pickled_columns" in kwargs:
+            pickled_columns = kwargs["pickled_columns"]
+        else:
+            pickled_columns = attrs["pickled_columns"]
+
+        if "where" in kwargs:
+            where = dictToWhere(kwargs["where"])
+        else:
+            where = None
+
+        if "orderby" in kwargs:
+            orderby = kwargs["orderby"]
+        else:
+            orderby = attrs["orderby"]
+
+        if "limit" in kwargs:
+            limit = self._get_limit(**kwargs)
+        else:
+            limit = None
+
+        records = yield attrs["class"].find(where=where,
+                                            orderby=orderby,
+                                            limit=limit,
+                                            )
+        # print(records)
+
+        return self.process_get_results(records, pickled_columns)
+
+    @inlineCallbacks
+    def generic_item_save(self, name, data):
+        """
+        Replaces many generic database interactions for setting/saving/updating various items.
+
+        :return:
+        """
+        attrs = GENERIC_ATTRIBUTES[name]
+        # print(f"Saving generic items: {name}")
+
+        primary_id = getattr(data, attrs["primary_column_name"])
+
+        db_item = yield attrs["class"].find(primary_id)
+        if db_item is None:  # If none is found, create a new one.
+            db_item = attrs["class"]()
+            db_item.id = primary_id
+
+        if len(attrs["pickled_columns"]) > 0:
+            fields = self.get_table_columns(name)
+            for field in fields:
+                if field in attrs["pickled_columns"]:
+                    setattr(db_item, field, data_pickle(getattr(data, field)))
+                else:
+                    setattr(db_item, field, getattr(data, field))
+
+        # print(db_item.__dict__)
+        yield db_item.save()
+        return db_item
+
+    @inlineCallbacks
+    def generic_item_delete(self, name, data):
+        """
+        Replaces many generic database interactions for setting/saving/updating various items.
+
+        :return:
+        """
+        attrs = GENERIC_ATTRIBUTES[name]
+        # print(f"Saving generic items: {name}")
+
+        primary_id = getattr(data, attrs["primary_column_name"])
+
+        db_item = yield attrs["class"].find(primary_id)
+        if db_item is not None:  # If found, delete it.
+            yield db_item.delete()
 
     @inlineCallbacks
     def _load_db_model(self):
@@ -40,7 +226,43 @@ class DB_Tools(object):
             for column in columns:
                 self.db_model[table["tbl_name"]][column["name"]] = column
 
-    def get_table_fields(self, table):
+    def process_get_results(self, records, pickled_columns=None, encoding=None):
+        """
+        Accepts an input from a find() or all().
+
+        If incoming is None, then an empty list is returned.
+
+        If pickled_columns (a list) is provided, then those columns will be sent though
+        data_unpickle()
+
+        :param records:
+        :param pickled_columns:
+        :return:
+        """
+        if records is None:
+            return []
+        if isinstance(pickled_columns, list) and len(pickled_columns) > 0:
+            for record in records:
+                for pickled in pickled_columns:
+                    if getattr(record, pickled) is not None:
+                        setattr(record, pickled, data_unpickle(getattr(record, pickled)))
+        return records
+
+    def pickle_records(self, records, pickled_columns, encoding=None):
+        """
+        Unpickles records.
+
+        :param records:
+        :param columns:
+        :return:
+        """
+        if isinstance(records, list) is False:
+            records = [records]
+        for record in records:
+            for pickled in pickled_columns:
+                setattr(record, pickled, data_pickle(getattr(record, pickled)))
+
+    def get_table_columns(self, table):
         if table in self.db_model:
             fields = list(self.db_model[table].keys())
             if "id" in fields:
@@ -225,7 +447,7 @@ class DB_Tools(object):
 
         # Clean notifications
         if section in ("notifications", "all"):
-            yield sleep(1)
+            yield sleep(5)
             start_time = time()
             for id in list(self._Notifications.notifications.keys()):
                 if self._Notifications.notifications[id].expire_at == "Never":
@@ -241,6 +463,7 @@ class DB_Tools(object):
             start_time = time()
             yield Registry.DBPOOL.runQuery(sql)
             timer += time() - start_time
+
             yield sleep(5)
             start_time = time()
             sql = """DELETE FROM states WHERE id IN

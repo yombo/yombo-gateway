@@ -127,7 +127,7 @@ class Logs(DBObject):
 
 class Modules(DBObject):
     HASONE = [{"name": "module_installed", "class_name": "ModuleInstalled", "foreign_key": "module_id"}]
-    HASMANY = [{"name": "module_device_types", "class_name": "ModuleDeviceTypes", "foreign_key": "module_id"}]
+    HASMANY = [{"name": "module_device_types", "class_name": "ModuleDeviceType", "foreign_key": "module_id"}]
     TABLENAME = "modules"
 
 
@@ -136,12 +136,12 @@ class ModuleCommits(DBObject):
     TABLENAME = "module_commits"
 
 
-class ModuleDeviceTypes(DBObject):
+class ModuleDeviceType(DBObject):
     BELONGSTO = ["devices"]
     TABLENAME = "module_device_types"
 
 
-class ModuleDeviceTypesView(DBObject):
+class ModuleDeviceTypeView(DBObject):
     TABLENAME = "module_device_types_view"
 
 
@@ -158,7 +158,7 @@ class Node(DBObject):
     TABLENAME = "nodes"
 
 
-class Notifications(DBObject):
+class Notification(DBObject):
     TABLENAME = "notifications"
 
 
@@ -186,11 +186,11 @@ class Storage(DBObject):
     TABLENAME = "storage"
 
 
-class Tasks(DBObject):
+class Task(DBObject):
     TABLENAME = "tasks"
 
 
-class Users(DBObject):
+class User(DBObject):
     HASMANY = [{"name": "user_roles", "class_name": "UserRoles", "foreign_key": "user_id"}]
     TABLENAME = "users"
 
@@ -235,7 +235,7 @@ class ModuleRoutingView(DBObject):
 
 Registry.SCHEMAS["PRAGMA_table_info"] = ["cid", "name", "type", "notnull", "dft_value", "pk"]
 Registry.register(Device, DeviceState, VariableData, DeviceType, Command)
-Registry.register(Modules, ModuleInstalled, ModuleDeviceTypes)
+Registry.register(Modules, ModuleInstalled, ModuleDeviceType)
 Registry.register(VariableGroups, VariableData)
 Registry.register(Category)
 Registry.register(DeviceTypeCommand)
@@ -253,51 +253,37 @@ for item in TEMP_MODULE_CLASSES:
 del TEMP_MODULE_CLASSES
 
 from yombo.lib.localdb._tools import DB_Tools
-from yombo.lib.localdb.commands import DB_Commands
 from yombo.lib.localdb.devices import DB_Devices
-from yombo.lib.localdb.devicecommands import DB_DeviceCommands
-from yombo.lib.localdb.devicecommandinputs import DB_DeviceCommandInputs
-from yombo.lib.localdb.devicetypes import DB_DeviceTypes
-from yombo.lib.localdb.devicetypecommands import DB_DeviceTypeCommands
-from yombo.lib.localdb.devicestates import DB_DevicesStates
+# from yombo.lib.localdb.devicetypes import DB_DeviceTypes
+# from yombo.lib.localdb.devicetypecommands import DB_DeviceTypeCommands
+# from yombo.lib.localdb.devicestates import DB_DevicesStates
 from yombo.lib.localdb.events import DB_Events
-from yombo.lib.localdb.gateways import DB_Gateways
+# from yombo.lib.localdb.gateways import DB_Gateways
 from yombo.lib.localdb.gpg import DB_GPG
-from yombo.lib.localdb.locations import DB_Locations
-from yombo.lib.localdb.inputtypes import DB_InputTypes
+# from yombo.lib.localdb.locations import DB_Locations
+# from yombo.lib.localdb.inputtypes import DB_InputTypes
 from yombo.lib.localdb.modules import DB_Modules
-from yombo.lib.localdb.moduledevicetypes import DB_ModuleDeviceTypes
+# from yombo.lib.localdb.moduledevicetypes import DB_ModuleDeviceType
 from yombo.lib.localdb.nodes import DB_Nodes
 from yombo.lib.localdb.notifications import DB_Notifications
 from yombo.lib.localdb.sqldict import DB_SqlDict
 from yombo.lib.localdb.states import DB_States
 from yombo.lib.localdb.statistics import DB_Statistics
 from yombo.lib.localdb.storage import DB_Storage
-from yombo.lib.localdb.tasks import DB_Tasks
-from yombo.lib.localdb.users import DB_Users
-from yombo.lib.localdb.variables import DB_Variables
+# from yombo.lib.localdb.tasks import DB_Tasks
+# from yombo.lib.localdb.users import DB_Users
+# from yombo.lib.localdb.variables import DB_Variables
 from yombo.lib.localdb.websessions import DB_Websessions
 from yombo.lib.localdb.webinterfacelogs import DB_WebinterfaceLogs
 
 
 class LocalDB(
     YomboLibrary,
-    DB_Tools, DB_Commands, DB_Devices, DB_DeviceCommands, DB_DeviceCommandInputs, DB_DeviceTypes,
-    DB_DeviceTypeCommands, DB_DevicesStates, DB_Events,
-    DB_Gateways, DB_GPG, DB_Locations, DB_InputTypes, DB_Modules, DB_ModuleDeviceTypes,
-    DB_Nodes, DB_Notifications, DB_SqlDict, DB_States,
-    DB_Statistics, DB_Storage, DB_Tasks, DB_Users, DB_Variables, DB_Websessions, DB_WebinterfaceLogs):
+    DB_Tools, DB_Devices, DB_Events, DB_GPG, DB_Modules, DB_Nodes, DB_Notifications, DB_SqlDict, DB_States,
+    DB_Statistics, DB_Storage, DB_Websessions, DB_WebinterfaceLogs):
     """
     Manages all database interactions.
     """
-    def __str__(self):
-        """
-        Returns the name of the library.
-        :return: Name of the library
-        :rtype: string
-        """
-        return "Yombo local database library"
-
     @inlineCallbacks
     def _init_(self, **kwargs):
         """

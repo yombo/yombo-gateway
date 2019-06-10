@@ -18,7 +18,7 @@ class DB_DeviceTypeCommands(object):
     @inlineCallbacks
     def get_device_type_commands(self):
         records = yield DeviceTypeCommand.find()
-        return self._return_empty_if_none(records)
+        return self.process_get_results(records)
 
     @inlineCallbacks
     def save_device_type_commands(self, data):

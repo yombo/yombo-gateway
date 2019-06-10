@@ -10,7 +10,7 @@ from time import time
 from twisted.internet.defer import inlineCallbacks
 
 # Import 3rd-party libs
-from yombo.lib.localdb import Users
+from yombo.lib.localdb import User
 from yombo.utils import instance_properties, data_pickle, data_unpickle
 
 

@@ -10,14 +10,14 @@ from time import time
 from twisted.internet.defer import inlineCallbacks
 
 # Import 3rd-party libs
-from yombo.lib.localdb import Users
+from yombo.lib.localdb import User
 
 
 class DB_Users(object):
 
     @inlineCallbacks
     def get_users(self):
-        records = yield Users.all()
+        records = yield User.all()
         for record in records:
             record = record.__dict__
         return records

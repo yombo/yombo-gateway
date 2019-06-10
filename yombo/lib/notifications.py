@@ -36,9 +36,14 @@ from twisted.internet.defer import inlineCallbacks
 from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
+from yombo.core.entity import Entity
 from yombo.core.exceptions import YomboWarning, YomboHookStopProcessing
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
+from yombo.mixins.library_db_child_mixin import LibraryDBChildMixin
+from yombo.mixins.sync_to_everywhere_mixin import SyncToEverywhereMixin
+from yombo.mixins.library_db_model_mixin import LibraryDBModelMixin
+from yombo.mixins.library_search_mixin import LibrarySearchMixin
 from yombo.utils import random_string, is_true_false
 from yombo.utils.hookinvoke import global_invoke_all
 
@@ -72,85 +77,75 @@ class SlicableOrderedDict(OrderedDict):
         self.update({key: value})
         self.move_to_end(key, last=False)
 
-        # root = self._OrderedDict__root
-        # first = root[1]
-        #
-        # if key in self:
-        #     link = self._OrderedDict__map[key]
-        #     link_prev, link_next, _ = link
-        #     link_prev[1] = link_next
-        #     link_next[0] = link_prev
-        #     link[0] = root
-        #     link[1] = first
-        #     root[1] = first[0] = link
-        # else:
-        #     root[1] = first[0] = self._OrderedDict__map[key] = [root, first, key]
-        #     dict_setitem(self, key, value)
 
-class Notifications(YomboLibrary):
+class Notification(Entity, LibraryDBChildMixin, SyncToEverywhereMixin):
+    """
+    A class to manage a notification.
+    """
+    _primary_column = "notification_id"  # Used by mixins
+
+    def __init__(self, parent, incoming, source=None):
+        """
+        Setup the notification object using information passed in.
+        """
+        self._Entity_type = "Notification"
+        self._Entity_label_attribute = "title"
+        super().__init__(parent)
+
+        self.persist = incoming.get("persist", False)
+        self._setup_class_model(incoming, source=source)
+
+    def ack(self, acknowledged_at=None, new_ack=None):
+        if acknowledged_at is None:
+            acknowledged_at = time()
+        if new_ack is None:
+            new_ack = True
+        self.acknowledged = new_ack
+        self.acknowledged_at = acknowledged_at
+        if self.always_show_allow_clear is True:
+            self.always_show = False
+        self._Parent._LocalDB.update_notification(self)
+
+    def update(self, notice):
+        """
+        Uodates a notice values.
+
+        :param notice:
+        :return:
+        """
+        for key, value in notice.items():
+            if key == 'id':
+                continue
+            setattr(self, key, value)
+
+
+class Notifications(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
     """
     Manages all notifications.
 
     """
-    def __getitem__(self, notification_requested):
-        """
-        Return a notification by ID.
+    notifications = SlicableOrderedDict()
+    notification_targets = {}  # tracks available notification targets. This allows subscribers to know whats possible.
 
-            >>> self._Notifications["137ab129da9318"]  #by id
-
-        :param notification_requested: The notification ID to search for.
-        :type input_type_requested: string
-        """
-        return self.get(notification_requested)
-
-    def __iter__(self):
-        return self.notifications.__iter__()
-
-    def __len__(self):
-        return len(self.notifications)
-
-    def __contains__(self, notification_requested):
-        try:
-            self.get(notification_requested)
-            return True
-        except:
-            return False
-
-    def __str__(self):
-        """
-        Returns the name of the library.
-        :return: Name of the library
-        :rtype: string
-        """
-        return "Yombo notifications library"
-
-    @property
-    def always_show_count(self) -> int:
-        always_show_count = 0
-        for id, notif in self.notifications.items():
-            if notif.always_show:
-                always_show_count += 1
-        return always_show_count
-
-    def iteritems(self, start=None, stop=None):
-        return iter(self.notifications.items())
-
-    def _init_(self, **kwargs):
-        """
-        Setups up the basic framework.
-        """
-        # self.init_deferred = Deferred()  # Prevents loader from moving on past _load_ until we are done.
-        self.notifications = SlicableOrderedDict()
-        self.notification_targets = {}  # tracks available notification targets. This allows subscribers to know whats possible.
+    # The following are used by get(), get_advanced(), search(), and search_advanced()
+    _class_storage_load_hook_prefix = "notification"
+    _class_storage_load_db_class = Notification
+    _class_storage_attribute_name = "notifications"
+    _class_storage_search_fields = [
+        "notification_id", "gateway_id", "type", "title"
+    ]
+    _class_storage_sort_key = "created_at"
 
     @inlineCallbacks
     def _load_(self, **kwargs):
         self._checkExpiredLoop = LoopingCall(self.check_expired)
         self._checkExpiredLoop.start(self._Configs.get("notifications", "check_expired", 121, False), False)
-        self.load_notifications()
+
+        yield self._class_storage_load_from_database()
+
         results = yield global_invoke_all("_notification_get_targets_",
-                                           called_by=self,
-                                           )
+                                          called_by=self,
+                                          )
 
         for component_name, data in results.items():
             logger.debug("Adding notification target: {component_name}", component_name=component_name)
@@ -165,14 +160,6 @@ class Notifications(YomboLibrary):
                     "component": component_name,
                     }
                 )
-
-    def _stop_(self, **kwargs):
-        if self.init_deferred is not None and self.init_deferred.called is False:
-            self.init_deferred.callback(1)  # if we don't check for this, we can't stop!
-
-    def _reload_(self):
-        self.notifications.clear()
-        self.load_notifications()
 
     def _notification_get_targets_(self, **kwargs):
         """ Hosting here since loader isn't properly called... """
@@ -201,29 +188,6 @@ class Notifications(YomboLibrary):
         """
         self._LocalDB.cleanup_database("notifications")
 
-    @inlineCallbacks
-    def load_notifications(self):
-        """
-        Load the last few notifications into memory.
-        """
-        notifications = yield self._LocalDB.get_notifications()
-        for notice in notifications:
-            notice = notice.__dict__
-            if notice["expire_at"] < time():
-                continue
-            try:
-                notice["meta"] = json.loads(notice["meta"])
-            except:
-                notice["meta"] = {}
-            try:
-                notice["targets"] = json.loads(notice["targets"])
-            except:
-                notice["targets"] = {}
-
-            self.add(notice, from_db=True)
-        logger.debug("Done load_notifications: {notifications}", notifications=self.notifications)
-        # self.init_deferred.callback(10)
-
     def ack(self, notice_id, acknowledged_at=None, new_ack=None):
         """
         Acknowledge a notice id.
@@ -238,8 +202,8 @@ class Notifications(YomboLibrary):
             new_ack = True
 
         if acknowledged_at is None:
-            acknowledged_at = time()
-        self.notifications[notice_id].set_ack(acknowledged_at, new_ack)
+            acknowledged_at = int(time())
+        self.notifications[notice_id].ack(acknowledged_at, new_ack)
         try:
             global_invoke_all("_notification_acked_",
                               called_by=self,
@@ -307,7 +271,7 @@ class Notifications(YomboLibrary):
             if "timeout" in notice:
                 notice["expire_at"] = time() + notice["timeout"]
             else:
-                notice["expire_at"] = time() + 60*60*24*30 # keep persistent notifications for 30 days.
+                notice["expire_at"] = time() + 60*60*24*30  # keep persistent notifications for 30 days.
         else:
             if notice["expire_at"] == None:
                 if notice["persist"] == True:
@@ -327,20 +291,8 @@ class Notifications(YomboLibrary):
             notice["acknowledged_at"] = None
 
         logger.debug("notice: {notice}", notice=notice)
-        if from_db is None and notice["persist"] is True:
-            self._LocalDB.add_notification(notice)
 
         self.notifications.prepend(notice["id"], Notification(self, notice))
-
-        # Call any hooks
-        try:
-            global_invoke_all("_notification_add_",
-                              called_by=self,
-                              notification=self.notifications[notice["id"]],
-                              event=self.notifications[notice["id"]].asdict()
-                              )
-        except YomboHookStopProcessing:
-            pass
 
         for target in notice["targets"]:
             reactor.callLater(.0001,
@@ -377,123 +329,3 @@ class Notifications(YomboLibrary):
         except:
             pass
 
-    def get(self, notice_id, get_all=None):
-        """
-        Performs the actual search.
-
-        .. note::
-
-           Modules shouldn't use this function. Use the built in reference to
-           find notification: `self._Notifications["8w3h4sa"]`
-
-        :raises YomboWarning: Raised when notifcation cannot be found.
-        :param notice_id: The input type ID or input type label to search for.
-        :type notice_id: string
-        :return: A dict containing details about the notification
-        :rtype: dict
-        """
-        if notice_id in self.notifications:
-            return self.notifications[notice_id]
-        else:
-            raise YomboWarning(f"Notification not found: {notice_id}")
-
-    @inlineCallbacks
-    def select(self, criteria):
-        """
-        Select notifications based on various criteria.
-
-        :param criteria: A dictionary containing field names and expected values.
-        :return: List of dictionaries.
-        """
-        results = yield self._LocalDB.select_notifications(criteria)
-        return results
-
-
-class Notification:
-    """
-    A class to manage a notification.
-    """
-
-    def __init__(self, parent, notice):
-        """
-        Setup the notification object using information passed in.
-        """
-        logger.debug("notice info: {notice}", notice=notice)
-
-        self._Parent = parent
-        self.notification_id = notice['id']
-        self.gateway_id = notice['gateway_id']
-        self.type = notice['type']
-        self.priority = notice['priority']
-        self.source = notice['source']
-        if notice['expire_at'] == 0:
-            self.expire_at = "None"
-        else:
-            self.expire_at = notice['expire_at']
-
-        self.acknowledged = notice['acknowledged']
-        self.acknowledged_at = notice['acknowledged_at']
-        self.user = notice['user']
-        self.title = notice['title']
-        self.message = notice['message']
-        self.targets = notice['targets']
-        self.meta = notice['meta']
-        self.always_show = notice['always_show']
-        self.always_show_allow_clear = notice['always_show_allow_clear']
-        self.persist = notice['persist']
-        self.local = notice['local']
-        self.created_at = notice['created_at']
-
-    def __str__(self):
-        """
-        Print a string when printing the class.  This will return the command_id so that
-        the command can be identified and referenced easily.
-        """
-        return f"{self.notification_id}: {self.message}"
-
-    def set_ack(self, acknowledged_at=None, new_ack=None):
-        if acknowledged_at is None:
-            acknowledged_at = time()
-        if new_ack is None:
-            new_ack = True
-        self.acknowledged = new_ack
-        self.acknowledged_at = acknowledged_at
-        if self.always_show_allow_clear is True:
-            self.always_show = False
-        self._Parent._LocalDB.update_notification(self)
-
-    def update(self, notice):
-        """
-        Uodates a notice values.
-
-        :param notice:
-        :return:
-        """
-        for key, value in notice.items():
-            if key == 'id':
-                continue
-            setattr(self, key, value)
-
-    def asdict(self):
-        """
-        Export command variables as a dictionary.
-        """
-        return {
-            'notification_id': str(self.notification_id),
-            'gateway_id': str(self.gateway_id),
-            'type': str(self.type),
-            'priority': str(self.priority),
-            'source': str(self.source),
-            'expire_at': None if self.expire_at is None else float(self.expire_at),
-            'acknowledged': self.acknowledged,
-            'acknowledged_at': None if self.acknowledged_at is None else float(self.acknowledged_at),
-            'title': str(self.title),
-            'message': str(self.message),
-            'targets': str(self.targets),
-            'meta': str(self.meta),
-            'always_show': str(self.always_show),
-            'always_show_allow_clear': str(self.always_show_allow_clear),
-            'persist': str(self.persist),
-            'local': self.local,
-            'created_at': int(self.created_at),
-        }

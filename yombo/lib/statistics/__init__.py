@@ -138,14 +138,6 @@ class Statistics(YomboLibrary):
         "energy.#": {"size": 60, "lifetime": 0},
     }
 
-    def __str__(self):
-        """
-        Returns the name of the library.
-        :return: Name of the library
-        :rtype: string
-        """
-        return "Yombo statistics library"
-
     @inlineCallbacks
     def _init_(self, **kwargs):
         """
@@ -875,7 +867,8 @@ class Statistics(YomboLibrary):
         except Exception as error:
             logger.warn("Error while trying to bulk save: {error}", error=error)
 
-        if gateway_stopping is True:
+        if gateway_stopping is True and self.unload_deferred.called is False:
+                # print("no kill")
             self.unload_deferred.callback(1)
         # else:
         #     self.consolidate_db()  # for testing
