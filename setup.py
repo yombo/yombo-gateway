@@ -74,7 +74,7 @@ REQUIRES = [
     'service_identity',
     'six',
     'treq',
-    'Twisted==18.4.*',
+    'Twisted==19.2.*',
     'unidecode',
     'uvloop',
     'voluptuous',

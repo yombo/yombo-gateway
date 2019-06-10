@@ -120,10 +120,10 @@ function start_gateway {
     #Check if PID is running, if it is, then exit gracefully.
     if [ -e $PID_PATH/$PID_FILE ]; then
         mypid=`cat $PID_PATH/$PID_FILE`
-      if kill -0 &>1 > /dev/null $mypid; then
-        echo "Yombo Gateway already running with pid: $mypid"
-        exit 1
-      fi
+        if kill -0 $mypid >/dev/null 2>&1; then
+          echo "Yombo Gateway already running with pid: $mypid"
+          exit 1
+        fi
     fi
 
     TACOPTIONS="--pidfile=$PID_PATH/$PID_FILE -n -y $TACFILE"
