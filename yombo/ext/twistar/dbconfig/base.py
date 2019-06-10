@@ -405,7 +405,6 @@ class InteractionBase(object):
         @return: A C{Deferred} that sends a callback the updated object.
         """
         def _doupdate(txn):
-            print(f"updateObj - start")
             klass = obj.__class__
             tablename = klass.tablename()
             cols = self.getSchema(tablename, txn)
