@@ -122,6 +122,7 @@ function start_gateway {
         mypid=`cat $PID_PATH/$PID_FILE`
         if kill -0 $mypid >/dev/null 2>&1; then
           echo "Yombo Gateway already running with pid: $mypid"
+          ybo motd
           exit 1
         fi
     fi
