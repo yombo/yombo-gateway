@@ -57,23 +57,33 @@
 
         <dashboard-sidebar-item :link="{name: $t('ui.navigation.debug'), icon: 'fas fa-bug'}">
           <dashboard-sidebar-item :link="{name: $t('ui.navigation.overview'), path: localePath('dashboard-debug')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.atoms'), path: localePath({name: 'dashboard-debug-generic-id', params: {id:'atoms'} })}"></dashboard-sidebar-item>
           <dashboard-sidebar-item :link="{name: $t('ui.navigation.authentication_platforms'), path: localePath('dashboard-debug-authentication_platforms')}"></dashboard-sidebar-item>
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.cache'), path: localePath('dashboard-debug-cache')}"></dashboard-sidebar-item>
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.commands'), path: localePath('dashboard-debug-commands')}"></dashboard-sidebar-item>
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.device_types'), path: localePath('dashboard-debug-device_types')}"></dashboard-sidebar-item>
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.events'), path: localePath('dashboard-debug-events')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.automation_rules'), path: localePath({name: 'dashboard-debug-generic-id', params: {id:'automation_rules'} })}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.cache'), path: localePath({name: 'dashboard-debug-generic-id', params: {id:'cache'} })}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.commands'), path: localePath({name: 'dashboard-debug-generic-id', params: {id:'commands'} })}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.devices'), path: localePath({name: 'dashboard-debug-generic-id', params: {id:'devices'} })}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.device_command_types'), path: localePath({name: 'dashboard-debug-generic-id', params: {id:'device_command_types'} })}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.device_types'), path: localePath({name: 'dashboard-debug-generic-id', params: {id:'device_types'} })}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.gateways'), path: localePath({name: 'dashboard-debug-generic-id', params: {id:'gateways'} })}"></dashboard-sidebar-item>
           <dashboard-sidebar-item :link="{name: $t('ui.navigation.hooks_called_libraries'), path: localePath('dashboard-debug-hooks_called_libraries')}"></dashboard-sidebar-item>
           <dashboard-sidebar-item :link="{name: $t('ui.navigation.hooks_called_modules'), path: localePath('dashboard-debug-hooks_called_modules')}"></dashboard-sidebar-item>
           <dashboard-sidebar-item :link="{name: $t('ui.navigation.http_event_stream'), path: localePath('dashboard-debug-http_event_stream')}"></dashboard-sidebar-item>
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.modules'), path: localePath('dashboard-debug-modules')}"></dashboard-sidebar-item>
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.nodes'), path: localePath('dashboard-debug-nodes')}"></dashboard-sidebar-item>
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.sslcerts'), path: localePath('dashboard-debug-sslcerts')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.input_types'), path: localePath({name: 'dashboard-debug-generic-id', params: {id:'input_types'} })}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.locations'), path: localePath({name: 'dashboard-debug-generic-id', params: {id:'locations'} })}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.module_device_types'), path: localePath({name: 'dashboard-debug-generic-id', params: {id:'module_device_types'} })}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.modules'), path: localePath({name: 'dashboard-debug-generic-id', params: {id:'modules'} })}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.notifications'), path: localePath({name: 'dashboard-debug-generic-id', params: {id:'notifications'} })}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.scenes'), path: localePath({name: 'dashboard-debug-generic-id', params: {id:'scenes'} })}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.sqldict'), path: localePath({name: 'dashboard-debug-generic-id', params: {id:'sqldict'} })}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.states'), path: localePath({name: 'dashboard-debug-generic-id', params: {id:'states'} })}"></dashboard-sidebar-item>
           <dashboard-sidebar-item :link="{name: $t('ui.navigation.statistic_bucket_lifetimes'), path: localePath('dashboard-debug-statistic_bucket_lifetimes')}"></dashboard-sidebar-item>
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.requirements'), path: localePath('dashboard-debug-requirements')}"></dashboard-sidebar-item>
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.requirements'), path: localePath('dashboard-debug-requirements')}"></dashboard-sidebar-item>
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.variables_groups'), path: localePath('dashboard-debug-variables_groups')}"></dashboard-sidebar-item>
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.variables_fields'), path: localePath('dashboard-debug-variables_fields')}"></dashboard-sidebar-item>
-          <dashboard-sidebar-item :link="{name: $t('ui.navigation.variables_data'), path: localePath('dashboard-debug-variables_data')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.states'), path: localePath({name: 'dashboard-debug-generic-id', params: {id:'states'} })}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.storage'), path: localePath('dashboard-debug-storage')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.users'), path: localePath('dashboard-debug-users')}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.variable_data'), path: localePath({name: 'dashboard-debug-generic-id', params: {id:'variables_data'} })}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.variable_fields'), path: localePath({name: 'dashboard-debug-generic-id', params: {id:'variables_fields'} })}"></dashboard-sidebar-item>
+          <dashboard-sidebar-item :link="{name: $t('ui.navigation.variable_groups'), path: localePath({name: 'dashboard-debug-generic-id', params: {id:'variables_groups'} })}"></dashboard-sidebar-item>
         </dashboard-sidebar-item>
 
       </template>

@@ -30,7 +30,7 @@ export default {
       this.updateDataAge();
     },
     updateDataAge () { // called by setInterval setup in mounted()
-      this.display_age =  this.$store.getters[this.getter](this.$i18n.locale);
+      this.display_age = this.$store.getters[this.getter](this.$i18n.locale);
     },
   },
   mounted() {

@@ -190,6 +190,7 @@ export default {
       "areas": "地区",
       "atoms": "原子",
       "automation": "自动化",
+      "automation_rules": "自动化规则",
       "backup": "备份",
       "basic_settings": "基本设置",
       "commands": "命令",

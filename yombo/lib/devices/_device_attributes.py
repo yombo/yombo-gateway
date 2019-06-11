@@ -559,6 +559,7 @@ class Device_Attributes(Entity, LibraryDBChildMixin, SyncToEverywhereMixin):
             return variables
 
         return {
+            "id": str(self.device_id),
             "gateway_id": self.gateway_id,
             "area": self.area,
             "location": self.location,
@@ -566,7 +567,6 @@ class Device_Attributes(Entity, LibraryDBChildMixin, SyncToEverywhereMixin):
             "location_id": self.location_id,
             "area_label": self.area_label,
             "full_label": self.full_label,
-            "device_id": str(self.device_id),
             "device_type_id": str(self.device_type_id),
             "device_type_label": self._DeviceTypes[self.device_type_id].machine_label,
             "machine_label": str(self.machine_label),

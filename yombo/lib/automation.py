@@ -342,6 +342,19 @@ class Automation(YomboLibrary):
             key = "label"
         return OrderedDict(sorted(iter(self.rules.items()), key=lambda i: getattr(i[1], key)))
 
+    def class_storage_as_list(self, gateway_id=None):
+        """
+        Gets automation rules as a list.
+
+        :return:
+        """
+        results = []
+        for rule_id, rule in self.rules.items():
+            rule = rule.asdict()
+            rule["id"] = rule_id
+            results.append(rule)
+        return results
+
     def get_list(self, gateway_id=None):
         """
         Gets Automation Rules as a list.

@@ -6,7 +6,7 @@
           <div class="fa-pull-right">
             <nuxt-link class="navbar-brand fa-pull-right" :to="localePath('dashboard-devices-add')">
               <button type="button" class="btn btn-info btn-sm" data-dismiss="modal">
-                <i class="fas fa-plus-circle fa-pull-left" style="font-size: 1.5em;"></i> &nbsp; Add new</a>
+                <i class="fas fa-plus-circle fa-pull-left" style="font-size: 1.5em;"></i> &nbsp; Add new
                 </button>
             </nuxt-link>
             <br>

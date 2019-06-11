@@ -75,25 +75,6 @@ class VariableDataItem(Entity, LibraryDBChildMixin, SyncToEverywhereMixin):
             self._decrypted = None
         self._display = self._Parent._GPG.display_encrypted(self.data)
 
-    def asdict(self):
-        """
-        Export data variables as a dictionary.
-        """
-        return {
-            "variable_data_id": str(self.variable_data_id),
-            "user_id": str(self.user_id),
-            "gateway_id": str(self.gateway_id),
-            "variable_field_id": str(self.variable_field_id),
-            "variable_relation_id": str(self.variable_relation_id),
-            "variable_relation_type": str(self.variable_relation_type),
-            "data": str(self.data),
-            "display": str(self.display),
-            "data_weight": str(self.data_weight),
-            "created_at": int(self.created_at),
-            "updated_at": int(self.updated_at),
-        }
-
-
 
 class VariableData(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
     """

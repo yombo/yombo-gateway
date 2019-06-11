@@ -54,7 +54,7 @@ from yombo.lib.webinterface.class_helpers.webserver import WebServer
 from yombo.lib.webinterface.routes.api_v1.atoms import route_api_v1_atoms
 from yombo.lib.webinterface.routes.api_v1.automation_rules import route_api_v1_automation_rules
 # from yombo.lib.webinterface.routes.api_v1.camera import route_api_v1_camera
-from yombo.lib.webinterface.routes.api_v1.command import route_api_v1_command
+from yombo.lib.webinterface.routes.api_v1.debug import route_api_v1_debug
 from yombo.lib.webinterface.routes.api_v1.device import route_api_v1_device
 from yombo.lib.webinterface.routes.api_v1.device_command import route_api_v1_device_command
 # from yombo.lib.webinterface.routes.api_v1.events import route_api_v1_events
@@ -130,7 +130,7 @@ class WebInterface(YomboLibrary, BuildDistribution, ErrorHandler, Render, WebSer
         route_api_v1_atoms(self.webapp)
         route_api_v1_automation_rules(self.webapp)
         # route_api_v1_camera(self.webapp)
-        route_api_v1_command(self.webapp)
+        route_api_v1_debug(self.webapp)
         route_api_v1_device(self.webapp)
         route_api_v1_device_command(self.webapp)
         # route_api_v1_events(self.webapp)

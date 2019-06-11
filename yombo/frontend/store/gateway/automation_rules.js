@@ -39,9 +39,9 @@ export const mutations = {
 
 export const getters = {
   data_age: state => () => {
-    return g_data_age(store_settings(), state)
+    return g_data_age(state)
   },
   display_age: (state, getters) => (locale) => {
-    return g_display_age(store_settings(), state, getters, locale)
+    return g_display_age(state, getters, locale)
   }
 };

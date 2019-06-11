@@ -107,6 +107,7 @@ export default {
     "common": {
       "add": "जोड़ें",
       "area": "क्षेत्र",
+      "automation_rules": "स्वचालन नियम",
       "cancel": "रद्द करना",
       "delete": "हटाना",
       "deleted": "हटाए गए",
@@ -130,6 +131,7 @@ export default {
       "areas": "क्षेत्रों",
       "atoms": "परमाणुओं",
       "automation": "स्वचालन",
+      "automation_rules": "स्वचालन नियम",
       "backup": "बैकअप",
       "commands": "आदेश",
       "control": "नियंत्रण",

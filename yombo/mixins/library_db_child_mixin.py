@@ -112,7 +112,7 @@ class LibraryDBChildMixin:
 
     def asdict(self):
         """ Returns the current object as a dictionary. """
-        results = {self._primary_column: getattr(self, self._primary_column)}
+        results = {"id": getattr(self, self._primary_column)}
         for field in self._Parent._class_storage_db_columns:
             results[field] = getattr(self, field)
         return results
@@ -123,7 +123,7 @@ class LibraryDBChildMixin:
 
     def as_reference(self):
         """ Returns a dictionary used that can be used to send externally. """
-        data = {self._primary_column: getattr(self, self._primary_column)}
+        data = {"id": getattr(self, self._primary_column)}
         for field in self._Parent._class_storage_db_columns:
             data[field] = getattr(self, field)
         self.as_reference_postprocess(data)

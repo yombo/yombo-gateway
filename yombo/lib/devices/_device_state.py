@@ -120,7 +120,7 @@ class Device_State(Entity, SyncToEverywhereMixin):
         :return:
         """
         results = {
-            "status_id": self.status_id,
+            "id": self.status_id,
             "device_id": self.device_id,
             "command_id": self.command_id,
             "set_at": self.set_at,
