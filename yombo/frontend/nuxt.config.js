@@ -84,6 +84,7 @@ export default {
     { src:'~/plugins/bus.js', ssr: false },
     { src: '~/plugins/startup.js', ssr: false },
     { src: '~/plugins/filters.js', ssr: false },
+    { src: '~/plugins/root_items.js', ssr: false },
   ],
 
   /*

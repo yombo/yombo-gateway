@@ -2,7 +2,7 @@
   <div>
     <style>
       body {
-        background-image: url('http://localhost:8080/img/bg/{{bgImageNumber}}_1536.jpg');
+        background-image: url('{{imageUrl}}img/bg/{{bgImageNumber}}_{{bgImageSize}}.jpg');
       }
     </style>
     <notifications></notifications>
@@ -32,18 +32,38 @@
       bgImageNumber: function () {
         return Math.floor(new Date()/10000) % 5;
       },
+      bgImageSize: function() {
+        console.log(this.$root.$data.window.width);
+        if (this.$root.$data.window.width <= 600) {
+          return 600;
+        } else if (this.$root.$data.window.width <= 1364) {
+          return 1364;
+        } else {
+          return 2048;
+        }
+      },
+      systemInfo: function () {
+        return this.$store.state.gateway.systeminfo;
+      },
+      imageUrl: function() {
+        let protocol = location.protocol;
+        let slashes = protocol.concat("//");
+        let host = slashes.concat(window.location.hostname);
+        let url = new URL(host);
+        url.port = this.systemInfo.internal_http_port;
+        return url.toString()
+      }
     }
 
   }
 </script>
 
-<style scoped>
+<style>
 .panel-header {
   height: 10px;
   padding-top: 20px;
 }
-</style>
-<style>
+
 body {
   font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI',
     Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -54,7 +74,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
   -webkit-font-smoothing: antialiased;
   /*box-sizing: border-box;*/
-  /*background-image: url('http://localhost:8080/img/bg/1_1536.jpg');*/
+  /*background-image: url('/img/bg/1_1536.jpg');*/
     /*background-size: contain;*/
   background-repeat: no-repeat;
   -webkit-background-size: cover;
