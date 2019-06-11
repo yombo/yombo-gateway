@@ -414,7 +414,7 @@ class Device_Attributes(Entity, LibraryDBChildMixin, SyncToEverywhereMixin):
             FEATURE_CONTROLLABLE: True,
             FEATURE_ALLOW_DIRECT_CONTROL: True,
         }
-        self.MACHINE_STATUS_EXTRA_FIELDS = {}  # Track what fields in state extra are allowed.
+        self.MACHINE_STATE_EXTRA_FIELDS = {}  # Track what fields in state extra are allowed.
         self.TOGGLE_COMMANDS = False  # Put two command machine_labels in a list to enable toggling.
 
         self.call_before_command = []
@@ -803,12 +803,12 @@ class Device_Attributes(Entity, LibraryDBChildMixin, SyncToEverywhereMixin):
         """
         if isinstance(fields, list):
             for field in fields:
-                self.MACHINE_STATUS_EXTRA_FIELDS[field] = True
+                self.MACHINE_STATE_EXTRA_FIELDS[field] = True
         elif isinstance(fields, dict):
             for field, value in fields:
-                self.MACHINE_STATUS_EXTRA_FIELDS[field] = value
+                self.MACHINE_STATE_EXTRA_FIELDS[field] = value
         elif isinstance(fields, str):
-            self.MACHINE_STATUS_EXTRA_FIELDS[fields] = True
+            self.MACHINE_STATE_EXTRA_FIELDS[fields] = True
 
     def remove_machine_state_fields(self, features):
         """

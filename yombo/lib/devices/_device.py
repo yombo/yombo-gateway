@@ -82,10 +82,10 @@ class Device(Device_Attributes, Device_Base):
         return f"{self.area_label} is now {human_state}"
 
     def available_state_modes_values(self):
-        return instance_properties(self, startswith_filter="STATUS_MODES_")
+        return instance_properties(self, startswith_filter="STATE_MODES_")
 
     def available_state_extra_attributes(self):
-        return instance_properties(self, startswith_filter="STATUS_EXTRA_")
+        return instance_properties(self, startswith_filter="STATE_EXTRA_")
 
     def energy_calc(self, **kwargs):
         """

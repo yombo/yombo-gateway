@@ -5,7 +5,7 @@ from yombo.constants.features import (FEATURE_BRIGHTNESS, FEATURE_COLOR_TEMP, FE
     FEATURE_SUPPORT_COLOR)
 from yombo.constants.inputs import INPUT_BRIGHTNESS
 from yombo.constants.platforms import PLATFORM_BASE_LIGHT, PLATFORM_COLOR_LIGHT, PLATFORM_LIGHT
-from yombo.constants.status_extra import STATUS_EXTRA_BRIGHTNESS, STATUS_EXTRA_RGB_COLOR
+from yombo.constants.state_extra import STATUS_EXTRA_BRIGHTNESS, STATUS_EXTRA_RGB_COLOR
 
 from yombo.lib.devices._device import Device
 import yombo.utils.color as color_util

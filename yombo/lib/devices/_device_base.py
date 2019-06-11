@@ -585,14 +585,14 @@ class Device_Base(object):
 
         # filter out previous invalid status extra values.
         # for extra_key in list(previous_extra.keys()):
-        #     if extra_key not in self.MACHINE_STATUS_EXTRA_FIELDS:
+        #     if extra_key not in self.MACHINE_STATE_EXTRA_FIELDS:
         #         del previous_extra[extra_key]
 
         new_extra = kwargs.get("machine_state_extra", {})
 
         # filter out new invalid status extra values.
         for extra_key in list(new_extra.keys()):
-            if extra_key not in self.MACHINE_STATUS_EXTRA_FIELDS:
+            if extra_key not in self.MACHINE_STATE_EXTRA_FIELDS:
                 logger.warn(
                     f"For device '{self.full_label}', the machine status extra field '{extra_key}' was removed"
                     f" on status update. This field is not apart of the approved machine status extra fields. "

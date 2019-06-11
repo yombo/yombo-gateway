@@ -4,8 +4,8 @@ from yombo.constants.features import (FEATURE_NUMBER_OF_STEPS,
 from yombo.constants.commands import COMMAND_OFF, COMMAND_ON, COMMAND_SET_SPEED, COMMAND_SET_DIRECTION
 from yombo.constants.inputs import INPUT_DIRECTION, INPUT_SPEED
 from yombo.constants.platforms import PLATFORM_BASE_FAN, PLATFORM_FAN
-from yombo.constants.status_extra import (STATUS_EXTRA_DIRECTION, STATUS_EXTRA_SPEED, STATUS_EXTRA_SPEED_LABEL,
-    STATUS_EXTRA_OSCILLATING)
+from yombo.constants.state_extra import (STATE_EXTRA_DIRECTION, STATE_EXTRA_SPEED, STATE_EXTRA_SPEED_LABEL,
+                                         STATE_EXTRA_OSCILLATING)
 
 from yombo.core.exceptions import YomboWarning
 from yombo.lib.devices._device import Device
@@ -28,10 +28,10 @@ class Fan(Device):
             FEATURE_SEND_UPDATES: False,
             FEATURE_NUMBER_OF_STEPS: 4  # # 0 = off, 4 = high
         })
-        self.MACHINE_STATUS_EXTRA_FIELDS[STATUS_EXTRA_DIRECTION] = True
-        self.MACHINE_STATUS_EXTRA_FIELDS[STATUS_EXTRA_OSCILLATING] = True
-        self.MACHINE_STATUS_EXTRA_FIELDS[STATUS_EXTRA_SPEED] = True
-        self.MACHINE_STATUS_EXTRA_FIELDS[STATUS_EXTRA_SPEED_LABEL] = True
+        self.MACHINE_STATE_EXTRA_FIELDS[STATE_EXTRA_DIRECTION] = True
+        self.MACHINE_STATE_EXTRA_FIELDS[STATE_EXTRA_OSCILLATING] = True
+        self.MACHINE_STATE_EXTRA_FIELDS[STATE_EXTRA_SPEED] = True
+        self.MACHINE_STATE_EXTRA_FIELDS[STATE_EXTRA_SPEED_LABEL] = True
 
         self.FAN_SPEED_NAME_TO_INT = {
             SPEED_OFF: 0,
@@ -113,8 +113,8 @@ class Fan(Device):
         """
         if len(self.status_history) > 0:
             machine_state_extra = self.status_history[0].machine_state_extra
-            if STATUS_EXTRA_SPEED in machine_state_extra:
-                return machine_state_extra[STATUS_EXTRA_SPEED]
+            if STATE_EXTRA_SPEED in machine_state_extra:
+                return machine_state_extra[STATE_EXTRA_SPEED]
             else:
                 return 0
         return None
@@ -126,8 +126,8 @@ class Fan(Device):
         """
         if len(self.status_history) > 0:
             machine_state_extra = self.status_history[0].machine_state_extra
-            if STATUS_EXTRA_SPEED_LABEL in machine_state_extra:
-                return machine_state_extra[STATUS_EXTRA_SPEED_LABEL]
+            if STATE_EXTRA_SPEED_LABEL in machine_state_extra:
+                return machine_state_extra[STATE_EXTRA_SPEED_LABEL]
         return None
 
     @property
@@ -137,8 +137,8 @@ class Fan(Device):
         """
         if len(self.status_history) > 0:
             machine_state_extra = self.status_history[0].machine_state_extra
-            if STATUS_EXTRA_DIRECTION in machine_state_extra:
-                return machine_state_extra[STATUS_EXTRA_DIRECTION]
+            if STATE_EXTRA_DIRECTION in machine_state_extra:
+                return machine_state_extra[STATE_EXTRA_DIRECTION]
             else:
                 return None
         return None
@@ -150,8 +150,8 @@ class Fan(Device):
         """
         if len(self.status_history) > 0:
             machine_state_extra = self.status_history[0].machine_state_extra
-            if STATUS_EXTRA_OSCILLATING in machine_state_extra:
-                return machine_state_extra[STATUS_EXTRA_OSCILLATING]
+            if STATE_EXTRA_OSCILLATING in machine_state_extra:
+                return machine_state_extra[STATE_EXTRA_OSCILLATING]
             else:
                 return None
         return None

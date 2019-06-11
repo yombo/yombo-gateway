@@ -8,7 +8,7 @@ from yombo.constants.commands import COMMAND_OPEN, COMMAND_CLOSE
 from yombo.constants.features import FEATURE_ALLOW_IN_SCENES
 from yombo.constants.platforms import (PLATFORM_BASE_COVER, PLATFORM_COVER, PLATFORM_DOOR, PLATFORM_GARAGE_DOOR,
     PLATFORM_WINDOW)
-from yombo.constants.status_extra import STATUS_EXTRA_PERCENT
+from yombo.constants.state_extra import STATE_EXTRA_PERCENT
 
 from yombo.lib.devices._device import Device
 
@@ -24,7 +24,7 @@ class Cover(Device):
         # Put two command machine_labels in a list to enable toggling.
         self.TOGGLE_COMMANDS = [COMMAND_OPEN, COMMAND_CLOSE]
         self.FEATURES[FEATURE_ALLOW_IN_SCENES] = False
-        self.MACHINE_STATUS_EXTRA_FIELDS[STATUS_EXTRA_PERCENT] = True
+        self.MACHINE_STATE_EXTRA_FIELDS[STATE_EXTRA_PERCENT] = True
 
     def toggle(self, **kwargs):
         if self.machine_state == 0:

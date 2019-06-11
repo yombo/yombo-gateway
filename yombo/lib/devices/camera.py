@@ -10,7 +10,7 @@ from yombo.constants.features import (FEATURE_NUMBER_OF_STEPS, FEATURE_ALL_ON, F
                                       FEATURE_POLLABLE, FEATURE_ALLOW_IN_SCENES, FEATURE_DETECTS_MOTION)
 from yombo.constants.commands import COMMAND_STOP, COMMAND_RECORD, COMMAND_ON, COMMAND_OFF
 from yombo.constants.platforms import PLATFORM_BASE_CAMERA, PLATFORM_CAMERA, PLATFORM_VIDEO_CAMERA
-from yombo.constants.status_extra import SEVALUE_IDLE, SEVALUE_RECORDING
+from yombo.constants.state_extra import SEVALUE_IDLE, SEVALUE_RECORDING
 from yombo.core.log import get_logger
 from yombo.lib.devices._device import Device
 from yombo.utils import sleep
@@ -57,7 +57,7 @@ class Camera(Device):
         self._password = None
         self._request_auth = None
 
-        # self.MACHINE_STATUS_EXTRA_FIELDS["mode"] = ["idle", "streaming", "recording"]
+        # self.MACHINE_STATE_EXTRA_FIELDS["mode"] = ["idle", "streaming", "recording"]
 
     def toggle(self):
         if self.status_history[0].machine_state == SEVALUE_IDLE:
