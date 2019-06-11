@@ -438,8 +438,8 @@ def route_setup_wizard(webapp):
                             "warning")
                         return webinterface.redirect(request, "/setup_wizard/dns")
 
-
             new_auth = response.content["data"]["attributes"]
+            print(f"new_auth: {new_auth}")
             webinterface._Configs.set("core", "gwid", new_auth["id"])
             webinterface._Configs.set("core", "gwuuid", new_auth["uuid"])
             webinterface._Configs.set("core", "machine_label", session["setup_wizard_gateway_machine_label"])

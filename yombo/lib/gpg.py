@@ -103,7 +103,7 @@ class GPG(YomboLibrary):
             self.__mypassphrase = bytes_to_unicode(phrase)
 
     @inlineCallbacks
-    def _init_from_startup_(self, **kwargs):
+    def _init_from_atoms_(self, **kwargs):
         """
         Solving a chicken and the egg thing. Configurations use gpg, gpg uses configs. Have to partially
         load GPG, then load configs, then finish loading GPG _AFTER_ startup library determines run state.
@@ -153,9 +153,6 @@ class GPG(YomboLibrary):
         Do nothing
         """
         pass
-
-    def _done_init(self):
-        self.initDefer.callback(10)
 
     @inlineCallbacks
     def load_passphrase(self, fingerprint=None):
@@ -620,7 +617,7 @@ class GPG(YomboLibrary):
         gwid = self.gateway_id
         gwuuid = self.gwuuid()
         if gwid is "local" or gwuuid is None:
-            self.key_generation_status = "failed: gateway not setup, gatewayid or uuid is missing"
+            self.key_generation_status = "failed: gateway not setup, gateway id or uuid is missing"
             self._generating_key = False
             return
         passphrase = random_string(length=random_int(200, .1), char_set="extended")
@@ -661,6 +658,7 @@ class GPG(YomboLibrary):
                 newfingerprint = key_data["fingerprint"]
                 break
         asciiArmoredPublicKey = self.gpg.export_keys(newfingerprint)
+        print(f"saving new gpg fingerprint: {newfingerprint}")
         self._Configs.set("gpg", "fingerprint", newfingerprint)
         secret_file = f"{self._Atoms.get('working_dir')}/etc/gpg/{newfingerprint}.pass"
         # print("saveing pass to : %s" % secret_file)

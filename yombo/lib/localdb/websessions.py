@@ -48,8 +48,8 @@ class DB_Websessions(object):
 
     @inlineCallbacks
     def save_web_session(self, session):
-        logger.info("save_web_session: session.auth_id: {auth_id}", auth_id=session._auth_id)
-        logger.info("save_web_session: session.auth_data: {auth_data}", auth_data=session.auth_data)
+        logger.debug("save_web_session: session.auth_id: {auth_id}", auth_id=session._auth_id)
+        logger.debug("save_web_session: session.auth_data: {auth_data}", auth_data=session.auth_data)
         auth_data = data_pickle({
             "auth_data": session.auth_data,
             "auth_type": session.auth_type,

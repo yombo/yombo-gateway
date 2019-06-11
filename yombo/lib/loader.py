@@ -78,6 +78,8 @@ HARD_LOAD["LocalDB"] = {"operating_mode": "all"}
 HARD_LOAD["SQLDict"] = {"operating_mode": "all"}
 HARD_LOAD["GPG"] = {"operating_mode": "all"}
 HARD_LOAD["Configuration"] = {"operating_mode": "all"}
+HARD_LOAD["YomboAPI"] = {"operating_mode": "all"}
+HARD_LOAD["Startup"] = {"operating_mode": "all"}
 HARD_LOAD["Localize"] = {"operating_mode": "all"}
 HARD_LOAD["Hash"] = {"operating_mode": "all"}
 HARD_LOAD["HashIDS"] = {"operating_mode": "all"}
@@ -85,8 +87,6 @@ HARD_LOAD["Discovery"] = {"operating_mode": "all"}
 HARD_LOAD["Atoms"] = {"operating_mode": "all"}
 HARD_LOAD["States"] = {"operating_mode": "all"}
 HARD_LOAD["Statistics"] = {"operating_mode": "all"}
-HARD_LOAD["YomboAPI"] = {"operating_mode": "all"}
-HARD_LOAD["Startup"] = {"operating_mode": "all"}
 HARD_LOAD["AMQP"] = {"operating_mode": "run"}
 HARD_LOAD["CronTab"] = {"operating_mode": "all"}
 HARD_LOAD["Times"] = {"operating_mode": "all"}
@@ -167,6 +167,7 @@ HARD_UNLOAD["LocalDB"] = {"operating_mode": "all"}
 
 RUN_PHASE = {
     "system_init": 0,
+    "system_start": 10,
     "libraries_import": 500,
     "libraries_init": 1000,
     "modules_import": 1500,
@@ -201,6 +202,8 @@ class Loader(YomboLibrary):
     """
     @property
     def gateway_id(self):
+        if self._Loader.operating_mode != "run":
+            return "local"
         return self._Configs.configs["core"]["gwid"]["value"]  # Shortcut to get the gateway_id directly
 
     @gateway_id.setter
@@ -209,6 +212,8 @@ class Loader(YomboLibrary):
 
     @property
     def is_master(self):
+        if self._Loader.operating_mode != "run":
+            return 1
         return self._Configs.configs["core"]["is_master"]["value"]  # Shortcut to get the gateway_id directly
 
     @is_master.setter
@@ -217,6 +222,8 @@ class Loader(YomboLibrary):
 
     @property
     def master_gateway_id(self):
+        if self._Loader.operating_mode != "run":
+            return "local"
         return self._Configs.configs["core"]["master_gateway_id"]["value"]  # Shortcut to get the gateway_id directly
 
     @master_gateway_id.setter
@@ -229,7 +236,7 @@ class Loader(YomboLibrary):
 
     @operating_mode.setter
     def operating_mode(self, val):
-        if RUN_PHASE[self.__run_phase] > 500:
+        if RUN_PHASE[self._run_phase] > 500:
             self.loaded_libraries["states"]["loader.operating_mode"] = val
             if val == 'run':
                 logger.debug("Operating mode set to: {mode}", mode=val)
@@ -239,21 +246,13 @@ class Loader(YomboLibrary):
 
     @property
     def run_phase(self):
-        return (self.__run_phase, RUN_PHASE[self.__run_phase])
+        return self._run_phase, RUN_PHASE[self._run_phase]
 
     @run_phase.setter
     def run_phase(self, val):
-        raise AttributeError("Unable to set this attribute: _Loader.run_phase.")
-
-    @property
-    def _run_phase(self):
-        return self.__run_phase
-
-    @_run_phase.setter
-    def _run_phase(self, val):
         if RUN_PHASE[val] > 500:
             self.loaded_libraries["states"]["loader.run_phase"] = val
-        self.__run_phase = val
+        self._run_phase = val
 
     def __getitem__(self, component_requested):
         """
@@ -275,12 +274,11 @@ class Loader(YomboLibrary):
                                "101", "__getitem__", "loader")
 
     def __init__(self, testing=False):
-        # self._Loader = self  # needed for reference when for modules -> magic attributes mixin.
         super().__init__(self)
         Entity._Root = self  # Configures the _Root attributes within the Entity class.
         self.startup_events_queue = []
         self._operating_mode = "system_init"
-        self.__run_phase = "system_init"
+        self._run_phase = "system_init"
         self.unittest = testing
         self._moduleLibrary = None
         self.event_loop = None
@@ -316,6 +314,8 @@ class Loader(YomboLibrary):
         This function is called when the gateway is to startup. In turn,
         this function will load all the components and modules of the gateway.
         """
+        self.run_phase = "system_start"
+
         if randint(1, 10) == 1:
             logger.debug("Upgrading pip...")
             check_output(["pip3", "install", "--upgrade", "pip"])

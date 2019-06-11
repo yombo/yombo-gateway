@@ -132,6 +132,8 @@ class Gateways(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
         :param kwargs: section, option(key), value
         :return:
         """
+        if self.gateway_id == "local" or len(self.gateways) == 0:
+            return
         section = kwargs["section"]
         option = kwargs["option"]
         value = kwargs["value"]

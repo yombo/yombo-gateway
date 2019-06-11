@@ -1,31 +1,19 @@
 <style>
-   @media screen and (min-width: 2049px) {
+   @media screen and (min-width: 1365px) {
       html,body {
-       background-image: url('/img/bg/{{ bg_image_id() }}.jpg');
+       background-image: url('/img/bg/{{ bg_image_id() }}_2048.jpg');
       }
     }
 
-   @media screen and (min-width: 1537px) and (max-width:2048px) {
+   @media screen and (min-width: 601px) and (max-width:1364px) {
       html,body {
-       background-image: url('/img/bg/{{ bg_image_id() }}_1536.jpg');
+       background-image: url('/img/bg/{{ bg_image_id() }}_1364.jpg');
       }
     }
 
-   @media screen and (min-width: 1025px) and (max-width:1536px) {
+   @media screen and (min-width: 100px) and (max-width:680px) {
       html,body {
-       background-image: url('/img/bg/{{ bg_image_id() }}_1536.jpg');
-      }
-    }
-
-   @media screen and (min-width: 601px) and (max-width:1024px) {
-      html,body {
-       background-image: url('/img/bg/{{ bg_image_id() }}_1024.jpg');
-      }
-    }
-
-   @media screen and (min-width: 100px) and (max-width:600px) {
-      html,body {
-       background-image: url('/img/bg/{{ bg_image_id() }}_600.jpg');
+       background-image: url('/img/bg/{{ bg_image_id() }}_680.jpg');
       }
     }
 

@@ -64,6 +64,7 @@ def route_home(webapp):
             if session is None or session.enabled is False or session.is_valid() is False or session.has_user is False:
                 return webinterface.redirect(request, "/user/login")
 
+            print(f"file_cache: {webinterface.file_cache}")
             if "index" not in webinterface.file_cache:
                 webinterface.file_cache["index"] = {}
                 try:

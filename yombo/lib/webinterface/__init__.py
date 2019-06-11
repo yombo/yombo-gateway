@@ -176,7 +176,8 @@ class WebInterface(YomboLibrary, BuildDistribution, ErrorHandler, Render, WebSer
         if not self.enabled:
             return
 
-        self.build_dist()  # Make all the JS and CSS files
+        if self.operating_mode == "run":
+            self.build_dist()  # Make all the JS and CSS files
 
         self.module_config_links = {}
 
@@ -271,6 +272,7 @@ class WebInterface(YomboLibrary, BuildDistribution, ErrorHandler, Render, WebSer
         self.webapp.templates.globals["_location"] = self._Locations.location
         self.webapp.templates.globals["_area"] = self._Locations.area
 
+    @inlineCallbacks
     def _start_(self, **kwargs):
         self._Notifications.add({
             "title": "System still starting",
@@ -282,6 +284,11 @@ class WebInterface(YomboLibrary, BuildDistribution, ErrorHandler, Render, WebSer
             "always_show_allow_clear": False,
             "id": "webinterface:starting",
         })
+
+        if self.operating_mode != "run":
+            logger.warn("First time running the gateway, it will take a while to build the frontend web server.")
+            yield self.build_dist(verbose=True)  # Make all the JS and CSS files
+
         self._get_nav_side_items()
         self.webapp.templates.globals["_"] = _  # i18n
 

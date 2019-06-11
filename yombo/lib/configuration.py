@@ -252,6 +252,8 @@ class Configuration(YomboLibrary):
         #setup some defaults if we are new....
         self.get("core", "gwid", "local")
         self.get("core", "gwuuid", None)
+        self.get("core", "is_master", 1)
+        self.get("core", "master_gateway_id", "local")
 
         # Perform DB cleanup activites based on local section.
         if self.get("local", "deletedelayedmessages", False, False) is True:

@@ -34,7 +34,7 @@ class BuildDistribution:
     to the working_dir where it can be accessed through the web server.
     """
     @inlineCallbacks
-    def build_dist(self):
+    def build_dist(self, verbose=None):
         """
         This builds the ~/.yombo/frontend folder.
 
@@ -54,14 +54,18 @@ class BuildDistribution:
         file_out.write(self.nuxt_env_content())
         yield file_out.close_while_waiting()
 
-        deferreds = []
-        deferreds.append(self.copy_static_web_items())
+        if verbose is True:
+            logger.info("Copying web static content.")
+        yield self.copy_static_web_items()
         if not path.exists(self.working_dir + "/frontend/img/bg/5.jpg"):
-            deferreds.append(self.download_background_images())
+            if verbose is True:
+                logger.info("Downloading pretty background images.")
+            yield self.download_background_images()
         if not path.exists(f"{self.working_dir}/frontend/_nuxt"):
-            deferreds.append(self.copy_frontend())  # We copy the previously built frontend in case it's new install..
-        deferreds.append(self.build_frontend())
-        yield DeferredList(deferreds)
+            if verbose is True:
+                logger.info("Copying basic web items for setup wizard.")
+            yield self.copy_frontend()  # We copy the previously built frontend in case it's new install..
+        yield self.build_frontend()
 
     @inlineCallbacks
     def frontend_npm_run(self, arguments=None):
@@ -106,7 +110,6 @@ class BuildDistribution:
             logger.info("Frontend builder appears to already be running. Won't build now.")
             return
 
-
         logger.warn("Web Frontend: Starting build. This may take a while to complete. Will notify when done.")
         self.frontend_building = True
         yield self.frontend_npm_run()  # THe build script copies to the final destination.
@@ -142,9 +145,12 @@ class BuildDistribution:
         :return:
         """
         yield threads.deferToThread(self.empty_directory, f"{self.working_dir}/frontend/_nuxt")
-        yield self.copytree("yombo/frontend/dist/_nuxt/", "frontend/_nuxt/")
-        yield threads.deferToThread(shutil.copy2, self.app_dir + "/yombo/frontend/dist/index.html", self.working_dir + "/frontend/")
-        yield threads.deferToThread(shutil.copy2, self.app_dir + "/yombo/frontend/dist/sw.js", self.working_dir + "/frontend/")
+        if path.exists(f"{self.app_dir }/yombo/frontend/dist/_nuxt/"):
+            yield self.copytree("yombo/frontend/dist/_nuxt/", "frontend/_nuxt/")
+        if path.exists(f"{self.app_dir }/yombo/frontend/dist/index.html"):
+            yield threads.deferToThread(shutil.copy2, self.app_dir + "/yombo/frontend/dist/index.html", self.working_dir + "/frontend/")
+        if path.exists(f"{self.app_dir }/yombo/frontend/dist/sw.js"):
+            yield threads.deferToThread(shutil.copy2, self.app_dir + "/yombo/frontend/dist/sw.js", self.working_dir + "/frontend/")
 
     @inlineCallbacks
     def download_background_images(self):
@@ -163,21 +169,29 @@ class BuildDistribution:
             "https://images.unsplash.com/uploads/14114036359651bd991f1/b3ed8fdf",
             "https://images.unsplash.com/reserve/vof4H8A1S02iWcK6mSAd_sarahmachtsachen.com_TheBeach.jpg",
             ]  # If added/updated, update WI/route/user.py - page_usr_login_user_get
-        sizes = [2048, 1536, 1024, 600]
         if not path.exists(f"{self.working_dir}/frontend/img/bg"):
             makedirs(f"{self.working_dir}/frontend/img/bg")
 
         for idx, image in enumerate(background_images):
-            logger.info(f"WebInterface background image: {image}")
+            logger.debug(f"WebInterface background image: {image}")
             try:
                 yield download_file(image, f"{self.working_dir}/frontend/img/bg/{idx}.jpg")
             except:
                 continue
-            logger.info(f"WebInterface background image, done: {image}")
+            logger.debug(f"WebInterface background image, done: {image}")
             full = Image.open(f"{self.working_dir}/frontend/img/bg/{idx}.jpg")
-            for size in sizes:
+            sizes = {
+                2048: 67,
+                1364: 67,
+                600: 65,
+            }
+            for size, quality in sizes.items():
                 out = yield threads.deferToThread(full.resize, (size, size), Image.BICUBIC)
-                yield threads.deferToThread(out.save, f"{self.working_dir}/frontend/img/bg/{idx}_{size}.jpg", format="JPEG", subsampling=0, quality=68)
+                yield threads.deferToThread(out.save,
+                                            f"{self.working_dir}/frontend/img/bg/{idx}_{size}.jpg",
+                                            format="JPEG",
+                                            subsampling=0,
+                                            quality=quality)
 
     def nuxt_env_content(self, request=None):
         internal_http_port = self._Gateways.local.internal_http_port

@@ -360,6 +360,9 @@ class States(YomboLibrary):
         if gateway_id is None or gateway_id.lower() == 'self':
             gateway_id = self.gateway_id
 
+        if self._Loader.operating_mode != "run":
+            gateway_id = "local"
+
         self._Statistics.increment("lib.states.get", bucket_size=15, anon=True)
         search_chars = ["#", "+"]
         if any(s in key for s in search_chars):
@@ -445,6 +448,9 @@ class States(YomboLibrary):
         # logger.debug("Saving state: {key} = {value}", key=key, value=value)
         if gateway_id is None:
             gateway_id = self.gateway_id
+
+        if self._Loader.operating_mode != "run":
+            gateway_id = "local"
 
         search_chars = ["#", "+"]
         if any(s in key for s in search_chars):

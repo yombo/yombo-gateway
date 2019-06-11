@@ -60,12 +60,7 @@ class Startup(YomboLibrary):
         self.has_valid_gw_auth = False
 
         self.system_stopping = False
-        if self._Loader.operating_mode == "first_run":  # will know if first_run already or yombo.ini is missing.
-            self.configs_needed = ['gwid', 'gwhash']
-            return
-        first_run = self._Configs.get("core", "first_run", False, False)
-        if first_run is True:
-            self._Loader.operating_mode = "first_run"
+        if self._Loader.operating_mode == "first_run" or self._Configs.get("core", "first_run", False, False):
             self.configs_needed = ['gwid', 'gwhash']
             return
 
@@ -82,13 +77,16 @@ class Startup(YomboLibrary):
             self._Loader.operating_mode = "config"
             self.configs_needed = ['gwhash']
             self.configs_needed_human.append("Gateway password is missing.")
+            return
 
         if len(self.configs_needed_human) == 0:
             has_valid_credentials = self._YomboAPI.gateway_credentials_is_valid
             if has_valid_credentials is False:
-                # print("setting to config mode ... 22")
+                print("setting to config mode ... 22")
                 self._Loader.operating_mode = "config"
                 self.configs_needed_human.append("Gateway ID is invalid or has invalid authentication info.")
+                return
+
             else:  # If we have a valid gateway, download it's details.
                 try:
                     response = yield self._YomboAPI.request("GET",
@@ -114,8 +112,7 @@ class Startup(YomboLibrary):
 
                 if gateway["dns_name"] is not None:
                     try:
-                        response = yield self._YomboAPI.request("GET",
-                                                                    f"/v1/gateways/{gwid}/dns")
+                        response = yield self._YomboAPI.request("GET", f"/v1/gateways/{gwid}/dns")
 
                     except YomboWarning as e:
                         logger.warn("Unable to get gateway dns details:{e}", e=e)
@@ -156,9 +153,9 @@ class Startup(YomboLibrary):
                                      })
             print("setting to config mode ... 33")
             self._Loader.operating_mode = "config"
+            return
 
         self._Loader.operating_mode = "run"
-        yield self._GPG._init_from_startup_()
 
     @inlineCallbacks
     def _load_(self, **kwargs):

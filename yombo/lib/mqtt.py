@@ -75,6 +75,13 @@ class MQTT(YomboLibrary):
         self.client_enabled = True
         self.mqtt_server = None
         self.mqtt_local_client = None
+        self.server_listen_port = None
+        self.server_listen_port_ss_ssl = None
+        self.server_listen_port_le_ssl = None
+        self.server_listen_port_websockets = None
+        self.server_listen_port_websockets_ss_ssl = None
+        self.server_listen_port_websockets_le_ssl = None
+        self.server_allow_anonymous = None
 
     def _init_(self, **kwargs):
         """

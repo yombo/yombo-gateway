@@ -31,13 +31,15 @@ from yombo.core.log import get_logger
 from .generic import YA_Commands
 logger = get_logger("library.yomboapi")
 
-class YomboAPI(YomboLibrary, YA_Commands):
 
+class YomboAPI(YomboLibrary, YA_Commands):
     @inlineCallbacks
     def _init_(self, **kwargs):
+        self.my_gateway_id = self._Configs.get2("core", "gwid", None, False)
         self.gateway_hash = self._Configs.get2("core", "gwhash", None, False)
 
         self.api_app_key = self._Configs.get("yomboapi", "api_app_key", "4Pz5CwKQCsexQaeUvhJnWAFO6TRa9SafnpAQfAApqy9fsdHTLXZ762yCZOct", False)
+        self.base_url = self._Configs.get("yomboapi", "baseurl", "https://api.yombo.net/api", False)
         self.gateway_credentials_is_valid = False
         yield self._check_gateway_credentials()
 
@@ -51,7 +53,7 @@ class YomboAPI(YomboLibrary, YA_Commands):
         :return:
         """
         logger.debug(f"About to validate gateway credentials")
-        gateway_id = self.gateway_id
+        gateway_id = self.my_gateway_id()
         gateway_hash = self.gateway_hash()
 
         if gateway_id == "local" or gateway_hash is None:
@@ -59,6 +61,7 @@ class YomboAPI(YomboLibrary, YA_Commands):
             return
 
         try:
+            logger.debug(f"Now doing credential check....")
             response = yield self.request("POST", f"/v1/gateways/{gateway_id}/check_authentication",
                                           {
                                             "hash": gateway_hash,
@@ -84,15 +87,12 @@ class YomboAPI(YomboLibrary, YA_Commands):
             self.gateway_credentials_is_valid = False
         else:
             data = response.content["data"]
-            # print(f"auth check response: {data}")
-            # print(f"auth check response: {data['attributes']}")
-            # print(f"api_auth_valid 111: gateway credentals: {self.gateway_credentials_is_valid}")
             self.gateway_credentials_is_valid = data["attributes"]["hash_valid"]
             # print(f"api_auth_valid 222: gateway credentals: {self.gateway_credentials_is_valid}")
 
     @inlineCallbacks
     def validate_user_token(self, user_token):
-        gateway_id = self.gateway_id
+        gateway_id = self.my_gateway_id()
         try:
             response = yield self.request("POST", f"/v1/gateways/{gateway_id}/check_authentication",
                                           {
@@ -164,8 +164,8 @@ class ApiRequest:
     """
     def __init__(self, parent, method="GET", url="", request_data=None, headers={}, authorization_header=None):
         self._Parent = parent
-        self.api_app_key = self._Parent._Configs.get("yomboapi", "api_app_key", "4Pz5CwKQCsexQaeUvhJnWAFO6TRa9SafnpAQfAApqy9fsdHTLXZ762yCZOct", False)
-        self.base_url = self._Parent._Configs.get("yomboapi", "baseurl", "https://api.yombo.net/api", False)
+        self.api_app_key = self._Parent.api_app_key
+        self.base_url = self._Parent.base_url
         self.user_agent = f"yombo-gateway-{VERSION}"
 
         self.method = method
@@ -202,8 +202,7 @@ class ApiRequest:
             # print("checking auth header 2")
             if self._Parent.gateway_credentials_is_valid is False:
                 return None
-            return {"Authorization": f"YomboGateway {self._Parent.gateway_id} "
-                    f"{self._Parent.gateway_hash()}"}
+            return {"Authorization": f"YomboGateway {self._Parent.my_gateway_id()} {self._Parent.gateway_hash()}"}
         else:
             return {"Authorization": incoming}
 

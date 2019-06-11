@@ -257,6 +257,7 @@ class Atoms(YomboLibrary):
             gateway_id = self.gateway_id
         return OrderedDict(sorted(self.atoms[gateway_id]))
 
+    @inlineCallbacks
     def _init_(self, **kwargs):
         """
         Sets up the atom library and files basic atoms values about the system.
@@ -264,7 +265,6 @@ class Atoms(YomboLibrary):
         :return: None
         """
         self.library_state = 1
-        # self.gateway_id = "local"
         self._loaded = False
         self.atoms = {self.gateway_id: {}}
         # if "local" not in self.atoms:
@@ -274,6 +274,7 @@ class Atoms(YomboLibrary):
         self.triggers = {}
         self.set("working_dir", settings.arguments["working_dir"], source=self)
         self.set("app_dir", settings.arguments["app_dir"], source=self)
+        yield self._GPG._init_from_atoms_()
 
     def _load_(self, **kwargs):
         self._loaded = True
@@ -356,6 +357,9 @@ class Atoms(YomboLibrary):
         if gateway_id is None:
             gateway_id = self.gateway_id
 
+        if self._Loader.operating_mode != "run":
+            gateway_id = "local"
+
         self._Statistics.increment("lib.atoms.get", bucket_size=15, anon=True)
         search_chars = ["#", "+"]
         if any(s in atom_requested for s in search_chars):
@@ -411,6 +415,9 @@ class Atoms(YomboLibrary):
         if gateway_id is None:
             gateway_id = self.gateway_id
         # logger.debug("atoms:set: {gateway_id}: {key} = {value}", gateway_id=gateway_id, key=key, value=value)
+
+        if self._Loader.operating_mode != "run":
+            gateway_id = "local"
 
         if gateway_id not in self.atoms:
             self.atoms[gateway_id] = {}
