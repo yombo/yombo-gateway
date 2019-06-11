@@ -9,8 +9,8 @@ Startup (yombo.lib.startup)
 ===========================
 .. automodule:: yombo.lib.startup
 
-Startup Class
-==============
+Startup Library Class
+========================
 .. autoclass:: Startup
    :members:
    :special-members:

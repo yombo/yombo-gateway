@@ -13,8 +13,8 @@ Scenes (yombo.lib.scenes)
 ===========================
 .. automodule:: yombo.lib.scenes
 
-Scenes Class
-==============
+Scenes Library Class
+===========================
 .. autoclass:: Scenes
    :members:
    :special-members:

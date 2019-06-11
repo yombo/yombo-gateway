@@ -9,8 +9,8 @@ Discovery (yombo.lib.hashids)
 ====================================
 .. automodule:: yombo.lib.hashids
 
-HashIDS
-================
+HashIDS Library Class
+=========================
 .. autoclass:: HashIDS
    :members:
    :special-members:

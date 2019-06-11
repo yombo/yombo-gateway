@@ -9,9 +9,9 @@ Times (yombo.lib.times)
 =======================
 .. automodule:: yombo.lib.times
 
-Times Class
+Times Library Class
 =======================
-.. autoclass:: Times
+.. automodule:: Times
    :members:
    :special-members:
    :private-members:

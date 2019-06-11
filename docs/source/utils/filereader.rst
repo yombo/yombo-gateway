@@ -1,11 +1,11 @@
-.. index:: filereader
+.. index:: util_filereader
 
-.. _filereader:
+.. _util_filereader:
 
 .. currentmodule:: yombo.utils.filereader
 
 ============================================
-FileReader (yombo.utils.filereader)
+File Reader (yombo.utils.filereader)
 ============================================
 
 .. automodule:: yombo.utils.filereader

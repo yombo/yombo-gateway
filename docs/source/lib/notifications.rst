@@ -9,9 +9,9 @@ Notifications (yombo.lib.notifications)
 ===========================================
 .. automodule:: yombo.lib.notifications
 
-Notifications class
+Notifications Library Class
 ===========================================
-.. autoclass:: Notifications
+.. automodule:: Notifications
    :members:
    :special-members:
    :private-members:

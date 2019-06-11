@@ -111,17 +111,20 @@ IoT devices, etc.
    ../lib/atoms.rst
    ../lib/automation.rst
    ../lib/cache.rst
+   ../lib/calllater.rst
    ../lib/commands.rst
    ../lib/configuration.rst
    ../lib/crontab.rst
    ../lib/devicecommands/_summary.rst
    ../lib/devices/_summary.rst
+   ../lib/devicecommandinputs.rst
+   ../lib/devicetypecommands.rst
    ../lib/devicetypes.rst
    ../lib/downloadmodules.rst
    ../lib/discovery.rst
    ../lib/events.rst
    ../lib/gateways/_summary.rst
-   ../lib/gateway_communications.rst
+   ../lib/gatewaycommunications.rst
    ../lib/gpg.rst
    ../lib/inputtypes/_summary.rst
    ../lib/hash.rst
@@ -130,6 +133,7 @@ IoT devices, etc.
    ../lib/localdb/_summary.rst
    ../lib/localize.rst
    ../lib/locations.rst
+   ../lib/moduledevicetypes.rst
    ../lib/modules.rst
    ../lib/mqtt.rst
    ../lib/nodes.rst
@@ -142,15 +146,19 @@ IoT devices, etc.
    ../lib/startup.rst
    ../lib/states.rst
    ../lib/statistics/_summary.rst
+   ../lib/storage.rst
+   ../lib/systemdatahandler/_summary.rst
    ../lib/tasks.rst
    ../lib/template.rst
    ../lib/times.rst
    ../lib/users/_summary.rst
    ../lib/validate.rst
-   ../lib/variables.rst
+   ../lib/variabledata.rst
+   ../lib/variablefields.rst
+   ../lib/variablegroups.rst
    ../lib/webinterface/_summary.rst
    ../lib/websessions.rst
-   ../lib/yomboapi.rst
+   ../lib/yomboapi/_summary.rst
 
 .. _framework_mixins:
 
@@ -163,7 +171,7 @@ the object as something can be used for authentication.
 .. toctree::
    :maxdepth: 1
 
-   ../mixins/accessor_mixin.rst
+   ../mixins/accessors_mixin.rst
    ../mixins/auth_mixin.rst
    ../mixins/library_db_child_mixin.rst
    ../mixins/library_db_model_mixin.rst
@@ -198,6 +206,22 @@ For a list of modules available to be installed by end users: `Available Modules
 
 .. _framework_utils:
 
+Classes
+=========
+
+Various helper classes that can make life easier.
+
+.. toctree::
+   :maxdepth: 1
+
+   ../classes/caseinsensitivedict.rst
+   ../classes/dictobject.rst
+   ../classes/fuzzysearch.rst
+   ../classes/images.rst
+   ../classes/lookupdict.rst
+   ../classes/maxdict.rst
+   ../classes/triggerdict.rst
+
 Utilities
 ===========
 
@@ -206,12 +230,17 @@ Various utilities to help the Yombo Gateway get things done.
 .. toctree::
    :maxdepth: 1
 
+   ../utils/color.rst
+   ../utils/converters.rst
    ../utils/decorators.rst
-   ../utils/dictobject.rst
+   ../utils/filehelper.rst
    ../utils/filereader.rst
-   ../utils/fuzzysearch.rst
-   ../utils/lookupdict.rst
-   ../utils/maxdict.rst
+   ../utils/filewriter.rst
+   ../utils/hookinvoke.rst
+   ../utils/imagehelper.rst
+   ../utils/location.rst
+   ../utils/networking.rst
+   ../utils/validators.rst
    ../utils/utils.rst
 
 .. _framework_ext:

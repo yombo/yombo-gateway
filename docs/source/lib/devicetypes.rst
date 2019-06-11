@@ -13,16 +13,16 @@ Device Types (yombo.lib.devicetypes)
 ====================================
 .. automodule:: yombo.lib.devicetypes
 
-Device Types
-================
+Device Library Class
+=====================
 .. autoclass:: DeviceTypes
    :members:
    :special-members:
    :private-members:
    :undoc-members:
 
-Device Type
-================
+Device Type Class
+====================
 .. autoclass:: DeviceType
    :members:
    :special-members:

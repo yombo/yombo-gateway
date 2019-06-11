@@ -15,7 +15,7 @@ AMQPYombo (yombo.lib.amqpyombo)
 ===========================================
 .. automodule:: yombo.lib.amqpyombo
 
-AMQPYombo class
+AMQPYombo Library Class
 ===========================================
 .. autoclass:: AMQPYombo
    :members:

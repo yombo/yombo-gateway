@@ -9,7 +9,7 @@ SQLDict (yombo.lib.sqldict)
 ====================================
 .. automodule:: yombo.lib.sqldict
 
-SQLDict Class
+SQLDict Library Class
 ============================
 .. autoclass:: SQLDict
    :members:

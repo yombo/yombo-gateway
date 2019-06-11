@@ -27,7 +27,7 @@ from twisted.internet.defer import inlineCallbacks
 from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
-from yombo.lib.amqpyombo_handlers.constants import CONFIG_ITEM_MAP, CONFIG_ITEMS
+from yombo.lib.systemdatahandler.constants import CONFIG_ITEM_MAP, CONFIG_ITEMS
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger

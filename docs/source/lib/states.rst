@@ -9,9 +9,9 @@ States (yombo.lib.states)
 ===========================
 .. automodule:: yombo.lib.states
 
-States Class
-==============
-.. autoclass:: States
+States Library Class
+======================
+.. automodule:: States
    :members:
    :special-members:
    :private-members:

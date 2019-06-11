@@ -13,8 +13,8 @@ Atoms (yombo.lib.atoms)
 ===========================
 .. automodule:: yombo.lib.atoms
 
-Atoms Class
-==============
+Atoms Library Class
+==========================
 .. autoclass:: Atoms
    :members:
    :special-members:

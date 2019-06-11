@@ -14,8 +14,8 @@ AuthKeys (yombo.lib.authkeys)
 ==============================
 .. automodule:: yombo.lib.authkeys
 
-AuthKeys Class
-================
+AuthKeys Library Class
+============================
 .. autoclass:: AuthKeys
    :members:
    :special-members:

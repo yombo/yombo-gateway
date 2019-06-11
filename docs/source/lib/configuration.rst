@@ -14,8 +14,8 @@ Configuration (yombo.lib.configuration)
 ========================================
 .. automodule:: yombo.lib.configuration
 
-Configuration Class
-=======================
+Configuration Library Class
+=================================
 .. autoclass:: Configuration
    :members:
    :special-members:

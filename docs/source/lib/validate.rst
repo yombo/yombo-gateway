@@ -9,7 +9,7 @@ Validate (yombo.lib.validate)
 ====================================
 .. automodule:: yombo.lib.validate
 
-Validate Class
+Validate Library Class
 ============================
 .. autoclass:: Validate
    :members:

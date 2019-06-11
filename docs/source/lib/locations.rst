@@ -9,15 +9,15 @@ Locations (yombo.lib.locations)
 ====================================
 .. automodule:: yombo.lib.locations
 
-Locations
-================
+Locations Library Class
+===========================
 .. autoclass:: Locations
    :members:
    :special-members:
    :private-members:
    :undoc-members:
 
-Location
+Location Class
 ================
 .. autoclass:: Location
    :members:

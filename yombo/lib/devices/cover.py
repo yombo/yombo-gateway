@@ -8,7 +8,7 @@ from yombo.constants.commands import COMMAND_OPEN, COMMAND_CLOSE
 from yombo.constants.features import FEATURE_ALLOW_IN_SCENES
 from yombo.constants.platforms import (PLATFORM_BASE_COVER, PLATFORM_COVER, PLATFORM_DOOR, PLATFORM_GARAGE_DOOR,
     PLATFORM_WINDOW)
-from yombo.constants.state_extra import STATUS_EXTRA_PERCENT
+from yombo.constants.status_extra import STATUS_EXTRA_PERCENT
 
 from yombo.lib.devices._device import Device
 

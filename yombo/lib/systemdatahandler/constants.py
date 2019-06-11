@@ -1,3 +1,16 @@
+"""
+Various constants used for the system data handler library.
+
+The constant values are not fully documented here, see the
+`constants source code <https://github.com/yombo/yombo-gateway/blob/master/yombo/lib/systemdatahandler/constants.py>`_
+for a full list.
+
+.. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+
+:copyright: Copyright 2018 by Yombo.
+:license: LICENSE for details.
+:view-source: `View Source Code <https://github.com/yombo/yombo-gateway/blob/master/yombo/lib/systemdatahandler/constants.py>`_
+"""
 
 CONFIG_ITEM_MAP = {
     "devices": "gateway_devices"

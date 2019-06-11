@@ -9,8 +9,8 @@ Hash (yombo.lib.hash)
 ==============================
 .. automodule:: yombo.lib.hash
 
-Hash Class
-==============
+Hash Library Class
+=========================
 .. autoclass:: Hash
    :members:
    :special-members:

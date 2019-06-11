@@ -9,7 +9,7 @@ Template (yombo.lib.template)
 =========================================
 .. automodule:: yombo.lib.template
 
-Template Class (Library)
+Template Library Class
 ===================================
 .. autoclass:: Template
    :members:

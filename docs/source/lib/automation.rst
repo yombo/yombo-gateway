@@ -13,7 +13,7 @@ Automation (yombo.lib.automation)
 ===========================================
 .. automodule:: yombo.lib.automation
 
-Automation Class
+Automation Library Class
 ===========================================
 .. autoclass:: Automation
    :members:

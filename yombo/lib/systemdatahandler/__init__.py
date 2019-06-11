@@ -30,7 +30,7 @@ from yombo.core.schemas import *
 logger = get_logger("library.systemdatahandler")
 
 
-class SystemDataHandler(YomboLibrary, object):
+class SystemDataHandler(YomboLibrary):
     """
     Handles downloading system data and saving it to the database. If the system is running, it will send
     events as needed.

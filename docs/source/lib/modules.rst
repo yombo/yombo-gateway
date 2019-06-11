@@ -9,8 +9,8 @@ Modules (yombo.lib.modules)
 ====================================
 .. automodule:: yombo.lib.modules
 
-Modules Class
-================
+Modules Library Class
+================================
 .. autoclass:: Modules
    :members:
    :special-members:

@@ -1,6 +1,6 @@
-.. index:: decorators
+.. index:: util_decorators
 
-.. _decorators:
+.. _util_decorators:
 
 .. currentmodule:: yombo.utils.decorators
 

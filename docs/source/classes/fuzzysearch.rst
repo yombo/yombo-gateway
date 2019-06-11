@@ -2,13 +2,13 @@
 
 .. _fuzzysearch:
 
-.. currentmodule:: yombo.utils.fuzzysearch
+.. currentmodule:: yombo.classes.fuzzysearch
 
 ============================================
-FuzzySearch (yombo.utils.fuzzysearch)
+FuzzySearch (yombo.classes.fuzzysearch)
 ============================================
 
-.. automodule:: yombo.utils.fuzzysearch
+.. automodule:: yombo.classes.fuzzysearch
    :members:
 
    .. automethod:: FuzzySearch.__init__

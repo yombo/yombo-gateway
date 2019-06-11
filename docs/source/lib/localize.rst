@@ -9,8 +9,8 @@ Localize (yombo.lib.localize)
 ==============================
 .. automodule:: yombo.lib.localize
 
-Localize Class
-==============
+Localize Library Class
+=============================
 .. autoclass:: Localize
    :members:
    :special-members:

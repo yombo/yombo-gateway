@@ -9,7 +9,7 @@ Queue (yombo.lib.queue)
 ===========================================
 .. automodule:: yombo.lib.queue
 
-Queue class
+Queue Library Class
 ===========================================
 .. autoclass:: Queue
    :members:

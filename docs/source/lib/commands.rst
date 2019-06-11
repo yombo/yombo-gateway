@@ -21,7 +21,7 @@ Commands (yombo.lib.commands)
 =============================
 .. automodule:: yombo.lib.commands
 
-Commands class
+Commands Library Class
 =============================
 .. autoclass:: Commands
    :members:
@@ -29,7 +29,7 @@ Commands class
    :private-members:
    :undoc-members:
 
-Command class
+Command Class
 =============================
 .. autoclass:: Command
    :members:

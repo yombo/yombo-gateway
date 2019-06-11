@@ -1,21 +1,21 @@
-.. index:: gateway_communications
+.. index:: gatewaycommunications
 
-.. _gateway_communications:
+.. _gatewaycommunications:
 
-.. currentmodule:: yombo.lib.gateway_communications
+.. currentmodule:: yombo.lib.gatewaycommunications
 
 .. meta::
    :description: Handles all intra-gateway communications within the cluster.
    :keywords: gateways, mqtt
 
 ===========================================================
-Gateway Communications (yombo.lib.gateway_communications)
+Gateway Communications (yombo.lib.gatewaycommunications)
 ===========================================================
-.. automodule:: yombo.lib.gateway_communications
+.. automodule:: yombo.lib.gatewaycommunications
 
-Gateway Communications Class
+Gateway Communications Library Class
 ===========================================================
-.. autoclass:: Gateway_Communications
+.. autoclass:: GatewayCommunications
    :members:
    :special-members:
    :private-members:

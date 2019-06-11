@@ -13,9 +13,9 @@ Requests (yombo.lib.requests)
 ================================
 .. automodule:: yombo.lib.requests
 
-Requests Class
-==================
-.. autoclass:: Requests
+Requests Library Class
+==========================
+.. automodule:: Requests
    :members:
    :special-members:
    :private-members:

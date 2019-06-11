@@ -14,16 +14,16 @@ Discovery (yombo.lib.discovery)
 ====================================
 .. automodule:: yombo.lib.discovery
 
-Discovery
-================
+Discovery Library Class
+============================
 .. autoclass:: Discovery
    :members:
    :special-members:
    :private-members:
    :undoc-members:
 
-Discovered Device
-=================
+Discovered Device Class
+===========================
 .. autoclass:: DiscoveredDevice
    :members:
    :special-members:

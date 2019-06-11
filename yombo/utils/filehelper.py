@@ -5,7 +5,7 @@ Used to determine the type of file other raw data (as bytes) and attempt to dete
 content type and charset.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-.. versionadded:: 0.25.0
+.. versionadded:: 0.23.0
 
 :copyright: Copyright 2018 by Yombo.
 :license: LICENSE for details.

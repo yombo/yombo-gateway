@@ -9,7 +9,7 @@ Events (yombo.lib.events)
 ===========================================
 .. automodule:: yombo.lib.events
 
-Events class
+Events Library Class
 ===========================================
 .. autoclass:: Events
    :members:

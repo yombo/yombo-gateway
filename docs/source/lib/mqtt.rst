@@ -9,7 +9,7 @@ MQTT (yombo.lib.mqtt)
 ===========================================
 .. automodule:: yombo.lib.mqtt
 
-MQTT class
+MQTT Library Class
 ===========================================
 .. autoclass:: MQTT
    :members:

@@ -9,8 +9,8 @@ Loader (yombo.lib.loader)
 ==========================
 .. automodule:: yombo.lib.loader
 
-Loader Class
-==============
+Loader Library Class
+============================
 .. autoclass:: Loader
    :members:
    :special-members:

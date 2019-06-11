@@ -13,8 +13,8 @@ Download Modules (yombo.lib.downloadmodules)
 ============================================
 .. automodule:: yombo.lib.downloadmodules
 
-DownloadModules Class
-=======================
+DownloadModules Library Class
+==================================
 .. autoclass:: DownloadModules
    :members:
    :special-members:

@@ -9,9 +9,9 @@ GPG (yombo.lib.gpg)
 ===========================================
 .. automodule:: yombo.lib.gpg
 
-GPG class
+GPG Library Class
 ===========================================
-.. autoclass:: GPG
+.. automodule:: GPG
    :members:
    :special-members:
    :private-members:

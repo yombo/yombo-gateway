@@ -9,8 +9,8 @@ Tasks (yombo.lib.tasks)
 ==============================
 .. automodule:: yombo.lib.tasks
 
-Tasks Class
-==============
+Tasks Library Class
+========================
 .. autoclass:: Tasks
    :members:
    :special-members:

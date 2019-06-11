@@ -21,7 +21,7 @@ CronTab (yombo.lib.crontab)
 =============================
 .. automodule:: yombo.lib.crontab
 
-CronTab class
+CronTab Library Class
 =============================
 .. autoclass:: CronTab
    :members:

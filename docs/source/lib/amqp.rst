@@ -23,7 +23,7 @@ AMQP (yombo.lib.amqp)
 ===========================================
 .. automodule:: yombo.lib.amqp
 
-AMQP class
+AMQP Library Class
 ===========================================
 .. autoclass:: AMQP
    :members:
@@ -31,7 +31,7 @@ AMQP class
    :private-members:
    :undoc-members:
 
-AMQPClient class
+AMQPClient Class
 ===========================================
 .. autoclass:: AMQPClient
    :members:
@@ -39,7 +39,7 @@ AMQPClient class
    :private-members:
    :undoc-members:
 
-PikaFactory class
+PikaFactory Class
 ===========================================
 .. autoclass:: PikaFactory
    :members:

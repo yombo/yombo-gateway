@@ -9,9 +9,9 @@ Cache (yombo.lib.cache)
 ==============================
 .. automodule:: yombo.lib.cache
 
-Cache Class
-==============
-.. autoclass:: Cache
+Cache Library Class
+===========================
+.. automodule:: Cache
    :members:
    :special-members:
    :private-members:

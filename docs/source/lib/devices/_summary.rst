@@ -24,7 +24,6 @@ Devices Library Components
    device.rst
    device_attributes.rst
    device_base.rst
-   device_command.rst
    device_states.rst
 
 Device Types

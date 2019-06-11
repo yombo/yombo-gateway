@@ -9,7 +9,7 @@ Nodes (yombo.lib.nodes)
 ===========================================
 .. automodule:: yombo.lib.nodes
 
-Nodes class
+Nodes Library Class
 ===========================================
 .. autoclass:: Nodes
    :members:
@@ -18,7 +18,7 @@ Nodes class
    :undoc-members:
    :noindex:
 
-Node class (Helper to Nodes Class)
+Node Class
 ===========================================
 .. autoclass:: Node
    :members:
