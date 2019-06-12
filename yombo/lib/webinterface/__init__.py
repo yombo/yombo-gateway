@@ -41,12 +41,12 @@ from yombo.core.log import get_logger
 import yombo.utils
 import yombo.utils.converters as converters
 import yombo.utils.datetime as dt_util
-from yombo.utils.hookinvoke import global_invoke_all
 
 from yombo.lib.webinterface.auth import require_auth
 
 from yombo.lib.webinterface.class_helpers.builddist import BuildDistribution
 from yombo.lib.webinterface.class_helpers.errorhandler import ErrorHandler
+from yombo.lib.webinterface.class_helpers.frontend import Frontend
 from yombo.lib.webinterface.class_helpers.render import Render
 from yombo.lib.webinterface.class_helpers.yombo_site import Yombo_Site
 from yombo.lib.webinterface.class_helpers.webserver import WebServer
@@ -57,6 +57,7 @@ from yombo.lib.webinterface.routes.api_v1.automation_rules import route_api_v1_a
 from yombo.lib.webinterface.routes.api_v1.debug import route_api_v1_debug
 from yombo.lib.webinterface.routes.api_v1.device import route_api_v1_device
 from yombo.lib.webinterface.routes.api_v1.device_command import route_api_v1_device_command
+from yombo.lib.webinterface.routes.api_v1.frontend import route_api_v1_frontend
 # from yombo.lib.webinterface.routes.api_v1.events import route_api_v1_events
 # from yombo.lib.webinterface.routes.api_v1.gateway import route_api_v1_gateway
 # from yombo.lib.webinterface.routes.api_v1.module import route_api_v1_module
@@ -77,12 +78,12 @@ from yombo.lib.webinterface.routes.home import route_home
 from yombo.lib.webinterface.routes.misc import route_misc
 from yombo.lib.webinterface.routes.system import route_system
 from yombo.lib.webinterface.routes.user import route_user
-from yombo.lib.webinterface.constants import NAV_SIDE_MENU, DEFAULT_NODE, NOTIFICATION_PRIORITY_MAP_CSS
+from yombo.lib.webinterface.constants import NOTIFICATION_PRIORITY_MAP_CSS
 
 logger = get_logger("library.webinterface")
 
 
-class WebInterface(YomboLibrary, BuildDistribution, ErrorHandler, Render, WebServer):
+class WebInterface(YomboLibrary, BuildDistribution, ErrorHandler, Frontend, Render, WebServer):
     """
     Web interface framework.
     """
@@ -133,6 +134,7 @@ class WebInterface(YomboLibrary, BuildDistribution, ErrorHandler, Render, WebSer
         route_api_v1_debug(self.webapp)
         route_api_v1_device(self.webapp)
         route_api_v1_device_command(self.webapp)
+        route_api_v1_frontend(self.webapp)
         # route_api_v1_events(self.webapp)
         # route_api_v1_gateway(self.webapp)
         # route_api_v1_module(self.webapp)
@@ -289,7 +291,6 @@ class WebInterface(YomboLibrary, BuildDistribution, ErrorHandler, Render, WebSer
             logger.warn("First time running the gateway, it will take a while to build the frontend web server.")
             yield self.build_dist(verbose=True)  # Make all the JS and CSS files
 
-        self._get_nav_side_items()
         self.webapp.templates.globals["_"] = _  # i18n
 
     def _started_(self, **kwargs):
@@ -425,100 +426,6 @@ class WebInterface(YomboLibrary, BuildDistribution, ErrorHandler, Render, WebSer
             self.translators[locales_hash] = web_translator(self, locales)
         return self.translators[locales_hash]
 
-    @inlineCallbacks
-    def _get_nav_side_items(self, **kwargs):
-        """
-        Called before modules have their _prestart_ function called (after _load_).
-
-        This implements the hook "webinterface_add_routes" and calls all libraries and modules. It allows libs and
-        modules to add menus to the web interface and provide additional funcationality.
-
-        **Usage**:
-
-        .. code-block:: python
-
-           def ModuleName_webinterface_add_routes(self, **kwargs):
-               return {
-                   "nav_side": [
-                       {
-                       "label1": "Tools",
-                       "label2": "MQTT",
-                       "priority1": 3000,
-                       "priority2": 10000,
-                       "icon": "fa fa-wrench fa-fw",
-                       "url": "/tools/mqtt",
-                       "tooltip": "",
-                       "opmode": "run",
-                       "cluster": "any",
-                       },
-                   ],
-                   "routes": [
-                       self.web_interface_routes,
-                   ],
-                   "configs" {
-                        "settings_link": "/modules/tester/index",
-                   },
-               }
-
-        """
-        # first, lets get the top levels already defined so children don"t re-arrange ours.
-        top_levels = {}
-        add_on_menus = yield global_invoke_all("_webinterface_add_routes_",
-                                               called_by=self,
-                                               )
-        logger.debug("_webinterface_add_routes_ results: {add_on_menus}", add_on_menus=add_on_menus)
-        nav_side_menu = deepcopy(NAV_SIDE_MENU)
-        for component, options in add_on_menus.items():
-            if "nav_side" in options:
-                for new_menu in options["nav_side"]:
-                    if new_menu["label1"] in nav_side_menu:
-                        the_index = nav_side_menu[new_menu["label1"]].index("bar")
-                        new_menu["priority1"] = nav_side_menu[the_index]["priority1"]
-                    if "priority1" not in new_menu or isinstance(new_menu["priority1"], int) is False:
-                        new_menu["priority1"] = 1000
-                    if "priority2" not in new_menu or isinstance(new_menu["priority2"], int) is False:
-                        new_menu["priority2"] = 100
-                nav_side_menu = nav_side_menu + options["nav_side"]
-
-        temp_list = sorted(NAV_SIDE_MENU, key=itemgetter("priority1", "label1", "priority2"))
-        for item in temp_list:
-            label1 = item["label1"]
-            if label1 not in temp_list:
-                top_levels[label1] = item["priority1"]
-
-        for component, options in add_on_menus.items():
-            logger.debug("component: {component}, options: {options}", component=component, options=options)
-            if "menu_priorities" in options:  # allow modules to change the ordering of top level menus
-                for label, priority in options["menu_priorities"].items():
-                    top_levels[label] = priority
-            if "routes" in options:
-                for new_route in options["routes"]:
-                    new_route(self.webapp)
-            if "configs" in options:
-                if "settings_link" in options["configs"]:
-                    self.module_config_links[component._module_id] = options["configs"]["settings_link"]
-
-        # build menu tree
-        self.misc_wi_data["nav_side"] = {}
-
-        is_master = self.is_master
-        # temp_list = sorted(nav_side_menu, key=itemgetter("priority1", "priority2", "label1"))
-        temp_list = sorted(nav_side_menu, key=itemgetter("priority1", "label1", "priority2", "label2"))
-        for item in temp_list:
-            if "cluster" not in item:
-                item["cluster"] = "any"
-            if item["cluster"] == "master" and is_master is not True:
-                continue
-            if item["cluster"] == "member" and is_master is True:
-                continue
-            item["label1_text"] = deepcopy(item["label1"])
-            item["label2_text"] = deepcopy(item["label2"])
-            label1 = "ui::navigation::" + yombo.utils.snake_case(item["label1"])
-            item["label1"] = "ui::navigation::" + yombo.utils.snake_case(item["label1"])
-            item["label2"] = "ui::navigation::" + yombo.utils.snake_case(item["label2"])
-            if label1 not in self.misc_wi_data["nav_side"]:
-                self.misc_wi_data["nav_side"][label1] = []
-            self.misc_wi_data["nav_side"][label1].append(item)
 
         self.starting = False
 
