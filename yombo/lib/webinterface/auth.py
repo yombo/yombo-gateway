@@ -36,9 +36,13 @@ def update_request(webinterface, request):
         origin = request.requestHeaders.getRawHeaders("origin")[0]
         if origin is not None:
             origin = urlparse(origin)
-            if origin.scheme in ("http", "https") and len(origin.hostname) < 150 \
-                    and origin.port > 60 and origin.port < 65535:
-                origin_final = f"{origin.scheme}://{origin.hostname}:{origin.port}"  # For the API
+            origin_port = origin.port
+            if origin_port is None:
+                origin_final = f"{origin.scheme}://{origin.hostname}"  # For the API
+            else:
+                if origin.scheme in ("http", "https") and len(origin.hostname) < 150 \
+                        and origin_port > 60 and origin_port < 65535:
+                    origin_final = f"{origin.scheme}://{origin.hostname}:{origin_port}"  # For the API
 
     request.setHeader("Access-Control-Allow-Origin", origin_final)  # For the API, TODO: Make this more restrictive.
     request.setHeader("Access-Control-Allow-Credentials", "true")  # For the API, TODO: Make this more restrictive.
