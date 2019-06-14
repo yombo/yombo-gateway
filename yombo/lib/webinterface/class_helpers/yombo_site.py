@@ -9,7 +9,6 @@ Responsible for running the website.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/webinterface/class_helpers/yombo_site.html>`_
 """
 # Import python libraries
-from collections import OrderedDict
 from time import time
 
 # Import twisted libraries
@@ -74,7 +73,7 @@ class Yombo_Site(Site):
             # print(f"request has no auth! : {request}")
             user_id = None
 
-        self.log_queue.append(OrderedDict({
+        self.log_queue.append({
             "request_at": time(),
             "request_protocol": request.clientproto.decode().strip(),
             "referrer": self._escape(request.getHeader(b"referer") or b"-").strip(),
@@ -89,7 +88,7 @@ class Yombo_Site(Site):
             "response_size": request.sentLength,
             "uploadable": 1,
             "uploaded": 0,
-            })
+            }
         )
 
     def save_log_queue(self):
