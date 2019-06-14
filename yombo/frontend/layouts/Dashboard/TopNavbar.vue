@@ -17,7 +17,6 @@
       <span class="navbar-toggler-bar navbar-kebab"></span>
     </button>
     <template slot="navbar-menu">
-
       <ul class="navbar-nav">
         <li class="nav-item">
           <nuxt-link class="nav-link" :to="localePath('lock')">

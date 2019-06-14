@@ -1,8 +1,7 @@
-
 <template>
   <section class="container">
     <div class="row">
-      <div class="col-md-10 mx-auto">
+      <div class="col-sm-12 col-md-10 mx-auto">
           <card class="card-chart" no-footer-line>
             <div slot="header">
               <h2 class="card-title">

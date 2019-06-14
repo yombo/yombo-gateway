@@ -1,7 +1,7 @@
 <template>
-  <section class="container">
-    <div class="row">
-      <div class="col-md-8">
+  <section class="container-fluid">
+    <div class="row justify-content-center">
+      <div class="col-sm-7 col-md-6 col-lg-6">
           <card class="card-chart" no-footer-line>
             <div slot="header">
               <h2 class="card-title">
@@ -20,7 +20,7 @@
               </i18n>
           </card>
       </div>
-      <div class="col-md-4">
+      <div class="col-sm-5 col-md-5 col-lg-4">
           <card class="card-chart" no-footer-line>
             <div slot="header">
               <h3 class="card-title">
