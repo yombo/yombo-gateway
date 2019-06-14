@@ -42,7 +42,7 @@ export default {
       { hid: 'description', name: 'description', content: pkg.description }
     ],
     script: [
-      { src: 'https://use.fontawesome.com/releases/v5.8.1/js/all.js' }
+      { src: 'https://use.fontawesome.com/releases/v5.9.0/js/all.js' }
     ],
     link: [
       { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
