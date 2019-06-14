@@ -1,14 +1,36 @@
 <template>
-  <div class="container">
-    <h1 v-if="error.statusCode === 404">Page not found</h1>
-    <h1 v-else>An error occurred</h1>
-    <nuxt-link to="/">Home page</nuxt-link>
-  </div>
+  <section class="container">
+    <div class="row">
+      <div class="col-md-12">
+          <card class="card-chart" no-footer-line>
+            <div slot="header">
+              <h2 class="card-title">
+                Page not found
+              </h2>
+            </div>
+            <p>
+              It looks like a bad link was followed.
+            </p>
+            <p>
+              Popular links:
+            </p>
+            <ul>
+              <li><nuxt-link :to="localePath('controltower')">{{$t("ui.navigation.control_tower")}}</nuxt-link></li>
+              <li><nuxt-link :to="localePath('dashboard')">{{$t("ui.navigation.dashboard")}}</nuxt-link></li>
+            </ul>
+            </p>
+          </card>
+      </div>
+    </div>
+  </section>
 </template>
 
 <script>
 export default {
-  props: ['error'],
-  layout: 'blog' // you can set a custom layout for the error page
+    head() {
+        return {
+            title: 'About Yombo Frontend',
+        }
+    },
 }
 </script>
