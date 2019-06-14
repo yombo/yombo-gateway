@@ -35,22 +35,21 @@ def route_home(webapp):
 
         @webapp.route("/<path:catchall>", branch=True)
         @require_auth()
+        @inlineCallbacks
         def home_static_frontend_catchall(webinterface, request, session, catchall):
             """ For frontend that doesn't match anything. """
             base_headers(request)
             uri = request.uri.decode()[1:]
             logger.info("Catchall for: {uri}", uri=uri)
 
-            if uri not in webinterface.file_cache:
-                if webinterface.operating_mode != "run":
-                    webinterface.redirect(request, "/")
-                uri = "index"
             if uri in webinterface.file_cache:
                 file = webinterface.file_cache[uri]
                 if "headers" in file and len(file["headers"]) > 0:
                     for header_name, header_content in file['headers'].items():
                         request.setHeader(header_name, header_content)
                 return file["data"]
+            content = yield home_return_index_file(webinterface, request, session)
+            return content
 
         @webapp.route("/")
         @run_first()
@@ -64,7 +63,11 @@ def route_home(webapp):
             if session is None or session.enabled is False or session.is_valid() is False or session.has_user is False:
                 return webinterface.redirect(request, "/user/login")
 
-            print(f"file_cache: {webinterface.file_cache}")
+            content = yield home_return_index_file(webinterface, request, session)
+            return content
+
+        @inlineCallbacks
+        def home_return_index_file(webinterface, request, session):
             if "index" not in webinterface.file_cache:
                 webinterface.file_cache["index"] = {}
                 try:
@@ -79,6 +82,7 @@ def route_home(webapp):
                 for header_name, header_content in file['headers'].items():
                     request.setHeader(header_name, header_content)
             return file["data"]
+
 
         @webapp.route("/nuxt.env")
         @require_auth()

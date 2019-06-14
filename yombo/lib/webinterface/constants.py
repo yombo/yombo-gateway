@@ -10,13 +10,13 @@ FRONTEND_DASHBOARD_NAV = [
         "parent": None,
         "label": "ui.navigation.devices",
         "icon": "fas fa-wifi",
-        "path": "dashboard",
+        "path": "dashboard-devices",
         "priority": 1000,
     },
     {
         "parent": "ui.navigation.devices",
         "label": "ui.navigation.list",
-        "path": {"label": "dashboard-devices-list", "params": {}},
+        "path": {"label": "dashboard-devices", "params": {}},
         "priority": 1000,
     },
     {
@@ -35,13 +35,13 @@ FRONTEND_DASHBOARD_NAV = [
         "parent": None,
         "label": "ui.navigation.automation",
         "icon": "fas fa-random",
-        "path": "dashboard",
+        "path": "dashboard-automation",
         "priority": 2000,
     },
     {
         "parent": "ui.navigation.automation",
         "label": "ui.navigation.rules",
-        "path": {"label": "dashboard-rules", "params": {}},
+        "path": {"label": "dashboard-automation_rules", "params": {}},
         "priority": 1000,
     },
     {
@@ -60,7 +60,7 @@ FRONTEND_DASHBOARD_NAV = [
         "parent": None,
         "label": "ui.navigation.info",
         "icon": "fas fa-info",
-        "path": "dashboard",
+        "path": "dashboard-info",
         "priority": 3000,
     },
     {
@@ -116,13 +116,13 @@ FRONTEND_DASHBOARD_NAV = [
     {
         "parent": "ui.navigation.permissions",
         "label": "ui.navigation.roles",
-        "path": {"label": "dashboard-roles", "params": {}},
+        "path": {"label": "dashboard-permissions-roles", "params": {}},
         "priority": 1000,
     },
     {
         "parent": "ui.navigation.permissions",
         "label": "ui.navigation.users",
-        "path": {"label": "dashboard-users", "params": {}},
+        "path": {"label": "dashboard-permissions-users", "params": {}},
         "priority": 2000,
     },
     {
@@ -360,13 +360,13 @@ FRONTEND_DASHBOARD_NAV = [
     {
         "parent": "ui.navigation.debug",
         "label": "ui.navigation.storage",
-        "path": {"label": "dashboard-debug-storage", "params": {}},
+        "path": {"label": "dashboard-debug-generic-id", "params": {"id": "storage"}},
         "priority": 24000,
     },
     {
         "parent": "ui.navigation.debug",
         "label": "ui.navigation.users",
-        "path": {"label": "dashboard-debug-users", "params": {}},
+        "path": {"label": "dashboard-debug-generic-id", "params": {"id": "users"}},
         "priority": 25000,
     },
     {

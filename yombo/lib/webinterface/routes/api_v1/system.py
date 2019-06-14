@@ -7,7 +7,7 @@ import os
 from time import time
 
 from yombo.constants import VERSION
-from yombo.lib.webinterface.auth import require_auth
+from yombo.lib.webinterface.auth import require_auth, run_first
 from yombo.utils import random_string
 
 
@@ -15,7 +15,8 @@ def route_api_v1_system(webapp):
     with webapp.subroute("/api/v1/system") as webapp:
 
         @webapp.route("/awake", methods=["GET"])
-        def apiv1_system_awake(webinterface, request):
+        @run_first(api=True)
+        def apiv1_system_awake(webinterface, request, session):
             """
             A non-authed method of checking if the system is fully booted and ready to go.
             """

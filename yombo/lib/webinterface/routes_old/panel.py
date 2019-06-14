@@ -9,7 +9,6 @@ This implements the "/panel" sub-route of the web interface.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://github.com/yombo/yombo-gateway/blob/master/yombo/lib/webinterface/route_devices.py>`_
 """
-# from collections import OrderedDict
 # Import Yombo libraries
 from yombo.lib.webinterface.auth import require_auth
 from yombo.core.log import get_logger

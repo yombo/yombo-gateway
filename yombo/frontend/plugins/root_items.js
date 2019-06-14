@@ -22,7 +22,7 @@ export default async function ({ app }) {
     }
   },
   mounted () {
-    console.log('Hooray, Nuxt.js app mounted.')
+    console.log('Hooray, Yombo Nuxt.js app mounted.')
   },
 	})
 }
