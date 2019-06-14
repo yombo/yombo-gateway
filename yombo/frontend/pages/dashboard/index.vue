@@ -5,7 +5,7 @@
         <div class="card card-stats card-raised">
           <div class="card-body">
             <div class="row">
-              <div class="col-md-3">
+              <div class="col-xs-6 col-sm-4 col-md-3">
                 <div class="statistics">
                   <div class="info">
                     <nuxt-link :to="localePath('dashboard-devices')" class="dropdown-item">
@@ -26,7 +26,7 @@
                   </div>
                 </div>
               </div>
-              <div class="col-md-3">
+              <div class="col-xs-6 col-sm-4 col-md-3">
                 <div class="statistics">
                   <div class="info">
                     <div class="icon icon-success">
@@ -39,7 +39,7 @@
                   </div>
                 </div>
               </div>
-              <div class="col-md-3">
+              <div class="col-xs-6 col-sm-4 col-md-3">
                 <div class="statistics">
                   <div class="info">
                     <div class="icon icon-info">
@@ -50,11 +50,10 @@
                     </h3>
                     <h6 class="stats-title">{{ $t('ui.navigation.commands') }}</h6>
                     <small>In last 24 hours</small>
-
                   </div>
                 </div>
               </div>
-              <div class="col-md-3">
+              <div class="col-xs-6 col-sm-4 col-md-3">
                 <div class="statistics">
                   <div class="info">
                     <div class="icon icon-danger">
@@ -73,7 +72,6 @@
         </div>
       </div>
     </div>
-
     <div class="row">
       <div class="col-lg-6">
         <card class="card-chart" no-footer-line>
