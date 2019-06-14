@@ -21,7 +21,7 @@
       <div :class="{content: !$route.meta.hideContent}" @click="toggleSidebar">
         <zoom-center-transition :duration="150" mode="out-in">
           <!-- your content here -->
-          <router-view></router-view>
+          <nuxt />
 
         </zoom-center-transition>
       </div>
@@ -104,6 +104,14 @@ export default {
 };
 </script>
 <style lang="scss">
+.panel-header {
+  height: 10px;
+  padding-top: 25px;
+}
+
+.main-panel > .content {
+  padding-top: 20px;
+}
 $scaleSize: 0.95;
 @keyframes zoomIn95 {
   from {

@@ -4,7 +4,7 @@
       <router-link :to="{name: route.name}" v-if="index < $route.matched.length - 1" class="breadcrumb-link">
         {{ route.name }}
       </router-link>
-      <span v-else class="breadcrumb-current">{{route.name}}3</span>
+      <span v-else class="breadcrumb-current">{{route.name}}</span>
     </BreadCrumbItem>
   </bread-crumb>
 </template>

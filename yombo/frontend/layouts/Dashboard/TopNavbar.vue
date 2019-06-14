@@ -5,9 +5,10 @@
         <navbar-toggle-button @click.native="toggleSidebar">
         </navbar-toggle-button>
       </div>
-      <a class="navbar-brand" href="#">
-        {{routeName}}
-      </a>
+<!--      {{crumbs}}-->
+      <template v-for="(crumb, idx) in crumbs">
+        <nuxt-link :to="localePath(crumb.to)" class="simple-text logo-normal">{{$t(crumb.text)}}</nuxt-link>&nbsp;/&nbsp;
+      </template>
     </div>
     <button @click="toggleNavbar" class="navbar-toggler" type="button" data-toggle="collapse"
             data-target="#navigation"
@@ -16,7 +17,6 @@
       <span class="navbar-toggler-bar navbar-kebab"></span>
       <span class="navbar-toggler-bar navbar-kebab"></span>
     </button>
-
     <template slot="navbar-menu">
 
       <ul class="navbar-nav">
@@ -107,11 +107,36 @@ export default {
     CollapseTransition
   },
   computed: {
-    routeName() {
+    routeName: function() {
       const { name } = this.$route;
-      // console.log("routename");
+      console.log("routename:");
+      console.log(this.$route.path);
+      console.log(this.$route.matched);
       return this.capitalizeFirstLetter(name);
+    },
+    crumbs: function() {
+      let pathArray = this.$route.path.split("/")
+      console.log("patharray:");
+      console.log(pathArray);
+      pathArray.shift()
+      console.log("patharray 2:");
+      console.log(pathArray);
+      console.log("matched 2:");
+      console.log(this.$route.matched);
+
+      let breadcrumbs = pathArray.reduce((breadcrumbArray, path, idx) => {
+        breadcrumbArray.push({
+          path: path,
+          to: breadcrumbArray[idx - 1]
+            ? breadcrumbArray[idx - 1].path + "-" + path
+            : path,
+          text: "ui.navigation." + path,
+        });
+        return breadcrumbArray;
+      }, [])
+      return breadcrumbs;
     }
+
   },
   data() {
     return {

@@ -61,8 +61,9 @@
 <style>
 .panel-header {
   height: 10px;
-  padding-top: 20px;
+  padding-top: 25px;
 }
+
 
 body {
   font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI',

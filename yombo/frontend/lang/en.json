@@ -603,6 +603,9 @@
     "header": {
       "basic_information": "Basic Information"
     },
+    "label": {
+      "add_device": "Add device"
+    },
     "messages": {
       "rate_limit_exceeded": "Too many attempts, try again later."
     },
@@ -673,6 +676,7 @@
       "modules": "Modules",
       "monitor": "Monitor",
       "more": "More",
+      "mqtt": "MQTT",
       "nodes": "Nodes",
       "notifications": "Notifications",
       "overview": "Overview",
