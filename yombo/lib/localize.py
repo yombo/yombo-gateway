@@ -60,7 +60,9 @@ class Localize(YomboLibrary):
     """
     def _init_(self, **kwargs):
         self.working_dir = settings.arguments["working_dir"]
-        self.default_lang = self._Configs.get2("localize", "default_lang", self.get_system_language(), False)
+        self.files = {}
+        self.parse_directory("yombo/utils/locale", has_header=True)
+        self.default_lang = self._Configs.get2('localize', 'default_lang', self.get_system_language(), False)
 
         try:
             hashes = self._Configs.get("localize", "hashes")
@@ -73,8 +75,6 @@ class Localize(YomboLibrary):
             self.hashes["en"] = None
 
         self.localization_degrees = self._Configs.get2("localization", "degrees", "f")
-
-        self.files = {}
 
         self.locale_save_folder = f"{self.working_dir}/locale/po/"
         self.translator = self.get_translator()
@@ -148,7 +148,6 @@ class Localize(YomboLibrary):
         default_lang = self.default_lang()
         try:
             languages_to_update = {}
-            self.parse_directory("yombo/utils/locale", has_header=True)
 
             try:
                 for item, data in self._Modules.modules.items():
@@ -207,7 +206,8 @@ class Localize(YomboLibrary):
                 self.default_lang(set="en")
 
             # English is the base of all language files. If English needs updating, we update the default too.
-            if "en" in languages_to_update and default_lang not in languages_to_update and default_lang != '':
+            if 'en' in languages_to_update and default_lang not in languages_to_update \
+                    and default_lang in self.files:
                 languages_to_update[default_lang] = True
 
             # Always do english language updates first, it"s the base of all.
@@ -242,12 +242,19 @@ class Localize(YomboLibrary):
         Returns the system language.
         :return:
         """
-        for item in ("LANGUAGE", "LC_ALL", "LC_MESSAGES", "LANG"):
+        lang = "en"
+        for item in ('LANGUAGE', 'LC_ALL', 'LC_MESSAGES', 'LANG'):
             if item in environ:
                 try:
-                    return environ.get(item).split(".")[0]
+                    lang = environ.get(item).split(".")[0]
                 except:
                     return None
+
+        if lang not in self.files and "_" in lang:
+            lang = lang.split("_")[0]
+        if lang not in self.files:
+            lang = "en"
+        return lang
 
     def get_translator(self, languages=None, get_null=None):
         if get_null is True:
