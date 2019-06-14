@@ -35,7 +35,7 @@ FRONTEND_DASHBOARD_NAV = [
         "parent": None,
         "label": "ui.navigation.automation",
         "icon": "fas fa-random",
-        "path": "dashboard-automation",
+        "path": "dashboard-placeholder",
         "priority": 2000,
     },
     {
@@ -60,7 +60,7 @@ FRONTEND_DASHBOARD_NAV = [
         "parent": None,
         "label": "ui.navigation.info",
         "icon": "fas fa-info",
-        "path": "dashboard-info",
+        "path": "dashboard-placeholder",
         "priority": 3000,
     },
     {
@@ -95,7 +95,7 @@ FRONTEND_DASHBOARD_NAV = [
     },
     {
         "parent": "ui.navigation.info",
-        "label": "ui.navigation.weblogs",
+        "label": "ui.navigation.webinterface_logs",
         "path": {"label": "dashboard-webinterface_logs", "params": {}},
         "priority": 5000,
     },
@@ -129,7 +129,7 @@ FRONTEND_DASHBOARD_NAV = [
         "parent": None,
         "label": "ui.navigation.misc",
         "icon": "fas fa-inbox",
-        "path": "dashboard-misc",
+        "path": "dashboard-placeholder",
         "priority": 6000,
     },
     {

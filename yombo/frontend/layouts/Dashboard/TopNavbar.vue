@@ -5,9 +5,8 @@
         <navbar-toggle-button @click.native="toggleSidebar">
         </navbar-toggle-button>
       </div>
-<!--      {{crumbs}}-->
       <template v-for="(crumb, idx) in crumbs">
-        <nuxt-link :to="localePath(crumb.to)" class="simple-text logo-normal">{{$t(crumb.text)}}</nuxt-link>&nbsp;/&nbsp;
+        &nbsp;/&nbsp;<nuxt-link :to="localePath({name: crumb.path, params: crumb.params})" class="simple-text logo-normal">{{$t(crumb.text)}}</nuxt-link>
       </template>
     </div>
     <button @click="toggleNavbar" class="navbar-toggler" type="button" data-toggle="collapse"
@@ -32,7 +31,7 @@
           <nuxt-link class="nav-link" :to="localePath('index')">
             <i class="fas fa-home" style="font-size: 18px"></i>
             <p>
-              <span class="d-lg-none d-md-block">Home</span>
+              <span class="d-lg-none d-md-block">Homer</span>
             </p>
           </nuxt-link>
         </li>
@@ -106,45 +105,49 @@ export default {
     NavbarToggleButton,
     CollapseTransition
   },
-  computed: {
-    routeName: function() {
-      const { name } = this.$route;
-      console.log("routename:");
-      console.log(this.$route.path);
-      console.log(this.$route.matched);
-      return this.capitalizeFirstLetter(name);
-    },
-    crumbs: function() {
-      let pathArray = this.$route.path.split("/")
-      console.log("patharray:");
-      console.log(pathArray);
-      pathArray.shift()
-      console.log("patharray 2:");
-      console.log(pathArray);
-      console.log("matched 2:");
-      console.log(this.$route.matched);
-
-      let breadcrumbs = pathArray.reduce((breadcrumbArray, path, idx) => {
-        breadcrumbArray.push({
-          path: path,
-          to: breadcrumbArray[idx - 1]
-            ? breadcrumbArray[idx - 1].path + "-" + path
-            : path,
-          text: "ui.navigation." + path,
-        });
-        return breadcrumbArray;
-      }, [])
-      return breadcrumbs;
-    }
-
-  },
-  data() {
-    return {
+  data: function() {
+    return  {
+      crumbs: [],
       activeNotifications: false,
       showNavbar: false
     };
   },
+  // data: {
+  //   crumbs: [],
+  // },
+  computed: {
+    locale: function() {
+      return this.$i18n.locale;
+    },
+  },
   methods: {
+    listenerUpdateBreadcrumb(data) {
+      this.crumbs.splice(data.index, 1, data);
+    },
+    listenerDeleteBreadcrumb(index) {
+      this.crumbs.splice(index, 1);
+    },
+    setupBreadcrumbs: function() {
+      if (this.$route.path == "/") {
+        return {}
+      }
+      let pathArray = this.$route.path.split("/");
+      pathArray.shift();
+      if (this.locale != "en") {
+              pathArray.shift();  // remove the locale prefix from the path.
+      }
+      let crumbs = [];
+      let path = "";
+      pathArray.forEach(function(pathPart) {
+        if (path.length == 0) {
+          path += pathPart;
+        } else {
+          path += "-" + pathPart;
+        }
+        crumbs.push({path: path, text: "ui.navigation." + pathPart, params: {}})
+      });
+      this.crumbs = crumbs;
+    },
     capitalizeFirstLetter(string) {
       return string.charAt(0).toUpperCase() + string.slice(1);
     },
@@ -163,7 +166,17 @@ export default {
     hideSidebar() {
       this.$dashboardsidebar.displayDashboardSidebar(false);
     }
-  }
+  },
+  mounted () {
+    this.setupBreadcrumbs();
+    this.$bus.$on('listenerUpdateBreadcrumb', e=> this.listenerUpdateBreadcrumb(e));
+    this.$bus.$on('listenerDeleteBreadcrumb', e=> this.listenerDeleteBreadcrumb(e));
+  },
+  watch: {
+    '$route.path': function (id) {
+      this.setupBreadcrumbs();
+    }
+  },
 };
 </script>
 <style>
