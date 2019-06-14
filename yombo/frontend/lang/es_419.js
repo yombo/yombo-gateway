@@ -143,10 +143,13 @@ export default {
       "delete": "Borrar",
       "deleted": "Eliminado",
       "description": "Descripción",
+      "detail": "Detalle",
+      "details": "Detalles",
       "edit": "Editar",
       "enable": "Habilitar",
       "enabled": "Habilitado",
       "label": "Etiqueta",
+      "list": "Lista",
       "location": "Ubicación",
       "more": "Más",
       "more_ddd": "Más...",
@@ -172,8 +175,14 @@ export default {
       "control_tower": "Torre de control",
       "dashboard": "Tablero",
       "debug": "Depurar",
+      "details": "Detalles",
+      "list": "Lista",
       "rules": "Reglas",
-      "users": "Usuarios"
+      "statistics": "Estadísticas",
+      "storage": "Almacenamiento",
+      "system": "Sistema",
+      "users": "Usuarios",
+      "variables_data": "Datos de variables"
     }
   }
 }

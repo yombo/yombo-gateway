@@ -643,6 +643,7 @@
       "dashboard": "Dashboard",
       "debug": "Debug",
       "delayed_commands": "Delayed Commands",
+      "details": "Details",
       "developer_tools": "Developer tools",
       "device_command_types": "Device command types",
       "device_commands": "Device Commands",
@@ -702,8 +703,7 @@
       "variable_fields": "Variable fields",
       "variable_groups": "Variable groups",
       "variables_data": "Variables data",
-      "web_logs": "Web Logs",
-      "weblogs": "Web Logs",
+      "webinterface_logs": "Web Logs",
       "yombo_ini": "Yombo.ini"
     },
     "notifications": {

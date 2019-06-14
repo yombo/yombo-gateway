@@ -152,10 +152,13 @@ export default {
       "deleted": "Excluído",
       "deny": "Negar",
       "description": "Descrição",
+      "detail": "Detalhe",
+      "details": "Detalhes",
       "disabled": "Desativado",
       "edit": "Editar",
       "enable": "Activar",
       "label": "Rótulo",
+      "list": "Lista",
       "location": "Localização",
       "more": "Mais",
       "more_ddd": "Mais...",
@@ -178,8 +181,13 @@ export default {
       "control": "Controle",
       "control_tower": "Torre de controle",
       "debug": "Depurar",
+      "details": "Detalhes",
+      "list": "Lista",
       "roles": "Papéis",
       "rules": "Regras",
+      "statistics": "Estatisticas",
+      "storage": "Armazenamento",
+      "system": "Sistema",
       "users": "Usuários"
     }
   }

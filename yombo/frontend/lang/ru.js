@@ -132,9 +132,11 @@ export default {
       "atom": "Атом",
       "delete": "удалять",
       "description": "Описание",
+      "details": "Детали",
       "edit": "Редактировать",
       "enable": "Включить",
       "label": "Метки",
+      "list": "Список",
       "location": "Расположение",
       "more": "Больше",
       "more_ddd": "Больше...",
@@ -150,8 +152,14 @@ export default {
       "automation": "Автоматизация",
       "commands": "Команды",
       "control_tower": "Диспетчерская вышка",
+      "details": "Детали",
+      "list": "Список",
       "roles": "Роли",
-      "rules": "Правила"
+      "rules": "Правила",
+      "statistics": "Статистика",
+      "storage": "Хранение",
+      "system": "Система",
+      "variables_data": "Данные переменных"
     }
   }
 }

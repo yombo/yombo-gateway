@@ -145,8 +145,11 @@ export default {
       "created_at": "Tạo tại",
       "delete": "Xóa bỏ",
       "description": "Mô tả",
+      "detail": "Chi tiết",
+      "details": "Chi tiết",
       "edit": "Chỉnh sửa",
       "label": "Nhãn",
+      "list": "Danh sách",
       "location": "Vị trí",
       "more": "Hơn",
       "more_ddd": "Hơn...",
@@ -167,10 +170,17 @@ export default {
       "basic_settings": "Cài đặt cơ bản",
       "commands": "Lệnh",
       "control_tower": "Tháp điều khiển",
+      "dashboard": "Bảng điều khiển",
       "debug": "Gỡ lỗi",
+      "details": "Chi tiết",
       "info": "Thông tin",
+      "list": "Danh sách",
       "roles": "Vai trò",
-      "users": "Người dùng"
+      "statistics": "Số liệu thống kê",
+      "storage": "Lưu trữ",
+      "system": "Hệ thống",
+      "users": "Người dùng",
+      "variables_data": "Dữ liệu biến"
     }
   }
 }
