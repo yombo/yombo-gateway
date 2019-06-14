@@ -1,19 +1,19 @@
 <style>
    @media screen and (min-width: 1365px) {
-      html,body {
+      body {
        background-image: url('/img/bg/{{ bg_image_id() }}_2048.jpg');
       }
     }
 
    @media screen and (min-width: 601px) and (max-width:1364px) {
-      html,body {
+      body {
        background-image: url('/img/bg/{{ bg_image_id() }}_1364.jpg');
       }
     }
 
-   @media screen and (min-width: 100px) and (max-width:680px) {
-      html,body {
-       background-image: url('/img/bg/{{ bg_image_id() }}_680.jpg');
+   @media screen and (max-width:600px) {
+      body {
+       background-image: url('/img/bg/{{ bg_image_id() }}_600.jpg');
       }
     }
 
@@ -23,13 +23,21 @@
       }
     }
 
-   html,body{
-       background-position: center;
-       background-size: cover;
+   body {
        background-repeat: no-repeat;
-       height: 100%;
-       color: white;
+       background-size: cover;
    }
+   html,
+       body {
+       height: 100%;
+   }
+//   html,body{
+//       background-position: center;
+//       background-size: cover;
+//       background-repeat: no-repeat;
+//       height: 100%;
+//       color: white;
+//   }
 
    .container{
        height: 100%;
