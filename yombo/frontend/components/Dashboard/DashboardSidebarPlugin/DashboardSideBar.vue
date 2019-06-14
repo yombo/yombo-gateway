@@ -3,14 +3,13 @@
        :data-color="backgroundColor">
 
     <div class="logo">
-      <nuxt-link to="/" class="simple-text logo-mini">
+      <nuxt-link to="index" class="simple-text logo-mini">
         <div class="logo-image">
           <img :src="logo">
         </div>
       </nuxt-link>
-
       <nuxt-link :to="localePath('index')" class="simple-text logo-normal">
-        {{title}}
+        Yombo
       </nuxt-link>
       <div class="navbar-minimize">
         <button id="minimizeDashboardSidebar" class="btn btn-simple btn-icon btn-neutral btn-round" @click="minimizeDashboardSidebar">
@@ -42,10 +41,6 @@
 export default {
   name: 'dashboard-sidebar',
   props: {
-    title: {
-      type: String,
-      default: 'Yombo'
-    },
     backgroundColor: {
       type: String,
       default: 'black',
