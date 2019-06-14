@@ -276,11 +276,13 @@ export default {
 .tab-content {
   display: flex; // to avoid horizontal scroll when animating
   .tab-pane {
-    display: block;
-    animation: fadeIn 0.5s;
+    /*display: block;*/
+    /*animation: none;*/
+    animation: fadeIn 0.3s;
     width: 100%;
   }
 }
+
 
 /**
     Extra niceties. Display error tabs and disable navigation unvisited tabs
