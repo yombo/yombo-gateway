@@ -1,4 +1,3 @@
-
 <template>
   <section class="container">
     <div class="row">
@@ -16,8 +15,8 @@
               the devices connected to the gateway, as well as automation rules, scenes in more.
             </p>
             <p>
-              The <router-link to="/controltower">control tower</router-link> is used to manage the devices
-              within the gateway.
+              The <nuxt-link :to="localePath('controltower')">{{$t("ui.navigation.control_tower")}}</nuxt-link> is
+              used to manage the devices within the gateway.
             </p>
           </card>
       </div>

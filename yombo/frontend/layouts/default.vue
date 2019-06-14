@@ -33,7 +33,7 @@
         return Math.floor(new Date()/10000) % 5;
       },
       bgImageSize: function() {
-        console.log(this.$root.$data.window.width);
+        // console.log(this.$root.$data.window.width);
         if (this.$root.$data.window.width <= 600) {
           return 600;
         } else if (this.$root.$data.window.width <= 1364) {

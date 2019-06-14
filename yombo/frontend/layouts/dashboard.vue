@@ -19,7 +19,7 @@
       <div class="panel-header panel-header-sm">
       </div>
       <div :class="{content: !$route.meta.hideContent}" @click="toggleSidebar">
-        <zoom-center-transition :duration="150" mode="out-in">
+        <zoom-center-transition :duration="100" mode="out-in">
           <!-- your content here -->
           <nuxt />
 
