@@ -1,6 +1,7 @@
 """
 This file handles the homepage, static files, and misc one-off urls.
 """
+from mimetypes import guess_type
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks
 from twisted.web.static import File
@@ -41,14 +42,7 @@ def route_home(webapp):
             base_headers(request)
             uri = request.uri.decode()[1:]
             logger.info("Catchall for: {uri}", uri=uri)
-
-            if uri in webinterface.file_cache:
-                file = webinterface.file_cache[uri]
-                if "headers" in file and len(file["headers"]) > 0:
-                    for header_name, header_content in file['headers'].items():
-                        request.setHeader(header_name, header_content)
-                return file["data"]
-            content = yield home_return_index_file(webinterface, request, session)
+            content = yield home_return_cached_file(webinterface, request, session, "index.html")
             return content
 
         @webapp.route("/")
@@ -63,21 +57,23 @@ def route_home(webapp):
             if session is None or session.enabled is False or session.is_valid() is False or session.has_user is False:
                 return webinterface.redirect(request, "/user/login")
 
-            content = yield home_return_index_file(webinterface, request, session)
+            content = yield home_return_cached_file(webinterface, request, session, "index.html")
             return content
 
         @inlineCallbacks
-        def home_return_index_file(webinterface, request, session):
-            if "index" not in webinterface.file_cache:
-                webinterface.file_cache["index"] = {}
+        def home_return_cached_file(webinterface, request, session, filename, cache_ttl=None):
+            if cache_ttl is None:
+                cache_ttl = 7200
+            if filename not in webinterface.file_cache or "data" in webinterface.file_cache[filename]:
+                webinterface.file_cache[filename] = {}
                 try:
-                    webinterface.file_cache["index"]["data"] = yield read_file(f"{webinterface.working_dir}/frontend/index.html")
-                    webinterface.file_cache["index"]["headers"] = {"Cache-Control": f"max-age=7200",
-                                                           "Content-Type": "text/html"}
+                    webinterface.file_cache[filename]["data"] = yield read_file(f"{webinterface.working_dir}/frontend/{filename}")
+                    webinterface.file_cache[filename]["headers"] = {"Cache-Control": f"max-age={cache_ttl}",
+                                                           "Content-Type": guess_type(filename)[0]}
                 except:
-                    return "Unable to process request."
+                    return "Unable to process request. Couldn't read source file."
 
-            file = webinterface.file_cache["index"]
+            file = webinterface.file_cache[filename]
             if "headers" in file and len(file["headers"]) > 0:
                 for header_name, header_content in file['headers'].items():
                     request.setHeader(header_name, header_content)
@@ -91,32 +87,6 @@ def route_home(webapp):
             request.setHeader("Content-Type", CONTENT_TYPE_JSON)
             request.setHeader("Cache-Control", f"max-age=5")
             return webinterface.nuxt_env_content(request)
-
-        # @webapp.route("/<path:catchall>", branch=True, strict_slashes=False)
-        # @require_auth()
-        # def home_static_frontend_catchall(webinterface, request, session, catchall):
-        #     """ For frontend that doesn't match anything. """
-        #     print(f"catchall: {catchall}")
-        #     print(f"page 404: {webinterface.working_dir}/frontend - {request.uri}")
-        #     # return File(webinterface.working_dir + "/frontend/css/")
-        #
-        #     uri = request.uri.decode('utf-8')
-        #     return File(webinterface.working_dir + "/frontend" + uri)
-        #
-        #     if re.match('^[a-zA-Z0-9?/.]*$', uri) is None:  # we have bad characters
-        #         return "Please stop that."
-        #
-        #     max_age = 60
-        #     if uri.endswith('.js') or uri.endswith('.css') or uri.startswith('/img/'):
-        #         max_age = random_int(604800, .2)
-        #
-        #     mime = guess_extension(uri)[0]
-        #     if mime is not None:
-        #         request.setHeader("Content-Type", mime)
-        #     request.responseHeaders.removeHeader("Expires")
-        #     request.setHeader("Cache-Control", f"max-age={max_age}")
-        #     # return "asdf"
-        #     return File(webinterface.working_dir + "/frontend")
 
         @webapp.route("/css/", branch=True)
         def home_static_frontend_css(webinterface, request):
@@ -161,26 +131,8 @@ def route_home(webapp):
         @inlineCallbacks
         def home_service_worker(webinterface, request, session):
             """ Service worker file for authenticated users only. """
-            print("got sw.js request...")
-            if "sw.js" not in webinterface.file_cache:
-                print("sw.js - loading cache...")
-                webinterface.file_cache["sw.js"] = {}
-                try:
-                    webinterface.file_cache["sw.js"]["data"] = yield read_file(f"{webinterface.working_dir}/frontend/sw.js")
-                    webinterface.file_cache["sw.js"]["headers"] = {"Cache-Control": f"max-age=60",
-                                                           "Content-Type": "application/javascript"}
-                except:
-                    return "Unable to process request."
-
-            file = webinterface.file_cache["sw.js"]
-            # print(webinterface.file_cache)
-            # print(file)
-            print("sw.js - setting headers")
-            if "headers" in file and len(file["headers"]) > 0:
-                for header_name, header_content in file['headers'].items():
-                    request.setHeader(header_name, header_content)
-            print("sw.js - send response.")
-            return file["data"]
+            content = yield home_return_cached_file(webinterface, request, session, "sw.js", 60)
+            return content
 
         @webapp.route("/favicon.ico")
         def home_static(webinterface, request):
