@@ -18,7 +18,7 @@ YOMBO_ROOT_DIR="$(dirname $YOMBO_SCRIPT_DIR)"
 bash "$YOMBO_SCRIPT_HELPER_DIR"/pyenv_setup &
 
 cd "$YOMBO_ROOT_DIR"/yombo/frontend
-(npm install && npm run build) &
+(npm install && npm dedup && npm run build) &
 
 for job in `jobs -p`
 do

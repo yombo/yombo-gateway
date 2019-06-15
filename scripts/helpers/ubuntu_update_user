@@ -31,3 +31,5 @@ pip3 install --upgrade -r requirements.txt
 
 cd "$YOMBO_ROOT_DIR"/frontend
 npm update
+npm audit fix
+npm dedup
