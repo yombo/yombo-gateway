@@ -180,6 +180,7 @@ export default {
 }
 .dashboard-sidebar ul.links__nav {
   margin-top: 0;
-  padding-top: 10px;
+  padding-top: 1px;
 }
+
 </style>
