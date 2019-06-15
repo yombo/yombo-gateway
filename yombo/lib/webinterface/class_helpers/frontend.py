@@ -36,58 +36,88 @@ logger = get_logger("library.webinterface.class_helpers.builddist")
 
 class Frontend:
     """
+    This webinterface helper class provides features to support the frontend application. Notably, it
+    generates the dashboard sidebar.
     """
-    # @inlineCallbacks
+    @inlineCallbacks
     def dashboard_sidebar_navigation(self, **kwargs):
         """
         Generates items for the frontend dashboard navigation. This starts with a pre-defined set of items
         and then allows other modules to add additional items.
 
+        Modules can add links to the dashboard by returning a dictionary to the '_frontend_dashboard_sidebar_' hook.
+        For module settings, the preferred method is to provide 'config' key with dictionary with 1 key:
+        * label - a label for the link. This label will be run thru the translator for localization.
+
+        The settings will automatically generate a link to the module's machine_label. The module should supply
+        a matching page in the 'frontend' folder within the module.
+
+        Additionally, the module can return a 'dashboard_link' key in the dictionary with a list of navigation
+        items to create.
+
         **Usage**:
+
+        The code below provides both a link and a module configuration settings. Typically, the module would return
+        one or the other.
 
         .. code-block:: python
 
            def _frontend_dashboard_sidebar_(self, **kwargs):
                return {
-                   "nav_side": [
-                       {
-                       "label1": "Tools",
-                       "label2": "MQTT",
-                       "priority1": 3000,
-                       "priority2": 10000,
-                       "icon": "fa fa-wrench fa-fw",
-                       "url": "/tools/mqtt",
-                       "tooltip": "",
-                       "opmode": "run",
-                       "cluster": "any",
-                       },
+                   "dashboard_link": [
+                        {
+                            "parent": "ui.navigation.module_configurations",
+                            "label": "ui.label.amazon_alexa",
+                            "path": {"name": "dashboard-module_configs-amazon_alexa", "params": {}},
+                            "priority": 1000,
+                        },
                    ],
-                   "routes": [
-                       self.web_interface_routes,
-                   ],
-                   "configs" {
-                        "settings_link": "/modules/tester/index",
+                   "config": {
+                        "label": "ui.label.amazon_alexa",
                    },
                }
 
         """
-        # sort the nav items
-        # build a dict with inner/outter
-        # build a list with that.
+        dashbard_items = deepcopy(FRONTEND_DASHBOARD_NAV)
+        config_links = []
 
-        # add_on_menus = yield global_invoke_all("_frontend_dashboard_sidebar_",
-        #                                        called_by=self,
-        #                                        )
-        # logger.debug("_webinterface_add_routes_ results: {add_on_menus}", add_on_menus=add_on_menus)
-        nav_side_menu = sorted(FRONTEND_DASHBOARD_NAV, key=lambda k: k['priority'])
+        add_on_menus = yield global_invoke_all("_dashboard_sidebar_navigation_",
+                                               called_by=self,
+                                               )
+
+        for component, options in add_on_menus.items():
+            if "dashboard_link" in options:
+                dashbard_items = dashbard_items + options["dashboard_link"]
+
+            if "config" in options:
+                config_links.append({
+                    "parent": "ui.navigation.module_configurations",
+                    "label": options['config']['label'],
+                    "path": {"name": f"dashboard-module_configs-{component._machine_label.lower()}", "params": {}},
+                    "priority": 1,
+                })
+        if len(config_links) > 0:
+            config_links.append({
+                "parent": None,
+                "icon": "fas fa-puzzle-piece",
+                "label": f"ui.navigation.module_configurations",
+                "path": {"name": f"dashboard-module_settings", "params": {}},
+                "priority": 1,
+            })
+            config_links = sorted(config_links, key=lambda k: k['label'])
+
+        for index, config_link in enumerate(config_links):
+            config_link["priority"] = index
+
+        dashbard_items = sorted(dashbard_items + config_links, key=lambda k: k['priority'])
 
         intermediate = {}
 
-        for item in nav_side_menu:
+        for item in dashbard_items:
             if item["parent"] is None:
                 intermediate[item["label"]] = {"out": item, "in": []}
 
-        for item in nav_side_menu:
+        for item in dashbard_items:
             if item["parent"] is not None:
                 if item["parent"] not in intermediate:
                     logger.warn("Frontend dashbard nav item being discarded, no parent: {item}", item=item)
@@ -100,44 +130,3 @@ class Frontend:
 
         return results
 
-        #
-        # temp_list = sorted(NAV_SIDE_MENU, key=itemgetter("priority1", "label1", "priority2"))
-        # for item in temp_list:
-        #     label1 = item["label1"]
-        #     if label1 not in temp_list:
-        #         top_levels[label1] = item["priority1"]
-        #
-        # for component, options in add_on_menus.items():
-        #     logger.debug("component: {component}, options: {options}", component=component, options=options)
-        #     if "menu_priorities" in options:  # allow modules to change the ordering of top level menus
-        #         for label, priority in options["menu_priorities"].items():
-        #             top_levels[label] = priority
-        #     if "routes" in options:
-        #         for new_route in options["routes"]:
-        #             new_route(self.webapp)
-        #     if "configs" in options:
-        #         if "settings_link" in options["configs"]:
-        #             self.module_config_links[component._module_id] = options["configs"]["settings_link"]
-        #
-        # # build menu tree
-        # self.misc_wi_data["nav_side"] = {}
-        #
-        # is_master = self.is_master
-        # # temp_list = sorted(nav_side_menu, key=itemgetter("priority1", "priority2", "label1"))
-        # temp_list = sorted(nav_side_menu, key=itemgetter("priority1", "label1", "priority2", "label2"))
-        # for item in temp_list:
-        #     if "cluster" not in item:
-        #         item["cluster"] = "any"
-        #     if item["cluster"] == "master" and is_master is not True:
-        #         continue
-        #     if item["cluster"] == "member" and is_master is True:
-        #         continue
-        #     item["label1_text"] = deepcopy(item["label1"])
-        #     item["label2_text"] = deepcopy(item["label2"])
-        #     label1 = "ui::navigation::" + yombo.utils.snake_case(item["label1"])
-        #     item["label1"] = "ui::navigation::" + yombo.utils.snake_case(item["label1"])
-        #     item["label2"] = "ui::navigation::" + yombo.utils.snake_case(item["label2"])
-        #     if label1 not in self.misc_wi_data["nav_side"]:
-        #         self.misc_wi_data["nav_side"][label1] = []
-        #     self.misc_wi_data["nav_side"][label1].append(item)
-        #
