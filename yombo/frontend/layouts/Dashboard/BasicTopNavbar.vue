@@ -38,7 +38,7 @@
         </li>
         <li class="nav-item">
           <nuxt-link class="nav-link" :to="localePath('controltower')">
-            <i class="fas fa-gamepad fa-lg"></i>
+            <i class="fas fa-broadcast-tower fa-lg"></i>
             <p>
               <span class="d-lg-none d-md-block">Control Tower</span>
             </p>
@@ -46,9 +46,9 @@
         </li>
         <li class="nav-item">
           <nuxt-link class="nav-link" :to="localePath('dashboard')">
-            <i class="fas fa-chart-line fa-lg"></i>
+            <i class="fas fa-tachometer-alt fa-lg"></i>
             <p>
-              <span class="d-lg-none d-md-block">Control Tower</span>
+              <span class="d-lg-none d-md-block">Dashboard</span>
             </p>
           </nuxt-link>
         </li>
