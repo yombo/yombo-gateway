@@ -46,9 +46,15 @@ def get_local_network_info(ethernet_name = None):
     # => IPNetwork("192.168.1.150/24")
     network_v4 = cidr_v4.network
 
-    ipinfo = addrs[socket.AF_INET6][0]
-    address_v6 = ipinfo["addr"].split("%")[0]
-    netmask_v6 = ipinfo["netmask"]
+    try:
+        ipinfo = addrs[socket.AF_INET6][0]
+        address_v6 = ipinfo["addr"].split("%")[0]
+        netmask_v6 = ipinfo["netmask"]
+    except KeyError as e:
+        print("Appears this machine has no IPv6.")
+        address_v6 = None
+        netmask_v6 = None
+
     # Create ip object and get
     # cidr_v6 = netaddr.IPNetwork("%s/%s" % (address_v6, netmask_v6))
     # => IPNetwork("192.168.1.150/24")
