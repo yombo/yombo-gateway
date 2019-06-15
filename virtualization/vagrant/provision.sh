@@ -126,7 +126,7 @@ main() {
         "status") show_status; exit ;;
     esac
     # ...otherwise we assume it's the Vagrant provisioner
-    if [ $(hostname) != "ubuntu1804.localdomain" ]; then usage; exit; fi
+    if [ $(hostname) != "ubuntu1904.localdomain" ]; then usage; exit; fi
     if ! [ -f $SETUP_DONE ]; then setup; fi
     if [ -f $RESTART ]; then restart; fi
     if ! systemctl start yombo.service; then
