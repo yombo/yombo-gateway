@@ -156,7 +156,6 @@ class Startup(YomboLibrary):
             self._Loader.operating_mode = "config"
             return
 
-        print("startup operating mode set to RUN")
         self._Loader.operating_mode = "run"
 
     @inlineCallbacks

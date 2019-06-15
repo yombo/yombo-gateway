@@ -64,7 +64,7 @@ from yombo.lib.webinterface.routes.api_v1.frontend import route_api_v1_frontend
 from yombo.lib.webinterface.routes.api_v1.mqtt import route_api_v1_mqtt
 # from yombo.lib.webinterface.routes.api_v1.notification import route_api_v1_notification
 from yombo.lib.webinterface.routes.api_v1.scenes import route_api_v1_scenes
-# from yombo.lib.webinterface.routes.api_v1.server import route_api_v1_server
+from yombo.lib.webinterface.routes.api_v1.server import route_api_v1_server
 from yombo.lib.webinterface.routes.api_v1.states import route_api_v1_states
 from yombo.lib.webinterface.routes.api_v1.stream import broadcast as route_api_v1_stream_broadcast
 # from yombo.lib.webinterface.routes.api_v1.stream import route_api_v1_stream
@@ -141,7 +141,7 @@ class WebInterface(YomboLibrary, BuildDistribution, ErrorHandler, Frontend, Rend
         route_api_v1_mqtt(self.webapp)
         # route_api_v1_notification(self.webapp)
         route_api_v1_scenes(self.webapp)
-        # route_api_v1_server(self.webapp)
+        route_api_v1_server(self.webapp)
         # route_api_v1_statistics(self.webapp)
         # route_api_v1_stream(self.webapp, self)
         route_api_v1_states(self.webapp)

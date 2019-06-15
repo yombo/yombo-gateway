@@ -1,21 +1,42 @@
 {% extends "lib/webinterface/fragments/layout.tpl" %}
 
-{% block content %}
+{% block head_top %}
+{% include "lib/webinterface/fragments/bg_image.tpl" %}
+{% endblock %}
 
-            <div class="row">
-                <div class="col-lg-12">
-                    <div class="panel panel-default">
-                        <div class="panel-heading">
-                            <label>Still booting</label>
-                        </div>
-                        <!-- /.panel-heading -->
-                        <div class="panel-body">
-                            The system is still booting. Trying again in a few moments.
-                        </div>
-                    </div>
-                    <!-- /.panel-body -->
+{% block content %}
+<div class="container-fluid">
+    <div class="row" style="padding-top: 3em; padding-bottom: 2em;">
+        <div class="col-12 col-md-10 col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-header text-center">
+                  <h2>Not quite there</h2>
                 </div>
-                <!-- /.col-lg-12 -->
+                <div class="card-body">
+                    <p></p>
+                    <p>
+                        It appears the system is still loading or the frontend is still building.
+                        Please wait a little bit and try again.
+                    </p>
+                    <p>
+                        The file you requested: {{ filename }}
+                    </p>
+                    <hr>
+                    <p>
+                        Some additional reading while you wait:
+                    </p>
+                    <ul>
+                        <li><a href="https://yombo.net" target="_blank">Yombo.Net</a></li>
+                        <li><a href="https://yombo.net/docs" target="_blank">Documentation</a></li>
+                        <li><a href="https://yombo.net/kbs" target="_blank">Knowledge base articles</a></li>
+                    </ul>
+                </div>
             </div>
-            <!-- /.row -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block body_bottom %}
+<!-- jQuery, js.cookie, bootstrap4, bootstrap select, bootstrap datatables, are you sure -->
+<script src="/js/basic_app.js"></script>
 {% endblock %}

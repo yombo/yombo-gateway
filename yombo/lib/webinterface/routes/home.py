@@ -62,23 +62,38 @@ def route_home(webapp):
 
         @inlineCallbacks
         def home_return_cached_file(webinterface, request, session, filename, cache_ttl=None):
+            allowed_files = [
+                "index.html", "sw.js",
+            ]
+            if filename not in allowed_files:
+                request.setResponseCode(400)
+                return "You have been a bad web browser, no data for you. Good bye."
+
             if cache_ttl is None:
                 cache_ttl = 7200
-            if filename not in webinterface.file_cache or "data" in webinterface.file_cache[filename]:
+
+            if filename in webinterface.file_cache:
+                if "data" not in webinterface.file_cache or "data" not in webinterface.file_cache:
+                    del webinterface.file_cache[filename]
+
+            if filename not in webinterface.file_cache:
                 webinterface.file_cache[filename] = {}
                 try:
-                    webinterface.file_cache[filename]["data"] = yield read_file(f"{webinterface.working_dir}/frontend/{filename}")
+                    webinterface.file_cache[filename]["data"] = yield read_file(
+                        f"{webinterface.working_dir}/frontend/{filename}")
                     webinterface.file_cache[filename]["headers"] = {"Cache-Control": f"max-age={cache_ttl}",
                                                            "Content-Type": guess_type(filename)[0]}
                 except:
-                    return "Unable to process request. Couldn't read source file."
+                    del webinterface.file_cache[filename]
+                    page = webinterface.webapp.templates.get_template(
+                        webinterface.wi_dir + '/pages/misc/stillbooting.html')
+                    return page.render(filename=filename)
 
             file = webinterface.file_cache[filename]
             if "headers" in file and len(file["headers"]) > 0:
                 for header_name, header_content in file['headers'].items():
                     request.setHeader(header_name, header_content)
             return file["data"]
-
 
         @webapp.route("/nuxt.env")
         @require_auth()
@@ -93,7 +108,7 @@ def route_home(webapp):
             """ For frontend css stylesheets. """
             request.responseHeaders.removeHeader("Expires")
             base_headers(request)
-            request.setHeader("Cache-Control", f"max-age={random_int(604800, .2)}")
+            request.setHeader("Cache-Control", f"max-age={random_int(21600, .2)}")
             return File(webinterface.working_dir + "/frontend/css")
 
         @webapp.route("/img/", branch=True)
@@ -111,7 +126,7 @@ def route_home(webapp):
             # print(f"static_frontend_js {uri}")
             # if uri.endswith('basic_app.js'):
             base_headers(request)
-            request.setHeader("Cache-Control", f"max-age={random_int(604800, .2)}")
+            request.setHeader("Cache-Control", f"max-age={random_int(21600, .2)}")
             request.responseHeaders.removeHeader("Expires")
             return File(webinterface.working_dir + "/frontend/js")
 
@@ -122,7 +137,7 @@ def route_home(webapp):
             # print(f"static_frontend_js {uri}")
             # if uri.endswith('basic_app.js'):
             base_headers(request)
-            request.setHeader("Cache-Control", f"max-age={random_int(604800, .2)}")
+            request.setHeader("Cache-Control", f"max-age={random_int(21600, .2)}")
             request.responseHeaders.removeHeader("Expires")
             return File(webinterface.working_dir + "/frontend/_nuxt")
 
