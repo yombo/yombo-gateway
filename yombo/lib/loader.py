@@ -76,7 +76,7 @@ HARD_LOAD["Queue"] = {"operating_mode": "all"}
 HARD_LOAD["Notifications"] = {"operating_mode": "all"}
 HARD_LOAD["LocalDB"] = {"operating_mode": "all"}
 HARD_LOAD["SQLDict"] = {"operating_mode": "all"}
-HARD_LOAD["GPG"] = {"operating_mode": "all"}
+HARD_LOAD["GPG"] = {"operating_mode": "run"}
 HARD_LOAD["Configuration"] = {"operating_mode": "all"}
 HARD_LOAD["YomboAPI"] = {"operating_mode": "all"}
 HARD_LOAD["Startup"] = {"operating_mode": "all"}
@@ -105,7 +105,7 @@ HARD_LOAD["DeviceCommands"] = {"operating_mode": "all"}
 HARD_LOAD["SystemDataHandler"] = {"operating_mode": "run"}
 HARD_LOAD["AMQPYombo"] = {"operating_mode": "run"}
 HARD_LOAD["Gateways"] = {"operating_mode": "all"}
-HARD_LOAD["GatewayCommunications"] = {"operating_mode": "all"}
+HARD_LOAD["GatewayCommunications"] = {"operating_mode": "run"}
 HARD_LOAD["DownloadModules"] = {"operating_mode": "run"}
 HARD_LOAD["Nodes"] = {"operating_mode": "all"}
 HARD_LOAD["MQTT"] = {"operating_mode": "run"}
@@ -123,7 +123,7 @@ HARD_LOAD["Storage"] = {"operating_mode": "all"}
 HARD_UNLOAD = {}
 HARD_UNLOAD["Users"] = {"operating_mode": "all"}
 HARD_UNLOAD["Gateways"] = {"operating_mode": "all"}
-HARD_UNLOAD["GatewayCommunications"] = {"operating_mode": "all"}
+HARD_UNLOAD["GatewayCommunications"] = {"operating_mode": "run"}
 HARD_UNLOAD["SSLCerts"] = {"operating_mode": "all"}
 HARD_UNLOAD["Scenes"] = {"operating_mode": "all"}
 HARD_UNLOAD["Automation"] = {"operating_mode": "all"}
@@ -131,7 +131,7 @@ HARD_UNLOAD["Tasks"] = {"operating_mode": "all"}
 HARD_UNLOAD["Localize"] = {"operating_mode": "all"}
 HARD_UNLOAD["Startup"] = {"operating_mode": "all"}
 HARD_UNLOAD["YomboAPI"] = {"operating_mode": "all"}
-HARD_UNLOAD["GPG"] = {"operating_mode": "all"}
+HARD_UNLOAD["GPG"] = {"operating_mode": "run"}
 HARD_UNLOAD["CronTab"] = {"operating_mode": "all"}
 HARD_UNLOAD["Times"] = {"operating_mode": "all"}
 HARD_UNLOAD["Commands"] = {"operating_mode": "all"}
@@ -346,7 +346,7 @@ class Loader(YomboLibrary):
         logger.debug("Calling load functions of libraries.")
 
         self._run_phase = "modules_import"
-        self.operating_mode = self.operating_mode  # so we can update the State!
+        self.operating_mode = self._operating_mode  # so we can update the State!
         if self.operating_mode == "run":
             yield self._moduleLibrary.prepare_modules()
             self._moduleLibrary.import_modules()
@@ -415,7 +415,7 @@ class Loader(YomboLibrary):
                 return
             self._log_loader("debug", name, "library", "_modules_started_", "About to call _modules_started_.")
             if self.check_operating_mode(config["operating_mode"]):
-                libraryName =  name.lower()
+                libraryName = name.lower()
                 yield self.library_invoke(libraryName, "_modules_started_", called_by=self)
                 HARD_LOAD[name]["_started_"] = True
             else:
@@ -669,7 +669,6 @@ class Loader(YomboLibrary):
         :return: True/False
         """
         operating_mode = self.operating_mode
-
         if operating_mode is None:
             return True
 

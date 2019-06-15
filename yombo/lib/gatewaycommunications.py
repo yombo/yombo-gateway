@@ -47,9 +47,6 @@ class GatewayCommunications(YomboLibrary):
     ok_to_publish_updates = False
 
     def _init_(self, **kwargs):
-        if self._Loader.operating_mode != "run":
-            return
-
         self.ok_to_publish_updates = False
         self.log_incoming = deque([], 150)
         self.log_outgoing = deque([], 150)
@@ -65,19 +62,12 @@ class GatewayCommunications(YomboLibrary):
         self.client_default_ws_ssl = None
 
     def _load_(self, **kwargs):
-        if self._Loader.operating_mode != "run":
-            return
-
         local_gateway = self._Gateways.local
         master_gateway = self._Gateways.master
 
         self.client_default_username = "yombogw_" + self.gateway_id
         self.client_default_password1 = local_gateway.mqtt_auth
         self.client_default_password2 = local_gateway.mqtt_auth_next
-
-        if self._Loader.operating_mode != "run":
-            logger.warn("Gateway communications disabled when not in run mode.")
-            return
 
         def test_port(host, port):
             """ Quick function to test if host is listening to a port. """
@@ -177,8 +167,6 @@ class GatewayCommunications(YomboLibrary):
         :param kwargs:
         :return:
         """
-        if self._Loader.operating_mode != "run":
-            return
         self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming,
                                    client_id=f"Yombo-gwcoms-{self.gateway_id}")
 
@@ -199,8 +187,6 @@ class GatewayCommunications(YomboLibrary):
         :param kwargs:
         :return:
         """
-        if self._Loader.operating_mode != "run":
-            return
         self.publish_data(destination_id="all",
                           component_type="lib", component_name="system_state",
                           payload="online")

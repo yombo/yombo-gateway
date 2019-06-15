@@ -133,9 +133,6 @@ class GPG(YomboLibrary):
         """
         We don't do anything, but "pass" so we don't generate an exception.
         """
-        if self._Loader.operating_mode != "run":
-            return
-
         self.remote_get_root_key()
         self.send_my_gpg_key_loop = LoopingCall(self.send_my_gpg_key)
         self.send_my_gpg_key_loop.start(random_int(60 * 60 * 2, .2))

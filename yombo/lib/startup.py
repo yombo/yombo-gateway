@@ -61,6 +61,7 @@ class Startup(YomboLibrary):
 
         self.system_stopping = False
         if self._Loader.operating_mode == "first_run" or self._Configs.get("core", "first_run", False, False):
+            self._Loader.operating_mode = "first_run"
             self.configs_needed = ['gwid', 'gwhash']
             return
 
@@ -155,6 +156,7 @@ class Startup(YomboLibrary):
             self._Loader.operating_mode = "config"
             return
 
+        print("startup operating mode set to RUN")
         self._Loader.operating_mode = "run"
 
     @inlineCallbacks
