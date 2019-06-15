@@ -1,0 +1,186 @@
+#!/usr/bin/env bash
+
+# This file is responsible for building both production and development frontend builds.
+# This will collect the primary source from the Yombo directory as well as all the
+# module directories. Once combined, it will start to build for either prod or dev.
+#
+# The working dir for this: $working_dir'/var/frontend Eg: /home/user/.yombo/var/frontend
+#
+#
+# To run the build process, goto the frontend directory within the gateway repo, then:
+# npm run dev
+#     or
+# npm run build
+#
+# For developing Frontend components, visit: https://yombo.net/docs/developer/frontend
+
+WORKING_DIR="$HOME/.yombo"
+if ! [ -z "$2" ]
+  then
+    WORKING_DIR=$2
+fi
+#WORKING_DIR="$WORKING_DIR/"
+
+YOMBO_SCRIPT_FRONTEND_UTILS="$( cd "$(dirname "$0")" ; pwd -P )"
+YOMBO_SCRIPT_FRONTEND="$(dirname $YOMBO_SCRIPT_FRONTEND_UTILS)"
+YOMBO_ROOT="$(dirname $YOMBO_SCRIPT_FRONTEND)"
+YOMBO_ROOT="$(dirname $YOMBO_ROOT)"
+
+
+function copy_source_files {
+  # Copies all the files from the core frontend and the modules
+
+  echo "Copying frontend core directory..."
+  DESTINATION=$WORKING_DIR/var/frontend
+  mkdir -p $DESTINATION
+  mkdir -p $DESTINATION/pages/dashboard/module_configs
+
+  rsync -a "$YOMBO_SCRIPT_FRONTEND/" --exclude '/.nuxt/' --exclude '/dist/' "$DESTINATION"
+
+  echo "Copying frontend files from various modules..."
+  cd "$YOMBO_ROOT"/yombo/modules
+
+  # Copy module/frontend magic items
+  for d in **/*frontend*/; do rsync -a "$d/" "$DESTINATION"/ ; done
+
+  # Copy module/frontend_configs magic items to dest/pages/dashboard/module_configs/MODULENAME
+  for d in **/*frontend_configs*/
+  do
+    IFS='/' read -r -a array <<< "$d"
+    MODULE=${array[0]}
+    echo $MODULE
+    rsync -a "$d/" "$DESTINATION"/pages/dashboard/module_configs/"$MODULE"/
+  done
+
+  # Load, merge, and save the translation files everywhere (core and modules)
+  $YOMBO_SCRIPT_FRONTEND_UTILS/merge_locale_files.py
+}
+
+function copy_to_destination {
+  # For production builds, copy the files to the final resting place when done.
+
+  echo "Copying final destination."
+  mkdir -p "$WORKING_DIR"/frontend/
+  rsync -a "$WORKING_DIR"/var/frontend/dist/* "$WORKING_DIR"/frontend/
+}
+
+function setup_watch_files {
+  # Watches all frontend source locations for changes, and then copies them
+  # to ~/.yombo/var/frontend where npm and act on them.
+
+  echo "Setting up frontend for development: watch & sync."
+  cd $YOMBO_ROOT
+
+  inotifywait -m -r -e modify -e moved_to -e close_write --exclude "___jb_" --exclude yombo/frontend/node_modules/ --format "%w%f" yombo/frontend/ yombo/modules/ |
+  while read -r filename; do
+    if [[ $filename =~ yombo/modules/.*/frontend/ || $filename =~ yombo/frontend ]] && [[ ! $filename =~ .*___jb.* ]]; then
+      while [[ $filename =~ .*/frontend/.* ]]
+      do
+        filename="$(dirname $filename)"
+      done
+      DESTINATION=$WORKING_DIR/var/frontend
+      rsync -a "$filename/" --exclude '/.nuxt/' --exclude '/dist/' "$DESTINATION"
+    fi
+    if [[ $filename =~ yombo/modules/.*/frontend_configs/ ]] && [[ ! $filename =~ .*___jb.* ]]; then
+      IFS='/' read -r -a array <<< "$filename"
+      MODULE=${array[2]}
+      SOURCE="yombo/modules/$MODULE/frontend_configs/"
+      DESTINATION=$WORKING_DIR/var/frontend/pages/dashboard/module_configs/$MODULE
+      rsync -a "$SOURCE" "$DESTINATION"
+    fi
+    if [[ $filename =~ .json ]] && [[ ! $filename =~ .*___jb.* ]]; then
+    $YOMBO_SCRIPT_FRONTEND_UTILS/merge_locale_files.py
+    fi
+
+  done
+}
+
+function ctrl_c() {
+  # Watch for ctrl-c, then stop all running tasks
+
+  echo
+  echo "Stopping Frontend watches."
+  kill $WATCHFILES >/dev/null 2>&1
+  kill $BUILDFRONTEND >/dev/null 2>&1
+  rm $YOMBO_SCRIPT_FRONTEND_UTILS/builder.pid
+
+}
+
+function build_dev {
+  # Builds the frontend for development
+  echo
+  echo "Starting Yombo Frontend Dev Build."
+  echo
+
+  copy_source_files
+
+  # trap ctrl-c and call ctrl_c()
+  trap ctrl_c INT
+
+  setup_watch_files &
+  WATCHFILES=$!
+
+  cd "$WORKING_DIR"/var/frontend/
+  npm run build_dev &
+  BUILDFRONTEND=$!
+
+  FAIL=0
+  for job in `jobs -p`
+  do
+      wait $job >/dev/null 2>&1 || let "FAIL+=1" >/dev/null 2>&1
+  done
+  sleep 1
+}
+
+function build_prod {
+  # Builds the frontend for production
+  echo
+  echo "Starting Yombo Frontend Production Build."
+  echo
+
+  copy_source_files
+  cd "$WORKING_DIR"/var/frontend/
+  npm run build_prod
+  copy_to_destination
+  rm $YOMBO_SCRIPT_FRONTEND_UTILS/builder.pid
+
+}
+
+function usage
+{
+  printf "usage: rundev dev   or   rundev prod\\n"
+  return 0
+}
+
+if [ $# -lt 1 ]; then
+  usage
+  exit 0
+fi
+
+if test -f "$YOMBO_SCRIPT_FRONTEND_UTILS/builder.pid"; then
+  builder_pid="`cat $YOMBO_SCRIPT_FRONTEND_UTILS/builder.pid`"
+  if ps -p $builder_pid > /dev/null 2>&1
+  then
+      echo "Frontend builder is already running: $builder_pid"
+      exit
+  else
+      echo "Removing stale pid file."
+      rm $YOMBO_SCRIPT_FRONTEND_UTILS/builder.pid
+  fi
+fi
+
+echo "$BASHPID" > $YOMBO_SCRIPT_FRONTEND_UTILS/builder.pid
+
+while true; do
+  case "$1" in
+    "dev")
+      build_dev
+      exit
+      ;;
+    "prod")
+      build_prod
+      exit
+      ;;
+    * ) usage ; break ;;
+  esac
+done
