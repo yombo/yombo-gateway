@@ -37,11 +37,12 @@ import yombo.ext.polib as polib
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 import yombo.core.settings as settings
-from yombo.utils import read_file, bytes_to_unicode
+from yombo.utils import read_file
 from yombo.utils.converters import unit_convert
 from yombo.core.log import get_logger
 
 logger = get_logger("library.localize")
+
 
 class YomboFormatter(Formatter):
     def get_value(self, key, args, keywords):
@@ -53,15 +54,17 @@ class YomboFormatter(Formatter):
         else:
             return Formatter.get_value(key, args, keywords)
 
+
 class Localize(YomboLibrary):
     """
-    Provides internaltionalization and localization where possible.  Default language is "en" (English). System and
-    debug messages are never translated.
+    Provides internaltionalization and localization where possible.  Default language is "en" (English).
+
+    Localization provides translations for both the system messages, including yombo.ini file.
     """
     def _init_(self, **kwargs):
         self.working_dir = settings.arguments["working_dir"]
         self.files = {}
-        self.parse_directory("yombo/utils/locale", has_header=True)
+        self.parse_directory("yombo/locale/backend", has_header=True)
         self.default_lang = self._Configs.get2('localize', 'default_lang', self.get_system_language(), False)
 
         try:
@@ -151,7 +154,7 @@ class Localize(YomboLibrary):
 
             try:
                 for item, data in self._Modules.modules.items():
-                    the_directory = path.dirname(path.abspath(inspect.getfile(data.__class__))) + "/locale"
+                    the_directory = path.dirname(path.abspath(inspect.getfile(data.__class__))) + "/locale/backend"
                     if path.exists(the_directory):
                         self.parse_directory(the_directory)
             except Exception as e:

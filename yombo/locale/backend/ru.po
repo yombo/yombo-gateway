@@ -1,0 +1,233 @@
+msgid ""
+msgstr ""
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: lokalise.co\n"
+"Project-Id-Version: Yombo Backend\n"
+"PO-Revision-Date: 2019-06-15 00:44\n"
+"Last-Translator: lokalise.co\n"
+"Language-Team: lokalise.co\n\n"
+"Language: ru\n"
+
+msgid "config::config_item::amqpyombo::port"
+msgstr "The AQMP port that Yombo AQMP connects to."
+
+msgid "config::config_item::amqpyombo:hostname"
+msgstr "AMQP Yombo server name to connect to."
+
+msgid "config::config_item::core::default_lang"
+msgstr "The default system language."
+
+msgid "config::config_item::core::environment"
+msgstr "Which environment this system connects to. One of: production, staging, development."
+
+msgid "config::config_item::core::externalipaddress"
+msgstr "Current external IP address, what the internet sees."
+
+msgid "config::config_item::core::first_run"
+msgstr "Used to help determine if this is the first time the gateway as run."
+
+msgid "config::config_item::core::gwhash"
+msgstr "The secret key of the gateway. Used by the gateway to authenticate to the server."
+
+msgid "config::config_item::core::gwid"
+msgstr "An ID that identifies this gateway to anyone. Notice: This ID change."
+
+msgid "config::config_item::core::gwuuid"
+msgstr "The ID of the gateway. Should not give this out freely, but not a secret."
+
+msgid "config::config_item::core::internalipaddress"
+msgstr "Current internal IP address, what the local network sees."
+
+msgid "config::config_item::core::module_domain"
+msgstr "A domain which the modules should be downloaded from."
+
+msgid "config::config_item::gpg::keyid"
+msgstr "GPG Key ID. This should be used by other devices wishing to send this gateway secrets. Or used to store secrets in the database."
+
+msgid "config::config_item::localize::hashes"
+msgstr "Store hasing information on the locale files. Used to determine if locale files need to be rebuilt."
+
+msgid "config::config_item::location::elevation"
+msgstr "Elevation of the gateway, in feet."
+
+msgid "config::config_item::location::latitude"
+msgstr "Latitude of the gateway."
+
+msgid "config::config_item::location::longitude"
+msgstr "Longitude of the gateway."
+
+msgid "config::config_item::mqtt::client_enabled"
+msgstr "When True, allows client connections to be made externally."
+
+msgid "config::config_item::mqtt::server_allow_anonymous"
+msgstr "Allow un-authenticated users. To add users, edit the yombo.ini file, add useds to 'mtqq_users' section."
+
+msgid "config::config_item::mqtt::server_enabled"
+msgstr "When True, starts the MQTT broker."
+
+msgid "config::config_item::mqtt::server_listen_ip"
+msgstr "The IP address to bind to. For security reasons, the default only allows connections from the local machine. Change to the IP address of the local machine or network card to allow from only that network card. Or, us '0.0.0.0 to allow from all network sources."
+
+msgid "config::config_item::mqtt::server_listen_port"
+msgstr "MQTT Non-secure (non-ssl) port to listen on. 0 = disabled.  Use non-secure port only when connecting to the local machine. Using the non-secure port for local connections reduces load on CPU for low-powered devices."
+
+msgid "config::config_item::mqtt::server_listen_port_le_ssl"
+msgstr "MQTT Lets encrypt cert port."
+
+msgid "config::config_item::mqtt::server_listen_port_ss_ssl"
+msgstr "MQTT Self-Signed cert port."
+
+msgid "config::config_item::mqtt::server_listen_port_websockets"
+msgstr "WS port to listen on."
+
+msgid "config::config_item::mqtt::server_listen_port_websockets_le_ssl"
+msgstr "WSS Lets Encrypt secure port."
+
+msgid "config::config_item::mqtt::server_listen_port_websockets_ss_ssl"
+msgstr "WSS Self-Signed cert secure port."
+
+msgid "config::config_item::mqtt::server_max_connections"
+msgstr "Max connections allowed on the MQTT broker. Sets 'max_connections' for the MQTT broker configs."
+
+msgid "config::config_item::mqtt::server_timeout_disconnect_delay"
+msgstr "MQTT broker timeout disconnect. Sets 'timeout_disconnect_delay' for the MQTT broker configs."
+
+msgid "config::config_item::mqtt::yombo_mqtt_password"
+msgstr "Yombo's mqtt password. You shouldn't use this password so it can be easily rotated."
+
+msgid "config::config_item::sqldict::save_interval"
+msgstr "How many seconds between saving the dictionaries to SQL."
+
+msgid "config::config_item::statistics::anonymous"
+msgstr "Allow collection of anaonymous statistics. If enabled, will allow upload regardless of 'upload' enabled for private statistics."
+
+msgid "config::config_item::statistics::averages_bucket_duration"
+msgstr "How minutes of information to collect for average based time buckets."
+
+msgid "config::config_item::statistics::averages_bucket_life_daily"
+msgstr "How many days to history to keep daily resolution statistics for average collections."
+
+msgid "config::config_item::statistics::averages_bucket_life_full"
+msgstr "How many days of history to keep full detailed statistics for average collections."
+
+msgid "config::config_item::statistics::averages_bucket_life_hourly"
+msgstr "How many days to history to keep hourly resolution statistics for average collections."
+
+msgid "config::config_item::statistics::averages_bucket_life_qtr_hour"
+msgstr "How many days of history to keep 15 minute resolution statistics for average collections."
+
+msgid "config::config_item::statistics::count_bucket_duration"
+msgstr "How minutes of information to collect for count based time buckets."
+
+msgid "config::config_item::statistics::count_bucket_life_daily"
+msgstr "How many days to history to keep daily resolution statistics for basic counters."
+
+msgid "config::config_item::statistics::count_bucket_life_full"
+msgstr "How many days of history to keep full detailed statistics for basic counters."
+
+msgid "config::config_item::statistics::count_bucket_life_hourly"
+msgstr "How many days to history to keep hourly resolution statistics for basic counters."
+
+msgid "config::config_item::statistics::count_bucket_life_qtr_hour"
+msgstr "How many days of history to keep 15 minute resolution statistics for basic counters."
+
+msgid "config::config_item::statistics::datapoint_bucket_life_daily"
+msgstr "How many days to history to keep daily averaged statistics for specific datapoints."
+
+msgid "config::config_item::statistics::datapoint_bucket_life_full"
+msgstr "How many days of history to keep full detailed statistics for specific datapoints."
+
+msgid "config::config_item::statistics::datapoint_bucket_life_hourly"
+msgstr "How many days to history to keep hourly averaged statistics for specific datapoints."
+
+msgid "config::config_item::statistics::datapoint_bucket_life_qtr_hour"
+msgstr "How many days of history to keep 15 minute averaged statistics for specific datapoints."
+
+msgid "config::config_item::statistics::enabled"
+msgstr "Enable or disable entire library. When disabled, calls still work, nothing actually done."
+
+msgid "config::config_item::statistics::time_between_saves"
+msgstr "Seconds between datasaves. Stats are collected and processed in memory memeory before being dumped. Longer is better for averages, but at a risk to dataloss."
+
+msgid "config::config_item::statistics::time_between_saves_averages"
+msgstr "For averages, how many seconds between data saves from memory to disk. Longer is better for averages, but at a risk to dataloss."
+
+msgid "config::config_item::statistics::upload"
+msgstr "Allow uploading of statistics to Yombo servers"
+
+msgid "config::config_item::times::twilighthorizon"
+msgstr "How many degrees below the horizon must the sun be before it's considered dark. Civil = -6, Nautical = -12, Astronomical = -18"
+
+msgid "config::config_item::webinterface::auth_pin_totp"
+msgstr "When using TOTP for additional security, it's token is stored here."
+
+msgid "config::config_item::webinterface::cookie_session"
+msgstr "Name of the cookie used in browsers."
+
+msgid "config::config_item::webinterface::enabled"
+msgstr "If True (or: on, 1), then the web interface will be started."
+
+msgid "config::config_item::yomboapi::allow_system_session"
+msgstr "Allows the gateway to store admin credentials in a hashed form to make calls on behalf of itself. This allows the gateway make changes to various items without admin input."
+
+msgid "config::config_item::yomboapi::api_key"
+msgstr "API Key to use when making requests. Note: This key will rotate to prevent abuse as needed."
+
+msgid "config::config_item::yomboapi::baseurl"
+msgstr "URL to prepend requests to."
+
+msgid "config::config_item::yomboapi::contenttype"
+msgstr "Sets the header of Content-Type in the request to Yombo API system"
+
+msgid "config::config_item::yomboapi::sessionid_id"
+msgstr "When allow_system_session is true, this is used for logging into the API."
+
+msgid "config::config_item::yomboapi::sessionid_key"
+msgstr "When allow_system_session is true, this is used for logging into the API."
+
+msgid "config::config_section::amqpyombo"
+msgstr "Items specific to the AMQPYombo library."
+
+msgid "config::config_section::core"
+msgstr "Core components of the gateway. Required items needed to run ths system, most with no defaults"
+
+msgid "config::config_section::localize"
+msgstr "Items specific to the localize library."
+
+msgid "config::config_section::location"
+msgstr "Location information about the gateway. Used for calculating light/dark, sunrise, etc."
+
+msgid "config::config_section::logging"
+msgstr "Allows fine grained control of console logging. See https://yombo.net/docs/gateway/logging for details."
+
+msgid "config::config_section::mqtt"
+msgstr "Items specific to the statistics library."
+
+msgid "config::config_section::rbac_roles"
+msgstr "Role Based Access Control - User roles. Stores user create roles here. These fields are not meant to be directly edited."
+
+msgid "config::config_section::rbac_user_roles"
+msgstr "Role Based Access Control - Roles and device permissions for users. These fields are not meant to be directly edited."
+
+msgid "config::config_section::sqldict"
+msgstr "Specific items relating to the SQLDict library."
+
+msgid "config::config_section::sslcerts"
+msgstr "Stores some SSL certificate information here. Primary storage location is the database."
+
+msgid "config::config_section::statistics"
+msgstr "Items specific to the statistics library."
+
+msgid "config::config_section::system_modules"
+msgstr "Controls where system modules are loaded or not."
+
+msgid "config::config_section::times"
+msgstr "Items specific to the times library."
+
+msgid "config::config_section::webinterface"
+msgstr "Web interface configuration."
+
+msgid "config::config_section::yomboapi"
+msgstr "API related items for communicating with remote Yombo API system."
