@@ -7,7 +7,7 @@
           <dashboard-sidebar-item :link="{name: $t(item.out.label), icon: item.out.icon, path: localePath(item.out.path)}">
             <template v-for="subitem in item.in" v-if="item.in.length > 0">
               <dashboard-sidebar-item :link="{name: $t(subitem.label),
-               path: localePath({name: subitem.path.label, params: subitem.path.params })}"></dashboard-sidebar-item>
+               path: localePath({name: subitem.path.name, params: subitem.path.params })}"></dashboard-sidebar-item>
             </template>
           </dashboard-sidebar-item>
         </template>
