@@ -204,10 +204,8 @@ class YomboModule(Entity):
         if gateway_id is None:
             gateway_id = self.gateway_id
         devices = {}
-        module_device_types = self.module_device_types
         for module_device_type_id, module_device_type in self.module_device_types.items():
             device_type_id = module_device_type.device_type_id
-            devices = self._DeviceTypes[device_type_id].get_devices(gateway_id=gateway_id)
             devices.update(self._DeviceTypes[device_type_id].get_devices(gateway_id=gateway_id))
         return devices
 
