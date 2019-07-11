@@ -20,7 +20,9 @@ def determine_variable_type(input):
     elif isinstance(input, float):
         return "int"
     elif isinstance(input, Decimal):
-        return "int"
+        return "decimal"
+    else:
+        return "other"
 
 
 def coerce_value(value, value_type):
@@ -43,6 +45,7 @@ def coerce_value(value, value_type):
         return is_true_false(value)
     else:
         return value
+
 
 def magnitude(value):
     """
