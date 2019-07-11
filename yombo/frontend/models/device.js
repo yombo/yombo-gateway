@@ -1,5 +1,6 @@
 import { Model } from '@vuex-orm/core'
 import Location from './location'
+import Device_Command from '@/models/device_command'
 
 export default class Device extends Model {
   static entity = 'devices';
@@ -40,6 +41,7 @@ export default class Device extends Model {
       status: this.number(1),
       created_at: this.number(0),
       updated_at: this.number(0),
+      commands: this.hasMany(Device_Command, 'device_id', 'id')
     }
   }
 

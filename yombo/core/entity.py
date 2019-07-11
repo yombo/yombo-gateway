@@ -104,9 +104,13 @@ class Entity:
     def master_gateway_id(self):
         return self._Root.master_gateway_id
 
-    @master_gateway_id.setter
-    def master_gateway_id(self, val):
-        return
+    @property
+    def _app_dir(self):
+        return self._Atoms.get('app_dir')
+
+    @property
+    def _app_dir(self):
+        return self._Atoms.get('working_dir')
 
     def __init__(self, parent, *args, **kwargs):
         if hasattr(self, "_Entity_type") is False:
@@ -122,6 +126,8 @@ class Entity:
         except Exception as e:
             print(f"YomboLibrary caught init exception: {e}")
             raise e
+
+        # self._app_dir = self._Atoms.get('app_dir')
 
     # def __str__(self):
     #     """

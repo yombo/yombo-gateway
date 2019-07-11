@@ -1,49 +1,57 @@
+import { a_fetch, a_refresh, a_fetchOne } from '@/store_common/db_actions'
+
+import { m_set_data } from '@/store_common/db_mutations'
+import { g_data_age, g_display_age } from '@/store_common/db_getters'
+
 export const state = () => ({
-  access_token: "",
-  access_token_expires: "",
   last_download_at: 0
 });
 
-import Vue from 'vue'
-import YomboApiV1 from '@/services/yboapiv1/YomboApiV1'
+function store_settings() {
+  return {
+    api: window.$nuxt.$gwapiv1.access_tokens(),
+    api_all: window.$nuxt.$gwapiv1.access_tokens().all,
+    name: 'atoms',
+    refresh_age: 300,
+  };
+}
 
 export const actions = {
-  fetch( { commit }) {
-    let response;
-
-    try {
-      response = window.$nuxt.$gwapiv1.user().access_token()
-        .then(response => {
-          commit('SET_DATA', response.data['data']['attributes'])
-          Object.defineProperty(Vue.prototype, '$yboapiv1', { value: YomboApiV1 });
-        });
-    } catch (ex) {  // Handle error
-      console.log("pages/index: has an error");
-      console.log(ex);
-      return
-    }
+  async fetch( { commit, dispatch }) {
+    await a_fetch(store_settings(), commit);
   },
-    // will only refresh if more than 1 hour has elapsed or the token expires within 2 hours.
-    refresh( { state, dispatch }) {
-    if (state.last_download_at <= Math.floor(Date.now()/1000) - 3600
-        || state.access_token_expires <= Math.floor(Date.now()/1000) + 7200) {
-      dispatch('fetch');
-    }
-  }
+  async fetchOne( { commit, dispatch }, payload) {
+    await a_fetchOne(store_settings(), commit, payload);
+  },
+  async refresh({ state, dispatch }) {  // Doesn't need api, just calls fetch if needed.
+    await a_refresh(store_settings(), state, dispatch);
+  },
+  async update({ commit, state, dispatch }, payload) {
+    await a_delete_with_status(store_settings(), commit, state, dispatch, payload);
+  },
+  async delete({ commit, state, dispatch }, payload) {
+    await a_update(store_settings(), commit, state, dispatch, payload);
+  },
+  async enable({ commit, state, dispatch }, payload) {
+    await a_enable(store_settings(), commit, state, dispatch, payload);
+  },
+  async disable({ commit, state, dispatch }, payload) {
+    await a_disable(store_settings(), commit, state, dispatch, payload);
+  },
 };
 
 export const mutations = {
-  SET_DATA (state, data) {
-    this.$bus.$emit('user_access_token', 'received');
-    state.access_token = data['access_token'];
-    state.access_token_expires = data['access_token_expires'];
-    state.last_download_at = Math.floor(Date.now() / 1000);
-  }
+  SET_DATA(state, payload) { // Clears all previous data and loads it.
+    m_set_data(store_settings(), state, payload);
+  },
 };
 
 export const getters = {
-  token: state => () => {
-    return state.access_token;
+  data_age: state => () => {
+    return g_data_age(state)
+  },
+  display_age: (state, getters) => (locale) => {
+    return g_display_age(state, getters, locale)
   }
 };
 

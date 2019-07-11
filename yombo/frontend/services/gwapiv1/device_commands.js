@@ -1,7 +1,12 @@
+// This gets all commands available for a device.
+// Not to be confused with device commands: list of commands sent to devices.
 import gwapiv1 from '@/services/gwapiv1'
 
 export default {
-    all() {
-        return gwapiv1().get('device_command');
+    commands() {
+        return gwapiv1().get('devices/commands');
+    },
+    device_states() {
+        return gwapiv1().get('devices/states');
     },
 }

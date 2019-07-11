@@ -3,6 +3,8 @@ import { Model } from '@vuex-orm/core'
 export default class Command extends Model {
   static entity = 'commands';
 
+  static primaryKey = 'id';
+  
   static fields () {
     return {
       id: this.string(''),
