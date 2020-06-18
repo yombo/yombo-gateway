@@ -11,30 +11,58 @@ Performs various tasks as needed. Usually used to run various processes at start
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.13.0
 
-:copyright: Copyright 2017-2018 by Yombo.
+:copyright: Copyright 2017-2020 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/tasks.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/tasks.html>`_
 """
 from time import time
+from typing import Any, ClassVar, Dict, List, Optional, Union
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
+from yombo.core.entity import Entity
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
+from yombo.mixins.library_db_child_mixin import LibraryDBChildMixin
+from yombo.mixins.library_db_parent_mixin import LibraryDBParentMixin
+from yombo.mixins.library_search_mixin import LibrarySearchMixin
 
 logger = get_logger("library.tasks")
 
-class Tasks(YomboLibrary):
+
+class Task(Entity, LibraryDBChildMixin):
     """
-    Performs various tasks at startup.
+    Represent a single task.
     """
+    _Entity_type: ClassVar[str] = "Task"
+    _Entity_label_attribute: ClassVar[str] = "machine_label"
+
+
+class Tasks(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
+    """
+    Manages recurring tasks. Tasks are run during various startup/shutdown before and after modules are
+    started and shurdown. These are not periodic tasks like CronTab.
+    """
+    tasks: dict = {}
+
+    # The remaining attributes are used by various mixins.
+    _storage_primary_field_name: ClassVar[str] = "task_id"
+    _storage_attribute_name: ClassVar[str] = "tasks"
+    _storage_label_name: ClassVar[str] = "task"
+    _storage_class_reference: ClassVar = Task
+    _storage_search_fields: ClassVar[str] = [
+        "task_id", "label", "machine_label", "description", "run_once", "phase", "component",
+        "function_name", "ars", "kwargs", "source"
+    ]
+    _storage_attribute_sort_key: ClassVar[str] = "machine_label"
+
     @inlineCallbacks
     def _init_(self, **kwargs):
-        self.loop_tasks = {}
+        yield self.load_from_database()
         yield self.check_tasks("init")
 
     @inlineCallbacks
@@ -53,11 +81,11 @@ class Tasks(YomboLibrary):
     @inlineCallbacks
     def _unload_(self, **kwargs):
         if hasattr(self, "self._LocalDB"):  # incase loading got stuck somewhere.
-            yield self.check_tasks("load")
+            yield self.check_tasks("unload")
 
     @inlineCallbacks
     def check_tasks(self, section):
-        tasks = yield self._LocalDB.generic_item_get("tasks", where={"run_section": section})
+        tasks = yield self.db_select(where={"run_section": section})
         for task in tasks:
             try:
                 component = getattr(self, task["task_component"])
@@ -92,16 +120,6 @@ class Tasks(YomboLibrary):
                 raise YomboWarning("run_once must be eitehr 0 or 1")
         else:
             new_task["run_once"] = 0
-
-        if "run_interval" in task:
-            if has_run_once is True:
-                raise YomboWarning("run_once and run_interval cannot both be set.")
-
-            if isinstance(task["run_interval"], int) is False:
-                raise YomboWarning("run_interval must be an interger")
-            if task["run_once"] < 0:
-                raise YomboWarning("run_interval must be 0 or greater")
-            new_task["run_interval"] = task["run_interval"]
 
         if "run_section" not in task:
             raise YomboWarning("run_section must be set.")

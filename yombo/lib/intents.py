@@ -4,19 +4,20 @@
 
 .. note::
 
-  * For library documentation, see: `Tasks @ Library Documentation <https://yombo.net/docs/libraries/intents>`_
+  * For library documentation, see: `Intents @ Library Documentation <https://yombo.net/docs/libraries/intents>`_
 
 Handles converstation intents.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.23.0
 
-:copyright: Copyright 2018 by Yombo.
+:copyright: Copyright 2018-2020 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/intents.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/intents.html>`_
 """
 from collections import deque
 import re
+from typing import Any, ClassVar, Dict, List, Optional, Type, Union
 import voluptuous as vol
 
 # Import twisted libraries
@@ -31,8 +32,8 @@ from yombo.core.entity import Entity
 from yombo.core.exceptions import YomboWarning, IntentHandleError
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import generate_source_string, sha224_compact, random_string
-import yombo.utils.validators as val
+from yombo.utils import random_string
+from yombo.utils.caller import caller_string
 import yombo.utils.color as color_util
 
 logger = get_logger("library.intents")
@@ -58,19 +59,19 @@ class Intents(YomboLibrary):
         :return:
         """
         item_type_slot_schema = {
-            vol.Required("item_type"): val.string,
+            vol.Required("item_type"): self._Validate.string,
         }
 
         light_slot_schema = {
-            vol.Required("name"): val.string,
+            vol.Required("name"): self._Validate.string,
             vol.Optional("color"): color_util.color_name_to_rgb,
             vol.Optional("brightness"): vol.All(vol.Coerce(int), vol.Range(0, 100))
         }
         scene_slot_schema = {
-            vol.Required("scene_id"): val.string,
+            vol.Required("scene_id"): self._Validate.string,
         }
         switch_slot_schema = {
-            vol.Required("name"): val.string,
+            vol.Required("name"): self._Validate.string,
         }
 
         # By location
@@ -275,7 +276,7 @@ class Intents(YomboLibrary):
     def generate_scene_statements(self, action):
         statements = []
         for scene_id, scene in self._Scenes.scenes.items():
-            if scene.enabled() is False:
+            if scene.enabled is False:
                 continue
             if scene.data["config"]["allow_intents"] not in (1, True):
                 continue
@@ -297,7 +298,7 @@ class Intents(YomboLibrary):
     # def generate_automation_statements(self, action):
     #     statements = []
     #     for rule_id, rule in self._Automation.rules.items():
-    #         if rule.enabled() is False:
+    #         if rule.enabled is False:
     #             continue
     #         statements.append({
     #             "statement": "[%s] %s" % (action, rule.label),
@@ -313,29 +314,29 @@ class Intents(YomboLibrary):
     #         )
     #     return statements
 
-    def _locations_deleted_(self, **kwargs):
+    def _locations_deleted_(self, arguments, **kwargs):
         self.update_locations()
 
-    def _locations_imported_(self, **kwargs):
+    def _locations_imported_(self, arguments, **kwargs):
         self.update_locations()
 
-    def _locations_updated_(self, **kwargs):
+    def _locations_updated_(self, arguments, **kwargs):
         self.update_locations()
 
-    def _locations_deleted_(self, **kwargs):
+    def _locations_deleted_(self, arguments, **kwargs):
         self.update_locations()
 
     def update_locations(self, **kwargs):
         self.on_locations.statements = self.generate_location_statements("on")
         self.off_locations.statements = self.generate_location_statements("off")
 
-    def _scene_added_(self, **kwargs):
+    def _scene_added_(self, arguments, **kwargs):
         self.update_scenes()
 
-    def _scene_edited_(self, **kwargs):
+    def _scene_edited_(self, arguments, **kwargs):
         self.update_scenes()
 
-    def _scene_deleted_(self, **kwargs):
+    def _scene_deleted_(self, arguments, **kwargs):
         self.update_scenes()
 
     def update_scenes(self, **kwargs):
@@ -374,14 +375,14 @@ class Intents(YomboLibrary):
             speech_parts.append(f"{slots['brightness']['value']}% brightness")
 
         if intent_type == INTENT_TURN_ON:
-            request_id = request_item.turn_on()
-            yield self._Devices.wait_for_command_to_finish(request_id, timeout=3)
+            device_command_id = request_item.turn_on()
+            yield self._Devices.wait_for_command_to_finish(device_command_id, timeout=3)
         elif intent_type == INTENT_TURN_OFF:
-            request_id = request_item.turn_off()
-            yield self._Devices.wait_for_command_to_finish(request_id, timeout=3)
+            device_command_id = request_item.turn_off()
+            yield self._Devices.wait_for_command_to_finish(device_command_id, timeout=3)
         elif intent_type == INTENT_TOGGLE:
-            request_id = request_item.toggle()
-            yield self._Devices.wait_for_command_to_finish(request_id, timeout=3)
+            device_command_id = request_item.toggle()
+            yield self._Devices.wait_for_command_to_finish(device_command_id, timeout=3)
         else:
             raise IntentHandleError(f"Unknown intent type: {intent_type}")
 
@@ -484,13 +485,13 @@ class Intents(YomboLibrary):
             if intent_type == INTENT_TURN_ON:
                 print("turning on: %s" % device.full_label)
                 speech = f"Turning on all {item_type}s in {location.label} {area.label}"
-                # request_id = device.turn_on()
-                # yield self._Devices.wait_for_command_to_finish(request_id, timeout=3)
+                # device_command_id = device.turn_on()
+                # yield self._Devices.wait_for_command_to_finish(device_command_id, timeout=3)
             elif intent_type == INTENT_TURN_OFF:
                 print("turning off: %s" % device.full_label)
                 speech = f"Turning on all {item_type}s in {location.label} {area.label}"
-                # request_id = device.turn_off()
-                # yield self._Devices.wait_for_command_to_finish(request_id, timeout=3)
+                # device_command_id = device.turn_off()
+                # yield self._Devices.wait_for_command_to_finish(device_command_id, timeout=3)
 
             response.set_speech(speech)
             return response
@@ -519,14 +520,14 @@ class Intents(YomboLibrary):
             else:
                 statements.append(statement)
 
-        source = generate_source_string()
+        source = caller_string()
         if intent_id is None:
             hash_string = ""
             for statement in statements:
                 hash_string += f":{statement['statement']}"
             if isinstance(description, str):
                 hash_string += description
-            intent_id = sha224_compact(hash_string)[:15]
+            intent_id = self._Hash.sha224_compact(hash_string)[:15]
 
         self.intents[intent_id] = Intent(self,
                                          statements=statements,

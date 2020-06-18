@@ -1,6 +1,11 @@
 """
 Anything dealing with data types, such as floats, ints, strings, decimals, etc.
 
+.. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+
+:copyright: Copyright 2018-2020 by Yombo.
+:license: See LICENSE for details.
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/datatypes.html>`_
 """
 import math
 from decimal import Decimal

@@ -9,6 +9,15 @@ Template (yombo.lib.template)
 =========================================
 .. automodule:: yombo.lib.template
 
+.. rubric:: Classes in this module
+
+.. autosummary::
+   :nosignatures:
+
+   Template
+   TemplateEnvironment
+   JinjaTemplate
+
 Template Library Class
 ===================================
 .. autoclass:: Template

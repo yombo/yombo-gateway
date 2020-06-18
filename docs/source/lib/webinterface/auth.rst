@@ -5,12 +5,13 @@
 .. currentmodule:: yombo.lib.webinterface.auth
 
 =================================================================
-WebInterface::Auth (yombo.lib.webinterface.auth)
+WebInterface - Auth (yombo.lib.webinterface.auth)
 =================================================================
 
 .. note::
 
-  This is a helper file that is used by the :ref:`WebInterface <webinterface>`.
+  This is a helper file that is used by the :ref:`WebInterface <webinterface>` and it's
+  various routes.
 
 .. automodule:: yombo.lib.webinterface.auth
    :members:

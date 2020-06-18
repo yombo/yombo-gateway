@@ -25,3 +25,22 @@ have the ./locale/frontend directory with the correctly formatted json files.
 
 These files are formatted in the .json syntax. These are managed through lokalise:
 https://lokalise.co/public/974982865b3422bf9a2177.49453396/
+
+When exporting, use these options:
+Format: JSON (.json)
+ - Include all platform keys
+File Structure: All Keys to a single file
+ - locale/%LANG_ISO%.%FORMAT%
+
+Empty translations: Don't export
+Order keys by: A-Z
+Plural Form: Array
+Placeholder Format: ICU
+Indentation: 2 spaces
+
+Options:
+ None selected
+
+Data to Export:
+All
+

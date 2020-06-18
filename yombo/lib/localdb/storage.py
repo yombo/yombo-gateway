@@ -1,5 +1,4 @@
 # Import python libraries
-from time import time
 import re
 
 # Import twisted libraries
@@ -9,47 +8,16 @@ from twisted.internet.defer import inlineCallbacks
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
 # Import 3rd-party libs
-from yombo.ext.twistar.registry import Registry
-from yombo.ext.twistar.utils import dictToWhere
-from yombo.lib.localdb import Storage
-from yombo.utils import clean_dict, data_pickle, data_unpickle, is_yes_no
+from yombo.utils import is_yes_no
 from yombo.utils.datatypes import coerce_value
+from yombo.utils.dictionaries import clean_dict
 
 logger = get_logger("library.localdb.storage")
 
 
 class DB_Storage(object):
-
-    @inlineCallbacks
-    def get_storage(self, storage_id):
-        """
-        Returns a db object representing the storage item.
-
-        :param storage_id:
-        :return:
-        """
-        record = yield Storage.find(storage_id)
-        if record is None:
-            raise KeyError(f"Storage not found in database: {storage_id}", errorno=8657)
-        record.variables = data_unpickle(record.variables)
-        return record
-
-    @inlineCallbacks
-    def get_expired_storage(self):
-        """
-        Get expired storage items.
-
-        :param storage_id:
-        :return:
-        """
-        records = yield Storage.find(where=["expires > 0 and expires < ?", int(time())], limit=50)
-        for record in records:
-            record.variables = data_unpickle(record.variables)
-        return records
-
     @inlineCallbacks
     def save_storage(self, storage):
-        # logger.debug("save_web_session: session.auth_id: {auth_id}", auth_id=session._auth_id)
         args = {
             "id": storage["id"],
             "scheme": storage["scheme"],
@@ -73,7 +41,7 @@ class DB_Storage(object):
             "size": storage["size"],
             "file_path": storage["file_path"],
             "file_path_thumb": storage["file_path_thumb"],
-            "variables": data_pickle(storage['variables']),
+            "variables": self._Tools.data_pickle(storage['variables']),
             "created_at": storage["created_at"],
         }
         yield self.dbconfig.insert("storage", args)

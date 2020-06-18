@@ -10,5 +10,6 @@ Logging (yombo.core.log)
 
 .. automodule:: yombo.core.log
    :members:
+   :special-members:
    :private-members:
-
+   :undoc-members:

@@ -27,7 +27,8 @@ test.py
 # Yombo Stuff #
 ###############
 Future
-yombo.ini*
+*yombo.toml*
+*yombo_meta.toml
 builddocs.sh*
 localmodules.ini*
 automation.txt*
@@ -72,11 +73,21 @@ usr/*
 !usr/README.rst
 mymodules/*
 
+# Tinker temp files #
+#####################
+yombo/utils/crls.d/*
+yombo/utils/openpgp-revocs.d/*
+yombo/utils/private-keys-v1.d/*
+yombo/utils/pubring.kbx
+yombo/utils/random_seed
+yombo/utils/trustdb.gpg
+
 # Frontend application #
 ########################
 # Created by .ignore support plugin (hsz.mobi)
 ### Node template
 # Logs
+yombo/frontend/.nuxt
 yombo/frontend/logs
 yombo/frontend/*.log
 yombo/frontend/npm-debug.log*
@@ -88,6 +99,7 @@ yombo/frontend/yarn-error.log*
 
 # NPM installed packages.
 yombo/frontend/package-lock.json
+yombo/frontend/yarn.lock
 
 # In process language files
 yombo/frontend/util/locale/*

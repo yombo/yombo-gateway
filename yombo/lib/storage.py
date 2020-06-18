@@ -24,39 +24,65 @@ platforms. This incldues S3, Dropbox, etc.
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.25.0
 
-:copyright: Copyright 2018 by Yombo.
+:copyright: Copyright 2018-2020 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/storage.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/storage.html>`_
+
 """
 # Import python libraries
 import datetime
-from mimetypes import MimeTypes
+# from mimetypes import MimeTypes
 import ntpath
 from os import path
 from time import time
+from typing import Any, ClassVar, Dict, List, Optional, Union
 from urllib.parse import urlparse
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, maybeDeferred
 
 # Import Yombo libraries
+from yombo.core.entity import Entity
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.lib.localdb.storage import Storage as StorageDB
-from yombo.utils import (mime_type_from_file, mime_type_from_buffer, random_string,
-                         sha224_compact, sha256_compact, file_size, data_pickle, clean_dict, sleep)
+from yombo.mixins.library_db_child_mixin import LibraryDBChildMixin
+from yombo.mixins.library_db_parent_mixin import LibraryDBParentMixin
+from yombo.mixins.library_search_mixin import LibrarySearchMixin
+
+from yombo.utils import random_string, sleep
+from yombo.utils.dictionaries import clean_dict
 from yombo.utils.hookinvoke import global_invoke_all
 
 logger = get_logger("library.storage")
 
 
-class Storage(YomboLibrary):
+class StorageItem(Entity, LibraryDBChildMixin):
+    _Entity_type: ClassVar[str] = "Storage item"
+    _Entity_label_attribute: ClassVar[str] = "storage_id"
+
+
+class Storage(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
+    """
+    Handles file storage.
+    """
+    storage: dict = {}
+
+    # The remaining attributes are used by various mixins.
+    _storage_primary_field_name: ClassVar[str] = "storage_id"
+    _storage_attribute_name: ClassVar[str] = "storage"
+    _storage_label_name: ClassVar[str] = "storage"
+    _storage_class_reference: ClassVar = StorageItem
+    _storage_pickled_fields: ClassVar[Dict[str, str]] = {"variables": "msgpack"}
+    _storage_search_fields: ClassVar[str] = [
+        "scheme", "netloc", "path"
+    ]
+    _storage_attribute_sort_key: ClassVar[str] = "storage_id"
 
     storage = {}
 
     def _init_(self, **kwargs):
-        self.mime = MimeTypes()
+        # self.mime = MimeTypes()
         self.purge_expired_running = False
 
     @inlineCallbacks
@@ -74,19 +100,18 @@ class Storage(YomboLibrary):
                 self.storage[scheme] = attrs
 
         yield self.purge_expired()
-        self._CronTab.new(self.purge_expired, min=0, hour=4, label="Delete expired storage files.", source="lib.storage")
+        self._CronTab.new(self.purge_expired, mins=0, hours=4, label="Delete expired storage files.",
+                          load_source="system")
 
     @inlineCallbacks
-    def get(self, file_id):
+    def get(self, storage_id):
         """
-        Retreive a storage db object based on the file_id
+        Retrieve a storage db object based on the file_id
 
-        :param file_id:
+        :param storage_id:
         :return:
         """
-        # print(f"storage.get: {file_id}")
-        data = yield self._LocalDB.get_storage(file_id)
-        # print(f"storage.get: done...")
+        data = yield self.db_select(row_id=storage_id)
         return data
 
     @inlineCallbacks
@@ -94,6 +119,10 @@ class Storage(YomboLibrary):
                   content_type=None, charset=None, extra=None):
         """
         Saves a file. Usually used when a file is on disk and needs to be uploaded.
+
+        This should not be confused with:
+         from yombo.utils.file import save_file
+        Which saves the file locally, outside of the Yombo storage system.
 
         Destinations:
         file://path/file.
@@ -118,7 +147,7 @@ class Storage(YomboLibrary):
 
         file_id = random_string(length=15)
         dest_parts, dest_parts_thumb, mangle_id = self.check_destination(destination, file_id, mangle_name)
-        size = yield file_size(source_file)
+        size = yield self._Files.size(source_file)
         results = yield maybeDeferred(self.storage[dest_parts.scheme]["save_file_callback"],
                                       source_file, dest_parts, dest_parts_thumb,
                                       delete_source, file_id, mangle_id, expires, public,
@@ -128,7 +157,7 @@ class Storage(YomboLibrary):
         """
 
         if content_type is None or charset is None:
-            content_info = yield mime_type_from_file(source_file)
+            content_info = yield self._Files.mime_type_from_file(source_file)
             if content_type in (None, ""):
                 content_type = content_info["content_type"]
             if charset in (None, ""):
@@ -161,7 +190,7 @@ class Storage(YomboLibrary):
         new.created_at = round(time(), 3)
         new.file_path = results.get("file_path", None)
         new.file_path_thumb = results.get("file_path_thumb", None)
-        new.variables = data_pickle(results.get("variables", {}))  # used by the various storage backends for their own use.
+        new.variables = self._Tools.data_pickle(results.get("variables", {}))  # used by the various storage backends for their own use.
         yield new.save()
 
     @inlineCallbacks
@@ -190,7 +219,7 @@ class Storage(YomboLibrary):
         # print(f" save data results: {results}")
 
         if content_type is None or charset is None:
-            content_info = yield mime_type_from_buffer(source_data)
+            content_info = yield self._Files.mime_type_from_buffer(source_data)
             if content_type in (None, ""):
                 content_type = content_info["content_type"]
             if charset in (None, ""):
@@ -223,7 +252,7 @@ class Storage(YomboLibrary):
         new.created_at = round(time(), 3)
         new.file_path = results.get("file_path", None)
         new.file_path_thumb = results.get("file_path_thumb", None)
-        new.variables = data_pickle(results.get("variables", {}))  # used by the various storage backends for their own use.
+        new.variables = self._Tools.data_pickle(results.get("variables", {}))  # used by the various storage backends for their own use.
         # print(f"new: {new} :: {new.__dict__}")
         yield new.save()
 
@@ -260,7 +289,7 @@ class Storage(YomboLibrary):
         self.purge_expired_running = True
 
         while True:
-            records = yield self._LocalDB.get_expired_storage()
+            records = yield self.db_select(where=["expires > 0 and expires < ?", int(time())], limit=50)
             # print(f"records: {records}")
             if len(records) == 0:
                 self.purge_expired_running = False
@@ -294,7 +323,7 @@ class Storage(YomboLibrary):
         """
         # print(f"storage: save file dest: {destination}")
         # print(f"storage: manglename: {mangle_name}")
-        mangle_id = sha224_compact(random_string(length=100))[0:20]
+        mangle_id = self._Hash.sha224_compact(random_string(length=100))[0:20]
         if mangle_name > 0:
             folder, filename = ntpath.split(destination)
             file, extension = path.splitext(filename)
@@ -308,11 +337,11 @@ class Storage(YomboLibrary):
                 destination = f"{folder}/{file_id}_{mangle_id}"
                 destination_thumb = f"{folder}/{file_id}_{mangle_id}_thumb"
             if mangle_name == 4:
-                new_filename = sha256_compact(random_string(length=200))
+                new_filename = self._Hash.sha256_compact(random_string(length=200))
                 destination = f"{folder}/{new_filename}{extension}"
                 destination_thumb = f"{folder}/{new_filename}{extension}_thumb"
             if mangle_name >= 5:
-                new_filename = sha256_compact(random_string(length=200))
+                new_filename = self._Hash.sha256_compact(random_string(length=200))
                 destination = f"{folder}/{new_filename}"
                 destination_thumb = f"{folder}/{new_filename}_thumb"
 

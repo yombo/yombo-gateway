@@ -13,9 +13,9 @@ even if this library wasn't used to make the request.
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.22.0
 
-:copyright: Copyright 2018-2019 by Yombo.
+:copyright: Copyright 2018-2020 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/requests.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/requests.html>`_
 """
 # Import python libraries
 import json
@@ -55,8 +55,44 @@ class Requests(YomboLibrary):
 
         return headers
 
-    def errorHandler(self,result):
+    def errorHandler(self, result):
         raise YomboWarning(f"Problem with request: {result}")
+
+    @inlineCallbacks
+    def download_file(self, url: str, destination_filename: str):
+        """
+        Downloads a file from the given url and saves it to the requested destination.
+
+        Returns a deferred!
+        :param url:
+        :param destination_filename:
+        :return:
+        """
+        try:
+            treq_response = yield treq.request("GET", url)
+        except ConnectionRefusedError as e:
+            raise YomboWarning(f"Connection was refused to '{url}': {e}")
+        except ConnectError as e:
+            raise YomboWarning(f"Error connecting to '{url}': {e}")
+        except Exception as e:
+            logger.info("Requests download_file error: {error}", error=e)
+            logger.error("---------------==(Traceback)==--------------------------")
+            logger.error("{url}", url=url)
+            logger.error("{trace}", trace=traceback.format_exc())
+            logger.error("--------------------------------------------------------")
+            logger.warn("An exception of type {etype} occurred in yombo.lib.yomboapi:import_component. Message: {msg}",
+                        etype=type(e), msg=e)
+            logger.error("--------------------------------------------------------")
+            raise e
+
+        raw_content = yield treq.content(treq_response)
+        yield self._Files.save(destination_filename, raw_content)
+
+        # destination = open(destination_filename, 'wb')
+        # d = treq.get(url, unbuffered=True)
+        # d.addCallback(treq.collect, destination.write)
+        # d.addBoth(lambda _: destination.close())
+        # return d
 
     @inlineCallbacks
     def request(self, method, url, **kwargs):
@@ -119,7 +155,13 @@ class Requests(YomboLibrary):
         return response
 
 
-class WebResponse(object):
+class WebResponse:
+    """
+    Represents the response of a web request. Primary attributes to look at are either 'content' or 'content_raw'.
+
+    Content will be decoded json or msgpack data if possible, while the content_raw is the raw response
+    from the server.
+    """
     def __init__(self, parent):
         self._Parent = parent
         self.request = None
@@ -159,7 +201,7 @@ class WebResponse(object):
                 raise YomboWarning(f"Receive response reported json, but found an error: {e}")
         elif content_type == CONTENT_TYPE_MSGPACK:
             try:
-                content = msgpack.loads(raw_content)
+                content = msgpack.unpackb(raw_content)
             except Exception:
                 if len(content) == 0:
                     return "dict", {}
@@ -171,16 +213,10 @@ class WebResponse(object):
                 content_type = "dict"
             except Exception:
                 try:
-                    content = msgpack.loads(raw_content)
+                    content = msgpack.unpackb(raw_content)
                     content_type = "dict"
                 except Exception:
                     content = raw_content
-
-        content = bytes_to_unicode(content)
-        # return {
-        #     "content_type": content_type,
-        #     "headers": response.all_headers,
-        # }
 
         self.content = bytes_to_unicode(content)
         self.content_raw = raw_content

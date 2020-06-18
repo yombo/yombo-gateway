@@ -5,9 +5,13 @@
 .. currentmodule:: yombo.lib.statistics.timeline
 
 =================================================================
-Statistics::Timeline (yombo.lib.statistics.timeline)
+Timeline (yombo.lib.statistics.timeline)
 =================================================================
 .. automodule:: yombo.lib.statistics.timeline
+
+Timeline Class
+================================================================
+.. autoclass:: Timeline
    :members:
    :special-members:
    :private-members:

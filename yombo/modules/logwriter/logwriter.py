@@ -12,7 +12,7 @@ class LogWriter(YomboModule):
 
     .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-    :copyright: Copyright 2012-2017 by Yombo.
+    :copyright: Copyright 2012-2020 by Yombo.
     :license: LICENSE for details.
     """
 
@@ -62,34 +62,34 @@ class LogWriter(YomboModule):
           except:
             pass
 
-    def _configuration_set_(self, **kwargs):
+    def _configs_set_(self, arguments, **kwargs):
         """
         Receive configuruation updates and adjust as needed.
 
-        :param kwargs: section, option(key), value
+        :param arguments: section, option(key), value
         :return:
         """
-        section = kwargs['section']
-        option = kwargs['option']
-        value = kwargs['value']
+        section = arguments['section']
+        option = arguments['option']
+        value = arguments['value']
 
         self.fp_out.write("%s\n" % json.dumps(
-            {'time':int(time.time()),
-             'type':'configuration_set',
+            {'time': int(time.time()),
+             'type': 'config_set',
              'section': section,
              'option': option,
              'value': value,
              }
         ))
 
-    def _device_command_(self, **kwargs):
+    def _device_command_(self, arguments, **kwargs):
         """
         Received a device command.
-        :param kwags: Contains 'device' and 'command'.
+        :param arguments: Contains 'device' and 'command'.
         :return: None
         """
-        device = kwargs['device']
-        command = kwargs['command']
+        device = arguments['device']
+        command = arguments['command']
 
         self.fp_out.write("%s\n" % json.dumps(
             {'time':int(time.time()),
@@ -101,9 +101,9 @@ class LogWriter(YomboModule):
              }
         ))
 
-    def _device_state_(self, **kwargs):
-        device = kwargs['device']
-        status = kwargs['status']
+    def _device_state_(self, arguments, **kwargs):
+        device = arguments['device']
+        status = arguments['status']
 
         self.fp_out.write("%s\n" % json.dumps(
             {'time': int(time.time()),

@@ -1,17 +1,17 @@
-.. index:: permissionmixin
+.. index:: permission_mixin
 
-.. _permissionmixin:
+.. _permission_mixin:
 
-.. currentmodule:: yombo.mixins.permissionmixin
+.. currentmodule:: yombo.mixins.permission_mixin
 
 .. meta::
    :description: Mixin class that adds permission handling. Used in things like users and roles objects within the user library.
    :keywords: permission, mixin, class, authentication
 
 ================================================================
-PermissionMixin (yombo.mixins.permissionmixin)
+PermissionMixin (yombo.mixins.permission_mixin)
 ================================================================
-.. automodule:: yombo.mixins.permissionmixin
+.. automodule:: yombo.mixins.permission_mixin
 
 PermissionMixin Class
 ================================================================

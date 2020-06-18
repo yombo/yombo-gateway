@@ -1,30 +1,38 @@
 # This file was created by Yombo for use with Yombo Python gateway automation
 # software.  Details can be found at https://yombo.net
 """
+The core of the webserver. Responsible for:
+
+* Handling all browser interactions;
+* Running the setup wizard on install;
+* Handles API calls;
+* Builds the frontend Vue application.
 
 .. note::
 
   * End user documentation: `Web Interface @ User Documentation <https://yombo.net/docs/gateway/web_interface>`_
   * For library documentation, see: `Web Interface @ Library Documentation <https://yombo.net/docs/libraries/web_interface>`_
 
-Provides web interface to easily configure and manage the gateway devices and modules.
+The webinterface module is broken up into the following components:
+
+* Mixins
+* Routes
+* Pages
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2016-2019 by Yombo.
+:copyright: Copyright 2016-2020 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/webinterface.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/webinterface/__init__.html>`_
 """
 # Import python libraries
-from copy import deepcopy
 from hashlib import sha256
 import jinja2
 import json
 from klein import Klein
-from operator import itemgetter
-from random import randint
 from time import time
-from urllib.parse import parse_qs, urlparse, urlunparse
+from typing import Any, ClassVar, Dict, List, Optional, Type, Union
+from urllib.parse import parse_qs, urlparse
 
 # Import twisted libraries
 from twisted.internet import reactor
@@ -35,73 +43,51 @@ from twisted.internet.task import LoopingCall
 from yombo.ext.expiringdict import ExpiringDict
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboRestart, YomboCritical
+from yombo.constants.webinterface import NOTIFICATION_PRIORITY_MAP_CSS
+from yombo.core.exceptions import YomboRestart, YomboQuit
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 import yombo.utils
 import yombo.utils.converters as converters
 import yombo.utils.datetime as dt_util
 
-from yombo.lib.webinterface.auth import require_auth
+from yombo.lib.webinterface.auth import get_session, setup_webinterface_reference
+from yombo.lib.webinterface.yombo_site import YomboSite
+from yombo.lib.webinterface.routes.api_v1.web_stream import web_broadcast
 
-from yombo.lib.webinterface.class_helpers.builddist import BuildDistribution
-from yombo.lib.webinterface.class_helpers.errorhandler import ErrorHandler
-from yombo.lib.webinterface.class_helpers.frontend import Frontend
-from yombo.lib.webinterface.class_helpers.render import Render
-from yombo.lib.webinterface.class_helpers.yombo_site import Yombo_Site
-from yombo.lib.webinterface.class_helpers.webserver import WebServer
-
-from yombo.lib.webinterface.routes.api_v1.atoms import route_api_v1_atoms
-from yombo.lib.webinterface.routes.api_v1.automation_rules import route_api_v1_automation_rules
-# from yombo.lib.webinterface.routes.api_v1.camera import route_api_v1_camera
-from yombo.lib.webinterface.routes.api_v1.debug import route_api_v1_debug
-from yombo.lib.webinterface.routes.api_v1.device import route_api_v1_device
-from yombo.lib.webinterface.routes.api_v1.device_command import route_api_v1_device_command
-from yombo.lib.webinterface.routes.api_v1.frontend import route_api_v1_frontend
-# from yombo.lib.webinterface.routes.api_v1.events import route_api_v1_events
-# from yombo.lib.webinterface.routes.api_v1.gateway import route_api_v1_gateway
-# from yombo.lib.webinterface.routes.api_v1.module import route_api_v1_module
-from yombo.lib.webinterface.routes.api_v1.mqtt import route_api_v1_mqtt
-# from yombo.lib.webinterface.routes.api_v1.notification import route_api_v1_notification
-from yombo.lib.webinterface.routes.api_v1.scenes import route_api_v1_scenes
-from yombo.lib.webinterface.routes.api_v1.server import route_api_v1_server
-from yombo.lib.webinterface.routes.api_v1.states import route_api_v1_states
-from yombo.lib.webinterface.routes.api_v1.stream import broadcast as route_api_v1_stream_broadcast
-# from yombo.lib.webinterface.routes.api_v1.stream import route_api_v1_stream
-# from yombo.lib.webinterface.routes.api_v1.statistics import route_api_v1_statistics
-# from yombo.lib.webinterface.routes.api_v1.storage import route_api_v1_storage
-from yombo.lib.webinterface.routes.api_v1.system import route_api_v1_system
-from yombo.lib.webinterface.routes.api_v1.user import route_api_v1_user
-# from yombo.lib.webinterface.routes.api_v1.webinterface_logs import route_api_v1_webinterface_logs
-
-from yombo.lib.webinterface.routes.home import route_home
-from yombo.lib.webinterface.routes.misc import route_misc
-from yombo.lib.webinterface.routes.system import route_system
-from yombo.lib.webinterface.routes.user import route_user
-from yombo.lib.webinterface.constants import NOTIFICATION_PRIORITY_MAP_CSS
+from yombo.lib.webinterface.mixins.frontend_mixin import FrontendMixin
+from yombo.lib.webinterface.mixins.load_routes_mixin import LoadRoutesMixin
+from yombo.lib.webinterface.mixins.render_mixin import RenderMixin
+from yombo.lib.webinterface.yombo_site import YomboSite
+from yombo.lib.webinterface.mixins.webserver_mixin import WebServerMixin
+from yombo.utils import random_string
 
 logger = get_logger("library.webinterface")
 
 
-class WebInterface(YomboLibrary, BuildDistribution, ErrorHandler, Frontend, Render, WebServer):
+class WebInterface(YomboLibrary, FrontendMixin, LoadRoutesMixin, RenderMixin, WebServerMixin):
     """
     Web interface framework.
     """
-    webapp = Klein()  # Like Flask, but for twisted
+    starting: ClassVar[bool] = True
+    already_starting_web_servers: ClassVar[bool] = False
+    hook_listeners: ClassVar[dict] = {}  # special way to toss hook calls to routes.
+    generic_router_list: ClassVar[dict] = {"libraries": {}, "modules": {}}
 
-    visits = 0
-    starting = True
-    already_starting_web_servers = False
-    hook_listeners = {}  # special way to toss hook calls to routes.
-
+    @inlineCallbacks
     def _init_(self, **kwargs):
-        self.frontend_building = False
-        self.web_interface_fully_started = False
-        self.enabled = self._Configs.get("webinterface", "enabled", True)
+        setup_webinterface_reference(self)  # Sets a reference to this library in auth.py
+        self.webapp = Klein()
+        self.webapp.webinterface = self
 
-        self.fqdn = self._Configs.get2("dns", "fqdn", None, False)
+        self.api_key = self._Configs.get("frontend.api_key", random_string(length=75))
+        self.frontend_building: bool = False
+        self.web_interface_fully_started: bool = False
+        self.enabled = self._Configs.get("webinterface.enabled", True)
 
-        self.enabled = self._Configs.get("core", "enabled", True)
+        self.fqdn = self._Configs.get("dns.fqdn", None, False, instance=True)
+
+        self.enabled = self._Configs.get("core.enabled", True)
         if not self.enabled:
             return
 
@@ -109,57 +95,24 @@ class WebInterface(YomboLibrary, BuildDistribution, ErrorHandler, Frontend, Rend
         self.translators = {}
         self.idempotence = self._Cache.ttl(name="lib.webinterface.idempotence", ttl=300)
 
-        self.working_dir = self._Atoms.get("working_dir")
-        self.app_dir = self._Atoms.get("app_dir")
         self.wi_dir = "/lib/webinterface"
 
         self.misc_wi_data = {}
 
-        self.wi_port_nonsecure = self._Configs.get2("webinterface", "nonsecure_port", 8080)
-        self.wi_port_secure = self._Configs.get2("webinterface", "secure_port", 8443)
+        self.wi_port_nonsecure = self._Configs.get("webinterface.nonsecure_port", 8080, instance=True)
+        self.wi_port_secure = self._Configs.get("webinterface.secure_port", 8443, instance=True)
 
-        self.webapp.templates = jinja2.Environment(loader=jinja2.FileSystemLoader(f"{self.app_dir}/yombo"),
+        self.webapp.templates = jinja2.Environment(loader=jinja2.FileSystemLoader(f"{self._app_dir}/yombo"),
                                                    extensions=["jinja2.ext.loopcontrols"])
         self.setup_basic_filters()
 
         self.web_interface_listener = None
         self.web_interface_ssl_listener = None
 
-        self.api_stream_spectators = {}
+        self.api_stream_spectators = {}  # Tracks all the spectators connected. An alternative to MQTT listening.
 
-        # Load API routes
-        route_api_v1_atoms(self.webapp)
-        route_api_v1_automation_rules(self.webapp)
-        # route_api_v1_camera(self.webapp)
-        route_api_v1_debug(self.webapp)
-        route_api_v1_device(self.webapp)
-        route_api_v1_device_command(self.webapp)
-        route_api_v1_frontend(self.webapp)
-        # route_api_v1_events(self.webapp)
-        # route_api_v1_gateway(self.webapp)
-        # route_api_v1_module(self.webapp)
-        route_api_v1_mqtt(self.webapp)
-        # route_api_v1_notification(self.webapp)
-        route_api_v1_scenes(self.webapp)
-        route_api_v1_server(self.webapp)
-        # route_api_v1_statistics(self.webapp)
-        # route_api_v1_stream(self.webapp, self)
-        route_api_v1_states(self.webapp)
-        route_api_v1_system(self.webapp)
-        # route_api_v1_storage(self.webapp)
-        route_api_v1_user(self.webapp)
-        # route_api_v1_webinterface_logs(self.webapp)
-
-        # Load web server routes
-        route_home(self.webapp)
-        route_misc(self.webapp)
-        route_system(self.webapp)
-        route_user(self.webapp)
-        if self.operating_mode != "run":
-            from yombo.lib.webinterface.routes.restore import route_restore
-            from yombo.lib.webinterface.routes.setup_wizard import route_setup_wizard
-            route_setup_wizard(self.webapp)
-            route_restore(self.webapp)
+        if self._Configs.get("webinterface.enable_default_routes", default=True, create=False):
+            yield self.webinterface_load_routes()  # Loads all the routes.
 
         self.npm_build_results = None
 
@@ -167,6 +120,7 @@ class WebInterface(YomboLibrary, BuildDistribution, ErrorHandler, Frontend, Rend
         self.web_server_started = False
         self.web_server_ssl_started = False
 
+        self.setup_wizard_map_js = None
         self.web_factory = None
         self.user_login_tokens = self._Cache.ttl(name="lib.users.cache", ttl=300)
 
@@ -174,90 +128,49 @@ class WebInterface(YomboLibrary, BuildDistribution, ErrorHandler, Frontend, Rend
     def operating_mode(self):
         return self._Loader.operating_mode
 
+    @inlineCallbacks
     def _load_(self, **kwargs):
         if not self.enabled:
             return
 
-        if self.operating_mode == "run":
-            self.build_dist()  # Make all the JS and CSS files
+        yield self._Notifications.new(notice_id="webinterface:starting",
+                                      title="System still starting",
+                                      message="Still starting up. Please wait.",
+                                      request_context=self._FullName,
+                                      priority="high",
+                                      always_show=True,
+                                      always_show_allow_clear=False
+                                      )
+
+        if self._Configs.get("webinterface.enable_frontend", True, False):
+            self.build_dist()  # Makes the Vue application frontend.
 
         self.module_config_links = {}
 
-        # self.web_factory = Yombo_Site(self.webapp.resource(), None, logPath="/dev/null")
-        self.web_factory = Yombo_Site(self.webapp.resource(), None, logPath=None)
-        self.web_factory.setup_log_queue(self)
+        # self.web_factory = YomboSite(self.webapp.resource(), None, logPath="/dev/null")
+        self.web_factory = YomboSite(self, self.webapp.resource(), None, logPath=None)
         self.web_factory.noisy = False  # turn off Starting/stopping message
         self.displayTracebacks = False
 
         self._display_how_to_access_at = 0  # When the display notice for how to access the web was shown.
 
-        self.misc_wi_data["gateway_label"] = self._Configs.get2("core", "label", "Yombo Gateway", False)
-        self.misc_wi_data["operating_mode"] = self.operating_mode
+        self.misc_wi_data["gateway_label"] = self._Configs.get("core.label", "Yombo Gateway", False, instance=True)
+        self.misc_wi_data["operating_mode"] = self._Loader.operating_mode
         self.misc_wi_data["notifications"] = self._Notifications
         self.misc_wi_data["notification_priority_map_css"] = NOTIFICATION_PRIORITY_MAP_CSS
         self.misc_wi_data["breadcrumb"] = []
 
         self.webapp.templates.globals["yombo"] = self
         self.webapp.templates.globals["_local_gateway"] = self._Gateways.local
-        self.webapp.templates.globals["_amqp"] = self._AMQP
-        self.webapp.templates.globals["_amqpyombo"] = self._AMQPYombo
-        self.webapp.templates.globals["_authkeys"] = self._AuthKeys
-        self.webapp.templates.globals["_atoms"] = self._Atoms
-        self.webapp.templates.globals["_automation"] = self._Automation
-        self.webapp.templates.globals["_cache"] = self._Cache
-        self.webapp.templates.globals["_calllater"] = self._CallLater
-        self.webapp.templates.globals["_commands"] = self._Commands
-        self.webapp.templates.globals["_configs"] = self._Configs
-        self.webapp.templates.globals["_crontab"] = self._CronTab
-        self.webapp.templates.globals["_events"] = self._Events
-        self.webapp.templates.globals["_devices"] = self._Devices
-        self.webapp.templates.globals["_devicetypes"] = self._DeviceTypes
-        self.webapp.templates.globals["_downloadmodules"] = self._DownloadModules
-        self.webapp.templates.globals["_gatewaycoms"] = self._GatewayComs
-        self.webapp.templates.globals["_gateways"] = self._Gateways
-        self.webapp.templates.globals["_gpg"] = self._GPG
-        self.webapp.templates.globals["_inputtypes"] = self._InputTypes
-        self.webapp.templates.globals["_intents"] = self._Intents
-        self.webapp.templates.globals["_localize"] = self._Localize
-        self.webapp.templates.globals["_locations"] = self._Locations
-        self.webapp.templates.globals["_locations"] = self._Locations
-        self.webapp.templates.globals["_modules"] = self._Modules
-        self.webapp.templates.globals["_mqtt"] = self._MQTT
-        self.webapp.templates.globals["_nodes"] = self._Nodes
-        self.webapp.templates.globals["_notifiticaions"] = self._Notifications
-        self.webapp.templates.globals["_users"] = self._Users
-        self.webapp.templates.globals["_queue"] = self._Queue
-        self.webapp.templates.globals["_scenes"] = self._Scenes
-        self.webapp.templates.globals["_requests"] = self._Requests
-        self.webapp.templates.globals["_sqldict"] = self._SQLDict
-        self.webapp.templates.globals["_sslcerts"] = self._SSLCerts
-        self.webapp.templates.globals["_states"] = self._States
-        self.webapp.templates.globals["_statistics"] = self._Statistics
-        self.webapp.templates.globals["_storage"] = self._Storage
-        self.webapp.templates.globals["_tasks"] = self._Tasks
-        self.webapp.templates.globals["_times"] = self._Times
-        self.webapp.templates.globals["_variabledata"] = self._VariableData
-        self.webapp.templates.globals["_variablefields"] = self._VariableFields
-        self.webapp.templates.globals["_variablegroups"] = self._VariableGroups
-        self.webapp.templates.globals["_validate"] = self._Validate
-        self.webapp.templates.globals["_webinterface"] = self
-        self.webapp.templates.globals["py_randint"] = randint
-        self.webapp.templates.globals["py_time_time"] = time
-        self.webapp.templates.globals["py_urllib_urlparse"] = urlparse
-        self.webapp.templates.globals["py_urllib_urlunparse"] = urlunparse
-        self.webapp.templates.globals["yombo_utils"] = yombo.utils
+        self.webapp.templates.globals["py_time"] = time
         self.webapp.templates.globals["misc_wi_data"] = self.misc_wi_data
         self.webapp.templates.globals["webinterface"] = self
-        self.webapp.templates.globals["_location_id"] = None
-        self.webapp.templates.globals["_area_id"] = None
-        self.webapp.templates.globals["_location"] = None
-        self.webapp.templates.globals["_area"] = None
-        self.webapp.templates.globals["bg_image_id"] = lambda: int(time()/300) % 6
-        self.webapp.templates.globals["get_alerts"] = self.get_alerts
+        self.webapp.templates.globals["bg_image_id"] = lambda: int(time()/300) % 6  # Used to select a background.
+        # self.webapp.templates.globals["get_alerts"] = self.get_alerts
 
         self._refresh_jinja2_globals_()
         self.starting = False
-        self.start_web_servers()
+        yield self.start_web_servers()
         self.clean_idempotence_ids_loop = LoopingCall(self.clean_idempotence_ids)
         self.clean_idempotence_ids_loop.start(1806, False)
 
@@ -267,7 +180,7 @@ class WebInterface(YomboLibrary, BuildDistribution, ErrorHandler, Frontend, Rend
 
         :return:
         """
-        if self.operating_mode != "run":
+        if self._Loader.operating_mode != "run":
             return
         self.webapp.templates.globals["_location_id"] = self._Locations.location_id
         self.webapp.templates.globals["_area_id"] = self._Locations.area_id
@@ -276,32 +189,25 @@ class WebInterface(YomboLibrary, BuildDistribution, ErrorHandler, Frontend, Rend
 
     @inlineCallbacks
     def _start_(self, **kwargs):
-        self._Notifications.add({
-            "title": "System still starting",
-            "message": "Still starting up. Please wait.",
-            "source": "Web Interface Library",
-            "persist": True,
-            "priority": "high",
-            "always_show": True,
-            "always_show_allow_clear": False,
-            "id": "webinterface:starting",
-        })
-
-        if self.operating_mode != "run":
-            logger.warn("First time running the gateway, it will take a while to build the frontend web server.")
-            yield self.build_dist(verbose=True)  # Make all the JS and CSS files
-
         self.webapp.templates.globals["_"] = _  # i18n
+        if self._gateway_id == "local":
+            results = yield self._Requests.request("get", "https://yg2.in/9id39")
+            self.setup_wizard_map_js = results.content.strip()
 
     def _started_(self, **kwargs):
-        # if self.operating_mode != "run":
-        self._display_how_to_access_at = int(time())
+        """ Perform a couple of small tasks after everything has started. """
+        self.web_interface_fully_started = True
         self.display_how_to_access()
         self._Notifications.delete("webinterface:starting")
-        self.web_interface_fully_started = True
 
         self.send_hook_listeners_ping_loop = LoopingCall(self.send_hook_listeners_ping_loop)
         self.send_hook_listeners_ping_loop.start(55, True)
+
+    @inlineCallbacks
+    def _unload_(self, **kwargs):
+        if hasattr(self, "web_factory"):
+            if self.web_factory is not None:
+                yield self.web_factory.save_log_queue()
 
     def clean_idempotence_ids(self):
         """
@@ -315,7 +221,7 @@ class WebInterface(YomboLibrary, BuildDistribution, ErrorHandler, Frontend, Rend
                 del self.idempotence[key]
 
     def send_hook_listeners_ping_loop(self):
-        route_api_v1_stream_broadcast(self, "ping", int(time()))
+        web_broadcast(self, "ping", int(time()))
 
     def register_hook(self, name, thecallback):
         if name not in self.hook_listeners:
@@ -354,17 +260,17 @@ class WebInterface(YomboLibrary, BuildDistribution, ErrorHandler, Frontend, Rend
             pass
             # add base node...
 
-    def _configuration_set_(self, **kwargs):
+    def _configs_set_(self, arguments, **kwargs):
         """
         Need to monitor if the web interface port has changed. This will restart the webinterface
         server if needed.
 
-        :param kwargs: section, option(key), value
+        :param arguments: section, option(key), value
         :return:
         """
-        section = kwargs["section"]
-        option = kwargs["option"]
-        value = kwargs["value"]
+        section = arguments["section"]
+        option = arguments["option"]
+        value = arguments["value"]
 
         if self.starting is True:
             return
@@ -375,12 +281,6 @@ class WebInterface(YomboLibrary, BuildDistribution, ErrorHandler, Frontend, Rend
             elif option == "secure_port":
                 self.change_ports(port_secure=value)
 
-    @inlineCallbacks
-    def _unload_(self, **kwargs):
-        if hasattr(self, "web_factory"):
-            if self.web_factory is not None:
-                yield self.web_factory.save_log_queue()
-
     @property
     def internal_url(self):
         """
@@ -389,12 +289,11 @@ class WebInterface(YomboLibrary, BuildDistribution, ErrorHandler, Frontend, Rend
 
         :return:
         """
-        fqdn = self.fqdn()
-        if fqdn is None:
-            internal_hostname = self._Configs.get("core", "localipaddress_v4")
-            return f"http://{internal_hostname}:{self.wi_port_nonsecure()}"
+        if self.fqdn.value is None:
+            internal_hostname = self._Configs.get("networking.localipaddress.v4")
+            return f"http://{internal_hostname}:{self.wi_port_nonsecure.value}"
         else:
-            return f"https://i.{fqdn}:{self.wi_port_secure()}"
+            return f"https://i.{self.fqdn.value}:{self.wi_port_secure.value}"
 
     @property
     def external_url(self):
@@ -404,30 +303,11 @@ class WebInterface(YomboLibrary, BuildDistribution, ErrorHandler, Frontend, Rend
 
         :return:
         """
-        fqdn = self.fqdn()
-        if fqdn is None:
-            external_hostname = self._Configs.get("core", "externalipaddress_v4")
-            return f"https://{external_hostname}:{self.wi_port_secure()}"
+        if self.fqdn.value is None:
+            external_hostname = self._Configs.get("networking.externalipaddress.v4")
+            return f"https://{external_hostname}:{self.wi_port_secure.value}"
         else:
-            return f"https://e.{fqdn}:{self.wi_port_secure()}"
-
-    def i18n(self, request):
-        """
-        Gets a translator based on the language the browser provides us.
-
-        :param request: The browser request.
-        :return:
-        """
-        locales = self._Localize.parse_accept_language(request.getHeader("accept-language"))
-        locales_hash = yombo.utils.sha256_compact("".join(str(e) for e in locales))
-        if locales_hash in self.translators:
-            return self.translators[locales_hash]
-        else:
-            self.translators[locales_hash] = web_translator(self, locales)
-        return self.translators[locales_hash]
-
-
-        self.starting = False
+            return f"https://e.{self.fqdn.value}:{self.wi_port_secure.value}"
 
     def add_alert(self, session, message, level="info", display_once=True, deletable=True, id=None):
         """
@@ -447,12 +327,8 @@ class WebInterface(YomboLibrary, BuildDistribution, ErrorHandler, Frontend, Rend
             return {}
         return session.get_alerts(autodelete)
 
-    def get_template(self, request, template_path):
-        request.webinterface.webapp.templates.globals["_"] = request.webinterface.i18n(request)  # set in auth.update_request.
-        return self.webapp.templates.get_template(template_path)
-
     def redirect(self, request, redirect_path):
-        request.redirect(redirect_path)
+        return request.redirect(redirect_path)
 
     def _get_parms(self, request):
         return parse_qs(urlparse(request.uri).query)
@@ -540,37 +416,53 @@ class WebInterface(YomboLibrary, BuildDistribution, ErrorHandler, Frontend, Rend
         self.webapp.templates.filters["epoch_get_age_exact"] = dt_util.get_age_exact  # yesterday, 5 minutes ago, etc.
         self.webapp.templates.filters["format_markdown"] = yombo.utils.format_markdown
         self.webapp.templates.filters["hide_none"] = yombo.utils.display_hide_none
-        self.webapp.templates.filters["display_encrypted"] = self._GPG.display_encrypted
         self.webapp.templates.filters["display_temperature"] = self._Localize.display_temperature
-        self.webapp.templates.filters["json_human"] = yombo.utils.json_human
         self.webapp.templates.filters["yombo"] = self
 
     def restart(self, request, message=None, redirect=None):
+        """
+        Restart the gateway. Called by various routes that need to restart the gateway. This will return
+        the restarting html with message and redirect to injected into it.
+
+        :param request:
+        :param message:
+        :param redirect:
+        :return:
+        """
         if message is None:
             message = ""
         if redirect is None:
             redirect = "/"
 
-        page = self.get_template(request, self.wi_dir + "/pages/restart.html")
-        reactor.callLater(0.3, self.do_restart)
-        return page.render(message=message,
-                           redirect=redirect,
-                           uptime=str(self._Atoms["running_since"])
-                           )
+        def do_restart():
+            try:
+                raise YomboRestart("Web Interface setup wizard complete.")
+            except:
+                pass
 
-    def do_restart(self):
-        try:
-            raise YomboRestart("Web Interface setup wizard complete.")
-        except:
-            pass
+        reactor.callLater(0.3, do_restart)
+        return self.render_template(request,
+                                    self.wi_dir + "/pages/misc/restarting.html",
+                                    message=message,
+                                    redirect=redirect,
+                                    )
 
-    def shutdown(self, request):
-        page = self.get_template(request, self.wi_dir + "/pages/shutdown.html")
-        # reactor.callLater(0.3, self.do_shutdown)
-        return page.render()
+    def shutdown(self, request, message=None, redirect=None):
+        """
+        Shutdown the gateway. Called by various routes that need to shutdownthe gateway. This will return
+        the shutting down html with the optional message injected into it.
 
-    def do_shutdown(self):
-        raise YomboCritical("Web Interface setup wizard complete.")
+        :param request:
+        :param message:
+        :param redirect:
+        :return:
+        """
+        def do_shutdown():
+            raise YomboQuit("Requested gateway shutdown from webinterface.")
+
+        reactor.callLater(0.3, do_shutdown)
+        return self.render_template(request,
+                                    self.wi_dir + "/pages/misc/shutting_down.html")
 
 
 class web_translator(object):

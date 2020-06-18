@@ -1,5 +1,3 @@
-#This file was created by Yombo for use with Yombo Python Gateway automation
-#software.  Details can be found at https://yombo.net
 """
 A dictionary that can search by either key or by value.
 
@@ -14,9 +12,11 @@ A dictionary that can search by either key or by value.
    result = items["Jane"] # mom
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+.. versionadded:: 0.23.0
 
-:copyright: Copyright 2016 by Yombo.
+:copyright: Copyright 2016-2020 by Yombo.
 :license: LICENSE for details.
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/classes/lookupdict.html>`_
 """
 
 

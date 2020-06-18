@@ -139,14 +139,6 @@ class ExpiringDict(OrderedDict):
         " Create a new dictionary with keys from seq and values set to value. "
         raise NotImplementedError()
 
-    def iteritems(self):
-        """ Return an iterator over the dictionary's (key, value) pairs. """
-        raise NotImplementedError()
-
-    def itervalues(self):
-        """ Return an iterator over the dictionary's values. """
-        raise NotImplementedError()
-
     def viewitems(self):
         " Return a new view of the dictionary's items ((key, value) pairs). "
         raise NotImplementedError()

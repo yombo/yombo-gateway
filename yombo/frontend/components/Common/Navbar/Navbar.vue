@@ -1,6 +1,6 @@
 <template>
   <nav :class="classes" class="navbar navbar-expand-lg">
-    <div class="container-fluid">
+    <div class="container-fluid container-narrow">
       <slot></slot>
 
       <CollapseTransition>
@@ -62,5 +62,3 @@ export default {
   }
 };
 </script>
-<style>
-</style>

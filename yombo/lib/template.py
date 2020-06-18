@@ -16,10 +16,12 @@ they can be used as condition statements for scenes, automation rules, etc.
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.18.0
 
-:copyright: Copyright 2018 by Yombo.
+:copyright: Copyright 2018-2020 by Yombo.
 :license: LICENSE for details.
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/template.html>`_
 """
 # Import python libraries
+import math
 import random
 from time import sleep
 
@@ -35,18 +37,16 @@ from twisted.internet.defer import inlineCallbacks
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
-from yombo.utils import (forgiving_float, forgiving_round, multiply, logarithm, fail_when_undefined,
+from yombo.utils import (forgiving_float, forgiving_round, multiply,
                          is_yes_no, excerpt, make_link, format_markdown, display_hide_none)
-from yombo.utils.datetime import strptime
-
 import yombo.utils.datetime as dt
 import yombo.utils.converters as converters
-#status_to_string, public_to_string, epoch_to_string
 
 logger = get_logger("library.templates")
 logger_runtime = get_logger("library.templates.runtime")
 
 _WATCHDOG = object()
+
 
 @contextfilter
 def random_choice(context, values):
@@ -64,17 +64,16 @@ class Template(YomboLibrary):
         self.environment = TemplateEnvironment()
         self.environment.globals["as_timestamp"] = dt.forgiving_as_timestamp
         self.environment.globals["float"] = forgiving_float
-        self.environment.globals["log"] = logarithm
+        self.environment.globals["log"] = self.logarithm
         self.environment.globals["now"] = dt.now
         self.environment.globals["sleep"] = sleep
-        self.environment.globals["strptime"] = strptime
+        self.environment.globals["strptime"] = dt.strptime
         self.environment.globals["utcnow"] = dt.utcnow
 
         self.environment.globals["amqp"] = self._AMQP
         self.environment.globals["amqpyombo"] = self._AMQPYombo
         self.environment.globals["authkeys"] = self._AuthKeys
         self.environment.globals["atoms"] = self._Atoms
-        self.environment.globals["automation"] = self._Automation
         self.environment.globals["commands"] = self._Commands
         self.environment.globals["configs"] = self._Configs
         self.environment.globals["crontab"] = self._CronTab
@@ -91,7 +90,7 @@ class Template(YomboLibrary):
         self.environment.globals["notifiticaions"] = self._Notifications
         self.environment.globals["queue"] = self._Queue
         self.environment.globals["scenes"] = self._Scenes
-        self.environment.globals["sqldict"] = self._SQLDict
+        self.environment.globals["sqldicts"] = self._SQLDicts
         self.environment.globals["sslcerts"] = self._SSLCerts
         self.environment.globals["states"] = self._States
         self.environment.globals["statistics"] = self._Statistics
@@ -110,11 +109,11 @@ class Template(YomboLibrary):
         self.environment.filters["error"] = logger_runtime.error
         self.environment.filters["round"] = forgiving_round
         self.environment.filters["multiply"] = multiply
-        self.environment.filters["log"] = logarithm
+        self.environment.filters["log"] = self.logarithm
         self.environment.filters["timestamp_custom"] = dt.timestamp_custom
         self.environment.filters["timestamp_local"] = dt.timestamp_local
         self.environment.filters["timestamp_utc"] = dt.timestamp_utc
-        self.environment.filters["is_defined"] = fail_when_undefined
+        self.environment.filters["is_defined"] = self.fail_when_undefined
         self.environment.filters["max"] = max
         self.environment.filters["min"] = min
         self.environment.filters["random_choice"] = random_choice
@@ -128,7 +127,6 @@ class Template(YomboLibrary):
         self.environment.filters["epoch_get_age_exact"] = dt.get_age_exact  # yesterday, 5 minutes ago, etc.
         self.environment.filters["format_markdown"] = format_markdown
         self.environment.filters["hide_none"] = display_hide_none
-        self.environment.filters["display_encrypted"] = self._GPG.display_encrypted
         self.environment.filters["display_temperature"] = self._Localize.display_temperature
         self.environment.globals["location_id"] = None
         self.environment.globals["area_id"] = None
@@ -139,6 +137,26 @@ class Template(YomboLibrary):
             self.environment.globals["local_gateway"] = "local"
         else:
             self.environment.globals["local_gateway"] = self._Gateways.local
+
+    @staticmethod
+    def fail_when_undefined(value):
+        """Filter to force a failure when the value is undefined."""
+        if isinstance(value, jinja2.Undefined):
+            value()
+        return value
+
+    @staticmethod
+    def logarithm(value, base=math.e):
+        """
+        Primarily used for templates as a filter. Performs logarithm math to a value.
+
+        :param value:
+        :param base:
+        """
+        try:
+            return math.log(float(value), float(base))
+        except (ValueError, TypeError):
+            return value  # return input if value cannot be processed.
 
     def _refresh_jinja2_globals_(self, **kwargs):
         """

@@ -13,5 +13,6 @@ YomboLibrary Class
 ---------------------------
 .. autoclass:: YomboLibrary
    :members:
-
-   .. automethod:: __init__
+   :special-members:
+   :private-members:
+   :undoc-members:

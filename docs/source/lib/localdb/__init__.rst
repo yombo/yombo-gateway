@@ -9,13 +9,12 @@ LocalDB (yombo.lib.localdb)
 ===========================================
 .. automodule:: yombo.lib.localdb
 
-LocalDB class
+LocalDB Library Class
 ===========================================
 .. autoclass:: LocalDB
    :members:
    :special-members:
    :private-members:
    :undoc-members:
-   :noindex:
 
 Last updated: |today|

@@ -1,7 +1,13 @@
 import { Model } from '@vuex-orm/core'
 
-export default class Location extends Model {
+class Location extends Model {
   static entity = 'locations';
+
+  static state ()  {
+    return {
+      api_source: null,
+    }
+  }
 
   static fields () {
     return {
@@ -15,4 +21,12 @@ export default class Location extends Model {
       updated_at: this.number(0),
     }
   }
+}
+
+export class GW_Location extends Location {
+  static entity = 'gw_locations';
+}
+
+export class Yombo_Location extends Location {
+  static entity = 'yombo_locations';
 }

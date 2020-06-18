@@ -10,7 +10,6 @@
              :aria-expanded="isOpen"
              @click="toggleDropDown"
              v-click-outside="closeDropDown">
-
     <slot name="title">
       <a class="dropdown-toggle nav-link"
          :class="{'no-caret': hideArrow}"

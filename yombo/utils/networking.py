@@ -1,41 +1,107 @@
 """
-Various tools for detailing with networking information.
+Various tools for working with networking information.
+
+.. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+
+:copyright: Copyright 2018-2020 by Yombo.
+:license: See LICENSE for details.
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/networking.html>`_
 """
 import binascii
 import netifaces
 import netaddr
-import socket
 from struct import pack as struct_pack, unpack as struct_unpack
+import socket
+from urllib.parse import urlparse
+
+from twisted.internet import threads
+from twisted.internet.defer import inlineCallbacks
 
 from yombo.utils.decorators import cached
 
 
+@inlineCallbacks
+def test_url_listening(url: str):
+    """
+    Tries to check if a server is listening at the URL. Returns True/False. If the port number cannot be derived
+    from the url, a ValueError will be raise.
+
+    If you have the host and port number, use test_port_listening instead.
+
+    :param url: The full url to check for.
+    :return:
+    """
+    parts = urlparse(url)
+    scheme = parts.scheme
+    host = parts.netloc
+    if scheme is None or host is None:
+        raise SyntaxWarning("Invalid URL format.")
+
+    port = parts.port
+    if port is None:  # Try to guess port number
+        if scheme == "ftp":
+            port = 21
+        elif scheme == "ssh":
+            port = 22
+        elif scheme == "telnet":
+            port = 23
+        elif scheme == "smtp":
+            port = 25
+        elif scheme == "tfpt":
+            port = 69
+        elif scheme == "http":
+            port = 80
+        elif scheme == "https":
+            port = 443
+
+    if port is None:
+        raise ValueError("Port number not found, ensure to include")
+    results = yield test_port_listening(host, port)
+    return results
+
+
+@inlineCallbacks
+def test_port_listening(host: str, port: int) -> bool:
+    """
+    Returns a deferred whose result will be True/False.
+
+    Tests if port is open on the host.
+
+    :param host:
+    :param port:
+    :return:
+    """
+    results = yield threads.deferToThread(_test_port_listening, host, port)
+    return results
+
+
+def _test_port_listening(host, port):
+    """
+    Should only be called by it's parent 'test_port_listening' due to blocking.
+    :return:
+    """
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(0.5)
+    return sock.connect_ex((host, port)) == 0
+
+
 @cached(600)
-def get_local_network_info(ethernet_name = None):
+def get_local_network_info(ethernet_name=None):
     """
     Collects various information about the local network.
     From: http://stackoverflow.com/questions/3755863/trying-to-use-my-subnet-address-in-python-code
     :return:
     """
-    ifaces = netifaces.interfaces()
-    # => ["lo", "eth0", "eth1"]
 
+    gws = netifaces.gateways()
     if ethernet_name is not None:
         myiface = ethernet_name
     else:
-        gws = netifaces.gateways()
         myiface = gws["default"][netifaces.AF_INET][1]
 
-    gws = netifaces.gateways()
     gateway_v4 = list(gws["default"].values())[0][0]
 
     addrs = netifaces.ifaddresses(myiface)
-    # {2: [{"addr": "192.168.1.150",
-    #             "broadcast": "192.168.1.255",
-    #             "netmask": "255.255.255.0"}],
-    #   10: [{"addr": "fe80::21a:4bff:fe54:a246%eth0",
-    #                "netmask": "ffff:ffff:ffff:ffff::"}],
-    #   17: [{"addr": "00:1a:4b:54:a2:46", "broadcast": "ff:ff:ff:ff:ff:ff"}]}
 
     # Get ipv4 stuff
     ipinfo = addrs[socket.AF_INET][0]
@@ -43,34 +109,29 @@ def get_local_network_info(ethernet_name = None):
     netmask_v4 = ipinfo["netmask"]
     # Create ip object and get
     cidr_v4 = netaddr.IPNetwork(f"{address_v4}/{netmask_v4}")
-    # => IPNetwork("192.168.1.150/24")
     network_v4 = cidr_v4.network
 
     try:
         ipinfo = addrs[socket.AF_INET6][0]
         address_v6 = ipinfo["addr"].split("%")[0]
         netmask_v6 = ipinfo["netmask"]
-    except KeyError as e:
-        print("Appears this machine has no IPv6.")
+    except KeyError:
         address_v6 = None
         netmask_v6 = None
 
-    # Create ip object and get
-    # cidr_v6 = netaddr.IPNetwork("%s/%s" % (address_v6, netmask_v6))
-    # => IPNetwork("192.168.1.150/24")
-    # network_v6 = cidr_v6.network
-
-    # => IPAddress("192.168.1.0")
     return {"ipv4":
-                {"address": str(address_v4), "netmask": str(netmask_v4), "cidr": str(cidr_v4),
-                 "network": str(network_v4), "gateway": str(gateway_v4)},
+                {
+                    "address": str(address_v4), "netmask": str(netmask_v4), "cidr": str(cidr_v4),
+                    "network": str(network_v4), "gateway": str(gateway_v4)
+                },
             "ipv6":
-                {"address": str(address_v6), "netmask": str(netmask_v6), "gateway": str("")},
+                {"address": str(address_v6), "netmask": str(netmask_v6), "gateway": str("")}
             }
 
 
 @cached(600)
-def ip_addres_in_local_network(ip_address):
+def ip_address_in_local_network(ip_address):
+    """ Checks if a given IP address belongs to the local network. """
     local_network = get_local_network_info()
     try:
         if ip_address_in_network(ip_address, local_network["ipv4"]["cidr"]):
@@ -104,7 +165,7 @@ def ip_address_in_network(ip_address, subnetwork):
     if version1 != version2:
         raise ValueError("incompatible IP versions")
 
-    return (ip_lower <= ip_integer <= ip_upper)
+    return ip_lower <= ip_integer <= ip_upper
 
 
 def ip_to_integer(ip_address):
@@ -119,7 +180,6 @@ def ip_to_integer(ip_address):
     Both IPv4 addresses (e.g. "192.168.1.1") and IPv6 addresses
     (e.g. "2a02:a448:ddb0::") are accepted.
     """
-
     # try parsing the IP address first as IPv4, then as IPv6
     for version in (socket.AF_INET, socket.AF_INET6):
 
@@ -127,7 +187,7 @@ def ip_to_integer(ip_address):
             ip_hex = socket.inet_pton(version, ip_address)
             ip_integer = int(binascii.hexlify(ip_hex), 16)
 
-            return (ip_integer, 4 if version == socket.AF_INET else 6)
+            return ip_integer, 4 if version == socket.AF_INET else 6
         except:
             pass
 
@@ -176,8 +236,10 @@ def subnetwork_to_ip_range(subnetwork):
 
 
 def ip_address_to_int(address):
+    """ Convet an ip address to a large integer. """
     return struct_unpack("!I", socket.inet_aton(address))[0]
 
 
 def int_to_ip_address(address):
+    """ Convert a large integer to an IP address. """
     return socket.inet_ntoa(struct_pack("!I", address))

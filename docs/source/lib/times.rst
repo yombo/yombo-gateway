@@ -1,6 +1,6 @@
 .. index:: times
 
-.. _times::
+.. _times:
 
 .. currentmodule:: yombo.lib.times
 
@@ -11,7 +11,7 @@ Times (yombo.lib.times)
 
 Times Library Class
 =======================
-.. automodule:: Times
+.. autoclass:: Times
    :members:
    :special-members:
    :private-members:

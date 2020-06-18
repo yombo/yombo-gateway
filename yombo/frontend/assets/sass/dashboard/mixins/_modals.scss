@@ -9,11 +9,11 @@
     }
 
     //inputs
-    @include input-coloured-bg($opacity-5, $white-color, $white-color, $transparent-bg, $opacity-1, $opacity-2);
+    @include input-coloured-bg($opacity-white-5, $white-color, $white-color, $transparent-bg, $opacity-white-1, $opacity-white-2);
 
     .input-group-addon,
     .form-group.form-group-no-border .input-group-addon,
     .input-group.form-group-no-border .input-group-addon{
-        color: $opacity-8;
+        color: $opacity-white-8;
     }
 }

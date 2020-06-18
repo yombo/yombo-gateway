@@ -6,25 +6,37 @@ if [ "$EUID" -eq 0 ]; then
     echo "If you created a dedicate account for this software, first log into that account."
     echo "Then run this script as:"
     echo ""
-    echo "mycomputer> bash ./pyenv-install.sh"
+    echo "mycomputer> bash ./debian_install"
     echo ""
     exit
 fi
 
-YOMBO_SCRIPT_DIR="$( cd "$(dirname "$0")" ; pwd -P )"
+YOMBO_SCRIPT_HELPER_DIR="$( cd "$(dirname "$0")" ; pwd -P )"
+YOMBO_SCRIPT_DIR="$(dirname $YOMBO_SCRIPT_HELPER_DIR)"
 YOMBO_ROOT_DIR="$(dirname $YOMBO_SCRIPT_DIR)"
 
-cd /home/$USER/.pyenv && git pull && cd -
+LOGFILE=$HOME/yombo_update.log
+LOGFILEDETAILED=$HOME/yombo_update_detailed.log
 
-cd "$YOMBO_ROOT_DIR"
+function logsetup {
+    exec > >(tee -a $LOGFILE $LOGFILEDETAILED)
+    exec 2>&1
+}
 
-pip3 install --upgrade pip
-pip3 install netifaces
+function log {
+    echo "[$(date --rfc-3339=seconds)]: $*"
+}
+logsetup
 
-CORECOUNT=$(grep -c ^processor /proc/cpuinfo)
-CORECOUNT=$(($CORECOUNT + 1))
+# TODO: uncomment on final commit for 0.24.0
+# Update Yombo from source.
+#git pull
 
-MAKE_OPTS="-j$CORECOUNT" pyenv install 3.7.3 -s
-
-git pull
-pip3 install --upgrade -r requirements.txt
+# Update the frontend build software. It will be compiled when the gateway starts.
+cd $YOMBO_ROOT_DIR/yombo/frontend
+log "==> yarn - Installing new packages."
+yarn install >> $LOGFILEDETAILED 2>&1
+log "==> yarn - Upgrading older packages."
+yarn upgrade >> $LOGFILEDETAILED 2>&1
+log "==> yarn - Autoclean / remove unused packages."
+yarn autoclean >> $LOGFILEDETAILED 2>&1

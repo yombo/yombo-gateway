@@ -1,13 +1,11 @@
-import yboapiv1 from '@/services/yboapiv1'
-
 export default {
     all () {
-        return yboapiv1().get('/input_types')
+        return window.$nuxt.$yboapiv1axios.get('/input_types')
     },
     allGW () {
-        return yboapiv1().get('/gateways/'+ window.$nuxt.$gwenv.gateway_id +'/relationships/input_types')
+        return window.$nuxt.$yboapiv1axios.get('/gateways/'+ window.$nuxt.$gwenv.gateway_id +'/relationships/input_types')
     },
     fetchOne(id) {
-        return yboapiv1().get('/input_types/' + id);
+        return window.$nuxt.$yboapiv1axios.get('/input_types/' + id);
     },
 }

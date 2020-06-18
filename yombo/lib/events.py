@@ -14,13 +14,14 @@ https://stackoverflow.com/questions/2797592/best-practice-logging-events-general
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.21.0
 
-:copyright: Copyright 2018 by Yombo.
+:copyright: Copyright 2018-2020 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/events.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/events.html>`_
 """
 from collections import OrderedDict
 from copy import deepcopy
 from time import time
+from typing import Any, ClassVar, Dict, List, Optional, Type, Union
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks
@@ -31,24 +32,41 @@ from yombo.constants.events import SYSTEM_EVENT_TYPES
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import generate_source_string
+from yombo.mixins.auth_mixin import AuthMixin
+from yombo.utils.caller import caller_string
 from yombo.utils.hookinvoke import global_invoke_all
 
 logger = get_logger("library.events")
 
-MAX_DURATION = 300
+
 
 class Events(YomboLibrary):
     """
     A common location to collect system events. Not to be confused with notifications to display to users
     as a push notification. However, it may be common to create an event and a notification if it's urgent.
     """
+
+    _storage_primary_field_name: ClassVar[str] = "device_command_id"
+    _storage_primary_length: ClassVar[int] = 25
+    _startup_queue = {}  # Any device commands sent before the system is ready will be stored here.
+
+    # The remaining attributes are used by various mixins.
+    _storage_attribute_name: ClassVar[str] = "device_commands"
+    _storage_label_name: ClassVar[str] = "device_command"
+    _storage_class_reference: ClassVar = None
+    _storage_pickled_fields: ClassVar[Dict[str, str]] = {"meta": "msgpack"}
+    _storage_attribute_sort_key: ClassVar[str] = "created_at"
+    _storage_attribute_sort_key_order: ClassVar[str] = "desc"
+
+    enabled: ClassVar[bool] = False
+
     def _init_(self, **kwargs):
         """
         Setup the queue so events can be saved right away.
         :param kwargs:
         :return:
         """
+        self.enabled = self._Configs.get("events.enabled", True)
         self.event_queue = {}  # Save events in bulk.
         self.event_types = deepcopy(SYSTEM_EVENT_TYPES)
         self.save_event_queue_running = False
@@ -63,9 +81,7 @@ class Events(YomboLibrary):
 
         :return:
         """
-        event_types = yield global_invoke_all("_event_types_",
-                                              called_by=self,
-                                              )
+        event_types = yield global_invoke_all("_event_types_", called_by=self)
         for component, options in event_types.items():
             for event_type, event_data in options.items():
                 if event_type not in self.event_types:
@@ -84,9 +100,18 @@ class Events(YomboLibrary):
 
         :return:
         """
+        if self.enabled is False:
+            return
+
         yield self.save_event_queue()
 
-    def new(self, event_type, event_subtype, attributes=None, priority=None, auth=None, created_at=None):
+    def new(self, event_type: str, event_subtype: str, attributes: list = None, priority: str = None,
+            request_by: Union[None, str] = None, request_by_type: Union[None, str] = None,
+            request_context: Union[None, str] = None, authentication: Union[None, Type[AuthMixin]] = None,
+            created_at=None) -> None:
+
+        if self.enabled is False:
+            return
 
         if created_at is None:
             created_at = round(time(), 3)
@@ -95,7 +120,8 @@ class Events(YomboLibrary):
         if priority is None:
             priority = "normal"
 
-        source_label = generate_source_string()  # get the module/class/function name of caller
+        if request_context is None:
+            request_context = caller_string()  # get the module/class/function name of caller
 
         if event_type not in self.event_types:
             raise YomboWarning(f"Invalid event type: {event_type}")
@@ -104,19 +130,23 @@ class Events(YomboLibrary):
         if isinstance(attributes, list) is False and isinstance(attributes, tuple) is False:
             attributes = [attributes, ]
 
-        if auth is None:
-            auth_id = None
-        else:
-            auth_id = auth.safe_display
+        try:
+            request_by, request_by_type = self._Permissions.request_by_info(
+                authentication, request_by, request_by_type)
+        except YomboWarning:
+            request_by, request_by_type = self._Permissions.request_by_info(self._Users.system_user)
+        if request_context is None:
+            request_context = caller_string()  # get the module/class/function name of caller
 
-        event = OrderedDict({
+        event = {
             "event_type": event_type,
             "event_subtype": event_subtype,
             "priority": priority,
-            "source": source_label,
-            "auth_id": auth_id,
+            "request_by": request_by,
+            "request_by_type": request_by_type,
+            "request_context": request_context,
             "created_at": created_at,
-            })
+            }
         event.update(OrderedDict({f"attr{v + 1}": k for v, k in enumerate(attributes)}))
         length = str(len(event))
         if length not in self.event_queue:
@@ -124,7 +154,7 @@ class Events(YomboLibrary):
 
         self.event_queue[length].append(event)
 
-    def new_type(self, event_type, event_subtype, description, attributes):
+    def new_type(self, event_type: str, event_subtype: str, description: str, attributes: Union[list, tuple]) -> None:
         """
         Used by modules to create new event types.
 
@@ -149,6 +179,10 @@ class Events(YomboLibrary):
         Bulk save events into the database.
         :return:
         """
+        if self.enabled is False:
+            self.event_queue = {}
+            return
+
         if self.save_event_queue_running is True:
             return
         self.save_event_queue_running = True
@@ -159,6 +193,6 @@ class Events(YomboLibrary):
         event_queue = deepcopy(self.event_queue)
         self.event_queue = {}
         for key, data in event_queue.items():
-            yield self._LocalDB.save_events_bulk(data)
+            yield self._LocalDB.database.db_insert("events", data)
 
         self.save_event_queue_running = False

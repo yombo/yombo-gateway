@@ -1,5 +1,5 @@
 {% macro modal(id='the_id', label='Modal Label', content='Modal Content', classes="") %}
-<div class="modal fade"" id="{{ id }}" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+<div class="modal fade" id="{{ id }}" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
     <div class="modal-dialog {{classes}}" role="document">
         <div class="modal-content">
             <div class="modal-header btn-primary">
@@ -108,7 +108,7 @@
                         </td>
                         <td>{%- if field.data|length > 0 %}
                             {%- for data_id, data in field.data.items() %}
-                            {{form_input_type(items, item, input_types, field, "vars[" ~ field.id ~ "][" ~ data_id ~ "][input]", "vars[" ~ field.id ~ "][" ~ data_id ~ "][input]",  data.value|display_encrypted)}}
+                            {{form_input_type(items, item, input_types, field, "vars[" ~ field.id ~ "][" ~ data_id ~ "][input]", "vars[" ~ field.id ~ "][" ~ data_id ~ "][input]",  data.value)}}
                              <input type="hidden" name="vars[{{ field.id }}][{{ data_id }}][orig]" id="vars[{{ field.id }}][{{ data.id }}][orig]" value="{{ data.value }}">
                             {%- endfor %}
                             {%- endif %}

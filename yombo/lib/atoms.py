@@ -9,7 +9,8 @@
 
 .. seealso::
 
-   The :doc:`States library </lib/states>` is used to store items whose data changes.
+   * The :doc:`States library </lib/states>` is used to store items whose data changes.
+   * The :doc:`System Data Mixin </mixins/systemdata_mixin>` handles the bulk of the actions.
 
 Atoms provide non-changing information about the environment the gateway is running in as well as about the
 Yombo Gateway software. Atoms are generally immutable, however, if the system state changes and is detected, the
@@ -26,9 +27,9 @@ For dynamically changing data, use :py:mod:`States <yombo.lib.states>`.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2016-2018 by Yombo.
+:copyright: Copyright 2016-2020 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/atoms.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/atoms.html>`_
 """
 # Import python libraries
 try:
@@ -37,225 +38,86 @@ try:
 except ImportError:
     HAS_PSUTIL = False
 
-from collections import OrderedDict
+import distro
 import os
 import platform
-import re
+import sys
 from time import time
+from typing import ClassVar, List
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
-import yombo.core.settings as settings
-from yombo.core.exceptions import YomboWarning
+from yombo.core.entity import Entity
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-import yombo.utils
-import yombo.utils.converters as converters
-from yombo.utils.hookinvoke import global_invoke_all
+from yombo.core.schemas import AtomSchema
+from yombo.mixins.library_db_child_mixin import LibraryDBChildMixin
+from yombo.mixins.library_db_parent_mixin import LibraryDBParentMixin
+from yombo.mixins.library_search_mixin import LibrarySearchMixin
+from yombo.mixins.systemdata_mixin import SystemDataParentMixin, SystemDataChildMixin
 
-SUPPORTED_DISTS = platform._supported_dists + ("arch", "mageia", "meego", "vmware", "bluewhite64",
-                     "slamd64", "ovs", "system", "mint", "oracle")
 logger = get_logger("library.atoms")
-
-_REPLACE_LINUX_RE = re.compile(r"linux", re.IGNORECASE)
 
 _MAP_OS_NAME = {
     "redhatente": "RedHat",
-    "gentoobase": "Gentoo",
-    "archarm": "Arch ARM",
-    "arch": "Arch",
     "debian": "Debian",
-    "debiangnu/": "Debian",
-    "raspbiangn": "Raspbian",
-    "fedoraremi": "Fedora",
-    "amazonami": "Amazon",
-    "alt": "ALT",
-    "enterprise": "OEL",
-    "oracleserv": "OEL",
-    "cloudserve": "CloudLinux",
-    "pidora": "Fedora",
-    "scientific": "ScientificLinux",
-    "synology": "Synology",
-    "nilrt": "NILinuxRT",
-    "manjaro": "Manjaro",
-    "antergos": "Antergos",
-    "sles": "SUSE",
 }
 
 _MAP_OS_FAMILY = {
-    "ALT": "RedHat",
-    "Amazon": "RedHat",
-    "Antergos": "Arch",
-    "Arch ARM": "Arch",
-    "Bluewhite64": "Bluewhite",
-    "CentOS": "RedHat",
-    "CloudLinux": "RedHat",
-    "Devuan": "Debian",
-    "ESXi": "VMWare",
-    "Fedora": "RedHat",
-    "GCEL": "Debian",
-    "GoOSe": "RedHat",
-    "Linaro": "Debian",
-    "Mandrake": "Mandriva",
-    "Manjaro": "Arch",
-    "Mint": "Debian",
-    "NILinuxRT": "NILinuxRT",
-    "OpenIndiana": "Solaris",
-    "OpenIndiana Development": "Solaris",
-    "OpenSolaris": "Solaris",
-    "OpenSolaris Development": "Solaris",
-    "OEL": "RedHat",
-    "OVS": "RedHat",
-    "Raspbian": "Debian",
-    "Scientific": "RedHat",
-    "ScientificLinux": "RedHat",
-    "Slamd64": "Slackware",
-    "SLED": "Suse",
-    "SLES": "Suse",
-    "SmartOS": "Solaris",
-    "Solaris": "Solaris",
-    "SUSE": "Suse",
-    "SUSE Enterprise Server": "Suse",
-    "SUSE  Enterprise Server": "Suse",
-    "Trisquel": "Debian",
-    "Ubuntu": "Debian",
-    "VMWareESX": "VMWare",
-    "XCP": "RedHat",
-    "XenServer": "RedHat",
-    "antiX": "Debian",
-    "elementary OS": "Debian",
-    "openSUSE": "Suse",
-    "openSUSE Leap": "Suse",
-    "openSUSE Tumbleweed": "Suse",
+    'Ubuntu': 'Debian',
+    'Fedora': 'RedHat',
+    'CentOS': 'RedHat',
+    'GoOSe': 'RedHat',
+    'Scientific': 'RedHat',
+    'Amazon': 'RedHat',
+    'CloudLinux': 'RedHat',
+    'Mandrake': 'Mandriva',
+    'ESXi': 'VMWare',
+    'VMWareESX': 'VMWare',
+    'Bluewhite64': 'Bluewhite',
+    'Slamd64': 'Slackware',
+    'OVS': 'Oracle',
+    'OEL': 'Oracle',
+    'SLES': 'Suse',
+    'SLED': 'Suse',
+    'openSUSE': 'Suse',
+    'SUSE': 'Suse'
 }
+DEFAULT = object()
 
 
-class Atoms(YomboLibrary):
+class Atom(Entity, LibraryDBChildMixin, SystemDataChildMixin):
+    """
+    Represents a single atom.
+    """
+    _Entity_type: ClassVar[str] = "Atom"
+    _Entity_label_attribute: ClassVar[str] = "atom_id"
+
+
+class Atoms(YomboLibrary, SystemDataParentMixin, LibraryDBParentMixin, LibrarySearchMixin):
     """
     Provides information about the system environment and yombo gateway.
     """
-    def __contains__(self, atom_requested):
+    atoms: dict = {}
+
+    # The remaining attributes are used by various mixins.
+    _storage_primary_field_name: ClassVar[str] = "atom_id"
+    _storage_label_name: ClassVar[str] = "atom"
+    _storage_class_reference: ClassVar = Atom
+    _storage_schema: ClassVar = AtomSchema()
+    _storage_attribute_name: ClassVar[str] = "atoms"
+    _storage_search_fields: ClassVar[List[str]] = [
+        "atom_id", "value"
+    ]
+    _storage_attribute_sort_key: ClassVar[str] = "atom_id"
+
+    def __delitem__(self, state_requested: str) -> None:
         """
-        Checks to if a provided atom exists.
-
-            >>> if "cpu.count" in self._Atoms:
-            >>>    print("The system has {0} cpus. ".format(self._Atoms["cpu.count"]))
-
-        :raises YomboWarning: Raised when request is malformed.
-        :param atom_requested: The atom key to search for.
-        :type atom_requested: string
-        :return: Returns true if exists, otherwise false.
-        :rtype: bool
+        Deleting atoms is not possible.
         """
-        try:
-            self.get(atom_requested)
-            return True
-        except Exception as e:
-            return False
-
-    def __getitem__(self, atom_requested):
-        """
-        Attempts to find the atom requested.
-
-            >>> system_cpus = self._Atoms["cpu.count"]
-
-        :raises YomboWarning: Raised when request is malformed.
-        :raises KeyError: Raised when request is not found.
-        :param atom_requested: The atom key to search for.
-        :type atom_requested: string
-        :return: The value assigned to the atom.
-        :rtype: mixed
-        """
-        return self.get(atom_requested)
-
-    def __setitem__(self, atom_requested, value):
-        """
-        Sets an atom value..
-
-            >>> system_cpus = self._Atoms["cpu.count"] = 4
-
-        :raises YomboWarning: Raised when request is malformed.
-        :param atom_requested: The atom key to replace the value for.
-        :type atom_requested: string
-        :param value: New value to set.
-        :type value: mixed
-        """
-        return self.set(atom_requested, value)
-
-    def __delitem__(self, atom_requested):
-        """
-        Deletes are not allowed. Raises exception.
-
-        :raises Exception: Always raised.
-        """
-        raise Exception("Not allowed.")
-
-    def __iter__(self):
-        """ iter atoms. """
-        return self.atoms[self.gateway_id].__iter__()
-
-    def __len__(self):
-        """
-        Returns an int of the number of atoms defined.
-
-        :return: The number of atoms defined.
-        :rtype: int
-        """
-        return len(self.atoms[self.gateway_id])
-
-    def keys(self, gateway_id=None):
-        """
-        Returns the keys of the atoms that are defined.
-
-        :return: A list of atoms defined. 
-        :rtype: list
-        """
-        if gateway_id is None:
-            gateway_id = self.gateway_id
-
-        if gateway_id not in self.atoms:
-            return []
-        return list(self.atoms[gateway_id].keys())
-
-    def items(self, gateway_id=None):
-        """
-        Gets a list of tuples representing the atoms defined.
-
-        :return: A list of tuples.
-        :rtype: list
-        """
-        if gateway_id is None:
-            gateway_id = self.gateway_id
-
-        if gateway_id not in self.atoms:
-            return []
-        return list(self.atoms[gateway_id].items())
-
-    def values(self, gateway_id=None):
-        """
-        Gets a list of atom values
-        :return: list
-        """
-        if gateway_id is None:
-            gateway_id = self.gateway_id
-        if gateway_id not in self.atoms:
-            return []
-        return list(self.atoms[gateway_id].values())
-
-    def sorted(self, gateway_id):
-        """
-        Returns an OrderedDict of the atoms sorted by name.
-
-        :param gateway_id: The gateway to get the atoms for, default is the local gateway.
-        :type gateway_id: str
-        :return: All atoms, sorted by atom name.
-        :rtype: OrderedDict
-        """
-        if gateway_id is None:
-            gateway_id = self.gateway_id
-        return OrderedDict(sorted(self.atoms[gateway_id]))
+        return
 
     @inlineCallbacks
     def _init_(self, **kwargs):
@@ -264,333 +126,74 @@ class Atoms(YomboLibrary):
 
         :return: None
         """
-        self.library_state = 1
-        self._loaded = False
-        self.atoms = {self.gateway_id: {}}
-        # if "local" not in self.atoms:
-        #     self.atoms["local"] = {}
-        self.os_data()
+        self.logger = logger
+        self.atoms[self._gateway_id] = {}
+        yield self.load_from_database()
+        yield self.set_yield("app_dir", self._Configs.app_dir, value_type="string", request_context=self)
+        yield self.set_yield("working_dir", self._Configs.working_dir, value_type="string", request_context=self)
+        yield self.set_yield("gateway.running_since", time(), value_type="int", request_context=self)
+        yield self.os_data()
 
-        self.triggers = {}
-        self.set("working_dir", settings.arguments["working_dir"], source=self)
-        self.set("app_dir", settings.arguments["app_dir"], source=self)
-        yield self._GPG._init_from_atoms_()
-
-    def _load_(self, **kwargs):
-        self._loaded = True
-        self.library_state = 2
-        self.set("running_since", time(), source=self)
-        self._loaded = True
-
-    def _start_(self, **kwargs):
-        self.library_state = 3
-
-    def exists(self, key, gateway_id=None):
-        """
-        Checks if a given state exists. Returns true or false.
-
-        :param key: Name of state to check.
-        :return: If state exists:
-        :rtype: Bool
-        """
-        if gateway_id is None:
-            gateway_id = self.gateway_id
-
-        if key in self.atoms[gateway_id]:
-            return True
-        return False
-
-    def get_last_update(self, key):
-        """
-        Get the time() the key was created or last updated.
-
-        :param key: Name of atom to check.
-        :return: Time() of last update
-        :rtype: float
-        """
-        if key in self.atoms:
-            return self.atoms[key]["updated_at"]
-        else:
-            raise KeyError(f"Cannot get state time: {key} not found")
-
-    def get_copy(self, gateway_id=None):
-        """
-        Shouldn"t really be used. Just returns a _copy_ of all the atoms.
-
-        :return: A dictionary containing all atoms.
-        :rtype: dict
-        """
-        if gateway_id is None:
-            return self.atoms.copy()
-        if gateway_id in self.atoms:
-            return self.atoms[gateway_id].copy()
-        else:
-            return {}
-
-    def class_storage_as_list(self, gateway_id=None):
-        """
-        Gets Atoms as a list.
-
-        :return:
-        """
-        results = []
-        for found_gateway_id, atoms in self.atoms.items():
-            if gateway_id is not None and found_gateway_id == gateway_id:
-                continue
-            for name, value in atoms.items():
-                atom = value.copy()
-                atom["id"] = name
-                results.append(atom)
-        return results
-
-    def get(self, atom_requested, human=None, full=None, gateway_id=None):
-        """
-        Get the value of a given atom (key).
-
-        :raises KeyError: Raised when request is not found.
-        :param atom_requested: Name of atom to retrieve.
-        :type atom_requested: string
-        :return: Value of the atom
-        :rtype: mixed
-        """
-        # logger.debug("atoms:get: {atom_requested}", atom_requested=atom_requested)
-        if gateway_id is None:
-            gateway_id = self.gateway_id
-
-        if self._Loader.operating_mode != "run":
-            gateway_id = "local"
-
-        self._Statistics.increment("lib.atoms.get", bucket_size=15, anon=True)
-        search_chars = ["#", "+"]
-        if any(s in atom_requested for s in search_chars):
-            if gateway_id not in self.atoms:
-                return {}
-            results = yombo.utils.pattern_search(atom_requested, self.atoms[gateway_id])
-            if len(results) > 1:
-                values = {}
-                for item in results:
-                    if human is True:
-                        values[item] = self.atoms[gateway_id][item]["value_human"]
-                    elif full is True:
-                        values[item] = self.atoms[gateway_id][item]
-                    else:
-                        values[item] = self.atoms[gateway_id][item]["value"]
-                return values
-            else:
-                raise KeyError(f"Searched for atom, none found: {atom_requested}")
-
-        if human is True:
-            return self.atoms[gateway_id][atom_requested]["value_human"]
-        elif full is True:
-            return self.atoms[gateway_id][atom_requested]
-        else:
-            return self.atoms[gateway_id][atom_requested]["value"]
-
-    @inlineCallbacks
-    def set(self, key, value, value_type=None, gateway_id=None, human_value=None, source=None):
-        """
-        Get the value of a given atom (key).
-
-        **Hooks called**:
-
-        * _atoms_set_ : Sends kwargs "key", and "value". *key* is the name of the atom being set and *value* is
-          the new value to set.
-
-        :raises YomboWarning: Raised when request is malformed.
-        :param key: Name of atom to set.
-        :type key: string
-        :param value: Value to set the atom to.
-        :type value: mixed
-        :param value_type: Data type to help with display formatting. Should be: str, dict, list, int, float, epoch
-        :type value_type: string
-        :param gateway_id: Gateway ID this atom belongs to, defaults to local gateway.
-        :type gateway_id: string
-        :param human_value: What to display to mere mortals.
-        :type human_value: mixed
-        :param source: Reference to the library or module settings this atom.
-        :type source: object
-        :return: Value of atom
-        :rtype: mixed
-        """
-        if gateway_id is None:
-            gateway_id = self.gateway_id
-        # logger.debug("atoms:set: {gateway_id}: {key} = {value}", gateway_id=gateway_id, key=key, value=value)
-
-        if self._Loader.operating_mode != "run":
-            gateway_id = "local"
-
-        if gateway_id not in self.atoms:
-            self.atoms[gateway_id] = {}
-
-        source_type, source_label = yombo.utils.get_yombo_instance_type(source)
-
-        search_chars = ["#", "+"]
-        if any(s in key for s in search_chars):
-            raise YomboWarning("state keys cannot have # or + in them, reserved for searching.")
-
-        if key in self.atoms[gateway_id]:
-            is_new = False
-            # If state is already set to value, we don't do anything.
-            self.atoms[gateway_id][key]["updated_at"] = int(round(time()))
-            if human_value is not None:
-                self.atoms[gateway_id][key]["value_human"] = human_value
-            if self.atoms[gateway_id][key]["value"] == value:
-                return
-            self._Statistics.increment("lib.atoms.set.update", bucket_size=60, anon=True)
-        else:
-            is_new = True
-            self.atoms[gateway_id][key] = {
-                "gateway_id": gateway_id,
-                "created_at": int(time()),
-                "updated_at": int(time()),
-            }
-            self._Statistics.increment("lib.atoms.set.new", bucket_size=60, anon=True)
-
-        self.atoms[gateway_id][key]["source"] = source_label
-
-        self.atoms[gateway_id][key]["value"] = value
-        if is_new is True or value_type is not None:
-            self.atoms[gateway_id][key]["value_type"] = value_type
-
-        if human_value is not None:
-            self.atoms[gateway_id][key]["value_human"] = human_value
-        else:
-            self.atoms[gateway_id][key]["value_human"] = self.convert_to_human(value, value_type)
-
-        # Call any hooks
-        if self._Loader.run_phase[1] >= 6000:
-            yield global_invoke_all("_atoms_set_",
-                                    called_by=self,
-                                    key=key,
-                                    value=value,
-                                    value_type=value_type,
-                                    value_full=self.atoms[gateway_id][key],
-                                    gateway_id=gateway_id,
-                                    source=source,
-                                    source_label=source_label,
-                                    )
-
-    @inlineCallbacks
-    def set_from_gateway_communications(self, key, data, source):
-        """
-        Used by the gateway coms (mqtt) system to set atom values.
-        :param key:
-        :param values:
-        :return:
-        """
-        gateway_id = data["gateway_id"]
-        if gateway_id == self.gateway_id:
-            return
-        if gateway_id not in self.atoms:
-            self.atoms[gateway_id] = {}
-        source_type, source_label = yombo.utils.get_yombo_instance_type(source)
-        self.atoms[data["gateway_id"]][key] = {
-            "gateway_id": data["gateway_id"],
-            "value": data["value"],
-            "value_human": data["value_human"],
-            "value_type": data["value_type"],
-            "source": source_label,
-            "created_at": data["created_at"],
-            "updated_at": data["updated_at"],
-        }
-
-        yield global_invoke_all("_atoms_set_",
-                                called_by=self,
-                                key=key,
-                                value=data["value"],
-                                value_type=data["value_type"],
-                                value_full=self.atoms[gateway_id][key],
-                                gateway_id=gateway_id,
-                                source=source,
-                                source_label=source_label,
-                                )
-
-    def convert_to_human(self, value, value_type):
-        """
-        Convert various value types to a more human friendly display.
-        :param value:
-        :param value_type:
-        :return:
-        """
-        if value_type == "bool":
-            results = yombo.utils.is_true_false(value)
-            if results is not None:
-                return results
-            else:
-                return value
-
-        elif value_type == "epoch":
-            return converters.epoch_to_string(value)
-        else:
-            return value
-
-    def os_data(self):
+    def os_data(self) -> None:
         """
         Sets atoms concerning the operating system.
-
-        :return: None
         """
-        atoms = {}
-        atoms["pid"] = os.getpid()
-        (atoms["kernel"], atoms["system.name"], atoms["kernel.release"], version,
-         atoms["cpu.arch"], _) = platform.uname()
-        atoms["python.version"] = platform.python_version()
-        atoms["python.build"] = platform.python_build()[0]
-        atoms["cpu.count"] = 0
-        atoms["mem.total"] = 0
-        atoms["mem.sizing"] = "medium"
-        atoms["os.family"] = "Unknown"
+        os_platform = sys.platform
+        self.set("gateway.pid", os.getpid(), value_type="int", request_context=self)
+        (_, system_name, kernel_version, kernel_notes, cpu_arch, _) = platform.uname()
+        self.set("hardware.cpu_arch", cpu_arch, value_type="string", request_context=self)
+        self.set("system.name", system_name, value_type="string", request_context=self)
+        self.set("os.type", os_platform, value_type="string", request_context=self)
+        self.set("os.kernel_version", kernel_version, value_type="string", request_context=self)
+        self.set("os.kernel_notes", kernel_notes, value_type="string", request_context=self)
+        self.set("python.version", platform.python_version(), value_type="string", request_context=self)
+        cpu_count = 1
+        mem_total = 550502400
+        mem_sizing = "small"
+        os_family = "Unknown"
         if HAS_PSUTIL:
-            atoms["cpu.count"] = psutil.cpu_count()
+            cpu_count = psutil.cpu_count()
             memory = psutil.virtual_memory()
-            atoms["mem.total"] = memory.total
-        if memory.total < 550502400:  # less then 525mb
-            atoms["mem.sizing"] = "x_small"
-        elif memory.total < 1101004800:  # less then 1050mb
-            atoms["mem.sizing"] = "small"
-        elif memory.total < 1651507200:  # less then 1575mb
-            atoms["mem.sizing"] = "medium"
-        elif memory.total < 2202009600:  # less than 2100mb
-            atoms["mem.sizing"] = "large"
-        elif memory.total < 4404019200:  # less than 4200mb
-            atoms["mem.sizing"] = "x_large"
-        else:                            # more than 4200mb
-            atoms["mem.sizing"] = "xx_large"
+            mem_total = memory.total
+            if mem_total < 550502400:  # less then 525mb
+                mem_sizing = "x_small"
+            elif mem_total < 1101004800:  # less then 1050mb
+                mem_sizing = "small"
+            elif mem_total < 1651507200:  # less then 1575mb
+                mem_sizing = "medium"
+            elif mem_total < 2202009600:  # less than 2100mb
+                mem_sizing = "large"
+            elif mem_total < 4404019200:  # less than 4200mb
+                mem_sizing = "x_large"
+            else:                         # more than 4200mb
+                mem_sizing = "xx_large"
 
-        if yombo.utils.is_windows():
-            atoms["os"] = "Windows"
-            atoms["os.family"] = "Windows"
-        elif yombo.utils.is_linux():
-            atoms["os"] = "Linux"
-            atoms["os.family"] = "Linux"
+        self.set("system.cpu_count", cpu_count, value_type="int", request_context=self)
+        self.set("system.memory_total", mem_total, value_type="int", request_context=self)
+        self.set("system.memory_sizing", mem_sizing, value_type="string", request_context=self)
 
+        if os_platform == "Windows":
+            self.set("os.family", "windows", value_type="string", request_context=self)
+            self.set("os.distrofamily", "nt", value_type="string", request_context=self)
+        elif os_platform == "Linux":
+            self.set("os.family", "linux", value_type="string", request_context=self)
             (osname, osrelease, oscodename) = \
                 [x.strip(""").strip(""") for x in
-                 # distro.linux_distribution(full_distribution_name=False)
-                 platform.linux_distribution(supported_dists=SUPPORTED_DISTS)]
+                 distro.linux_distribution()]
+            self.set("os.release", osrelease.strip(), value_type="string", request_context=self)
+            self.set("os.oscodename", oscodename.strip(), value_type="string", request_context=self)
 
-            if "os.fullname" not in atoms:
-                atoms["os.fullname"] = osname.strip()
-            if "os.release" not in atoms:
-                atoms["os.release"] = osrelease.strip()
-            atoms["os.codename"] = oscodename.strip()
-
-            distroname = _REPLACE_LINUX_RE.sub("", atoms["os.fullname"]).strip()
-            # return the first ten characters with no spaces, lowercased
+            distroname = osname.lower().strip()
+            self.set("os.distroname", distroname, value_type="string", request_context=self)
             shortname = distroname.replace(" ", "").lower()[:10]
-            # this maps the long names from the /etc/DISTRO-release files to the
-            # traditional short names that Salt has used.
-            atoms["os"] = _MAP_OS_NAME.get(shortname, distroname)
+            self.set("os.distrofamily", _MAP_OS_NAME.get(shortname, distroname), value_type="string", request_context=self)
 
-        elif atoms["kernel"] == "Darwin":
-            atoms["os"] = "Mac"
-            atoms["os.family"] = "Darwin"
-        elif atoms["kernel"] == "SunOS":
-            atoms["os"] = "SunOS"
-            atoms["os.family"] = "Solaris"
+        elif os_platform == "Darwin":
+            self.set("os.family", "darwin", value_type="string", request_context=self)
+            self.set("os.distrofamily", "darwin", value_type="string", request_context=self)
+        elif os_platform == "SunOS":
+            self.set("os.family", "solaris", value_type="string", request_context=self)
+            self.set("os.distrofamily", "solaris", value_type="string", request_context=self)
         else:
-            atoms["os"] = atoms["kernel"]
-
-        for name, value in atoms.items():
-            self.set(name, value, source=self)
-        return atoms
+            self.set("os.family", _MAP_OS_FAMILY.get(os_platform, os_platform),
+                     value_type="string", request_context=self)

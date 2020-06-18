@@ -1,0 +1,144 @@
+{
+  "common": {
+    "copy": "Copy"
+  },
+  "lib": {
+    "configs": {
+      "item": {
+        "amqpyombo": {
+          "port": "The AQMP port that Yombo AQMP connects to."
+        },
+        "amqpyombo:hostname": "AMQP Yombo server name to connect to.",
+        "core": {
+          "default_lang": "The default system language.",
+          "environment": "Define the environment this system connects to. One of: production, staging, development.",
+          "externalipaddress": "Current external IP address, what the internet sees.",
+          "first_run": "Used to help determine if this is the first time the gateway as run.",
+          "gwhash": "The secret key of the gateway. Used by the gateway to authenticate to the server.",
+          "gwid": "An ID that identifies this gateway to anyone. Notice: This ID change.",
+          "gwuuid": "The ID of the gateway. Should not give this out freely, but not a secret.",
+          "internalipaddress": "Current internal IP address, what the local network sees.",
+          "module_domain": "A domain which the modules should be downloaded from."
+        },
+        "gpg": {
+          "keyid": "GPG Key ID. This should be used by other devices wishing to send this gateway secrets. Or used to store secrets in the database."
+        },
+        "localize": {
+          "hashes": "Store hasing information on the locale files. Used to determine if locale files need to be rebuilt."
+        },
+        "location": {
+          "elevation": "Elevation of the gateway, in feet.",
+          "latitude": "Latitude of the gateway.",
+          "longitude": "Longitude of the gateway."
+        },
+        "mqtt": {
+          "client_enabled": "When True, allows client connections to be made externally.",
+          "server_allow_anonymous": "Allow unauthenticated users. To add users, edit the yombo.ini file, add used to 'mtqq_users' section.",
+          "server_enabled": "When True, starts the MQTT broker.",
+          "server_listen_ip": "The IP address to bind to. For security reasons, the default only allows connections from the local machine. Change to the IP address of the local machine or network card to allow from only that network card. Or, us '0.0.0.0 to allow from all network sources.",
+          "server_listen_port": "MQTT Non-secure (non-ssl) port to listen on. 0 = disabled.  Use non-secure port only when connecting to the local machine. Using the non-secure port for local connections reduces load on CPU for low-powered devices.",
+          "server_listen_port_le_ssl": "MQTT Lets encrypt cert port.",
+          "server_listen_port_ss_ssl": "MQTT Self-Signed cert port.",
+          "server_listen_port_websockets": "WS port to listen on.",
+          "server_listen_port_websockets_le_ssl": "WSS Lets Encrypt secure port.",
+          "server_listen_port_websockets_ss_ssl": "WSS Self-Signed cert secure port.",
+          "server_max_connections": "Max connections allowed on the MQTT broker. Sets 'max_connections' for the MQTT broker configs.",
+          "server_timeout_disconnect_delay": "MQTT broker timeout disconnect. Sets 'timeout_disconnect_delay' for the MQTT broker configs.",
+          "yombo_mqtt_password": "Yombo's mqtt password. You shouldn't use this password so it can be easily rotated."
+        },
+        "sqldict": {
+          "save_interval": "How many seconds between saving the dictionaries to SQL."
+        },
+        "statistics": {
+          "anonymous": "Allow collection of anonymous statistics. If enabled, will allow upload regardless of 'upload' enabled for private statistics.",
+          "averages_bucket_duration": "How minutes of information to collect for average based time buckets.",
+          "averages_bucket_life_daily": "How many days to history to keep daily resolution statistics for average collections.",
+          "averages_bucket_life_full": "How many days of history to keep full detailed statistics for average collections.",
+          "averages_bucket_life_hourly": "How many days to history to keep hourly resolution statistics for average collections.",
+          "averages_bucket_life_qtr_hour": "How many days of history to keep 15 minute resolution statistics for average collections.",
+          "count_bucket_duration": "How minutes of information to collect for count based time buckets.",
+          "count_bucket_life_daily": "How many days to history to keep daily resolution statistics for basic counters.",
+          "count_bucket_life_full": "How many days of history to keep full detailed statistics for basic counters.",
+          "count_bucket_life_hourly": "How many days to history to keep hourly resolution statistics for basic counters.",
+          "count_bucket_life_qtr_hour": "How many days of history to keep 15 minute resolution statistics for basic counters.",
+          "datapoint_bucket_life_daily": "How many days to history to keep daily averaged statistics for specific datapoints.",
+          "datapoint_bucket_life_full": "How many days of history to keep full detailed statistics for specific data points.",
+          "datapoint_bucket_life_hourly": "How many days to history to keep hourly averaged statistics for specific data points.",
+          "datapoint_bucket_life_qtr_hour": "How many days of history to keep 15 minute averaged statistics for specific data points.",
+          "enabled": "Enable or disable entire library. When disabled, calls still work, nothing actually done.",
+          "time_between_saves": "Seconds between data saves. Stats are collected and processed in memory memory before being dumped. Longer is better for averages, but at a risk to data loss.",
+          "time_between_saves_averages": "For averages, how many seconds between data saves from memory to disk. Longer is better for averages, but at a risk to data loss.",
+          "upload": "Allow uploading of statistics to Yombo servers"
+        },
+        "times": {
+          "twilighthorizon": "How many degrees below the horizon must the sun be before it's considered dark. Civil = -6, Nautical = -12, Astronomical = -18"
+        },
+        "webinterface": {
+          "auth_pin_totp": "When using TOTP for additional security, it's token is stored here.",
+          "cookie_session": "Name of the cookie used in browsers.",
+          "enabled": "If True (or: on, 1), then the web interface will be started."
+        },
+        "yomboapi": {
+          "allow_system_session": "Allows the gateway to store admin credentials in a hashed form to make calls on behalf of itself. This allows the gateway make changes to various items without admin input.",
+          "api_key": "API Key to use when making requests. Note: This key will rotate to prevent abuse as needed.",
+          "baseurl": "URL to prepend requests to.",
+          "contenttype": "Sets the header of Content-Type in the request to Yombo API system",
+          "sessionid_id": "When allow_system_session is true, this is used for logging into the API.",
+          "sessionid_key": "When allow_system_session is true, this is used for logging into the API."
+        }
+      },
+      "section": {
+        "amqpyombo": "Items specific to the AMQPYombo library.",
+        "core": "Core components of the gateway. Required items needed to run ths system, most with no defaults",
+        "localize": "Items specific to the localize library.",
+        "location": "Location information about the gateway. Used for calculating light\/dark, sunrise, etc.",
+        "logging": "Allows fine-grained control of console logging. See https:\/\/yombo.net\/docs\/gateway\/logging for details.",
+        "mqtt": "Items specific to the statistics library.",
+        "rbac_roles": "Role Based Access Control - User roles. Stores user create roles here. These fields are not meant to be directly edited.",
+        "rbac_user_roles": "Role Based Access Control - Roles and device permissions for users. These fields are not meant to be directly edited.",
+        "sqldict": "Specific items relating to the SQLDict library.",
+        "sslcerts": "Stores some SSL certificate information here. Primary storage location is the database.",
+        "statistics": "Items specific to the statistics library.",
+        "system_modules": "Controls where system modules are loaded or not.",
+        "times": "Items specific to the times library.",
+        "webinterface": "Web interface configuration.",
+        "yomboapi": "API related items for communicating with remote Yombo API system."
+      },
+      "yombo_toml": {
+        "about": "This file stores configuration information about the gateway.",
+        "dont_edit": "WARNING: Do not edit this file while the gateway is running, any changes will be lost.",
+        "still_running": "It appears the Yombo gateway still running. All changes will be lost!",
+        "still_running_pid": "Yombo process id (PID): {number}",
+        "warning": "WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING"
+      }
+    },
+    "scenes": {
+      "logger": {
+        "cannot_start_disabled_scene": "Scene '{label}' is not enabled, cannot start.",
+        "cannot_start_while_stopping": "Scene '{label}' is currently stopping, cannot start.",
+        "scene_already_running": "Scene '{label}' is already running, cannot start."
+      }
+    }
+  },
+  "setupwizard": {
+    "dns": {
+      "allowed_next_change": "Allowed next change",
+      "current_fqdn": "Current FQDN",
+      "current_sub_domain": "Current Sub-domain",
+      "current_top_level_domain": "Current Domain"
+    },
+    "selectgateway": {
+      "create_new": "Create New",
+      "create_new_gateway": "Create New Gateway",
+      "create_new_or_use_existing_gateway": "Create New Gateway or Use Existing",
+      "new_gateway": "New Gateway",
+      "no_previous_gateway": "No previously configured gateways were found in your account.",
+      "step2": "Step 2: Gateway Selection",
+      "use_configured_gateway_or_new": "Select 'Create New' to create a new gateway, or select an existing gateway."
+    }
+  },
+  "ui": {
+    "back": "Back",
+    "next": "Next"
+  }
+}

@@ -13,9 +13,25 @@ DeviceCommandInputs (yombo.lib.devicecommandinputs)
 =====================================================
 .. automodule:: yombo.lib.devicecommandinputs
 
+.. rubric:: Classes in this module
+
+.. autosummary::
+   :nosignatures:
+
+   DeviceCommandInputs
+   DeviceCommandInput
+
 DeviceCommandInputs Library Class
-==================================
+=======================================
 .. autoclass:: DeviceCommandInputs
+   :members:
+   :special-members:
+   :private-members:
+   :undoc-members:
+
+DeviceCommandInput Class
+=============================
+.. autoclass:: DeviceCommandInput
    :members:
    :special-members:
    :private-members:

@@ -65,7 +65,7 @@
     &.navbar-absolute{
         position: absolute;
         width: 100%;
-        padding-top: 10px;
+        padding-top: 8px;
         z-index: 1029;
     }
 
@@ -166,7 +166,7 @@
         .nav-item .nav-link:not(.btn):focus,
         .nav-item .nav-link:not(.btn):hover,
         .nav-item .nav-link:not(.btn):active{
-            background-color: $opacity-2;
+            background-color: $opacity-white-2;
             border-radius: $border-radius-small;
             color: $white-color;
         }

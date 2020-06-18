@@ -17,7 +17,7 @@ http://localhost:8080.
 
 # Compilation
 
-The front end requires NPM installed on the system to order to compile the frontend
+The front end requires yarn installed on the system to order to compile the frontend
 application. If you used the automated setup scripts or images, such as Yombian
 for Raspberry PI, the **gateway will automatically recompile as needed.**
 Due to the heavy processing required, this may take a few minutes for the application
@@ -29,17 +29,19 @@ to be recompiled, which wil be handled automatically.
 
 # Development
 
-To help with rapid development, npm can be used to compile and run a local webserver
+To help with rapid development, yarn can be used to compile and run a local webserver
 on port 3000. To start the development environment, open a shell prompt and type the
 following commands:
 
 ``` bash
 # Change to the frontend directory:
 $ cd /opt/yombo-gateway/yombo/frontend
-$ npm run dev
+$ yarn run dev
 ```
 
-Visit the website at: http://localhost:3000
+First, you need to be authenticated with Yombo. First, visit the Frontend application
+(either your dynamic DNS name or http://localhost:8080). After logging in, then visit 
+visit the website at: http://localhost:3000
 
 It's recommended to use Chrome with the Vue extension installed and enabled. This will
 provide additional debug information inside Chrome developer tools.
@@ -52,7 +54,7 @@ following command to compile and distribute the source code:
 ``` bash
 # Change to the front directory:
 $ cd /opt/yombo-gateway/yombo/frontend
-$ python3 ./rebuild.py
+$ yarn run prod
 ```
 
 This will build the production version of the application (smaller code & faster),

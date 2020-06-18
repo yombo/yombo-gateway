@@ -12,8 +12,7 @@ Usage
 =====
 
 The primary purpose of this module is to demonstrate creating modules and using
-the Yombo Filereader utility. The
-[Filereader](https://yg2.in/dev_util) utility allows
+the File read stream library function. The read stream function allows
 for easily monitoring a file for updates and support file skip-ahead when the gateway restarts.
 
 With this module, you can simple echo in a command to be peformed:

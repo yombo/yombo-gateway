@@ -1,0 +1,176 @@
+#!/usr/bin/env bash
+# This script install's the gateway to run on an Debian installation.
+#
+# This script configures apt to use NodeJs version 14.
+#
+# This also ensures the system software is upto date by running apt-get upgrade.
+#
+# To use, first goto a directory where 'yombo-gateway' gateway will be created.
+# Then:
+# git clone https://github.com/yombo/yombo-gateway.git
+# cd yombo-gateway/scripts
+# ./debian_install
+
+if [ "$USER" = "root" ] && [ "$SUDO_USER" == "" ]; then
+  echo "This script cannot be run as root directly and must be run"
+  echo "as the user owning the Yombo gateway service."
+  echo ""
+  echo "Logout as root and rerun this script:"
+  echo "sudo ./debian_install"
+  exit
+fi
+
+if [ "$(id -u)" -ne 0 ]; then
+  echo "This script must run with sudo to gain root access. This"
+  echo "is needed to install the latest updates. Run this the user"
+  echo "owning the Yombo gateway service:"
+  echo ""
+  echo "Rerun this script:"
+  echo "sudo ./debian_install"
+  echo ""
+  exit
+fi
+
+if [ "$1" != "vagrant" ]; then
+    echo "This will install various requirements to run Yombo Gateway."
+    echo ""
+    echo "This will also perform the following tasks:"
+    echo "1) Install dependencies through apt-get"
+    echo "2) Install pyenv or update pyenv"
+    echo "3) Install the latest Python into pyenv"
+    echo "4) Update system pip3 installer to latest version."
+    echo "5) Download and compile mosquitto and libwebsockets."
+    echo "6) Setup apt to use NodeJS version 14."
+    echo ""
+    echo "This will take a while due to compiling the needed requirements."
+    echo ""
+    while true; do
+        read -p "Do you wish to complete this? (y/n): " yn
+        case $yn in
+            [Yy]* ) break;;
+            [Nn]* ) exit;;
+            * ) echo "Please answer y (yes) or n (no).";;
+        esac
+    done
+
+    echo ""
+
+    secs=$((5))
+    while [ $secs -gt 0 ]; do
+       echo -ne "Will continue in $secs.  Ctrl-c to abort.\033[0K\r"
+       sleep 1
+       : $((secs--))
+    done
+fi
+
+YOMBO_SCRIPT_HELPER_DIR="$( cd "$(dirname "$0")" ; pwd -P )"
+YOMBO_SCRIPT_DIR="$(dirname $YOMBO_SCRIPT_HELPER_DIR)"
+YOMBO_ROOT_DIR="$(dirname $YOMBO_SCRIPT_DIR)"
+
+touch /home/$SUDO_USER/yombo_install.log
+chown $SUDO_USER:$SUDO_USER /home/$SUDO_USER/yombo_install.log
+
+touch /home/$SUDO_USER/yombo_install_detailed.log
+chown $SUDO_USER:$SUDO_USER /home/$SUDO_USER/yombo_install_detailed.log
+
+mkdir -p /home/$SUDO_USER/.yombo
+mkdir -p /home/$SUDO_USER/.yombo/log
+chown -R $SUDO_USER:$SUDO_USER /home/$SUDO_USER/.yombo
+
+LOGFILE=/home/$SUDO_USER/yombo_install.log
+LOGFILEDETAILED=/home/$SUDO_USER/yombo_install_detailed.log
+echo ""
+echo "The log file for these changes will be available at: $LOGFILE";
+echo "Detailed logs can be found: $LOGFILEDETAILED";
+echo ""
+echo "You can monitor the details log from another terminal: tail -f $LOGFILEDETAILED"
+echo ""
+function logsetup {
+    exec > >(tee -a $LOGFILE $LOGFILEDETAILED)
+    exec 2>&1
+}
+
+function log {
+    echo "[$(date --rfc-3339=seconds)]: $*"
+}
+logsetup
+
+log "==> Checking if apt is locked..."
+if [[ $(sudo lsof /var/lib/dpkg/lock 2>/dev/null) ]]; then
+    log "==> It appears the apt/dpkg is locked. Try later."
+    sudo lsof /var/lib/dpkg/lock 2>/dev/null
+    echo ""
+    exit
+fi
+
+log "==> apt-get - Doing auto-remove to speed things up."
+apt-get autoremove -y >> $LOGFILEDETAILED 2>&1
+
+log "==> apt-get - Adding reference to yarn tool."
+curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
+echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
+apt-get update >> $LOGFILEDETAILED 2>&1
+
+# log "==> apt-get - Upgrading OS (apt-get upgrade) - starting downloads"
+# sudo apt-mark hold keyboard-configuration >> $LOGFILEDETAILED 2>&1
+# sudo apt-mark hold grub-pc >> $LOGFILEDETAILED 2>&1
+#
+# apt-get upgrade --download-only -y >> $LOGFILEDETAILED 2>&1
+#
+# log "==> apt-get - Upgrading OS (apt-get upgrade) - Upgrading OS, this will take a few minutes"
+# apt-get upgrade -y >> $LOGFILEDETAILED 2>&1
+# sudo apt-mark unhold keyboard-configuration >> $LOGFILEDETAILED 2>&1
+# sudo apt-mark unhold grub-pc >> $LOGFILEDETAILED 2>&1
+
+log "==> apt-get - Installing core tools."
+apt-get install wget curl git -y >> $LOGFILEDETAILED 2>&1
+
+log "==> apt-get - Configuring apt for NodeJS v14."
+wget https://deb.nodesource.com/setup_14.x -q -O - | sudo -E bash - >> $LOGFILEDETAILED 2>&1
+
+log "==> apt-get - Pre-fetching requirements packages in background."
+apt-get install --download-only -y build-essential cmake daemon dirmngr g++ gnupg2 llvm libmosquitto-dev make \
+mosquitto quilt rng-tools gir1.2-gtk-3.0 libbluetooth3 libbluetooth-dev libncurses5 libncursesw5-dev libncurses5-dev \
+liblzma-dev libncursesw5 libreadline6-dev libreadline-dev libsqlite3-dev libexpat1-dev libyaml-dev ntp nodejs \
+python3-dev python3-pip sqlite3 tk-dev avahi-daemon libavahi-compat-libdnssd-dev libboost-thread-dev libbz2-dev \
+libgirepository1.0-dev libcurl4-openssl-dev libc-ares-dev libcairo2-dev libglib2.0 libudev-dev libssl-dev \
+python3-setuptools xz-utils yarn zlib1g-dev uuid-dev >> $LOGFILEDETAILED 2>&1
+
+log "==> agt-get - Starting installation for system dependencies."
+apt-get install build-essential cmake daemon dirmngr g++ gnupg2 llvm libmosquitto-dev make mosquitto quilt \
+rng-tools -y >> $LOGFILEDETAILED 2>&1
+
+log "==> agt-get - About 33% done."
+apt-get install expect gir1.2-gtk-3.0 libbluetooth3 libbluetooth-dev libncurses5 libncursesw5-dev libncurses5-dev \
+liblzma-dev libncursesw5 libreadline6-dev libreadline-dev libsqlite3-dev libexpat1-dev libyaml-dev ntp nodejs \
+python3-dev python3-pip sqlite3 tk-dev uuid-dev -y >> $LOGFILEDETAILED 2>&1
+
+log "==> agt-get - About 66% done."
+apt-get install avahi-daemon libavahi-compat-libdnssd-dev libboost-thread-dev libbz2-dev libgirepository1.0-dev \
+libcurl4-openssl-dev libc-ares-dev libcairo2-dev libglib2.0 libudev-dev libssl-dev python3-setuptools \
+xz-utils yarn zlib1g-dev -y >> $LOGFILEDETAILED 2>&1
+
+log "==> yarn - Installing global packages"
+yarn global add @vue/cli >> $LOGFILEDETAILED 2>&1
+log "==> pip3 - Upgrading system pip3"
+pip3 install --upgrade pip >> $LOGFILEDETAILED 2>&1
+
+log "==> Adding correct user to dialout for serial/USB port access."
+sudo usermod -a -G dialout $SUDO_USER >> $LOGFILEDETAILED 2>&1
+
+log "==> apt-get - Installing mosquitto."
+sudo apt-mark hold mosquitto >> $LOGFILEDETAILED 2>&1
+
+cd /etc/mosquitto
+sudo mkdir -p yombo
+sudo chown $SUDO_USER yombo
+if grep -Fxq "include_dir /etc/mosquitto/yombo" mosquitto.conf
+then
+    log "==> Mosquitto already configured for Yombo."
+else
+    echo "include_dir /etc/mosquitto/yombo" >> /etc/mosquitto/mosquitto.conf
+fi
+
+log "==> Installing bin links to /etc/usr/local/bin"
+ln -s $YOMBO_ROOT_DIR/ybo /usr/local/bin/ybo
+ln -s $YOMBO_ROOT_DIR/ybo-config /usr/local/bin/ybo-config

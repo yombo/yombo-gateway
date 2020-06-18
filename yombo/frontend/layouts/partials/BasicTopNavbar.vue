@@ -1,7 +1,7 @@
 <template>
   <navbar :show-navbar="showNavbar">
     <div class="navbar-wrapper">
-      <nuxt-link class="nav-link" :to="localePath('index')">Yombo Gateway</nuxt-link>
+      <portal-target name="topnavbar" />
     </div>
     <button @click="toggleNavbar" class="navbar-toggler" type="button" data-toggle="collapse"
             data-target="#navigation"
@@ -14,17 +14,17 @@
       <ul class="navbar-nav">
         <li class="nav-item">
           <nuxt-link class="nav-link" :to="localePath('lock')">
-            <i class="fas fa-question" style="font-size: 18px"></i>
+            <i class="fas fa-lock" style="font-size: 18px"></i>
             <p>
-              <span class="d-lg-none d-md-block">Lock</span>
+              <span class="d-lg-none d-md-block">{{ $t('ui.navigation.lock') }}</span>
             </p>
           </nuxt-link>
         </li>
         <li class="nav-item">
           <nuxt-link class="nav-link" :to="localePath('about')">
-            <i class="fas fa-lock" style="font-size: 18px"></i>
+            <i class="fas fa-question" style="font-size: 18px"></i>
             <p>
-              <span class="d-lg-none d-md-block">Lock</span>
+              <span class="d-lg-none d-md-block">{{ $t('ui.navigation.about') }}</span>
             </p>
           </nuxt-link>
         </li>
@@ -32,7 +32,7 @@
           <nuxt-link class="nav-link" :to="localePath('index')">
             <i class="fas fa-home" style="font-size: 18px"></i>
             <p>
-              <span class="d-lg-none d-md-block">Home</span>
+              <span class="d-lg-none d-md-block">{{ $t('ui.navigation.home') }}</span>
             </p>
           </nuxt-link>
         </li>
@@ -40,7 +40,7 @@
           <nuxt-link class="nav-link" :to="localePath('controltower')">
             <i class="fas fa-broadcast-tower fa-lg"></i>
             <p>
-              <span class="d-lg-none d-md-block">Control Tower</span>
+              <span class="d-lg-none d-md-block">{{ $t('ui.navigation.control_tower') }}</span>
             </p>
           </nuxt-link>
         </li>
@@ -48,7 +48,7 @@
           <nuxt-link class="nav-link" :to="localePath('dashboard')">
             <i class="fas fa-tachometer-alt fa-lg"></i>
             <p>
-              <span class="d-lg-none d-md-block">Dashboard</span>
+              <span class="d-lg-none d-md-block">{{ $t('ui.navigation.dashboard') }}</span>
             </p>
           </nuxt-link>
         </li>
@@ -63,16 +63,21 @@
                    position="right"
                    class="nav-item"
                    icon="now-ui-icons users_single-02">
-
+          <nuxt-link class="dropdown-item" :to="localePath('frontend_settings')">{{ $t('ui.navigation.frontend_settings')}}</nuxt-link>
+          <nuxt-link class="dropdown-item" :to="localePath('about')">{{ $t('ui.navigation.about')}}</nuxt-link>
+          <b-dropdown-divider />
           <a class="dropdown-item" href="https://my.yombo.net">My.Yombo.Net</a>
-          <nuxt-link class="dropdown-item" :to="localePath('frontend_settings')">Frontend Settings</nuxt-link>
           <b-dropdown-divider />
           <a class="dropdown-item" href="/user/logout">{{ $t('ui.navigation.logout')}}</a>
+          <b-dropdown-divider />
+          <nuxt-link class="dropdown-item text-danger" :to="localePath('restart')">{{ $t('ui.common.restart')}}</nuxt-link>
+          <nuxt-link class="dropdown-item text-danger" :to="localePath('shutdown')">{{ $t('ui.common.shutdown')}}</nuxt-link>
         </drop-down>
 
         <drop-down tag="li"
                    position="right"
                    class="nav-item"
+                   :title="$t('ui.navigation.languages')"
                    icon="fas fa-globe fa-lg">
           <nuxt-link :to="switchLocalePath('ar')" class="dropdown-lang"> العربية</nuxt-link><br>
           <nuxt-link :to="switchLocalePath('en')" class="dropdown-lang"><span class="flag-icon flag-icon-us"></span>English</nuxt-link><br>
@@ -134,5 +139,3 @@ export default {
   }
 };
 </script>
-<style>
-</style>

@@ -1,3 +1,29 @@
+body {
+  font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: $font-size-base;
+  color: $black-color;
+  word-spacing: 1px;
+  -ms-text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-font-smoothing: antialiased;
+  /*box-sizing: border-box;*/
+  /*background-image: url('/img/bg/1_1536.jpg');*/
+    /*background-size: contain;*/
+  background-repeat: no-repeat;
+  -webkit-background-size: cover;
+  -moz-background-size: cover;
+  -o-background-size: cover;
+  background-size: cover;
+  background-position: right top;
+  /*width: 100%;*/
+  /*height: 100%;*/
+  /*overflow: hidden;*/
+  margin: 0;
+
+}
+
 button,
 input,
 optgroup,
@@ -120,7 +146,10 @@ a.text-warning:focus, a.text-warning:hover {
 a.text-danger:focus, a.text-danger:hover {
   color: $brand-danger !important;
 }
-
+.text-black,
+a.text-black:focus, a.text-black:hover{
+    color: $black-color !important;
+}
 .text-gray,
 a.text-gray:focus, a.text-gray:hover{
     color: $light-gray !important;
@@ -159,11 +188,11 @@ a.text-gray:focus, a.text-gray:hover{
     }
 
     &.blockquote-white{
-        border-color: $opacity-8;
+        border-color: $opacity-white-8;
         color: $white-color;
 
         small{
-            color: $opacity-8;
+            color: $opacity-white-8;
         }
     }
 }

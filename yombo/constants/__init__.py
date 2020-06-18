@@ -12,23 +12,26 @@ The constant values are not fully documented here, see the
 .. versionadded:: 0.17.0
 
 
-:copyright: Copyright 2018 by Yombo.
+:copyright: Copyright 2018-2020 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://github.com/yombo/yombo-gateway/tree/master/yombo/constants>`_
 """
 MAJOR_VERSION = 0
 MINOR_VERSION = 24
-PATCH_VERSION = "0-alpha-5"
+PATCH_VERSION = "0-alpha-7"
+PATCH_VERSION_NUMBER = "0.7"
 __short_version__ = f"{MAJOR_VERSION}.{MINOR_VERSION}"
-__version__ = f"{__short_version__}.{PATCH_VERSION}"
-
-REQUIRED_PYTHON_VER = (3, 5, 3)
+__version__ = f"{__short_version__}.{PATCH_VERSION_NUMBER}"
 
 # Yombo gateway version number
 VERSION = __version__
+VERSION_NUMBER = f"{__short_version__}.{PATCH_VERSION}"
 
 MODULE_API_VERSION = 1
 
+# Used to detect defaults that include None.
+SENTINEL = object()
+
+LOCAL_SOURCES = ["local", "database", "yombo", "system"]
 # Days of the week
 WEEKDAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 
@@ -45,7 +48,28 @@ TEMP_FAHRENHEIT = "°F"
 ATR_ICON = "icon"
 ATR_CODE = "code"
 
-# #### STATUS ####
+# #### Status values
+DISABLED = "disabled"
+ENABLED = "enabled"
+DELETED = "deleted"
+
+STATUS_PAST = {
+    0: DISABLED,
+    1: ENABLED,
+    2: DELETED
+}
+
+DISABLE = "disable"
+ENABLE = "enable"
+DELETE = "delete"
+
+STATUS = {
+    0: DISABLE,
+    1: ENABLE,
+    2: DELETE
+}
+
+# #### States ####
 STATE_ON = "on"
 STATE_OFF = "off"
 STATE_HOME = "home"
@@ -131,15 +155,15 @@ CONTENT_TYPE_JSON = "application/json"
 CONTENT_TYPE_MSGPACK = "application/msgpack"
 CONTENT_TYPE_MULTIPART = "multipart/x-mixed-replace; boundary={}"
 CONTENT_TYPE_TEXT_PLAIN = "text/plain"
+CONTENT_TYPE_TEXT_HTML = "text/html"
 
-# The exit code to send to request a restart
-RESTART_EXIT_CODE = 127
+RESTART_EXIT_CODE = 4  # This code is monitored by yombo_tac.sh to restart. Only this will number will restart it.
 QUIT_ERROR_EXIT_CODE = 1
 QUIT_EXIT_CODE = 0
 
-# Session types
-AUTH_TYPE_USER = "user"  # an actual user object
+# Auth types
 AUTH_TYPE_AUTHKEY = "authkey"
+AUTH_TYPE_USER = "user"  # an actual user object
 AUTH_TYPE_WEBSESSION = "websession"
 
 ENERGY_NONE = "none"

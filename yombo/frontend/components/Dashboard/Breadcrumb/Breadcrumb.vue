@@ -11,5 +11,3 @@ export default {
   name: 'breadcrumb'
 };
 </script>
-<style>
-</style>

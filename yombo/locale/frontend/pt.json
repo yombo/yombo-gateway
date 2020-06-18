@@ -137,6 +137,9 @@
       "alarm_control_panel": {
         "arm_away": "Armado assente",
         "arm_home": "Armado Casa"
+      },
+      "automation": {
+        "title": "Automação"
       }
     },
     "common": {
@@ -147,7 +150,7 @@
       "atom": "Átomo",
       "cancel": "Cancelar",
       "close": "Perto",
-      "created_at": "Criado em",
+      "created_at": "Criado",
       "delete": "Excluir",
       "deleted": "Excluído",
       "deny": "Negar",
@@ -165,10 +168,15 @@
       "none": "Nenhum",
       "search": "Procurar",
       "search_ddd": "Procurar...",
-      "updated": "Atualizada"
+      "updated": "Atualizada",
+      "updated_at": "Atualizada",
+      "version": "Versão"
     },
     "greeting": {
       "welcome": "Bem-vindo"
+    },
+    "label": {
+      "select": "Selecione"
     },
     "navigation": {
       "about": "Sobre",
@@ -182,13 +190,21 @@
       "control_tower": "Torre de controle",
       "debug": "Depurar",
       "details": "Detalhes",
+      "language": "Língua",
+      "languages": "Idiomas",
       "list": "Lista",
       "roles": "Papéis",
       "rules": "Regras",
+      "settings": "Configurações",
       "statistics": "Estatisticas",
       "storage": "Armazenamento",
       "system": "Sistema",
+      "tools": "Ferramentas",
       "users": "Usuários"
+    },
+    "relative_time": {
+      "never_downloaded": "Nunca baixado",
+      "past": "{time} atrás"
     }
   }
 }

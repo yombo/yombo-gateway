@@ -1,57 +1,54 @@
-import { a_fetch, a_refresh, a_fetchOne } from '@/store_common/db_actions'
-
-import { m_set_data } from '@/store_common/db_mutations'
-import { g_data_age, g_display_age } from '@/store_common/db_getters'
-
 export const state = () => ({
-  last_download_at: 0
+  access_token: null,
+  access_token_expires: null,
+  session: null,
+  last_download_at: 0,
+  refresh_timeout: 3600,
 });
 
-function store_settings() {
-  return {
-    api: window.$nuxt.$gwapiv1.access_tokens(),
-    api_all: window.$nuxt.$gwapiv1.access_tokens().all,
-    name: 'atoms',
-    refresh_age: 300,
-  };
-}
+import Vue from 'vue'
+import YomboApiV1 from '@/services/yboapiv1/YomboApiV1'
 
 export const actions = {
-  async fetch( { commit, dispatch }) {
-    await a_fetch(store_settings(), commit);
-  },
-  async fetchOne( { commit, dispatch }, payload) {
-    await a_fetchOne(store_settings(), commit, payload);
-  },
-  async refresh({ state, dispatch }) {  // Doesn't need api, just calls fetch if needed.
-    await a_refresh(store_settings(), state, dispatch);
-  },
-  async update({ commit, state, dispatch }, payload) {
-    await a_delete_with_status(store_settings(), commit, state, dispatch, payload);
-  },
-  async delete({ commit, state, dispatch }, payload) {
-    await a_update(store_settings(), commit, state, dispatch, payload);
-  },
-  async enable({ commit, state, dispatch }, payload) {
-    await a_enable(store_settings(), commit, state, dispatch, payload);
-  },
-  async disable({ commit, state, dispatch }, payload) {
-    await a_disable(store_settings(), commit, state, dispatch, payload);
-  },
-};
+  async fetch( { commit } ) {
+    // let response;
 
-export const mutations = {
-  SET_DATA(state, payload) { // Clears all previous data and loads it.
-    m_set_data(store_settings(), state, payload);
+    try {
+      await window.$nuxt.$gwapiv1.current_user().access_token()
+        .then(function (response) {
+          commit('SET_DATA', response.data['data']['attributes'])
+          Object.defineProperty(Vue.prototype, '$yboapiv1axios', { value: GetYomboV1Client(response.data['data']['attributes']['access_token']), writable: true });
+        });
+    } catch (ex) {  // Handle error
+      return
+    }
   },
-};
-
-export const getters = {
-  data_age: state => () => {
-    return g_data_age(state)
-  },
-  display_age: (state, getters) => (locale) => {
-    return g_display_age(state, getters, locale)
+    // will only refresh if more than 1 hour has elapsed or the token expires within 2 hours.
+    async refresh( { state, dispatch }) {
+    if (state.last_download_at <= Math.floor(Date.now()/1000) - state.refresh_timeout
+        || state.access_token_expires <= Math.floor(Date.now()/1000) + state.refresh_timeout * 2) {
+      await dispatch('fetch');
+    }
   }
 };
 
+export const mutations = {
+  SET_DATA (state, values) {
+    state.access_token = values.access_token;
+    state.access_token_expires = values.access_token_expires;
+    state.session = values.session;
+    state.last_download_at = Math.floor(Date.now() / 1000);
+    if ("$nuxt" in window && "$bus" in window.$nuxt) {
+      window.$nuxt.$bus.$emit('user_access_token', 'received');
+    }
+  }
+};
+
+export const getters = {
+  token: state => () => {
+    return state.access_token;
+  },
+  expires: state => () => {
+    return state.access_token_expires;
+  }
+};

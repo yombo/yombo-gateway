@@ -1,13 +1,17 @@
-.. index:: inputtype_input_type
+.. index:: inputtypes_input_type
 
-.. _inputtype_input_type:
+.. _inputtypes_input_type:
 
 .. currentmodule:: yombo.lib.inputtypes.input_type
 
 =================================================================
-Input Type - Base (yombo.lib.inputtypes.input_type)
+InputType (yombo.lib.inputtypes.input_type)
 =================================================================
 .. automodule:: yombo.lib.inputtypes.input_type
+
+InputType Class
+================================================================
+.. autoclass:: InputType
    :members:
    :special-members:
    :private-members:

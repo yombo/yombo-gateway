@@ -17,19 +17,18 @@ from twisted.internet import defer
 
 # Yombo Items
 from yombo.core.log import get_logger
+
 logger = get_logger('ext.txrdq.job')
 
 
 class Job(object):
     """
-    Hold the details of a job that is being, or will be, processed by a
-    L{ResizableDispatchQueue}.
+    Hold the details of a job that is being, or will be, processed by a ResizableDispatchQueue.
 
     All jobs start out in the PENDING state. Then either of the following
     will eventually happen:
 
       1. The job is launched. State is set to UNDERWAY.
-
       2. The job is cancelled (self.cancel is called) without being
          launched.  The state is then set to CANCELLED.
 
@@ -37,9 +36,7 @@ class Job(object):
 
       1. The function that launches the job hits an error of some
          kind. State goes to FAILED.
-
       2. The job completes cleanly. State goes to FINISHED.
-
       3. The job (or, equivalently, the deferred that will receive the
          result) is cancelled. State is set to CANCELLED.
 

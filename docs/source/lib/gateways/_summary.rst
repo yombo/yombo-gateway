@@ -22,7 +22,6 @@ Gateway Library
 
    __init__.rst
 
-
 Gateway class
 ========================
 

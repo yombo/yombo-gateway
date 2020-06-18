@@ -1,5 +1,3 @@
-# This file was created by Yombo for use with Yombo Python gateway automation
-# software.  Details can be found at https://yombo.net
 """
 Use ffmpeg to capture individual images from a video stream only to reassemble them into a MJPEG video
 with the intended target HTTP.
@@ -7,7 +5,7 @@ with the intended target HTTP.
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.24.0
 
-:copyright: Copyright 2018 by Yombo.
+:copyright: Copyright 2018-2020 by Yombo.
 :license: LICENSE for details.
 """
 
@@ -16,9 +14,9 @@ from twisted.internet.defer import inlineCallbacks, Deferred
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
-from yombo.classes.image import Image
+from yombo.classes.imagecontainer import ImageContainer
 
-from .ffmpeg import YBOFFmpeg
+from .yboffmpeg import YBOFFmpeg
 
 logger = get_logger("utils.ffmpeg.mjpeg")
 
@@ -136,7 +134,7 @@ class MJPEG(YBOFFmpeg):
                     image_raw = slice_image(img)
                     # print(f"image size: {len(image_raw)}")
                     output_buffer = output_buffer[img_loc + len(image_raw):]
-                    image = Image("image/jpeg", image_raw)
+                    image = ImageContainer(image_raw, "image/jpeg")
                     images_callback(image, callback_args)
                 else:
                     check_again = False

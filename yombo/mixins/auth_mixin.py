@@ -10,19 +10,21 @@ Mixin class for anything can act like an authentication. For example, users, web
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.22.0
 
-:copyright: Copyright 2018-2019 by Yombo.
+:copyright: Copyright 2018-2020 by Yombo.
 :license: LICENSE for details.
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/mixins/auth_mixin.html>`_
 """
 from time import time
+from typing import Any, ClassVar, Dict, List, Optional, Type, Union
 
+from yombo.constants import AUTH_TYPE_USER, AUTH_TYPE_AUTHKEY, AUTH_TYPE_WEBSESSION, SENTINEL
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
 
 logger = get_logger("mixins.auth_mixin")
 
 
-class AuthMixin(object):
-
+class AuthMixin:
     def __contains__(self, element):
         """
         Checks if the provided data element exists.
@@ -79,6 +81,30 @@ class AuthMixin(object):
         return self.auth_data.keys()
 
     @property
+    def accessor_id(self):
+        """ Return either the  """
+        if hasattr(self, "user") and self.user is not None:
+            return self.user.user_id
+        else:
+            return getattr(self, self._Parent._storage_primary_field_name)
+
+    @property
+    def accessor_type(self):
+        """ Return either the  """
+        if hasattr(self, "user") and self.user is not None:
+            return AUTH_TYPE_USER
+        return self.auth_type
+
+    @property
+    def auth_id(self):
+        """ Return the ID of the auth class. """
+        return self.__dict__[self._Parent._storage_primary_field_name]
+
+    @auth_id.setter
+    def auth_id(self, val):
+        self.__dict__[self._Parent._storage_primary_field_name] = val
+
+    @property
     def display(self):
         """
         Display the auth information. For users, it will display their email address.  For
@@ -89,9 +115,7 @@ class AuthMixin(object):
 
         :return:
         """
-        if hasattr(self, "_user_id"):  # Here incase the ording was wrong on loading... BAD DEV!
-            return f"{self.name} <{self.email}>"
-        return self.auth_id
+        raise NotImplemented("Display must be implemented in child classes.")
 
     @property
     def full_display(self):
@@ -103,8 +127,8 @@ class AuthMixin(object):
 
         :return:
         """
-        if hasattr(self, "_user_id"):  # Here incase the ording was wrong on loading... BAD DEV!
-            return f"{self.name} ({self.user_id}) <{self.email}>"
+        if hasattr(self, "user_id"):  # Here incase the ording was wrong on loading... BAD DEV!
+            return super().display()
         elif self.auth_id is not None:
             return f"{self.auth_type}::{self.auth_id}"
         return None
@@ -133,71 +157,47 @@ class AuthMixin(object):
         return None
 
     @property
-    def auth_id(self):
-        if hasattr(self, "user_id") and self.user_id is not None:
-            return self.user_id
-        return self._auth_id
-
-    @auth_id.setter
-    def auth_id(self, val):
-        self._set_auth_id(val)
-
-    def _set_auth_id(self, val):
-        self._auth_id = val
-
-    @property
-    def has_user(self) -> str:
-        if hasattr(self, "_user_id"):
-            if self._user_id is None:
-                return False
+    def has_user(self) -> bool:
+        if self.auth_type == AUTH_TYPE_USER and self.auth_id is not None:
             return True
         return False
 
     @property
     def enabled(self):
-        return self._enabled
+        if self.status != 1:
+            logger.info("is_valid: status is not 1")
+            return False
 
-    @enabled.setter
-    def enabled(self, val):
-        self._enabled = val
+        if self.created_at < (int(time() - self._Parent.config.max_session)):
+            logger.info("is_valid: Expiring session, it's too old: {auth_id}", auth_id=self.auth_id)
+            self.expire()
+            return False
+
+        if self.last_access_at < (int(time() - self._Parent.config.max_idle)):
+            logger.info("is_valid: Expiring session, no recent access: {auth_id}", auth_id=self.auth_id)
+            self.expire()
+            return False
+
+        if self.auth_id is None and self.last_access_at < (int(time() - self._Parent.config.max_session_no_auth)):
+            logger.info("is_valid: Expiring session, no recent access and not authenticated: {auth_id}",
+                        auth_id=self.auth_id)
+            self.expire()
+            return False
+
+        return True
 
     def __init__(self, *args, **kwargs):
-        # print(f"authmixin args: {args}")
-        # print(f"authmixin kwargs: {kwargs}")
-        if "load_source" in kwargs:
-            load_source = kwargs["load_source"]
-            del kwargs["load_source"]
-        else:
-            load_source = "database"
-        super().__init__(*args, **kwargs)
-        self._enabled = True
-
-        if load_source == "database":
-            self.in_db = True
-            self.is_dirty = 0
-        else:
-            self.in_db = False
-            self.is_dirty = 1000
-
-        self._auth_id = kwargs.get("auth_id", None)
-
+        self.status = 1
         self.auth_data = {}
-        # These are set by the item that actually created this instance.
-        self.source = None  # Label of library or module that created this
-        self.source_type = None  # one of: module, library
-
-        # Original creation source. Typically used by authkeys and such to note where it was sourced.
-        self.created_by = None  #
-        self.created_by_type = None  # one of: user, module, library
-
-        self.auth_type = None  # websession, user, authkey, etc
-        self.gateway_id = None  # originating gateway_id, if available.
-
+        if hasattr(self, "gateway_id") is False or self.gateway_id is None:
+            self.gateway_id = self._Parent._gateway_id
         self.last_access_at = int(time())
-        self.created_at = int(time())
-        self.updated_at = int(time())
+        try:
+            super().__init__(*args, **kwargs)
+        except TypeError:
+            pass
 
-    def get(self, key, default="BRFEqgdgLgI0I8QM2Em2nWeJGEuY71TTo7H08uuT"):
+    def get(self, key, default=SENTINEL):
         """
         Get an auth_data item.
 
@@ -205,14 +205,12 @@ class AuthMixin(object):
         :param default:
         :return:
         """
-        if key in ("last_access_at", "created_at", "updated_at", "auth_id", "user_id", "created_by"):
+        if key in ("last_access_at", "created_at", "updated_at", "auth_id", "user_id", "request_by"):
             return getattr(self, key)
-        elif key == "enabled":
-            raise YomboWarning("Use expire() method to disable this auth.")
         elif key in self.auth_data:
             self.last_access_at = int(time())
             return self.auth_data[key]
-        elif default != "BRFEqgdgLgI0I8QM2Em2nWeJGEuY71TTo7H08uuT":
+        elif default is not SENTINEL:
             return default
         else:
             raise KeyError("Cannot find auth key: {key}")
@@ -222,20 +220,18 @@ class AuthMixin(object):
         Set an auth_data item.
 
         :param key:
-        :param default:
+        :param val:
         :return:
         """
-        if key in ("last_access_at", "created_at", "updated_at", "auth_id", "user_id", "created_by"):
-            raise YomboWarning("Cannot use this method to object attribute: {key}", key=key)
-        elif key == "enabled":
-            raise YomboWarning("Use expire() method to disable this auth.")
+        if key in ("last_access_at", "created_at", "updated_at", "auth_id", "user_id", "request_by"):
+            raise YomboWarning(f"Cannot use this method to object attribute: {key}")
+        elif key == "status":
+            raise YomboWarning("Use enable, expire, delete, or disable methods to manage this auth.")
         elif key in ("auth_id", "user_id"):
             raise YomboWarning("Cannot change the ID of this session.")
         else:
             self.updated_at = int(time())
             self.auth_data[key] = val
-            if hasattr(self, "is_dirty"):
-                self.is_dirty += 50
             return val
 
     def delete(self, key):
@@ -247,34 +243,19 @@ class AuthMixin(object):
         :return:
         """
         if key in self.auth_data:
-            self.last_access_at = int(time())
             try:
                 del self.auth_data[key]
                 self.updated_at = int(time())
-                if hasattr(self, "is_dirty"):
-                    self.is_dirty += 50
             except Exception:
                 pass
 
     def touch(self):
         """
-        Touch the
+        Touch the auth item, usually just update the last_access_at.
+
         :return:
         """
-        self.last_access_at = int(time())
-        self.is_dirty += 1
-
-    def has_access(self, platform, item, action, raise_error=None):
-        """
-        Check if auth has access to a resource / access_type combination.
-
-        :param platform: device, command, etc
-        :param item: *, device_id, command_id, etc
-        :param action: view, edit, delete, etc
-        :param raise_error: Bool if error should be raise on deny, or just return true/false
-        :return:
-        """
-        return self._Parent._Users.has_access(self, platform, item, action, raise_error)
+        self. update({"last_access_at": int(time())})
 
     def enable(self):
         """
@@ -282,39 +263,36 @@ class AuthMixin(object):
 
         :return:
         """
-        self.enabled = True
-        if hasattr(self, "is_dirty"):
-            self.is_dirty += 50000
-        self.save()
+        updates = {"status": 1}
+        if hasattr(self, "expired_at"):
+            updates["expired_at"] = None
+        self. update(updates)
 
-    def is_valid(self):
-        return self.enabled
-
-    def expire(self):
+    def disable(self):
         """
-        Disable/expire an auth
+        Disable an auth
 
         :return:
         """
-        logger.debug("Expiring '{auth_type}' id: {id}", auth_type=self.auth_type, id=self._auth_id)
-        self.enabled = False
-        if hasattr(self, "is_dirty"):
-            self.is_dirty += 50000
-        self.save()
+        updates = {"status": 0}
+        if hasattr(self, "expired_at"):
+            updates["expired_at"] = None
+        self. update(updates)
 
-    def asdict(self):
-        results = {
-            "auth_id": self.auth_id,
-            "auth_type": self.auth_type,
-            "last_access_at": self.last_access_at,
-            "created_at": self.created_at,
-            "updated_at": self.updated_at,
-            "auth_data": self.auth_data,
-            "enabled": self.enabled,
-            "is_dirty": self.is_dirty,
-        }
+    def expire(self):
+        """
+        Delete/expire an auth
 
-        if hasattr(self, "_user_id"):
-            results['user_id'] = self._user_id
-        else:
-            results['user_id'] = None
+        :return:
+        """
+        logger.debug("Expiring '{auth_type}' id: {id}", auth_type=self.auth_type, id=self.auth_id)
+        updates = {"status": 2}
+        if hasattr(self, "expired_at"):
+            updates["expired_at"] = int(time())
+        self. update(updates)
+
+    def is_allowed(self, platform, action, item_id: Optional[str] = None, raise_error: Optional[bool] = None):
+        return self._Permissions.is_allowed(platform, action, item_id, self, raise_error)
+
+    def is_valid(self):
+        return self.status == 1

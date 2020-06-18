@@ -1,10 +1,6 @@
 {% extends "lib/webinterface/fragments/layout.tpl" %}
 {% import "lib/webinterface/fragments/macros.tpl" as macros%}
 
-{% block head_top %}
-{% include "lib/webinterface/fragments/bg_image.tpl" %}
-{% endblock %}
-
 {% set progressbar = 25 %}
 
 {% block content %}
@@ -59,11 +55,11 @@
               <li>The <b>first</b> decimal place is worth up to 11.1 km (6.9 miles):
                   it can distinguish the position of one large city from a neighboring large city.</li>
               <li>The <b>second</b> decimal place is worth up to 1.1 km (.69 miles):
-                  it can separate one village or town from the next.</li>
+                  it can determine the 2 nearest major cross streets.</li>
               <li>The <b>third</b> decimal place is worth up to 110 m (360 feet):
-                  it can identify a small neighborhood or when you're near your property.</li>
+                  it can determine the 2 nearest cross streets or alleys.</li>
               <li>The <b>fourth</b> decimal place is worth up to 1.1 m (3.6 feet):
-                  it can identify a parcel of land and can used to identifiy if you're on your property.</li>
+                  it can identify where on your property you are.</li>
           </ul>
               <a target="_blank" href="http://gis.stackexchange.com/questions/8650/measuring-accuracy-of-latitude-and-longitude">Reference</a>
               </p>
@@ -195,8 +191,8 @@ identify this gateway.
                     <div class="row">
                         <div class="col-md-12">
                         <div>&nbsp;</div>
-                            <a class="btn btn-md btn-warning" href="/setup_wizard/select_gateway"><i class="fa fa-chevron-left float-left"> &nbsp; </i>Back</a>
-                            <button type="submit" id="submit_login" class="btn btn-lg btn-success float-right" onclick="$( '#myform' ).validate.form();">Next</button>
+                            <a class="btn btn-md btn-warning" href="/setup_wizard/select_gateway"><i class="fa fa-chevron-left float-left"> &nbsp; </i>{{_("ui.back")}}</a>
+                            <button type="submit" id="submit_login" class="btn btn-lg btn-success float-right" onclick="$( '#myform' ).validate.form();">{{_("ui.next")}}</button>
                         </div>
                     </div>
                   </div>

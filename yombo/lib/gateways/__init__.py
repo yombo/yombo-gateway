@@ -11,18 +11,21 @@ Tracks gateway details for the local gateway and any member gateways within the 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.14.0
 
-:copyright: Copyright 2017 by Yombo.
+:copyright: Copyright 2017-2020 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/gateways.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/gateways/__init__.html>`_
 """
 from time import time
+from typing import Any, ClassVar, Dict, List, Optional, Type, Union
+
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
 from yombo.constants import VERSION
 from yombo.core.library import YomboLibrary
-from yombo.mixins.library_db_model_mixin import LibraryDBModelMixin
+from yombo.core.schemas import GatewaySchema
+from yombo.mixins.library_db_parent_mixin import LibraryDBParentMixin
 from yombo.mixins.library_search_mixin import LibrarySearchMixin
 from yombo.core.log import get_logger
 from yombo.lib.gateways.gateway import Gateway
@@ -30,56 +33,58 @@ from yombo.lib.gateways.gateway import Gateway
 logger = get_logger("library.gateways")
 
 
-class Gateways(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
+class Gateways(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
     """
     Manages information about gateways.
     """
     gateways = {}
 
-    # The following are used by get(), get_advanced(), search(), and search_advanced()
-    _class_storage_load_hook_prefix = "gateway"
-    _class_storage_load_db_class = Gateway
-    _class_storage_attribute_name = "gateways"
-    _class_storage_search_fields = [
+    # The remaining attributes are used by various mixins.
+    _storage_primary_field_name: ClassVar[str] = "gateway_id"
+    _storage_attribute_name: ClassVar[str] = "gateways"
+    _storage_label_name: ClassVar[str] = "gateway"
+    _storage_class_reference: ClassVar = Gateway
+    _storage_schema: ClassVar = GatewaySchema()
+    _storage_search_fields: ClassVar[List[str]] = [
         "gateway_id", "machine_label", "label"
     ]
-    _class_storage_sort_key = "machine_label"
+    _storage_attribute_sort_key: ClassVar[str] = "machine_label"
 
     @property
-    def local(self):
-        return self.gateways[self.gateway_id]
+    def local(self) -> Gateway:
+        return self.gateways[self._gateway_id]
 
     @local.setter
-    def local(self, val):
-        return
+    def local(self, val: Any) -> None:
+        return None
 
     @property
-    def local_id(self):
-        return self.gateway_id
+    def local_id(self) -> str:
+        return self._gateway_id
 
-    @local.setter
-    def local_id(self, val):
-        return
+    @local_id.setter
+    def local_id(self, val: Any) -> None:
+        return None
 
     @property
-    def master_id(self):
+    def master_gateway_id(self) -> str:
+        if self._master_gateway_id is None:
+            return self._gateway_id
+        return self._master_gateway_id
+
+    @master_gateway_id.setter
+    def master_gateway_id(self, val: Any) -> None:
+        return None
+
+    @property
+    def master(self) -> Gateway:
         if self.master_gateway_id is None:
-            return self.local_id
-        return self.master_gateway_id
-
-    @master_id.setter
-    def master_id(self, val):
-        return
-
-    @property
-    def master(self):
-        if self.master_gateway_id is None:
-            return self.gateways[self.gateway_id]
+            return self.gateways[self._gateway_id]
         return self.gateways[self.master_gateway_id]
 
     @master.setter
-    def master(self, val):
-        return
+    def master(self, val: Any) -> None:
+        return None
 
     @inlineCallbacks
     def _init_(self, **kwargs):
@@ -87,69 +92,65 @@ class Gateways(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
         Setups up the basic framework. Nothing is loaded in here until the
         Load() stage.
         """
-        self.gateway_status = yield self._SQLDict.get(self, "gateway_status")
+        self.gateway_status = yield self._SQLDicts.get(self, "gateway_status")
 
         if self._Loader.operating_mode != "run":
-            self._class_storage_load_db_items_to_memory({
-                "id": "local",
-                "is_master": True,
+            yield self.load_an_item_to_memory({
+                    "id": "local",
+                    "is_master": 1,
+                    "master_gateway_id": "",
+                    "machine_label": "local",
+                    "label": "Local",
+                    "description": "Local",
+                    "dns_name": "127.0.0.1",
+                    "version": VERSION,
+                    "user_id": "local",
+                    "created_at": int(time()),
+                    "updated_at": int(time()),
+                    "status": 1,
+                    "_fake_data": True,
+                },
+                load_source="system"
+            )
+        yield self.load_an_item_to_memory({
+                "id": "cluster",
+                "is_master": 0,
                 "master_gateway_id": "",
-                "machine_label": "local",
-                "label": "Local",
-                "description": "Local",
+                "machine_label": "cluster",
+                "label": "Cluster",
+                "description": "All gateways in a cluster.",
                 "dns_name": "127.0.0.1",
                 "version": VERSION,
                 "user_id": "local",
                 "created_at": int(time()),
                 "updated_at": int(time()),
-            }, source="database")
-        self._class_storage_load_db_items_to_memory({
-            "id": "cluster",
-            "is_master": False,
-            "master_gateway_id": "",
-            "machine_label": "cluster",
-            "label": "Cluster",
-            "description": "All gateways in a cluster.",
-            "dns_name": "127.0.0.1",
-            "version": VERSION,
-            "user_id": "local",
-            "created_at": int(time()),
-            "updated_at": int(time()),
-        }, source="database")
-        yield self._class_storage_load_from_database()
+                "status": 1,
+                "_fake_data": True,
+            },
+            load_source="system"
+        )
+        yield self.load_from_database()
 
-    def get_gateways(self):
+    def get_gateways(self) -> Dict[str, Gateway]:
         """
         Returns a copy of the gateways list.
         :return:
         """
         return self.gateways.copy()
 
-    def _configuration_set_(self, **kwargs):
+    def _configs_set_(self, arguments, **kwargs) -> None:
         """
         Check for various configurations have changes so we can update ourselves too.
 
-        :param kwargs: section, option(key), value
+        :param arguments: section, option(key), value
         :return:
         """
-        if self.gateway_id == "local" or len(self.gateways) == 0:
+        if self._gateway_id == "local" or len(self.gateways) == 0:
             return
-        section = kwargs["section"]
-        option = kwargs["option"]
-        value = kwargs["value"]
+        section = arguments["section"]
+        option = arguments["option"]
+        value = arguments["value"]
 
         if section == "dns":
             if option == "fqdn":
                 self.local.dns_name = value
-
-    def full_list_gateways(self):
-        """
-        Return a list of dictionaries representing all known commands to this gateway.
-        :return:
-        """
-        items = []
-        for gateway_id, gateway in self.gateways.items():
-            if gateway.machine_label in ("cluster", "all"):
-                continue
-            items.append(gateway.asdict())
-        return items

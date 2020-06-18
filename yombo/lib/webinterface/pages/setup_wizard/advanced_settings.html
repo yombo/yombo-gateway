@@ -1,27 +1,91 @@
 {% extends "lib/webinterface/fragments/layout.tpl" %}
 {% import "lib/webinterface/fragments/macros.tpl" as macros%}
 
-{% block head_top %}
-{% include "lib/webinterface/fragments/bg_image.tpl" %}
-{% endblock %}
-
 {% set progressbar = 70 %}
 
 {% block content %}
 <!-- Modals -->
-<!-- Overview help -->
+<div class="modal fade" id="localModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header btn-primary">
+                <h5 class="modal-title" id="ModalLabel-localModal">Cluster Member Type</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>
+                    Only one master gateway per location (site, property, a house, etc) is allowed. This setting
+                    determines if this gateway is the master or slave gateway. A collection of gateways connected
+                    together forms a cluster of gateways. Device states and system states are shared across
+                    the cluster. This allows scenes on any gateway to make decisions based on information within
+                    the cluster. Any device within the cluster can controlled and monitored across the cluster
+                    and is treated as if the device is local to the gateway.
+                </p>
+                <p>
+                    The dropdown allows you to select if this gateway is a master gateway, or should be a secondary
+                    gateway to a master gateway.
+                </p>
+                <p>
+                    Secondary gateways can only connect to one master gateway. This allows secondary gateways to
+                    placed closer to hardwired devices and eliminates the need to run wires to a central location.
+                    Secondary gateways are the same as primary gateways except for the following:
+                </p>
+                <ul>
+                    <li>Some modules handle all processing at the master, while the slaves only send sensor data and
+                    can receive control data to perform actions.</li>
+                </ul>
+                <p>
+                  Benefits of using multiple gateways:
+                </p>
+                <ul>
+                    <li>Avoid long wire runs: Use USB or GPIO (relays and senors) over WIFI/Ethernet instead of long runs of wires.</li>
+                    <li>Some modules/components require heavy system resources, this allows the load to be distributed.</li>
+                    <li>Scenes from any gateway can get states from any other gateway to make decisions.</li>
+                </ul>
+                <p>
+                    Any Raspberry PI model or other low end device can be used as the master; however we recommend a
+                    Raspberry PI model 3 or above. Slave devices can even be lower powered, such as the
+                    Raspberry PI Zero W. Secondary gateways will communicate with the primary and other slave gateways
+                    using a secure channel. This allows a master and secondary gateways to communicate over open
+                    networks (the internet).
+                </p>
+                <p>
+                    Use cases:
+                    <ul>
+                        <li>Using various slaves allows for receiving and sending IR commands to each room to control devices.</li>
+                        <li>Use a Raspberry Pi Zero in each room to collect signal strength of Bluetooth devices. This allows
+                            the system to know which room someone is in if they keep their cell phone, smartwatch, bluetooth
+                            tracker, or other bluetooth device with them. This allows for turning on lights or items based
+                            on who is in the room.</li>
+                        <li>Turn a Raspberry PI Zero into a garage door sensor and controler.</li>
+                      </ul>
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="localModal" tabindex="-1" role="dialog" aria-labelledby="localModalLabel">
-  <div class="modal-dialog modal-lg" role="document">
+  <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header btn-primary">
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        <h4 class="modal-title" id="myModalLabel">Master or Slave</h4>
+        <div class="modal-header btn-primary">
+            <h4 class="modal-title" id="ModalLabel-localModal">Master or Slave</h4>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
       </div>
       <div class="modal-body">
           <p>
-              Only one master gateway per location (a house, other house, etc) is required. This setting determines if this
-              gateway is the master or primary gateway. If this is a slave gateway, simply select the master gateway
-              from the drop down.
+              Only one master gateway per location (site, property, a house, etc) is required. This setting determines
+              if this gateway is the master or primary gateway. If this is a slave gateway, simply select the master
+              gateway from the drop down.
           </p>
           <p>
               Secondary gateways are typically used when wires for automation control cannot be run back to the
@@ -50,6 +114,7 @@
                       tracker, or other bluetooth device with them. This allows for turning on lights or items based
                       on who is in the room.</li>
                 </ul>
+          </p>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
@@ -151,7 +216,7 @@ and more. This information helps us design a more robust system.
                 <div class="card">
                     <div class="card-header text-center">
                       <h2>Gateway Setup Wizard</h2>
-                      <h5 class="card-title">Step 3: Basic Security Settings</h5>
+                      <h5 class="card-title">Step 3: Advanced & Security Settings</h5>
                       <div class="progress">
                         <div class="progress-bar progress-bar-primary progress-bar-striped" role="progressbar"
                              aria-valuenow="{{ progressbar }}" aria-valuemin="2" aria-valuemax="100" style="min-width: 2em; width: {{ progressbar }}%">
@@ -160,23 +225,24 @@ and more. This information helps us design a more robust system.
                       </div>
                     </div>
                     <div class="card-body">
-                        <h2>Gateway Master / Slave
+                        <h2>Cluster Settings
                             <a href="#" data-toggle=modal data-target=#localModal> <i class="fa fa-question fa-1x"></i></a>
                         </h2>
-                        <br>
                         <div class="form-group">
                             <label for="master-gateway-id" data-toggle="tooltip" title="Select the master gateway.">
-                                Select master gateway
+                                Select master gateway:
                             </label>
                             <div class="pull-right">
                                 <select name="master-gateway-id" id="master-gateway-id"
                                         required class="selectpicker show-tick" title="Select...">
-                                    <option value="local" style="background: #e6f7ff; color: #000;"{%-
+                                    <option value="{{authentication.setup_wizard_gateway_id}}" style="background: #e6f7ff; color: #000;"{%-
                                             if security_items.master_gateway_id == 'None' or security_items.is_master == 1 %} selected{%-
-                                    endif %}>I'm the master!
+                                    endif %}>This gateway ({{available_gateways[security_items.master_gateway_id]['label']}})
                                     </option>
                                     <option data-divider="true"></option>
-                                    {% for id, gateway in available_gateways.items() if gateway.is_master == '1' or gateway.is_master == 1  -%}
+                                    {% for id, gateway in available_gateways.items() if
+                                      (gateway.is_master == '1' or gateway.is_master == 1 ) and security_items.master_gateway_id != id
+                                    -%}
                                     <option value="{{ gateway.id }}"{%-
                                             if security_items.master_gateway_id == id %} selected{% endif %}>
                                         {{ gateway.label }}
@@ -192,7 +258,7 @@ and more. This information helps us design a more robust system.
 
                         <div class="form-group">
                             <input type="checkbox" data-toggle="toggle" data-size="xs"
-                            id="security-status" name="security-status"
+                            id="security-send-device-state" name="security-send-device-states"
                             {% if security_items.status == '1' %} checked {% endif %}>
                             Allow device status to be sent to Yombo
                             &nbsp;<a href="#" data-toggle="modal" data-target="#securitystatus">
@@ -217,8 +283,8 @@ and more. This information helps us design a more robust system.
                             <i class="fa fa-question-circle"></i></a>
                         </div>
                         <a class="btn btn-md btn-warning" href="/setup_wizard/basic_settings">
-                            <i class="fa fa-chevron-left float-left"> &nbsp; </i>Back</a>
-                        <input type="button" name="btn" value="Next" id="submitBtn" class="btn btn-lg btn-success float-right"
+                            <i class="fa fa-chevron-left float-left"> &nbsp; </i>{{_("ui.back")}}</a>
+                        <input type="button" name="btn" value="{{_('ui.next')}}" id="submitBtn" class="btn btn-lg btn-success float-right"
                                data-toggle="modal" data-target="#confirm-submit" class="btn btn-default" />
                     </div>
                 </div>
@@ -254,7 +320,6 @@ and more. This information helps us design a more robust system.
             }
         })
     });
-
 </script>
 
 {% endblock %}

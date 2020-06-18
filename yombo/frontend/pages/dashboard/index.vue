@@ -160,183 +160,182 @@
     </div>
   </div>
 </template>
+
 <script>
+  import LineChart from '../../components/Common/Charts/LineChart';
+  import { GW_Command } from '@/models/command'
+  import { GW_Device } from '@/models/device'
 
-import LineChart from '../../components/Common/Charts/LineChart';
-import Command from '@/models/command'
-import Device from '@/models/device'
-
-import {
-  StatsCard,
-  Card,
-  Table as NTable,
-  Checkbox,
-  AnimatedNumber,
-  Progress as NProgress
-} from '@/components/Common';
-
-export default {
-  layout: 'dashboard',
-  components: {
-    Checkbox,
-    Card,
-    NTable,
+  import {
     StatsCard,
+    Card,
+    Table as NTable,
+    Checkbox,
     AnimatedNumber,
-    NProgress,
-    LineChart
-  },
-  data() {
-    return {
-      progress: 0,
-      charts: {
-        activeUsers: {
-          labels: [
-            'Jan',
-            'Feb',
-            'Mar',
-            'Apr',
-            'May',
-            'Jun',
-            'Jul',
-            'Aug',
-            'Sep',
-            'Oct',
-            'Nov',
-            'Dec'
-          ],
-          data: [542, 480, 430, 550, 530, 453, 380, 434, 568, 610, 700, 630],
-          color: '#f96332'
+    Progress as NProgress
+  } from '@/components/Common';
+
+  export default {
+    layout: 'dashboard',
+    components: {
+      Checkbox,
+      Card,
+      NTable,
+      StatsCard,
+      AnimatedNumber,
+      NProgress,
+      LineChart
+    },
+    data() {
+      return {
+        progress: 0,
+        charts: {
+          activeUsers: {
+            labels: [
+              'Jan',
+              'Feb',
+              'Mar',
+              'Apr',
+              'May',
+              'Jun',
+              'Jul',
+              'Aug',
+              'Sep',
+              'Oct',
+              'Nov',
+              'Dec'
+            ],
+            data: [542, 480, 430, 550, 530, 453, 380, 434, 568, 610, 700, 630],
+            color: '#f96332'
+          },
+          emailsCampaign: {
+            labels: ['12pm,', '3pm', '6pm', '9pm', '12am', '3am', '6am', '9am'],
+            data: [40, 500, 650, 700, 1200, 1250, 1300, 1900],
+            color: '#18ce0f'
+          },
+          activeCountries: {
+            labels: [
+              'January',
+              'February',
+              'March',
+              'April',
+              'May',
+              'June',
+              'July',
+              'August',
+              'September',
+              'October'
+            ],
+            data: [80, 78, 86, 96, 83, 85, 76, 75, 88, 90],
+            color: '#2CA8FF'
+          }
         },
-        emailsCampaign: {
-          labels: ['12pm,', '3pm', '6pm', '9pm', '12am', '3am', '6am', '9am'],
-          data: [40, 500, 650, 700, 1200, 1250, 1300, 1900],
-          color: '#18ce0f'
-        },
-        activeCountries: {
-          labels: [
-            'January',
-            'February',
-            'March',
-            'April',
-            'May',
-            'June',
-            'July',
-            'August',
-            'September',
-            'October'
-          ],
-          data: [80, 78, 86, 96, 83, 85, 76, 75, 88, 90],
-          color: '#2CA8FF'
+        tableData: [
+          {
+            country: 'USA',
+            value: '2.920',
+            percentage: '53.23%'
+          },
+          {
+            country: 'Germany',
+            value: '1.300',
+            percentage: '20.43%'
+          },
+          {
+            country: 'Australia',
+            value: '760',
+            percentage: '10.35%'
+          },
+          {
+            country: 'United Kingdom',
+            value: '690',
+            percentage: '7.87%'
+          },
+          {
+            country: 'United Kingdom',
+            value: '600',
+            percentage: '5.94%'
+          },
+          {
+            country: 'Brasil',
+            value: '550',
+            percentage: '4.34%'
+          }
+        ],
+        productsTable: [
+          {
+            image: 'img/saint-laurent.jpg',
+            title: 'Suede Biker Jacket',
+            subTitle: 'by Saint Laurent',
+            color: 'Black',
+            size: 'M',
+            price: 3390,
+            quantity: 1,
+            amount: 3390
+          },
+          {
+            image: 'img/balmain.jpg',
+            title: 'Jersey T-Shirt ',
+            subTitle: 'by Balmain',
+            color: 'Black',
+            size: 'M',
+            price: 499,
+            quantity: 2,
+            amount: 998
+          },
+          {
+            image: 'img/prada.jpg',
+            title: 'Slim-Fit Swim Short ',
+            subTitle: 'by Prada',
+            color: 'Red',
+            size: 'M',
+            price: 200,
+            quantity: 1,
+            amount: 200
+          }
+        ],
+        mapData: {
+          AU: 760,
+          BR: 550,
+          CA: 120,
+          DE: 1300,
+          FR: 540,
+          GB: 690,
+          GE: 200,
+          IN: 200,
+          RO: 600,
+          RU: 300,
+          US: 2920
         }
+      };
+    },
+    computed: {
+      device_count () {
+        return GW_Device.query().count();
       },
-      tableData: [
-        {
-          country: 'USA',
-          value: '2.920',
-          percentage: '53.23%'
-        },
-        {
-          country: 'Germany',
-          value: '1.300',
-          percentage: '20.43%'
-        },
-        {
-          country: 'Australia',
-          value: '760',
-          percentage: '10.35%'
-        },
-        {
-          country: 'United Kingdom',
-          value: '690',
-          percentage: '7.87%'
-        },
-        {
-          country: 'United Kingdom',
-          value: '600',
-          percentage: '5.94%'
-        },
-        {
-          country: 'Brasil',
-          value: '550',
-          percentage: '4.34%'
-        }
-      ],
-      productsTable: [
-        {
-          image: 'img/saint-laurent.jpg',
-          title: 'Suede Biker Jacket',
-          subTitle: 'by Saint Laurent',
-          color: 'Black',
-          size: 'M',
-          price: 3390,
-          quantity: 1,
-          amount: 3390
-        },
-        {
-          image: 'img/balmain.jpg',
-          title: 'Jersey T-Shirt ',
-          subTitle: 'by Balmain',
-          color: 'Black',
-          size: 'M',
-          price: 499,
-          quantity: 2,
-          amount: 998
-        },
-        {
-          image: 'img/prada.jpg',
-          title: 'Slim-Fit Swim Short ',
-          subTitle: 'by Prada',
-          color: 'Red',
-          size: 'M',
-          price: 200,
-          quantity: 1,
-          amount: 200
-        }
-      ],
-      mapData: {
-        AU: 760,
-        BR: 550,
-        CA: 120,
-        DE: 1300,
-        FR: 540,
-        GB: 690,
-        GE: 200,
-        IN: 200,
-        RO: 600,
-        RU: 300,
-        US: 2920
+      command_count () {
+        return GW_Command.query().count();
+      },
+      device_age () {
+        return (new Date(Date.now()/1000)) - this.$store.state.devices.last_download_at
+      },
+      devices () {
+        return GW_Device.query().with('locations').orderBy('id', 'desc').get()
       }
-    };
-  },
-  computed: {
-    device_count () {
-      return Device.query().count();
     },
-    command_count () {
-      return Command.query().count();
+    mounted() {
+      this.$store.dispatch('gateway/devices/refresh');
+      this.$store.dispatch('gateway/locations/refresh');
+      // await this.$store.dispatch('yombo/categories/refresh');
+      // await this.$store.dispatch('yombo/commands/refresh');
+      // await this.$store.dispatch('yombo/device_command_inputs/refresh');
+      // await this.$store.dispatch('yombo/device_type_commands/refresh');
+      // await this.$store.dispatch('yombo/device_types/refresh');
+      // await this.$store.dispatch('yombo/gateways/refresh');
+      // await this.$store.dispatch('yombo/input_types/refresh');
+      // await this.$store.dispatch('locations/refresh', 'gwF');
+      // await this.$store.dispatch('yombo/modules/refresh');
+      // await this.$store.dispatch('yombo/module_device_types/refresh');
     },
-    device_age () {
-      return (new Date(Date.now()/1000)) - this.$store.state.devices.last_download_at
-    },
-    devices () {
-      return Device.query().with('locations').orderBy('id', 'desc').get()
-    }
-  },
-  async mounted() {
-    await this.$store.dispatch('yombo/devices/refresh');
-    await this.$store.dispatch('yombo/categories/refresh');
-    await this.$store.dispatch('yombo/commands/refresh');
-    await this.$store.dispatch('yombo/device_command_inputs/refresh');
-    await this.$store.dispatch('yombo/device_type_commands/refresh');
-    await this.$store.dispatch('yombo/device_types/refresh');
-    await this.$store.dispatch('yombo/gateways/refresh');
-    await this.$store.dispatch('yombo/input_types/refresh');
-    await this.$store.dispatch('yombo/locations/refresh');
-    await this.$store.dispatch('yombo/modules/refresh');
-    await this.$store.dispatch('yombo/module_device_types/refresh');
-  },
-};
+  };
 </script>
-<style>
-</style>

@@ -1,0 +1,16 @@
+{
+  "lib": {
+    "configs": {
+      "item": {
+        "yomboapi": {
+          "api_key": "Clave de API para usar al hacer solicitudes. Nota: Esta tecla girará para evitar el abuso según sea necesario.",
+          "sessionid_key": "Cuando allow_system_session es true, se utiliza para iniciar sesión en la API."
+        }
+      },
+      "yombo_toml": {
+        "about": "Esto almacena información de configuración de archivos sobre el sistema.",
+        "warning": "ADVERTENCIA ADVERTENCIA ADVERTENCIA ADVERTENCIA ADVERTENCIA ADVERTENCIA"
+      }
+    }
+  }
+}

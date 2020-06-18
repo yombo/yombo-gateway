@@ -12,7 +12,7 @@ All files are stored within the "working_dir/storage_files" path.
                    public=True)
 
 
-:copyright: 2018 Yombo
+:copyright: 2018-2020 Yombo
 """
 import ntpath
 import os
@@ -22,12 +22,11 @@ import urllib.parse
 from twisted.internet.defer import inlineCallbacks
 from twisted.web.static import File
 
+from yombo.classes.imagecontainer import ImageContainer
 from yombo.core.exceptions import YomboWarning
 from yombo.core.module import YomboModule
 from yombo.core.log import get_logger
-from yombo.lib.webinterface.auth import run_first
-from yombo.utils import save_file, delete_file
-from yombo.utils.imagehelper import ImageHelper
+from yombo.lib.webinterface.auth import get_session
 
 logger = get_logger("modules.storagefile")
 
@@ -37,9 +36,8 @@ class StorageFile(YomboModule):
     Stores files locally.
     """
     def _init_(self, **kwargs):
-        storage_path = f"{self._Atoms.get('working_dir')}/storage_files"
-        self.app_dir = self._Atoms.get('app_dir')
-        self.storage_path = self._Configs.get("storagefile", "path", storage_path)
+        storage_path = f"{self._working_dir}/storage_files"
+        self.storage_path = self._Configs.get("storagefile.path", storage_path)
 
         if not os.path.exists(self.storage_path):
             os.makedirs(self.storage_path)
@@ -81,13 +79,13 @@ class StorageFile(YomboModule):
         :param public:
         :return:
         """
-        helper = ImageHelper()
+        helper = ImageContainer()
         yield helper.set(source_file)
         results = yield self._save_common(helper, dest_parts, dest_parts_thumb,
                                           delete_source, file_id, mangle_id,
                                           expires, public, extra, **kwargs)
         if delete_source is True:
-            yield delete_file(source_file)
+            yield self._Files.delete(source_file)
         return results
 
     @inlineCallbacks
@@ -106,7 +104,7 @@ class StorageFile(YomboModule):
         :param public:
         :return:
         """
-        helper = ImageHelper()
+        helper = ImageContainer()
         yield helper.set(source_data)
         results = yield self._save_common(helper, dest_parts, dest_parts_thumb,
                                           file_id, mangle_id,
@@ -138,7 +136,7 @@ class StorageFile(YomboModule):
             final_path = file_path
 
         image = yield helper.get()
-        yield save_file(final_path, image.content)
+        yield self._Files.save(final_path, image.content)
 
         url = self.generate_url(dest_parts, file_id, mangle_id)
         results = {
@@ -154,7 +152,7 @@ class StorageFile(YomboModule):
             final_path = f"{self.storage_path}/{file_path}"
             if isinstance(extra, dict) and "absolute" in extra and extra["absolute"] is True:
                 final_path = file_path
-            yield save_file(final_path, thumbnail.content)
+            yield self._Files.save(final_path, thumbnail.content)
             url = self.generate_url(dest_parts_thumb, file_id, mangle_id, thumb=True)
             results.update({
                 "internal_thumb_url": self._WebInterface.internal_url + url,
@@ -175,12 +173,12 @@ class StorageFile(YomboModule):
         :return:
         """
         try:
-            yield delete_file(file["file_path"], remove_empty=True)
+            yield self._Files.delete(file["file_path"], remove_empty=True)
         except Exception as e:
             logger.warn("Error deleting file: {e}", e=e)
             pass
         try:
-            yield delete_file(file["file_path_thumb"], remove_empty=True)
+            yield self._Files.delete(file["file_path_thumb"], remove_empty=True)
         except Exception as e:
             logger.warn("Error deleting file thumb: {e}", e=e)
         return True
@@ -192,7 +190,7 @@ class StorageFile(YomboModule):
         :param kwargs:
         :return:
         """
-        if hasattr(self, "_States") and self._States["loader.operating_mode"] == "run":
+        if hasattr(self, "_Loader") and self._Loader.operating_mode == "run":
             return {
                 "routes": [
                     self.web_interface_routes,
@@ -208,7 +206,7 @@ class StorageFile(YomboModule):
         """
         with webapp.subroute("/") as webapp:
             @webapp.route("/storage_files/<string:in_file_id>")
-            @run_first()
+            @get_session(auth_required=True)
             @inlineCallbacks
             def page_file_storage_show_file(webinterface, request, session, in_file_id):
                 # print("looking up file_id: %s" % in_file_id)
@@ -225,7 +223,7 @@ class StorageFile(YomboModule):
                 # print(f"got file: {file}")
                 if (file.public is not True and (session is None or session.auth_id is None)) or \
                         mangle_id != file.mangle_id:
-                    f = File(f"{self.app_dir}/yombo/lib/webinterface/static/source/img/no-access.svg")
+                    f = File(f"{self._app_dir}/yombo/lib/webinterface/static/source/img/no-access.svg")
                     f.isLeaf = True
                     f.type = "image/svg+xml"
                     f.encoding = None

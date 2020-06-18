@@ -1,0 +1,75 @@
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row" style="padding-top: 5em; padding-bottom: 2em;">
+        <div class="col-12 col-xl-10 mx-auto">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                      <div class="card-header text-center">
+                          <h2>Gateway Setup</h2>
+                        <h5 class="card-title">Gateway setup & installation wizard</h5>
+                      </div>
+                      <div class="card-body">
+                        <p class="card-text" style="font-size: 1.2em;">
+                            This <a href="https://yombo.net">Yombo</a> gateway is not configured. Use one of the two methods
+                            below to complete the setup.
+                        </p>
+                      </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row" style="padding-top: 1em; padding-bottom: 1em;">
+               <div class="col-6">
+                    <div class="card">
+                      <div class="card-header text-center">
+                          <h2>Gateway Setup Wizard</h2>
+                            <h5 class="card-title">Gateway setup & installation wizard</h5>
+                      </div>
+                      <div class="card-body">
+                        <p class="card-text" style="font-size: 1.2em">
+                            Use the setup wizard to create a new gateway, or when reinstalling a gateway
+                            without a configuration backup.
+                        </p>
+                        <a class="btn btn-lg btn-success btn-block" href="/setup_wizard/select_gateway?autologinredirect=1">Run wizard
+                            <i class="fa fa-angle-double-right pull-right"></i></a>
+                          </p>
+                      </div>
+                    </div>
+               </div>
+               <div class="col-6">
+                    <div class="card">
+                      <div class="card-header text-center">
+                          <h2>Restore from backup</h2>
+                        <h5 class="card-title">Recover gateway from a backup</h5>
+                      </div>
+                      <div class="card-body">
+                        <p class="card-text">
+                            If you are reinstalling and have a configuration backup, use this method to quickly
+                            restore the configuration settings.
+                        </p>
+                        <p class="card-text">
+                            If you are reinstalling the gateway and don't have a configuration backup, don't
+                            worry. Simply use the setup wizard. However, you will need to re-enter any
+                            encrypted data such as passwords where needed.
+                        </p>
+                          <br>
+                        <p class="card-text" style="font-size: 1.2em">
+                            To restore, simply click the button below and select the configuration backup file.
+                        </p>
+                        <form method="post" action="/setup_wizard/restore_details" enctype="multipart/form-data">
+                            <label class="btn btn-lg btn-success btn-block" for="restorefile">
+                                <input id="restorefile" name="restorefile" type="file" style="display:none;" onchange="javascript:this.form.submit();">
+                                Select configuration restore file
+                            </label>
+                        </form>
+                      </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

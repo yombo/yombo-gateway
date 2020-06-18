@@ -11,7 +11,7 @@ Cache (yombo.lib.cache)
 
 Cache Library Class
 ===========================
-.. automodule:: Cache
+.. autoclass:: Cache
    :members:
    :special-members:
    :private-members:

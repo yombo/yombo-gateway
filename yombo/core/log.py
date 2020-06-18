@@ -11,23 +11,22 @@ Handles logging functions.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2012-2018 by Yombo.
+:copyright: Copyright 2012-2020 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/core/module.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/core/log.html>`_
 """
 # Import python libraries
-from zope.interface import provider
+from copy import copy
+import gzip
 import io
 import os
-import gzip
-from copy import copy
+from zope.interface import provider
 
 # Import twisted libraries
-from twisted.logger import (globalLogPublisher, FilteringLogObserver, InvalidLogLevelError,
-    Logger, LogLevel, LogLevelFilterPredicate, ILogObserver, formatEvent, formatTime,
-    textFileLogObserver, jsonFileLogObserver)
+from twisted.logger import (globalLogPublisher, FilteringLogObserver, InvalidLogLevelError, Logger, LogLevel,
+                            LogLevelFilterPredicate, ILogObserver, formatEvent,
+                            textFileLogObserver, jsonFileLogObserver)
 from twisted.internet import reactor
-
 
 def static_var(varname, value):
     """
@@ -67,12 +66,13 @@ logLevels = (
     "error",
 )
 
-bcolor = {"debug":"\033[94m",
-          "info":"\033[92m",
-          "warn":"\033[93m",
-          "error":"\033[91m",
-          "default":"\033[33m",
+bcolor = {"debug": "\033[94m",
+          "info": "\033[92m",
+          "warn": "\033[93m",
+          "error": "\033[91m",
+          "default": "\033[33m",
          }
+
 
 
 @provider(ILogObserver)
@@ -81,7 +81,7 @@ def simpleObserver(event):
     print((formatEvent(event)))
 
 
-log_format = lambda event: f"{formatTime(event['log_time'])} [{event['log_level'].name.upper()}]: {formatEvent(event)}"
+# log_format = lambda event: f"{formatTime(event['log_time'])} [{event['log_level'].name.upper()}]: {formatEvent(event)}"
 
 
 @provider(ILogObserver)
@@ -123,52 +123,41 @@ def get_logger(logname="yombolog", **kwargs):
 
     # Determine the logging level
     if len(loggers) == 0:
-        import yombo.core.settings as settings
-        if settings.yombo_ini is not False and "logging" in settings.yombo_ini:
-            log_levels = settings.yombo_ini["logging"]
+        try:
+            from yombo.core.settings import logger_settings
+            log_levels = logger_settings
+        except ImportError:
+            log_levels = []
 
+    ini_log_level = "info"
     log_filter = LogLevelFilterPredicate()
-    log_name_search = copy(logname)
-    try:
-        ini_log_level = "info"
-        while len(log_name_search) > 0:
-            if log_name_search in log_levels:
-                ini_log_level = log_levels[log_name_search].lower()
-                break
-            # This crazy line removes the last element in the string.
-            log_name_search = ".".join(log_name_search.rsplit(".")[:-1])
-        log_filter.setLogLevelForNamespace(logname, LogLevel.levelWithName(ini_log_level))
+    logname_search = copy(logname).lower()
 
+    try:
+        while len(logname_search) > 0 and len(log_levels):
+            try:
+                ini_log_level = log_levels[logname_search]
+                break
+            except KeyError:
+                pass
+            # This crazy line removes the last element in the string.
+            logname_search = ".".join(logname_search.rsplit(".")[:-1])
     except InvalidLogLevelError:
-        log_filter.setLogLevelForNamespace(logname, LogLevel.info)
         # Yell at the user if they specified an invalid log level
-        loggers[logname].warn("yombo.ini file contained invalid log level {invalidLevel}, level has been set to INFO instead.",
-                           invalidLevel=log_levels[logname].lower())
+        loggers[logname].warn("yombo.toml file contained invalid log level {invalidLevel}, "
+                              "level has been set to INFO instead.",
+                              invalidLevel=log_levels[logname].lower())
+
+    if isinstance(ini_log_level, str) is False:
+        ini_log_level = "info"
+
+    log_filter.setLogLevelForNamespace(logname, LogLevel.levelWithName(ini_log_level))
 
     # Set up logging
     consoleFilterObserver = FilteringLogObserver(consoleLogObserver, (log_filter,))
 
     logger = Logger(namespace=logname, source=source, observer=consoleFilterObserver)
     loggers[logname] = logger
-
-    # global logFirstRun
-    # if logFirstRun is True:
-    #   logFirstRun = False
-      # This doesn't appear to be working yet...
-    #   observers['json'] = jsonFileLogObserver(io.open("usr/log/yombo.json", "a"))
-    #   globalLogPublisher.addObserver(observers['json'])
-    #   observers['text'] = textFileLogObserver(io.open("usr/log/yombo.text", "a"))
-    #   globalLogPublisher.addObserver(observers['text'])
-    #
-    #   # globalLogPublisher.addObserver(jsonFileLogObserver(io.open("usr/log/yombo.json", "a")))
-    #   # globalLogPublisher.addObserver(textFileLogObserver(io.open("usr/log/yombo.text", "a")))
-    #
-    #
-    # if get_logger.rotate_loop is None:
-    #     get_logger.rotate_loop = LoopingCall(rotate_logs)
-    #     get_logger.rotate_loop.start(5, False)  # about every 10 minutes
-    #     # get_logger.rotate_loop.start(615, False)  # about every 10 minutes
-
     return loggers[logname]
 
 

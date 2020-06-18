@@ -3,6 +3,12 @@ Color util methods.
 
 This file comes from the home assistant and has an Apache 2.0 license. This file has been modified to work
 with Yombo.
+
+.. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+
+:copyright: Copyright 2018-2020 by Yombo.
+:license: See LICENSE for details.
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/color.html>`_
 """
 import logging
 import math

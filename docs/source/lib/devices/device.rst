@@ -2,12 +2,16 @@
 
 .. _devices_device:
 
-.. currentmodule:: yombo.lib.devices._device
+.. currentmodule:: yombo.lib.devices.device
 
 =================================================================
-Devices::Device (yombo.lib.devices._device)
+Device (yombo.lib.devices.device)
 =================================================================
-.. automodule:: yombo.lib.devices._device
+.. automodule:: yombo.lib.devices.device
+
+Device Class
+================================================================
+.. autoclass:: Device
    :members:
    :special-members:
    :private-members:

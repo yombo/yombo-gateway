@@ -12,7 +12,7 @@
 DeviceCommands (yombo.lib.devicecommands)
 ==========================================================
 
-Maintains list of device commands available.
+Manages commands sent to devices.
 
 Device Commands Library
 ==========================================================
@@ -21,7 +21,6 @@ Device Commands Library
    :maxdepth: 1
 
    __init__.rst
-
 
 Device Command class
 ==========================================================

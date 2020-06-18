@@ -1,6 +1,6 @@
-.. index:: library_search_mixin
+.. index:: library_db_child_mixin
 
-.. _library_search_mixin:
+.. _library_db_child_mixin:
 
 .. currentmodule:: yombo.mixins.library_db_child_mixin
 
@@ -10,13 +10,13 @@
    :keywords: library, search, get, dict, mixin, class
 
 ================================================================
-LibrarySearchMixin (yombo.mixins.library_search_mixin)
+LibraryDBChildMixin (yombo.mixins.library_db_child_mixin)
 ================================================================
-.. automodule:: yombo.mixins.library_search_mixin
+.. automodule:: yombo.mixins.library_db_child_mixin
 
-LibrarySearchMixin Class
+LibraryDBChildMixin Class
 ================================================================
-.. autoclass:: LibrarySearchMixin
+.. autoclass:: LibraryDBChildMixin
    :members:
    :special-members:
    :private-members:

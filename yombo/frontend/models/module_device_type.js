@@ -1,7 +1,13 @@
 import { Model } from '@vuex-orm/core'
 
-export default class Module_Device_type extends Model {
+export class Module_Device_Type extends Model {
   static entity = 'module_device_type';
+
+  static state ()  {
+    return {
+      api_source: null,
+    }
+  }
 
   static fields () {
     return {
@@ -15,4 +21,12 @@ export default class Module_Device_type extends Model {
       updated_at: this.number(0),
     }
   }
+}
+
+export class GW_Module_Device_Type extends Module_Device_Type {
+  static entity = 'gw_module_device_type';
+}
+
+export class Yombo_Module_Device_Type extends Module_Device_Type {
+  static entity = 'yombo_module_device_type';
 }

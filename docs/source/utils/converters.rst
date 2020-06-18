@@ -10,3 +10,6 @@ Converters (yombo.utils.converters)
 
 .. automodule:: yombo.utils.converters
    :members:
+   :private-members:
+   :special-members:
+   :undoc-members:

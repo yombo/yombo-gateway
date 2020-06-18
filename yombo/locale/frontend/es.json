@@ -5,11 +5,6 @@
     }
   },
   "lib": {
-    "configs": {
-      "yombo.ini": {
-        "about": "Esto almacena información de configuración de archivos sobre el sistema."
-      }
-    },
     "state": {
       "amqp.amqpyombo.state": "Verdadero si está conectado, Falso si la conexión no está completamente establecida."
     }
@@ -145,6 +140,11 @@
     "current_language": "Español"
   },
   "ui": {
+    "card": {
+      "automation": {
+        "title": "Automatización"
+      }
+    },
     "common": {
       "actions": "Acciones",
       "add": "Añadir",
@@ -153,7 +153,7 @@
       "atom": "Átomo",
       "cancel": "Cancelar",
       "close": "Cerrar",
-      "created_at": "Creado en",
+      "created_at": "Creado",
       "delete": "Borrar",
       "deleted": "Eliminado",
       "description": "Descripción",
@@ -169,10 +169,15 @@
       "more_ddd": "Más...",
       "search": "Buscar",
       "search_ddd": "Buscar...",
-      "updated": "Actualizado"
+      "updated": "Actualizado",
+      "updated_at": "Actualizado",
+      "version": "Versión"
     },
     "greeting": {
       "welcome": "Bienvenido"
+    },
+    "label": {
+      "select": "Seleccione"
     },
     "messages": {
       "rate_limit_exceeded": "Demasiados intentos, inténtelo de nuevo más tarde."
@@ -190,13 +195,21 @@
       "dashboard": "Tablero",
       "debug": "Depurar",
       "details": "Detalles",
+      "language": "Lengua",
+      "languages": "Idiomas",
       "list": "Lista",
       "rules": "Reglas",
+      "settings": "Configuraciones",
       "statistics": "Estadísticas",
       "storage": "Almacenamiento",
       "system": "Sistema",
+      "tools": "Herramientas",
       "users": "Usuarios",
       "variables_data": "Datos de variables"
+    },
+    "relative_time": {
+      "never_downloaded": "Nunca descargado",
+      "past": "{time} hace"
     }
   }
 }

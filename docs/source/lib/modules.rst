@@ -1,6 +1,6 @@
 .. index:: modules
 
-.. _modules::
+.. _modules:
 
 .. currentmodule:: yombo.lib.modules
 

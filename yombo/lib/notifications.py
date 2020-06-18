@@ -21,14 +21,12 @@ Priority levels:
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.12.0
 
-:copyright: Copyright 2016-2018 by Yombo.
+:copyright: Copyright 2016-2020 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/notifications.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/notifications.html>`_
 """
-from collections import OrderedDict
-import json
 from time import time
-from itertools import islice
+from typing import Any, ClassVar, Dict, List, Optional, Type, Union
 
 # Import twisted libraries
 from twisted.internet import reactor
@@ -36,64 +34,33 @@ from twisted.internet.defer import inlineCallbacks
 from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
+from yombo.classes.sliceableordereddict import SliceableOrderedDict
 from yombo.core.entity import Entity
 from yombo.core.exceptions import YomboWarning, YomboHookStopProcessing
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.mixins.library_db_child_mixin import LibraryDBChildMixin
-from yombo.mixins.sync_to_everywhere_mixin import SyncToEverywhereMixin
-from yombo.mixins.library_db_model_mixin import LibraryDBModelMixin
+from yombo.mixins.library_db_parent_mixin import LibraryDBParentMixin
 from yombo.mixins.library_search_mixin import LibrarySearchMixin
 from yombo.utils import random_string, is_true_false
 from yombo.utils.hookinvoke import global_invoke_all
 
 logger = get_logger("library.notifications")
 
-class SlicableOrderedDict(OrderedDict):
-    """
-    Allows an ordereddict to be called with:  thisdict[1:2]
 
-    Source: http://stackoverflow.com/questions/30975339/slicing-a-python-ordereddict
-    Author: http://stackoverflow.com/users/1307905/anthon
-
-    and
-
-    Source: http://stackoverflow.com/questions/16664874/how-can-i-add-an-element-at-the-top-of-an-ordereddict-in-python
-    Author: http://stackoverflow.com/users/846892/ashwini-chaudhary
-    """
-    def __getitem__(self, k):
-        if not isinstance(k, slice):
-            return OrderedDict.__getitem__(self, k)
-        return SlicableOrderedDict(islice(self.items(), k.start, k.stop))
-
-    def prepend(self, key, value, dict_setitem=dict.__setitem__):
-        """
-        Add an element to the front of the dictionary.
-        :param key: 
-        :param value: 
-        :param dict_setitem: 
-        :return: 
-        """
-        self.update({key: value})
-        self.move_to_end(key, last=False)
-
-
-class Notification(Entity, LibraryDBChildMixin, SyncToEverywhereMixin):
+class Notification(Entity, LibraryDBChildMixin):
     """
     A class to manage a notification.
     """
-    _primary_column = "notification_id"  # Used by mixins
+    _Entity_type: ClassVar[str] = "Notification"
+    _Entity_label_attribute: ClassVar[str] = "title"
 
-    def __init__(self, parent, incoming, source=None):
+    def __init__(self, parent, **kwargs):
         """
         Setup the notification object using information passed in.
         """
-        self._Entity_type = "Notification"
-        self._Entity_label_attribute = "title"
-        super().__init__(parent)
-
-        self.persist = incoming.get("persist", False)
-        self._setup_class_model(incoming, source=source)
+        super().__init__(parent, **kwargs)
+        self.persist: bool = kwargs["incoming"].get("persist", False)
 
     def ack(self, acknowledged_at=None, new_ack=None):
         if acknowledged_at is None:
@@ -106,66 +73,36 @@ class Notification(Entity, LibraryDBChildMixin, SyncToEverywhereMixin):
             self.always_show = False
         self._Parent._LocalDB.update_notification(self)
 
-    def update(self, notice):
-        """
-        Uodates a notice values.
 
-        :param notice:
-        :return:
-        """
-        for key, value in notice.items():
-            if key == 'id':
-                continue
-            setattr(self, key, value)
-
-
-class Notifications(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
+class Notifications(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
     """
     Manages all notifications.
 
     """
-    notifications = SlicableOrderedDict()
-    notification_targets = {}  # tracks available notification targets. This allows subscribers to know whats possible.
+    notifications = SliceableOrderedDict()
+    notification_targets: dict = {}  # tracks available notification targets. This allows subscribers to know whats possible.
 
-    # The following are used by get(), get_advanced(), search(), and search_advanced()
-    _class_storage_load_hook_prefix = "notification"
-    _class_storage_load_db_class = Notification
-    _class_storage_attribute_name = "notifications"
-    _class_storage_search_fields = [
+    # The remaining attributes are used by various mixins.
+    _storage_primary_field_name: ClassVar[str] = "notification_id"
+    _storage_primary_length: int = 16
+    _storage_label_name: ClassVar[str] = "notification"
+    _storage_class_reference: ClassVar = Notification
+    _storage_attribute_name: ClassVar[str] = "notifications"
+    _storage_pickled_fields: ClassVar[Dict[str, str]] = {
+        "meta": "msgpack",
+        "targets": "msgpack"}
+    _storage_search_fields: ClassVar[List[str]] = [
         "notification_id", "gateway_id", "type", "title"
     ]
-    _class_storage_sort_key = "created_at"
+    _storage_attribute_sort_key: ClassVar[str] = "created_at"
 
     @inlineCallbacks
+    def _init_(self, **kwargs):
+        yield self.load_from_database()
+
     def _load_(self, **kwargs):
         self._checkExpiredLoop = LoopingCall(self.check_expired)
-        self._checkExpiredLoop.start(self._Configs.get("notifications", "check_expired", 121, False), False)
-
-        yield self._class_storage_load_from_database()
-
-        results = yield global_invoke_all("_notification_get_targets_",
-                                          called_by=self,
-                                          )
-
-        for component_name, data in results.items():
-            logger.debug("Adding notification target: {component_name}", component_name=component_name)
-            if isinstance(data, dict) is False:
-                continue
-            for target, description in data.items():
-                if target not in self.notification_targets:
-                    self.notification_targets[target] = []
-
-                self.notification_targets[target].append({
-                    "description": description,
-                    "component": component_name,
-                    }
-                )
-
-    def _notification_get_targets_(self, **kwargs):
-        """ Hosting here since loader isn't properly called... """
-        return {
-            "system_startup_complete": "System startup complete",
-        }
+        self._checkExpiredLoop.start(self._Configs.get("notifications.check_expired", 121, False), False)
 
     def get_important(self):
         items = {}
@@ -186,7 +123,7 @@ class Notifications(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
         Called by looping call to periodically purge expired notifications.
         :return:
         """
-        self._LocalDB.cleanup_database("notifications")
+        self._LocalDB.database.db_cleanup("notifications")
 
     def ack(self, notice_id, acknowledged_at=None, new_ack=None):
         """
@@ -207,103 +144,144 @@ class Notifications(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
         try:
             global_invoke_all("_notification_acked_",
                               called_by=self,
-                              notification=self.notifications[notice_id],
-                              event={
-                                  "notification_id": notice_id,
-                              }
+                              arguments={
+                                  "notification": self.notifications[notice_id],
+                                  "event": {
+                                    "notification_id": notice_id,
+                                    },
+                                  }
                               )
         except YomboHookStopProcessing:
             pass
 
-    def add(self, notice, from_db=None, create_event=None):
+    @inlineCallbacks
+    def new(self, title: str, message: str, gateway_id: Optional[str] = None,
+            priority: Optional[str] = None, persist: Optional[bool] = None,
+            timeout: Optional[Union[int, float]] = None, expire_at: Optional[Union[int, float]] = None,
+            always_show: Optional[bool] = None, always_show_allow_clear: Optional[bool] = None,
+            notice_type: Optional[str] = None, notice_id: Optional[str] = None, local: Optional[bool] = None,
+            targets: Optional[List[str]] = None,
+            request_by: Optional[str] = None, request_by_type: Optional[str] = None,
+            request_context: Optional[str] = None,
+            meta: Optional[dict] = None,
+            acknowledged: Optional[bool] = None, acknowledged_at: Optional[int] = None,
+            created_at: Optional[Union[int, float]] = None,
+            # gateway_id: Optional[str] = None,
+            create_event: Optional[bool] = None):
         """
         Add a new notice.
 
-        :param notice: A dictionary containing notification details.
-        :type record: dict
+        :param title: Title, or label, for the not
         :returns: Pointer to new notice. Only used during unittest
         """
-        if "title" not in notice:
-            raise YomboWarning("New notification requires a title.")
-        if "message" not in notice:
-            raise YomboWarning("New notification requires a message.")
-
-        if "id" not in notice:
-            notice["id"] = random_string(length=16)
+        if gateway_id is None:
+            gateway_id = self._gateway_id
+        if priority not in ("low", "normal", "high", "urgent"):
+            priority = "normal"
+        if persist is None:
+            persist = False
+        if always_show is None:
+            always_show = False
         else:
-            if notice["id"] in self.notifications:
-                self.notifications[notice["id"]].update(notice)
-                return notice["id"]
-
-        if "type" not in notice:
-            notice["type"] = "notice"
-        if "gateway_id" not in notice:
-            notice["gateway_id"] = self.gateway_id
-        if "priority" not in notice:
-            notice["priority"] = "normal"
-        if "source" not in notice:
-            notice["source"] = ""
-        if "always_show" not in notice:
-            notice["always_show"] = False
+            always_show = is_true_false(always_show)
+        if isinstance(always_show, bool) is False:
+            raise YomboWarning(f"always_show must be True or False, got: {always_show}")
+        if always_show_allow_clear is None:
+            always_show_allow_clear = False
         else:
-            notice["always_show"] = is_true_false(notice["always_show"])
-        if "always_show_allow_clear" not in notice:
-            notice["always_show_allow_clear"] = True
+            always_show_allow_clear = is_true_false(always_show_allow_clear)
+        if isinstance(always_show_allow_clear, bool) is False:
+            raise YomboWarning("always_show must be True or False.")
+        if notice_type is None:
+            notice_type = "notice"
+        if notice_type not in ("notice"):
+            raise YomboWarning("Invalid notification type.")
+        if notice_id is None:
+            notice_id = random_string(length=50)
+        notice_id = self._Hash.sha224_compact(notice_id)
+        if local is None:
+            local = True
         else:
-            notice["always_show_allow_clear"] = is_true_false(notice["always_show_allow_clear"])
-        if "persist" not in notice:
-            notice["persist"] = False
-        if "meta" not in notice:
-            notice["meta"] = {}
-        if "user" not in notice:
-            notice["user"] = None
-        if "targets" not in notice:  # tags on where to send notifications
-            notice["targets"] = []
-        if isinstance(notice["targets"], str):
-            notice["targets"] = [notice["targets"]]
-        if "local" not in notice:
-            notice["local"] = False
+            local = is_true_false(local)
 
-        if notice["persist"] is True and "always_show_allow_clear" is True:
-            YomboWarning("New notification cannot have both 'persist' and 'always_show_allow_clear' set to true.")
+        if persist is True and always_show_allow_clear is False:
+            raise YomboWarning(f"New notification cannot be 'persist'=True and 'always_show_allow_clear'=False..{title}")
 
-        if "expire_at" not in notice:
-            if "timeout" in notice:
-                notice["expire_at"] = time() + notice["timeout"]
-            else:
-                notice["expire_at"] = time() + 60*60*24*30  # keep persistent notifications for 30 days.
+        if isinstance(expire_at, int) or isinstance(expire_at, float):
+            expire_at = time() + expire_at
+        elif isinstance(timeout, int) or isinstance(timeout, float):
+            expire_at = time() + timeout
+        elif expire_at is not None:
+            raise YomboWarning("expire_at must be int or float.")
+        elif timeout is not None:
+            raise YomboWarning("timeout must be int or float.")
+        if persist is True and expire_at is None:
+                expire_at = time() + 60*60*24*30  # keep persistent notifications for 30 days.
+
+        if targets is not None:  # tags on where to send notifications
+            if isinstance(targets, list) is False:
+                if isinstance(targets, str):
+                    targets = [targets]
+                else:
+                    raise YomboWarning("targets argument must be a list of strings.")
+            for target in targets:
+                if isinstance(target, str) is False:
+                    raise YomboWarning("targets argument must be a list of strings.")
+
+        if created_at is None:
+            created_at = time()
+
+        if acknowledged is None:
+            acknowledged = False
         else:
-            if notice["expire_at"] == None:
-                if notice["persist"] == True:
-                    YomboWarning("Cannot persist a non-expiring notification")
-            elif notice["expire_at"] > time():
-                YomboWarning("New notification is set to expire before current time.")
-        if "created_at" not in notice:
-            notice["created_at"] = time()
+            acknowledged = is_true_false(acknowledged)
 
-        if "acknowledged" not in notice:
-            notice["acknowledged"] = False
-        else:
-            if notice["acknowledged"] not in (True, False):
-                YomboWarning("New notification 'acknowledged' must be either True or False.")
+        if isinstance(acknowledged_at, float):
+            acknowledged_at = int(acknowledged_at)
+        if acknowledged is True and acknowledged_at is None:
+            acknowledged_at = int(time)
 
-        if "acknowledged_at" not in notice:
-            notice["acknowledged_at"] = None
+        notice = {
+            "id": notice_id,
+            "title": title,
+            "message": message,
+            "gateway_id": gateway_id,
+            "priority": priority,
+            "persist": persist,
+            "always_show": always_show,
+            "always_show_allow_clear": always_show_allow_clear,
+            "type": notice_type,
+            "local": local,
+            "targets": targets,
+            "request_by": request_by,
+            "request_by_type": request_by_type,
+            "request_context": request_context,
+            "meta": meta,
+            "acknowledged": acknowledged,
+            "acknowledged_at": acknowledged_at,
+            "expire_at": expire_at,
+            "created_at": created_at,
+        }
+        if notice_id in self.notifications:
+            del notice["id"]
+            self.notifications[notice_id].update(notice)
+            return self.notifications[notice_id]
 
         logger.debug("notice: {notice}", notice=notice)
 
-        self.notifications.prepend(notice["id"], Notification(self, notice))
+        notification = yield self.load_an_item_to_memory(notice, load_source="local")
 
-        for target in notice["targets"]:
-            reactor.callLater(.0001,
-                              global_invoke_all,
-                              "_notification_target_",
-                              called_by=self,
-                              notification=self.notifications[notice["id"]],
-                              target=target,
-                              event=self.notifications[notice["id"]].asdict()
-                              )
-        return notice["id"]
+        reactor.callLater(.0001,
+                          global_invoke_all,
+                          "_notification_new_",
+                          called_by=self,
+                          arguments={
+                              "notification": notification,
+                              "target": targets,
+                              "event": notification.to_dict(),
+                              }
+                          )
+        return notification
 
     def delete(self, notice_id):
         """
@@ -312,14 +290,22 @@ class Notifications(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
         :param notice_id:
         :return:
         """
-        # Call any hooks
+        notice_id = self._Hash.sha224_compact(notice_id)
+        try:
+            notice = self.notifications[notice_id]
+        except KeyError:
+            return
+
         try:
             global_invoke_all("_notification_delete_",
                               called_by=self,
-                              notification=self.notifications[notice_id],
-                              event={
-                                  "notification_id": notice_id,
-                              })
+                              arguments={
+                                  "notification": notice,
+                                  "event": {
+                                    "notification_id": notice_id,
+                                    }
+                                  }
+                              )
         except YomboHookStopProcessing:
             pass
 

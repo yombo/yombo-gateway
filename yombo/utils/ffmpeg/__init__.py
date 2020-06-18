@@ -1,8 +1,7 @@
 """
-.. module:: yombo.utils.ffmpeg
-   :synopsis: Adds support FFMPEG processing.
+Adds support FFMPEG processing.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-:copyright: Copyright 2018 by Yombo.
+:copyright: Copyright 2018-2020 by Yombo.
 :license: LICENSE for details.
 """

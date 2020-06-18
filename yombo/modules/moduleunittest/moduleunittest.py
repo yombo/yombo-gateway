@@ -16,10 +16,11 @@ from twisted.internet.task import LoopingCall
 
 from yombo.core.log import get_logger
 from yombo.core.module import YomboModule
-from yombo.utils import sleep
+from yombo.utils import sleep, bytes_to_unicode
 import yombo.utils.datetime as dt
 
 logger = get_logger("module.test")
+
 
 class ModuleUnitTest(YomboModule):
     """
@@ -80,8 +81,6 @@ class ModuleUnitTest(YomboModule):
         #           'pin_code'        : "1234",
         #           'pin_required'    : 0,
         #           'module_label'    : "ModuleUnitTest",
-        #           'voice_cmd'       : "tstdvc01 [on, off, open, close]",
-        #           'voice_cmd_order'  : "verbnoun",
         #           'status'         : 1,
         #          }
         #
@@ -98,8 +97,6 @@ class ModuleUnitTest(YomboModule):
         #           'pin_code'       : "1234",
         #           'pin_required'   : 0,
         #           'module_label'   : "ModuleUnitTest",
-        #           'voice_cmd'      : "2dvctst [on, off, open, close]",
-        #           'voice_cmd_order'  : "nounverb",
         #           'status'         : 1,
         #          }
         #
@@ -114,13 +111,14 @@ class ModuleUnitTest(YomboModule):
         
         Startup phase 3 of 3.
         """
-        reactor.callLater(1, self.started) # so we can see our results easier
+        reactor.callLater(1, self.started)  # so we can see our results easier
 
     @inlineCallbacks
     def started(self):
         self.display_results_loop.start(1)
         logger.info("Module unit test running.")
 
+        yield self.test_encryption()
         yield self.test_statistic_get_range()
 #        self.test_crontab()
 #        self.test_gpg()
@@ -136,6 +134,12 @@ class ModuleUnitTest(YomboModule):
         print("tomorrow 10pm get_time: %s" % dt.time_from_string("tomorrow 10pm")[0])
         print("1 hour ago get_time): %s" % dt.time_from_string("1 hour ago")[0])
         print("10:20:30: %s" % dt.time_from_string("10:20:30")[0])
+
+    def test_encryption(self):
+        test_data = "hello 1234567890123456789112345678921234567893123456789"
+        results = yield self.encrypt(test_data)
+        output = yield self.decrypt(results)
+        print(f"aes test: passed: {test_data == bytes_to_unicode(output)}")
 
 
     @inlineCallbacks
@@ -194,12 +198,12 @@ class ModuleUnitTest(YomboModule):
 
     @inlineCallbacks
     def test_gpg(self):
-        encrypted = yield self._GPG.encrypt("hello1")
+        encrypted = yield self._GPG.encryptg("hello1")
         decrypted = yield self._GPG.decrypt(encrypted)
         self.assertIsEqual("hello1", decrypted, "Testing GPG priv/pub keys.")
 
-        encrypted = yield self._GPG.encrypt_aes("mypass", "hello2")
-        decrypted = yield self._GPG.decrypt_aes("mypass", encrypted)
+        encrypted = yield self._GPG.encrypt("hello2", "mypass")
+        decrypted = yield self._GPG.decrypt(encrypted, "mypass")
         self.assertIsEqual("hello2", decrypted, "Testing GPG AES 256 password")
 
     def test_states(self):
@@ -209,13 +213,13 @@ class ModuleUnitTest(YomboModule):
         :return:
         """
         #basic checks
-        self._States.set("module.unittest1", "letsdoit", value_type='string', source=self)
+        self._States.set("module.unittest1", "letsdoit", value_type='string', request_context=self._FullName)
         isLight_dynamic = self._States.get2("module.unittest1")
         self.assertIsEqual("letsdoit", self._States['module.unittest1'], "Get states as dictionary")
         self.assertIsEqual("letsdoit", self._States.get('module.unittest1'), "Get states as function")
         self.assertIsEqual("letsdoit", isLight_dynamic(), "Get states as with dynamic get2")
 
-        self._States.set("module.unittest1", "letsdoit2", value_type='string', source=self)
+        self._States.set("module.unittest1", "letsdoit2", value_type='string', request_context=self._FullName)
         self.assertIsEqual("letsdoit2", self._States['module.unittest1'], "Get states as dictionary")
         self.assertIsEqual("letsdoit2", self._States.get('module.unittest1'), "Get states as dictionary and function")
         self.assertIsEqual("letsdoit2", isLight_dynamic(), "Get states as dictionary and function")

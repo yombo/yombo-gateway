@@ -6,7 +6,8 @@
 #=============================================================================
 # environment setup
 #=============================================================================
-import sys, os
+import os
+import sys
 
 # This is here to cython modules will display their content properly.
 #import pyximport; pyximport.install()
@@ -42,6 +43,14 @@ extensions = [
     'sphinx.ext.napoleon',
     ]
 
+########
+# As of Jun 16, 2020, this is used to remove deprecation warnings. See:
+# https://github.com/agronholm/sphinx-autodoc-typehints/issues/133
+import warnings
+warnings.filterwarnings('ignore', message = 'sphinx.util.inspect.Signature\(\) is deprecated')
+########
+
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
@@ -60,7 +69,7 @@ index_doc = 'index'
 
 # General information about the project.
 project = 'Yombo Gateway'
-copyright = '2012-2018, Mitch Schwenk'
+copyright = '2012-2020, Yombo / Mitch Schwenk'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -123,7 +132,7 @@ html_theme = 'bootstrap'
 
 html_theme_options = {
     # Navigation bar title. (Default: ``project`` value)
-    'navbar_title': "Yombo Reference",
+    'navbar_title': "Yombo",
 
     # Tab name for entire site. (Default: "Site")
     'navbar_site_name': "Docs",

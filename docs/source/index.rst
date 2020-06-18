@@ -5,7 +5,7 @@ Yombo Automation Python Reference
 =================================
 
 Release |release|
-(`Release notes <https://yombo.net/release_notes/gateway/0.23.0>`_)
+(`Release notes <https://yombo.net/release_notes/gateway/0.24.0>`_)
 
 The Yombo Gateway is a framework that allows users to quickly develop
 modules to implement automation of various devices around the home, office,
@@ -46,10 +46,10 @@ and turns it off at 10:30pm:
         event = kwargs['value']  # Can be 'now_light', 'now_twilight', 'now_not_dawn', etc.
         if (event == 'now_dusk'):
            porch_light = self._Device['porch light']
-           porch_light.command(cmd='on')  # turn on now
+           porch_light.command(command='on')  # turn on now
 
            off_time = self._Times.get_next('hour=22', 'minute'=30')  # get epoch for the next 10:30pm time.
-           porch_light.command(cmd='off', not_before=off_time)  # turn of at 10:30pm
+           porch_light.command(command='off', not_before=off_time)  # turn of at 10:30pm
 
 Navigating the framework
 ===========================
@@ -65,7 +65,7 @@ The gateway framework is split into a few directories:
  * :ref:`framework_modules` - Extend the features of the Yombo gateway.
  * :ref:`framework_utils` - Various utilities for getting things done.
 
-.. _framework_frontend
+.. _framework_frontend:
 
 Frontend Application
 ==========================
@@ -86,11 +86,14 @@ features to be used by libraries and modules.
 .. toctree::
    :maxdepth: 1
 
+   ../core/entity.rst
    ../core/exceptions.rst
    ../core/gwservice.rst
    ../core/library.rst
    ../core/log.rst
    ../core/module.rst
+   ../core/schemas.rst
+   ../core/settings.rst
 
 .. _framework_lib:
 
@@ -104,60 +107,69 @@ IoT devices, etc.
 .. toctree::
    :maxdepth: 1
 
-   ../lib/amqp.rst
-   ../lib/amqpyombo.rst
-   ../lib/amqpyombo_handlers/_summary.rst
-   ../lib/authkey.rst
+   ../lib/amqp/_summary.rst
+   ../lib/amqpyombo/_summary.rst
+   ../lib/authkeys/_summary.rst
    ../lib/atoms.rst
    ../lib/automation.rst
    ../lib/cache.rst
    ../lib/calllater.rst
    ../lib/commands.rst
-   ../lib/configuration.rst
+   ../lib/configs.rst
    ../lib/crontab.rst
    ../lib/devicecommands/_summary.rst
    ../lib/devices/_summary.rst
    ../lib/devicecommandinputs.rst
    ../lib/devicetypecommands.rst
-   ../lib/devicetypes.rst
-   ../lib/downloadmodules.rst
+   ../lib/devicestates/_summary.rst
+   ../lib/devicetypes/_summary.rst
    ../lib/discovery.rst
+   ../lib/downloadmodules.rst
+   ../lib/encryption.rst
    ../lib/events.rst
+   ../lib/files/_summary.rst
    ../lib/gateways/_summary.rst
-   ../lib/gatewaycommunications.rst
-   ../lib/gpg.rst
+   ../lib/gpg/_summary.rst
    ../lib/inputtypes/_summary.rst
    ../lib/hash.rst
    ../lib/hashids.rst
+   ../lib/intents.rst
    ../lib/loader.rst
    ../lib/localdb/_summary.rst
    ../lib/localize.rst
    ../lib/locations.rst
    ../lib/moduledevicetypes.rst
    ../lib/modules.rst
-   ../lib/mqtt.rst
-   ../lib/nodes.rst
+   ../lib/modulesinstalled.rst
+   ../lib/mosquitto.rst
+   ../lib/mqtt/_summary.rst
+   ../lib/mqttusers.rst
+   ../lib/mqttyombo/_summary.rst
+   ../lib/nodes/_summary.rst
    ../lib/notifications.rst
+   ../lib/permissions.rst
    ../lib/queue.rst
    ../lib/requests.rst
+   ../lib/roles/_summary.rst
    ../lib/scenes.rst
-   ../lib/sqldict.rst
+   ../lib/sqldicts.rst
    ../lib/sslcerts/_summary.rst
    ../lib/startup.rst
    ../lib/states.rst
    ../lib/statistics/_summary.rst
    ../lib/storage.rst
-   ../lib/systemdatahandler/_summary.rst
+   ../lib/systemdatahandler.rst
    ../lib/tasks.rst
    ../lib/template.rst
    ../lib/times.rst
+   ../lib/tools.rst
    ../lib/users/_summary.rst
    ../lib/validate.rst
    ../lib/variabledata.rst
    ../lib/variablefields.rst
    ../lib/variablegroups.rst
    ../lib/webinterface/_summary.rst
-   ../lib/websessions.rst
+   ../lib/websessions/_summary.rst
    ../lib/yomboapi/_summary.rst
 
 .. _framework_mixins:
@@ -171,14 +183,16 @@ the object as something can be used for authentication.
 .. toctree::
    :maxdepth: 1
 
-   ../mixins/accessors_mixin.rst
+   ../mixins/amqp_mixin.rst
    ../mixins/auth_mixin.rst
+   ../mixins/child_storage_accessors_mixin.rst
+   ../mixins/library_db_child_attributes_mixin.rst
    ../mixins/library_db_child_mixin.rst
-   ../mixins/library_db_model_mixin.rst
    ../mixins/library_search_mixin.rst
+   ../mixins/parent_storage_accessors_mixin.rst
    ../mixins/permission_mixin.rst
    ../mixins/roles_mixin.rst
-   ../mixins/sync_to_everywhere.rst
+   ../mixins/systemdata_mixin.rst
    ../mixins/user_mixin.rst
 
 .. _framework_constants:
@@ -186,23 +200,26 @@ the object as something can be used for authentication.
 Constants
 =========
 
-Easily reference the same values across the Yombo Gateway framework.
+Constants help keep consistency across the framework. To view all the
+contents, visit the
+`Constants source @ GitHub <https://github.com/yombo/yombo-gateway/tree/master/yombo/constants>`_
 
 .. toctree::
    :maxdepth: 1
 
-   ../constants/constants.rst
+   ../frontend/summary.rst
 
 .. _framework_modules:
 
 Modules
 =======
 
-System modules, user modules, and downloaded modules go into the modules folder. These extend
-the capabilites of the gateway and provide the gateway the ability to communicate with
-various devices over various protocols.
+System modules, user modules, and downloaded modules go into the modules folder. These
+extend the capabilites of the gateway and provide the gateway the ability to
+communicate with various devices over various protocols.
 
-For a list of modules available to be installed by end users: `Available Modules <https://yg2.in/f_gdoc_modules>`_
+For a list of modules available to be installed by end users:
+`Available Modules <https://yg2.in/f_gdoc_modules>`_
 
 .. _framework_utils:
 
@@ -216,10 +233,14 @@ Various helper classes that can make life easier.
 
    ../classes/caseinsensitivedict.rst
    ../classes/dictobject.rst
+   ../classes/dotdict.rst
+   ../classes/filecontainer.rst
    ../classes/fuzzysearch.rst
-   ../classes/images.rst
+   ../classes/imagecontainer.rst
+   ../classes/jsonapi.rst
    ../classes/lookupdict.rst
    ../classes/maxdict.rst
+   ../classes/sliceableordereddict.rst
    ../classes/triggerdict.rst
 
 Utilities
@@ -228,19 +249,18 @@ Utilities
 Various utilities to help the Yombo Gateway get things done.
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
+   ../utils/caller.rst
    ../utils/color.rst
    ../utils/converters.rst
-   ../utils/decorators.rst
-   ../utils/filehelper.rst
-   ../utils/filereader.rst
-   ../utils/filewriter.rst
+   ../utils/datatypes.rst
+   ../utils/datetime.rst
+   ../utils/decorators/_summary.rst
+   ../utils/dictionaries.rst
+   ../utils/ffmpeg/_summary.rst
    ../utils/hookinvoke.rst
-   ../utils/imagehelper.rst
-   ../utils/location.rst
    ../utils/networking.rst
-   ../utils/validators.rst
    ../utils/utils.rst
 
 .. _framework_ext:
@@ -253,15 +273,17 @@ the framework features. They are governed under their respective
 licenses. See the COPYING file included with this distribution for more
 information.
 
+Note: Many of the extensions don't properly display here, visit
+`Extensions source @ GitHub <https://github.com/yombo/yombo-gateway/tree/master/yombo/ext>`_
+
 .. toctree::
    :maxdepth: 1
 
-   ../ext/bermiinflector.rst
+   ../ext/base62.rst
    ../ext/expiringdict.rst
-   ../ext/hashids.rst
-   ../ext/mqtt.rst
-   ../ext/twistar.rst
-   ../ext/totp.rst
+   ../ext/gnupg.rst
+   ../ext/ipy.rst
+   ../ext/magic.rst
    ../ext/txrdq.rst
    ../ext/validators.rst
 

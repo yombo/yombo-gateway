@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+
+if [ "$EUID" -eq 0 ] || [ "$USER" = "root" ]; then
+  echo "This script cannot be run as root directly and must be run"
+  echo "as the user owning the Yombo gateway service."
+  echo ""
+  echo "Use: ./yombo_update.sh"
+  exit
+fi
+
+YOMBO_SCRIPT_DIR="$( cd "$(dirname "$0")" ; pwd -P )"
+YOMBO_ROOT_DIR="$(dirname $YOMBO_SCRIPT_DIR)"
+cd "$YOMBO_SCRIPT_DIR"
+
+# Determine OS platform
+if [ -f /etc/os-release ]; then
+    # freedesktop.org and systemd
+    . /etc/os-release
+    OS=$NAME
+    VER=$VERSION_ID
+elif type lsb_release >/dev/null 2>&1; then
+    # linuxbase.org
+    OS=$(lsb_release -si)
+    VER=$(lsb_release -sr)
+elif [ -f /etc/lsb-release ]; then
+    # For some versions of Debian/Ubuntu without lsb_release command
+    . /etc/lsb-release
+    OS=$DISTRIB_ID
+    VER=$DISTRIB_RELEASE
+elif [ -f /etc/debian_version ]; then
+    # Older Debian/Ubuntu/etc.
+    OS=Debian
+    VER=$(cat /etc/debian_version)
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+    echo "Yombo isn't support on Mac OSX. You should use Vagrant:"
+    echo "https://yombo.net/docs/gateway/vagrant"
+    exit
+elif [[ "$OSTYPE" == "cygwin" ]]; then
+    # POSIX compatibility layer and Linux environment emulation for Windows
+    echo "Yombo isn't support on Windows. You should use Vagrant:"
+    echo "https://yombo.net/docs/gateway/vagrant"
+    exit
+elif [[ "$OSTYPE" == "msys" ]]; then
+    # Lightweight shell and GNU utilities compiled for Windows (part of MinGW)
+    echo "Yombo isn't support on Windows. You should use Vagrant:"
+    echo "https://yombo.net/docs/gateway/vagrant"
+    exit
+elif [[ "$OSTYPE" == "win32" ]]; then
+    echo "Yombo isn't support on Windows. You should use Vagrant:"
+    echo "https://yombo.net/docs/gateway/vagrant"
+    exit
+elif [[ "$OSTYPE" == "freebsd"* ]]; then
+    echo "This script hasn't been updated to support freebsd."
+    echo "Feel free update and make a pull request"
+    exit
+else
+    echo "Your operating system is unknown: $OSTYPE"
+    echo "Please email us at support@yombo.net with the output of this script."
+    exit
+fi
+
+echo
+echo "###########################################"
+echo
+echo "Detected OS: $OS -> $VER"
+echo
+echo "###########################################"
+echo "If this is incorrect, exit the setup and manually start one of"
+echo "the setup scripts rom the helpers directory."
+echo "###########################################"
+echo
+
+  echo "This update script will perform the following tasks:"
+  echo ""
+  echo "1) Download latest Yombo Gateway software."
+  echo "2) Install latest compatible Python version."
+  echo "3) Update user's pip3 software."
+  echo "4) Install/upgrade python modules."
+  echo "5) Update frontend build software."
+  echo ""
+  while true; do
+      read -p "Do you wish to complete this? (y/n): " yn
+      case $yn in
+          [Yy]* ) break;;
+          [Nn]* ) exit;;
+          * ) echo "Please answer y (yes) or n (no).";;
+      esac
+  done
+
+# Update Yombo from source.
+cd "$YOMBO_ROOT_DIR"
+#  git pull
+
+if [[ "$OS" == "Debian" ]]; then
+  $YOMBO_SCRIPT_DIR/helpers/debian_update_user
+elif [[ "$OS" == "Ubuntu" ]]; then
+  $YOMBO_SCRIPT_DIR/helpers/debian_update_user
+fi

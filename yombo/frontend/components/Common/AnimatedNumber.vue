@@ -1,54 +1,56 @@
 <template>
-  <span>{{animatedNumber}}</span>
+  <span>{{tweeningValue}}</span>
 </template>
+
 <script>
-import TWEEN from 'tween.js';
+import TWEEN from '@tweenjs/tween.js';
 
 export default {
   props: {
     value: {
-      default: 0
+      type: Number,
+      default: 0,
+      required: true
     },
     duration: {
       type: Number,
-      default: 500
+      default: 750
     }
   },
-  data() {
+  data: function() {
     return {
-      animatedNumber: 0
-    };
+      tweeningValue: 0
+    }
+  },
+  watch: {
+    value: function(newValue, oldValue) {
+      this.tween(oldValue, newValue)
+    }
+  },
+  mounted: function() {
+    this.tween(0, this.value)
   },
   methods: {
-    initAnimation(newValue, oldValue) {
-      let vm = this;
+    tween: function(startValue, endValue) {
+      var vm = this;
 
       function animate() {
         if (TWEEN.update()) {
-          requestAnimationFrame(animate);
+          requestAnimationFrame(animate)
         }
       }
-
-      new TWEEN.Tween({ tweeningNumber: oldValue })
-        .easing(TWEEN.Easing.Quadratic.Out)
-        .to({ tweeningNumber: newValue }, this.duration)
+      new TWEEN.Tween({
+          tweeningValue: startValue
+        })
+        .to({
+          tweeningValue: endValue
+        }, vm.duration)
         .onUpdate(function() {
-          vm.animatedNumber = this.tweeningNumber.toFixed(0);
+          vm.tweeningValue = this._object.tweeningValue.toFixed(0)
         })
         .start();
-
-      animate();
-    }
-  },
-  mounted() {
-    this.initAnimation(this.value, 0);
-  },
-  watch: {
-    number(newValue, oldValue) {
-      this.initAnimation(newValue, oldValue);
+      animate()
     }
   }
 };
 </script>
-<style>
-</style>

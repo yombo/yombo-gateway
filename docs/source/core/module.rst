@@ -13,5 +13,6 @@ YomboModule Class
 ================================
 .. autoclass:: YomboModule
    :members:
-
-   .. automethod:: __init__
+   :special-members:
+   :private-members:
+   :undoc-members:

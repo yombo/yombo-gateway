@@ -11,7 +11,7 @@ Notifications (yombo.lib.notifications)
 
 Notifications Library Class
 ===========================================
-.. automodule:: Notifications
+.. autoclass:: Notifications
    :members:
    :special-members:
    :private-members:

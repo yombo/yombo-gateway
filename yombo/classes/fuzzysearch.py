@@ -1,5 +1,3 @@
-#This file was created by Yombo for use with Yombo Python Gateway automation
-#software.  Details can be found at https://yombo.net
 """
 Allows fuzzy, non-exact, key search on dictionary keys. This expands on the base dictionary class.
 
@@ -28,14 +26,17 @@ exactness can be fine tuned using a percent value from .99 - .10, the default 75
    Search, but only require 50% match.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+.. versionadded:: 0.23.0
 
-:copyright: Copyright 2012-2016 by Yombo.
+:copyright: Copyright 2012-2020 by Yombo.
 :license: LICENSE for details.
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/classes/fuzzysearch.html>`_
 """
 # Import python libraries
 from difflib import SequenceMatcher
-import operator
 from itertools import islice
+import operator
+from typing import Optional, Union
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboFuzzySearchError
@@ -46,7 +47,7 @@ class FuzzySearch(dict):
     Fuzzy searches on dictionary keys.
 
     """
-    def __init__(self, seed=None, limiter=.75):
+    def __init__(self, seed: Optional[dict] = None, limiter: float = .75):
         """
         Construct a new fuzzy search dictionary
         
@@ -54,9 +55,7 @@ class FuzzySearch(dict):
         values make matching more strict.
         
         :param seed: A starting dictionary.
-        :type seed: dict
         :param limiter: The minimum % (as a float) that a search for a key must match a key. Default: .75
-        :type limiter: float
         """
         super(FuzzySearch, self).__init__()
 
@@ -77,38 +76,35 @@ class FuzzySearch(dict):
         self._dict_getitem = lambda key: \
             super(FuzzySearch, self).__getitem__(key)
 
-    def __contains__(self, searchFor):
+    def __contains__(self, search_for: Union[str, int]) -> bool:
         """
-        Overides python dict __contains__ - Return true if searchFor is
+        Overides python dict __contains__ - Return true if search_for is
         found in the dict key space, using fuzzy search.
 
-        :param searchFor: The key of the dictionary to search for.
-        :type searchFor: int or string
+        :param search_for: The key of the dictionary to search for.
         :return: If close key is found, True, otherwise false.
-        :rtype: bool
         """
-        if self._search(searchFor, True)[0]:
+        if self._search(search_for, True)[0]:
             return True
         else:
             return False
 
-    def __getitem__(self, searchFor):
+    def __getitem__(self, search_for: Union[str, int]):
         """
         Overides python dict __getitem__ - Try to return exact match first, then do
         fuzzy search of the dict key space.
 
-        :param searchFor: The key of the dictionary to search for.
-        :type searchFor: int or string
-        :return: The value of from the dict[searchFor]
+        :param search_for: The key of the dictionary to search for.
+        :return: The value of from the dict[search_for]
         """
-        found, key, item, ratio, others = self._search(searchFor)
+        found, key, item, ratio, others = self._search(search_for)
 
         if not found:
-            raise YomboFuzzySearchError(searchFor, key, item, ratio, others)
+            raise YomboFuzzySearchError(search_for, key, item, ratio, others)
 
         return item
 
-    def search(self, searchFor, limiter_override=None):
+    def search(self, search_for: Union[str, int], limiter: Optional[float] = None) -> dict:
         """
         What key to search for.  It returns 5 variables as a dictionary:
             - valid - True if ratio match is above the limiter.
@@ -118,23 +114,23 @@ class FuzzySearch(dict):
             - others - The top 5 alternatives, ordered from highest to lowest, as a dictionary
                 of dictionaries.  The key being the ratio. Values of the dictionary are: key, value
         
-        :param searchFor: The key of the dictionary to search for.
-        :type searchFor: int or string
-        :param limiter_override: temporarily override the limiter for only this search.
+        :param search_for: The key of the dictionary to search for.
+        :type search_for: int or string
+        :param limiter: temporarily override the limiter for only this search.
         :return: See description for details
         :rtype: dict
         """
-        results = self._search(searchFor, limiter_override)
+        results = self._search(search_for, limiter)
         return {
             "valid": results[0],
             "key": results[1],
             "value": results[2],
             "ratio": results[3],
             "others": results[4],
-            "searchFor": searchFor,
+            "search_for": search_for,
         }
 
-    def search2(self, searchFor, limiter_override=None):
+    def search2(self, search_for: Union[str, int], limiter: Optional[float] = None):
         """
         What key to search for.  It returns 5 variables as a dictionary:
             - valid - True if ratio match is above the limiter.
@@ -144,43 +140,39 @@ class FuzzySearch(dict):
             - others - The top 5 alternatives, ordered from highest to lowest, as a dictionary
                 of dictionaries.  The key being the ratio. Values of the dictionary are: key, value
 
-        :param searchFor: The key of the dictionary to search for.
-        :type searchFor: int or string
-        :param limiter_override: temporarily override the limiter for only this search.
+        :param search_for: The key of the dictionary to search for.
+        :type search_for: int or string
+        :param limiter: temporarily override the limiter for only this search.
         :return: See description for details
         :rtype: dict
         """
-        if limiter_override is not None:
-            found, key, item, ratio, others = self._search(searchFor, limiter_override)
+        if limiter is not None:
+            found, key, item, ratio, others = self._search(search_for, limiter)
         else:
-            found, key, item, ratio, others = self._search(searchFor)
+            found, key, item, ratio, others = self._search(search_for)
 
         if not found:
-            raise YomboFuzzySearchError(searchFor, key, item, ratio, others)
+            raise YomboFuzzySearchError(search_for, key, item, ratio, others)
 
         return item
 
-    def _search(self, searchFor, limiter_override=None):
+    def _search(self, search_for: Union[str, int], limiter: Optional[float] = None) -> list:
         """
         **Don't use this function directly** - Performs the actual search.
 
         Scan through the dictionary, and match keys. Returns the value of
         the best matching key.
-        :param searchFor: The key of the dictionary to search for.
-        :type searchFor: int or string
-        :param limiter_override: temporarily override the limiter for this search.
-        :type limiter_override
+        :param search_for: The key of the dictionary to search for.
+        :param limiter: temporarily override the limiter for this search.
         :return: See :func:`~yombo.lib.fuzzysearch.search` for details
-        :rtype: dict
         """
-#        logger.debug("searching for: %s", searchFor)
         # if it's here, just return that
-        if self._dict_contains(searchFor):
-            return True, searchFor, self._dict_getitem(searchFor), 1, {}
+        if self._dict_contains(search_for):
+            return True, search_for, self._dict_getitem(search_for), 1, {}
 
         # otherwise, we will fuzzy search it. Prepare the minions.
         stringDiffLib = SequenceMatcher()
-        stringDiffLib.set_seq1(searchFor.lower())
+        stringDiffLib.set_seq1(search_for.lower())
 
         # examine each key in the dict
         best_ratio = 0
@@ -212,47 +204,43 @@ class FuzzySearch(dict):
             key_list[curRatio] = {"key": key, "value": self._dict_getitem(key), "ratio": curRatio}
             sorted_list = self.take(5, sorted(iter(key_list.items()), key=operator.itemgetter(0), reverse=True))
 
-        limiter = None
-        if limiter_override is not None:
-            if limiter_override > .99999999999:
-                limiter_override = .99
-            elif limiter_override < .10:
-                limiter_override = .10
-            limiter = limiter_override
+        limiter_final = None
+        if limiter is not None:
+            if limiter > .99999999999:
+                limiter = .99
+            elif limiter < .10:
+                limiter = .10
+            limiter_final = limiter
         else:
-            limiter = self.limiter
+            limiter_final = self.limiter
             
         return (
-            best_ratio >= limiter,  # the part that does the actual check.
+            best_ratio >= limiter_final,  # the part that does the actual check.
             best_key,
             best_match,
             best_ratio,
             sorted_list)
 
-    def take(self, n, iterable):
+    def take(self, n: int, iterable: Union[dict, list]):
         """
         Return first n items
         
         :param n: Number of items to return from iterable
-        :type n: int
         :param iterable: An iterable
-        :type iterable: list or dict
         :return: The iterable with only n number of items.
-        :rtype: iterable
         """
         return list(islice(iterable, n))
 
-    def get_key(self, searchFor):
+    def get_key(self, search_for: Union[str, int]):
         """
-        Returns the closest key of this dictionary for "searchFor".
+        Returns the closest key of this dictionary for "search_for".
         
-        :param searchFor: The key of the dictionary to search for.
-        :type searchFor: int or string
-        :return: The key for searchFor.
+        :param search_for: The key of the dictionary to search for.
+        :return: The key for search_for.
         """
-        found, key, item, ratio, others = self._search(searchFor)
+        found, key, item, ratio, others = self._search(search_for)
 
         if not found:
-            raise YomboFuzzySearchError(searchFor, key, item, ratio, others)
+            raise YomboFuzzySearchError(search_for, key, item, ratio, others)
 
         return key

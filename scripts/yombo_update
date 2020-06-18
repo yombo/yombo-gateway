@@ -5,7 +5,7 @@ if [ "$USER" = "root" ] && [ "$SUDO_USER" == "" ]; then
   echo "as the user owning the Yombo gateway service."
   echo ""
   echo "Logout as root and then:"
-  echo "sudo yombo_update"
+  echo "use: sudo ./yombo_update"
   exit
 fi
 
@@ -14,13 +14,10 @@ if [ "$(id -u)" -ne 0 ]; then
   echo "is needed to install the latest updates. Run this the user"
   echo "owning the Yombo gateway service:"
   echo ""
-  echo "sudo yombo_update"
+  echo "sudo ./yombo_update"
   echo ""
   exit
 fi
-
-#YOMBO_SCRIPT_DIR="$( cd "$(dirname "$0")" ; pwd -P )"
-
 
 YOMBO_SCRIPT_DIR="$( cd "$(dirname "$0")" ; pwd -P )"
 YOMBO_ROOT_DIR="$(dirname $YOMBO_SCRIPT_DIR)"
@@ -74,19 +71,78 @@ else
 fi
 
 echo
-echo "###########################################"
+echo "#########################################################"
+echo
 echo "Detected OS: $OS -> $VER"
-echo "###########################################"
-echo "If this is incorrect, exit the setup and"
-echo "manually start one of the setup scripts"
-echo "from the helpers directory."
-echo "###########################################"
+echo
+echo "#########################################################"
+echo "If this is incorrect, exit the setup and manually start"
+echo " one ofthe setup scripts rom the helpers directory."
+echo "#########################################################"
 echo
 
+if [ "$1" != "vagrant" ]; then
+    echo "This update script will perform the following tasks:"
+    echo ""
+    echo "0) (Optional) Update system using 'apt upgrade' and pip3."
+    echo "1) Update the system pip3."
+    echo "2) Update mosquitto (mqtt) broker, including it's dependencies."
+    echo "3) Run user updates - this be also be called using 'yombo_update_user':"
+    echo "   - Download latest Yombo Gateway software."
+    echo "   - Install latest compatible Python version."
+    echo "   - Update user's pip3 software."
+    echo "   - Install/upgrade python modules."
+    echo "   - Update frontend build software."
+    echo ""
+    while true; do
+        read -p "Do you wish to complete this? (y/n): " yn
+        case $yn in
+            [Yy]* ) break;;
+            [Nn]* ) exit;;
+            * ) echo "Please answer y (yes) or n (no).";;
+        esac
+    done
+fi
+
+# Update Yombo from source.
+cd "$YOMBO_ROOT_DIR"
+
+function debian_update
+{
+  echo ""
+  echo ""
+  echo ""
+  echo ""
+  echo ""
+  while true; do
+      read -p "Do you wish to run the debian 'apt upgrade' and pip3 update?  (y/n): " yn
+      case $yn in
+          [Yy]* ) break;;
+          [Nn]* ) return 0;;
+          * ) echo "Please answer y (yes) or n (no).";;
+      esac
+  done
+  $YOMBO_SCRIPT_DIR/helpers/debian_update vagrant
+}
+
 if [[ "$OS" == "Debian" ]]; then
-    $YOMBO_SCRIPT_DIR/helpers/debian_update $1
-    sudo runuser -l $SUDO_USER -c "bash $YOMBO_SCRIPT_DIR/helpers/debian_update_user"
+    debian_update
+    $YOMBO_SCRIPT_DIR/helpers/debian_install_mosquitto $1 &
+    runuser -l $SUDO_USER -c "bash -i -c $YOMBO_SCRIPT_DIR/pyenv_update" &
+    runuser -l $SUDO_USER -c "bash -i -c $YOMBO_SCRIPT_DIR/debian_update_user" &
+    for job in `jobs -p`
+    do
+    echo $job
+        wait $job || let "FAIL+=1"
+    done
 elif [[ "$OS" == "Ubuntu" ]]; then
-    $YOMBO_SCRIPT_DIR/helpers/ubuntu_update $1
-    sudo runuser -l $SUDO_USER -c "bash $YOMBO_SCRIPT_DIR/helpers/ubuntu_update_user"
+    debian_update
+    $YOMBO_SCRIPT_DIR/helpers/debian_install_mosquitto $1 &
+    runuser -l $SUDO_USER -c "bash -i -c $YOMBO_SCRIPT_DIR/pyenv_update" &
+    runuser -l $SUDO_USER -c "bash -i -c $YOMBO_SCRIPT_DIR/debian_update_user" &
+    for job in `jobs -p`
+    do
+    echo $job
+        wait $job || let "FAIL+=1"
+    done
 fi

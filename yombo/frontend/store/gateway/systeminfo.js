@@ -18,7 +18,8 @@ export const state = () => ({
   version: null,
   operating_mode: null,
   running_since: null,
-  last_download_at: 0
+  last_download_at: 0,
+  refresh_timeout: 300,
 });
 
 export const actions = {
@@ -28,7 +29,8 @@ export const actions = {
     try {
       response = window.$nuxt.$gwapiv1.system().info()
         .then(response => {
-          commit('SET_DATA', response.data['data']['attributes'])
+          commit('SET_DATA', response.data['data']['attributes']);
+          commit('touch_downloaded');
         });
     } catch (ex) {  // Handle error
       console.log("pages/index: has an error");
@@ -37,7 +39,7 @@ export const actions = {
     }
   },
     refresh( { state, dispatch }) {
-    if (state.last_download_at <= Math.floor(Date.now()/1000) - 120 || state.gwLabel == null) {
+    if (state.last_download_at === null || state.last_download_at <= Math.floor(Date.now() - (state.refresh_timeout*1000))) {
       dispatch('fetch');
     }
   }
@@ -50,6 +52,14 @@ export const mutations = {
       state[key] = data[key];
     });
     state.last_download_at = Math.floor(Date.now() / 1000);
+  },
+  touch_downloaded(state) {
+    state.last_download_at = Number(Date.now());
   }
 };
 
+export const getters = {
+  gateway_id: state => () => {
+    return state.gateway_id;
+  },
+};

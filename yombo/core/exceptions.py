@@ -5,13 +5,19 @@ Create various exceptions to be used throughout the Yombo gateway.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2012-2019 by Yombo.
+:copyright: Copyright 2012-2020 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/core/exceptions.html>`_
 """
+from copy import deepcopy
+import inspect
+import sys
+from typing import Dict, List, Optional, Union
 from twisted.internet.error import ReactorNotRunning
+from uuid import uuid4
 
-from yombo.constants import RESTART_EXIT_CODE, QUIT_ERROR_EXIT_CODE
+from yombo.constants import RESTART_EXIT_CODE, QUIT_EXIT_CODE, QUIT_ERROR_EXIT_CODE
+from yombo.constants.exceptions import ERROR_CODES
 
 
 class YomboException(Exception):
@@ -23,117 +29,172 @@ class YomboException(Exception):
 
     The meta variable is a dict to provide any additional details about the error.
     """
-    def __init__(self, errors=None, errorno=1, name="unknown", component="component", meta=None):
+    # errors: List[Dict[str, Union[str, int]]]
+    message: str = ""
+    html: str = ""
+    errors: Union[str, List[Dict[str, Union[str, int, dict]]]]
+    error_code: Union[str, int]
+    response_code: int
+    links: dict
+    component_name: str
+    component_type: str
+    component_function: str
+
+    def __init__(self,
+                 errors: Union[str, dict, List[Dict[str, Union[str, int, dict]]]],
+                 error_code: Optional[Union[str, int]] = 101,
+                 component_name: Optional[str] = None,
+                 component_type: Optional[str] = None,
+                 component_function: Optional[str] = None,
+                 meta: Optional[dict] = None,
+                 title: Optional[str] = None,
+                 response_code: Optional[int] = None):
         """
         :param errors: List of errors with additional details. Can be used by others to format more detailed responses.
-        :type errors: list, str
-        :param errorno: The error number to log/display.
-        :type errorno: int
-        :param name: Name of the library, component, or module rasing the exception.
-        :type name: string
-        :param component: What type of ojbect is calling: component, library, or module
-        :type component: string
+        :param error_code: The error number to log/display.
+        :param component_name: Name of the library, component, or module raising the exception.
+        :param component_type: Library, core, module, etc.
+        :param component_function: Name of the function that raised the error.
         :param meta: Any additional items for reference.
         :type meta: dict
+        :param title: Use a default title for errors.
+        :param response_code: Response code to send to the web browser.
         """
-        message = ""
-        html = ""
-
-        # print(f"Type of errors: {type(errors)}")
-        if isinstance(errors, str):
-            # print("errors is a string...")
-            errors = [{'detail': errors}]
-            # print(f"new errors: {errors}")
+        calling_frame = sys._getframe(2)
+        mod = inspect.getmodule(calling_frame)
+        if "self" in calling_frame.f_locals:
+            component_details = {
+                "file": mod.__name__,
+                "class": calling_frame.f_locals['self'].__class__.__name__,
+                "method": calling_frame.f_code.co_name
+            }
         else:
-            errors = errors
+            component_details = {
+                "file": mod.__name__,
+                "class": None,
+                "method": calling_frame.f_code.co_name,
+            }
 
-        # allowed_keys = ["id", "links", "status", "code", "title", "detail", "source", "meta"]
+        if component_type is None:
+            item_path = component_details["file"]
+            if item_path.startswith("yombo.lib"):
+                component_type = "library"
+            if item_path.startswith("yombo."):
+                item_parts = item_path.split(".")
+                component_type = item_parts[1]
+        if component_name is None:
+            component_name = component_details["file"]
+
+        if isinstance(errors, str):
+            errors: List[Dict[str, Union[str, int, dict]]] = [{'detail': errors}]
+        if isinstance(errors, dict):
+            errors: List[Dict[str, Union[str, int, dict]]] = [errors]
+
+        if response_code is None or isinstance(response_code, int) is False or response_code not in ERROR_CODES:
+            response_code = 400
+        if title is None:
+            title = ERROR_CODES[response_code]["title"]
+
+        self.response_code = response_code
         for error in errors:
-            # print(f"error: {error}")
+            missing = ERROR_CODES[response_code]
+
             if "code" not in error:
-                error["code"] = f"errorno"
-            if "id" not in error:
-                error["id"] = f"no_id_provided_{errorno}"
+                error["code"] = error_code
             if "title" not in error:
-                error["title"] = self.__class__.__name__
+                error["title"] = title
             if "detail" not in error:
                 error["detail"] = "No details about exception was provided."
             if "links" not in error:
-                error["links"] = {}
-            if "about" not in error["links"]:
-                error["links"]["about"] = f"https://yombo.com/docs/exceptions/{self.__class__.__name__}"
+                error["links"] = missing["links"]
+            else:
+                temp_links = deepcopy(missing["links"])
+                if error["links"] is None:
+                    error["links"] = temp_links
+                else:
+                    temp_links.update(error["links"])
+                    error["links"] = temp_links
 
+            if isinstance(meta, dict):
+                error["meta"] = meta
+
+        message: str = ""
+        messages = []
+        html: str = ""
         for error in errors:
-            # print(f"exception error: {error}")
             if len(message) > 0:
-                # print(f"message: '{message}', len: {len(message)}")
                 message += ",+ "
-            message += f"{message}{error['title']} - {error['detail']}"
+            messages.append(f"{error['detail']}")
             html += f"<li>{error['title']}<ul><li>{error['detail']}</li><li>{error['code']}</li></ul></li>"
+        message = ", ".join(messages)
         if len(message) == 0:
             message = "Unknown error"
 
-        # message += f"  In component: {component}->{name}"
         self.errors = errors
         self.message = message
         self.html = html
+
         Exception.__init__(self, self.message)
 
-        self.errorno = errorno
-        self.component = component
-        self.name = name
+        self.error_code = error_code
+        self.component_name = component_name
+        self.component_type = component_type
+        self.component_function = component_function
         self.meta = meta
+        self.title = title
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         Formats the exception for logging to text.
 
-        :return: A formated string of the error message.
+        :return: A formatted string of the error message.
         :rtype: string
         """
-        output = "%d: %s  In %s '%s'." % (self.errorno, self.message, self.component, self.name)
-        return repr(output)
+        results = f"{self.error_code}: {self.message}"
+        if self.component_name is not None:
+            results += f" in {self.component_name}"
+        results2 = ""
+        if self.component_type is not None:
+            results2 = str(self.component_type)
+        if self.component_function is not None:
+            results2 += f" {str(self.component_type)}"
+        if len(results2) > 0:
+            results += f" ({results2.strip()})"
+        return results
 
 
 class YomboWarning(YomboException):
     """
     Extends *Exception* - A non-fatal warning gateway exception that is used for items needing user attention.
     """
-    def __init__(self, errors, errorno=101, name="unknown", component="component", meta=None):
+    def __init__(self,
+                 errors: Union[str, dict, List[Dict[str, Union[str, int]]]],
+                 error_code: Optional[Union[str, int]] = 102,
+                 component_name: Optional[str] = None,
+                 component_type: Optional[str] = None,
+                 component_function: Optional[str] = None,
+                 meta: Optional[dict] = None,
+                 title: Optional[str] = None,
+                 response_code: Optional[int] = None):
         """
         Setup the YomboWarning and then pass everying to YomboException
         
         :param errors: List of errors with additional details. Can be used by others to format more detailed responses.
-        :type errors: list, str
-        :param errorno: The error number to log/display.
-        :type errorno: int
-        :param name: Name of the library, component, or module rasing the exception.
-        :type name: string
-        :param component: What type of ojbect is calling: component, library, or module
-        :type component: string
+        :param error_code: The error number to log/display.
+        :param component_name: Name of the library, component, or module raising the exception.
+        :param component_type: Library, core, module, etc.
+        :param component_function: Name of the function that raised the error.
         :param meta: Any additional items for reference.
-        :type meta: dict
+        :param title: Use a default title for errors.
+        :param response_code: Response code to send to the web browser.
         """
-        YomboException.__init__(self, errors, errorno, name, component, meta)
+        YomboException.__init__(self, errors, error_code, component_name, component_type, component_function, meta,
+                                title, response_code)
 
 
 class IntentError(YomboWarning):
     """
     Base class for intent related errors.
-    """
-
-
-class UnknownIntent(IntentError):
-    """
-    When the intent is not registered.
-    """
-    def __init__(self, errors, errorno=1359, name="unknown", component="component", meta=None):
-        YomboException.__init__(self, errors, errorno, name, component, meta)
-
-
-class InvalidSlotInfo(IntentError):
-    """
-    When the slot data is invalid or missing components.
     """
 
 
@@ -149,27 +210,126 @@ class IntentUnexpectedError(IntentError):
     """
 
 
+class UnknownIntent(IntentError):
+    """
+    When the intent is not registered.
+    """
+    def __init__(self,
+                 errors: Union[str, List[Dict[str, Union[str, int]]]],
+                 error_code: Optional[Union[str, int]] = 1359,
+                 component_name: Optional[str] = None,
+                 component_type: Optional[str] = None,
+                 component_function: Optional[str] = None,
+                 meta: Optional[dict] = None):
+        YomboException.__init__(self, errors, error_code, component_name, component_type, component_function, meta)
+
+
+class InvalidSlotInfo(IntentError):
+    """
+    When the slot data is invalid or missing components.
+    """
+
+
+class YomboMarshmallowValidationError(YomboException):
+    """
+    Takes a Marshmallow ValidationError and converts to Yombo format.
+    """
+    def __init__(self, validation_error,
+                 error_code: Optional[Union[str, int]] = 101,
+                 component_name: Optional[str] = None,
+                 component_type: Optional[str] = None,
+                 component_function: Optional[str] = None,
+                 meta: Optional[dict] = None,
+                 title: Optional[str] = None,
+                 response_code: Optional[int] = None):
+
+        print(f"YomboMarshmallowValidationError: validation_error: {validation_error}")
+        messages = validation_error.messages
+        print(f"YomboMarshmallowValidationError: message: {messages}")
+        errors = []
+        for field, message in messages.items():
+            errors.append({
+                "title": field,
+                "detail": " ".join(message),  # Comes in as a list of messages. Lets just make one string.
+            })
+        YomboException.__init__(self, errors, error_code, component_name, component_type, component_function, meta,
+                                title, response_code)
+
+
 class YomboInvalidValidation(YomboException):
     """
     Occurs when asked to validate something and it fails. Primary use cases are: 1) validating user inputs to
     the web interface, or 2) validating variable types within the framework or modules.
     """
-    def __init__(self, errors, errorno=1873, name="unknown", component="component", meta=None):
+    def __init__(self,
+                 errors: Union[str, List[Dict[str, Union[str, int]]]],
+                 error_code: Optional[Union[str, int]] = 1873,
+                 component_name: Optional[str] = None,
+                 component_type: Optional[str] = None,
+                 component_function: Optional[str] = None,
+                 meta: Optional[dict] = None):
         """
         Setup the YomboWarning and then pass everying to YomboException
 
         :param errors: List of errors with additional details. Can be used by others to format more detailed responses.
-        :type errors: list
-        :param errorno: The error number to log/display.
-        :type errorno: int
-        :param name: Name of the library, component, or module rasing the exception.
-        :type name: string
-        :param component: What type of ojbect is calling: component, library, or module
-        :type component: string
+        :param error_code: The error number to log/display.
+        :param component_name: Name of the library, component, or module raising the exception.
+        :param component_type: Library, core, module, etc.
+        :param component_function: Name of the function that raised the error.
         :param meta: Any additional items for reference.
-        :type meta: dict
         """
-        YomboException.__init__(self, errors, errorno, name, component, meta)
+        YomboException.__init__(self, errors, error_code, component_name, component_type, component_function, meta)
+
+
+class YomboWebinterfaceError(YomboException):
+    """
+    Raised when somewhere within the webinterface. Collects various items to be displayed via template or to
+    output in JSON/MSGPACK.
+    """
+    def __init__(self,
+                 errors: Optional[Union[str, List[Dict[str, Union[str, int]]]]] = None,
+                 error_code: Optional[Union[str, int]] = "error_3102",
+                 title: Optional[str] = None,
+                 links: Optional[dict] = None,
+                 response_code: Optional[int] = None,
+                 component_name: Optional[str] = None,
+                 component_type: Optional[str] = None,
+                 component_function: Optional[str] = None,
+                 meta: Optional[dict] = None):
+        """
+
+        Setup the YomboWarning and then pass everying to YomboException
+
+        :param errors: List of errors with additional details. Can be used by others to format more detailed responses.
+        :param error_code: The error number to log/display.
+        :param component_name: Name of the library, component, or module raising the exception.
+        :param component_type: Library, core, module, etc.
+        :param component_function: Name of the function that raised the error.
+        :param meta: Any additional items for reference.
+        """
+        if response_code is None or isinstance(response_code, int) is False or response_code not in ERROR_CODES:
+            response_code = 400
+
+        self.response_code = response_code
+
+        missing = ERROR_CODES[response_code]
+        # print(f"return_error: {errors}")
+        if title is None:
+            self.title = missing["title"]
+        if errors is None:
+            errors = missing["details"]
+
+        if error_code is None:
+            error_code = missing["error_code"]
+
+        temp_links = deepcopy(missing["links"])
+        if links is None:
+            self.links = temp_links
+        else:
+            temp_links.update(links)
+            self.links = temp_links
+
+        YomboException.__init__(self, errors, error_code, component_name, component_type, component_function, meta)
 
 
 class YomboInvalidArgument(ValueError):
@@ -184,84 +344,92 @@ class YomboAPICredentials(YomboException):
     Extends *YomboException* - A non-fatal warning gateway exception that is used when the YomboAPI library
     ran into an authentication issue and cannot process the request.
     """
-    def __init__(self, errors, errorno=9854, name="unknown", component="component", meta=None):
+    def __init__(self,
+                 errors: Union[str, List[Dict[str, Union[str, int]]]],
+                 error_code: Optional[Union[str, int]] = 9854,
+                 component_name: Optional[str] = None,
+                 component_type: Optional[str] = None,
+                 component_function: Optional[str] = None,
+                 meta: Optional[dict] = None):
         """
-        Setup the YomboWarning and then pass everying to YomboException
+        Setup the YomboWarning and then pass everything to YomboException
 
         :param errors: List of errors with additional details. Can be used by others to format more detailed responses.
-        :type errors: list
-        :param errorno: The error number to log/display.
-        :type errorno: int
-        :param name: Name of the library, component, or module rasing the exception.
-        :type name: string
-        :param component: What type of ojbect is calling: component, library, or module
-        :type component: string
+        :param error_code: The error number to log/display.
+        :param component_name: Name of the library, component, or module raising the exception.
+        :param component_type: Library, core, module, etc.
+        :param component_function: Name of the function that raised the error.
         :param meta: Any additional items for reference.
-        :type meta: dict
         """
-        YomboException.__init__(self, errors, errorno, name, component, meta)
+        YomboException.__init__(self, errors, error_code, component_name, component_type, component_function, meta)
+
+
+# class YomboCritical(RuntimeWarning):
+#     """
+#     Extends *RuntimeWarning* - A **fatal error** gateway exception - **forces the gateway to quit**.
+#     """
+#     def __init__(self,
+#                  message: str,
+#                  error_code: Optional[int] = 9999,
+#                  exit_code: Optional[int] = None,
+#                  component_name: Optional[str] = None,
+#                  component_type: Optional[str] = None,
+#                  component_function: Optional[str] = None
+#                  ):
+#         """
+#         Setup the YomboCritical. When caught, call the exit function of this exception to
+#         exit the gateway.
+#
+#         :param message: The error message to log/display.
+#         :param error_code: The error number to log/display.
+#         :param component_name: Name of the library, component, or module raising the exception.
+#         :param component_type: Library, core, module, etc.
+#         :param component_function: Name of the function that raised the error.
+#         """
+#         if exit_code is None:
+#             exit_code = QUIT_ERROR_EXIT_CODE
+#         self.exit_code = exit_code
+#         self.message = message
+#         self.error_code = error_code
+#         self.component_name = component_name
+#         self.component_type = component_type
+#         self.component_function = component_function
+#         self.exit()
+#
+#     def __str__(self) -> str:
+#         """
+#         Formats the exception for logging to text.
+#
+#         :return: A formatted string of the error message.
+#         :rtype: string
+#         """
+#         return f"{self.error_code}: {self.message} in {self.component_name} ({self.component_type} - " \
+#                f"{self.component_function})"
+#
+#     def exit(self):
+#         """
+#         Kills the gateway, won't be restarted.
+#         """
+#         from twisted.internet import reactor
+#         import os
+#         print("Yombo critical stopping......")
+#         reactor.addSystemEventTrigger("after", "shutdown", os._exit, self.exit_code)
+#         try:
+#             reactor.stop()
+#         except ReactorNotRunning as e:
+#             print(f"Unable to stop reactor....{e}")
+#             pass
 
 
 class YomboCritical(RuntimeWarning):
     """
     Extends *RuntimeWarning* - A **fatal error** gateway exception - **forces the gateway to quit**.
-    """
-    def __init__(self, message, errorno=9999, name="unknown", component="component", exit_code=None):
-        """
-        Setup the YomboCritical. When caught, call the exit function of this exception to
-        exit the gateway.
 
-        :param message: The error message to log/display.
-        :type message: string
-        :param errorno: The error number to log/display.
-        :type errorno: int
-        :param name: Name of the library, component, or module rasing the exception.
-        :type name: string
-        :param component: What type of ojbect is calling: component, library, or module
-        :type component: string
-        """
-        if exit_code is None:
-            exit_code = QUIT_ERROR_EXIT_CODE
-        self.exit_code = exit_code
-        self.message = message
-        self.errorno = errorno
-        self.component = component
-        self.name = name
-        self.exit()
-
-    def __str__(self):
-        """
-        Formats the exception for logging to text.
-
-        :return: A formated string of the error message.
-        :rtype: string
-        """
-
-        output = "%d: %s  In '%s' (type:%s)." % (self.errorno, self.message, self.component, self.name)
-        return repr(output)
-
-    def exit(self):
-        """
-        Kills the gateway, won't be restarted.
-        """
-        from twisted.internet import reactor
-        import os
-        print("Yombo critical stopping......")
-        reactor.addSystemEventTrigger("after", "shutdown", os._exit, self.exit_code)
-        try:
-            reactor.stop()
-        except ReactorNotRunning as e:
-            print(f"Unable to stop reactor....{e}")
-            pass
-
-
-class YomboRestart(RuntimeWarning):
-    """
-    Extends *RunningWarning* - Restarts the gateway, not a fatal exception.  
+    Used to exit the gateway with a return status code representing something went wrong.
     """
     message = ""
 
-    def __init__(self, message):
+    def __init__(self, message: str):
         """
         :param message: The error message to log/display.
         :type message: string
@@ -276,8 +444,75 @@ class YomboRestart(RuntimeWarning):
         @return: A formated string of the error message.
         @rtype: string
         """
-        output = f"Restarting Yombo Gateway. Reason: {self.message}."
-        return repr(output)
+        return f"Restarting Yombo Gateway. Reason: {self.message}."
+
+    def exit(self):
+        """
+        Exists the daemon with exit status 127 so that the wrapper script knows to restart the gateway.
+        """
+        from twisted.internet import reactor
+        import os
+        reactor.addSystemEventTrigger("after", "shutdown", os._exit, QUIT_ERROR_EXIT_CODE)
+        reactor.stop()
+
+
+class YomboQuit(RuntimeWarning):
+    """
+    Extends *RuntimeWarning* - A **fatal error** gateway exception - **forces the gateway to quit**.
+
+    Used to exit the gateway with a return status code representing everything is good.
+    """
+    message = ""
+
+    def __init__(self, message: str):
+        """
+        :param message: The error message to log/display.
+        :type message: string
+        """
+        self.message = message
+        self.exit()
+
+    def __str__(self):
+        """
+        Formats the exception for logging to text.
+
+        @return: A formated string of the error message.
+        @rtype: string
+        """
+        return f"Restarting Yombo Gateway. Reason: {self.message}."
+
+    def exit(self):
+        """
+        Exists the daemon with exit status 127 so that the wrapper script knows to restart the gateway.
+        """
+        from twisted.internet import reactor
+        import os
+        reactor.addSystemEventTrigger("after", "shutdown", os._exit, QUIT_EXIT_CODE)
+        reactor.stop()
+
+
+class YomboRestart(RuntimeWarning):
+    """
+    Extends *RunningWarning* - Restarts the gateway, not a fatal exception.  
+    """
+    message = ""
+
+    def __init__(self, message: str):
+        """
+        :param message: The error message to log/display.
+        :type message: string
+        """
+        self.message = message
+        self.exit()
+
+    def __str__(self):
+        """
+        Formats the exception for logging to text.
+
+        @return: A formated string of the error message.
+        @rtype: string
+        """
+        return f"Restarting Yombo Gateway. Reason: {self.message}."
 
     def exit(self):
         """
@@ -294,40 +529,60 @@ class YomboNoAccess(YomboWarning):
     Extends :class:`YomboWarning` - Resource accessed without required permissions.
     """
 
-    def __init__(self, item_permissions=None, roles=None, platform=None, item=None, action=None,
-                 message="No access", name="unknown", component="component", messages=None):
+    def __init__(self,
+                 action: str,
+                 platform: str,
+                 item_id: Union[str, int],
+                 request_by: str,
+                 request_by_type: str,
+                 request_context: str,
+                 error_code: Optional[Union[str, int]] = None,
+                 message: Optional[str] = None,
+                 component_name: Optional[str] = None,
+                 component_type: Optional[str] = None,
+                 component_function: Optional[str] = None,
+                 meta: Optional[dict]=None):
         """
         Setup the YomboWarning and then pass everying to YomboException
 
-        :param message: The error message to log/display.
-        :type message: string
-        :param name: Name of the library, component, or module rasing the exception.
-        :type name: string
-        :param component: What type of ojbect is calling: component, library, or module
-        :type component: string
+        :param action: The action requested, such as edit, view, create, etc.
+        :param platform: The platform, such as yombo.lib.atoms
+        :param item_id: The id requested, such as a command_id, device_id.
+        :param request_by: The id of the requester.
+        :param request_by_type: The type of requester, such as authkey, user.
+        :param request_context: Context about the request. Such as an IP address of the source.
+        :param error_code: An error code for the no access, typically the request_id.
+        :param message: Message to return to the requester.
+        :param component_name: Name of the library, component, or module raising the exception.
+        :param component_type: Library, core, module, etc.
+        :param component_function: Name of the function that raised the error.
         """
-        YomboException.__init__(self, message=message, errorno=403, name=name, component=component,
-                                messages=messages)
-        self.item_permissions = item_permissions
-        self.roles = roles
-        self.platform = platform
+        if error_code is None:
+            error_code = uuid4()
+        if message is None:
+            message = "No access"
+
+        errors = [
+            {
+                "code": 403,
+                "id": error_code,
+                "title": "Access denied",
+                "details": message,
+            }
+        ]
+        YomboException.__init__(self,
+                                errors=errors,
+                                error_code=403,
+                                component_name=component_name,
+                                component_type=component_type,
+                                component_function=component_function,
+                                meta=meta)
         self.action = action
-
-
-class YomboModuleWarning(YomboWarning):
-    """
-    Extends :class:`YomboWarning` - Same as calling YomboWarning, but sets component type to "module".
-    """
-    def __init__(self, message, errorno, module_obj):
-        """
-        :param message: The error message to log/display.
-        :type message: string
-        :param errorno: The error number to log/display.
-        :type errorno: int
-        :param module_obj: The module instance.
-        :type module_obj: Module
-        """
-        YomboWarning.__init__(self, message, errorno, module_obj._Name, "module")
+        self.platform = platform
+        self.item_id = item_id
+        self.request_by = request_by
+        self.request_by_type = request_by_type
+        self.request_context = request_context
 
 
 class YomboFileError(YomboWarning):
@@ -343,28 +598,23 @@ class YomboFuzzySearchError(Exception):
     with a fuzzy search.
 
     :cvar device_id: (string) The device_id if known, otherwise will be None.
-    :cvar errorno: (int) An error number for further error sorting/handling.
+    :cvar error_code: (int) An error number for further error sorting/handling.
     :cvar key: (string) If from a fuzzy search exception, will be the best possible device_id.
     :cvar others: (dict) If from a fuzzy search exception, will be a dictionary of other alternatives.
-    :cvar searchFor: (string) If from a fuzzy search exception, will be the requested search key.
+    :cvar search_for: (string) If from a fuzzy search exception, will be the requested search key.
     :cvar ratio: (float) If from a fuzzy search exception, the match confidence in percent as .80 for 80%.
     :cvar value: (device) If from a fuzzy search exception, will be the best possible device instance.
     """
-    def __init__(self, searchFor, key, value, ratio, others):
+    def __init__(self, search_for, key, value, ratio, others):
         """
-        :param searchfor: The requestd search key.
-        :type searchfor: string
+        :param search_for: The requestd search key.
         :param key: The best matching key.
-        :type key: string
         :param value: The best matchin value.
-        :type value: int
         :param ratio: The ratio as a percent of closeness. IE: .32
-        :type ratio: flaot
         :param others: Other top 5 choices to choose from.
-        :type others: dict
         """
         Exception.__init__(self)
-        self.searchFor = searchFor
+        self.search_for = search_for
         self.key = key
         self.value = value
         self.ratio = ratio
@@ -377,9 +627,8 @@ class YomboFuzzySearchError(Exception):
         :return: A formated string of the error message.
         :rtype: string
         """
-        output = "Key (%s) not found above the cutoff limit. Closest key found: %s with ratio of: %.3f." %\
-                 (self.searchFor, self.key, self.ratio)
-        return repr(output)
+        return "Key (%s) not found above the cutoff limit. Closest key found: %s with ratio of: %.3f." %\
+                 (self.search_for, self.key, self.ratio)
 
 
 class YomboPinCodeError(Exception):
@@ -401,23 +650,27 @@ class YomboHookStopProcessing(YomboWarning):
     Raise this during a hook call to stop processing any remain hook calls and to stop further processing
     of the remaining request.
     """
-    def __init__(self, message, errorno=19348, name="unknown", component="component", collected=None, by_who=None):
+    def __init__(self,
+                 message: str,
+                 error_code: Union[str, int] = 19348,
+                 component_name: Optional[str] = None,
+                 component_type: Optional[str] = None,
+                 component_function: Optional[str] = None
+                 ):
         """
         Setup the YomboWarning and then pass everying to YomboException
 
         :param message: The error message to log/display.
-        :type message: string
-        :param errorno: The error number to log/display.
-        :type errorno: int
-        :param name: Name of the library, component, or module rasing the exception.
-        :type name: string
-        :param component: What type of ojbect is calling: component, library, or module
-        :type component: string
+        :param error_code: The error number to log/display.
+        :param component_name: Name of the library, component, or module raising the exception.
+        :param component_type: Library, core, module, etc.
+        :param component_function: Name of the function that raised the error.
         """
         errors = [
             {
                 "title": "Yombo Hook Stop Processing",
-                "detail": "The requested hook should stop processing."
+                "detail": message
             }
         ]
-        YomboWarning.__init__(self, errors, errorno, component, name)
+        YomboWarning.__init__(self, errors, error_code=error_code, component_name=component_name,
+                              component_type=component_type, component_function=component_function)

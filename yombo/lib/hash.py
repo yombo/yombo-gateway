@@ -11,26 +11,33 @@ Responsible for creating and checking password hashes.
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.16.0
 
-:copyright: Copyright 2018 by Yombo.
+:copyright: Copyright 2018-2020 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/hash.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/hash.html>`_
 """
+from hashlib import sha224, sha256, sha384, sha512
+
 from passlib.hash import argon2, bcrypt
 from time import time
+from typing import Any, ClassVar, Dict, List, Optional, Type, Union
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet import reactor, threads
 
+# Import 3rd-party libs
+import yombo.ext.base62 as base62
 
 # Import Yombo libraries
+from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import sleep
+from yombo.utils import sleep, unicode_to_bytes, encode_binary
 
 logger = get_logger("library.hash")
 
-MAX_DURATION = 300
+MAX_DURATION = 300  # How long it should take to validate a password, in milliseconds.
+
 
 class Hash(YomboLibrary):
     """
@@ -43,12 +50,12 @@ class Hash(YomboLibrary):
     """
     @inlineCallbacks
     def _init_(self, **kwargs):
-        self.argon2_rounds = self._Configs.get("hash", "argon2_rounds", None, False)
-        self.argon2_memory = self._Configs.get("hash", "argon2_memory", None, False)
-        self.argon2_duration = self._Configs.get("hash", "argon2_duration", None, False)
-        self.argon2_rounds_fast = self._Configs.get("hash", "argon2_rounds_fast", None, False)
-        self.argon2_memory_fast = self._Configs.get("hash", "argon2_memory_fast", None, False)
-        self.argon2_duration_fast = self._Configs.get("hash", "argon2_duration_fast", None, False)
+        self.argon2_rounds = self._Configs.get("hash.argon2_rounds", None, False)
+        self.argon2_memory = self._Configs.get("hash.argon2_memory", None, False)
+        self.argon2_duration = self._Configs.get("hash.argon2_duration", None, False)
+        self.argon2_rounds_fast = self._Configs.get("hash.argon2_rounds_fast", None, False)
+        self.argon2_memory_fast = self._Configs.get("hash.argon2_memory_fast", None, False)
+        self.argon2_duration_fast = self._Configs.get("hash.argon2_duration_fast", None, False)
 
         # Find argon2 cost now if don't have. Or find it in 70 seconds
         # Want to do this incase the gateway is moved to a faster/slow processor.
@@ -61,24 +68,25 @@ class Hash(YomboLibrary):
 
     @inlineCallbacks
     def argon2_find_cost(self, slow=None):
-        results = yield threads.deferToThread(self.argon2_find_cost_calculator)
+        max_duration = self._Configs.get("hash.max_duration", MAX_DURATION)
+        results = yield threads.deferToThread(self.argon2_find_cost_calculator, max_time=max_duration)
         self.argon2_rounds = results[0]
         self.argon2_memory = results[1]
         self.argon2_duration = results[2]
-        self._Configs.set("hash", "argon2_rounds", results[0])
-        self._Configs.set("hash", "argon2_memory", results[1])
-        self._Configs.set("hash", "argon2_duration", results[2])
+        self._Configs.set("hash.argon2_rounds", results[0])
+        self._Configs.set("hash.argon2_memory", results[1])
+        self._Configs.set("hash.argon2_duration", results[2])
 
         if slow is True:
-            yield sleep(16)
+            yield sleep(1)
 
-        results = yield threads.deferToThread(self.argon2_find_cost_calculator, max_time=MAX_DURATION/2)
+        results = yield threads.deferToThread(self.argon2_find_cost_calculator, max_time=max_duration/2)
         self.argon2_rounds_fast = results[0]
         self.argon2_memory_fast = results[1]
         self.argon2_duration_fast = results[2]
-        self._Configs.set("hash", "argon2_rounds_fast", results[0])
-        self._Configs.set("hash", "argon2_memory_fast", results[1])
-        self._Configs.set("hash", "argon2_duration_fast", results[2])
+        self._Configs.set("hash.argon2_rounds_fast", results[0])
+        self._Configs.set("hash.argon2_memory_fast", results[1])
+        self._Configs.set("hash.argon2_duration_fast", results[2])
 
     def argon2_find_cost_calculator(self, max_time=None):
         """
@@ -89,60 +97,61 @@ class Hash(YomboLibrary):
         :return:
         """
         if max_time is None:
-            max_time = MAX_DURATION
+            max_time = self._Configs.get("hash.max_duration", MAX_DURATION)
         else:
             try:
                 max_time = int(max_time)
             except Exception as e:
                 max_time = MAX_DURATION
 
-        max_time = max_time * .95
+        max_time = max_time * .98
         memory_base = 1
         memory_min = 11
-        memory_max = 17
+        memory_max = 23
         rounds_min = 0
-        rounds_max = 16
+        rounds_max = 45
         duration = -1
         skip = 0
-        rounds_best = 8
-        memory_best = 10
+        rounds_best = 7
+        memory_best = 11
         duration_best = 300
         for memory_step in range(memory_min, memory_max):
-            for rounds in range(rounds_min + round(memory_step * 0.4), rounds_max):
-                # We implement a skipper if we blast through some of the early checks.
+            for rounds in range(rounds_min + round(memory_step * 0.6), rounds_max):
+                # We implement a skipper if we blast through some of the early checks/fast checks.
                 if skip > 0:
                     skip -= 1
                     duration = 0
                     continue
-                max_time_skip = duration / 4
-                if duration > 0 and duration < max_time * 0.1:
+                if duration > 0 and duration < max_time * 0.15:
                     skip = 5
                     if (rounds + skip) > rounds_max:
                         skip = rounds_max - rounds
                     duration = 0
                     continue
-                if duration > 0 and duration < max_time * 0.125:
+                if duration > 0 and duration < max_time * 0.25:
                     skip = 4
                     if (rounds + skip) > rounds_max:
                         skip = rounds_max - rounds
                     duration = 0
                     continue
-                if duration > 0 and duration < max_time * 0.25:
+                if duration > 0 and duration < max_time * 0.40:
                     skip = 3
                     if (rounds + skip) > rounds_max:
                         skip = rounds_max - rounds
                     duration = 0
                     continue
-                if duration > 0 and duration < max_time * 0.375:
+                if duration > 0 and duration < max_time * 0.50:
                     skip = 2
                     if (rounds + skip) > rounds_max:
                         skip = rounds_max - rounds
                     duration = 0
                     continue
-                if duration > 0 and duration < max_time * 0.5:
+                if duration > 0 and duration < max_time * 0.60:
                     skip = 1
                     duration = 0
                     continue
+                if rounds > round((memory_step-7)*2.6):
+                    break
 
                 start = time()
                 memory_cost = memory_base << memory_step
@@ -151,14 +160,11 @@ class Hash(YomboLibrary):
                 duration = (end - start) * 1000
                 # print("rounds=%s, memory=%s (%s), time=%.3f" % (rounds, memory_cost, memory_step, duration))
                 if duration > max_time:
-                    break
+                    return [rounds_best, memory_best, duration_best]
                 rounds_best = rounds
                 memory_best = memory_step
                 duration_best = duration
-            # if rounds == rounds_min + round(memory_step * 0.4):
-            #     break
-        return([rounds_best, memory_best, duration_best])
-        # print("Best = rounds=%s, memory=%s, time=%.3f" % (rounds_best, memory_best, duration_best))
+        return [rounds_best, memory_best, duration_best]
 
     @inlineCallbacks
     def hash(self, password, algorithm=None, rounds=None, memory=None, fast=None):
@@ -245,3 +251,87 @@ class Hash(YomboLibrary):
         """
         results = yield threads.deferToThread(bcrypt.verify, password, hashed)
         return results
+
+    @staticmethod
+    def sha224_compact(value, encoder: Optional[str] = None, convert_to_unicode: Optional[bool] = True):
+        """
+        Returns a shorter sha224 - 38 characters long instead of 56.
+
+        This uses a base62 encoding which uses the entire alphabet, with mixed case.
+
+        Returned length is 38 characters.
+
+        :param value:
+        :return:
+        """
+        if encoder is None:
+            encoder = "base62"
+        if convert_to_unicode is None:
+            convert_to_unicode = True
+
+        if value is None:
+            return None
+        return encode_binary(sha224(unicode_to_bytes(value)).digest(), encoder, convert_to_unicode)
+
+    @staticmethod
+    def sha256_compact(value, encoder: Optional[str] = None, convert_to_unicode: Optional[bool] = True):
+        """
+        Returns a shorter sha256 - 43 characters long instead of 64.
+
+        This uses a base62 encoding which uses the entire alphabet, with mixed case.
+
+        Returned length is 43 characters.
+
+        :param value:
+        :return:
+        """
+        if encoder is None:
+            encoder = "base62"
+        if convert_to_unicode is None:
+            convert_to_unicode = True
+
+        if value is None:
+            return None
+        return encode_binary(sha256(unicode_to_bytes(value)).digest(), encoder, convert_to_unicode)
+
+    @staticmethod
+    def sha384_compact(value, encoder: Optional[str] = None, convert_to_unicode: Optional[bool] = True):
+        """
+        Returns a shorter sha384 - 64 characters long instead of 96.
+
+        This uses a base62 encoding which uses the entire alphabet, with mixed case.
+
+        Returned length is 64 characters.
+
+        :param value:
+        :return:
+        """
+        if encoder is None:
+            encoder = "base62"
+        if convert_to_unicode is None:
+            convert_to_unicode = True
+
+        if value is None:
+            return None
+        return encode_binary(sha384(unicode_to_bytes(value)).digest(), encoder, convert_to_unicode)
+
+    @staticmethod
+    def sha512_compact(value, encoder: Optional[str] = None, convert_to_unicode: Optional[bool] = True):
+        """
+        Returns a shorter sha512 - 86 characters long instead of 128.
+
+        This uses a base62 encoding which uses the entire alphabet, with mixed case.
+
+        Returned length is 86 characters.
+
+        :param value:
+        :return:
+        """
+        if encoder is None:
+            encoder = "base62"
+        if convert_to_unicode is None:
+            convert_to_unicode = True
+
+        if value is None:
+            return None
+        return encode_binary(sha512(unicode_to_bytes(value)).digest(), encoder, convert_to_unicode)

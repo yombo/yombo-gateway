@@ -3,17 +3,20 @@ import re
 
 from twisted.internet.defer import inlineCallbacks
 
-from yombo.lib.webinterface.auth import require_auth
+from yombo.constants.permissions import AUTH_PLATFORM_EVENTS
+from yombo.lib.webinterface.auth import get_session
 from yombo.lib.webinterface.routes.api_v1.__init__ import return_json
 
 def route_api_v1_events(webapp):
     with webapp.subroute("/api/v1") as webapp:
 
         @webapp.route("/events/<string:event_type>/<string:event_subtype>", methods=["GET"])
-        @require_auth(api=True)
+        @get_session(auth_required=True, api=True)
         @inlineCallbacks
         def apiv1_events_get(webinterface, request, session, event_type, event_subtype):
-            session.has_access("events", "*", "view", raise_error=True)
+            webinterface._Validate.id_string(event_type)
+            webinterface._Validate.id_string(event_subtype)
+            session.is_allowed(AUTH_PLATFORM_EVENTS, "view")
             args = request.args
 
             try:
@@ -34,7 +37,7 @@ def route_api_v1_events(webapp):
             if re.match("^[ \w-]+$", search_string) is None:
                 search_string = ""
 
-            data, total_count, filtered_count = yield webinterface._LocalDB.search_events_for_datatables(
+            data, total_count, filtered_count = yield webinterface._LocalDB.database.search_events_for_datatables(
                 event_type, event_subtype, order_column_name, order_direction, start,
                 length, search_string)
 

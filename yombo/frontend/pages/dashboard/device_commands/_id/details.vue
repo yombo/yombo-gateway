@@ -42,7 +42,7 @@ export default {
       this.$swal({
         title: 'Are you sure?',
         text: `You won't may not be able to revert this!`,
-        type: 'warning',
+        icon: 'warning',
         showCancelButton: true,
         confirmButtonClass: 'btn btn-success btn-fill',
         cancelButtonClass: 'btn btn-danger btn-fill',
@@ -54,7 +54,7 @@ export default {
           this.$swal({
             title: 'Deleted!',
             text: `You deleted ${row.full_name}`,
-            type: 'success',
+            icon: 'success',
             confirmButtonClass: 'btn btn-success btn-fill',
             buttonsStyling: false
           });
@@ -65,7 +65,7 @@ export default {
       await this.$swal({
         title: 'Are you sure?',
         text: `This will enable the device, the gateway may need to be rebooted.`,
-        type: 'info',
+        icon: 'info',
         showCancelButton: true,
         confirmButtonClass: 'btn btn-success btn-fill',
         cancelButtonClass: 'btn btn-danger btn-fill',
@@ -78,7 +78,7 @@ export default {
           this.$swal({
             title: 'Enabled!',
             text: `You enabled ${row.full_name}`,
-            type: 'success',
+            icon: 'success',
             confirmButtonClass: 'btn btn-success btn-fill',
             buttonsStyling: false
           });
@@ -89,7 +89,7 @@ export default {
       await this.$swal({
         title: 'Are you sure?',
         text: `This will disable the device, the gateway may need to be rebooted.`,
-        type: 'warning',
+        icon: 'warning',
         showCancelButton: true,
         confirmButtonClass: 'btn btn-success btn-fill',
         cancelButtonClass: 'btn btn-danger btn-fill',
@@ -102,7 +102,7 @@ export default {
           this.$swal({
             title: 'Enabled!',
             text: `You enabled ${row.full_name}`,
-            type: 'success',
+            icon: 'success',
             confirmButtonClass: 'btn btn-success btn-fill',
             buttonsStyling: false
           });
@@ -133,8 +133,3 @@ export default {
 };
 </script>
 
-<style>
-/*.table-transparent {*/
-/*  background-color: transparent !important;*/
-/*}*/
-</style>

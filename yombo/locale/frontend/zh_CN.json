@@ -1,6 +1,7 @@
 {
   "commands": {
     "close": {
+      "description": "关闭东西。",
       "label": "关"
     }
   },
@@ -10,6 +11,9 @@
     }
   },
   "lokalise.po.header": "\"MIME-Version: 1.0\\n\"\n\"Content-Type: text\/plain; charset=UTF-8\\n\"\n\"Content-Transfer-Encoding: 8bit\\n\"\n\"X-Generator: lokalise.co\\n\"\n\"Project-Id-Version: Yombo Frontend\\n\"\n\"Report-Msgid-Bugs-To: translate@yombo.net\\n\"\n\"POT-Creation-Date: 2016-10-28 17:12-0400\\n\"\n\"Last-Translator: Mitch Schwenk <translate@yombo.net>\\n\"\n\"Language: en\\n\"\n\"Plural-Forms: nplurals=2; plural=(n!=1);\\n\"",
+  "panel": {
+    "dev-info": "信息"
+  },
   "state": {
     "automation": {
       "off": "关闭",
@@ -144,6 +148,9 @@
       "alarm_control_panel": {
         "arm_away": "离家警戒",
         "arm_home": "在家警戒"
+      },
+      "automation": {
+        "title": "自动化"
       }
     },
     "common": {
@@ -155,7 +162,7 @@
       "automation_rules": "自动化规则",
       "cancel": "取消",
       "close": "关",
-      "created_at": "创建于",
+      "created_at": "创建",
       "delete": "删除",
       "deleted": "删除",
       "description": "描述",
@@ -173,10 +180,15 @@
       "none": "没有",
       "search": "搜索",
       "search_ddd": "搜索...",
-      "updated": "更新"
+      "updated": "更新",
+      "updated_at": "更新",
+      "version": "版本"
     },
     "greeting": {
       "welcome": "欢迎"
+    },
+    "label": {
+      "select": "选择"
     },
     "navigation": {
       "about": "关于",
@@ -194,16 +206,26 @@
       "dashboard": "仪表板",
       "debug": "调试",
       "details": "细节",
+      "developer_tools": "开发者工具",
       "devices": "设备",
       "info": "信息",
+      "language": "语言",
       "list": "列表",
-      "module_configurations": "模块设置",
+      "module_configs": "模块设置",
       "roles": "角色",
       "rules": "规则",
+      "settings": "设定值",
       "statistics": "统计",
       "storage": "存储",
       "system": "系统",
+      "system_settings": "系统设置",
+      "tools": "工具类",
       "users": "用户"
+    },
+    "relative_time": {
+      "never": "从来没有",
+      "never_downloaded": "从不下载",
+      "past": "{time}前"
     }
   }
 }

@@ -83,16 +83,16 @@ the benefits of better averages, but mitigate loss of data. This is at a cost of
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.11.0
 
-:copyright: Copyright 2015-2017 by Yombo.
+:copyright: Copyright 2015-2020 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/statistics.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/statistics/__init__.html>`_
 """
 # Import python libraries
-
 from difflib import SequenceMatcher
 import json
 import re
 from time import time
+from typing import Any, ClassVar, Dict, List, Optional, Union
 
 # Import twisted libraries
 from twisted.internet.task import LoopingCall
@@ -103,7 +103,9 @@ from twisted.internet import reactor
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import percentile, pattern_search, random_int, dict_merge
+from yombo.utils import percentile, pattern_search, random_int
+from yombo.utils.dictionaries import recursive_dict_merge
+
 from yombo.utils.decorators import cached
 from yombo.utils.hookinvoke import global_invoke_all
 
@@ -138,6 +140,9 @@ class Statistics(YomboLibrary):
         "energy.#": {"size": 60, "lifetime": 0},
     }
 
+    _storage_attribute_sort_key: ClassVar[str] = "updated_at"
+    _storage_attribute_sort_key_order: ClassVar[str] = "desc"
+
     @inlineCallbacks
     def _init_(self, **kwargs):
         """
@@ -145,36 +150,31 @@ class Statistics(YomboLibrary):
         :param loader: Loader library.
         :return:
         """
-        self.enabled = self._Configs.get("statistics", "enabled", True)
-        self.upload_allowed = self._Configs.get("statistics", "upload", True)
-        self.anonymous_allowed = self._Configs.get("statistics", "anonymous", True)
+        self.enabled = self._Configs.get("statistics.enabled", True)
+        self.upload_allowed = self._Configs.get("statistics.upload", True)
+        self.anonymous_allowed = self._Configs.get("statistics.anonymous", True)
 
         # defines bucket time span, default is 5 minutes for all buckets
-        self.count_bucket_duration = self._Configs.get("statistics", "count_bucket_duration", 300)  # 5 minutes for count buckets
-        self.averages_bucket_duration = self._Configs.get("statistics", "averages_bucket_duration", 300)  # 5 minutes for averages buckets
+        self.count_bucket_duration = self._Configs.get("statistics.count_bucket_duration", 300)  # 5 minutes for count buckets
+        self.averages_bucket_duration = self._Configs.get("statistics.averages_bucket_duration", 300)  # 5 minutes for averages buckets
 
-        if self.enabled is not True:
+        if self.enabled is False:
             return
 
-        self.time_between_saves = self._Configs.get("statistics", "time_between_saves", 308)  # ~5 mins
+        self.time_between_saves = self._Configs.get("statistics.time_between_saves", 308)  # ~5 mins
         self.saveDataLoop = LoopingCall(self._save_statistics)
         self.saveDataLoop.start(self.time_between_saves, False)
 
         self._upload_statistics_loop = LoopingCall(self._upload_statistics)
 
-        self.unload_deferred = None
-
-        # self.init_deferred = Deferred()
         yield self.load_last_datapoints()
-
         self.last_upload_count = None
 
-        # return self.init_deferred
-
     def _start_(self, **kwargs):
-        return  # Yombo doesn't currently store statistics in the cloud.
-        self._upload_statistics_loop.start(random_int(60*10, .2), False)  # about every 10 minutes
+        if self.enabled is True:
+            self._upload_statistics_loop.start(random_int(60*10, .2), False)  # about every 10 minutes
 
+    @inlineCallbacks
     def _stop_(self, **kwargs):
         """
         Saves statistics data to database.
@@ -185,9 +185,7 @@ class Statistics(YomboLibrary):
 
         if self.enabled is True:
             # todo: test more. Changed Oct 28, 2016. Previous method worked, just unclean.
-            self.unload_deferred = Deferred()
-            self._save_statistics(True, True)
-            return self.unload_deferred
+            yield self._save_statistics(True, True)
 
     @inlineCallbacks
     def load_last_datapoints(self):
@@ -276,9 +274,7 @@ class Statistics(YomboLibrary):
         if self.enabled is not True:
             return
 
-        stat_lifetimes = yield global_invoke_all("_statistics_lifetimes_",
-                                                 called_by=self,
-                                                 )
+        stat_lifetimes = yield global_invoke_all("_statistics_lifetimes_", called_by=self)
         for moduleName, item in stat_lifetimes.items():
             if isinstance(item, dict):
                 for bucket_name, lifetime in item.items():
@@ -735,7 +731,7 @@ class Statistics(YomboLibrary):
         if not (isinstance(names, (list, tuple)) and all(isinstance(name, str) for name in names)):
             raise ValueError("names must be a string or list/tuple of strings")
 
-        data = yield self._LocalDB.statistic_get_range(names, start, end, minimal=True)
+        data = yield self._LocalDB.database.statistic_get_range(names, start, end, minimal=True)
         bm = BucketsManager()
         bm.process(data)
         stat = bm.get_stats(resolution, start, end)
@@ -762,10 +758,11 @@ class Statistics(YomboLibrary):
                     if "restored_db_id" in current_bucket and current_bucket["restored_db_id"] is not False:
                         if current_bucket["touched"] is True:
                             # print("_counters stats save bucket, updating existing")
-                            yield self._LocalDB.save_statistic(
-                                current_bucket,
-                                int(bucket_time < (current_bucket_time["time"]))
-                            )
+                            if self.enabled is True:
+                                yield self._LocalDB.database.save_statistic(
+                                    current_bucket,
+                                    int(bucket_time < (current_bucket_time["time"]))
+                                )
                             current_bucket_time["touched"] = False
                     else:
                         # print("_counters stats save bucket, finished: %s < %s" % (int(bucket_time), current_bucket_time))
@@ -787,7 +784,6 @@ class Statistics(YomboLibrary):
             if len(self._counters[bucket_time]) == 0:
                 del self._counters[bucket_time]
 
-
         for bucket_time in list(self._averages.keys()):
             for bucket_name in list(self._averages[bucket_time].keys()):
                 current_bucket = self._averages[bucket_time][bucket_name]
@@ -804,7 +800,7 @@ class Statistics(YomboLibrary):
                         if "restored_db_id" in current_bucket and current_bucket["restored_db_id"] is not False:
                             if current_bucket["touched"] is True:
                                 # print("_averages stats save bucket, updating existing")
-                                yield self._LocalDB.save_statistic(current_bucket,
+                                yield self._LocalDB.database.save_statistic(current_bucket,
                                                                    int(bucket_time < (current_bucket_time["time"])))
                                 current_bucket_time["touched"] = False
                         else:
@@ -817,7 +813,7 @@ class Statistics(YomboLibrary):
                                 "bucket_type": current_bucket["type"],
                                 "bucket_name": current_bucket["name"],
                                 "bucket_value": current_bucket["value"],
-                                "bucket_average_data": json.dumps(current_bucket["average_data"], separators=(",",":")),
+                                "bucket_average_data": json.dumps(current_bucket["average_data"], separators=(",", ":")),
                                 "updated_at": int(time()),
                                 "anon": current_bucket["anon"],
                                 "finished": int(bucket_time < (current_bucket_time["time"])),
@@ -834,9 +830,9 @@ class Statistics(YomboLibrary):
                 current_bucket = self._datapoints[bucket_time][bucket_name]
                 if "restored_db_id" in current_bucket and current_bucket["restored_db_id"] is not False:
                     if current_bucket["touched"] is True:
-                        # print("_datapoints stats save bucket, updating existing")
-                        yield self._LocalDB.save_statistic(current_bucket,
-                                                           int(bucket_time < (current_bucket_time["time"])))
+                        if self.enabled is True:
+                            yield self._LocalDB.database.save_statistic(current_bucket,
+                                                                       int(bucket_time < (current_bucket_time["time"])))
                         current_bucket_time["touched"] = False
                 else:
                     # print("_datapoints stats save bucket, finished: %s < %s" % (
@@ -862,16 +858,11 @@ class Statistics(YomboLibrary):
         try:
             if len(to_save) > 0:
                 logger.debug("Stats save data: {to_save}", to_save=to_save)
-                yield self._LocalDB.save_statistic_bulk(to_save)
+                if self.enabled is True:
+                    yield self._LocalDB.save_statistic_bulk(to_save)
             to_save = []
         except Exception as error:
             logger.warn("Error while trying to bulk save: {error}", error=error)
-
-        if gateway_stopping is True and self.unload_deferred.called is False:
-                # print("no kill")
-            self.unload_deferred.callback(1)
-        # else:
-        #     self.consolidate_db()  # for testing
 
     def calc_averages(self, bucket_time, bucket_name):
         values = self._averages[bucket_time][bucket_name]["values"]
@@ -991,7 +982,10 @@ class Statistics(YomboLibrary):
         Not implemented yet.
         :return: 
         """
-        stats = yield self._LocalDB.get_uploadable_statistics(0)
+        if self.enabled is not True:
+            return
+        return ## yombo doesn't accept stats yet.
+        stats = yield self._LocalDB.database.get_uploadable_statistics(0)
         if len(stats) > 0:
 
             headers = {
@@ -1012,11 +1006,13 @@ class Statistics(YomboLibrary):
             self.last_upload_count = 0
 
     def upload_statistics_complete(self, msg=None, **kwargs):
+        if self.enabled is not True:
+            return
         logger.debug("upload_statistics_complete got message: {msg}", msg=msg)
         if "stats_completed" in msg and len(msg["stats_completed"]) > 0:
-            yield self._LocalDB.set_uploaded_statistics(2, msg["stats_completed"])
+            yield self._LocalDB.database.set_uploaded_statistics(2, msg["stats_completed"])
         if "stats_failed" in msg and len(msg["stats_failed"]) > 0:
-            yield self._LocalDB.set_uploaded_statistics(-1, msg["stats_failed"])
+            yield self._LocalDB.database.set_uploaded_statistics(-1, msg["stats_failed"])
 
         if self.last_upload_count > 1900: # if we upload a lot of stats last time, maybe we have more to upload.
             reactor.callLater(36, self._upload_statistics)  # give the system a few seconds to chill

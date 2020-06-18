@@ -10,8 +10,9 @@
 .. moduleauthor:: https://github.com/freekotya
 .. versionadded:: 0.14.0
 
-:copyright: Copyright 2017 by Yombo.
+:copyright: Copyright 2017-2020 by Yombo.
 :license: LICENSE for details.
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/statistics/timeline.html>`_
 """
 
 class Timeline:

@@ -12,11 +12,12 @@ This library implements a modified version of a queue developed by Terry Jones
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.13.0
 
-:copyright: Copyright 2016-2018 by Yombo.
+:copyright: Copyright 2016-2020 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/queue.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/queue.html>`_
 """
 import traceback
+from typing import Any, ClassVar, Dict, List, Optional, Type, Union
 
 # Import twisted libraries
 from twisted.internet.defer import Deferred, DeferredList, inlineCallbacks, maybeDeferred
@@ -32,16 +33,13 @@ import collections
 
 logger = get_logger("library.queue")
 
+
 class Queue(YomboLibrary):
     """
     Allows libraries and modules to implement a FIFO queue with various features. See 
     `Queues @ command Development <https://yombo.net/docs/libraries/queues>`_ for full usage.
     """
-    def _init_(self, **kwargs):
-        """
-        Track all the queue created so we can gracefully shut them down.
-        """
-        self.queues = {}
+    queues: ClassVar[dict] = {}
 
     def _stop_(self, **kwargs):
         self.unload_deferred = Deferred()

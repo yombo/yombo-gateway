@@ -10,3 +10,6 @@ Data Types (yombo.utils.datatypes)
 
 .. automodule:: yombo.utils.datatypes
    :members:
+   :private-members:
+   :special-members:
+   :undoc-members:

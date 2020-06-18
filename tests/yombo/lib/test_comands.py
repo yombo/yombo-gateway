@@ -12,7 +12,6 @@ class TestCommands:
         return Commands()
 
     def test_create_commands(self, empty_commands):
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11")
         assert empty_commands._FullName == 'yombo.gateway.lib.Commands'
         assert empty_commands._Name == 'Commands'
 

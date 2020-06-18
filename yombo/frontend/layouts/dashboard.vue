@@ -4,10 +4,13 @@
     <dashboard-side-bar>
       <template slot-scope="props" slot="links">
         <template v-for="item in nav_items">
-          <dashboard-sidebar-item :link="{name: $t(item.out.label), icon: item.out.icon, path: localePath(item.out.path)}">
+          <dashboard-sidebar-item :link="{name: $t(item.out.label,),
+                                          icon: item.out.icon,
+                                          path: localePath(item.out.path)}">
             <template v-for="subitem in item.in" v-if="item.in.length > 0">
               <dashboard-sidebar-item :link="{name: $t(subitem.label),
-               path: localePath({name: subitem.path.name, params: subitem.path.params })}"></dashboard-sidebar-item>
+                                              path: localePath({name: subitem.path.name,
+                                              params: subitem.path.params })}"></dashboard-sidebar-item>
             </template>
           </dashboard-sidebar-item>
         </template>
@@ -20,12 +23,10 @@
       </div>
       <div :class="{content: !$route.meta.hideContent}" @click="toggleSidebar">
         <zoom-center-transition :duration="100" mode="out-in">
-          <!-- your content here -->
           <nuxt />
-
         </zoom-center-transition>
       </div>
-      <content-footer v-if="!$route.meta.hideFooter"></content-footer>
+      <footer v-if="!$route.meta.hideFooter"></footer>
     </div>
   </div>
 </template>
@@ -51,43 +52,37 @@ function initScrollbar(className) {
 }
 
 import TopNavbar from '@/layouts/Dashboard/TopNavbar.vue';
-import ContentFooter from '@/layouts/Dashboard/ContentFooter.vue';
-import DashboardContent from '@/layouts/Dashboard/Content.vue';
+import Footer from '@/layouts/Dashboard/Footer.vue';
 import MobileMenu from '@/layouts/Dashboard/Extra/MobileMenu.vue';
 import { SlideYDownTransition, ZoomCenterTransition } from 'vue2-transitions';
 
 export default {
   components: {
     TopNavbar,
-    ContentFooter,
-    DashboardContent,
+    Footer,
+    // DashboardContent,
     MobileMenu,
     // UserMenu,
     SlideYDownTransition,
     ZoomCenterTransition
   },
-  data: function data() {
-    return {
-    };
-  },
   computed: {
-    nav_items: function () {
-      return this.$store.state.gateway.frontend_dashboard_navbar.data;
+    nav_items: function() {
+      return this.$store.state.gateway.dashboard_navbar_items.data;
     },
-    last_download_at: function () {
-      return this.$store.state.gateway.frontend_dashboard_navbar.last_download_at;
+    last_download_at: function() {
+      return this.$store.state.gateway.dashboard_navbar_items.last_download_at;
     },
   },
   methods: {
-    toggleSidebar() {
+    toggleSidebar: function() {
       if (this.$dashboardsidebar.showDashboardSidebar) {
         this.$dashboardsidebar.displayDashboardSidebar(false);
       }
     }
   },
   mounted() {
-    console.log("about to get gateway frontend_dashboard_navbar")
-    this.$store.dispatch('gateway/frontend_dashboard_navbar/fetch');
+    this.$store.dispatch('gateway/dashboard_navbar_items/refresh');
 
     let docClasses = document.body.classList;
     let isWindows = navigator.platform.startsWith('Win');
@@ -100,15 +95,10 @@ export default {
     } else {
       docClasses.add('perfect-scrollbar-off');
     }
-  }
+  },
 };
 </script>
-<style lang="scss">
-.panel-header {
-  height: 10px;
-  padding-top: 25px;
-}
-
+<style scoped lang="scss">
 .main-panel > .content {
   padding-top: 20px;
 }

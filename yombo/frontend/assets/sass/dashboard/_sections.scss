@@ -51,7 +51,7 @@
     }
     .description,
     .info-area .icon:not(.icon-circle){
-        color: $opacity-8;
+        color: $opacity-white-8;
     }
     .card:not(.card-plain){
         .info-title{
@@ -140,7 +140,7 @@
 
     .category,
     .description{
-        color: $opacity-8;
+        color: $opacity-white-8;
     }
 
     &.page-header-small{
@@ -396,7 +396,7 @@
     color: $white-color;
 
     .separator-line{
-        background-color: $opacity-5;
+        background-color: $opacity-white-5;
     }
 
     .footer{
@@ -407,7 +407,7 @@
     }
 
     .pagination .page-item.disabled > .page-link{
-      background-color: $opacity-2; 
+      background-color: $opacity-white-2;
       color: $white-color;
     }
 
@@ -453,14 +453,14 @@
     &.footer hr,
     &.card-pricing .icon i,
     &.card-pricing ul li{
-        border-color: $opacity-2;
+        border-color: $opacity-white-2;
     }
 
     .card-footer .stats i,
     &.card-plain .category,
     .card-plain .category,
     .card-header:after{
-        color: $opacity-5;
+        color: $opacity-white-5;
     }
 
     &.card-pricing ul li i,
@@ -469,7 +469,7 @@
     .card-category,
     .author span,
     .card-pricing.card-plain ul li i{
-        color: $opacity-8 !important;
+        color: $opacity-white-8 !important;
     }
 
     .separator{
@@ -482,11 +482,11 @@
 
     .description,
     .social-description p{
-        color: $opacity-8;
+        color: $opacity-white-8;
     }
 
     p.blockquote{
-        border-color: $opacity-2;
+        border-color: $opacity-white-2;
     }
 
     //radio and checkboxes
@@ -494,7 +494,7 @@
     .checkbox label::after,
     .radio label::before,
     .radio label::after{
-        border-color: $opacity-2;
+        border-color: $opacity-white-2;
     }
 
     .checkbox label::after,
@@ -515,12 +515,12 @@
     }
 
     //inputs
-    @include input-coloured-bg($opacity-5, $white-color, $white-color, $transparent-bg, $opacity-1, $opacity-2);
+    @include input-coloured-bg($opacity-white-5, $white-color, $white-color, $transparent-bg, $opacity-white-1, $opacity-white-2);
 
     .input-group-addon,
     .form-group.no-border .input-group-addon,
     .input-group.no-border .input-group-addon{
-        color: $opacity-8;
+        color: $opacity-white-8;
     }
 
     .subscribe-line{
@@ -546,7 +546,7 @@
     //buttons
     .btn.btn-simple{
         background-color: $transparent-bg;
-        border-color: $opacity-5;
+        border-color: $opacity-white-5;
         color: $white-color;
 
         &:hover,

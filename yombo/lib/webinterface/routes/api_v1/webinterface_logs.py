@@ -3,18 +3,19 @@ import re
 
 from twisted.internet.defer import inlineCallbacks
 
-from yombo.lib.webinterface.auth import require_auth
+from yombo.constants.permissions import ACTIONS_SYSTEM_OPTION
+from yombo.lib.webinterface.auth import get_session
 from yombo.lib.webinterface.routes.api_v1.__init__ import return_json
 
 
-def route_api_v1_webinterface_logs(webapp):
+def route_api_v1_web_logs(webapp):
     with webapp.subroute("/api/v1") as webapp:
 
-        @webapp.route("/webinterface_logs", methods=["GET"])
-        @require_auth(api=True)
+        @webapp.route("/web_logs", methods=["GET"])
+        @get_session(auth_required=True, api=True)
         @inlineCallbacks
-        def apiv1_webinterface_logs_get(webinterface, request, session):
-            session.has_access("weblogs", "*", "view", raise_error=True)
+        def apiv1_web_logs_get(webinterface, request, session):
+            session.is_allowed(ACTIONS_SYSTEM_OPTION, "weblogs")
             args = request.args
 
             try:
@@ -35,7 +36,7 @@ def route_api_v1_webinterface_logs(webapp):
             if re.match("^[ \w-]+$", search_string) is None:
                 search_string = ""
 
-            data, total_count, filtered_count = yield webinterface._LocalDB.search_webinterface_logs_for_datatables(
+            data, total_count, filtered_count = yield webinterface._LocalDB.search_web_logs_for_datatables(
                 order_column_name, order_direction, start, length, search_string)
 
             response = {

@@ -17,7 +17,7 @@
                 There are two backups:
             </p>
                 <ul>
-                    <li><stong>Configuration</stong> - Saves GPG keys and yombo.ini.
+                    <li><stong>Configuration</stong> - Saves GPG keys and yombo.toml.
                     <li><stong>Database</stong> - Current database state. Includes historical info.</li>
                 </ul>
             <p>
@@ -67,7 +67,7 @@
               <p><br>
                   If desired, you can also download an un-encrypted version of the configuration data.
               </p>
-              <a href="/system/backup/configuration" class="btn btn-md btn-danger">Download plaintext backup<br>
+              <a href="/api/v1/system/backup/configs" class="btn btn-md btn-danger">Download plaintext backup<br>
                 <strong>Not recommended!</strong></a>
           </card>
       </div>

@@ -8,9 +8,9 @@
 #
 #
 # To run the build process, goto the frontend directory within the gateway repo, then:
-# npm run dev
+# yarn run dev
 #     or
-# npm run build
+# yarn run build
 #
 # For developing Frontend components, visit: https://yombo.net/docs/developer/frontend
 
@@ -19,23 +19,21 @@ if ! [ -z "$2" ]
   then
     WORKING_DIR=$2
 fi
-#WORKING_DIR="$WORKING_DIR/"
 
 YOMBO_SCRIPT_FRONTEND_UTILS="$( cd "$(dirname "$0")" ; pwd -P )"
 YOMBO_SCRIPT_FRONTEND="$(dirname $YOMBO_SCRIPT_FRONTEND_UTILS)"
 YOMBO_ROOT="$(dirname $YOMBO_SCRIPT_FRONTEND)"
 YOMBO_ROOT="$(dirname $YOMBO_ROOT)"
 
-
+echo "Builder starting....."
 function copy_source_files {
   # Copies all the files from the core frontend and the modules
 
   echo "Copying frontend core directory..."
   DESTINATION=$WORKING_DIR/var/frontend
   mkdir -p $DESTINATION
+  rsync -a --delete "$YOMBO_SCRIPT_FRONTEND/" --exclude '/.nuxt/' --exclude '/dist/' "$DESTINATION"
   mkdir -p $DESTINATION/pages/dashboard/module_configs
-
-  rsync -a "$YOMBO_SCRIPT_FRONTEND/" --exclude '/.nuxt/' --exclude '/dist/' "$DESTINATION"
 
   echo "Copying frontend files from various modules..."
   cd "$YOMBO_ROOT"/yombo/modules
@@ -66,7 +64,7 @@ function copy_to_destination {
 
 function setup_watch_files {
   # Watches all frontend source locations for changes, and then copies them
-  # to ~/.yombo/var/frontend where npm and act on them.
+  # to ~/.yombo/var/frontend where yarn and act on them.
 
   echo "Setting up frontend for development: watch & sync."
   cd $YOMBO_ROOT
@@ -121,7 +119,7 @@ function build_dev {
   WATCHFILES=$!
 
   cd "$WORKING_DIR"/var/frontend/
-  npm run build_dev &
+  yarn run build_dev &
   BUILDFRONTEND=$!
 
   FAIL=0
@@ -140,7 +138,7 @@ function build_prod {
 
   copy_source_files
   cd "$WORKING_DIR"/var/frontend/
-  npm run build_prod
+  yarn run build_prod
   copy_to_destination
   rm $YOMBO_SCRIPT_FRONTEND_UTILS/builder.pid
 

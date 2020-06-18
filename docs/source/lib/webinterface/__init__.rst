@@ -9,6 +9,10 @@ WebInterface (yombo.lib.webinterface.__init__)
 =================================================================
 
 .. automodule:: yombo.lib.webinterface.__init__
+
+WebInterface Library Class
+================================================================
+.. autoclass:: WebInterface
    :members:
    :special-members:
    :private-members:

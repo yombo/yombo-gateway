@@ -34,7 +34,7 @@ export default {
       this.$swal({
         title: `${this.$t('ui.common.delete')} ${this.$t('ui.common.' + this.i18n).toLowerCase()}? <br> ${this.item_label}`,
         text: this.$t('ui.phrase.cannot_undo'),
-        type: 'warning',
+        icon: 'warning',
         showCancelButton: true,
         confirmButtonClass: 'btn btn-success btn-fill',
         cancelButtonClass: 'btn btn-danger btn-fill',
@@ -46,7 +46,7 @@ export default {
           this.$swal({
             title: this.$t('ui.common.deleted'),
             text: `${this.$t('ui.common.deleted')} ${this.$t('ui.common.' + this.i18n).toLowerCase()}: ${this.item_label}`,
-            type: 'success',
+            icon: 'success',
             confirmButtonClass: 'btn btn-success btn-fill',
             buttonsStyling: false
           });
@@ -56,5 +56,3 @@ export default {
   }
 };
 </script>
-<style>
-</style>

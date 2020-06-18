@@ -1,7 +1,12 @@
+<template>
+  <div>
+    Need a control tower ID, redirecting...
+  </div>
+</template>
 <script>
 export default {
-  fetch ({ params, redirect }) {
-    redirect(301, '/controltower')
-  }
+    mounted () {
+      this.$router.push(this.localePath('controltower'));
+    }
 }
 </script>

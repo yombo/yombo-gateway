@@ -51,7 +51,7 @@
 
     &.progress-primary{
         .progress{
-            background: $primary-color-opacity;
+            background: $primary-color-opacity-3;
         }
 
         .progress-bar{
@@ -66,7 +66,7 @@
 
     &.progress-info{
         .progress{
-            background: $info-color-opacity;
+            background: $info-color-opacity-3;
         }
 
         .progress-bar{
@@ -81,7 +81,7 @@
 
     &.progress-success{
         .progress{
-            background: $success-color-opacity;
+            background: $success-color-opacity-3;
         }
 
         .progress-bar{
@@ -96,7 +96,7 @@
 
     &.progress-warning{
         .progress{
-            background: $warning-color-opacity;
+            background: $warning-color-opacity-3;
         }
 
         .progress-bar{
@@ -111,7 +111,7 @@
 
     &.progress-danger{
         .progress{
-            background: $danger-color-opacity;
+            background: $danger-color-opacity-3;
         }
 
         .progress-bar{

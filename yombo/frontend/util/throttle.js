@@ -1,5 +1,6 @@
 /**
  * Simple throttle function that executes a passed function only once in the specified timeout
+ *
  * @param handlerFunc
  * @param [timeout] the throttle interval
  */

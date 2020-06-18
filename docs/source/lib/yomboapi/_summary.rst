@@ -10,24 +10,16 @@ YomboAPI (yombo.lib.yomboapi)
 
 This library is used to interact with api.yombo.net.
 
-**See the `yomboapi developer docs <https://yombo.net/docs/libraries/yomboapi>`_ for more
-details.**
+See the `yomboapi developer docs <https://yombo.net/docs/libraries/yomboapi>`_ for more
+details.
 
-SSL Certificates Library
+YomboAPI Library
 =========================
 
 .. toctree::
    :maxdepth: 1
 
    __init__.rst
-
-
-Helper files and classes
-========================
-
-.. toctree::
-   :maxdepth: 1
-
-   generic.rst
+   interactions_mixin.rst
 
 Last updated: |today|

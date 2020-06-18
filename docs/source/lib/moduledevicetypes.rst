@@ -9,9 +9,17 @@ ModuleDeviceTypes (yombo.lib.moduledevicetypes)
 =================================================
 .. automodule:: yombo.lib.moduledevicetypes
 
+.. rubric:: Classes in this module
+
+.. autosummary::
+   :nosignatures:
+
+   ModuleDeviceTypes
+   ModuleDeviceType
+
 ModuleDeviceTypes Library Class
 ===========================================
-.. automodule:: ModuleDeviceTypes
+.. autoclass:: ModuleDeviceTypes
    :members:
    :special-members:
    :private-members:
@@ -19,7 +27,7 @@ ModuleDeviceTypes Library Class
 
 ModuleDeviceType Class
 ===========================================
-.. automodule:: ModuleDeviceType
+.. autoclass:: ModuleDeviceType
    :members:
    :special-members:
    :private-members:

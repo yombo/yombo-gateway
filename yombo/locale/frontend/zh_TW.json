@@ -1,4 +1,12 @@
 {
+  "commands": {
+    "close": {
+      "description": "關閉東西。"
+    }
+  },
+  "panel": {
+    "dev-info": "信息"
+  },
   "state": {
     "automation": {
       "off": "關閉",
@@ -130,6 +138,9 @@
       "alarm_control_panel": {
         "arm_away": "離家警戒",
         "arm_home": "在家警戒"
+      },
+      "automation": {
+        "title": "自動化"
       }
     },
     "common": {
@@ -139,7 +150,7 @@
       "atom": "原子",
       "automation_rules": "自動化規則",
       "cancel": "取消",
-      "created_at": "創建於",
+      "created_at": "创建",
       "delete": "刪除",
       "deleted": "刪除",
       "description": "描述",
@@ -157,10 +168,15 @@
       "none": "沒有",
       "search": "搜索",
       "search_ddd": "搜索...",
-      "updated": "更新"
+      "updated": "更新",
+      "updated_at": "更新",
+      "version": "版本"
     },
     "greeting": {
       "welcome": "歡迎"
+    },
+    "label": {
+      "select": "选择"
     },
     "navigation": {
       "about": "关于",
@@ -178,15 +194,25 @@
       "dashboard": "仪表 板",
       "debug": "調試",
       "details": "细节",
+      "developer_tools": "開發者工具",
       "devices": "設備",
       "info": "信息",
+      "language": "语言",
+      "languages": "语言",
       "list": "列表",
       "roles": "角色",
       "rules": "規則",
+      "settings": "設定值",
       "statistics": "統計",
       "storage": "存儲",
       "system": "系統",
+      "system_settings": "系統設置",
+      "tools": "工具類",
       "users": "用戶"
+    },
+    "relative_time": {
+      "never": "从来 没有",
+      "past": "{time}前"
     }
   }
 }

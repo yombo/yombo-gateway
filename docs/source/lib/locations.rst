@@ -9,6 +9,14 @@ Locations (yombo.lib.locations)
 ====================================
 .. automodule:: yombo.lib.locations
 
+.. rubric:: Classes in this module
+
+.. autosummary::
+   :nosignatures:
+
+   Locations
+   Location
+
 Locations Library Class
 ===========================
 .. autoclass:: Locations

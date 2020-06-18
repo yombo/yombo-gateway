@@ -13,36 +13,23 @@ Devices are controllable items (lamps, fans, thermostats) as well as virtual typ
 See the `devices developer docs <https://yombo.net/docs/libraries/devices>`_
 for more details.
 
-
-Devices Library Components
+Devices Library
 ==========================
 
 .. toctree::
    :maxdepth: 1
 
    __init__.rst
-   device.rst
-   device_attributes.rst
-   device_base.rst
-   device_states.rst
 
-Device Types
+Base Device Components
 ==========================
 
 .. toctree::
    :maxdepth: 1
 
-   alarm.rst
-   camera.rst
-   climate.rst
-   cover.rst
-   fan.rst
-   light.rst
-   lock.rst
-   mediaplayer.rst
-   scene.rst
-   sensor.rst
-   switch.rst
-   tv.rst
+   device.rst
+   device_attributes_mixin.rst
+   device_command_mixin.rst
+   device_state_mixin.rst
 
 Last updated: |today|

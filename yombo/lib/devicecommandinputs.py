@@ -12,10 +12,12 @@ various commands.
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.24.0
 
-:copyright: Copyright 2019 by Yombo.
+:copyright: Copyright 2019-2020 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/devicecommandinputs.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/devicecommandinputs.html>`_
 """
+from typing import Any, ClassVar, Dict, List, Optional, Type, Union
+
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks
 
@@ -23,55 +25,45 @@ from twisted.internet.defer import inlineCallbacks
 from yombo.core.entity import Entity
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
+from yombo.core.schemas import DeviceCommandInputSchema
 from yombo.mixins.library_db_child_mixin import LibraryDBChildMixin
-from yombo.mixins.sync_to_everywhere_mixin import SyncToEverywhereMixin
-from yombo.mixins.library_db_model_mixin import LibraryDBModelMixin
+from yombo.mixins.library_db_parent_mixin import LibraryDBParentMixin
 from yombo.mixins.library_search_mixin import LibrarySearchMixin
 
 logger = get_logger("library.device_command_inputs")
 
 
-class DeviceCommandInput(Entity, LibraryDBChildMixin, SyncToEverywhereMixin):
+class DeviceCommandInput(Entity, LibraryDBChildMixin):
     """
     A class to manage a single device command input.
     """
-    _primary_column = "device_command_input_id"  # Used by mixins
-
-    def __init__(self, parent, incoming, source=None):
-        """
-        Setup the device command input object using information passed in.
-
-        :param incoming: An device command input with all required items to create the class.
-        :type incoming: dict
-        :return: None
-        """
-        self._Entity_type = "Device command input"
-        self._Entity_label_attribute = "machine_label"
-        super().__init__(parent)
-        self._setup_class_model(incoming, source=source)
+    _Entity_type: ClassVar[str] = "Device command input"
+    _Entity_label_attribute: ClassVar[str] = "machine_label"
 
 
-class DeviceCommandInputs(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
+class DeviceCommandInputs(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
     """
     Manages device type command inputs.
     """
-    device_command_inputs = {}
+    device_command_inputs: dict = {}
 
-    # The following are used by get(), get_advanced(), search(), and search_advanced()
-    _class_storage_load_hook_prefix = "device_command_input"
-    _class_storage_load_db_class = DeviceCommandInput
-    _class_storage_attribute_name = "device_command_inputs"
-    _class_storage_search_fields = [
+    # The remaining attributes are used by various mixins.
+    _storage_primary_field_name: ClassVar[str] = "device_command_input_id"
+    _storage_attribute_name: ClassVar[str] = "device_command_inputs"
+    _storage_label_name: ClassVar[str] = "device_command_input"
+    _storage_class_reference: ClassVar = DeviceCommandInput
+    _storage_schema: ClassVar = DeviceCommandInputSchema()
+    _storage_search_fields: ClassVar[List[str]] = [
         "device_command_input_id", "device_type_id", "machine_label", "label", "command_id", "input_type_id",
     ]
-    _class_storage_sort_key = "machine_label"
+    _storage_attribute_sort_key: ClassVar[str] = "machine_label"
 
     @inlineCallbacks
-    def _load_(self, **kwargs):
+    def _init_(self, **kwargs):
         """
         Loads device command inputs from the database and imports them.
         """
-        yield self._class_storage_load_from_database()
+        yield self.load_from_database()
 
     def get_by_ids(self, device_type_id, command_id):
         """

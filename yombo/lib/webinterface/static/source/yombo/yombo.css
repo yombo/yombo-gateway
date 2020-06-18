@@ -290,7 +290,8 @@ color:#dd3939;
     top: 1rem;
     left: 1rem;
     right: 1rem;
-    width: calc(100vw - 2rem);
+    width: calc(100vw - 4rem);
+    z-index:9999;
 }
 
 .modal-lg {

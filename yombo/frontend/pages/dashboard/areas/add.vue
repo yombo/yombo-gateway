@@ -4,11 +4,11 @@
         <card class="card-chart" no-footer-line>
           <div slot="header">
             <h2 class="card-title">
-              {{ $t('ui.common.add_area') }}
+              {{ $t('ui.common.add_location') }}
             </h2>
           </div>
           <p>
-            Create a new area.
+            Create a new location.
           </p>
           <p>
             <b-container fluid>
@@ -17,7 +17,7 @@
                   <label for="label">{{$t('ui.common.label')}}:</label>
                 </b-col>
                 <b-col sm="8" md="9" lg="10">
-                  <b-form-input id="label" placeholder="Label: House, Shed, Garage, Pool House"></b-form-input>
+                  <b-form-input id="label" placeholder="Label: Den, Bedroom, Kitchen, Backyard"></b-form-input>
                 </b-col>
               </b-row>
               <b-row>
@@ -38,7 +38,7 @@
                 </b-col>
               </b-row>
             </b-container>
-            <button class="btn btn-outline-warning btn-info" type="submit">{{ $t('ui.common.add_area') }}
+            <button class="btn btn-outline-warning btn-info" type="submit">{{ $t('ui.common.add_location') }}
               <i class="fas fa-plus-circle fa-pull-right" style="font-size: 1.5em;"></i></button>
           </p>
         </card>

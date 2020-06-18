@@ -1,0 +1,9 @@
+{
+  "lib": {
+    "configs": {
+      "yombo_toml": {
+        "warning": "ADVERTENCIA ADVERTENCIA ADVERTENCIA ADVERTENCIA ADVERTENCIA ADVERTENCIA"
+      }
+    }
+  }
+}

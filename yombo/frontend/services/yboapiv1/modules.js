@@ -1,13 +1,11 @@
-import yboapiv1 from '@/services/yboapiv1'
-
 export default {
     all () {
-        return yboapiv1().get('/modules')
+        return window.$nuxt.$yboapiv1axios.get('/modules')
     },
     allGW () {
-        return yboapiv1().get('/gateways/'+ window.$nuxt.$gwenv.gateway_id +'/relationships/modules')
+        return window.$nuxt.$yboapiv1axios.get('/gateways/'+ window.$nuxt.$gwenv.gateway_id +'/relationships/modules')
     },
     fetchOne(id) {
-        return yboapiv1().get('/modules/' + id);
+        return window.$nuxt.$yboapiv1axios.get('/modules/' + id);
     },
 }

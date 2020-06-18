@@ -1,0 +1,227 @@
+.dropdown-lang {
+  margin-top:5px;
+  margin-left:5px;
+  font-size:.8571em;
+  color: #000000 !important;
+}
+
+section {
+    padding: 1em;
+}
+
+h1 {
+    font-size: 3em;
+    /*text-transform: uppercase;*/
+}
+
+// Override bootstrap
+.container-narrow {
+  padding-right: 1px;
+  padding-left: 1px;
+}
+
+.subheading {
+    font-size: 1.5em;
+    margin-bottom: 2em;
+    /*text-transform: uppercase;*/
+    color: rgb(104, 104, 104);
+    font-weight: bold;
+}
+
+p {
+    font-size: 1em;
+    line-height: 1.4em;
+}
+
+.page-enter-active {
+  animation: bounce-in .1s;
+}
+.page-leave-active {
+  animation: bounce-out .1s;
+}
+
+@keyframes bounce-in {
+  0% { transform: scale(.9); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes bounce-out {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(.9); opacity: 0; }
+}
+
+/* From the dashboard... */
+.tim-row{
+    margin-bottom: 20px;
+}
+
+.tim-white-buttons {
+    background-color: #777777;
+}
+.typography-line{
+    padding-left: 25%;
+    margin-bottom: 35px;
+    position: relative;
+    display: block;
+    width: 100%;
+}
+.typography-line span{
+    bottom: 10px;
+    color: #c0c1c2;
+    display: block;
+    font-weight: 400;
+    font-size: 13px;
+    line-height: 13px;
+    left: 0;
+    position: absolute;
+    width: 260px;
+    text-transform: none;
+}
+.tim-row{
+    padding-top: 60px;
+}
+.tim-row h3{
+    margin-top: 0;
+}
+
+.offline-doc .page-header{
+  display: flex;
+  align-items: center;
+}
+
+.offline-doc .footer{
+  position: absolute;
+  width: 100%;
+  background: transparent;
+  bottom: 0;
+  color: #fff;
+  z-index: 1;
+}
+
+#map {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+}
+
+.col-nested {
+  padding-left: 0px;
+  padding-right: 0px;
+}
+
+.col-nested-left {
+  padding-left: 0px;
+}
+
+.col-nested-right {
+  padding-right: 0px;
+}
+
+.framed-content {
+  border-radius: 10px;
+  border: 2px solid #3173ab;
+  padding: 8px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+.framed-content h4 {
+  margin-top: 0px;
+  margin-bottom: 10px;
+}
+
+// Display pages.
+.detail-label {
+  color: black !important;
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 15px;
+  margin-bottom: 0px;
+}
+
+.detail-label-first {
+  color: black !important;
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 0px;
+  margin-bottom: 0px;
+}
+
+.item-tabs {
+  padding: 10px 15px;
+}
+
+hr.dashed {
+	border-top: 2px dashed #8c8b8b;
+}
+
+
+hr.dotted {
+	border-top: 2px dotted #8c8b8b;
+}
+
+hr.compact {
+	margin-top: 1px;
+  margin-bottom: 1px;
+}
+
+.form-group
+.custom-select {
+  color: $black-color;
+  padding: 0.375rem 1.75rem 0.375rem 0.75rem;
+
+  //display: inline-block;
+  //width: 100%;
+  //height: $custom-select-height;
+  //font-family: $custom-select-font-family;
+  //@include font-size($custom-select-font-size);
+  //font-weight: $custom-select-font-weight;
+  //line-height: $custom-select-line-height;
+  //vertical-align: middle;
+  //background: $custom-select-bg $custom-select-background;
+  //border: $custom-select-border-width solid $custom-select-border-color;
+  //@include border-radius($custom-select-border-radius, 0);
+  //@include box-shadow($custom-select-box-shadow);
+  //appearance: none;
+  //
+  //&:focus {
+  //  border-color: $custom-select-focus-border-color;
+  //  outline: 0;
+  //  @if $enable-shadows {
+  //    box-shadow: $custom-select-box-shadow, $custom-select-focus-box-shadow;
+  //  } @else {
+  //    box-shadow: $custom-select-focus-box-shadow;
+  //  }
+  //
+  //  &::-ms-value {
+  //    // For visual consistency with other platforms/browsers,
+  //    // suppress the default white text on blue background highlight given to
+  //    // the selected option text when the (still closed) <select> receives focus
+  //    // in IE and (under certain conditions) Edge.
+  //    // See https://github.com/twbs/bootstrap/issues/19398.
+  //    color: $input-color;
+  //    background-color: $input-bg;
+  //  }
+  //}
+  //
+  //&[multiple],
+  //&[size]:not([size="1"]) {
+  //  height: auto;
+  //  padding-right: $custom-select-padding-x;
+  //  background-image: none;
+  //}
+  //
+  //&:disabled {
+  //  color: $custom-select-disabled-color;
+  //  background-color: $custom-select-disabled-bg;
+  //}
+  //
+  //// Hides the default caret in IE11
+  //&::-ms-expand {
+  //  display: none;
+  //}
+  //
+  //// Remove outline from select box in FF
+  //&:-moz-focusring {
+  //  color: transparent;
+  //  text-shadow: 0 0 0 $custom-select-color;
+  //}
+}

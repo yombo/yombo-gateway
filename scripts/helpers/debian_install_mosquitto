@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+set -m
+
+#
+# Reinstall mosquitto and it's required resources.
+#
+
+if [ "$USER" = "root" ] && [ "$SUDO_USER" == "" ]; then
+  echo "This script cannot be run as root directly and must be run"
+  echo "as the user owning the Yombo gateway service."
+  echo ""
+  echo "Logout as root and then:"
+  echo "sudo ./debian_update_mosquitto"
+  exit
+fi
+
+if [ "$(id -u)" -ne 0 ]; then
+  echo "This script must run with sudo to gain root access. This"
+  echo "is needed to install the latest updates. Run this the user"
+  echo "owning the Yombo gateway service:"
+  echo ""
+  echo "sudo ./debian_update_mosquitto"
+  echo ""
+  exit
+fi
+
+YOMBO_SCRIPT_HELPER_DIR="$( cd "$(dirname "$0")" ; pwd -P )"
+YOMBO_SCRIPT_DIR="$(dirname $YOMBO_SCRIPT_HELPER_DIR)"
+YOMBO_ROOT_DIR="$(dirname $YOMBO_SCRIPT_DIR)"
+
+LOGFILE=$HOME/yombo_install_mosquitto.log
+LOGFILEDETAILED=$HOME/yombo_install_mosquitto_detailed.log
+
+touch $LOGFILE
+chown $SUDO_USER:$SUDO_USER $LOGFILE
+
+touch $LOGFILEDETAILED
+chown $SUDO_USER:$SUDO_USER $LOGFILEDETAILED
+
+function logsetup {
+#    TMP=$(tail -n $RETAIN_NUM_LINES $LOGFILE 2>/dev/null) && echo "${TMP}" > $LOGFILE
+    exec > >(tee -a $LOGFILE $LOGFILEDETAILED)
+    exec 2>&1
+}
+
+function log {
+    echo "[$(date --rfc-3339=seconds)]: $*"
+}
+logsetup
+
+rm /var/lib/mosquitto/mosquitto.db >> $LOGFILEDETAILED 2>&1
+
+cd /usr/local/src/
+sudo mkdir -p yombo
+sudo chown $SUDO_USER yombo
+cd yombo
+
+cd /usr/local/src/yombo
+
+log "==> Rebuilding MQTT Broker - mosquitto"
+cd /usr/local/src >> $LOGFILEDETAILED 2>&1
+rm -rf /usr/local/src/yombo/libwebsockets >> $LOGFILEDETAILED 2>&1
+rm -rf /usr/local/src/yombo/mosquitto >> $LOGFILEDETAILED 2>&1
+rm -rf /usr/local/src/yombo/mosquitto-auth-plug >> $LOGFILEDETAILED 2>&1
+
+cd /usr/local/src/yombo
+log "==> Downloading MQTT broker source files."
+git clone https://github.com/coldfire84/mosquitto-auth-plug.git >> $LOGFILEDETAILED 2>&1 &
+git clone https://github.com/warmcat/libwebsockets.git >> $LOGFILEDETAILED 2>&1
+git clone https://github.com/eclipse/mosquitto.git >> $LOGFILEDETAILED 2>&1
+cd /usr/local/src/yombo/mosquitto
+git checkout v1.6.7 >> $LOGFILEDETAILED 2>&1
+
+log "==> Compiling libsockets."
+cd /usr/local/src/yombo/libwebsockets
+mkdir -p build
+cd build
+cmake .. >> $LOGFILEDETAILED 2>&1
+make >> $LOGFILEDETAILED 2>&1
+make install >> $LOGFILEDETAILED 2>&1
+ldconfig
+
+log "==> Compiling mosquitto auth plugin."
+cd /usr/local/src/yombo/mosquitto-auth-plug
+wget -O config.mk https://get.yombo.net/pibakery_files/mosquitto-auth.mk >> $LOGFILEDETAILED 2>&1
+make >> $LOGFILEDETAILED 2>&1
+
+log "==> Compiling mosquitto."
+cd /usr/local/src/yombo/mosquitto
+make binary WITH_WEBSOCKETS=yes WITH_DOCS=no CFLAGS=-I/usr/local/include/ >> $LOGFILEDETAILED 2>&1
+log "==> Installing mosquitto."
+make install WITH_WEBSOCKETS=yes WITH_DOCS=no CFLAGS=-I/usr/local/include/ >> $LOGFILEDETAILED 2>&1
+
+cd /usr/sbin  >> $LOGFILEDETAILED 2>&1
+rm /usr/sbin/mosquitto >> $LOGFILEDETAILED 2>&1
+ln -s /usr/local/sbin/mosquitto .  >> $LOGFILEDETAILED 2>&1
+log "==> Done with mosquitto install."

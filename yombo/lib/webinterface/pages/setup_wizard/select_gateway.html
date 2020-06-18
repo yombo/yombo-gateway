@@ -1,9 +1,5 @@
 {% extends "lib/webinterface/fragments/layout.tpl" %}
 
-{% block head_top %}
-{% include "lib/webinterface/fragments/bg_image.tpl" %}
-{% endblock %}
-
 {% set progressbar = 10 %}
 
 {% block content %}
@@ -13,9 +9,11 @@
             <div class="card">
               <div class="card-header text-center">
                   <h2>Gateway Setup Wizard</h2>
-                <h5 class="card-title">Step 2: Gateway Selection</h5>
+                <h5 class="card-title">{{_("setupwizard.selectgateway.step2")}}</h5>
                 <div class="progress">
-                  <div class="progress-bar progress-bar-primary progress-bar-striped" role="progressbar" aria-valuenow="{{ progressbar }}" aria-valuemin="2" aria-valuemax="100" style="min-width: 2em; width: {{ progressbar }}%">
+                  <div class="progress-bar progress-bar-primary progress-bar-striped" role="progressbar"
+                       aria-valuenow="{{ progressbar }}" aria-valuemin="2" aria-valuemax="100"
+                       style="min-width: 2em; width: {{ progressbar }}%">
                     {{ progressbar }}%
                   </div>
                 </div>
@@ -23,24 +21,28 @@
               <div class="card-body">
 {% if available_gateways|length == 0 %}
                 <form action="/setup_wizard/basic_settings" method="POST" role="form">
-                <h2>Create New Gateway</h2>
+                <h2>{{_("setupwizard.selectgateway.create_new_gateway")}}</h2>
                 <p class="card-text">
-                    No previously configured gateways were found in your account.
+                    {{_("setupwizard.selectgateway.no_previous_gateway")}}
                 </p>
-                <a class="btn btn-md btn-warning" href="/setup_wizard/select_gateway"><i class="fa fa-chevron-left pull-left"></i>&nbsp; Back</a>
+                <a class="btn btn-md btn-warning" href="/setup_wizard/select_gateway">
+                  <i class="fa fa-chevron-left pull-left"></i>&nbsp; Back</a>
                     <input class="form-control" id="gateway" name="gateway-id" type="hidden" value="new">
-                    <button type="submit" id="submit-new" class="btn btn-lg btn-success pull-right">New Gateway<i class="fa fa-chevron-right pull-right"></i></button>
+                    <button type="submit" id="submit-new" class="btn btn-lg btn-success pull-right">
+                      {{_("setupwizard.selectgateway.new_gateway")}}<i class="fa fa-chevron-right pull-right"></i></button>
                 </form>
 {% else %}
-                <h2>Create New Gateway or Use Existing</h2>
+                <h2>{{_("setupwizard.selectgateway.create_new_or_use_existing_gateway")}}</h2>
                 <p class="card-text">
-                    Configured gateways were found, would you like to use one of these?
+                    {{_("setupwizard.selectgateway.use_configured_gateway_or_new")}}
                 </p>
                 <form action="/setup_wizard/basic_settings" method="POST" role="form">
                     <fieldset>
                         <div class="form-group">
                             <select name="gateway-id" required class="selectpicker show-tick" title="Select...">
-                                <option value="new" style="background: #e6f7ff; color: #000;"{% if selected_gateway == 'new' %} selected{% endif %}>Create New</option>
+                                <option value="new" style="background: #e6f7ff; color: #000;"{% if selected_gateway == 'new' %} selected{% endif %}>
+                                  {{_("setupwizard.selectgateway.create_new")}}
+                                </option>
                                 <option data-divider="true"></option>
                                 {% for id, gateway in available_gateways.items() -%}
                                 <option value="{{ gateway.id }}"{% if selected_gateway == id %} selected{% endif %}>{{ gateway.label }}</option>
@@ -48,8 +50,9 @@
                             </select>
                         </div>
                     </fieldset>
-                    <a class="btn btn-md btn-warning" href="/setup_wizard/select_gateway"><i class="fa fa-chevron-left float-left"></i>&nbsp; Back</a>
-                    <button type="submit" id="submit-existing" class="btn btn-lg btn-success float-right">Next</button>
+                    <a class="btn btn-md btn-warning" href="/setup_wizard/select_gateway">
+                      <i class="fa fa-chevron-left float-left"></i>&nbsp; {{_("ui.back")}}</a>
+                    <button type="submit" id="submit-existing" class="btn btn-lg btn-success float-right">{{_("ui.next")}}</button>
                 </form>
 {%- endif %}
               </div>
@@ -58,4 +61,3 @@
     </div>
 </div>
 {% endblock %}
-

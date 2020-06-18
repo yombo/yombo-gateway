@@ -4,6 +4,9 @@
       "description": "أغلق شيء."
     }
   },
+  "panel": {
+    "dev-info": "معلومات"
+  },
   "state": {
     "automation": {
       "off": "إيقاف",
@@ -131,6 +134,11 @@
     "current_language": "العربية"
   },
   "ui": {
+    "card": {
+      "automation": {
+        "title": "اتمته"
+      }
+    },
     "common": {
       "actions": "الإجراءات",
       "add": "إضافة",
@@ -150,10 +158,14 @@
       "none": "لا شيء",
       "search": "البحث",
       "search_ddd": "البحث...",
-      "updated": "تحديث"
+      "updated": "تحديث",
+      "version": "الإصدار"
     },
     "greeting": {
       "welcome": "أهلا بك"
+    },
+    "label": {
+      "select": "حدد"
     },
     "navigation": {
       "about": "حول",
@@ -166,16 +178,25 @@
       "basic_settings": "الإعدادات الأساسية",
       "commands": "الأوامر",
       "details": "التفاصيل",
+      "developer_tools": "ادوات المطورين",
       "devices": "الأجهزة",
       "info": "معلومات",
+      "languages": "اللغات",
       "list": "قائمة",
       "panel": "الفريق",
       "roles": "أدوار",
       "rules": "القواعد",
+      "settings": "الإعدادات",
       "statistics": "الإحصاءات",
       "storage": "تخزين",
       "system": "نظام",
+      "system_settings": "اعدادات النظام",
+      "tools": "أدوات",
       "users": "المستخدمين"
+    },
+    "relative_time": {
+      "never": "أبدا",
+      "past": "{time} قبل"
     }
   }
 }

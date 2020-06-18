@@ -1,0 +1,77 @@
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+{% import "lib/webinterface/fragments/macros.tpl" as macros%}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row" style="padding-top: 3em; padding-bottom: 2em;">
+        <div class="col-12 col-md-10 col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-header text-center">
+                  <h2>Gateway Restarting</h2>
+                </div>
+                <div class="card-body">
+                    <p></p>
+                    <div  style="text-align: center">
+                        <p style="font-size: 1.2em">
+                            <strong>{{message}}</strong>
+                        </p><br>
+                        <i class="fas fa-moon fa-spin fa-4x" style="color:Green"></i>
+                        <p>
+                            This page will redirect to the gateway once it's finished restarting.
+                        </p>
+                    </div>
+                    <hr>
+                    <p>
+                        Some additional reading while you wait:
+                    </p>
+                    <ul>
+                        <li><a href="https://yg2.in/f_gw_yombonet" target="_blank">Yombo.Net</a></li>
+                        <li><a href="https://yg2.in/f_gw_my_account" target="_blank">Manage Account</a></li>
+                        <li><a href="https://yg2.in/f_gw_docs" target="_blank">Documentation</a></li>
+                        <li><a href="https://yg2.in/f_gw_dev_modules" target="_blank">Create advanced automation rules or add new features.</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block body_bottom %}
+<!-- jQuery, js.cookie, bootstrap4, bootstrap select, bootstrap datatables, are you sure -->
+<script src="/js/basic_app.js"></script>
+
+<script>
+$(document).ready(function() {
+    function doRedirect() {
+        var targetUrl = "/";
+        window.location.href = targetUrl;
+    }
+
+    function checkServer() {
+        var uptime = {{yombo._Atoms['gateway.running_since']|int}} + 2;
+        var response_uptime = 0;
+        var pingUrl = "/api/v1/system/awake";
+        var refreshIntervalId = setInterval(ping, 250);
+
+        function ping() {
+            $.ajax({
+                url: pingUrl,
+                headers: {
+                  Accept: "application/json",
+                },
+                success: function(response, textStatus, request){
+                        response_uptime = Number($.trim(response['data']['attributes']['id']));
+                        console.log("New uptime: " + response_uptime + " Old uptime: " + uptime)
+                        if (response_uptime > uptime) {
+                            console.log("Going to redirect....");
+                            clearInterval(refreshIntervalId);
+                            setTimeout(doRedirect, 200);
+                    }
+                }
+            });
+        }
+    }
+    setTimeout(checkServer, 200);
+});
+</script>
+{% endblock %}

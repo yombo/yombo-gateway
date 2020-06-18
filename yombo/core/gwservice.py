@@ -6,17 +6,18 @@
 
   For more information see: `GW Service Core @ Module Development <https://yombo.net/docs/core/gwservice>`_
 
-
 This is the main class the is responsible for getting everything started. This calls the loader
-library to get everything started.
+library which loads the rest of the system.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2012-2019 by Yombo.
+:copyright: Copyright 2012-2020 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/core/module.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/core/gwservice.html>`_
 """
 import multiprocessing
+import sys
+import traceback
 
 # Import twisted libraries
 from twisted.internet import reactor
@@ -26,37 +27,36 @@ from twisted.internet.defer import inlineCallbacks
 # Import Yombo libraries
 from yombo.lib.loader import setup_loader
 from yombo.core.log import get_logger
-from yombo.utils import set_twisted_logger as utils_logger
-from yombo.utils.decorators.deprecation import set_twisted_logger as utils_decorators_logger
-
-logger = get_logger("core.gwservice")
+from yombo.utils import set_twisted_logger as set_twisted_logger_utils
+from yombo.utils.decorators.deprecation import set_twisted_logger as set_twisted_logger_decorators
 
 
 class GWService(Service):
     """
-    Responsible for starting/stopping the entire Yombo Gateway service.  This is called from Yombo.tac.
+    Responsible for starting/stopping the entire Yombo Gateway service.  This is called from yombo.tac.
     """
     loader = None
 
-    def start(self):
+    def start(self) -> None:
         """
         After twisted is running to get, call loader library and various starter functions
         to get everything started.
         """
-        # Threads are used for multiple items within the Yombo Gateway. They are used to prevent
-        # blocking code. We need at least 40 threads to make things run smoothly.
-        utils_logger(get_logger("utils"))
-        utils_decorators_logger(get_logger("utils"))
+        set_twisted_logger_utils(get_logger("utils"))
+        set_twisted_logger_decorators(get_logger("utils"))
 
+        # Threads are used for multiple items within the Yombo Gateway. They are used to prevent
+        # blocking code and diverting some of the workload off the main thread to keep things
+        # running more smooth.
         thread_count = multiprocessing.cpu_count() * 10
-        if thread_count < 50:
-            thread_count = 50
+        if thread_count < 40:
+            thread_count = 40
         reactor.suggestThreadPoolSize(thread_count)
         reactor.callWhenRunning(self.start_loader_library)
 
-    def startService(self):
+    def startService(self) -> None:
         """
-        Get the service started.  Shouldn't be called by anyone!
+        Get the service started.  Shouldn't be called by anyone other than yombo.tac.
         """
         Service.startService(self)
 
@@ -65,8 +65,17 @@ class GWService(Service):
         """
         Sets up the loader library and then start it.
         """
-        self.loader = setup_loader()
-        yield self.loader.start()
+        try:
+            self.loader = setup_loader()
+        except Exception as e:
+            print(f"Error starting the gateway: {e}")
+            print("--------------------------------------------------------")
+            print(f"{sys.exc_info()}")
+            print("---------------==(Traceback)==--------------------------")
+            print(f"{traceback.print_exc(file=sys.stdout)}")
+            print("--------------------------------------------------------")
+
+        yield self.loader.start_the_gateway()
 
     @inlineCallbacks
     def stopService(self):
@@ -75,5 +84,5 @@ class GWService(Service):
         
         If the service needs to be stopped due to error, use an L{exceptions}.
         """
-        logger.info("Yombo Gateway stopping.")
+        print("Yombo Gateway stopping. (gwsvc-ss)")
         yield self.loader.unload()

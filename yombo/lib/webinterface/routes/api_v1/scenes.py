@@ -1,32 +1,38 @@
-from yombo.lib.webinterface.auth import require_auth
-from yombo.utils import is_none
+from yombo.classes.jsonapi import JSONApi
+from yombo.constants.permissions import AUTH_PLATFORM_SCENE
+from yombo.lib.webinterface.auth import get_session
 
 
 def route_api_v1_scenes(webapp):
     with webapp.subroute("/api/v1") as webapp:
-
-        @webapp.route("/scenes", methods=["GET"])
-        @require_auth(api=True)
-        def apiv1_scenes_get(webinterface, request, session):
-            """ Gets the system scenes. """
-            return webinterface.render_api(request, None,
-                                           data_type="rules",
-                                           attributes=webinterface._Scenes.get_list()
-                                           )
-
-        @webapp.route("/scenes/<string:scene_id>", methods=["GET"])
-        @require_auth(api=True)
-        def apiv1_scenes_byid_get(webinterface, request, session, rule_id):
-            """ Get a single scene by it's ID. """
-            rule_id = webinterface._Validate.id_string(rule_id)
-            return webinterface.render_api(request, None,
-                                           data_type="rules",
-                                           attributes=webinterface._Scenes.get(rule_id)
-                                           )
+        pass
+        # @webapp.route("/scenes", methods=["GET"])
+        # @get_session(auth_required=True, api=True)
+        # def apiv1_scenes_get(webinterface, request, session):
+        #     """ Gets the system scenes. """
+        #     session.is_allowed(AUTH_PLATFORM_SCENE, "view")
+        #     return webinterface.render_api(request,
+        #                                    data=JSONApi(webinterface._Scenes.get_all()),
+        #                                    data_type="scenes",
+        #                                    )
         #
+        # @webapp.route("/scenes/<string:scene_id>", methods=["GET"])
+        # @get_session(auth_required=True, api=True)
+        # def apiv1_scenes_byid_get(webinterface, request, session, rule_id):
+        #     """ Get a single scene by it's ID. """
+        #     webinterface._Validate.id_string(rule_id)
+        #     session.is_allowed(AUTH_PLATFORM_SCENE, "view", rule_id)
+        #     return webinterface.render_api(request,
+        #                                    data=JSONApi(webinterface._Scenes.get_all()),
+        #                                    data_type="rules",
+        #                                    attributes=webinterface._Scenes.get(rule_id)
+        #                                    )
+
         # @webapp.route("/device_inputs", methods=["GET"])
-        # @require_auth(api=True)
+        # @get_session(auth_required=True, api=True)
         # def apiv1_scenes_device_inputs_index(webinterface, request, session):
+        #     webinterface._Validate.id_string(rule_id)
+        #     session.is_allowed(AUTH_PLATFORM_SCENE, "edit", rule_id)
         #     session.has_access("scene", "*", "view", raise_error=True)
         #
         #     def local_error(message):

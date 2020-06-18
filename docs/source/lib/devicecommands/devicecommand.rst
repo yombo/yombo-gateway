@@ -2,12 +2,16 @@
 
 .. _devicecommands_devicecommand:
 
-.. currentmodule:: yombo.lib.gateways.gateway
+.. currentmodule:: yombo.lib.devicecommands.devicecommand
 
-=======================================================================
-DeviceCommands::DeviceCommand (yombo.lib.devicecommands.devicecommand)
-=======================================================================
+================================================================
+DeviceCommand (yombo.lib.devicecommands.devicecommand)
+================================================================
 .. automodule:: yombo.lib.devicecommands.devicecommand
+
+DeviceCommand Class
+================================================================
+.. autoclass:: DeviceCommand
    :members:
    :special-members:
    :private-members:

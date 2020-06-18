@@ -1,4 +1,5 @@
 import pkg from './package';
+
 const webpack = require('webpack');
 
 const dateTimeFormats = {
@@ -42,7 +43,7 @@ export default {
       { hid: 'description', name: 'description', content: pkg.description }
     ],
     script: [
-      { src: 'https://use.fontawesome.com/releases/v5.9.0/js/all.js' }
+      { src: 'https://use.fontawesome.com/releases/v5.13.0/js/all.js' }
     ],
     link: [
       { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
@@ -50,8 +51,11 @@ export default {
   },
 
   router: {
-    // Run the middleware/user-agent.js on every page
-    middleware: 'disablespa'
+    // Run these items on every page
+    middleware: [
+      'lockscreen',
+      'disablespa'
+      ]
   },
 
   generate: {
@@ -70,37 +74,38 @@ export default {
   ** Global CSS
   */
   css: [
-
     '@/assets/sass/dashboard.scss',
-    '@/assets/css/custom.css',
+    'vue-multiselect/dist/vue-multiselect.min.css',
+    'vue-loading-overlay/dist/vue-loading.css',
   ],
 
   /*
   ** Plugins to load before mounting the App
   */
   plugins: [
-    { src: '~/plugins/index.js', ssr: false },
-    { src: '~/plugins/localStorage.js', ssr: false },
-    { src:'~/plugins/bus.js', ssr: false },
-    { src: '~/plugins/startup.js', ssr: false },
-    { src: '~/plugins/filters.js', ssr: false },
-    { src: '~/plugins/root_items.js', ssr: false },
+    { src: '~/plugins/bus.js', mode: 'client' },  // Global bus.
+    { src: '~/plugins/localStorage.js', mode: 'client' },  // persistent data
+    { src: '~/plugins/environment.js', mode: 'client' },  // Downloads env data from gateway
+    { src: '~/plugins/browser.js', mode: 'client' },  // Monitor browser events - resize and language.
+    { src: '~/plugins/vue-inject.js', mode: 'client' },
+    { src: '~/plugins/index.js', mode: 'client' },  // Sets up global components and directives
+    { src: '~/plugins/filters.js', mode: 'client' },  // Filters used within components.
+    { src: '~/plugins/mixins.js', mode: 'client' },  // Filters used within components.
+    { src: '~/plugins/mqtt.js', mode: 'client' },  // Adds MQTT support.
   ],
 
   /*
   ** Nuxt.js modules
   */
   modules: [
-    // // Doc: https://axios.nuxtjs.org/usage
-    // '@nuxtjs/axios',
-    // Doc: https://bootstrap-vue.js.org/docs/
-    'bootstrap-vue/nuxt',
-    '@nuxtjs/pwa',
+    'bootstrap-vue/nuxt',  // Bootstrap for vue.
+    '@nuxtjs/pwa',  // Create progressive web app.
     '~modules/generate-whitelist.js',
-    'vue-sweetalert2/nuxt',
+    'nuxt-client-init-module',  // Used to download the gateway env data within store/index.js
+    'vue-sweetalert2/nuxt',  // Pretty alerts
+    'portal-vue/nuxt',  // Magically place data from any component to any other component
     ['nuxt-i18n', {
       seo: false,
-      // locales: ['en', 'fr', 'es'],
       defaultLocale: 'en',
       detectBrowserLanguage: {
         useCookie: true,
@@ -124,6 +129,7 @@ export default {
       langDir: 'lang/',
       vueI18n: {
         dateTimeFormats,
+        silentTranslationWarn: true,
         fallbackLocale: 'en',
         messages: {
           en: require('./lang/en.json'),
@@ -144,13 +150,16 @@ export default {
   */
   build: {
     /*
-    ** You can extend webpack config here
+    * You can extend webpack config here
+    *
+    * This current setting forces smaller chunks together, causing the browser to make less download
+    * requests.
     */
     extend(config, ctx) {
       if (!this.dev) {
         config.plugins.push(
             new webpack.optimize.MinChunkSizePlugin({
-            minChunkSize: 20000
+            minChunkSize: 50000
           })
         )
       }

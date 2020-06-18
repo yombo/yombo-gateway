@@ -5,9 +5,14 @@
 .. currentmodule:: yombo.lib.gateways.gateway
 
 =================================================================
-Gateways::Gateway (yombo.lib.gateways.gateway)
+Gateway (yombo.lib.gateways.gateway)
 =================================================================
 .. automodule:: yombo.lib.gateways.gateway
+
+
+Gateway Class
+================================================================
+.. autoclass:: Gateway
    :members:
    :special-members:
    :private-members:

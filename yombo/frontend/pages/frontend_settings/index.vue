@@ -1,25 +1,34 @@
-
 <template>
-  <section class="container">
-    <div class="row">
-      <div class="col-md-10 mx-auto">
+  <section class="container-fluid">
+    <portal to="topnavbar">
+      {{ $t('ui.navigation.frontend_settings') }}
+    </portal>
+    <div class="row justify-content-center">
+      <div class="col-sm-12 col-md-10 mx-auto">
           <card class="card-chart" no-footer-line>
             <div slot="header">
               <h2 class="card-title">
-                Frontend Settings
+                {{ $t('ui.navigation.frontend_settings') }}
               </h2>
-              <p class="subheading" style="margin-bottom: .5em;">Various app settings</p>
+              <p class="subheading" style="margin-bottom: .5em;">Configuration items</p>
             </div>
             <p>
-              Settings for currently logged in user for <strong>this browser.</strong>. Changes here will only affect
-              this browser for the current user.
+              Yombo Frontend Vue application settings.
+              <br>
+              <strong>Note:</strong>These setting only affect this <strong>this</strong> browser for
+              <strong>this</strong> user.
             </p>
             <p>
-              Form items here:
+              Lock Code:<br>
+              <input v-model="newLockCode" type="password" placeholder="Set passcode" value="newLockCode">
             </p>
-            <ul>
-              <li>Lock screen pin: (input form)</li>
-            </ul>
+            <p>
+              Lock Code Hint:<br>
+              <input v-model="newLockCodeHint" type="text" placeholder="To tickle your brain" value="newLockCodeHint">
+            </p>
+            <button type="button" class="btn btn-round btn-primary active" v-on:click="saveSettings">
+              {{ $t('ui.common.save') }}
+            </button>
           </card>
       </div>
     </div>
@@ -28,31 +37,42 @@
 
 <script>
 export default {
-    head() {
-        return {
-            title: 'Frontend Settings',
+  head() {
+    return {
+      title: 'Frontend Settings',
+    }
+  },
+  data () {
+    return {
+      metaPageTitle: this.$t('ui.navigation.frontend_settings'),
+          newLockCode: "        ",  // Save a new lock code
+          newLockCodeHint: this.$store.state.frontend.settings.lockScreenPasswordHint,  // Save a new lock code
+          gwLabel: null
         }
     },
-    data () {
-          return {
-              gwLabel: null
-          }
-      },
-    computed: {
-      pageTitle: function () {
-        return this.gwLabel + " Home";
-      },
-      systemInfo: function () {
-        return this.$store.state.systeminfo;
-      },
-      randomBGNumber : function(){
-        return Math.floor(Math.random() * (10 - 1 + 1)) + 1;
+  computed: {
+    systemInfo: function () {
+      return this.$store.state.systeminfo;
+    },
+  },
+    methods: {
+      saveSettings: function() {
+        if (this.newLockCode !== "        ") {
+          console.log(`saving new lock codE: ${this.newLockCode}`);
+          this.$store.commit('frontend/settings/screenLockPassword', this.newLockCode);
+        }
+        this.$store.commit('frontend/settings/screenLockPasswordHint', this.newLockCodeHint);
+        this.$swal({
+          title: 'Settings saved',
+          text: `Frontend settings saved.`,
+          icon: 'success',
+          confirmButtonClass: 'btn btn-success btn-fill',
+          buttonsStyling: false
+        });
       }
     },
-    created: function () {
-      if (this.gwLabel == null) {
-        this.$store.dispatch('systeminfo/fetch');
-      }
-    },
+  created: function () {
+      this.$store.dispatch('gateway/systeminfo/refresh');
+  },
 }
 </script>

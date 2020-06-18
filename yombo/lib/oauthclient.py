@@ -11,9 +11,9 @@ Acts as an oauth client. Currently, this only handles the  authorization code gr
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.24.0
 
-:copyright: Copyright 2019 by Yombo.
+:copyright: Copyright 2019-2020 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/oauthendpoint.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/oauthclient.html>`_
 """
 from time import time
 
@@ -34,7 +34,7 @@ class OauthEndpoint(YomboLibrary):
     """
     def _init_(self, **kwargs):
         self.clients = {}
-        self.new(client_id=self.gateway_id,
+        self.new(client_id=self._gateway_id,
                  secret=self._Configs.get("core", "gwhash"),
                  scope="")
 

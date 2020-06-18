@@ -3,8 +3,9 @@ Various datetime / date /time utilities.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2018 by Yombo.
+:copyright: Copyright 2018-2020 by Yombo.
 :license: See LICENSE for details.
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/datetime.html>`_
 """
 
 import datetime as dt
@@ -12,7 +13,7 @@ import parsedatetime as pdt
 import pytz
 import re
 from time import time
-from typing import Any, Dict, Union, Optional, Tuple  # NOQA
+from typing import Any, Dict, Union, Optional, Tuple
 
 from yombo.utils.decorators import static_var
 
@@ -20,7 +21,7 @@ DATE_STR_FORMAT = "%Y-%m-%d"
 UTC = DEFAULT_TIME_ZONE = pytz.utc  # type: dt.tzinfo
 
 
-# Copyright (c) Django Software Foundation and individual contributors.
+# This re.compile string is copyright (c) Django Software Foundation and individual contributors.
 # All rights reserved.
 # https://github.com/django/django/blob/master/LICENSE
 DATETIME_RE = re.compile(
@@ -154,6 +155,7 @@ def get_age_exact(time: Any) -> str:
         return formatn(minute, "minute")
 
     return formatn(second, "second") if second > 0 else "0 seconds"
+
 
 def utc_from_timestamp(timestamp: float) -> dt.datetime:
     """

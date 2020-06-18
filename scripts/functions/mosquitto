@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+
+function log {
+    echo "[$(date --rfc-3339=seconds)]: $*"
+}
+
+function download_libwebsockets {
+  cd /usr/local/src/yombo
+  log "==> Downloading Mosquitto (MQTT) Source files."
+  git clone https://github.com/warmcat/libwebsockets.git
+}
+
+function download_mosquitto_auth {
+  cd /usr/local/src/yombo
+  log "==> Downloading Mosquitto Auth Plugin Source files."
+  git clone https://github.com/coldfire84/mosquitto-auth-plug.git >> $LOGFILEDETAILED 2>&1
+}
+
+function download_mosquitto {
+  apt-get install mosquitto -y
+  cd /usr/local/src/yombo >> $LOGFILEDETAILED 2>&1
+  log "==> Downloading Mosquitto (MQTT) Source files."
+  git clone https://github.com/eclipse/mosquitto.git >> $LOGFILEDETAILED 2>&1
+  cd /usr/local/src/yombo/mosquitto
+  git checkout v1.6.7 >> $LOGFILEDETAILED 2>&1
+}
+
+function build_libwebsockets {
+  log "==> Compiling libsockets."
+  wait $downloadpid
+  cd /usr/local/src/yombo/libwebsockets
+  mkdir -p build
+  cd build
+  log "==> Configuring Mosquitto build"
+  cmake .. >> $LOGFILEDETAILED 2>&1
+  log "==> Compiling Mosquitto, give this a few moments."
+  make >> $LOGFILEDETAILED 2>&1
+  make install >> $LOGFILEDETAILED 2>&1
+  ldconfig
+}
+
+function build_mosquitto_auth {
+  log "==> Compiling mosquitto auth plugin."
+  cd /usr/local/src/yombo/mosquitto-auth-plug
+  wget -O config.mk https://get.yombo.net/pibakery_files/mosquitto-auth.mk >> $LOGFILEDETAILED 2>&1
+  make >> $LOGFILEDETAILED 2>&1
+}
+
+function build_mosquitto {
+  log "==> Compiling mosquitto."
+  cd /usr/local/src/yombo/mosquitto
+  make binary WITH_WEBSOCKETS=yes WITH_DOCS=no CFLAGS=-I/usr/local/include/ >> $LOGFILEDETAILED 2>&1
+  log "==> Installing mosquitto."
+  make install WITH_WEBSOCKETS=yes WITH_DOCS=no CFLAGS=-I/usr/local/include/ >> $LOGFILEDETAILED 2>&1
+}

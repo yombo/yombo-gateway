@@ -30,11 +30,11 @@ To send a command to a device is simple.
 
    # Lets turn on every device this module manages.
    for device in self._Devices:
-       self.Devices[device].command(cmd="off")
+       self.Devices[device].command(command="off")
 
    # Lets turn off every every device, using a very specific command id.
    for device in self._Devices:
-       self.Devices[device].command(cmd="js83j9s913")  # Made up id, but can be same as off
+       self.Devices[device].command(command="js83j9s913")  # Made up id, but can be same as off
 
    # Turn off the christmas tree.
    self._Devices.command("christmas tree", "off")
@@ -43,24 +43,23 @@ To send a command to a device is simple.
    deviceList = self._Devices.search(device_type="x10_appliance")  # Can search on any device attribute
 
    # Turn on all x10 lights off (regardless of house / unit code)
-   allX10Lamps = self._DeviceTypes.devices_by_device_type("x10_light")
-   # Turn off all x10 lamps
-   for lamp in allX10Lamps:
-       lamp.command("off")
+   allX10lights = self._DeviceTypes.devices_by_device_type("x10_light")
+   # Turn off all x10 lights
+   for light in allX10lights:
+       light.command("off")
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2012-2017 by Yombo.
+:copyright: Copyright 2012-2020 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/devices.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/devices/__init__.html>`_
+
 """
 # Import python libraries
 from copy import deepcopy
-import json
-import msgpack
+import simplejson as json
 from numbers import Number
-import sys
-import traceback
+from typing import Any, ClassVar, Dict, List, Union
 
 from time import time
 
@@ -69,22 +68,22 @@ from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks, maybeDeferred, Deferred
 
 # Import Yombo libraries
-from yombo.constants import ENERGY_NONE, ENERGY_ELECTRIC, ENERGY_GAS, ENERGY_WATER, ENERGY_NOISE, ENERGY_TYPES
+from yombo.constants import ENERGY_ELECTRIC, ENERGY_GAS, ENERGY_WATER, ENERGY_NOISE, ENERGY_TYPES
 from yombo.core.exceptions import YomboWarning, YomboHookStopProcessing
 from yombo.core.library import YomboLibrary
-from yombo.mixins.library_db_model_mixin import LibraryDBModelMixin
+from yombo.core.schemas import DeviceSchema
+from yombo.mixins.library_db_parent_mixin import LibraryDBParentMixin
 from yombo.mixins.library_search_mixin import LibrarySearchMixin
 from yombo.core.log import get_logger
-from yombo.utils import generate_source_string
+from yombo.utils.caller import caller_string
 from yombo.utils.hookinvoke import global_invoke_all
 
-
-from ._device import Device
+from .device import Device
 
 logger = get_logger("library.devices")
 
 
-class Devices(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
+class Devices(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
     """
     Manages all devices and provides the primary interaction interface. The
     primary functions developers should use are:
@@ -95,65 +94,57 @@ class Devices(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
     """
     devices = {}
 
-    # The following are used by get(), get_advanced(), search(), and search_advanced()
-    _class_storage_load_hook_prefix = "device"
-    _class_storage_load_db_class = Device
-    _class_storage_attribute_name = "devices"
-    _class_storage_search_fields = [
+    # The remaining attributes are used by various mixins.
+    _storage_primary_field_name: ClassVar[str] = "device_id"
+    _storage_attribute_name: ClassVar[str] = "devices"
+    _storage_label_name: ClassVar[str] = "device"
+    _storage_class_reference: ClassVar = Device
+    _storage_schema: ClassVar = DeviceSchema()
+    _storage_pickled_fields: ClassVar[Dict[str, str]] = {"energy_map": "json"}
+    _storage_search_fields: ClassVar[List[str]] = [
         "device_id", "device_type_id", "machine_label", "label", "area_label_lower", "full_label_lower",
         "area_label", "full_label", "description"
     ]
-    _class_storage_sort_key = "machine_label"
+    _storage_attribute_sort_key: ClassVar[str] = "machine_label"
 
     @inlineCallbacks
     def _init_(self, **kwargs):
         """
         Sets up basic attributes.
         """
-        self.mqtt = None
-        self.all_energy_usage = yield self._SQLDict.get(self, "all_energy_usage")
+        self.all_energy_usage = yield self._SQLDicts.get(self, "all_energy_usage")
         self.all_energy_usage_calllater = None
 
-        # reactor.callLater(10, self.test_change_device)
-
-    def test_change_device(self):
-        print("test change device starting.")
-        # print(f"sync enabled: {self._sync_enabled}")
-        # device_id = random.choice(list(self.devices))
-        print(list(self.devices.keys()))
-        device = self.devices['aWpBzyrK0WQUZwgdvmZ4']
-        print(f"changing device label: {device.label}")
-        device.label = f"{device.label}2"
-        print(f"changing device new device label: {device.label}")
-
     @inlineCallbacks
-    def _start_(self, **kwags):
+    def _load_(self, **kwargs):
         """
-        Loads the devices from the database and loads device commands.
+        Load devices from the database.
 
-        :param kwags:
+        :param kwargs:
         :return:
         """
-        yield self._class_storage_load_from_database()
+        yield self.load_from_database()
 
-    def _started_(self, **kwargs):
-        """
-        Sets up the looping call to cleanup device commands. Also, subscribes to
-        MQTT topics for IoT interactions.
+    # @inlineCallbacks
+    # def _start_(self, **kwargs):
+    #     """testing"""
+    #     yield self.test_change_device()
+    # @inlineCallbacks
+    #
+    # def test_change_device(self):
+    #     print("test change device starting.")
+    #     device = yield self.devices['ZjpMlXxx9bToqtAnBX3Boa']
+    #     print(f"changing device label: {device.label}")
+    #     print(f"device.update: {device.update}")
+    #     device.update({"label": f"{device.label}2"})
+    #     print(f"changing device new device label: {device.label}")
 
-        :return: 
-        """
-        if self._Loader.operating_mode == "run":
-            self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming,
-                                       client_id=f"Yombo-devices-{self.gateway_id}")
-            self.mqtt.subscribe("yombo/devices/+/get")
-
-    def _device_state_(self, **kwargs):
+    def _device_state_(self, arguments, **kwargs) -> None:
         """
         Sets up the callLater to calculate total energy usage.
         Called by send_state when a devices status changes.
 
-        :param kwargs:
+        :param arguments:
         :return:
         """
         if self.all_energy_usage_calllater is not None and self.all_energy_usage_calllater.active():
@@ -161,7 +152,7 @@ class Devices(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
 
         self.all_energy_usage_calllater = reactor.callLater(1, self.calculate_energy_usage)
 
-    def calculate_energy_usage(self):
+    def calculate_energy_usage(self) -> None:
         """
         Iterates thru all the devices and adds up the energy usage across all devices.
 
@@ -181,11 +172,13 @@ class Devices(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
 
         for device_id, device in self.devices.items():
             state_all = device.state_all
-            if "_fake_data" in state_all and state_all["_fake_data"] is True:
+            # print(f"state_all: {state_all}, type: {type(state_all)}")
+            # print(f"state_history: {device.state_history}")
+            if state_all._fake_data is True:
                 continue
-            if state_all["energy_type"] not in ENERGY_TYPES or state_all["energy_type"] == "none":
+            if state_all.energy_type not in ENERGY_TYPES or state_all.energy_type == "none":
                 continue
-            energy_usage = state_all["energy_usage"]
+            energy_usage = state_all.energy_usage
             if isinstance(energy_usage, int) or isinstance(energy_usage, float):
                 usage = energy_usage
             elif isinstance(energy_usage, Number):
@@ -196,8 +189,8 @@ class Devices(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
             location_label = location_id.machine_label
             if location_label not in all_energy_usage:
                 all_energy_usage[location_label] = deepcopy(usage_types)
-            all_energy_usage[location_label][state_all["energy_type"]] += usage
-            all_energy_usage["total"][state_all["energy_type"]] += usage
+            all_energy_usage[location_label][state_all.energy_type] += usage
+            all_energy_usage["total"][state_all.energy_type] += usage
 
         logger.debug("All energy usage: {all_energy_usage}", all_energy_usage=all_energy_usage)
 
@@ -248,52 +241,64 @@ class Devices(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
                 )
         self.all_energy_usage = deepcopy(all_energy_usage)
 
-    def _class_storage_preprocess_load(self, item, **kwargs):
-        new_map = {}
-        for key, value in item["energy_map"].items():
-            new_map[float(key)] = float(value)
-        item["energy_map"] = new_map
-
     @inlineCallbacks
-    def _class_storage_load_db_items_to_memory(self, incoming, source=None, **kwargs):
+    def load_an_item_to_memory(self, incoming: dict, load_source: Union[None, str] = None, **kwargs) -> Device:
+        new_map = {"0.0": "0", "1.0": "0"}
+        if incoming["energy_map"] is None:
+            incoming["energy_map"] = new_map
+        else:
+            if isinstance(incoming["energy_map"], str):
+                incoming["energy_map"] = json.loads(incoming["energy_map"])
+
+        if load_source is None:
+            load_source = "database"
+
         device_id = incoming["id"]
+
+        device_system_disabled = False
+        device_system_disabled_reason = None
+        try:
+            device_type = self._DeviceTypes.get(incoming["device_type_id"])
+            class_name = device_type.machine_label.replace("_", "")
+            error_include = f" Cannot find device type platform: {class_name}"
+        except KeyError:
+            device_type = self._DeviceTypes.get("device")
+            class_name = device_type.machine_label.replace("_", "")
+            error_include = f" Cannot find required device type '{incoming['device_type_id']}' for device, using generic device."
+            device_system_disabled = True
+            device_system_disabled_reason = "Missing device_type, usually because the platform isn't available."
+
+        incoming["device_type"] = device_type
         if device_id not in self.devices:
-            device_type = self._DeviceTypes[incoming["device_type_id"]]
-
-            if device_type.platform is None or device_type.platform == "":
-                device_type.platform = "device"
-            class_names = device_type.platform.lower()
-
-            class_names = "".join(class_names.split())  # we don't like spaces
-            class_names = class_names.split(",")
-
-            # logger.info("Loading device ({device}), platforms: {platforms}",
-            #             device=device,
-            #             platforms=class_names)
 
             klass = None
-            for class_name in class_names:
-                if class_name in self._DeviceTypes.platforms:
-                    klass = self._DeviceTypes.platforms[class_name]
-                    break
+            if class_name in self._DeviceTypes.platforms:
+                klass = self._DeviceTypes.platforms[class_name]
 
             if klass is None:
                 klass = self._DeviceTypes.platforms["device"]
-                logger.warn(
-                    "Using base device class for device '{label}' cannot find any of these requested classes:"
-                    " {class_names}",
-                    label=incoming["label"],
-                    class_names=class_names)
+                location = self._Locations[incoming["location_id"]]
+                area = self._Locations[incoming["area_id"]]
+                logger.warn("Using base device class for device '{label}'.{error_include}",
+                            label=f"{location.label} {area.label} {incoming['label']}",
+                            error_include=error_include)
 
-            device = yield maybeDeferred(self._generic_class_storage_load_to_memory,
-                                         self.devices,
-                                         Device,
-                                         incoming,
-                                         source=source
-                                         )
+            device = self.do_load_an_item_to_memory(
+                self.devices,
+                klass,
+                incoming,
+                load_source=load_source
+                )
+            klass.system_disabled = device_system_disabled
+            klass.system_disabled_reason = device_system_disabled_reason
+
+            device.device_type = device_type
+            # device.device_type = device_type
+            # print(f"new device: {device.device_type_id}")
+            # print(f"new device: {incoming}")
 
             d = Deferred()
-            d.addCallback(lambda ignored: maybeDeferred(self.devices[device_id]._system_init_, incoming, source=source))
+            d.addCallback(lambda ignored: maybeDeferred(self.devices[device_id]._system_init_))
             d.addErrback(self._load_node_into_memory_failure, self.devices[device_id])
             d.addCallback(lambda ignored: maybeDeferred(self.devices[device_id]._init_))
             d.addErrback(self._load_node_into_memory_failure, self.devices[device_id])
@@ -306,30 +311,41 @@ class Devices(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
             try:
                 global_invoke_all("_device_imported_",
                                   called_by=self,
-                                  id=device_id,
-                                  device=self.devices[device_id],
+                                  arguments={
+                                      "id": device_id,
+                                      "device": self.devices[device_id],
+                                      }
                                   )
             except YomboHookStopProcessing as e:
                 pass
         else:
-            device = yield maybeDeferred(self._generic_class_storage_load_to_memory,
-                                         self.devices,
-                                         Device,
-                                         incoming,
-                                         source=source
-                                         )
+            device = self.do_load_an_item_to_memory(
+                          self.devices,
+                          Device,
+                          incoming,
+                          load_source=load_source
+                          )
+        # print(f"device checking start_data_sync...")
+        if hasattr(device, 'start_data_sync'):
+            # print(f"checking start_data_sync... has it")
+            start_data_sync = getattr(device, "start_data_sync")
+            if callable(start_data_sync):
+                # print(f"checking start_data_sync... is callable.")
+                start_data_sync()
+
         return device
 
-    def _load_node_into_memory_failure(self, failure, device):
+    def _load_node_into_memory_failure(self, failure, device) -> None:
         logger.error("Got failure while creating device instance for '{label}': {failure}", failure=failure,
                      label=device['label'])
 
     @inlineCallbacks
-    def create_child_device(self, existing, label, machine_label, device_type, description=None):
+    def create_child_device(self, existing: Any, label: str, machine_label: str, device_type: str,
+                            description: Union[None, str] = None) -> Device:
         # create a child device based on a provided device.
         if description is None:
             description = f"Child of: {existing.full_label}"
-        new_data = existing.asdict_short()
+        new_data = existing.to_dict(to_database=True, include_meta=False)
         device_type_found = self._DeviceTypes.get(device_type)
         new_data.update({
             "device_id": f"{existing.device_id}{machine_label}",
@@ -343,12 +359,12 @@ class Devices(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
             "updated_at": time(),
             "_fake_data": True,
         })
-        new_device = yield self._load_node_into_memory(new_data, source="child")
-        new_device.parent = existing
-        new_device.parent_id = existing.device_id
+        new_device = yield self._load_node_into_memory(new_data, load_source="system")
+        new_device.device_parent = existing
+        new_device.device_parent_id = existing.device_id
         return new_device
 
-    def command(self, device, cmd, **kwargs):
+    def command(self, device: Union[Device, str], **kwargs):
         """
         Tells the device to do a command. This in turn calls the hook _device_command_ so modules can process the
         command if they are supposed to.
@@ -356,17 +372,17 @@ class Devices(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
         If a pin is required, "pin" must be included as one of the arguments. All kwargs are sent with the
         hook call.
 
-            - cmd doesn't exist
+            - command doesn't exist
             - delay or max_delay is not a float or int.
 
         :raises YomboPinCodeError: Raised when:
 
-            - pin is required but not recieved one.
+            - pin is required but not received one.
 
-        :param device: Device ID, machine_label, or Label.
+        :param device: Device Instance, Device ID, machine_label, or Label.
         :type device: str
-        :param cmd: Command ID, machine_label, or Label to send.
-        :type cmd: str
+        :param command: Command InstanceCommand ID, machine_label, or Label to send.
+        :type command: str
         :param pin: A pin to check.
         :type pin: str
         :param request_id: Request ID for tracking. If none given, one will be created.
@@ -385,82 +401,9 @@ class Devices(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
         :return: The request id.
         :rtype: str
         """
-        kwargs["requesting_source"] = generate_source_string()
-        return self.get(device).command(cmd, **kwargs)
-
-    def mqtt_incoming(self, topic, payload, qos, retain):
-        """
-        Processing any incoming MQTT messages we have subscribed to. This allows IoT type connections
-        from various external sources.
-
-        * yombo/devices/DEVICEID|DEVICEMACHINELABEL/get Value - Get some attribute
-          * Value = state, human, machine, extra
-        * yombo/devices/DEVICEID|DEVICEMACHINELABEL/cmd/CMDID|CMDMACHINELABEL Options - Send a command
-          * Options - Either a string for a single variable, or json for multiple variables
-
-        Examples: /yombo/devices/get/christmas_tree/cmd/on
-
-        :param topic:
-        :param payload:
-        :param qos:
-        :param retain:
-        :return:
-        """
-        #  0       1       2       3        4
-        # yombo/devices/DEVICEID/get|cmd/option
-        parts = topic.split("/", 10)
-        logger.info("Yombo Devices got this: {topic} : {parts}", topic=topic, parts=parts)
-        payload = payload.strip()
-        content_type = "string"
-        try:
-            payload = json.loads(payload)
-            content_type = "json"
-        except Exception as e:
-            try:
-                payload = msgpack.loads(payload)
-                content_type = "msgpack"
-            except Exception as e:
-                pass
-
-        try:
-            device_label = self.get(parts[2].replace("_", " "))
-            device = self.get(device_label)
-        except KeyError as e:
-            logger.info("Received MQTT request for a device that doesn't exist: {part}", part=parts[2])
-            return
-
-        if parts[3] == "get":
-            status = device.state_all
-
-            if len(parts) == 5:
-                if payload == "all":
-                    self.mqtt.publish(f"yombo/devices/{device.machine_label}/status",
-                                      json.dumps(device.state_all))
-                elif payload in status:
-                    self.mqtt.publish(f"yombo/devices/{device.machine_label}/status/{payload}",
-                                      str(getattr(payload, status)))
-            else:
-                self.mqtt.publish(f"yombo/devices/{device.machine_label}/status",
-                                  json.dumps(device.state_all))
-
-        elif parts[3] == "cmd":
-            try:
-                device.command(cmd=parts[4])
-            except Exception as e:
-                logger.warn("Device received invalid command request for command: {command} Reason: {reason}",
-                            command=parts[4], reason=e)
-
-            if len(parts) == 6:
-                status = device.state_all
-                if parts[4] == "all":
-                    self.mqtt.publish(f"yombo/devices/{device.machine_label}/status",
-                                      json.dumps(device.state_all))
-                elif payload in status:
-                    self.mqtt.publish(f"yombo/devices/{device.machine_label}/status/{payload}",
-                                      getattr(payload, status))
-            else:
-                self.mqtt.publish(f"yombo/devices/{device.machine_label}/status",
-                                  json.dumps(device.state_all))
+        if "request_context" not in kwargs or kwargs["request_context"] is None:
+            kwargs["request_context"] = caller_string()
+        return self.get(device).command(**kwargs)
 
     def device_user_access(self, device_id, access_type=None):
         """
@@ -502,12 +445,12 @@ class Devices(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
         :return:
         """
         if gateway_id == "local":
-            gateway_id = self.gateway_id
+            gateway_id = self._gateway_id
 
         devices = []
         for device_id, device in self.devices.items():
             if gateway_id is None or device.gateway_id == gateway_id:
-                devices.append(device.asdict())
+                devices.append(device.to_dict())
         return devices
 
     @inlineCallbacks
@@ -522,7 +465,7 @@ class Devices(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
         results = None
         # logger.info("Add new device.  Data: {data}", data=data)
         if "gateway_id" not in api_data:
-            api_data["gateway_id"] = self.gateway_id
+            api_data["gateway_id"] = self._gateway_id
 
         try:
             for key, value in api_data.items():
@@ -546,8 +489,10 @@ class Devices(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
         try:
             global_invoke_all("_device_before_add_",
                               called_by=self,
-                              data=api_data,
-                              stoponerror=True,
+                              arguments={
+                                  "data": api_data,
+                                  },
+                              stop_on_error=True,
                               )
         except YomboHookStopProcessing as e:
             raise YomboWarning(f"Adding device was halted by '{e.name}', reason: {e.message}")
@@ -566,8 +511,9 @@ class Devices(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
                 else:
                     variable_data = None
 
-                device_results = yield self._YomboAPI.request("POST", "/v1/device",
-                                                              api_data,
+                device_results = yield self._YomboAPI.request("POST",
+                                                              "/v1/device",
+                                                              body=api_data,
                                                               session=session)
             except YomboWarning as e:
                 return {
@@ -608,8 +554,10 @@ class Devices(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
         try:
             yield global_invoke_all("_device_added_",
                                     called_by=self,
-                                    id=device_id,
-                                    device=self.devices[device_id],
+                                    arguments={
+                                        "id": device_id,
+                                        "device": self.devices[device_id],
+                                        }
                                     )
         except Exception:
             pass

@@ -2,7 +2,7 @@
 
 .. _roles_mixin:
 
-.. currentmodule:: yombo.mixins.rolesmixin
+.. currentmodule:: yombo.mixins.roles_mixin
 
 .. meta::
    :description: Mixin class to support roles for users, authkeys, etc.

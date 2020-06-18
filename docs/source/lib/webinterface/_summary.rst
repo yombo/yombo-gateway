@@ -20,16 +20,17 @@ details.
 Web Interface Library
 =========================
 
-Primary webinterface library files.
+The Webinterface library has been broken down to multiple files for easier
+management.
 
 .. toctree::
    :maxdepth: 1
 
    __init__.rst
-   class_helpers/builddist.rst
-   class_helpers/errorhandler.rst
-   class_helpers/render.rst
-   class_helpers/webserver.rst
+   mixins/frontend_mixin.rst
+   mixins/load_routes_mixin.rst
+   mixins/render_mixin.rst
+   mixins/webserver_mixin.rst
 
 Routes
 =======
@@ -39,11 +40,16 @@ documentation system is unable to automatically generate easily viewable
 documentation. Please view the
 `source code for the routes <https://github.com/yombo/yombo-gateway/tree/master/yombo/lib/webinterface/routes>`_ .
 
+Additionally, see the :ref:`LoadRoutesMixin <wi_load_routes_mixin>` for list of route files
+loaded.
+
 Web Interface HTML
 ==================
 
 The HTML pages displayed can be viewed from the git repository:
-`HTML Pages <https://github.com/yombo/yombo-gateway/tree/master/yombo/lib/webinterface/pages>`_ .
+
+  * `HTML Pages <https://github.com/yombo/yombo-gateway/tree/master/yombo/lib/webinterface/pages>`_
+  * `Fragrments <https://github.com/yombo/yombo-gateway/tree/master/yombo/lib/webinterface/fragments>`_
 
 Helper Files
 ============
@@ -52,6 +58,7 @@ Helper Files
    :maxdepth: 1
 
    auth.rst
-   constants.rst
+   response_tools.rst
+   yombo_site.rst
 
 Last updated: |today|

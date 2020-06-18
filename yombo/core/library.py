@@ -16,15 +16,13 @@ Used by the Yombo Gateway framework to set up it's libraries.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2012-2019 by Yombo.
+:copyright: Copyright 2012-2020 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/core/library.html>`_
 """
-# Import Yombo libraries
-from yombo.core.exceptions import YomboWarning
+from typing import Any, ClassVar, Dict, List, Optional, Type, Union
 
 from yombo.core.entity import Entity
-from yombo.utils.hookinvoke import global_invoke_all
 
 
 class YomboLibrary(Entity):
@@ -33,15 +31,13 @@ class YomboLibrary(Entity):
 
     This is the only class where the Entity class won't fully populate this class.
     """
-    def __init__(self, *args, **kwargs):
-        try:  # Some exceptions not being caught. So, catch, display and release.
-            if hasattr(self, '_import_init_'):
-                self._import_init_(**kwargs)
+    _Entity_type: str = "library"
 
-            self._Entity_type = "library"
+    def __init__(self, parent, *args, **kwargs):
+        try:  # Some exceptions parent being caught. So, catch, display and release.
             super().__init__(self, **kwargs)
         except Exception as e:
-            print(f"YomboLibrary caught init exception: {e}")
+            print(f"YomboLibrary caught init exception in {self._Name}: {e}")
             raise e
 
     def _init_(self, **kwargs):
@@ -79,25 +75,3 @@ class YomboLibrary(Entity):
         """
         if hasattr(super(), '_unload_'):
             super()._unload_(**kwargs)
-
-    def amqp_incoming(self, headers, **kwargs):
-        """
-        Basic routing of incoming AQMP message packagets to a module. Sends requests to "amqp_incoming_request"
-        and responses to "amqp_incoming_response".
-        """
-        if headers["message_type"] == "request":
-            self.amqp_incoming_request(headers=headers, **kwargs)
-        if headers["message_type"] == "response":
-            self.amqp_incoming_response(headers=headers, **kwargs)
-
-    def amqp_incoming_request(self, **kwargs):
-        """
-        This method should be implemented by any modules expecting to receive amqp incoming requests.
-        """
-        pass
-
-    def amqp_incoming_response(self, **kwargs):
-        """
-        This method should be implemented by any modules expecting to receive amqp incoming responses.
-        """
-        pass

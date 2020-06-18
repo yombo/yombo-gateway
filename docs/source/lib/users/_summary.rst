@@ -4,22 +4,39 @@
 
 .. currentmodule:: yombo.lib.users
 
-
-=======================================
+==========================================================
 Users (yombo.lib.users)
-=======================================
+==========================================================
 
-Manages user access using Role Based Access Control (RBAC). Roles are
-used to grant permissions to parts of the gateway, and users are added
-to the roles.
+Manages gateway users.
 
-See the `Users library documentation <https://yombo.net/docs/libraries/users>`_ for more
-details.
+Users Library
+==========================================================
 
 .. toctree::
    :maxdepth: 1
 
-   role.rst
+   __init__.rst
+
+User class
+==========================================================
+
+Represents a single user, including the built-in users.
+
+.. toctree::
+   :maxdepth: 1
+
    user.rst
+
+Built-In Users
+==========================================================
+
+Represents various built in users.
+
+.. toctree::
+   :maxdepth: 1
+
+   blankuser.rst
+   systemuser.rst
 
 Last updated: |today|

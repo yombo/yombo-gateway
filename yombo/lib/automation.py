@@ -13,16 +13,16 @@ template library.
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.19.0
 
-:copyright: Copyright 2016-2018 by Yombo.
+:copyright: Copyright 2016-2020 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/automation.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/automation.html>`_
 """
 # Import python libraries
 from collections import OrderedDict
 from copy import deepcopy
 import msgpack
 import traceback
-import types
+from typing import Any, ClassVar, Dict, List, Optional, Type, Union
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks
@@ -32,7 +32,7 @@ from twisted.internet import reactor
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.lib.nodes import Node
+from yombo.lib.nodes.node import Node
 from yombo.utils import is_true_false, random_string, sleep, bytes_to_unicode
 from yombo.utils.datatypes import coerce_value
 
@@ -49,6 +49,10 @@ REQUIRED_FILTER_FIELDS = ["platform"]
 CONDITION_TYPE_AND = "and"
 CONDITION_TYPE_OR = "or"
 
+# BASE_NODE_PLATFORMS = {
+#     "yombo.lib.automation.automation_rule": ["Automation_Rule", ],
+# }
+
 
 class Automation(YomboLibrary):
     """
@@ -56,12 +60,13 @@ class Automation(YomboLibrary):
     Also calls hook_automation_rules_list for additional automation rules defined by modules.
     It also implements various hooks so modules can extend the capabilites of the automation system.
     """
-    triggers = {  # Place to track rules to be fired.
+    triggers: ClassVar[Dict[str, dict]] = {  # Place to track rules to be fired.
         "device": {},
         "scene": {},
         "state": {},
     }
-    startup_items_checked = {}
+    startup_items_checked: ClassVar = {}
+    automation_rules: ClassVar[dict] = {}  # Store processed / active rules
 
     def __contains__(self, requested_rule):
         """
@@ -159,7 +164,8 @@ class Automation(YomboLibrary):
         Get the Automation library started. Setups various dictionarys to be used.
         :return:
         """
-        self.rules = {}   # Store processed / active rules
+        # self.load_platforms(BASE_NODE_PLATFORMS)
+
         self.active_triggers = {}  # Track various triggers - help find what rules to fire when a trigger matches.
 
         self.action_types = {  # things that rules can do as a result if it being triggered.
@@ -233,7 +239,6 @@ class Automation(YomboLibrary):
         logger.debug("Automation rule starting, about to iterate rules and validate&activate.")
         self.rules = self._Nodes.search_advanced({"node_type": "automation_rules"})["values"]
         for rule_id, rule in self.rules.items():
-            self.patch_automation_rule(rule)
             self.actions_running[rule_id] = "stopped"
             try:
                 self.validate_and_activate_rule(rule)
@@ -289,8 +294,7 @@ class Automation(YomboLibrary):
                     self.trigger_monitor("state",
                                          _run_on_start=True,
                                          key=state,
-                                         value=self._States.get(state, gateway_id=gateway_id),
-                                         value_full=self._States.get(state, full=True, gateway_id=gateway_id),
+                                         state=self._States.get(state, gateway_id=gateway_id),
                                          action="set",
                                          gateway_id=gateway_id,
                                          called_by="_started_")
@@ -329,20 +333,18 @@ class Automation(YomboLibrary):
         elif access_type == "roles":
             return {}
 
-    def sorted(self, key=None):
+    def sorted(self, key: Optional[str] = None) -> dict:
         """
-        Returns an OrderedDict, sorted by key.  If key is not set, then default is "label".
+        Returns a dict, sorted by key.  If key is not set, then default is "label".
 
         :param key: Attribute contained in a automation rule to sort by.
-        :type key: str
-        :return: All devices, sorted by key.
-        :rtype: OrderedDict
+        :return: All automation rules, sorted by key.
         """
         if key is None:
             key = "label"
-        return OrderedDict(sorted(iter(self.rules.items()), key=lambda i: getattr(i[1], key)))
+        return dict(sorted(iter(self.rules.items()), key=lambda i: getattr(i[1], key)))
 
-    def class_storage_as_list(self, gateway_id=None):
+    def to_external_all(self, gateway_id=None, **kwargs):
         """
         Gets automation rules as a list.
 
@@ -350,21 +352,21 @@ class Automation(YomboLibrary):
         """
         results = []
         for rule_id, rule in self.rules.items():
-            rule = rule.asdict()
+            rule = rule.to_dict()
             rule["id"] = rule_id
             results.append(rule)
         return results
-
-    def get_list(self, gateway_id=None):
-        """
-        Gets Automation Rules as a list.
-
-        :return:
-        """
-        results = []
-        for rule_id, rule in self.sorted().items():
-            results.append(self.rule_to_dict(rule))
-        return results
+    #
+    # def get_list(self, gateway_id=None):
+    #     """
+    #     Gets Automation Rules as a list.
+    #
+    #     :return:
+    #     """
+    #     results = []
+    #     for rule_id, rule in self.sorted().items():
+    #         results.append(self.rule_to_dict(rule))
+    #     return results
 
     def get(self, requested_rule=None):
         """
@@ -386,7 +388,7 @@ class Automation(YomboLibrary):
         for temp_rule_id, rule in self.rules.items():
             if rule.machine_label.lower() == requested_rule:
                 return rule
-        raise YomboWarning("Cannot find requested automation rule: {requested_rule}", requested_rule=requested_rule)
+        raise KeyError("Requested automation rule not found.")
 
     def get_trigger_types(self, trigger_type=None):
         """
@@ -809,8 +811,8 @@ class Automation(YomboLibrary):
             if action_type == "device":
                 device = self._Devices[action["device_machine_label"]]
                 command = self._Commands[action["command_machine_label"]]
-                device.command(cmd=command,
-                               auth=self._Users.system_user,
+                device.command(command=command,
+                               authentication=self._Users.system_user,
                                control_method="automation",
                                inputs=action["inputs"],
                                **kwargs)
@@ -848,7 +850,7 @@ class Automation(YomboLibrary):
                         pass
 
             elif action_type == "state":
-                self._States.set(action["name"], action["value"], source=self)
+                yield self._States.set_yield(action["name"], action["value"], request_context=self._FullName)
 
             elif action_type == "template":
                 try:
@@ -952,11 +954,10 @@ class Automation(YomboLibrary):
                                             node_type="automation_rules",
                                             data=data,
                                             data_content_type="json",
-                                            gateway_id=self.gateway_id,
+                                            gateway_id=self._gateway_id,
                                             destination="gw",
                                             status=1)
         new_rule.rule_type = "node"
-        self.patch_automation_rule(new_rule)
         self.rules[new_rule.node_id] = new_rule
         try:
             self.validate_and_activate_rule(new_rule)
@@ -1027,10 +1028,9 @@ class Automation(YomboLibrary):
                                             node_type="automation_rules",
                                             data=new_data,
                                             data_content_type="json",
-                                            gateway_id=self.gateway_id,
+                                            gateway_id=self._gateway_id,
                                             destination="gw",
                                             status=1)
-        self.patch_automation_rule(new_rule)
         self.rules[new_rule.node_id] = new_rule
         return new_rule
 
@@ -1372,54 +1372,3 @@ class Automation(YomboLibrary):
             "created_at": rule.created_at,
             "updated_at": rule.updated_at,
         }
-
-    def patch_automation_rule(self, rule):
-        """
-        Adds additional attributes and methods to a node or rule instance.
-
-        :param rule:
-        :return:
-        """
-        rule.rule_id = rule.node_id
-        rule._rule = self
-        rule.conditions = {}
-        rule._Automation = self
-
-        @inlineCallbacks
-        def delete(node, session):
-            results = yield node._Automation.delete(node._node_id, session=session)
-            return results
-
-        def description(node):
-            return node.data["config"]["description"]
-
-        def disable(node, session):
-            results = node._action.disable(node._node_id, session=session)
-            return results
-
-        def effective_status(node):
-            if node.status == 2:
-                return 2
-            elif node.data["config"]["enabled"] is True:
-                return 1
-            else:
-                return 0
-
-        def enabled(node):
-            return node.data["config"]["enabled"]
-
-        def enable(node, session):
-            results = node._Automation.enable(node._node_id)
-            return results
-
-        def stop(node, session):
-            results = node._Automation.stop(node._node_id)
-            return results
-
-        rule.delete = types.MethodType(delete, rule)
-        rule.description = types.MethodType(description, rule)
-        rule.disable = types.MethodType(disable, rule)
-        rule.effective_status = types.MethodType(effective_status, rule)
-        rule.enabled = types.MethodType(enabled, rule)
-        rule.enable = types.MethodType(enable, rule)
-        rule.stop = types.MethodType(stop, rule)

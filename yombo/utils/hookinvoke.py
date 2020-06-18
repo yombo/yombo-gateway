@@ -1,48 +1,79 @@
+"""
+A couple of shortcut functions to call hooks. Used by libraries and modules to call hooks in other libraries
+and modules.
+
+.. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+.. versionadded:: 0.24.0
+
+:copyright: Copyright 2016-2020 by Yombo.
+:license: See LICENSE for details.
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/hookinvoke.html>`_
+"""
 from twisted.internet.defer import inlineCallbacks
 
+from yombo.utils.dictionaries import recursive_dict_merge
+
+
 @inlineCallbacks
-def global_invoke_all(hook, **kwargs):
+def global_invoke_all(hook, called_by, **kwargs):
     """
     Call all hooks in libraries and modules. Basically a shortcut for calling module_invoke_all and libraries_invoke_all
     methods.
 
     :param hook: The hook name to call.
+    :param called_by: Reference of the caller.
     :param kwargs: kwargs to send to the function.
     :return: a dictionary of results.
     """
-    lib_results = yield get_component("yombo.lib.loader").library_invoke_all(hook, True, **kwargs)
-    modules_results = yield get_component("yombo.lib.modules").module_invoke_all(hook, True, **kwargs)
-    # print(f"hook lib_results: {lib_results}")
-    # print(f"hook modules_results: {modules_results}")
-    return dict_merge(modules_results, lib_results)
+    # print(f"global_invoke_all: {hook}, {called_by}, {kwargs}")
+    lib_results = yield get_component("yombo.lib.loader").invoke_all("library",
+                                                                     hook,
+                                                                     called_by=called_by,
+                                                                     **kwargs)
+    modules_results = yield get_component("yombo.lib.loader").invoke_all("module",
+                                                                         hook,
+                                                                         called_by=called_by,
+                                                                         **kwargs)
+    return recursive_dict_merge(modules_results, lib_results)
 
 
 @inlineCallbacks
-def global_invoke_libraries(hook, **kwargs):
+def global_invoke_libraries(hook, called_by, **kwargs):
     """
     Call all hooks in libraries and modules. Basically a shortcut for calling module_invoke_all and libraries_invoke_all
     methods.
 
     :param hook: The hook name to call.
+    :param called_by: Reference of the caller.
     :param kwargs: kwargs to send to the function.
     :return: a dictionary of results.
     """
-    lib_results = yield get_component("yombo.lib.loader").library_invoke_all(hook, True, **kwargs)
+    lib_results = yield get_component("yombo.lib.loader").invoke_all("library",
+                                                                     hook,
+                                                                     called_by=called_by,
+                                                                     # stop_on_error=True,
+                                                                     **kwargs)
     return lib_results
 
 
 @inlineCallbacks
-def global_invoke_modules(hook, **kwargs):
+def global_invoke_modules(hook, called_by, **kwargs):
     """
     Call all hooks in libraries and modules. Basically a shortcut for calling module_invoke_all and libraries_invoke_all
     methods.
 
     :param hook: The hook name to call.
+    :param called_by: Reference of the caller.
     :param kwargs: kwargs to send to the function.
     :return: a dictionary of results.
     """
-    modules_results = yield get_component("yombo.lib.modules").module_invoke_all(hook, True, **kwargs)
+    modules_results = yield get_component("yombo.lib.loader").invoke_all("module",
+                                                                         hook,
+                                                                         called_by=called_by,
+                                                                         # stop_on_error=True,
+                                                                         **kwargs)
     return modules_results
+
 
 def get_component(name):
     """
@@ -65,45 +96,3 @@ def get_component(name):
         return get_component.components[name.lower()]
     except KeyError:
         raise KeyError("No such loaded component:" + str(name))
-
-def dict_merge(original, changes):
-    """
-    Recursively merges a dictionary with any changes. Sub-dictionaries won't be overwritten - just updated.
-
-    *Usage**:
-
-    .. code-block:: python
-
-        my_information = {
-            "name": "Mitch"
-            "phone: {
-                "mobile": "4155551212"
-            }
-        }
-
-        updated_information = {
-            "phone": {
-                "home": "4155552121"
-            }
-        }
-
-        print(dict_merge(my_information, updated_information))
-
-    # Output:
-
-    .. code-block:: none
-
-        {
-            "name": "Mitch"
-            "phone: {
-                "mobile": "4155551212",
-                "home": "4155552121"
-            }
-        }
-    """
-    for key, value in original.items():
-        if key not in changes:
-            changes[key] = value
-        elif isinstance(value, dict):
-            dict_merge(value, changes[key])
-    return changes

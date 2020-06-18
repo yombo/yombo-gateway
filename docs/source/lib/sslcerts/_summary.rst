@@ -21,7 +21,6 @@ SSL Certificates Library
 
    __init__.rst
 
-
 Helper files and classes
 ========================
 

@@ -1,0 +1,17 @@
+{
+  "lib": {
+    "configs": {
+      "yombo_toml": {
+        "warning": "تحذير تحذير تحذير إنذار تحذير تحذير تحذير تحذيري إنذار تحذير"
+      }
+    }
+  },
+  "setupwizard": {
+    "dns": {
+      "current_top_level_domain": "المجال الحالي"
+    }
+  },
+  "ui": {
+    "next": "التالى"
+  }
+}

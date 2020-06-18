@@ -10,13 +10,13 @@
    :keywords: library, db, model, dict, mixin, class
 
 ================================================================
-LibraryDBModelMixin (yombo.mixins.library_search_mixin)
+LibrarySearchMixin (yombo.mixins.library_search_mixin)
 ================================================================
 .. automodule:: yombo.mixins.library_search_mixin
 
-LibraryDBModelMixin Class
+LibrarySearchMixin Class
 ================================================================
-.. autoclass:: LibraryDBModelMixin
+.. autoclass:: LibrarySearchMixin
    :members:
    :special-members:
    :private-members:

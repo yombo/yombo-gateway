@@ -2,9 +2,9 @@
 
 # This python script is for Yombo.Net locale file merging. This merges multiple JSON files into a single file.
 
+from collections.abc import Mapping
 import json
 import os
-# import subprocess
 import sys
 
 if len(sys.argv) > 1:
@@ -30,16 +30,17 @@ dest_lang_dir = f"{dest_frontend_dir}/lang"
 # print(dest_lang_dir)
 
 
-def dict_merge(original, changes):
+def recursive_dict_merge(original, changes):
     """
     Recursively merges a dictionary with any changes. Sub-dictionaries won't be overwritten - just updated.
     """
-    for key, value in original.items():
-        if key not in changes:
-            changes[key] = value
-        elif isinstance(value, dict):
-            dict_merge(value, changes[key])
-    return changes
+    for key, value in changes.items():
+        if (key in original and isinstance(original[key], dict)
+                and isinstance(changes[key], Mapping)):
+            recursive_dict_merge(original[key], changes[key])
+        else:
+            original[key] = changes[key]
+    return original
 
 
 def read_json_file(file):
@@ -64,7 +65,6 @@ for file in primary_locale:
         continue
 
 modules_dir = os.listdir(f"{app_dir}/yombo/modules")
-
 for module in modules_dir:
     full_path = f"{app_dir}/yombo/modules/{module}"
     if os.path.isdir(full_path):
@@ -72,7 +72,7 @@ for module in modules_dir:
             module_locals = os.listdir(f"{full_path}/frontend_locale")
             for file in module_locals:
                 try:
-                    locales[file] = dict_merge(locales[file], read_json_file(f"{full_path}/frontend_locale/{file}"))
+                    recursive_dict_merge(locales[file], read_json_file(f"{full_path}/frontend_locale/{file}"))
                 except json.JSONDecodeError as e:
                     print(f"Module file has invalid format for local file (bad JSON): {full_path}/frontend_locale/{file}:")
                     print(e)

@@ -8,9 +8,9 @@
 #
 #
 # To run the build process, goto the frontend directory within the gateway repo, then:
-# npm run dev
+# yarn run dev
 #     or
-# npm run build
+# yarn run build
 
 import os
 import subprocess

@@ -4,6 +4,9 @@
       "label": "Gần"
     }
   },
+  "panel": {
+    "dev-info": "Thông tin"
+  },
   "state": {
     "automation": {
       "off": "Tắt",
@@ -133,6 +136,9 @@
       "alarm_control_panel": {
         "arm_away": "VT Đi vắng",
         "arm_home": "VT Ở nhà"
+      },
+      "automation": {
+        "title": "Tự động hóa"
       }
     },
     "common": {
@@ -142,7 +148,7 @@
       "area": "Khu vực",
       "cancel": "Hủy bỏ",
       "close": "Gần",
-      "created_at": "Tạo tại",
+      "created_at": "Tạo",
       "delete": "Xóa bỏ",
       "description": "Mô tả",
       "detail": "Chi tiết",
@@ -155,10 +161,15 @@
       "more_ddd": "Hơn...",
       "search": "Tìm kiếm",
       "search_ddd": "Tìm kiếm...",
-      "updated": "Cập nhật"
+      "updated": "Cập nhật",
+      "updated_at": "Cập nhật",
+      "version": "Phiên bản"
     },
     "greeting": {
       "welcome": "Chào mừng"
+    },
+    "label": {
+      "select": "Chọn"
     },
     "navigation": {
       "about": "Về",
@@ -174,14 +185,23 @@
       "debug": "Gỡ lỗi",
       "details": "Chi tiết",
       "info": "Thông tin",
+      "language": "Ngôn ngữ",
+      "languages": "Ngôn ngữ",
       "list": "Danh sách",
-      "module_configurations": "Cài đặt mô-đun",
+      "module_configs": "Cài đặt mô-đun",
       "roles": "Vai trò",
+      "settings": "Cài đặt",
       "statistics": "Số liệu thống kê",
       "storage": "Lưu trữ",
       "system": "Hệ thống",
+      "system_settings": "Cài đặt hệ thống",
+      "tools": "Công cụ",
       "users": "Người dùng",
       "variables_data": "Dữ liệu biến"
+    },
+    "relative_time": {
+      "never_downloaded": "Không bao giờ tải xuống",
+      "past": "{time} trước"
     }
   }
 }

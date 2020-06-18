@@ -3,7 +3,7 @@
       <div id='footer-title'>
         Yombo Gateway: {{systemInfo.label}}
         <div class="pull-right">
-          <small>Version: {{systemInfo.version}}</small> &nbsp;
+          <small>{{ $t('ui.common.version') }}: {{systemInfo.version}}</small> &nbsp;
         </div>
       </div>
     </div>

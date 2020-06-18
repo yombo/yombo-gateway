@@ -1,0 +1,14 @@
+{
+  "lib": {
+    "configs": {
+      "yombo_toml": {
+        "warning": "CẢNH BÁO CẢNH BÁO CẢNH BÁO CẢNH BÁO CẢNH BÁO CẢNH BÁO CẢNH BÁO"
+      }
+    }
+  },
+  "setupwizard": {
+    "selectgateway": {
+      "create_new": "Tạo mới"
+    }
+  }
+}

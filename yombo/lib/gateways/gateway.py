@@ -11,23 +11,24 @@ The gateway class.
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.19.1
 
-:copyright: Copyright 2018-2019 by Yombo.
+:copyright: Copyright 2018-2020 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/gateways.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/gateways/gateway.html>`_
 """
 from collections import deque
 from time import time
+from typing import Any, ClassVar, Dict, List, Optional, Type, Union
+
 
 # Import Yombo libraries
 from yombo.core.entity import Entity
 from yombo.core.log import get_logger
 from yombo.mixins.library_db_child_mixin import LibraryDBChildMixin
-from yombo.mixins.sync_to_everywhere_mixin import SyncToEverywhereMixin
 
 logger = get_logger("library.gateways.gateway")
 
 
-class Gateway(Entity, LibraryDBChildMixin, SyncToEverywhereMixin):
+class Gateway(Entity, LibraryDBChildMixin):
     """
     A class to manage a single gateway.
     :ivar gateway_id: (string) The unique ID.
@@ -40,15 +41,64 @@ class Gateway(Entity, LibraryDBChildMixin, SyncToEverywhereMixin):
     :ivar created_at: (int) EPOCH time when created
     :ivar updated: (int) EPOCH time when last updated
     """
-    _primary_column = "gateway_id"  # Used by mixins
+    _Entity_type: ClassVar[str] = "Gateway"
+    _Entity_label_attribute: ClassVar[str] = "machine_label"
+    _additional_to_dict_fields: ClassVar[list] = ["is_real", "com_status", "last_seen", "version", "ping_request_id",
+                                                  "ping_request_at", "ping_time_offset", "ping_roundtrip"]
 
     @property
-    def is_real(self):
+    def is_real(self) -> bool:
         if self.machine_label in ("local", "cluster"):
             return False
         return True
 
-    def __init__(self, parent, incoming, source=None):
+    @property
+    def com_status(self) -> str:
+        if self.gateway_id == self._Parent._gateway_id:
+            return "Online"
+
+        if self.gateway_id in self._Parent.gateway_status:
+            return self._Parent.gateway_status[self.gateway_id]["com_status"]
+        else:
+            return "Not available"
+
+    @com_status.setter
+    def com_status(self, val: str) -> None:
+        if self.gateway_id == self._Parent._gateway_id:
+            return
+
+        if self.gateway_id not in self._Parent.gateway_status:
+            self._Parent.gateway_status[self.gateway_id] = {
+                "com_status": val,
+                "last_seen": None,
+            }
+        else:
+            self._Parent.gateway_status[self.gateway_id]["com_status"] = val
+
+    @property
+    def last_seen(self) -> int:
+        if self.gateway_id == self._Parent._gateway_id:
+            return time()
+
+        if self.gateway_id in self._Parent.gateway_status:
+            return self._Parent.gateway_status[self.gateway_id]["last_seen"]
+        else:
+            return None
+
+    @last_seen.setter
+    def last_seen(self, val: int) -> None:
+        if self.gateway_id == self._Parent._gateway_id:
+            return
+
+        if self.gateway_id not in self._Parent.gateway_status:
+            self._Parent.gateway_status[self.gateway_id] = {
+                "com_status": None,
+                "last_seen": val,
+            }
+        else:
+            self._Parent.gateway_status[self.gateway_id]["last_seen"] = val
+
+    def __init__(self, parent, **kwargs) -> None:
         """
         Setup the gateway object using information passed in.
 
@@ -56,10 +106,7 @@ class Gateway(Entity, LibraryDBChildMixin, SyncToEverywhereMixin):
         :type gateway: dict
 
         """
-        self._Entity_type = "Yombo Gateway"
-        self._Entity_label_attribute = "machine_label"
-
-        super().__init__(parent)
+        super().__init__(parent, **kwargs)
 
         self.version = None
         self.ping_request_id = None  # The last ID for the ping request
@@ -69,87 +116,15 @@ class Gateway(Entity, LibraryDBChildMixin, SyncToEverywhereMixin):
         self.ping_roundtrip = None  # How many millisecond for last round trip.
 
         self.last_communications = deque([], 30)  # stores times and topics of the last few communications
-        self._setup_class_model(incoming, source=source)
 
-    def asdict(self):
-        """
-        Export gateway variables as a dictionary.
-        """
-        return {
-            "gateway_id": str(self.gateway_id),
-            "dns_name": str(self.dns_name),
-            "is_master": self.is_master,
-            "master_gateway_id": str(self.master_gateway_id),
-            "machine_label": str(self.machine_label),
-            "label": str(self.label),
-            "description": str(self.description),
-            "com_status": str(self.com_status),
-            "internal_ipv4": str(self.internal_ipv4),
-            "external_ipv4": str(self.external_ipv4),
-            "internal_http_port": str(self.internal_http_port),
-            "external_http_port": str(self.external_http_port),
-            "internal_http_secure_port": str(self.internal_http_secure_port),
-            "external_http_secure_port": str(self.external_http_secure_port),
-            "internal_mqtt": str(self.internal_mqtt),
-            "internal_mqtt_le": str(self.internal_mqtt_le),
-            "internal_mqtt_ss": str(self.internal_mqtt_ss),
-            "internal_mqtt_ws": str(self.internal_mqtt_ws),
-            "internal_mqtt_ws_le": str(self.internal_mqtt_ws_le),
-            "internal_mqtt_ws_ss": str(self.internal_mqtt_ws_ss),
-            "external_mqtt": str(self.external_mqtt),
-            "external_mqtt_le": str(self.external_mqtt_le),
-            "external_mqtt_ss": str(self.external_mqtt_ss),
-            "external_mqtt_ws": str(self.external_mqtt_ws),
-            "external_mqtt_ws_le": str(self.external_mqtt_ws_le),
-            "external_mqtt_ws_ss": str(self.external_mqtt_ws_ss),
-            "version": str(self.version),
-            "status": str(self.status),
-            "created_at": int(self.created_at),
-            "updated_at": int(self.updated_at),
-        }
-
-    @property
-    def com_status(self):
-        if self.gateway_id == self._Parent.gateway_id:
-            return "online"
-
-        if self.gateway_id in self._Parent.gateway_status:
-            return self._Parent.gateway_status[self.gateway_id]["com_status"]
-        else:
-            return None
-
-    @com_status.setter
-    def com_status(self, val):
-        if self.gateway_id == self._Parent.gateway_id:
-            return
-
-        if self.gateway_id not in self._Parent.gateway_status:
-            self._Parent.gateway_status[self.gateway_id] = {
-                "com_status": val,
-                "last_scene": None,
-            }
-        else:
-            self._Parent.gateway_status[self.gateway_id]["com_status"] = val
-
-    @property
-    def last_scene(self):
-        if self.gateway_id == self._Parent.gateway_id:
-            return time()
-
-        if self.gateway_id in self._Parent.gateway_status:
-            return self._Parent.gateway_status[self.gateway_id]["last_scene"]
-        else:
-            return None
-
-    @last_scene.setter
-    def last_scene(self, val):
-        if self.gateway_id == self._Parent.gateway_id:
-            return
-
-        if self.gateway_id not in self._Parent.gateway_status:
-            self._Parent.gateway_status[self.gateway_id] = {
-                "com_status": None,
-                "last_scene": val,
-            }
-        else:
-            self._Parent.gateway_status[self.gateway_id]["last_scene"] = val
+    # def to_dict_postprocess(self, incoming, to_database: Optional[bool] = None, **kwargs):
+    #     """ Add some additional data to send. """
+    #     if to_database is False:
+    #         incoming["data"]["is_real"] = self.is_real
+    #         incoming["data"]["com_status"] = self.com_status
+    #         incoming["data"]["last_seen"] = self.last_seen
+    #         incoming["data"]["version"] = self.version
+    #         incoming["data"]["ping_request_id"] = self.version
+    #         incoming["data"]["ping_request_at"] = self.version
+    #         incoming["data"]["ping_time_offset"] = self.version
+    #         incoming["data"]["ping_roundtrip"] = self.version

@@ -14,6 +14,14 @@ Discovery (yombo.lib.discovery)
 ====================================
 .. automodule:: yombo.lib.discovery
 
+.. rubric:: Classes in this module
+
+.. autosummary::
+   :nosignatures:
+
+   Discovery
+   DiscoveredDevice
+
 Discovery Library Class
 ============================
 .. autoclass:: Discovery
@@ -22,7 +30,7 @@ Discovery Library Class
    :private-members:
    :undoc-members:
 
-Discovered Device Class
+DiscoveredDevice Class
 ===========================
 .. autoclass:: DiscoveredDevice
    :members:

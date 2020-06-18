@@ -12,92 +12,63 @@ THIS MIXIN MUST BE LISTED BEFORE AUTHMIXIN!
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.22.0
 
-:copyright: Copyright 2018-2019 by Yombo.
+:copyright: Copyright 2018-2020 by Yombo.
 :license: LICENSE for details.
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/mixins/user_mixin.html>`_
 """
-from time import time
-
-from yombo.core.entity import Entity
 from yombo.core.log import get_logger
-
-
-from yombo.core.exceptions import YomboWarning
 from yombo.mixins.roles_mixin import RolesMixin
 
 logger = get_logger("mixins.user_mixin")
 
 
-class UserMixin(Entity, RolesMixin):
-
+class UserMixin(RolesMixin):
     @property
     def display(self):
-        return f"{self._user.name} <{self._user.email}>"
+        return f"{self.user.name} <{self.user.email}>"
 
     @property
     def has_user(self) -> str:
-        if self._user is None:
+        if self.user is None:
             return False
         return True
 
     @property
-    def item_permissions(self):
-        return self._user._item_permissions
-
-    # @item_permissions.setter
-    # def item_permissions(self, val):
-    #     self._user._item_permissions = val
-
-    @property
     def roles(self):
-        return self._user._roles
+        return self.user.roles
 
-    # @item_permissions.setter
-    # def item_permissions(self, val):
-    #     self._user._item_permissions = val
-
-    @property
-    def user(self):
-        return self._user
-
-    @user.setter
-    def user(self, val):
-        if self._user is not None:
-            raise YomboWarning("Unable to set user (from user_mixin), already have a user.")
-        self.auth_at = time()
-        self._user = val
+    @roles.setter
+    def roles(self, val):
+        self.user.roles = val
 
     @property
     def user_id(self):
-        if self._user is None:
+        if self.user is None:
             return None
-        return self._user.user_id
+        return self.user.user_id
 
     @property
     def name(self):
-        if self._user is None:
+        if self.user is None:
             return None
-        return self._user.name
+        return self.user.name
 
     @property
     def email(self):
-        if self._user is None:
+        if self.user is None:
             return None
-        return self._user.email
+        return self.user.email
 
     @property
     def safe_email(self):
-        if self._user is None:
+        if self.user is None:
             return None
         u = self._email.split("@")
         return u[0] + "@" + u[1][0:4] + "..."
 
-    @user.setter
-    def user(self, val):
-        self._user = val
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._user = None
+        self.__dict__["user"] = None
 
     def has_role(self, requested_role_id):
         return self._Parent._Users.has_role(requested_role_id, self)

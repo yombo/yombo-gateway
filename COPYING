@@ -4,33 +4,9 @@ Upstream-Contact: mitch-gw@yombo.net
 Source: https://github.com/yombo/yombo-gateway
 
 Files: *
-Copyright: 2014 Yombo
+Copyright: 2014-2020 Yombo
 License: Yombo Reciprocal Public License (YRPL)
   See LICENSE file for details.
-
-Files: yombo/ext/expiringdict.py
-Copyright: Anton Efimenko
-License: Apache License, 2.0 http://www.apache.org/licenses/
-Comment: https://pypi.python.org/pypi/expiringdict/1.1.2
-
-Files: yombo/ext/BermiInflector/*
-Copyright: 2006 Bermi Ferrer Martinez
-License: Other
-Comment: https://github.com/SublimeCodeIntel/inflector commit hash:acfe73d3cacf83ea2fa55c67e945314c0b790568
-  Permission is hereby granted, free of charge, to any person obtaining a copy
-  of this software to deal in this software without restriction, including
-  without limitation the rights to use, copy, modify, merge, publish,
-  distribute, sublicense, and/or sell copies of this software, and to permit
-  persons to whom this software is furnished to do so, subject to the following
-  condition:
-  .
-  THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-  OUT OF OR IN CONNECTION WITH THIS SOFTWARE OR THE USE OR OTHER DEALINGS IN
-  THIS SOFTWARE.
 
 Files: yombo/ext/base62.py
 Copyright: Copyright (c) 2014, Sumin Byeon
@@ -63,30 +39,10 @@ Comment: https://github.com/suminb/base62 commit hash:ab786ae631d76bc4bbdd483bfe
   of the authors and should not be interpreted as representing official policies,
   either expressed or implied, of the FreeBSD Project.
 
-Files: yombo/ext/hashids.py
-Copyright: 2012-2014 Ivan Akimov, David Aurelio
-License: Other
-Comment: https://github.com/davidaurelio/hashids-python commit hash:48f92cfd8427a0e434c9ced212fb93e641752db3
-  Permission is hereby granted, free of charge, to any person
-  obtaining a copy of this software and associated documentation
-  files (the "Software"), to deal in the Software without
-  restriction, including without limitation the rights to use,
-  copy, modify, merge, publish, distribute, sublicense, and/or sell
-  copies of the Software, and to permit persons to whom the
-  Software is furnished to do so, subject to the following
-  conditions:
-  .
-  The above copyright notice and this permission notice shall be
-  included in all copies or substantial portions of the Software.
-  .
-  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-  OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-  HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-  WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-  OTHER DEALINGS IN THE SOFTWARE.
+Files: yombo/ext/expiringdict.py
+Copyright: Anton Efimenko
+License: Apache License, 2.0 http://www.apache.org/licenses/
+Comment: https://pypi.python.org/pypi/expiringdict/1.1.2
 
 Files: yombo/ext/gnupg.py
   Copyright: Copyright (c) 2008-2014 by Vinay Sajip.
@@ -174,95 +130,6 @@ Comment: https://github.com/ahupp/python-magic commit: c5b386b08bfbc01330e2ba836
   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
   SOFTWARE.
-
-Files: yombo/ext/mqtt
-Copyright: 2015 astrorafael
-License: MIT License
-Comment: https://github.com/astrorafael/twisted-mqtt commit: 5b322f7c2b82a502b1e1b70703ae45f1f668d07d
-  Permission is hereby granted, free of charge, to any person obtaining a copy
-  of this software and associated documentation files (the "Software"), to deal
-  in the Software without restriction, including without limitation the rights
-  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-  copies of the Software, and to permit persons to whom the Software is
-  furnished to do so, subject to the following conditions:
-  .
-  The above copyright notice and this permission notice shall be included in all
-  copies or substantial portions of the Software.
-  .
-  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-  SOFTWARE.
-
-Files: yombo/ext/otp.py
-Copyright: 2011-2013 Tomasz Jaskowski
-License: BSD License
-Comment: https://github.com/tadeck/onetimepass commit hash:ee4b4e1700089757594a5ffee5f24408c864ad00
-  Permission is hereby granted, free of charge, to any person obtaining a copy
-  of this software and associated documentation files (the "Software"), to deal
-  in the software without restriction, including without limitation the rights
-  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-  copies of the Software, and to permit persons to whom the Software is
-  furnished to do so, subject to the following conditions:
-  .
-  The above copyright notice and this permission notice shall be included in
-  all copies or substantial portions of the Software.
-  .
-  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-  THE SOFTWARE.
-
-Files: yombo/ext/polib.py
-Copyright: 2006-2015 David Jean Louis
-License: MIT License
-  Comment: https://bitbucket.org/izi/polib commit hash:c5b3c9a4861cb11ffa7807bfba96e823445e372c
-  Permission is hereby granted, free of charge, to any person obtaining a copy
-  of this software and associated documentation files (the "Software"), to deal
-  in the Software without restriction, including without limitation the rights
-  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-  copies of the Software, and to permit persons to whom the Software is
-  furnished to do so, subject to the following conditions:
-  .
-  The above copyright notice and this permission notice shall be included in all
-  copies or substantial portions of the Software.
-  .
-  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-  SOFTWARE.
-
-Files: yombo/ext/twistar/*
-Copyright: 2010 Butterfat, LLC
-License: BSD License
-Comment: https://github.com/bmuller/twistar commit hash:19f4ce3d759f03f5066dfbaf2dab3f8939e6719d
-  Permission is hereby granted, free of charge, to any person obtaining
-  a copy of this software and associated documentation files (the
-  "Software"), to deal in the Software without restriction, including
-  without limitation the rights to use, copy, modify, merge, publish,
-  distribute, sublicense, and/or sell copies of the Software, and to
-  permit persons to whom the Software is furnished to do so, subject to
-  the following conditions:
-  .
-  The above copyright notice and this permission notice shall be
-  included in all copies or substantial portions of the Software.
-  .
-  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-  LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-  OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 Files: yombo/ext/txrdq
 Copyright: Anton Efimenko

@@ -3,7 +3,8 @@ import re
 
 from twisted.internet.defer import inlineCallbacks
 
-from yombo.lib.webinterface.auth import require_auth
+from yombo.constants.permissions import AUTH_PLATFORM_STORAGE
+from yombo.lib.webinterface.auth import get_session
 from yombo.lib.webinterface.routes.api_v1.__init__ import return_json
 
 
@@ -11,10 +12,10 @@ def route_api_v1_storage(webapp):
     with webapp.subroute("/api/v1") as webapp:
 
         @webapp.route("/storage/index", methods=["GET"])
-        @require_auth(api=True)
+        @get_session(auth_required=True, api=True)
         @inlineCallbacks
         def apiv1_storage_get(webinterface, request, session):
-            # session.has_access("storage", "*", "view", raise_error=True)
+            session.is_allowed(AUTH_PLATFORM_STORAGE, "view")
             args = request.args
 
             try:

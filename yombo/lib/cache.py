@@ -11,27 +11,31 @@ Consolidates all the caching features into here so that they can be monitored an
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.20.1
 
-:copyright: Copyright 2018 by Yombo.
+:copyright: Copyright 2018-2020 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/cache.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/cache.html>`_
 """
-from threading import RLock
 from cachetools import TTLCache, LFUCache, LRUCache
+from threading import RLock
+from typing import Optional, Union
 
 # Import Yombo libraries
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import generate_source_string, random_string
+# from yombo.mixins.child_storage_accessors_mixin import ChildStorageAccessorsMixin
+from yombo.mixins.parent_storage_accessors_mixin import ParentStorageAccessorsMixin
+from yombo.utils import random_string
+from yombo.utils.caller import caller_string
 from yombo.utils.decorators import setup_cache
 
 logger = get_logger("library.cache")
 
 
-class Cache(YomboLibrary):
+class Cache(YomboLibrary, ParentStorageAccessorsMixin):
     """
     Create and manage caches for various items.
     """
-    def _pre_init_(self, **kwargs):
+    def _pre_init_(self, **kwargs) -> None:
         """
         Setup the cache decorator.
 
@@ -42,7 +46,8 @@ class Cache(YomboLibrary):
         self.caches = {}
         self.lock = RLock()  # lock of last resort
 
-    def lfu(self, tags=None, name=None, maxsize=None):
+    def lfu(self, tags: Optional[Union[list, str]] = None, name: Optional[str] = None,
+            maxsize: Optional[int]=None) -> LFUCache:
         """
         Create a new LFU (Least Frequently Used) based cache. This counts how often
         the cache items are used, and when the maxsize is reached, it will discard
@@ -51,7 +56,6 @@ class Cache(YomboLibrary):
 
         Default is a maxsize of 512 entires.
 
-        :param ttl: seconds cache should be good for.
         :param tags: Associate tags with this cache for purging.
         :param name: Name of the cache.
         :param maxsize: Max number of entries.
@@ -66,7 +70,7 @@ class Cache(YomboLibrary):
             tags = ()
 
         if name is None:
-            name = generate_source_string() + random_string(length=10)
+            name = caller_string() + random_string(length=10)
         if name not in self.caches:
             self.caches[name] = {
                 "cache": LFUCache(maxsize),
@@ -74,9 +78,9 @@ class Cache(YomboLibrary):
                 "type": "LFUCache",
                 "lock": RLock(),
             }
-        return self.caches[name]["cache"]
 
-    def lru(self, tags=None, name=None, maxsize=None):
+    def lru(self, tags: Optional[Union[list, str]] = None, name: Optional[str] = None,
+            maxsize: Optional[int] = None) -> LRUCache:
         """
         Create a new LRU (least recently used) based cache. This cache discards the
         least recently used items to make space if needed.
@@ -98,7 +102,7 @@ class Cache(YomboLibrary):
             tags = ()
 
         if name is None:
-            name = generate_source_string() + random_string(length=10)
+            name = caller_string() + random_string(length=10)
 
         if name not in self.caches:
             self.caches[name] = {
@@ -109,7 +113,8 @@ class Cache(YomboLibrary):
             }
         return self.caches[name]["cache"]
 
-    def ttl(self, ttl=None, tags=None, name=None, maxsize=None):
+    def ttl(self, ttl: Optional[int] = None, tags: Optional[Union[list, str]] = None, name: Optional[str] = None,
+            maxsize: Optional[int] = None) -> TTLCache:
         """
         Create a new TTL based cache. Items in this cache will timeout after a certain period
         of time.
@@ -133,7 +138,7 @@ class Cache(YomboLibrary):
             tags = ()
 
         if name is None:
-            name = generate_source_string() + random_string(length=10)
+            name = caller_string() + random_string(length=10)
 
         if name not in self.caches:
             self.caches[name] = {
@@ -144,7 +149,7 @@ class Cache(YomboLibrary):
             }
         return self.caches[name]["cache"]
 
-    def flush(self, tags=None):
+    def flush(self, tags: Optional[Union[list, str]] = None) -> None:
         """
         Flush all caches with the specified tag/tags.
 
@@ -161,21 +166,21 @@ class Cache(YomboLibrary):
                 with cache["lock"]:
                     cache["cache"].clear()
 
-    def clear(self, cache_item):
+    def clear(self, cache_item: Union[LFUCache, LRUCache, TTLCache]) -> None:
         """
         Flush a specific cache. The cache_item must be a cache object.
 
-        :param cachename:
+        :param cache_item: Reference cache to clear.
         :return:
         """
         with self.lock:
             cache_item.clear()
 
-    def clear_item(self, cachename):
+    def clear_item(self, cachename: str) -> None:
         """
-        Flush a specific cache. cachename must be the name of the cache, not the actual cache object.
+        Flush a specific cache: cachename must be the name of the cache, not the actual cache object.
 
-        :param cachename:
+        :param cachename: Name of the cache to flush.
         :return:
         """
         if cachename in self.caches:
@@ -183,7 +188,7 @@ class Cache(YomboLibrary):
             with cache["lock"]:
                 cache["cache"].clear()
 
-    def flush_all(self, tags=None):
+    def flush_all(self, tags: Optional[Union[list, str]] = None) -> None:
         """
         Flush all the caches. If tag/tags were sent in, then only flush those with a matching tag.
 

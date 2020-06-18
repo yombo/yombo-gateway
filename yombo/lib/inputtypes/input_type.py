@@ -1,17 +1,22 @@
 """
 Base input type validator.
+.. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+
+:copyright: Copyright 2012-2020 by Yombo.
+:license: LICENSE for details.
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/inputtypes/input_type.html>`_
 """
+from typing import Any, ClassVar, Dict, List, Optional, Type, Union
 
 # Import Yombo libraries
 from yombo.core.entity import Entity
 from yombo.core.log import get_logger
-from yombo.mixins.sync_to_everywhere_mixin import SyncToEverywhereMixin
 from yombo.mixins.library_db_child_mixin import LibraryDBChildMixin
 
 logger = get_logger("library.inputtypes.validator")
 
 
-class Input_Type(Entity, LibraryDBChildMixin, SyncToEverywhereMixin):
+class InputType(Entity, LibraryDBChildMixin):
     """
     A class to manage a single input type.
     :ivar input_type_id: (string) The unique ID.
@@ -23,7 +28,6 @@ class Input_Type(Entity, LibraryDBChildMixin, SyncToEverywhereMixin):
     :ivar created: (int) EPOCH time when created
     :ivar updated: (int) EPOCH time when last updated
     """
-
     ALLOW_BLANK = True
     ALLOW_NONE = True
     ALLOW_NULL = True
@@ -32,20 +36,19 @@ class Input_Type(Entity, LibraryDBChildMixin, SyncToEverywhereMixin):
     MAX = None
     CONVERT = True
 
-    _primary_column = "input_type_id"  # Used by mixins
+    _Entity_type: ClassVar[str] = "Input type"
+    _Entity_label_attribute: ClassVar[str] = "machine_label"
 
-    def __init__(self, parent, incoming, source=None):
+    def to_dict_postprocess(self, data, to_database: Optional[bool] = None, **kwargs):
         """
-        Setup the input type object using information passed in.
+        Add 'is_usable' attribute if not sending to the database.
 
-        :param incoming: An input type with all required items to create the class.
-        :type incoming: dict
+        :param to_database:
+        :return:
         """
-        self._Entity_type = "Input type"
-        self._Entity_label_attribute = "machine_label"
-        super().__init__(parent)
-
-        self._setup_class_model(incoming, source=source)
+        if to_database in (True, None):
+            return
+        data["is_usable"] = self.is_usable
 
     def validate(self, input, **kwargs):
         logger.warn("Input type doesn't have a validator. Accepting input by default. '{machine_label}",

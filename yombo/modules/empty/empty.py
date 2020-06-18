@@ -2,8 +2,7 @@
 A starting point to creating your own module. This is a simple,
 nearly empty starter module.
 
-:copyright: 2012-2016 Yombo
-:license: GPL
+:copyright: 2012-2020 Yombo
 """
 from twisted.internet import reactor
 

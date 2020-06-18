@@ -1,10 +1,8 @@
-import yboapiv1 from '@/services/yboapiv1'
-
 export default {
     all () {
-        return yboapiv1().get('/locations')
+        return window.$nuxt.$yboapiv1axios.get('/locations')
     },
     fetchOne(id) {
-        return yboapiv1().get('/locations/' + id);
+        return window.$nuxt.$yboapiv1axios.get('/locations/' + id);
     },
 }

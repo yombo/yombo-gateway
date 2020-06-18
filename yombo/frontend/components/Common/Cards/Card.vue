@@ -16,9 +16,9 @@
       <slot></slot>
     </div>
     <hr v-if="$slots.footer && !noFooterLine">
-    <div class="card-footer" v-if="$slots.footer">
-      <slot name="footer"></slot>
-    </div>
+<!--    <div class="card-footer" v-if="$slots.footer">-->
+<!--      <slot name="footer"></slot>-->
+<!--    </div>-->
   </div>
 </template>
 <script>
@@ -36,5 +36,3 @@ export default {
   }
 };
 </script>
-<style>
-</style>

@@ -11,9 +11,9 @@ Performs various tasks as needed. Usually used to run various processes at start
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.24.0
 
-:copyright: Copyright 2019 by Yombo.
+:copyright: Copyright 2019-2020 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/oauthprovider.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/oauthprovider.html>`_
 """
 from time import time
 
@@ -27,6 +27,7 @@ from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 
 logger = get_logger("library.tasks")
+
 
 class Tasks(YomboLibrary):
     """

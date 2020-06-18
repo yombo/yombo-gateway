@@ -7,6 +7,7 @@ function loadmap() {
 	var map = new google.maps.Map(document.getElementById("gmap"), {
 		center: new google.maps.LatLng(($("#location_latitude").val().length) ? $("#location_latitude").val() : 37.757720, ($("#location_longitude").val().length) ? $("#location_longitude").val() : -122.437600),
 		zoom: 10,
+    streetViewControl: false,
 		mapTypeId: google.maps.MapTypeId.ROADMAP
 	});
 	// initialize marker
@@ -22,12 +23,23 @@ function loadmap() {
 		$('#location_longitude').val(map.getCenter().lng().toFixed(3));
 
 		var elevator = new google.maps.ElevationService();
-		var denali = new google.maps.LatLng(map.getCenter().lat().toFixed(6) , map.getCenter().lng().toFixed(6));
-		var positionalRequest = {'locations':[denali]};
+		// console.log(map.getCenter().lat());
+		// console.log(map.getCenter().lng());
+		// console.log(map.getCenter().lat().toFixed(6));
+		// console.log(map.getCenter().lng().toFixed(6));
 
+    var locations = [];
+		locations.push(new google.maps.LatLng(map.getCenter().lat() , map.getCenter().lng()));
+    var positionalRequest = {
+      'locations': locations
+    }
+
+		console.log(positionalRequest);
 		var text;
 
 		elevator.getElevationForLocations(positionalRequest, function (results, status) {
+		  console.log(results);
+		  console.log(status);
 			if (status == google.maps.ElevationStatus.OK) {
 
 				// Retrieve the first result
@@ -39,11 +51,9 @@ function loadmap() {
 				}
 			}
 			else {
-				alert('Elevation service failed due to: ' + status);
+				// alert('Elevation service failed due to: ' + status);
 			}
 		});
-
-
 	});
 	google.maps.event.addListener(marker, "dragend", function(mapEvent) {
 		map.panTo(mapEvent.latLng);
@@ -52,9 +62,9 @@ function loadmap() {
 	// initialize geocoder
 	var geocoder = new google.maps.Geocoder();
 
-
 	google.maps.event.addDomListener(document.getElementById("search_btn"), "click", function(event) {
 		if (!event.alreadyCalled_) {
+
 			geocoder.geocode({ address: document.getElementById("search_txt").value }, function(results, status) {
 				if (status == google.maps.GeocoderStatus.OK) {
 					var result = results[0];
@@ -67,7 +77,7 @@ function loadmap() {
 				} else if (status == google.maps.GeocoderStatus.ZERO_RESULTS) {
 					alert("Google could not find that location.");
 				} else {
-					alert("Sorry, geocoder API failed with an error.");
+					alert("Sorry, geocoder API failed with an error: " + status);
 				}
 			});
 			event.alreadyCalled_ = true;
@@ -79,15 +89,5 @@ function loadmap() {
 			google.maps.event.trigger(document.getElementById("search_btn"), "click");
 		}
 	});
-	// initialize geolocation
-	if (navigator.geolocation) {
-		google.maps.event.addDomListener(document.getElementById("detect_btn"), "click", function() {
-			navigator.geolocation.getCurrentPosition(function(position) {
-				map.setCenter(new google.maps.LatLng(position.coords.latitude, position.coords.longitude));
-			}, function() {
-				alert("Sorry, geolocation API failed to detect your location.");
-			});
-		});
-		document.getElementById("detect_btn").disabled = false;
-	}
+
 }

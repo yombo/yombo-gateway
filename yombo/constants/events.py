@@ -2,26 +2,6 @@
 frg Constants for events library.
 """
 SYSTEM_EVENT_TYPES = {
-    "auth": {
-        "denied": {
-            "description": "Authentication request failed",
-            "attributes": (
-                "platform",
-                "item",
-                "action",
-            ),
-            "expires": 90,  # save events for 90 days
-        },
-        "accepted": {
-            "description": "Authentication request allowed",
-            "attributes": (
-                "platform",
-                "item",
-                "action",
-            ),
-            "expires": 90,  # save events for 90 days
-        },
-    },
     "amqp": {
         "new": {
             "description": "New AMQP client created, but not connected yet.",
@@ -32,14 +12,14 @@ SYSTEM_EVENT_TYPES = {
                 "username",
                 "ssl",
             ),
-            "expires": 90,  # save events for 90 days
+            "expires": 2160,  # save events for 90 days
         },
         "connected": {
             "description": "AMQP connection made.",
             "attributes": (
                 "client_id",
             ),
-            "expires": 90,  # save events for 90 days
+            "expires": 2160,  # save events for 90 days
         },
         "disconnected": {
             "description": "AMQP disconnected.",
@@ -47,7 +27,83 @@ SYSTEM_EVENT_TYPES = {
                 "client_id",
                 "reason",
             ),
-            "expires": 90,  # save events for 90 days
+            "expires": 2160,  # save events for 90 days
+        },
+    },
+    "atoms": {
+        "set": {
+            "description": "Set an atom",
+            "attributes": (
+                "name",
+                "value",
+                "value_human",
+                "value_type",
+                "gateway_id",
+                "source",
+            ),
+            "expires": 8760,  # 365 days
+        },
+    },
+    "auth": {
+        "denied": {
+            "description": "Authentication request failed",
+            "attributes": (
+                "platform",
+                "item",
+                "action",
+            ),
+            "expires": 2160,  # save events for 90 days
+        },
+        "accepted": {
+            "description": "Authentication request allowed",
+            "attributes": (
+                "platform",
+                "item",
+                "action",
+            ),
+            "expires": 2160,  # save events for 90 days
+        },
+    },
+    "authkey": {
+        "new": {
+            "description": "AuthKey created",
+            "attributes": (
+                "label",
+                "description",
+                "requested_by",
+                "requested_by_type",
+                "requested_context",
+            ),
+            "expires": 43800,  # save events for 5 years
+        },
+        "modified": {
+            "description": "Modified key",
+            "attributes": (
+                "label",
+                "description",
+                "requested_by",
+                "requested_by_type",
+                "requested_context",
+            ),
+            "expires": 43800,  # save events for 5 years
+        },
+        "rotated": {
+            "description": "Rotated key for security.",
+            "attributes": (
+                "requested_by",
+                "requested_by_type",
+                "requested_context",
+            ),
+            "expires": 43800,  # save events for 5 years
+        },
+        "removed": {
+            "description": "AuthKey was removed",
+            "attributes": (
+                "requested_by",
+                "requested_by_type",
+                "requested_context",
+            ),
+            "expires": 43800,  # save events for 90 days
         },
     },
     "localdb": {
@@ -57,7 +113,7 @@ SYSTEM_EVENT_TYPES = {
                 "action",
                 "duration",
             ),
-            "expires": 30,  # save events for 30 days
+            "expires": 720,  # save events for 30 days
         },
         "connected": {
             "description": "SQLite connection details.",
@@ -65,14 +121,14 @@ SYSTEM_EVENT_TYPES = {
                 "start_schema_version",
                 "last_schema_version",
             ),
-            "expires": 30,  # save events for 30 days
+            "expires": 720,  # save events for 30 days
         },
         "dbbackup": {
             "description": "Tracks database backup events.",
             "attributes": (
                 "duration",
             ),
-            "expires": 30,  # save events for 30 days
+            "expires": 720,  # save events for 30 days
         },
     },
     "pip": {
@@ -83,14 +139,14 @@ SYSTEM_EVENT_TYPES = {
                 "version",
                 "duration",
             ),
-            "expires": 365*5,
+            "expires": 8760,  # 365 days
         },
         "not_found": {
             "description": "Python package not found, but was required..",
             "attributes": (
                 "package_name",
             ),
-            "expires": 365*5,
+            "expires": 8760,  # 365 days
         },
         "update_needed": {
             "description": "When a python package is old and about to updated.",
@@ -99,7 +155,7 @@ SYSTEM_EVENT_TYPES = {
                 "current",
                 "requested",
             ),
-            "expires": 365*5,
+            "expires": 8760,  # 365 days
         },
     },
     "sslcerts": {
@@ -111,7 +167,22 @@ SYSTEM_EVENT_TYPES = {
                 "san",
                 "duration",
             ),
-            "expires": 365*5,
+            "expires": 8760,  # 365 days
         },
     },
+    "states": {
+        "set": {
+            "description": "Set a state",
+            "attributes": (
+                "name",
+                "value",
+                "value_human",
+                "value_type",
+                "gateway_id",
+                "source",
+            ),
+            "expires": 8760,  # 365 days
+        },
+    },
+
 }

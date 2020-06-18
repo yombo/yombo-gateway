@@ -1,83 +1,86 @@
 <template>
-  <div class="row">
-    <div class="col-md-12">
-      <card card-body-classes="table-full-width">
-        <div slot="header">
-          <div class="fa-pull-right">
-            <nuxt-link class="navbar-brand fa-pull-right" :to="localePath('dashboard-locations-add')">
-              <button type="button" class="btn btn-info btn-sm" data-dismiss="modal">
-                <i class="fas fa-plus-circle fa-pull-left" style="font-size: 1.5em;"></i> &nbsp; Add new</a>
-                </button>
-            </nuxt-link>
-            <br>
-            <el-input
-                  class="fa-pull-right"
-                  v-model="search"
-                  size="mini"
-                  :placeholder="$t('ui.common.search_ddd')"/>
-          </div>
-          <h4 class="card-title">
-           {{ $t('ui.navigation.locations') }}
-          </h4>
-          <last-updated refresh="yombo/locations/fetch" getter="yombo/locations/display_age"/>
-        </div>
-        <div class="card-body">
-          <el-table
-            :data="items.filter(data => !search
-             || data.label.toLowerCase().includes(search.toLowerCase())
-             || data.description.toLowerCase().includes(search.toLowerCase())
-             )"
-          >
-            <el-table-column :label="$t('ui.common.label')" property="label"></el-table-column>
-            <el-table-column :label="$t('ui.common.description')" property="description"></el-table-column>
-            <el-table-column
-              align="right" :label="$t('ui.common.actions')">
-              <div slot-scope="props" class="table-actions">
-                <action-details path="dashboard-locations" :id="props.row.id"/>
-                <action-edit path="dashboard-locations" :id="props.row.id"/>
-                <action-delete path="dashboard-locations-delete" :id="props.row.id"
-                               i18n="location" :item_label="props.label"/>
-              </div>
-            </el-table-column>
-          </el-table>
-        </div>
-      </card>
-    </div>
-
-  </div>
+  <dashboard-display-index
+    :pageTitle="$t('ui.navigation.locations')"
+    addPath="dashboard-locations-add"
+    displayAgePath="gateway/locations/display_age"
+    :dashboardFetchData="dashboardFetchData"
+    :dashboardDisplayItems="dashboardDisplayItems"
+    :apiErrors="apiErrors"
+  >
+    <span v-if="dashboardDisplayItems">
+      <dashboard-table-pagination
+          tableIndex="1"
+          tableName="indexTable1"
+          position="top"
+          :rowCount="dashboardQueriedData.length"
+        >
+      </dashboard-table-pagination>
+      <b-table striped hover
+               id="indexTable1"
+               :items="dashboardQueriedData"
+               :per-page="dashboardTableRowsPerPage"
+               :current-page="dashboardTablePage1"
+               :fields="tableColumns1"
+               small
+               >
+        <template v-slot:cell(actions)="data">
+          <dashboard-row-actions
+            :typeLabel="$t('ui.common.roles')"
+            :displayItem="data.item"
+            :itemLabel="data.item.id"
+            :id="data.item.id"
+            detailIcon="dashboard-locations-id-details"
+            editIcon="dashboard-locations-id-edit"
+            deleteIcon="gateway/locations/delete"
+          ></dashboard-row-actions>
+        </template>
+      </b-table>
+      <dashboard-table-pagination
+          tableIndex="1"
+          tableName="indexTable1"
+          position="bottom"
+          :rowCount="dashboardQueriedData.length"
+        >
+      </dashboard-table-pagination>
+    </span>
+  </dashboard-display-index>
 </template>
 
 <script>
-import { ActionDelete, ActionDetails, ActionEdit } from '@/components/Dashboard/Actions';
-import LastUpdated from '@/components/Dashboard/LastUpdated.vue'
+  import Fuse from 'fuse.js';
 
-import { Table, TableColumn } from 'element-ui';
+  import { dashboardApiIndexMixin } from "@/mixins/dashboardApiIndexMixin";
 
-import Location from '@/models/location'
+  import { GW_Location } from '@/models/location'
 
-export default {
-  layout: 'dashboard',
-  components: {
-    ActionEdit,
-    [Table.name]: Table,
-    [TableColumn.name]: TableColumn,
-    ActionDelete,
-    ActionDetails,
-    ActionEdit,
-    LastUpdated,
-  },
-  data() {
-    return {
-      search: '',
-    };
-  },
-  computed: {
-    items () {
-      return Location.query().where('location_type', 'location').orderBy('label', 'desc').get()
+  export default {
+    layout: 'dashboard',
+    mixins: [dashboardApiIndexMixin],
+    data() {
+      return {
+        dashboardBusModel: "locations",
+        tableColumns1: [
+          {key: 'id', label: this.$i18n.t('ui.common.atom') },
+          {key: 'machine_label', label: this.$i18n.t('ui.common.machine_label') },
+          {key: 'description',  label: this.$i18n.t('ui.common.description') },
+          {key: 'actions',  label: this.$i18n.t('ui.common.actions') },
+        ]
+      }
     },
-  },
-  mounted () {
-    this.$store.dispatch('yombo/locations/refresh');
-  },
-};
+    methods: {
+      dashboardGetFuseData() {
+        this.dashboardDisplayItems = GW_Location.query()
+                                       .where('location_type', 'location')
+                                       .orderBy('label', 'asc')
+                                       .get();
+        this.dashboardFuseSearch = new Fuse(this.dashboardDisplayItems, {
+          keys: [
+            { name: 'label', weight: 0.5 },
+            { name: 'machine_label', weight: 0.3 },
+            { name: 'description', weight: 0.2 },
+          ]
+        });
+      }
+    },
+  };
 </script>

@@ -1,0 +1,4 @@
+# Used to by /tests/misc
+faker==2.0.*
+lz4==3.0.*
+zstd==1.4.*

@@ -8,6 +8,10 @@
 DeviceCommands (yombo.lib.devicecommands.__init__)
 =============================================================
 .. automodule:: yombo.lib.devicecommands.__init__
+
+DeviceCommands Library Class
+================================================================
+.. autoclass:: DeviceCommands
    :members:
    :special-members:
    :private-members:

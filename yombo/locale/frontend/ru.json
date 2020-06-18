@@ -123,6 +123,9 @@
       "alarm_control_panel": {
         "arm_away": "Охрана (не дома)",
         "arm_home": "Охрана (дома)"
+      },
+      "automation": {
+        "title": "Автоматизация"
       }
     },
     "common": {
@@ -130,6 +133,7 @@
       "add": "Добавить",
       "area": "Площадь",
       "atom": "Атом",
+      "created_at": "Создан",
       "delete": "удалять",
       "description": "Описание",
       "details": "Детали",
@@ -143,7 +147,12 @@
       "none": "Никто",
       "search": "Поиск",
       "search_ddd": "Поиск...",
-      "updated": "Обновлено"
+      "updated": "Обновлено",
+      "updated_at": "Обновлено",
+      "version": "Версия"
+    },
+    "label": {
+      "select": "Выберите"
     },
     "navigation": {
       "about": "Около",
@@ -153,13 +162,20 @@
       "commands": "Команды",
       "control_tower": "Диспетчерская вышка",
       "details": "Детали",
+      "language": "Язык",
+      "languages": "Языки",
       "list": "Список",
       "roles": "Роли",
       "rules": "Правила",
+      "settings": "Настройки",
       "statistics": "Статистика",
       "storage": "Хранение",
       "system": "Система",
+      "tools": "Инструменты",
       "variables_data": "Данные переменных"
+    },
+    "relative_time": {
+      "past": "{time} назад"
     }
   }
 }

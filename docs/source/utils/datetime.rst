@@ -5,8 +5,11 @@
 .. currentmodule:: yombo.utils.datetime
 
 ============================================
-Date Time (yombo.utils.datetime)
+Datetime (yombo.utils.datetime)
 ============================================
 
 .. automodule:: yombo.utils.datetime
    :members:
+   :private-members:
+   :special-members:
+   :undoc-members:

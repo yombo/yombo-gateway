@@ -1,4 +1,7 @@
-""" A wrapper for the 'gpg' command::
+"""
+From: https://bitbucket.org/vinay.sajip/python-gnupg/raw/6870dee35a80eda319ca8ca69008ce8b0c0cfa60/gnupg.py
+
+A wrapper for the 'gpg' command.
 
 Portions of this module are derived from A.M. Kuchling's well-designed
 GPG.py, using Richard Jones' updated version 1.3, which can be found
@@ -32,9 +35,9 @@ Modifications Copyright (C) 2008-2019 Vinay Sajip. All rights reserved.
 A unittest harness (test_gnupg.py) has also been added.
 """
 
-__version__ = "0.4.5.dev0"
+__version__ = "0.4.6.dev0"
 __author__ = "Vinay Sajip"
-__date__  = "$24-Jan-2019 08:43:25$"
+__date__  = "$12-Aug-2019 15:58:03$"
 
 try:
     from io import StringIO
@@ -42,7 +45,6 @@ except ImportError:  # pragma: no cover
     from cStringIO import StringIO
 
 import codecs
-# import locale
 import logging
 import os
 import re
@@ -1155,14 +1157,17 @@ class GPG(object):
     # KEY MANAGEMENT
     #
 
-    def import_keys(self, key_data):
+    def import_keys(self, key_data, extra_args=None):
         """
         Import the key_data into our keyring.
         """
         result = self.result_map['import'](self)
         logger.debug('import_keys: %r', key_data[:256])
         data = _make_binary_stream(key_data, self.encoding)
-        self._handle_io(['--import'], data, result, binary=True)
+        args = ['--import']
+        if extra_args:
+            args.extend(extra_args)
+        self._handle_io(args, data, result, binary=True)
         logger.debug('import_keys result: %r', result.__dict__)
         data.close()
         return result
@@ -1232,6 +1237,8 @@ class GPG(object):
         else:
             fingerprints = [no_quote(fingerprints)]
         args = ['--delete-%s' % which]
+        if secret and self.version >= (2, 1):
+            args.insert(0, '--yes')
         args.extend(fingerprints)
         result = self.result_map['delete'](self)
         if not secret or self.version < (2, 1):

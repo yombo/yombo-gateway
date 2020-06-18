@@ -1,4 +1,7 @@
 {
+  "panel": {
+    "dev-info": "जानकारी"
+  },
   "state": {
     "automation": {
       "off": "बंद"
@@ -104,11 +107,17 @@
     "current_language": "हिन्दी"
   },
   "ui": {
+    "card": {
+      "automation": {
+        "title": "स्वचालन"
+      }
+    },
     "common": {
       "add": "जोड़ें",
       "area": "क्षेत्र",
       "automation_rules": "स्वचालन नियम",
       "cancel": "रद्द करना",
+      "created_at": "बनाया",
       "delete": "हटाना",
       "deleted": "हटाए गए",
       "description": "विवरण",
@@ -126,7 +135,9 @@
       "none": "कोई नहीं",
       "search": "खोज",
       "search_ddd": "खोज...",
-      "updated": "अद्यतन"
+      "updated": "अद्यतन",
+      "updated_at": "अद्यतन",
+      "version": "संस्करण"
     },
     "navigation": {
       "about": "के बारे में",
@@ -145,10 +156,16 @@
       "list": "सूची",
       "roles": "भूमिकाओं",
       "rules": "नियम",
+      "settings": "सेटिंग्स",
       "statistics": "आंकड़े",
       "storage": "भंडारण",
       "system": "प्रणाली",
+      "system_settings": "प्रणाली व्यवस्था",
+      "tools": "उपकरण",
       "users": "उपयोगकर्ताओं"
+    },
+    "relative_time": {
+      "past": "{time} पहले"
     }
   }
 }

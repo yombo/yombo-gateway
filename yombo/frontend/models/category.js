@@ -1,12 +1,18 @@
 import { Model } from '@vuex-orm/core'
 
-export default class Category extends Model {
-  static entity = 'categories';
+export class Category extends Model {
+  static entity = 'gw_categories';
+
+  static state ()  {
+    return {
+      api_source: null,
+    }
+  }
 
   static fields () {
     return {
       id: this.string(''),
-      parent_id: this.string(''),
+      category_parent_id: this.string(''),
       category_type: this.string(''),
       machine_label: this.string(''),
       label: this.string(''),
@@ -16,4 +22,12 @@ export default class Category extends Model {
       updated_at: this.number(0),
     }
   }
+}
+
+export class GW_Category extends Category {
+  static entity = 'gw_categories';
+}
+
+export class Yombo_Category extends Category {
+  static entity = 'yombo_categories';
 }

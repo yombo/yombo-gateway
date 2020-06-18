@@ -10,3 +10,6 @@ Networking (yombo.utils.networking)
 
 .. automodule:: yombo.utils.networking
    :members:
+   :private-members:
+   :special-members:
+   :undoc-members:

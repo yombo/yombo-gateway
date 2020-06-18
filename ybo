@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# a basic wrapper around the yombo.tac (yombo service).
+# Starts, stops, and manages basic Gateway items.
 
 if [ "$USER" = "root" ] && [ "$SUDO_USER" == "" ]; then
   echo "This script cannot be run as root directly and must be run"
@@ -16,14 +16,30 @@ if [ "$SUDO_USER" != "" ]; then
 else
   REALUSER=$USER
 fi
+
 SCRIPTPATH="$(dirname "$(readlink -f "$0")")"
 rc=$?
 if [[ $rc != 0 ]]; then
  SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
 fi
+
 WORK_DIR="$HOME/.yombo"
 LOGCFGFILE=$WORK_DIR/log/config.log
 LOGFILE=$WORK_DIR/log/service.log
+
+function need_sudo {
+  if (( EUID != 0 ))
+  then
+    echo ""
+    echo "Error: When performing this command, sudo is required."
+    echo "Hint: Run the same same command again with 'sudo' in front:"
+    echo ""
+    echo "sudo ybo [args]"
+    echo ""
+    exit 1
+  fi
+  return 0
+}
 
 function usage
 {
@@ -42,16 +58,20 @@ If no options are provided, starts the Yombo software in interactive mode.
 ybo [command] [-option(s)]
 
 COMMANDS:
-  daemon    Start Yombo Gatewayservice (called by system to start the daemon)
+  daemon    Start Yombo Gateway service (called systemctl to start the daemon)
+  status    Show the status of the Yombo service
   start     Start Yombo gateway in command line mode
   stop      Stop Yombo gateway
-  status    Show the status of the Yombo service
   motd      Show MOTD / URL status
+  update    Run update script
   version   Show version
   ---- Cleanup commands, be careful! ----
-  removeini     Removes the ini file
+  removetoml     Removes the toml (config) file
   removesql     Removes the database
-  removesqlini  Removes database and ini file
+  removesqltoml  Removes database and toml (config) file
+
+INSTALLTION:
+  Run 'ybo-config -help' for installation and service setup.
 
 OPTIONS:
   -debug [items]     Turn on debug mode.
@@ -96,25 +116,25 @@ function show_status
 
 function start_shell {
     # Run a shell command
-
     eval $RUN_SHELL $ARGUMENTS
 }
 
-function remove_ini {
+function remove_toml {
     # Wipe the yombo configs
-    rm $WORK_DIR/yombo.ini
-    rm $WORK_DIR/etc/yombo.ini.info
+    rm $WORK_DIR/yombo.toml
+    rm $WORK_DIR/etc/yombo_meta.toml
 }
 
 function remove_sql {
     # Wipe the yombo configs
-    rm $WORK_DIR/etc/yombo.sqlite3
+    rm $WORK_DIR/var/yombo.sqlite3
 }
 
-function remove_sql_ini {
-    remove_ini
+function remove_sql_toml {
+    remove_toml
     remove_sql
 }
+
 
 function start_gateway {
     #Check if PID is running, if it is, then exit gracefully.
@@ -127,17 +147,20 @@ function start_gateway {
         fi
     fi
 
-    TACOPTIONS="--pidfile=$PID_PATH/$PID_FILE -n -y $TACFILE"
+    TACOPTIONS="--pidfile=$PID_PATH/$PID_FILE -n -y $TACFILE"  # Always put nodaemon.
 
     if [ $DAEMON -eq "1" ]; then
         YOMBO_SERVICE="echo \"$ARGUMENTS\" | $SCRIPTPATH/scripts/yombo_tac.sh $TACOPTIONS --logfile=$LOGFILE &"
-        echo "Starting yombo, in daemon mode."
+        echo "Starting yombo using yombo_tac daemon mode"
+#        echo $YOMBO_SERVICE
+#        exit
         eval $YOMBO_SERVICE
         exit 0
+
     else
         YOMBO_SERVICE="echo \"$ARGUMENTS\" | twistd $TACOPTIONS"
         cd $SCRIPTPATH
-        export SSL_CERT_FILE="$(python -m certifi)"
+#        export SSL_CERT_FILE="$(python3 -m certifi)"
 
         # Check if pyenv is being used and isn't loaded...
         if [ -f ".python-version" ] ; then
@@ -154,9 +177,8 @@ function start_gateway {
     do
       eval $YOMBO_SERVICE
       OUT=$?
-      if [ $OUT -lt "126" ]; then
-        # Gateway died for some reason or was told to quit, so, lets exit!
-        exit $OUT
+      if [ $OUT != "4" ]; then   # 4 is the exit code to signify a restart
+        exit $OUT  # Gateway died for some reason or was told to quit, so, lets exit!
       fi
     done
 }
@@ -167,7 +189,7 @@ function stop_gateway {
         mypid=`cat $PID_PATH/$PID_FILE`
         if kill -0 &>1 > /dev/null $mypid; then
             /bin/kill -s SIGTERM "$mypid"
-            echo "Request Yombo Gateway service stop."
+            echo "Requested Yombo Gateway service stop. It take a few moments to stop."
             exit 0
         fi
     fi
@@ -179,9 +201,8 @@ DAEMON=0
 DEBUG=false
 DEBUG_ITEMS=*
 LOGENABLE=0
-PID_PATH=$HOME/.yombo
+PID_PATH=$HOME/.yombo/var
 PID_FILE=yombo.pid
-TACFILE=$SCRIPTPATH/yombo.tac
 SHOW_STATUS=false
 TACFILE="$SCRIPTPATH/yombo.tac"
 RUN_SHELL=
@@ -213,7 +234,7 @@ while true; do
       shift
       ;;
     "cache" )
-      # Show yombo motd
+      # Clears python cache
       RUN="start_shell"
       RUN_SHELL="$SCRIPTPATH/scripts/clear_cache"
       shift
@@ -236,16 +257,22 @@ while true; do
       echo "Yombo version: $VERSION"
       exit 0
       ;;
-    "removeini")
-      RUN="remove_ini"
+    "removetoml")
+      RUN="remove_remove_toml"
       shift
       ;;
     "removesql")
       RUN="remove_sql"
       shift
       ;;
-    "removesqlini")
-      RUN="remove_sql_ini"
+    "removesqltoml")
+      RUN="remove_sql_toml"
+      shift
+      ;;
+    "update" )
+      # Run the update script
+      RUN="start_shell"
+      RUN_SHELL="$SCRIPTPATH/scripts/yombo_update"
       shift
       ;;
     "-debug" )
@@ -303,7 +330,6 @@ while true; do
 done
 
 if [ "$RUN" != "" ]; then
-#  echo "$RUN"
   $RUN
   exit 0
 fi

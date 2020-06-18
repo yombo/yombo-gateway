@@ -1,6 +1,6 @@
 // Mixin for generating new styles
 @mixin btn-styles($btn-color, $btn-states-color) {
-    background-color: $btn-color;
+    background-color: darken($btn-color, 15%);
 
     &:hover,
     &:focus,
@@ -48,7 +48,7 @@
             &:focus,
             &:active,
             &:active:focus{
-                color: $danger-states-color;
+                color: $danger-color-light-1;
             }
         }
 
@@ -59,7 +59,7 @@
             &:focus,
             &:active,
             &:active:focus{
-                color: $info-states-color;
+                color: $info-color-light-1;
             }
         }
 
@@ -70,7 +70,7 @@
             &:focus,
             &:active,
             &:active:focus{
-                color: $warning-states-color;
+                color: $warning-color-light-1;
             }
         }
 
@@ -81,7 +81,7 @@
             &:focus,
             &:active,
             &:active:focus{
-                color: $success-states-color;
+                color: $success-color-light-1;
             }
         }
 
@@ -92,7 +92,7 @@
             &:focus,
             &:active,
             &:active:focus{
-                color: $default-states-color;
+                color: $default-color-lighten-1;
             }
         }
 
@@ -106,13 +106,13 @@
         .show > &.dropdown-toggle:focus,
         .show > &.dropdown-toggle:hover {
             background-color: $white-color;
-            color: $primary-states-color;
+            color: $primary-color-light-1;
             box-shadow: none;
         }
 
         &:hover,
         &:focus{
-            color: $primary-states-color;
+            color: $primary-color-light-1;
 
             &:not(.nav-link){
                 box-shadow: none;

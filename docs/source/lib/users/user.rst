@@ -5,13 +5,13 @@
 .. currentmodule:: yombo.lib.users.user
 
 =================================================================
-Users::User (yombo.lib.users.user)
+Users::User (yombo.lib.users.users)
 =================================================================
+.. automodule:: yombo.lib.users.users
 
-**See the `Users library documentation <https://yombo.net/docs/libraries/users`_
-for more details.**
-
-.. automodule:: yombo.lib.users.user
+User Class
+================================================================
+.. autoclass:: User
    :members:
    :special-members:
    :private-members:

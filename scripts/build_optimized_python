@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+if [ "$EUID" -eq 0 ]; then
+    echo ""
+    echo "This must NOT be run as root, instead run as the user running the Yombo Gateway"
+    echo ""
+    echo "If you created a dedicate account for this software, first log into that account."
+    echo "Then run this script as:"
+    echo ""
+    echo "mycomputer> bash ./debian_install"
+    echo ""
+    exit
+fi
+
+PYTHON_VERSION="3.8.1"
+
+YOMBO_SCRIPT_HELPER_DIR="$( cd "$(dirname "$0")" ; pwd -P )"
+YOMBO_SCRIPT_DIR="$(dirname $YOMBO_SCRIPT_HELPER_DIR)"
+YOMBO_ROOT_DIR="$(dirname $YOMBO_SCRIPT_DIR)"
+
+# Update pyenv to have the latest version
+cd $HOME/.pyenv && git pull
+
+# Setup a temp directory. Some operating systems restrict tmp directory with noexec.
+cd $HOME
+rm -rf $HOME/.pyenv-build-tmp
+mkdir -p $HOME/.pyenv-build-tmp
+
+# Build the latest python version.
+cd "$YOMBO_ROOT_DIR"
+CORECOUNT=$(grep -c ^processor /proc/cpuinfo)
+CORECOUNT=$(($CORECOUNT + 1))
+export TMPDIR="$HOME/.pyenv-build-tmp"
+
+echo "Building python $PYTHON_VERSION with $CORECOUNT core(s)."
+PYTHON_CONFIGURE_OPTS="--enable-optimizations" MAKE_OPTS="-j$CORECOUNT" pyenv install $PYTHON_VERSION -s
+
+pyenv local $PYTHON_VERSION
+pip3 install --upgrade pip
+
+# Update Yombo from source.
+#git pull
+
+# Update required pacakges. Will also be updated at runtime. This helps
+# making things start faster.
+pip3 install --upgrade -r requirements.txt

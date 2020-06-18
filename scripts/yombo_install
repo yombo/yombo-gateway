@@ -1,0 +1,150 @@
+#!/usr/bin/env bash
+set -m
+
+if [ "$USER" = "root" ] && [ "$SUDO_USER" == "" ]; then
+  echo "This script cannot be run as root directly and must be run"
+  echo "as the user owning the Yombo gateway service."
+  echo ""
+  echo "Logout as root and then:"
+  echo "sudo yombo_install"
+  exit
+fi
+
+if [ "$(id -u)" -ne 0 ]; then
+  echo "This script must run with sudo to gain root access. This"
+  echo "is needed to install the latest updates. Run this the user"
+  echo "owning the Yombo gateway service:"
+  echo ""
+  echo "sudo yombo_install"
+  echo ""
+  exit
+fi
+
+if [ "$RUNAS_USER" != "" ]; then
+  REALUSER=$RUNAS_USER
+elif [ "$SUDO_USER" != "" ]; then
+  REALUSER=$SUDO_USER
+else
+  REALUSER=$USER
+fi
+
+YOMBO_SCRIPT_DIR="$( cd "$(dirname "$0")" ; pwd -P )"
+YOMBO_ROOT_DIR="$(dirname $YOMBO_SCRIPT_DIR)"
+cd "$YOMBO_SCRIPT_DIR"
+
+touch /home/$SUDO_USER/yombo_install.log
+chown $SUDO_USER:$SUDO_USER /home/$SUDO_USER/yombo_install.log
+
+touch /home/$SUDO_USER/yombo_install_detailed.log
+chown $SUDO_USER:$SUDO_USER /home/$SUDO_USER/yombo_install_detailed.log
+
+# Determine OS platform
+if [ -f /etc/os-release ]; then
+    # freedesktop.org and systemd
+    . /etc/os-release
+    OS=$NAME
+    VER=$VERSION_ID
+elif type lsb_release >/dev/null 2>&1; then
+    # linuxbase.org
+    OS=$(lsb_release -si)
+    VER=$(lsb_release -sr)
+elif [ -f /etc/lsb-release ]; then
+    # For some versions of Debian/Ubuntu without lsb_release command
+    . /etc/lsb-release
+    OS=$DISTRIB_ID
+    VER=$DISTRIB_RELEASE
+elif [ -f /etc/debian_version ]; then
+    # Older Debian/Ubuntu/etc.
+    OS=Debian
+    VER=$(cat /etc/debian_version)
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+    echo "Yombo isn't support on Mac OSX. You should use Vagrant:"
+    echo "https://yombo.net/docs/gateway/vagrant"
+    exit
+elif [[ "$OSTYPE" == "cygwin" ]]; then
+    # POSIX compatibility layer and Linux environment emulation for Windows
+    echo "Yombo isn't support on Windows. You should use Vagrant:"
+    echo "https://yombo.net/docs/gateway/vagrant"
+    exit
+elif [[ "$OSTYPE" == "msys" ]]; then
+    # Lightweight shell and GNU utilities compiled for Windows (part of MinGW)
+    echo "Yombo isn't support on Windows. You should use Vagrant:"
+    echo "https://yombo.net/docs/gateway/vagrant"
+    exit
+elif [[ "$OSTYPE" == "win32" ]]; then
+    echo "Yombo isn't support on Windows. You should use Vagrant:"
+    echo "https://yombo.net/docs/gateway/vagrant"
+    exit
+elif [[ "$OSTYPE" == "freebsd"* ]]; then
+    echo "This script hasn't been updated to support freebsd."
+    echo "Feel free update and make a pull request"
+    exit
+else
+    echo "Your operating system is unknown: $OSTYPE"
+    echo "Please email us at support@yombo.net with the output of this script."
+    exit
+fi
+
+echo
+echo "###########################################"
+echo "Detected OS: $OS -> $VER"
+echo "###########################################"
+echo "If this is incorrect, exit the install and"
+echo "manually start one of the install scripts"
+echo "from the helpers directory."
+echo "###########################################"
+echo
+
+# This accounts for various Ubuntu distros.
+IFS=$'\t'
+ubuntuarray=("Ubuntu\tPop!_OS")
+unset IFS
+
+#    echo "true"
+#else
+#    echo "false"
+#fi
+
+if [[ "$OS" == "Debian" ]]; then
+    $YOMBO_SCRIPT_DIR/helpers/debian_install $1
+    $YOMBO_SCRIPT_DIR/helpers/debian_install_mosquitto $1
+    runuser -l $REALUSER -c "bash -i -c $YOMBO_SCRIPT_DIR/pyenv_install"
+    runuser -l v$REALUSER -c "bash -i -c $YOMBO_SCRIPT_DIR/helpers/debian_install_user" $1
+    cd $YOMBO_ROOT_DIR
+    export RUNAS_USER=$SUDO_USER && $YOMBO_ROOT_DIR/ybo-config svc-install
+
+elif [[ "\t${ubuntuarray[@]}\t" =~ "\t${OS}\t" ]]; then
+    $YOMBO_SCRIPT_DIR/helpers/debian_install $1
+    $YOMBO_SCRIPT_DIR/helpers/debian_install_mosquitto $1
+    runuser -l $REALUSER -c "bash -i -c $YOMBO_SCRIPT_DIR/pyenv_install"
+    runuser -l $REALUSER -c "bash -i -c $YOMBO_SCRIPT_DIR/helpers/debian_install_user" $1
+    cd $YOMBO_ROOT_DIR
+    export RUNAS_USER=$SUDO_USER && $YOMBO_ROOT_DIR/ybo-config svc-install
+
+else
+    echo ""
+    echo "Unable to handle detected OS. Please open a ticket at https://github.com/yombo/yombo-gateway"
+    echo "and provide the detected OS string."
+    echo ""
+    exit 1
+fi
+
+if ! [ $1 = "vagrant" ]; then
+    # This has to run in a subshell due to pyenv just being installed.
+    bash -c "ybo motd"
+    echo ""
+    echo "======================================================================================"
+    echo "=  * WARNING * WARNING * WARNING * WARNING * WARNING * WARNING * WARNING * WARNING   ="
+    echo "======================================================================================"
+    echo "=                                                                                    ="
+    echo "= You must exit this terminal session and start a new one before using Yombo Gateway ="
+    echo "=                                                                                    ="
+    echo "======================================================================================"
+    echo "=                                                                                    ="
+    echo "= With a NEW TERMINAL, these commands will get you started:                          ="
+    echo "=                                                                                    ="
+    echo "= ybo motd    - Details about the installation                                       ="
+    echo "= ybo start   - Start the Yombo Gateway                                              ="
+    echo "======================================================================================"
+    echo ""
+fi

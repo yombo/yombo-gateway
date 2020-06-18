@@ -93,31 +93,31 @@
     .form-group,
     .input-group{
         .form-control{
-            padding: $padding-vertical - 1 $padding-horizontal - 1 $padding-vertical - 1 $padding-horizontal - 1;
+            padding: $padding-vertical/2 - 1 $padding-horizontal/2 - 1 $padding-vertical/2 - 1 $padding-horizontal/2 - 1;
 
             & + .input-group-addon{
-                padding: $padding-vertical - 1 $padding-horizontal - 1 $padding-vertical - 1 0;
+                padding: $padding-vertical/2 - 1 $padding-horizontal/2 - 1 $padding-vertical/2 - 1 0;
             }
         }
 
         .input-group-addon{
-            padding: $padding-vertical - 1 0 $padding-vertical - 1 $padding-horizontal - 1;
+            padding: $padding-vertical/2 - 1 0 $padding-vertical/2 - 1 $padding-horizontal/2 - 1;
 
             & + .form-control,
             & ~ .form-control{
-                padding:$padding-vertical - 1 $padding-horizontal $padding-vertical $padding-horizontal - 3;
+                padding:$padding-vertical/2 - 1 $padding-horizontal/2 $padding-vertical/2 $padding-horizontal/2 - 3;
             }
         }
     }
 }
 
 
-//color1 = $opacity-5
-//color2 = $opacity-8
+//color1 = $opacity-white-5
+//color2 = $opacity-white-8
 //color3 = $white-color
 //color4 = $transparent-bg
-//color5 = $opacity-1
-//color6 = $opacity-2
+//color5 = $opacity-white-1
+//color6 = $opacity-white-2
 
 
 @mixin input-coloured-bg($color1, $color2, $color3, $color4, $color5, $color6) {

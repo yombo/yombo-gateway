@@ -1,5 +1,4 @@
 <template>
-
   <ul class="pagination" :class="paginationClass">
     <li class="page-item prev-page" :class="{disabled: value === 1}">
       <a class="page-link" aria-label="Previous" @click="prevPage">

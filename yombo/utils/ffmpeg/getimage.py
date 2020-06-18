@@ -1,23 +1,21 @@
-# This file was created by Yombo for use with Yombo Python gateway automation
-# software.  Details can be found at https://yombo.net
 """
 Use ffmpeg to capture an image from a media stream.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.24.0
 
-:copyright: Copyright 2018 by Yombo.
+:copyright: Copyright 2018-2020 by Yombo.
 :license: LICENSE for details.
 """
 
 from twisted.internet.defer import inlineCallbacks, Deferred
 
 # Import Yombo libraries
-from yombo.classes.image import Image
+from yombo.classes.imagecontainer import ImageContainer
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
 
-from .ffmpeg import YBOFFmpeg
+from .yboffmpeg import YBOFFmpeg
 
 logger = get_logger("utils.ffmpeg.image")
 
@@ -124,7 +122,7 @@ class GetImage(YBOFFmpeg):
             nonlocal output_buffer
             # print("GetImage: collect_results_final")
             try:
-                image = Image("image/jpeg", output_buffer)
+                image = ImageContainer(output_buffer, "image/jpeg")
                 image_deferred.callback(image)
             except Exception as e:
                 print("collect_results_final Exception:")

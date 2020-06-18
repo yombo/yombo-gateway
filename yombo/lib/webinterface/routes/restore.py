@@ -10,7 +10,7 @@ from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
-from yombo.lib.webinterface.auth import require_auth, run_first
+from yombo.lib.webinterface.auth import get_session, get_session
 from yombo.core.log import get_logger
 from yombo.utils import unicode_to_bytes, bytes_to_unicode
 
@@ -39,28 +39,28 @@ def route_restore(webapp):
                     try:
                         if restorefile["hash"] != hashlib.sha256(unicode_to_bytes(restorefile["data"])).hexdigest():
                             webinterface.add_alert("Backup file appears to be corrupt: Invalid checksum.")
-                            return webinterface.redirect("/misc/gateway_setup")
+                            return webinterface.redirect("/setup_wizard/start")
                         restorefile["data"] = base64.b64decode(unicode_to_bytes(restorefile["data"]))
                     except Exception as e:
                         logger.warn("Unable to b64decode data: {e}", e=e)
                         webinterface.add_alert("Unable to properly decode pass 1 of data segment of restore file.")
-                        return webinterface.redirect("/misc/gateway_setup")
+                        return webinterface.redirect("/setup_wizard/start")
 
                     session.set("restore_backup_file", restorefile)
                 except Exception as e:
                     logger.warn("Unable to parse JSON phase 2: {e}", e=e)
                     webinterface.add_alert("Invalid restore file contents.")
-                    return webinterface.redirect("/misc/gateway_setup")
+                    return webinterface.redirect("/setup_wizard/start")
             except Exception:
                 restorefile = session.get("restore_backup_file", None)
                 if restorefile is None:
                     webinterface.add_alert("No restore file found.")
-                    return webinterface.redirect("/misc/gateway_setup")
+                    return webinterface.redirect("/setup_wizard/start")
 
             required_keys = ("encrypted", "time", "file_type", "created", "backup_version")
             if all(required in restorefile for required in required_keys) is False:
                 webinterface.add_alert("Backup file appears to be missing important parts.")
-                return webinterface.redirect("/misc/gateway_setup")
+                return webinterface.redirect("/setup_wizard/start")
 
             if restorefile["encrypted"] is True:
                 try:
@@ -76,7 +76,10 @@ def route_restore(webapp):
                     )
 
                 try:
-                    decrypted = yield webinterface._GPG.decrypt_aes(password, restorefile["data"])
+                    decrypted = yield webinterface._Tools.data_unpickle(restorefile["data"],
+                                                                        "msgpack_aes256_zip_base85",
+                                                                        passphrase=password,
+                                                                       )
                     restorefile["data_processed"] = json.loads(bytes_to_unicode(decrypted))
                 except Exception as e:
                     logger.warn("Unable to decrypt restoration file: {e}", e=e)
@@ -127,20 +130,19 @@ def route_restore(webapp):
                 if key["passphrase"] != None:
 
                     filename = f"{working_path}/etc/gpg/{key['fingerprint']}.pass"
-                    yield save_file(filename, key["passphrase"])
+                    yield webinterface._Files.save(filename, key["passphrase"])
                 if data["gpg_fingerprint"] == key["fingerprint"]:
                     filename = f"{working_path}/etc/gpg/last.pass"
-                    yield save_file(filename, key["passphrase"])
+                    yield webinterface._Files.save(filename, key["passphrase"])
 
             for cert_name, cert in data["sslcerts"].items():
                 webinterface._SSLCerts.add_sslcert(cert)
 
-            webinterface._Configs.exit_config_file = data["yombo_ini"]
+            webinterface._Configs.exit_config_file = data["yombo_toml"]
             yield webinterface._GPG.import_trust(data["gpg_trust"])
 
-            page = webinterface.get_template(request, webinterface.wi_dir + "/pages/restart.html")
-            reactor.callLater(0.4, webinterface.do_restart)
-            return page.render(
-                               alerts=session.get_alerts(),
-                               message="Configuration restored."
-                               )
+            reactor.callLater(0.3, webinterface.do_restart)
+            return webinterface.render_template(request,
+                                                webinterface.wi_dir + "/pages/restart.html",
+                                                message="Gateway settings restored.",
+                                                )

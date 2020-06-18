@@ -1,9 +1,9 @@
 """
 This module demonstrates two features of the Yombo Gateway:
 
-1. Using the pre-made FileReader to open a file for reading. The FileReader opens
+1. Using the self._Files.read_stream to open a file for reading. The read_stream opens
   the file in a non-blocking style and sends new lines back to the module.
-  The FileReader also keeps track of where it left off between restarts so
+  The read_stream also keeps track of where it left off between restarts so
   duplicate lines are not sent. It's smart enough to start at the top if the
   file is smaller than were it left off before.
 
@@ -12,13 +12,15 @@ This module demonstrates two features of the Yombo Gateway:
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2013-2017 by Yombo.
+:copyright: Copyright 2013-2020 by Yombo.
 :license: LICENSE for details.
 """
+# Import twisted libraries
+from twisted.internet.defer import inlineCallbacks
+
 from yombo.core.exceptions import YomboFileError
 from yombo.core.log import get_logger
 from yombo.core.module import YomboModule
-from yombo.utils.filereader import FileReader
 
 logger = get_logger("modules.logreader")
 
@@ -26,9 +28,6 @@ logger = get_logger("modules.logreader")
 class LogReader(YomboModule):
     """
     Monitors a file for intents and sends them to the intents library for processing.
-
-    :ivar fileReader: A yombo :doc:`FileReader <../utils/filereader>` that reads text files
-      delivers lines of text to callable.
     """
     def _init_(self, **kwargs):
         """
@@ -51,42 +50,42 @@ class LogReader(YomboModule):
             logger.warn("No 'logfile' set for logreader, using default: 'logreader.txt'")
             self.fileName = "logreader.txt"
 
+    @inlineCallbacks
     def _start_(self, **kwargs):
         """
-        Setups the file to be read. FileReader does the heavy lifting.
+        Setups the file to be read. Read stream does the heavy lifting.
 
         * Get the YomboBot, and register the log reader as a user, even though it's blank.
-        * Use the FileReader to open the file and monitor it for new lines.
+        * Use the read stream to open the file and monitor it for new lines.
         * Send any lines of text from the file reader to the YomboBot.
         """
-
         # Register with YomboBot.
         self.YomboBot.registerConnection(source=self, sessionid='logreader', authuser="UNKNOWN", remoteuser='None')
 
-        # Setup the FileReader and tell it to send new text to "newContent()"
+        # Setup the read stream and tell it to send new text to "newContent()"
         try:
-            self.fileReader = FileReader(self, filename=self.fileName, callback=self.newContent)
-            self.fileReader.start()
+            self.fileReader = yield self._Files.read_stream(filename=self.fileName, callback=self.newContent, file_id=f"module log reader {self.fileName}")
             self.isRunning = True
         except YomboFileError as e:
             self.fileReader = None
-            logger.warn("Error with FileReader: %s" % e)
+            logger.warn("Error with read_stream: %s" % e)
 
     def newContent(self, linein):
         """
-        Receives new lines of text from the FileReader here.
+        Receives new lines of text from the read stream here.
 
         Just pass the raw string to YomboBot for parsing.
         """
         pass
 
+    @inlineCallbacks
     def _stop_(self):
         """
-        Module is shutting down. If a FileReader was setup, delete it. FileReader will close the file
+        Module is shutting down. If a read stream was setup, delete it. read stream will close the file
         and save it's current location. This will be used next time as a starting point.
         """
         if self.fileReader is not None:
-            self.fileReader.close()
+            yield self.fileReader.close()
 
     def _unload_(self):
         """

@@ -9,8 +9,24 @@ VariableGroups (yombo.lib.variablegroups)
 ==================================================
 .. automodule:: yombo.lib.variablegroups
 
-VariableGroup Library Class
+.. rubric:: Classes in this module
+
+.. autosummary::
+   :nosignatures:
+
+   VariableGroups
+   VariableGroup
+
+VariableGroups Library Class
 ============================
+.. autoclass:: VariableGroups
+   :members:
+   :special-members:
+   :private-members:
+   :undoc-members:
+
+VariableGroup Class
+=============================
 .. autoclass:: VariableGroup
    :members:
    :special-members:

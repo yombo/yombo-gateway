@@ -2,13 +2,15 @@
 {% import "lib/webinterface/fragments/macros.tpl" as macros%}
 
 {% block head_top %}
-{% include "lib/webinterface/fragments/bg_image.tpl" %}
 <style>
     .table-hover tbody tr:hover {
         color: #fffff !important;
     }
     .table {
         color: #fffff !important;
+    }
+    .table td {
+      border-top: none !important;
     }
 </style>
 {% endblock %}
@@ -67,45 +69,6 @@
                 </div>
 
                 <div class="row" style="padding-top: 1em; padding-bottom: 1em;">
-                    <div class="col-6">
-                        <div class="card">
-                            <div class="card-header text-center">
-                              <h3>Setup Dynamic DNS</h3>
-                            </div>
-                            <div class="card-body">
-                                <h3>Dynamic DNS setup</h3>
-                                <p><strong>DNS can only be changed once every 30 days.</strong></p>
-                                <ul>
-                                    <li>{{_('ui::misc::current_sub_domain', 'Current Sub-domain')}}: {{ dns_name }}</li>
-                                    <li>{{_('ui::misc::current_top_level_domain', 'Current Domain')}}: {{ dns_domain }}</li>
-                                    <li>{{_('ui::misc::current_fqdn', 'Current FQDN')}}: {{ dns_fqdn }} </li>
-                                    <li>{{_('ui::misc::allowed_next_change', 'Allowed next change')}}:
-                                        {% if allow_change == 0 %}Now{% else %}{{ allow_change|epoch_to_string }}{% endif %}</li>
-                                </ul>
-
-                                {% if allow_change < py_time_time() %}
-                                <h4 style="padding-top: 1.5em;">Set new DNS</h4>
-                                <p>
-                                <input type="hidden" name="dns_domain_id" />
-                                <label>Domain prefix: </label>
-                                <input type="text" name="dns_name" id="dnsname" autofocus="autofocus">
-                                <a class="btn btn-large btn-success" id="fire" href="#">Search</a>
-                                <table id="myTableId" class="table table-nonfluid table-sm">
-                                  <thead class="thead-default">
-                                    <tr>
-                                      <th>Domain Availability</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody id="tBody"></tbody>
-                                    <tr><td><strong>Search for domains first.</strong></td> </tr>
-                                </table>
-                                </p>
-                                <hr>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-
                     {% if dns_name == "" or dns_name == None-%}
                     <div class="col-6">
                         <div class="card">
@@ -133,7 +96,7 @@
                             <div class="card-body">
                                 <p>
                                     Dynamic DNS is already setup and configured.
-                                {% if allow_change < py_time_time() %}
+                                {% if allow_change < py_time() %}
                                     You can skip this section or setup a new DNS name.
                                 {% else %}
                                     It's too soon to change the DNS name, please wait until after: {{ allow_change|epoch_to_string }}
@@ -146,24 +109,67 @@
                         </div>
                     </div>
                     {% endif %}
+
+                    <div class="col-6">
+                        <div class="card">
+                            <div class="card-header text-center">
+                              {% if dns_name == "" or dns_name == None-%}
+                              <h3>Setup Dynamic DNS</h3>
+                              {% else -%}
+                              <h3>Change Dynamic DNS</h3>
+                              {% endif %}
+                            </div>
+                            <div class="card-body">
+                                <h3>Dynamic DNS setup</h3>
+                                <p><strong>DNS can only be changed once every 30 days.</strong></p>
+                                <ul>
+                                    <li>{{_('setupwizard.dns.current_sub_domain', 'Current Sub-domain')}}: {{ dns_name }}</li>
+                                    <li>{{_('setupwizard.dns.current_top_level_domain', 'Current Domain')}}: {{ dns_domain }}</li>
+                                    <li>{{_('setupwizard.dns.current_fqdn', 'Current FQDN')}}: {{ dns_fqdn }} </li>
+                                    <li>{{_('setupwizard.dns.allowed_next_change', 'Allowed next change')}}:
+                                        {% if allow_change == 0 %}Now{% else %}{{ allow_change|epoch_to_string }}{% endif %}</li>
+                                </ul>
+
+                                {% if allow_change < py_time() %}
+                                <h4 style="padding-top: 1.5em;">Set new DNS</h4>
+                                <p>
+                                <input type="hidden" name="dns_domain_id" />
+                                <label>Domain prefix: </label>
+                                <input type="text" name="dns_name" id="dnsname" autofocus="autofocus">
+                                <a class="btn btn-large btn-success" id="fire" href="#">Search</a>
+                                <table id="myTableId" class="table table-nonfluid table-lg">
+                                  <tbody id="tBody"></tbody>
+                                    <tr>
+                                      <td class="text-white">
+                                        <strong>Enter a preferred domain prefix and click search.</strong> A list of
+                                          available domains will be displayed here.
+                                      </td>
+                                    </tr>
+                                </table>
+                                </p>
+                                <hr>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </form>
 
-<div class="modal fade" id="dns_check_error_modal" role="dialog">
-    <div class="modal-dialog modal-sm">
+<div class="modal fade" id="dns_check_error_modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+    <div class="modal-dialog" role="document">
         <div class="modal-content">
-            <div class="modal-header panel-heading panel-danger">
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                <h4 class="modal-title" id="myModalLabel">Error</h4>
+            <div class="modal-header btn-primary">
+                <h4 class="modal-title" id="ModalLabel-dns_check_error_modal">DNS Error</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
             </div>
-            <div class="modal-body">
-                <p> </p>
-            </div>
+            <div class="modal-body"></div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
@@ -173,8 +179,8 @@
 {% block body_bottom %}
 
 <script>
-
-    var lastSearchSubmit = "";
+    let lastSearchSubmit = "";
+    let selectedFQDN = "";
 
     $('form').on('keyup keypress', function(e) {
       var keyCode = e.keyCode || e.which;
@@ -189,13 +195,13 @@
       }
     });
 
-    function submitter(btn, fqdn) {
+    function selectDomain(btn, fqdn) {
         var param = btn.parentElement.parentElement.id;
         var myForm = document.forms["myForm"];
         $('#fqdn').text(btn.id);
+        selectedFQDN = btn.id;
 
         myForm.elements["dns_domain_id"].value = param;
-        console.log("this domain id: " + btn.id);
         $('#confirm-submit').modal('show');
     //    myForm.submit();
         return false;
@@ -203,44 +209,6 @@
 
     /* when the submit button in the modal is clicked, submit the form */
     $('#submit').click(function(){
-        console.log("##################################" + val);
-    //     $.ajax({
-    //         url: "/api/v1/server/dns/select_dns/" + val,
-    //         dataType: 'json',
-    //         success: function (resp) {
-    //             $("#myTableId td").parent().remove();
-    //             var trHTML = '';
-    //             $.each(resp, function (i, userData) {
-    //                 console.log("i: " + i);
-    //                 console.log(userData);
-    //                 for (var i in userData) {
-    //                     console.log(userData[i]['attributes']);
-    //                     var availField = "";
-    //                     if (userData[i]['attributes']['available'] == false) {
-    //                         availField = `<button type="button" class="btn btn-block btn-sm btn-danger disabled" style="margin: auto; width: 80%;">
-    //                         Not Available - ${val}.${userData[i]['attributes']['domain']}</button>`;
-    //                     } else {
-    //                         availField = `<button type="button" class="btn btn-block btn-md btn-primary" style="margin: auto; width: 80%;"
-    //                         onclick="submitter(this); return false;" id="${val}.${userData[i]['attributes']['domain']}">
-    //                         Select: <strong>${val}.${userData[i]['attributes']['domain']}</strong></button>`;
-    //                     }
-    //                     trHTML +=
-    //                         '<tr id="' + userData.id + '"><td width="10%">'
-    //                         + availField
-    //                         + '</td></tr>';
-    //                 }
-    //             });
-    //             $('#tBody').append(trHTML);
-    //         },
-    //         error: function (req, status, err) {
-    //             var data = req.responseJSON;
-    // //                console.log('something went wrong', status, err);
-    // //                console.log(data);
-    //             var mymodal = $('#dns_check_error_modal');
-    //             mymodal.find('.modal-body').text(data['message']);
-    //             mymodal.modal('show');
-    //         }
-    //     });
         $('#myForm').submit();
     });
 
@@ -252,43 +220,45 @@
             lastSearchSubmit = val;
         }
         $.ajax({
-            url: "/api/v1/server/dns/check_available/" + val,
+            url: "/api/v1/yombo/dns/check_available/" + val,
             dataType: 'json',
             success: function (resp) {
                 $("#myTableId td").parent().remove();
-                var trHTML = '';
+                let trHTML = "<tr><td class='text-info text-center'><strong>Click a domain to select it.</strong></td></tr>";
                 $.each(resp, function (i, userData) {
-                    console.log("i: " + i);
-                    console.log(userData);
                     for (var i in userData) {
-                        console.log(userData[i]['attributes']);
-                        var availField = "";
+                        let availField = ""
                         if (userData[i]['attributes']['available'] == false) {
                             availField = `<button type="button" class="btn btn-block btn-sm btn-danger disabled" style="margin: auto; width: 80%;">
                             Not Available - ${val}.${userData[i]['attributes']['domain']}</button>`;
                         } else {
-                            availField = `<button type="button" class="btn btn-block btn-md btn-primary" style="margin: auto; width: 80%;"
-                            onclick="submitter(this); return false;" id="${val}.${userData[i]['attributes']['domain']}">
+                            availField = `<button type="button" class="btn btn-block btn-md btn-info" style="margin: auto; width: 80%;"
+                            onclick="selectDomain(this); return false;" id="${val}.${userData[i]['attributes']['domain']}">
                             Select: <strong>${val}.${userData[i]['attributes']['domain']}</strong></button>`;
                         }
                         trHTML +=
-                            '<tr id="' + userData.id + '"><td width="10%">'
+                            '<tr id="' + userData[i]['attributes']['id'] + '">' +
+                            '<td width="100%" class="p-2">'
                             + availField
-                            + '</td></tr>';
+                            + "</td></tr>\n";
                     }
                 });
                 $('#tBody').append(trHTML);
             },
             error: function (req, status, err) {
-                var data = req.responseJSON;
-                var mymodal = $('#dns_check_error_modal');
-                mymodal.find('.modal-body').text(data['message']);
+                let data = req.responseJSON;
+                let mymodal = $('#dns_check_error_modal');
+                let arrayLength = data['errors'].length;
+                let output = "<ul>"
+                for (var i = 0; i < arrayLength; i++) {
+                    output += `<li>${data['errors'][i]['detail']}</li>`;
+                }
+                output += `</ul>`;
+                mymodal.find('.modal-body').html(output);
                 mymodal.modal('show');
             }
         });
-
     }
-
     $("#fire").on('click', doSearch);
 
 </script>

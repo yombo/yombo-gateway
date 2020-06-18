@@ -1,88 +1,46 @@
-# Import python libraries
+"""
+Generic debug handler for /api/v1/debug route.
+"""
+from yombo.classes.jsonapi import JSONApi
+from yombo.constants.library_references import LIBRARY_REFERENCES
+from yombo.constants.permissions import AUTH_PLATFORM_SYSTEM_OPTION
+from yombo.core.exceptions import YomboWebinterfaceError
+from yombo.lib.webinterface.auth import get_session
 
-from yombo.lib.webinterface.auth import require_auth
-
-DEBUG_TYPES = {
-    "atoms": {
-        "class": "_Atoms"
-    },
-    "automation_rules": {
-        "class": "_Automation"
-    },
-    "cache": {
-        "class": "_Cache"
-    },
-    "commands": {
-        "class": "_Commands"
-    },
-    "crontab": {
-        "class": "_CronTab"
-    },
-    "devices": {
-        "class": "_Devices"
-    },
-    "device_command_inputs": {
-        "class": "_DeviceCommandInputs"
-    },
-    "device_command_types": {
-        "class": "_DeviceTypeCommands"
-    },
-    "device_types": {
-        "class": "_DeviceTypes"
-    },
-    "gateways": {
-        "class": "_Gateways"
-    },
-    "input_types": {
-        "class": "_InputTypes"
-    },
-    "locations": {
-        "class": "_Locations"
-    },
-    "modules": {
-        "class": "_Modules"
-    },
-    "moduledevicetypes": {
-        "class": "_ModuleDeviceTypes"
-    },
-    "notifications": {
-        "class": "_Notifications"
-    },
-    "scenes": {
-        "class": "_Scenes"
-    },
-    "sqldict": {
-        "class": "_SQLDict"
-    },
-    "sslcerts": {
-        "class": "_SSLCerts"
-    },
-    "states": {
-        "class": "_States"
-    },
-    "storage": {
-        "class": "_Storage"
-    },
-    "users": {
-        "class": "_Users"
-    },
-    "variables_data": {
-        "class": "_VariableData"
-    },
-    "variables_fields": {
-        "class": "_VariableFields"
-    },
-    "variables_groups": {
-        "class": "_VariableGroups"
-    },
-}
+DEBUG_TYPES = [
+    "atoms",
+    "automation_rules",
+    "cache",
+    "commands",
+    "crontab",
+    "devices",
+    "device_command_inputs",
+    "device_command_types",
+    "device_types",
+    "gateways",
+    "input_types",
+    "locations",
+    "modules",
+    "moduledevicetypes",
+    "notifications",
+    "scenes",
+    "sqldicts",
+    "sslcerts",
+    "states",
+    "storage",
+    "users",
+    "variable_data",
+    "variable_fields",
+    "variable_groups",
+]
 
 
 def route_api_v1_debug(webapp):
     with webapp.subroute("/api/v1") as webapp:
         @webapp.route("/debug", methods=["GET"])
-        @require_auth(api=True)
+        @get_session(auth_required=True, api=True)
         def apiv1_debug_get(webinterface, request, session):
+            session.is_allowed(AUTH_PLATFORM_SYSTEM_OPTION, "debug")
 
             try:
                 debug_type = request.args.get("debug_type")[0]
@@ -90,17 +48,20 @@ def route_api_v1_debug(webapp):
                 debug_type = None
 
             if debug_type is None or debug_type not in DEBUG_TYPES:
-                return webinterface.render_api_error(request, None,
-                                                     code="invalid_debug_type",
-                                                     title="Invalid debug type",
-                                                     detail="Debug type supplied is invalid.",
-                                                     response_code=500)
+                raise YomboWebinterfaceError(errors="Debug type supplied is invalid",
+                                             error_code="invalid_debug_type",
+                                             title="Invalid debug type",
+                                             response_code=400)
 
-            debug = DEBUG_TYPES[debug_type]
+            if debug_type not in LIBRARY_REFERENCES:
+                raise YomboWebinterfaceError(errors="Debug type is not supported.",
+                                             error_code="unsupported_debug_type",
+                                             title="Unsupported debug type",
+                                             response_code=400)
 
-            klass = getattr(webinterface, debug["class"])
-            print(klass.class_storage_as_list())
-            return webinterface.render_api(request, None,
+            klass = getattr(webinterface, LIBRARY_REFERENCES[debug_type]["class"])
+            # print(klass.to_list())
+            return webinterface.render_api(request,
+                                           data=JSONApi(klass.get_all()),
                                            data_type=debug_type,
-                                           attributes=klass.class_storage_as_list()
                                            )

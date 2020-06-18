@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+
+if [ "$(id -u)" -eq 0 ]; then
+    echo ""
+    echo "This must NOT be run as root, instead run as the user running the Yombo Gateway"
+    echo ""
+    echo "If you created a dedicate account for this software, first log into that account."
+    echo "Then run this script as:"
+    echo ""
+    echo "mycomputer> bash ./pyenv_install"
+    echo ""
+    exit
+fi
+
+# as of march 15, 2020 - 3.8.2 won't work with openzwave, won't compile. 3.8.1, broke insteonplm.
+PYTHON_VERSION="3.7.7"
+
+SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
+YOMBO_ROOT_DIR="$(dirname "$SCRIPTPATH")"
+
+LOGFILE=/home/$USER/yombo_update.log
+LOGFILEDETAILED=/home/$USER/yombo_update_detailed.log
+function logsetup {
+    exec > >(tee -a $LOGFILE $LOGFILEDETAILED)
+    exec 2>&1
+}
+
+function log {
+    echo "[$(date --rfc-3339=seconds)]: $*"
+}
+logsetup
+
+
+log "==> pyenv - Updating self to latest version"
+
+cd $HOME/.pyenv
+git pull  >> $LOGFILEDETAILED 2>&1
+
+# Setup a temp directory. Some operating systems restrict tmp directory with noexec.
+cd $HOME
+rm -rf $HOME/.pyenv-build-tmp
+mkdir -p $HOME/.pyenv-build-tmp
+
+# Build the latest python version.
+cd "$YOMBO_ROOT_DIR"
+CORECOUNT=$(grep -c ^processor /proc/cpuinfo)
+CORECOUNT=$(($CORECOUNT + 1))
+export TMPDIR="$HOME/.pyenv-build-tmp"
+
+log "==> pyenv - Building python $PYTHON_VERSION with $CORECOUNT core(s)."
+startpythonbuild=`date +%s`
+## The following two lines determine how Python is compiled. The first line is normal with no special optimizations.
+## The second line optimizes Python by about 10%. However, this can take all night to compile on a Raspberry Pi.
+## See: https://stackoverflow.com/questions/41405728/what-does-enable-optimizations-do-while-compiling-python
+## Only one of the 2 lines should be uncommented.
+MAKE_OPTS="-j$CORECOUNT" pyenv install $PYTHON_VERSION -s >> $LOGFILEDETAILED 2>&1
+#PYTHON_CONFIGURE_OPTS="--enable-optimizations" MAKE_OPTS="-j$CORECOUNT" pyenv install $PYTHON_VERSION -s
+
+endpythonbuild=`date +%s`
+
+runtime=$((endpythonbuild-startpythonbuild))
+
+log "==> pyenv - Done building python $PYTHON_VERSION in $runtime seconds."
+
+pyenv local $PYTHON_VERSION >> $LOGFILEDETAILED 2>&1
+
+log "==> pip3 - Upgrading itself."
+pip3 install --upgrade pip
+
+# Update required packages. Will also be updated at runtime; but this helps
+# making things start faster.
+log "==> pip3 - Installing gateway requirements."
+cd "$YOMBO_ROOT_DIR"
+pip3 install -r requirements.txt >> $LOGFILEDETAILED 2>&1
+
+log "==> Pyenv update complete."

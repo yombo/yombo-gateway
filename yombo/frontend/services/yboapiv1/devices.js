@@ -1,24 +1,22 @@
-import yboapiv1 from '@/services/yboapiv1'
-
 export default {
     all () {
-        return yboapiv1().get('/devices')
+        return window.$nuxt.$yboapiv1axios.get('/devices?include=variables')
     },
     allGW () {
-        return yboapiv1().get('/gateways/'+ window.$nuxt.$gwenv.gateway_id +'/relationships/devices')
+        return window.$nuxt.$yboapiv1axios.get('/gateways/'+ window.$nuxt.$gwenv.gateway_id +'/relationships/devices?include=variables')
     },
     fetchOne(id) {
         // console.log("devices find: " + id);
-        return yboapiv1().get('/devices/' + id);
+        return window.$nuxt.$yboapiv1axios.get('/devices/' + id + '?include=variables');
     },
     delete(id, data) {
         // console.log("devices delete: " + id);
         // console.log(data);
-        return yboapiv1().delete('/devices/' + id);
+        return window.$nuxt.$yboapiv1axios.delete('/devices/' + id);
     },
     patch(id, data) {
         // console.log("devices patch: " + id);
         // console.log(data);
-        return yboapiv1().patch('/devices/' + id, data);
+        return window.$nuxt.$yboapiv1axios.patch('/devices/' + id, data);
     },
 }

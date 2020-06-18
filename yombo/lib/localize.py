@@ -11,40 +11,34 @@ Localization and translation for Yombo Gateway.
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.12.0
 
-:copyright: Copyright 2016-2018 by Yombo.
+:copyright: Copyright 2016-2020 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/localize.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/localize.html>`_
 """
 # Import python libraries
 import builtins
-import inspect
-import gettext
+from functools import partial
 import json
-from hashlib import sha224
+from os import environ
 from string import Formatter
-from os import path, listdir, makedirs, environ
-import re
 import sys
+from time import time
 import traceback
+from typing import Any, ClassVar, Dict, List, Optional, Type, Union
 
-from twisted.internet import threads
 from twisted.internet.defer import inlineCallbacks
 
-# Import 3rd-party libs
-import yombo.ext.polib as polib
-
-# Import Yombo librariesA
-from yombo.core.exceptions import YomboWarning
+# Import Yombo libraries
 from yombo.core.library import YomboLibrary
-import yombo.core.settings as settings
-from yombo.utils import read_file
 from yombo.utils.converters import unit_convert
+from yombo.utils.dictionaries import recursive_dict_merge, access_dict
 from yombo.core.log import get_logger
 
 logger = get_logger("library.localize")
 
 
 class YomboFormatter(Formatter):
+    """ Converts a localize string, applying arguments to it. """
     def get_value(self, key, args, keywords):
         if isinstance(key, str):
             try:
@@ -57,31 +51,146 @@ class YomboFormatter(Formatter):
 
 class Localize(YomboLibrary):
     """
-    Provides internaltionalization and localization where possible.  Default language is "en" (English).
+    Provides internationalization and localization where possible. Default language is "en" (English).
 
-    Localization provides translations for both the system messages, including yombo.ini file.
+    Localization provides translations for both the system messages, including yombo.toml file.
     """
+    @inlineCallbacks
     def _init_(self, **kwargs):
-        self.working_dir = settings.arguments["working_dir"]
-        self.files = {}
-        self.parse_directory("yombo/locale/backend", has_header=True)
-        self.default_lang = self._Configs.get2('localize', 'default_lang', self.get_system_language(), False)
+        self.yombo_formatter = YomboFormatter()
 
-        try:
-            hashes = self._Configs.get("localize", "hashes")
-        except:
-            self.hashes = {"en": None}
-        else:
-            self.hashes = json.loads(hashes)
+        self.localization_degrees = self._Configs.get("localization.degrees", "f", instance=True)
+        self.locale_save_folder = f"{self._working_dir}/locale"
+        self.available_translations = []
+        self.backend_translations = {}
 
-        if "en" not in self.hashes:
-            self.hashes["en"] = None
-
-        self.localization_degrees = self._Configs.get2("localization", "degrees", "f")
-
-        self.locale_save_folder = f"{self.working_dir}/locale/po/"
-        self.translator = self.get_translator()
+        # Temp load english translation for bootup.
+        data = yield self._Files.read(f"{self._app_dir}/yombo/locale/backend/en.json")
+        self.backend_translations["en"] = json.loads(data)
+        self.default_lang = self._Configs.get("localize.default_lang", self.get_system_language(), instance=True)
+        # print(f"########################: default lang: {self.default_lang}")
+        # print(f"localize module: a: {self.default_lang}")
+        # print(f"localize module: a: {type(self.default_lang)}")
         builtins.__dict__["_"] = self.handle_translate
+
+    @inlineCallbacks
+    def _modules_pre_init_(self, **kwargs):
+        """
+        Called just before modules get their _init_ called. However, all the gateway libraries are loaded.
+
+        This gets all the frontend/backend translation files (.json) to be merged into individual language files.
+        :return:
+        """
+        yield self.update_language_files()
+
+    @inlineCallbacks
+    def update_language_files(self):
+        """
+        This gets all the frontend/backend translation files (.json) to be merged into individual language files.
+
+        :param language:
+        :return:
+        """
+        backend_files = {}
+        frontend_files = {}
+        try:
+            backend_files = yield self._Files.search_path_for_files(
+                f"yombo/locale/backend/*",
+                recursive=True, merge_dict=backend_files)
+        except Exception as e:
+            logger.warn("Unable list module backend locale files: {e}", e=e)
+        # print(f"localize module: 22: {self.default_lang}")
+        # print(f"localize module: 22: {type(self.default_lang)}")
+        try:
+            frontend_files = yield self._Files.search_path_for_files(
+                f"yombo/locale/frontend/*",
+                recursive=True, merge_dict=frontend_files)
+        except Exception as e:
+            logger.warn("Unable list module frontend locale files: {e}", e=e)
+
+        # print(f"localize module: 55")
+
+        for item, module in self._Modules.modules.items():
+            # print(f"localize module: {module._machine_label}")
+            if module._status != 1:
+                continue
+            try:
+                backend_files = yield self._Files.search_path_for_files(
+                    f"yombo/modules/{module._machine_label.lower()}/backend_locale/*",
+                    recursive=True, merge_dict=backend_files)
+            except Exception as e:
+                logger.warn("Unable list module backend locale files: {e}", e=e)
+            try:
+                frontend_files = yield self._Files.search_path_for_files(
+                    f"yombo/modules/{module._machine_label.lower()}/frontend_locale/*",
+                    recursive=True, merge_dict=frontend_files)
+            except Exception as e:
+                logger.warn("Unable list module frontend locale files: {e}", e=e)
+
+        @inlineCallbacks
+        def process_locales(files, locale_type):
+            """
+            Load each locale, merge, and then output to new json file.
+
+            :param files: Dictionary of files, as output from search_path_for_files
+            :param locale_type: frontend/backend
+            :return:
+            """
+            locales = {}
+            output = {}
+            meta = {}
+            for file, data in files.items():
+                locale = data["filename"].split(".")[0]
+                if locale not in locales:
+                    locales[locale] = []
+                    output[locale] = {}
+                    meta[locale] = {"files": [], "time": int(time())}
+                meta[locale]["files"].append(file)
+                locales[locale].append(file)
+
+            for locale, files in locales.items():
+                for file in files:
+                    try:
+                        data = yield self._Files.read(file)
+                        data = json.loads(data)
+                    except Exception as e:
+                        logger.warn("Unable to read json local file: {e}", e=e)
+                    # print(f"local data: {locale}, {file} = {data}")
+                    recursive_dict_merge(output[locale], data)
+                if locale_type == "backend":
+                    if locale not in self.available_translations:
+                        self.available_translations.append(locale)
+                    # print(f"localize module: 22: {self.default_lang}")
+                    # print(f"localize module: 22: {type(self.default_lang)}")
+                    # if locale in self.requested_locales \
+                    #         or locale in self.backend_translations \
+                    #         or locale == self.default_lang.value:
+                    self.backend_translations[locale] = data
+                try:
+                    yield self._Files.save(f"{self.locale_save_folder}/{locale_type}/{locale}.json",
+                                    json.dumps(output[locale], separators=(',', ':')))
+                    yield self._Files.save(f"{self.locale_save_folder}/{locale_type}/{locale}_meta.json",
+                                    json.dumps(meta[locale], indent=4))
+                except Exception as e:
+                    logger.warn("Unable to write json local file: {e}", e=e)
+
+            if self.default_lang.value not in self.available_translations:
+                self._Configs.set("localize.default_lang", "en")
+                self.default_lang = self._Configs.get("localize.default_lang", "en", instance=True)
+
+        yield process_locales(backend_files, "backend")
+        yield process_locales(frontend_files, "frontend")
+        try:
+            pass
+        except Exception as e:  # if problem with translation, at least return msgid...
+            logger.error("Unable to load translations. Getting null one. Reason: {e}", e=e)
+            logger.error("--------------------------------------------------------")
+            logger.error("{error}", error=sys.exc_info())
+            logger.error("---------------==(Traceback)==--------------------------")
+            logger.error("{trace}", trace=traceback.print_exc(file=sys.stdout))
+            logger.error("--------------------------------------------------------")
+            self.translator = self.get_translator()
+            builtins.__dict__["_"] = self.handle_translate
 
     def display_temperature(self, in_temp, in_type=None, out_type=None, out_decimals=None):
         """
@@ -105,7 +214,7 @@ class Localize(YomboLibrary):
             in_type = in_type[0].lower()
 
         if out_type is None:
-            out_type = self.localization_degrees()[0].lower()
+            out_type = self.localization_degrees.value[0].lower()
         else:
             out_type = out_type[0].lower()
 
@@ -138,257 +247,95 @@ class Localize(YomboLibrary):
             size = size / 1024.0  # apply the division
         return "%.*f%s" % (precision, size, suffixes[suffixIndex])
 
-    def _modules_pre_init_(self, **kwargs):
-        """
-        Called just before modules get their _init_ called. However, all the gateway libraries are loaded.
-
-        This combines any module .po/.po.head files with the system po files. Then creates .mo binary files.
-
-        Uses a basic sha224 hash to validate if files have changes or not between runs. This prevents the files to be
-        rebuilt on each run.
-        :return:
-        """
-        default_lang = self.default_lang()
-        try:
-            languages_to_update = {}
-
-            try:
-                for item, data in self._Modules.modules.items():
-                    the_directory = path.dirname(path.abspath(inspect.getfile(data.__class__))) + "/locale/backend"
-                    if path.exists(the_directory):
-                        self.parse_directory(the_directory)
-            except Exception as e:
-                logger.warn("Unable list module local files: {e}", e=e)
-
-            # always check english. If it gets updated, we need to update them all!
-            hash_obj = sha224(open(self.files["en"][0], "rb").read())
-
-            for fname in self.files["en"][1:]:
-                hash_obj.update(open(fname, "rb").read())
-            checksum = hash_obj.hexdigest()
-
-            if checksum != self.hashes["en"]:
-                self.hashes = {}
-
-            # Generate/update locale file hashes. If anything changed, add to languages_to_update
-            for lang, files in self.files.items():
-                hash_obj = sha224(open(files[0], "rb").read())
-                for fname in files[1:]:
-                    hash_obj.update(open(fname, "rb").read())
-                checksum = hash_obj.hexdigest()
-                if lang in self.hashes:
-                    if path.exists(self.working_dir + "/locale/po/" + lang + "/LC_MESSAGES/yombo.mo") is False:
-                        languages_to_update[lang] = True
-                        continue
-                    if checksum == self.hashes[lang]:
-                        # self.hashes[lang] = checksum
-                        continue
-
-                self.hashes[lang] = checksum
-                languages_to_update[lang] = True
-
-            # If we have a default language, lets make sure we have language files for it.
-            if default_lang is not None:
-                if default_lang not in self.files:
-                    self.default_lang(set=None)
-                    language = default_lang.split("_")[0]
-                    if language in self.files:
-                        self.default_lang(set=language)
-            # If no default lang, try the system language.
-            if default_lang is None:
-                language = self.get_system_language()
-                if language in self.files:
-                    self.default_lang(set=language)
-                else:
-                    language = language.split("_")[0]
-                    if language in self.files:
-                        self.default_lang(set=language)
-
-            # If still no language, we will use english.
-            if default_lang is None:
-                self.default_lang(set="en")
-
-            # English is the base of all language files. If English needs updating, we update the default too.
-            if 'en' in languages_to_update and default_lang not in languages_to_update \
-                    and default_lang in self.files:
-                languages_to_update[default_lang] = True
-
-            # Always do english language updates first, it"s the base of all.
-            if "en" in languages_to_update:
-                self.update_language_files("en")
-                del languages_to_update["en"]
-
-            self._States["localize.default_language"] = default_lang
-
-            for lang, files in languages_to_update.items():
-                self.update_language_files(lang)
-
-            # Save the updated hash into the configuration for next time.
-            self._Configs.set("localize", "hashes", json.dumps(self.hashes, separators=(",",":")))
-
-            gettext._translations.clear()
-            self.translator = self.get_translator()
-            builtins.__dict__["_"] = self.handle_translate
-
-        except Exception as e:  # if problem with translation, at least return msgid...
-            logger.error("Unable to load translations. Getting null one. Reason: {e}", e=e)
-            logger.error("--------------------------------------------------------")
-            logger.error("{error}", error=sys.exc_info())
-            logger.error("---------------==(Traceback)==--------------------------")
-            logger.error("{trace}", trace=traceback.print_exc(file=sys.stdout))
-            logger.error("--------------------------------------------------------")
-            self.translator = self.get_translator(get_null=True)
-            builtins.__dict__["_"] = self.handle_translate
-
     def get_system_language(self):
         """
         Returns the system language.
         :return:
         """
         lang = "en"
-        for item in ('LANGUAGE', 'LC_ALL', 'LC_MESSAGES', 'LANG'):
+        for item in ('LANG', 'LC_ALL', 'LC_MESSAGES', 'LANGUAGE'):
             if item in environ:
                 try:
-                    lang = environ.get(item).split(".")[0]
+                    temp_lang = environ.get(item).split(".")[0]
+                    if temp_lang is not None and temp_lang != "":
+                        lang = temp_lang
+                        break
                 except:
                     return None
 
-        if lang not in self.files and "_" in lang:
+        if lang not in self.available_translations and "_" in lang:
             lang = lang.split("_")[0]
-        if lang not in self.files:
+        if lang not in self.available_translations:
             lang = "en"
         return lang
 
-    def get_translator(self, languages=None, get_null=None):
-        if get_null is True:
-            return gettext.NullTranslations()
+    def get_translator(self, languages=None):
+        """
+        Returns a partial to handle_translate with a predetermined language set.
+
+        :param languages: A list or string of possible languages to use.
+        :return:
+        """
+        return partial(self.handle_translate, _set_language=self.validate_language(languages))
+
+    def handle_translate_by_language(self, language, msgid, default_text=None, **kwargs):
+        return self.handle_translate(msgid, default_text, _set_language=language, **kwargs)
+
+    def handle_translate(self, msgid, default_text=None, _set_language=None, **kwargs):
+        set_language = _set_language or self.default_lang.value
+        # if set_language not in self.backend_translations:
+        #     set_language = "en"
+        if set_language not in self.backend_translations:
+            set_language = self.validate_language(set_language)
+            if set_language not in self.backend_translations:
+                return msgid
+
+        message = None
+        try:
+            message = access_dict(msgid, self.backend_translations[set_language])
+        except KeyError as e:
+            logger.debug(f"handle_translate: Key not found: {msgid}")
+            if default_text is not None:
+                return default_text
+            return msgid
+        except TypeError as e:
+            logger.debug(f"handle_translate: Key not found: {msgid}")
+            if default_text is not None:
+                return default_text
+            return msgid
+
+        if message is None:
+            return msgid
+        return self.yombo_formatter.format(message, **kwargs)
+
+    def validate_language(self, languages):
+        """
+        Validates the the requested language is available. Accepts a list or string. If the requested
+        language is not found, the default language is returned.
+
+        :param languages:
+        :return:
+        """
         if languages is None:
             languages = []
-            if self.default_lang() not in languages:
-                languages.append(
-                    self.default_lang())  # toss in the gateway default language, which may be the system lang
-            if "en" not in languages:
-                languages.append("en")  # if all else fails, show english.
-        logger.debug("locale_files path: {path}", path=self.locale_save_folder)
-        try:
-            return gettext.translation("yombo", self.locale_save_folder, languages)
-        except Exception as e:  # if problem with translation, at least return msgid...
-            logger.warn("Ignore this if first running Yombo. Unable to load translations: {e}", e=e)
-        return gettext.NullTranslations()
+        elif isinstance(languages, str):
+            languages = [item.strip() for item in languages.split(',')]
+        if self.default_lang.value not in languages:
+            languages.append(self.default_lang.value)
+        if "en" not in languages:
+            languages.append("en")  # if all else fails, show english.
+        for lang in languages:
+            if lang in self.available_translations:
+                return lang
+        return self.default_lang.value
 
-    def handle_translate(self, msgid, default_text=None, translator=None, **kwargs):
-
-        if translator is None:
-            translator = self.translator
-        yfmt = YomboFormatter()
-        translation = translator.gettext(msgid)
-        if translation == msgid and default_text is not None:
-            return yfmt.format(default_text, **kwargs)
-        return yfmt.format(translation, **kwargs)
-
-    def update_language_files(self, language):
+    def get_translator_from_request(self, request):
         """
-        Merges all the files together and then generates a compiled languages file (mo)
-
-        :param language:
-        :return:
-        """
-        logger.debug("Localize combining files for language: {language}", language=language)
-        output_folder = self.working_dir + "/locale/po/" + language + "/LC_MESSAGES"
-
-        if not path.exists(output_folder):
-            makedirs(output_folder)
-
-        # merge files
-        makedirs(path.dirname(output_folder + "/yombo.po"), exist_ok=True)
-        with open(output_folder + "/yombo.po", "w") as outfile:
-            for fname in self.files[language]:
-                with open(fname) as infile:
-                    outfile.write(infile.read())
-        po_lang = polib.pofile(output_folder + "/yombo.po")
-        po_lang.save_as_mofile(output_folder + "/yombo.mo")
-
-    def parse_directory(self, directory, has_header=False):
-        """
-        Checks a directory for any .po or .po.head files to combine them. This allows modules to have translation
-        files.
-
-        :param directory: The directory to check.
-        :return:
-        """
-        for filename in listdir(directory):
-            if filename.endswith(".po") is False:
-                continue
-            filepart = filename.split(".")
-            filepart = filepart[0]
-            locale = filepart.split("_")
-            if len(locale) == 0 or len(locale) > 2:
-                logger.warn("Bad language_country code split. Must be <ISO 639 lang code>_<ISO 3166 REGION CODE (optional)>: {{locale}}, file: {filename}",
-                            locale=locale[0], filename=filename)
-
-            if locale[0].islower() is False:
-                logger.warn("Invalid file, ISO 639 lang code must be lower case: {locale}, file: {filename}",
-                            locale=locale[0], filename=filename)
-                continue
-            elif len(locale[0]) not in (2, 3):
-                logger.warn("Invalid file, ISO 639 lang code must be 2 (preferred) or 3 letters: {locale}, file: {filename}",
-                            locale=locale[0], filename=filename)
-                continue
-
-            if len(locale) == 2:
-                if locale[1].isupper() is False and locale[1].isalpha() is True:
-                    logger.warn("Invalid file, ISO 6166 region code must be upper case: {locale}, file: {filename}",
-                                locale=locale[0], filename=filename)
-                    continue
-                elif len(locale[1]) not in (2, 3):
-                    logger.warn("Invalid file, ISO 6166 region code must be 2 letters: {locale}, file: {filename}",
-                                locale=locale[0], filename=filename)
-                    continue
-
-            if filepart not in self.files:
-                if path.exists(directory + "/" + filename + ".head"):
-                    self.files[filepart] = []
-                    self.files[filepart].append(directory + "/" + filename + ".head")
-                    self.files[filepart].append(directory + "/" + filename)
-                else:
-                    if has_header == True:
-                        self.files[filepart] = []
-                        self.files[filepart].append(directory + "/" + filename)
-                    else:
-                        logger.warn("Yombo core doesn't have a locale for: {lang}  Cannot merge file. Additionally, no '.head' file exists. (Help link soon.)",
-                            lang=filepart)
-            else:
-                self.files[filepart].append(directory + "/" + filename)
-
-    def get_ugettext(self, languages):
-        """
-        Returns a translator function based on a list of languages provided. If request through a webbrowser, send
-        the request to :py:meth:parse_accept_language first.
-
-        :param languages: list of locales to check, in order of list items.
-        :return:
-        """
-        translator = self.get_translator(languages)
-        return translator.gettext
-
-    def get_ungettext(self, languages):
-        """
-        Returns a translator function based on a list of languages provided. If request through a webbrowser, send
-        the request to :py:meth:parse_accept_language first.
-
-        :param languages: list of locales to check, in order of list items.
-        :return:
-        """
-        translator = self.get_translator(languages)
-        return translator.ngettext
-
-    def parse_accept_language(self, accept_language):
-        """
-        From: https://siongui.github.io/2012/10/11/python-parse-accept-language-in-http-request-header/
-        Modified for yombo...
+        Gets
         :param accept_language: The accept language header from a browser, or a string in the same format
         :return:
         """
+        accept_language = request.getHeader("accept-language")
         if accept_language is None or accept_language == "":
             accept_language = "en"
         languages = accept_language.split(",")
@@ -402,26 +349,5 @@ class Localize(YomboLibrary):
                 locales.append(lang.replace("-", "_"))
             if lang_parts[0] not in locales:
                 locales.append(lang_parts[0])
-        if self.default_lang() not in locales:
-            locales.append(self.default_lang())  # toss in the gateway default language, which may be the system lang
-        if "en" not in locales:
-            locales.append("en")  # if all else fails, show english.
-        return locales
-
-    @inlineCallbacks
-    def locale_to_dict(self, locale=None):
-        if locale is None:
-            locale = self.default_lang()
-
-        if locale not in self.files:
-            raise YomboWarning(f"Invalid locale for locale_to_dict: {locale}")
-
-        po_file = f"{self.locale_save_folder}{locale}/LC_MESSAGES/yombo.po"
-        data = yield read_file(po_file, convert_to_unicode=True)
-        tuples = re.findall(r'msgid "(.+)"\nmsgstr "(.+)"', data)
-
-        po_dict = {}
-        for tuple in tuples:
-            po_dict[tuple[0]] = tuple[1]
-
-        return po_dict
+        locale = self.validate_language(languages)
+        return partial(self.handle_translate_by_language, locale)

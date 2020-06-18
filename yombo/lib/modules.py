@@ -14,9 +14,9 @@ Also calls module hooks as requested by other libraries and modules.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2012-2018 by Yombo.
+:copyright: Copyright 2012-2020 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/modules.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/modules.html>`_
 """
 # Import python libraries
 import configparser
@@ -25,6 +25,7 @@ import os.path
 from pyclbr import readmodule
 from time import time
 import traceback
+from typing import Any, ClassVar, Dict, List, Optional, Type, Union
 
 # Import twisted libraries
 from twisted.internet import reactor
@@ -35,10 +36,9 @@ from yombo.constants import MODULE_API_VERSION
 from yombo.core.exceptions import YomboHookStopProcessing, YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-import yombo.core.settings as settings
 from yombo.mixins.library_search_mixin import LibrarySearchMixin
-from yombo.mixins.library_db_model_mixin import LibraryDBModelMixin
-from yombo.utils import read_file, bytes_to_unicode, sha224_compact, random_string
+from yombo.mixins.library_db_parent_mixin import LibraryDBParentMixin
+from yombo.utils import bytes_to_unicode, random_string
 from yombo.utils.hookinvoke import global_invoke_all
 
 from yombo.classes.maxdict import MaxDict
@@ -52,6 +52,8 @@ SYSTEM_MODULES = {
     "storagefile": {
         "id": "modulestoragefile",  # module_id
         "gateway_id": "local",
+        "user_id": "local",
+        "original_user_id": "local",
         "module_type": "logic",
         "machine_label": "StorageFile",
         "label": "Storage - File",
@@ -60,16 +62,17 @@ SYSTEM_MODULES = {
         "description": "Adds support to storing files within the filesystem.",
         "medium_description_html": "Adds support to storing files within the filesystem.",
         "description_html": "Adds support to storing files within the filesystem.",
-        "install_branch": "system",
-        "require_approved": 0,
-        "install_count": "",
         "see_also": "",
         "repository_link": "",
         "issue_tracker_link": "",
+        "install_count": 0,
         "doc_link": "",
         "git_link": "",
-        "public": "2",
-        "status": "1",
+        "git_auto_approve": "1",
+        "public": 2,
+        "status": 1,
+        "install_branch": "system",
+        "require_approved": 0,
         "created_at": int(time()),
         "updated_at": int(time()),
         "load_source": "system modules",
@@ -77,56 +80,55 @@ SYSTEM_MODULES = {
     }
 
 
-class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
+class Modules(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
     """
     A single place for modudule management and reference.
     """
+    modules: ClassVar[dict] = {}  # Stores a list of modules. Populated by the loader module at startup.
+    loaded_modules: ClassVar[dict] = {}  # Stores the machine label with a reference to the module instance
 
-    modules = {}  # Stores a list of modules. Populated by the loader module at startup.
-    loaded_modules = {}  # Stores the machine label with a reference to the module instance
+    _rawModulesList: ClassVar[dict] = {}  # used during boot-up. Combined system modules, localmodules.ini, and DB loaded modules.
+    disabled_modules: ClassVar[dict] = {}  # List of modules that are blacklisted from the server.
 
-    _rawModulesList = {}  # used during boot-up. Combined system modules, localmodules.ini, and DB loaded modules.
-    disabled_modules = {}  # List of modules that are blacklisted from the server.
-
-    # The following are used by get(), get_advanced(), search(), and search_advanced()
-    _class_storage_load_hook_prefix = "module"
-    _class_storage_load_db_class = None
-    _class_storage_attribute_name = "modules"
-    _class_storage_search_fields = [
+    _storage_attribute_name: ClassVar[str] = "modules"
+    _storage_label_name: ClassVar[str] = "module"
+    _storage_attribute_sort_key: ClassVar[str] = "_Name"
+    _storage_primary_field_name: ClassVar[str] = "_module_id"
+    _storage_fields: ClassVar[list] = ["calllater_id", "description", "call_time", "created_at"]
+    _storage_class_reference: ClassVar = None
+    _storage_search_fields: ClassVar[List[str]] = [
         "_module_id", "_module_type", "_label", "_machine_label", "_description", "_short_description",
         "_medium_description"
     ]
-    _class_storage_sort_key = "machine_label"
+    module_api_version: ClassVar[str] = MODULE_API_VERSION
 
+    @inlineCallbacks
     def _init_(self, **kwargs):
         """
         Init doesn't do much. Just setup a few variables. Things really happen in start.
         """
-        self.module_api_version = MODULE_API_VERSION
         self._invoke_list_cache = {}  # Store a list of hooks that exist or not. A cache.
         self.hook_counts = {}  # keep track of hook names, and how many times it"s called.
         self.hooks_called = MaxDict(400, {})
         self.disabled_modules = {}
         self.modules_that_are_starting = {}  # a place for modules to register their status.
+        if self._Loader.operating_mode == "run":
+            logger.debug("Calling load functions of libraries.")
+            yield self.build_raw_module_list()  # Create a list of modules, includes localmodules.ini
+            yield self.build_requirements()  # Collect all the requirements files...
 
-    def _notification_get_targets_(self, **kwargs):
-        """ Hosting here since loader isn't properly called... """
-        return {
-            "module_updated": "Module information updated.",
-            "module_added": "Module added, will work on next restart.",
-            "module_enabled": "Module has been enabled.",
-            "module_disabled": "Module has been disabled.",
-            "module_removed": "Module to be removed from system.",
-        }
+            self.import_modules()
 
     @inlineCallbacks
     def init_modules(self):
+        logger.debug("modules::init_modules....")
         self._Loader._run_phase = "modules_pre_init"
-        yield self._Loader.library_invoke_all("_modules_pre_init_", called_by=self)
+        logger.debug("starting modules::_modules_pre_init_....")
+        yield self._Loader.invoke_all("library", "_modules_pre_init_", called_by=self)
         logger.debug("starting modules::init....")
         self._Loader._run_phase = "modules_init"
         yield self.module_init_invoke()  # Call "_init_" of modules
-        yield self._Loader.library_invoke_all("_modules_inited_", called_by=self)
+        yield self._Loader.invoke_all("library", "_modules_inited_", called_by=self)
 
     @inlineCallbacks
     def load_modules(self):
@@ -154,31 +156,31 @@ class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
         # Pre-Load
         logger.debug("starting modules::pre-load....")
         self._Loader._run_phase = "modules_preload"
-        yield self.module_invoke_all("_preload_yombo_internal_", called_by=self, allow_disable=True)
-        yield self.module_invoke_all("_preload_", called_by=self, allow_disable=True)
-        yield self._Loader.library_invoke_all("_modules_preloaded_", called_by=self)
+        yield self._Loader.invoke_all("module", "_preload_yombo_internal_", called_by=self)
+        yield self._Loader.invoke_all("module", "_preload_", called_by=self)
+        yield self._Loader.invoke_all("library", "_modules_preloaded_", called_by=self)
         # Load
         self._Loader._run_phase = "modules_load"
-        yield self.module_invoke_all("_load_yombo_internal_", called_by=self, allow_disable=True)
-        yield self.module_invoke_all("_load_", called_by=self, allow_disable=True)
-        yield self._Loader.library_invoke_all("_modules_loaded_", called_by=self)
+        yield self._Loader.invoke_all("module", "_load_yombo_internal_", called_by=self)
+        yield self._Loader.invoke_all("module", "_load_", called_by=self)
+        yield self._Loader.invoke_all("library", "_modules_loaded_", called_by=self)
 
         # Pre-Start
         self._Loader._run_phase = "modules_prestart"
-        yield self.module_invoke_all("_prestart_yombo_internal_", called_by=self, allow_disable=True)
-        yield self.module_invoke_all("_prestart_", called_by=self, allow_disable=True)
-        yield self._Loader.library_invoke_all("_modules_prestarted_", called_by=self)
+        yield self._Loader.invoke_all("module", "_prestart_yombo_internal_", called_by=self)
+        yield self._Loader.invoke_all("module", "_prestart_", called_by=self)
+        yield self._Loader.invoke_all("library", "_modules_prestarted_", called_by=self)
 
         # Start
         self._Loader._run_phase = "modules_start"
-        yield self.module_invoke_all("_start_yombo_internal_", called_by=self, allow_disable=True)
-        yield self.module_invoke_all("_start_", called_by=self, allow_disable=True)
-        yield self._Loader.library_invoke_all("_modules_started_", called_by=self)
+        yield self._Loader.invoke_all("module", "_start_yombo_internal_", called_by=self)
+        yield self._Loader.invoke_all("module", "_start_", called_by=self)
+        yield self._Loader.invoke_all("library", "_modules_started_", called_by=self)
 
         self._Loader._run_phase = "modules_started"
-        yield self.module_invoke_all("_started_yombo_internal_", called_by=self, allow_disable=True)
-        yield self.module_invoke_all("_started_", called_by=self, allow_disable=True)
-        yield self._Loader.library_invoke_all("_modules_start_finished_", called_by=self)
+        yield self._Loader.invoke_all("module", "_started_yombo_internal_", called_by=self)
+        yield self._Loader.invoke_all("module", "_started_", called_by=self)
+        yield self._Loader.invoke_all("library", "_modules_start_finished_", called_by=self)
 
     @inlineCallbacks
     def unload_modules(self):
@@ -194,46 +196,44 @@ class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
 
         :return:
         """
-        yield self._Loader.library_invoke_all("_modules_stop_", called_by=self)
-        self._Loader._run_phase = "modules_stop"
-        yield self.module_invoke_all("_stop_")
-        yield self._Loader.library_invoke_all("_modules_stopped_", called_by=self)
-
-        yield self._Loader.library_invoke_all("_modules_unload_", called_by=self)
-
-        self._Loader._run_phase = "modules_unload"
-        for module_id in self.modules.keys():
-            module = self.modules[module_id]
-            if int(module._status) != 1:
-                continue
-
-            try:
-                yield self.module_invoke(module._Name, "_unload_", called_by=self)
-            except YomboWarning:
-                pass
-        yield self._Loader.library_invoke_all("_modules_unloaded_", called_by=self)
+        try:
+            self._Loader._run_phase = "modules_unload"
+            yield self._Loader.invoke_all("library", "_modules_stop_", called_by=self)
+            yield self._Loader.invoke_all("module", "_stop_", called_by=self)
+            yield self._Loader.invoke_all("library", "_modules_stopped_", called_by=self)
+            yield self._Loader.invoke_all("library", "_modules_unload_", called_by=self)
+            yield self._Loader.invoke_all("module", "_unload_", called_by=self)
+            yield self._Loader.invoke_all("library", "_modules_unloaded_", called_by=self)
+        except Exception as e:
+            logger.error("Error unloading modules: {e}", e=e)
 
     @inlineCallbacks
-    def prepare_modules(self):
+    def prepare_modules(self) -> None:
         """
         Called by the Loader library. This simply called the build raw modules list and build requirements
         functions.
 
+        In short, this prepares a list of modules to be loaded and all their requirements files are gathered.
+
         :return:
         """
-        yield self.build_raw_module_list()  # Create a list of modules, includes localmodules.ini
-        yield self.build_requirements()  # Collect all the requirements files...
 
     @inlineCallbacks
-    def build_raw_module_list(self):
+    def build_raw_module_list(self) -> None:
+        """
+        Creates a complete list of modules to load.
+        :return:
+        """
         logger.debug("Building raw module list start.")
         try:
-            localmodules_ini_path = f"{settings.arguments['working_dir']}/localmodules.ini"
+            localmodules_ini_path = f"{self._Configs.working_dir}/localmodules.ini"
+            logger.debug("Trying to load local modules: {path}", path=localmodules_ini_path)
             ini = configparser.ConfigParser()
             ini.optionxform = str
             ini.read(localmodules_ini_path)
 
             for section in ini.sections():
+                logger.debug("Adding module from localmodules.ini: {section}", section=section)
                 options = ini.options(section)
                 if "mod_machine_label" in options:
                     mod_machine_label = ini.get(section, "mod_machine_label")
@@ -303,10 +303,12 @@ class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
 
                 logger.info("Adding module from localmodule.ini: {item}", item=mod_machine_label)
 
-                new_module_id = sha224_compact(str(mod_machine_label).encode())
+                new_module_id = self._Hash.sha224_compact(str(mod_machine_label).encode())
                 self._rawModulesList[new_module_id] = {
-                  "id": new_module_id, # module_id
+                  "id": new_module_id,  # module_id
                   "gateway_id": "local",
+                  "user_id": "local",
+                  "original_user_id": "local",
                   "module_type": mod_module_type,
                   "machine_label": mod_machine_label,
                   "label": mod_label,
@@ -323,6 +325,7 @@ class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
                   "issue_tracker_link": "",
                   "doc_link": mod_doc_link,
                   "git_link": "",
+                  "git_auto_approve": "local",
                   "public": "0",
                   "status": "1",
                   "created_at": int(time()),
@@ -334,8 +337,8 @@ class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
                     variable_field_id = random_string(length=25)
                     field = {
                         "id": variable_field_id,
-                        "user_id": self.gateway_id,
-                        "variable_group_id": None,
+                        "user_id": self._gateway_id,
+                        "variable_group_id": "",
                         "field_machine_label": field_label,
                         "field_label": field_label,
                         "field_description": mod_machine_label,
@@ -343,8 +346,9 @@ class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
                         "value_required": 1,
                         "value_max": -8388600,
                         "value_min": 8388600,
-                        "value_casing": None,
+                        "value_casing": "none",
                         "encryption": "nosuggestion",
+                        "input_type_id": "19oQjpvxx6FLeyPlZ",  # Pretty much anything.
                         # "input_type_id": self._InputTypes.get("string"),
                         "default_value": "",
                         "field_help_text": "localmodules.ini supplied value. Cannot be edited.",
@@ -354,27 +358,28 @@ class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
                         "_fake_data": True,
                     }
                     logger.debug(" - Module variable field: {label}", label=field_label)
-
-                    self._VariableFields._class_storage_load_db_items_to_memory(field, source="database")
+                    self._VariableFields.load_an_item_to_memory(field, load_source="database")
 
                     values = ini.get(section, field_label)
                     values = values.split(":::")
                     for value in values:
-                        value_hash = random_string(length=10)
-                        data = {
-                            "id": value_hash,
-                            "user_id": self.gateway_id,
-                            "gateway_id": self.gateway_id,
-                            "variable_field_id": variable_field_id,
-                            "variable_relation_id": new_module_id,
-                            "variable_relation_type": "module",
-                            "data": value,
-                            "data_weight": 0,
-                            "created_at": int(time()),
-                            "updated_at": int(time()),
-                        }
+                        value_hash = random_string(length=20)
                         logger.debug(" - Module variable data, value: {value}", value=value)
-                        yield self._VariableData._class_storage_load_db_items_to_memory(data, source="database")
+                        yield self._VariableData.load_an_item_to_memory(
+                            {
+                                "id": value_hash,
+                                "user_id": self._gateway_id,
+                                "gateway_id": self._gateway_id,
+                                "variable_field_id": variable_field_id,
+                                "variable_relation_id": new_module_id,
+                                "variable_relation_type": "module",
+                                "data": value,
+                                "data_content_type": "string",
+                                "data_weight": 0,
+                                "created_at": int(time()),
+                                "updated_at": int(time()),
+                            },
+                            load_source="database")
 
         except IOError as xxx_todo_changeme:
             (errno, strerror) = xxx_todo_changeme.args
@@ -382,14 +387,14 @@ class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
 
         # Local system modules.
         for module_name, data in SYSTEM_MODULES.items():
-            if self._Configs.get("system_modules", data["machine_label"], "enabled") != "enabled":
+            if self._Configs.get(f"system_modules.{data['machine_label']}", True) != True:
                 continue
             self._rawModulesList[data["id"]] = data
 
-        modulesDB = yield self._LocalDB.get_modules()
-        for module in modulesDB:
-            self._rawModulesList[module.id] = module.__dict__
-            self._rawModulesList[module.id]["load_source"] = "sql"
+        all_modules = yield self.db_select(orderby="label ASC")
+        for module in all_modules:
+            self._rawModulesList[module["id"]] = module
+            self._rawModulesList[module["id"]]["load_source"] = "database"
 
         logger.debug("Building raw module list done.")
 
@@ -403,12 +408,13 @@ class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
         """
         for module_id, module in self._rawModulesList.items():
             requirements_file = f"yombo/modules/{module['machine_label'].lower()}/requirements.txt"
+            logger.debug("checking module requirements file: {file}", file=requirements_file)
             if os.path.isfile(requirements_file):
                 try:
                     filesize = os.path.getsize(requirements_file)
                     if filesize == 0:
                         continue
-                    input = yield read_file(requirements_file)
+                    input = yield self._Files.read(requirements_file)
                 except Exception as e:
                     logger.warn("Unable to process requirements file for module '{module}', reason: {e}",
                                 module=module["machine_label"], e=e)
@@ -428,7 +434,9 @@ class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
             module_path_name = f"yombo.modules.{module['machine_label']}"
             logger.debug("Importing module: {label}", label=module_path_name)
             try:
-                module_instance, module_name = self._Loader.import_component(module_path_name, module["machine_label"], "module", module["id"])
+                module_instance, module_name = self._Loader.import_component(module_path_name,
+                                                                             module["machine_label"],
+                                                                             "module")
             except ImportError as e:
                 logger.error("----------==(Import Error: Loading Module)==------------")
                 logger.error("----Name: {module_path_name}", module_path_name=module_path_name)
@@ -451,6 +459,9 @@ class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
             try:
                 module_instance._hooks_called = {}
                 module_instance._module_id = module["id"]
+                module_instance._primary_field_id = module["id"]
+                module_instance._user_id = module["user_id"]
+                module_instance._original_user_id = module["original_user_id"]
                 module_instance._module_type = module["module_type"]
                 module_instance._machine_label = module["machine_label"]
                 module_instance._label = module["label"]
@@ -459,42 +470,25 @@ class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
                 module_instance._description = module["description"]
                 module_instance._medium_description_html = module["medium_description_html"]
                 module_instance._description_html = module["description_html"]
-                module_instance._install_count = module["install_count"]
                 module_instance._see_also = module["see_also"]
                 module_instance._repository_link = module["repository_link"]
                 module_instance._issue_tracker_link = module["issue_tracker_link"]
+                module_instance._install_count = int(module["install_count"])
                 module_instance._doc_link = module["doc_link"]
                 module_instance._git_link = module["git_link"]
+                module_instance._git_auto_approve = module["git_auto_approve"]
+                module_instance._public = int(module["public"])
+                module_instance._status = int(module["status"])
                 module_instance._install_branch = module["install_branch"]
-                module_instance._require_approved = module["require_approved"]
-                module_instance._public = module["public"]
-                module_instance._status = module["status"]
-                module_instance._created_at = module["created_at"]
-                module_instance._updated_at = module["updated_at"]
+                module_instance._require_approved = int(module["require_approved"])
+                module_instance._created_at = int(module["created_at"])
+                module_instance._updated_at = int(module["updated_at"])
                 module_instance._load_source = module["load_source"]
 
                 self.add_imported_module(module["id"], module_name, module_instance)
             except Exception as e:
-                print(f"Yombo Library Modules issue loading module magic vars: {e}")
+                logger.warn("Yombo Library Modules issue loading module magic vars: {e}", e=e)
                 raise e
-
-            possible_module_files = ["_devices", "_input_types"]  # Load some magic files within a module directory.
-            for possible_file_name in possible_module_files:
-                try:
-                    file_path = module_path_name.lower() + "." + possible_file_name
-                    possible_file = __import__(file_path, globals(), locals(), [], 0)
-                    module_tail = reduce(lambda p1, p2: getattr(p1, p2),
-                                         [possible_file, ] + file_path.split(".")[1:])
-                    classes = readmodule(file_path)
-                    for name, file_class_name in classes.items():
-                        klass = getattr(module_tail, name)
-                        if possible_file_name == "_devices":
-                            self._DeviceTypes.platforms[name.lower()] = klass
-                        if possible_file_name == "_input_types":
-                            self._InputTypes.platforms[name.lower()] = klass
-                except Exception as e:
-                    # logger.debug("M: Unable to import magic file {file_path}, reason: {e}", file_path=file_path, e=e)
-                    pass
 
     def module_invoke_failure(self, failure, module_name, hook_name):
         logger.warn("---==(failure during module invoke for hook ({module_name}::{hook_name})==----",
@@ -532,7 +526,7 @@ class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
 
             try:
                 d = Deferred()
-                d.addCallback(lambda ignored: self.modules_invoke_log("debug", module._label, "module", "_init_", "About to call _init_."))
+                # d.addCallback(lambda ignored: self.modules_invoke_log("debug", module._label, "module", "_init_", "About to call _init_."))
                 d.addCallback(lambda ignored: maybeDeferred(module._init_))
                 d.addErrback(self.module_invoke_failure, module._Name, "_init_")
                 d.addCallback(self._log_hook_called, module._Name + ":_init", module, "_init_", "yombo.lib.modules")
@@ -547,134 +541,16 @@ class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
                 self.disabled_modules[module_id] = f"Caught exception during call '_init_': {e}"
             # logger.debug("Starting module_init_invoke for module: {module} - init finished", module=module)
 
-    def _log_hook_called(self, results, name, module, hook, calling_component):
+    def _log_hook_called(self, results, name, module, hook, called_by):
         # logger.debug("results in _log_hook_called: {results}", results=results)
         self.hooks_called[name] = {
             "module": module._Name,
             "hook": hook,
             "time": int(time()),
-            "called_by": calling_component,
+            "called_by": called_by,
         }
         return results
 
-    def module_invoke(self, requested_module, hook_name, **kwargs):
-        """
-        Invokes a hook for a a given module. Passes kwargs in, returns the results to caller.
-        """
-        if requested_module not in self:
-            raise YomboWarning(f"Requested library is missing: {requested_module}")
-
-        if "called_by" not in kwargs:
-            raise YomboWarning(
-                f"Unable to call hook '{requested_module}:{hook_name}', missing 'called_by' named argument.")
-        calling_component = kwargs["called_by"]
-        final_results = None
-
-        for hook in [hook_name, "_yombo_universal_hook_"]:
-            cache_key = requested_module + hook
-            if cache_key in self._invoke_list_cache:
-                if self._invoke_list_cache[cache_key] is False:
-                    continue  # skip. We already know function doesn't exist.
-            module = self.get(requested_module)
-            if module._Name == "yombo.core.module.YomboModule":
-                self._invoke_list_cache[cache_key] is False
-                # logger.warn("Cache module hook ({cache_key})...SKIPPED", cache_key=cache_key)
-                return None
-            if not (hook.startswith("_") and hook.endswith("_")):
-                hook = module._Name.lower() + "_" + hook
-            kwargs["hook_name"] = hook
-            # self.modules_invoke_log("info", requested_module, "module", hook, "About to call.")
-            if hasattr(module, hook):
-                method = getattr(module, hook)
-                if isinstance(method, collections.Callable):
-                    if module._Name not in self.hook_counts:
-                        self.hook_counts[module._Name] = {}
-                    if hook not in self.hook_counts[module._Name]:
-                        self.hook_counts[module._Name][hook] = {"Total Count": {"count": 0}}
-                    if calling_component not in self.hook_counts[module._Name][hook]:
-                        self.hook_counts[module._Name][hook][calling_component] = {"count": 0}
-                    self.hook_counts[module._Name][hook][calling_component]["count"] = self.hook_counts[module._Name][hook][calling_component]["count"] + 1
-                    self.hook_counts[module._Name][hook]["Total Count"]["count"] = self.hook_counts[module._Name][hook]["Total Count"]["count"] + 1
-
-                    try:
-                        # self.modules_invoke_log("debug", module._label, "module", hook, f"About to call {hook}.")
-                        d = Deferred()
-                        d.addCallback(lambda ignored: self.modules_invoke_log("debug", module._label, "module", hook,
-                                                                              f"About to call {hook}"))
-                        d.addCallback(lambda ignored: maybeDeferred(method, **kwargs))
-                        d.addErrback(self.module_invoke_failure, module._Name, hook)
-                        d.addCallback(self._log_hook_called, module._Name + ":" + hook, module, hook, calling_component)
-                        # d.addCallback(lambda ignored: self.modules_invoke_log("debug", module._label, "module", hook,
-                        #                                                       f"Finished call to {hook}"))
-                        d.callback(1)
-                        return d
-
-                    except Exception as e:
-                        if kwargs["allow_disable"] is True:
-                            logger.warn("Disabling module '{module}' due to exception from hook ({hook}): {e}",
-                                        module=module._Name, hook=hook, e=e)
-                            self.disabled_modules[module._module_id] = f"Caught exception during call '{e}': {hook}"
-
-                else:
-                    pass
-            else:
-                self._invoke_list_cache[cache_key] = False
-            return final_results
-
-    @inlineCallbacks
-    def module_invoke_all(self, hook, full_name=None, allow_disable=None, **kwargs):
-        """
-        Calls module_invoke for all loaded modules.
-        """
-        def add_results(value, results, label):
-            if value is not None:
-                results[label] = value
-            return value
-
-        kwargs["allow_disable"] = allow_disable
-        # logger.debug("in module_invoke_all: fullname={full_name}   hook: {hook}.",
-        #              full_name=full_name, hook=hook)
-        # logger.debug("in module_invoke_all: modules={modules}", modules=self.modules)
-        if full_name == None:
-            full_name = False
-        results = {}
-        dl_list = []
-        if "stoponerror" in kwargs:
-            stoponerror = kwargs["stoponerror"]
-        else:
-            kwargs["stoponerror"] = False
-            stoponerror = False
-
-        for module_id, module in self.modules.items():
-            # print("aaa2")
-            if module_id in self.disabled_modules:
-                continue
-
-            # print(f"module._Status.... {module.__dict__.keys()}")
-            if int(module._status) != 1:
-                continue
-
-            label = module._FullName.lower() if full_name else module._Name.lower()
-            try:
-                d = self.module_invoke(module._Name, hook, **kwargs)
-                if d is not None:
-                    d.addCallback(add_results, results, module)
-                    dl_list.append(d)
-            except YomboWarning:
-                pass
-            except YomboHookStopProcessing as e:
-                if stoponerror is True:
-                    e.collected = results
-                    e.by_who = label
-                    raise
-            except Exception as e:
-                logger.warn("Disabling module '{module}' due to exception from hook ({hook}): {e}",
-                            module=module._Name, hook=hook, e=e)
-                self.disabled_modules[module_id] = f"Caught exception during call '{e}': {hook}"
-
-        dl = DeferredList(dl_list)
-        yield dl
-        return results
 
     def add_imported_module(self, module_id, module_label, module_instance):
         # logger.debug("adding module: {module_id}:{module_label}", module_id=module_id, module_label=module_label)
@@ -699,14 +575,17 @@ class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
         logit = getattr(logger, level)
         logit("({log_source}) {label}({type})::{method} - {msg}", label=label, type=type, method=method, msg=msg)
 
+    @inlineCallbacks
     def module_starting(self, module_id):
         self.modules_that_are_starting[module_id] = True
-        self.update_starting_modules_notification()
+        yield self.update_starting_modules_notification()
 
+    @inlineCallbacks
     def module_started(self, module_id):
         del self.modules_that_are_starting[module_id]
-        self.update_starting_modules_notification()
+        yield self.update_starting_modules_notification()
 
+    @inlineCallbacks
     def update_starting_modules_notification(self):
         if len(self.modules_that_are_starting) == 0:
             self._Notifications.delete("modules_that_are_starting")
@@ -715,17 +594,16 @@ class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
             for module in self.modules_that_are_starting:
                 module_labels.append(module._label)
             modules = "<br>".join(module_labels)
-            self._Notifications.add({"title": "Modules still starting",
-                                     "message": f"The following modules are still starting:<br>{modules}",
-                                     "source": "Modules Library",
-                                     "persist": False,
-                                     "priority": "high",
-                                     "always_show": True,
-                                     "always_show_allow_clear": False,
-                                     "id": "modules_that_are_starting",
-                                     "local": True,
-                                     }
-                                    )
+            yield self._Notifications.new(title="Modules still starting",
+                                          message=f"The following modules are still starting:<br>{modules}",
+                                          request_context=self._FullName,
+                                          persist=False,
+                                          priority="high",
+                                          always_show=True,
+                                          always_show_allow_clear=False,
+                                          notice_id="modules_that_are_starting",
+                                          local=True,
+                                          )
 
     @inlineCallbacks
     def full_list_modules(self):
@@ -735,9 +613,35 @@ class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
         """
         items = []
         for module_id, module in self.modules.items():
-            module_data = yield module.asdict()
+            module_data = yield module.to_dict()
             items.append(module_data)
         return items
+
+    @inlineCallbacks
+    def search_modules_for_files(self, filename: str, recursive: Optional[bool] = None):
+        """
+        Is used to search through the modules directory, looking for various files. This is primarily used for
+        magic file features.
+
+        Examples:
+        self._Modules.search_modules_for_files("frontend_configs/index.vue")
+        This will return all files within all modules that match the have index.vue files.
+
+        self._Modules.search_modules_for_files("**/somethingelse.txt")
+        This will return the full path for the file "somethingelse.txt", regardless of what subdirectory it's in.
+
+        :param filename:
+        :param recursive: If true, will do a recursive search. Default: True
+        :return:
+        """
+        results = {}
+        for module_id, module in self.modules.items():
+            if module._status != 1:
+                continue
+            more_files = yield self._Files.search_path_for_files(
+                f"yombo/modules/{module._machine_label.lower()}/{filename}", recursive)
+            results.update(more_files)
+        return results
 
     @inlineCallbacks
     def add_module(self, data, **kwargs):
@@ -761,8 +665,9 @@ class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
             else:
                 session = None
 
-            yield self._YomboAPI.request("POST", f"/v1/gateway/{self.gateway_id}/module",
-                                         api_data,
+            yield self._YomboAPI.request("POST",
+                                         f"/v1/gateway/{self._gateway_id}/module",
+                                         body=api_data,
                                          session=session)
         except YomboWarning as e:
             return {
@@ -788,7 +693,7 @@ class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
                     if data_id.startswith("new_"):
                         # print("data_id starts with new...")
                         post_data = {
-                            "gateway_id": self.gateway_id,
+                            "gateway_id": self._gateway_id,
                             "field_id": field_id,
                             "relation_id": data["module_id"],
                             "relation_type": "module",
@@ -798,7 +703,7 @@ class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
                         # print("post_data: %s" % post_data)
                         try:
                             yield self._YomboAPI.request("POST", "/v1/variable/data",
-                                                         post_data,
+                                                         body=post_data,
                                                          session=session)
                         except YomboWarning as e:
                             return {
@@ -815,8 +720,9 @@ class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
                         # print("posting to: /v1/variable/data/%s" % data_id)
                         # print("post_data: %s" % post_data)
                         try:
-                            yield self._YomboAPI.request("PATCH", f"/v1/variable/data/{data_id}",
-                                                         post_data,
+                            yield self._YomboAPI.request("PATCH",
+                                                         f"/v1/variable/data/{data_id}",
+                                                         body=post_data,
                                                          session=session)
                         except YomboWarning as e:
                             return {
@@ -835,21 +741,22 @@ class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
                           global_invoke_all,
                           "_module_added_",
                           called_by=self,
-                          module_id=data["module_id"],
+                          arguments={
+                              "module_id": data["module_id"],
+                              }
                           )
         if "module_label" in data:
             label = data["module_label"]
         else:
             label = data["module_id"]
-        self._Notifications.add(
-            {"title": f"Module added: {label}",
-             "message": f"The module '{label}' has been disabled and will take affect on next reboot.",
-             "timeout": 3600,
-             "source": "Modules Library",
-             "persist": False,
-             "always_show": False,
-             "targets": "module_updated",
-             })
+        yield self._Notifications.new(title=f"Module added: {label}",
+                                      message=f"The module '{label}' has been disabled and will take affect on next reboot.",
+                                      timeout=3600,
+                                      request_context=self._FullName,
+                                      persist=False,
+                                      always_show=False,
+                                      targets="module_updated"
+                                      )
         return results
 
     @inlineCallbacks
@@ -874,8 +781,8 @@ class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
             session = None
         try:
             yield self._YomboAPI.request("PATCH",
-                                         f"/v1/gateway/{self.gateway_id}/module/{module_id}",
-                                         api_data,
+                                         f"/v1/gateway/{self._gateway_id}/module/{module_id}",
+                                         body=api_data,
                                          session=session)
         except YomboWarning as e:
             return {
@@ -897,7 +804,7 @@ class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
                     if data_id.startswith("new_") or data_id is None or data_id.lower() == "none":
                         # print("data_id starts with new...")
                         post_data = {
-                            "gateway_id": self.gateway_id,
+                            "gateway_id": self._gateway_id,
                             "field_id": field_id,
                             "relation_id": data["module_id"],
                             "relation_type": "module",
@@ -907,7 +814,7 @@ class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
                         # print("post_data: %s" % post_data)
                         try:
                             yield self._YomboAPI.request("POST", "/v1/variable/data",
-                                                         post_data,
+                                                         body=post_data,
                                                          session=session)
                         except YomboWarning as e:
                             return {
@@ -926,7 +833,7 @@ class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
                         try:
                             yield self._YomboAPI.request("PATCH",
                                                          f"/v1/variable/data/{data_id}",
-                                                         post_data,
+                                                         body=post_data,
                                                          session=session)
                         except YomboWarning as e:
                             return {
@@ -949,15 +856,14 @@ class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
                           module_id=module_id,
                           module=a_module,
                           )
-        self._Notifications.add(
-            {"title": f"Module edited: {a_module._label}",
-             "message": f"The module '{a_module._label}' has been edited.",
-             "timeout": 3600,
-             "source": "Modules Library",
-             "persist": False,
-             "always_show": False,
-             "targets": "module_updated",
-             })
+        yield self._Notifications.new(title=f"Module edited: {a_module._label}",
+                                      message=f"The module '{a_module._label}' has been edited.",
+                                      timeout=3600,
+                                      request_context=self._FullName,
+                                      persist=False,
+                                      always_show=False,
+                                      targets="module_updated"
+                                      )
 
         return results
 
@@ -980,7 +886,7 @@ class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
                 session = None
 
             yield self._YomboAPI.request("DELETE",
-                                         f"/v1/gateway/{self.gateway_id}/module/{module_id}",
+                                         f"/v1/gateway/{self._gateway_id}/module/{module_id}",
                                          session=session)
         except YomboWarning as e:
             # print("module delete results: %s" % module_results)
@@ -1004,19 +910,19 @@ class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
                           global_invoke_all,
                           "_module_removed_",
                           called_by=self,
-                          module_id=module_id,
-                          module=a_module,
+                          arguments={
+                              "module_id": module_id,
+                              "module": a_module,
+                              }
                           )
-        self._Notifications.add(
-            {"title": f"Module removed: {a_module._label}",
-             "message": f"The module '{a_module._label}' has been removed and will take affect on next reboot.",
-             "timeout": 3600,
-             "source": "Modules Library",
-             "persist": False,
-             "always_show": False,
-             "targets": "module_updated",
-             })
-
+        yield self._Notifications.new(title=f"Module removed: {a_module._label}",
+                                      message=f"The module '{a_module._label}' has been removed and will take affect on next reboot.",
+                                      timeout=3600,
+                                      request_context=self._FullName,
+                                      persist=False,
+                                      always_show=False,
+                                      targets="module_updated"
+                                      )
         #todo: add task to remove files.
         #todo: add system for "do something on next startup..."
         return results
@@ -1045,8 +951,8 @@ class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
                 session = None
 
             yield self._YomboAPI.request("PATCH",
-                                         f"/v1/gateway/{self.gateway_id}/module/{module_id}",
-                                         api_data,
+                                         f"/v1/gateway/{self._gateway_id}/module/{module_id}",
+                                         body=api_data,
                                          session=session)
         except YomboWarning as e:
             return {
@@ -1068,18 +974,19 @@ class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
                           global_invoke_all,
                           "_module_enabled_",
                           called_by=self,
-                          module_id=module_id,
-                          module=module,
+                          arguments={
+                              "module_id": module_id,
+                              "module": module,
+                              }
                           )
-        self._Notifications.add(
-            {"title": f"Module enabled: {a_module._label}",
-             "message": f"The module '{a_module._label}' has been enabled and will take affect on next reboot.",
-             "timeout": 3600,
-             "source": "Modules Library",
-             "persist": False,
-             "always_show": False,
-             "targets": "module_updated",
-             })
+        yield self._Notifications.new(title=f"Module enabled: {a_module._label}",
+                                      message=f"The module '{a_module._label}' has been enabled and will take affect on next reboot.",
+                                      timeout=3600,
+                                      request_context=self._FullName,
+                                      persist=False,
+                                      always_show=False,
+                                      targets="module_updated"
+                                      )
         return results
 
     @inlineCallbacks
@@ -1106,8 +1013,8 @@ class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
                 session = None
 
             yield self._YomboAPI.request("PATCH",
-                                         f"/v1/gateway/{self.gateway_id}/module/{module_id}",
-                                         api_data,
+                                         f"/v1/gateway/{self._gateway_id}/module/{module_id}",
+                                         body=api_data,
                                          session=session)
         except YomboWarning as e:
             # print("module disable results: %s" % module_results)
@@ -1130,17 +1037,18 @@ class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
                           global_invoke_all,
                           "_module_disabled_",
                           called_by=self,
-                          module_id=module_id,
+                          arguments={
+                              "module_id": module_id,
+                              }
                           )
-        self._Notifications.add(
-            {"title": f"Module disabled: {a_module._label}",
-             "message": f"The module '{a_module._label}' has been disabled and will take affect on next reboot.",
-             "timeout": 3600,
-             "source": "Modules Library",
-             "persist": False,
-             "always_show": False,
-             "targets": "module_updated",
-             })
+        yield self._Notifications.new(title=f"Module disabled: {a_module._label}",
+                                      message=f"The module '{a_module._label}' has been disabled and will take affect on next reboot.",
+                                      timeout=3600,
+                                      request_context=self._FullName,
+                                      persist=False,
+                                      always_show=False,
+                                      targets="module_updated"
+                                      )
         return results
 
     @inlineCallbacks
@@ -1163,7 +1071,8 @@ class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
                     "apimsghtml": "Couldn't add module: User session missing.",
                 }
 
-            module_results = yield self._YomboAPI.request("POST", "/v1/module", data,
+            module_results = yield self._YomboAPI.request("POST", "/v1/module",
+                                                          body=data,
                                                           session=session)
         except YomboWarning as e:
             # print("module add results: %s" % module_results)
@@ -1199,8 +1108,9 @@ class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
                     "apimsg": "Couldn't edit module: User session missing.",
                     "apimsghtml": "Couldn't edit module: User session missing.",
                 }
-            yield self._YomboAPI.request("PATCH", f"/v1/module/{module_id}",
-                                         data,
+            yield self._YomboAPI.request("PATCH",
+                                         f"/v1/module/{module_id}",
+                                         body=data,
                                          session=session)
         except YomboWarning as e:
             # print("module edit results: %s" % module_results)
@@ -1236,7 +1146,8 @@ class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
                     "apimsg": "Couldn't delete module: User session missing.",
                     "apimsghtml": "Couldn't delete module: User session missing.",
                 }
-            yield self._YomboAPI.request("DELETE", f"/v1/module/{module_id}",
+            yield self._YomboAPI.request("DELETE",
+                                         f"/v1/module/{module_id}",
                                          session=session)
         except YomboWarning as e:
             return {
@@ -1275,8 +1186,9 @@ class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
                     "apimsg": "Couldn't enable module: User session missing.",
                     "apimsghtml": "Couldn't enable module: User session missing.",
                 }
-            yield self._YomboAPI.request("PATCH", f"/v1/module/{module_id}",
-                                         api_data,
+            yield self._YomboAPI.request("PATCH",
+                                         f"/v1/module/{module_id}",
+                                         body=api_data,
                                          session=session)
         except YomboWarning as e:
             return {
@@ -1315,8 +1227,9 @@ class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
                     "apimsg": "Couldn't disable module: User session missing.",
                     "apimsghtml": "Couldn't disable module: User session missing.",
                 }
-            yield self._YomboAPI.request("PATCH", f"/v1/module/{module_id}",
-                                         api_data,
+            yield self._YomboAPI.request("PATCH",
+                                         f"/v1/module/{module_id}",
+                                         body=api_data,
                                          session=session)
         except YomboWarning as e:
             return {
@@ -1356,8 +1269,9 @@ class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
                     "apimsg": "Couldn't associate device type to module: User session missing.",
                     "apimsghtml": "Couldn't associate device type to module: User session missing.",
                 }
-            yield self._YomboAPI.request("POST", "/v1/module_device_type",
-                                         data,
+            yield self._YomboAPI.request("POST",
+                                         "/v1/module_device_type",
+                                         body=data,
                                          session=session)
         except YomboWarning as e:
             return {
@@ -1435,7 +1349,7 @@ class Modules(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
                     "apimsghtml": f"Couldn't {new_status} module: User session missing.",
                 }
             yield self._YomboAPI.request("PATCH",
-                                         f"/v1/gateway/{self.gateway_id}/module/{module_id}",
+                                         f"/v1/gateway/{self._gateway_id}/module/{module_id}",
                                          session=session)
         except YomboWarning as e:
             return {

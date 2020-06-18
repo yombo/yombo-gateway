@@ -1,12 +1,10 @@
-# This file was created by Yombo for use with Yombo Python gateway automation
-# software.  Details can be found at https://yombo.net
 """
 Use ffmpeg as motion or video sensor. These can be used as triggers to perform various events.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.24.0
 
-:copyright: Copyright 2018 by Yombo.
+:copyright: Copyright 2018-2020 by Yombo.
 :license: LICENSE for details.
 """
 
@@ -20,7 +18,7 @@ from twisted.internet.defer import inlineCallbacks
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
 
-from .ffmpeg import YBOFFmpeg
+from .yboffmpeg import YBOFFmpeg
 
 logger = get_logger("utils.ffmpeg.sensor")
 

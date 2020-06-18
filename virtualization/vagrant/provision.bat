@@ -21,11 +21,12 @@ goto:eof
 :main
 if "%*"=="setup" (
     if exist setup_done del setup_done
+    vagrant box update
     vagrant up --provision
     copy /y nul setup_done
 ) else (
 if "%*"=="restart" (
-    copy /y nul restart
+    vagrant halt
     vagrant provision
 ) else (
 if "%*"=="start" (
@@ -35,6 +36,7 @@ if "%*"=="stop" (
     vagrant halt
 ) else (
 if "%*"=="destroy" (
+    if exist setup_done del setup_done
     vagrant destroy -f
 ) else (
 if "%*"=="recreate" (

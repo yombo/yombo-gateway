@@ -4,14 +4,12 @@
 
 .. currentmodule:: yombo.classes.dictobject
 
-==========================================
+=====================================================
 DictObject (yombo.classes.dictobject)
-==========================================
+=====================================================
+
 .. automodule:: yombo.classes.dictobject
-
-DictObject Class
----------------------------
-.. autoclass:: DictObject
    :members:
-
-   .. automethod:: __init__
+   :private-members:
+   :special-members:
+   :undoc-members:

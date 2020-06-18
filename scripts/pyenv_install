@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+set -e
+
+if [ "$(id -u)" -eq 0 ]; then
+    echo ""
+    echo "This must NOT be run as root, instead run as the user running the Yombo Gateway"
+    echo ""
+    echo "If you created a dedicate account for this software, first log into that account."
+    echo "Then run this script as:"
+    echo ""
+    echo "mycomputer> bash ./pyenv_install"
+    echo ""
+    exit
+fi
+
+# as of march 15, 2020 - 3.8.2 won't work with openzwave, won't compile. 3.8.1, broke insteonplm.
+PYTHON_VERSION="3.7.7"
+
+SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
+YOMBO_ROOT_DIR="$(dirname "$SCRIPTPATH")"
+
+LOGFILE=/home/$USER/yombo_install.log
+LOGFILEDETAILED=/home/$USER/yombo_install_detailed.log
+function logsetup {
+    exec > >(tee -a $LOGFILE $LOGFILEDETAILED)
+    exec 2>&1
+}
+
+function log {
+    echo "[$(date --rfc-3339=seconds)]: $*"
+}
+logsetup
+
+log "==> Yombo Gateway installer: pyenv installer starting."
+
+log "==> Installing pyenv"
+
+if [ "$PYENV_ROOT" == "" ]; then
+  log "==> pyenv not detected, or wasn't setup properly. Installing."
+  cd
+  curl -L -s https://raw.githubusercontent.com/pyenv/pyenv-installer/master/bin/pyenv-installer | bash >> $LOGFILEDETAILED 2>&1
+  echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
+  echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
+  echo 'eval "$(pyenv init -)"' >> ~/.bashrc
+  export PYENV_ROOT="$HOME/.pyenv"
+  export PATH="$PYENV_ROOT/bin:$PATH"
+  eval "$(pyenv init -)"
+else
+  log "==> pyenv is detected. Making sure it's up to date."
+  cd /home/$USER/.pyenv && git pull >> $LOGFILEDETAILED 2>&1
+fi
+
+echo "Changing to: $YOMBO_ROOT_DIR"
+cd $YOMBO_ROOT_DIR
+
+log "==> Installing latest python 3.8.x series. This will take a few minutes."
+log "==> Raspberry PI installs can take a very long time, we suggest making lunch.."
+
+CORECOUNT=$(grep -c ^processor /proc/cpuinfo)
+CORECOUNT=$(($CORECOUNT + 1))
+
+log "==> Compiling python $PYTHON_VERSION with '$CORECOUNT' core(s)."
+## The following two lines determine how Python is compiled. The first line is normal with no special optimizations.
+## The second line optimizes Python by about 10%. However, this can take all night to compile on a Raspberry Pi.
+## See: https://stackoverflow.com/questions/41405728/what-does-enable-optimizations-do-while-compiling-python
+## Only one of the 2 lines should be uncommented.
+MAKE_OPTS="-j$CORECOUNT" pyenv install $PYTHON_VERSION -s
+#PYTHON_CONFIGURE_OPTS="--enable-optimizations" MAKE_OPTS="-j$CORECOUNT" pyenv install $PYTHON_VERSION -s
+
+pyenv local $PYTHON_VERSION
+
+log "==> Updating pyenv pip3."
+pip3 install --upgrade pip >> $LOGFILEDETAILED 2>&1
+
+log "==> Updating / Installing python libraries."
+pip3 install -r requirements.txt >> $LOGFILEDETAILED 2>&1
+
+log "==> Done with yombo user based setup"

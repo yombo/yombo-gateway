@@ -9,10 +9,10 @@
               </h2>
             </div>
             <p>
-              It looks like a bad link was followed.
+              It looks like a bad link was followed or an application error occurred.
             </p>
             <p>
-              Popular links:
+              Popular frontend links:
             </p>
             <ul>
               <li><nuxt-link :to="localePath('controltower')">{{$t("ui.navigation.control_tower")}}</nuxt-link></li>

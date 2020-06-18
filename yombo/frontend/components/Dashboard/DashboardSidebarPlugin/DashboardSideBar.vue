@@ -41,6 +41,10 @@
 export default {
   name: 'dashboard-sidebar',
   props: {
+    title: {
+      type: String,
+      default: 'Vue NUD PRO'
+    },
     backgroundColor: {
       type: String,
       default: 'black',

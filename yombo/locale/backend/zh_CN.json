@@ -1,0 +1,18 @@
+{
+  "lib": {
+    "configs": {
+      "item": {
+        "yomboapi": {
+          "api_key": "API密钥在提出请求时使用。注意：该键将旋转以防止滥用。",
+          "sessionid_key": "当allow_system_session为true时，这用于登录到API。"
+        }
+      },
+      "yombo_toml": {
+        "warning": "警告警告警告警告警告警告警告警告警告警告"
+      }
+    }
+  },
+  "ui": {
+    "next": "下一个"
+  }
+}

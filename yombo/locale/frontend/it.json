@@ -137,6 +137,9 @@
       "alarm_control_panel": {
         "arm_away": "Attiva Fuori Casa",
         "arm_home": "Attivo in casa"
+      },
+      "automation": {
+        "title": "Automazione"
       }
     },
     "common": {
@@ -146,7 +149,7 @@
       "atom": "Atomo",
       "cancel": "Annulla",
       "close": "Chiudere",
-      "created_at": "Creato a",
+      "created_at": "Creato",
       "delete": "Eliminare",
       "deny": "Negare",
       "description": "Descrizione",
@@ -163,10 +166,15 @@
       "more_ddd": "Di Più...",
       "search": "Ricerca",
       "search_ddd": "Ricerca...",
-      "updated": "Aggiornato"
+      "updated": "Aggiornato",
+      "updated_at": "Aggiornato",
+      "version": "Versione"
     },
     "greeting": {
       "welcome": "Benvenuto"
+    },
+    "label": {
+      "select": "Selezionare"
     },
     "navigation": {
       "about": "Di",
@@ -181,13 +189,20 @@
       "dashboard": "Cruscotto",
       "details": "Dettagli",
       "devices": "Dispositivi",
+      "language": "Lingua",
       "list": "Elenco",
       "roles": "Ruoli",
       "rules": "Regole",
+      "settings": "Impostazioni",
       "statistics": "Statistiche",
       "storage": "Conservazione",
       "system": "Sistema",
+      "tools": "Strumenti",
       "users": "Utenti"
+    },
+    "relative_time": {
+      "never_downloaded": "Mai scaricato",
+      "past": "{time} fa"
     }
   }
 }

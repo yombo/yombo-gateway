@@ -1,7 +1,4 @@
 {% extends "lib/webinterface/fragments/layout.tpl" %}
-{% block head_top %}
-{% include "lib/webinterface/fragments/bg_image.tpl" %}
-{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -12,9 +9,27 @@
 					<h3>{{title}}</h3>
 				</div>
 				<div class="card-body" style="padding-top: 1em;">
-					{%- for message in messages %}
-					<p>{message}</p>
-					{%- endfor %}
+					<ul>
+						{%- for message in messages %}
+							{%- if message is mapping %}
+								<li>{{message.title}}</li>
+								<ul>
+									<li>Details: {{message.detail}}</li>
+									<li>Code: {{message.code}}</li>
+									{% if "links" in message and message["links"].length > 0 %}
+										<li>links: </li>
+										<ul>
+										{%- for link_name, link_value in message.links.items() %}
+										<li><a href="{{link_value}}">{{link_name}} - {{link_value}} </li>
+										{%- endfor %}
+										</ul>
+									{% endif %}
+								</ul>
+							{% else %}
+								<li>{{message}}</li>
+						    {% endif %}
+						{%- endfor %}
+					</ul>
 				</div>
 			</div>
 		</div>

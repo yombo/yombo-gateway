@@ -4,11 +4,12 @@
 
 .. currentmodule:: yombo.classes.fuzzysearch
 
-============================================
+=====================================================
 FuzzySearch (yombo.classes.fuzzysearch)
-============================================
+=====================================================
 
 .. automodule:: yombo.classes.fuzzysearch
    :members:
-
-   .. automethod:: FuzzySearch.__init__
+   :private-members:
+   :special-members:
+   :undoc-members:

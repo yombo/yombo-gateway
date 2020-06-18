@@ -35,7 +35,7 @@ export default {
       this.$swal({
         title: `${this.$t('ui.common.disable')} ${this.$t('ui.common.' + this.i18n).toLowerCase()}? <br> ${this.item_label}`,
         text: this.$t('ui.phrase.gateway_maybe_need_rebooted_after_change'),
-        type: 'warning',
+        icon: 'warning',
         showCancelButton: true,
         confirmButtonClass: 'btn btn-success btn-fill',
         cancelButtonClass: 'btn btn-danger btn-fill',
@@ -47,7 +47,7 @@ export default {
           this.$swal({
             title: this.$t('ui.common.disabled'),
             text: `${this.$t('ui.common.disabled')} ${this.$t('ui.common.' + this.i18n).toLowerCase()}: ${this.item_label}`,
-            type: 'success',
+            icon: 'success',
             confirmButtonClass: 'btn btn-success btn-fill',
             buttonsStyling: false
           });
@@ -57,5 +57,3 @@ export default {
   }
 };
 </script>
-<style>
-</style>

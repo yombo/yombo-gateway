@@ -1,5 +1,5 @@
 # This file is from https://github.com/briancurtin/deprecation and was
-# not written. This has been modified for Yombo by Mitch Schwenk.
+# not written by Yombo. This has been modified for Yombo by Mitch Schwenk.
 # This has been modified to display a logger.warn() as well add
 # some location hints of where it's called and where the function is defined.
 #
@@ -23,6 +23,7 @@ import textwrap
 import sys
 import warnings
 
+from yombo.constants import __version__
 logger = None  # This is set by the set_twisted_logger function.
 
 
@@ -34,8 +35,6 @@ def set_twisted_logger(the_logger):
     """
     global logger
     logger = the_logger
-
-__version__ = "2.0.5"
 
 # This is mostly here so automodule docs are ordered more ideally.
 __all__ = ["deprecated", "message_location", "fail_if_not_removed",

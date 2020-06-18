@@ -3,7 +3,7 @@ Various function decorators.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2016-2017 by Yombo.
+:copyright: Copyright 2016-2020 by Yombo.
 :license: LICENSE for details.
 """
 # Import python libraries
@@ -63,7 +63,8 @@ class cached(object):
         :param tags:
         :param cache_type: Type of cache, default is TTL.
         """
-        from yombo.utils import generate_source_string, random_string
+        from yombo.utils import random_string
+        from yombo.utils.caller import caller_string
 
         global cache_library
 
@@ -73,7 +74,7 @@ class cached(object):
             cache_type = cache_type.lower()
 
         if cachename is None:
-            cachename = f"{generate_source_string()} R:{random_string(length=10)}"
+            cachename = f"r={random_string(length=10)},{caller_string()}"
 
         self.kwd_mark = object()  # sentinel for separating args from kwargs
         if cache_library is None:  # Here in case cache is called before fully started.

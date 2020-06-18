@@ -1,0 +1,20 @@
+.. index:: utils_ffmpeg_h264
+
+.. _utils_ffmpeg_h264:
+
+.. currentmodule:: yombo.lib.events
+
+===========================================
+H264 (yombo.utils.ffmpeg.h264)
+===========================================
+.. automodule:: yombo.utils.ffmpeg.h264
+
+H264 FFMPeg Utils Class
+===========================================
+.. autoclass:: H264
+   :members:
+   :special-members:
+   :private-members:
+   :undoc-members:
+
+Last updated: |today|

@@ -16,51 +16,59 @@ Add get, get_advanced, search, and search_advanced functions to libraries.
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.24.0
 
-:copyright: Copyright 2019 by Yombo.
+:copyright: Copyright 2019-2020 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/mixins/library_search_mixin.html>`_
 """
+from typing import Any, ClassVar, Dict, List, Optional, Type, Union
+
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 from yombo.utils import do_search_instance
 
 
-class LibrarySearchMixin(object):
+class LibrarySearchMixin:
     """
     Implements get and search functions.
     """
+    _storage_attribute_sort_key: ClassVar[str] = "label"
+    _storage_attribute_sort_key_order: ClassVar[str] = "asc"
+
     def get(self, item_requested):
         """
         Get an item by it's ID or machine_label. Unlike search(), this doesn't use any fuzzy logic to search
         for the requested item. This is a wrapper for get_advanced().
 
         :param item_requested: The item ID or machine label to get.
-        :param multiple: If multiple items should be returned, default is False.
         :return:
         """
-        items_to_search = getattr(self, self._class_storage_attribute_name)
-        # print(f"library search: get: _class_storage_attribute_name {items_to_search}")
+        items_to_search = getattr(self, self._storage_attribute_name)
+        if self._storage_class_reference is not None and \
+                isinstance(item_requested, self._storage_class_reference):
+            return item_requested
 
         if isinstance(item_requested, str) is False:
-            raise YomboWarning("item_requested must be a string.")
+            raise ValueError(f"item_requested must be a string, received: {item_requested}")
 
         if item_requested in items_to_search:
             return items_to_search[item_requested]
 
-        # print(f"Building criteria from these fileds: {self._class_storage_search_fields}")
-        if hasattr(self, "_class_storage_search_fields"):
+        if hasattr(self, "_storage_search_fields"):
             criteria = {}
-            for key in self._class_storage_search_fields:
+            for key in self._storage_search_fields:
                 criteria[key] = item_requested
         else:
             criteria = {
                     "machine_label": item_requested,
                 }
-        # print(f"library search: get: criteria {criteria}")
+
+        if "machine_label" in criteria:
+            criteria["machine_label"] = criteria["machine_label"].lower()
+
         try:
             return self.get_advanced(criteria, multiple=False)
         except KeyError:
-            raise KeyError(f"No matching {self._class_storage_attribute_name} found: {item_requested}")
+            raise KeyError(f"No matching {self._storage_attribute_name} found: {item_requested}")
 
     def get_advanced(self, criteria, multiple=None):
         """
@@ -75,18 +83,15 @@ class LibrarySearchMixin(object):
         :param multiple: If multiple items should be returned, default is False.
         :return:
         """
-        items_to_search = getattr(self, self._class_storage_attribute_name)
+        items_to_search = getattr(self, self._storage_attribute_name)
         if multiple is None:
             multiple = True
         results = {}
         for item_id, item in items_to_search.items():
             for key, value in criteria.items():
-                if key not in self._class_storage_search_fields:
+                if key not in self._storage_search_fields:
                     continue
 
-                # print(f"get_advanced searching: {key}:{item}")
-
-                # if value == item._instance[key]:
                 if value == getattr(item, key):
                     if multiple is False:
                         return item
@@ -94,7 +99,7 @@ class LibrarySearchMixin(object):
         if len(results) == 0:
             # for item_id, item in items_to_search.items():
             #     print(f"Searching: {item_id}: {item.__dict__}")
-            raise KeyError(f"No matching {self._class_storage_attribute_name} found.")
+            raise KeyError(f"No matching {self._storage_attribute_name} found.")
         return results
 
     def search(self, item_requested, limiter=None, max_results=None, status=None):
@@ -131,13 +136,13 @@ class LibrarySearchMixin(object):
         :rtype: list
         """
         if isinstance(item_requested, str) is False:
-            raise YomboWarning("item_requested must be a string.")
+            raise ValueError("item_requested must be a string.")
         if max_results is None:
             max_results = 0
 
-        if hasattr(self, "_class_storage_search_fields"):
+        if hasattr(self, "_storage_search_fields"):
             search_attributes = []
-            for key in self._class_storage_search_fields:
+            for key in self._storage_search_fields:
                 search_attributes.append({
                     "field": key,
                     "value": item_requested,
@@ -167,7 +172,7 @@ class LibrarySearchMixin(object):
             required_value = None
         else:
             if isinstance(status, int) is False:
-                raise YomboWarning("Status must be an int.")
+                raise ValueError("Status must be an int.")
             required_field = "status"
             required_value = status
 
@@ -214,13 +219,13 @@ class LibrarySearchMixin(object):
         :return: Pointer to requested item.
         :rtype: dict
         """
-        items_to_search = getattr(self, self._class_storage_attribute_name)
+        items_to_search = getattr(self, self._storage_attribute_name)
 
         try:
             # logger.debug("item.search() is about to call do_search_instance...: %s" % item_requested)
             results = do_search_instance(search_attributes,
                                          items_to_search,
-                                         allowed_keys=self._class_storage_search_fields,
+                                         allowed_keys=self._storage_search_fields,
                                          limiter=limiter,
                                          max_results=max_results,
                                          required_field=required_field,
@@ -234,4 +239,4 @@ class LibrarySearchMixin(object):
 
             raise KeyError(f"item not found.")
         except YomboWarning as e:
-            raise KeyError(f"Searched for {self._class_storage_attribute_name}, but had problems: {e}")
+            raise KeyError(f"Searched for {self._storage_attribute_name}, but had problems: {e}")

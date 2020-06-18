@@ -5,7 +5,8 @@ from time import time
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks
 
-from yombo.lib.webinterface.auth import require_auth
+from yombo.constants.permissions import AUTH_PLATFORM_STATISTIC
+from yombo.lib.webinterface.auth import get_session
 from yombo.lib.webinterface.routes.api_v1.__init__ import return_error
 from yombo.constants import CONTENT_TYPE_JSON
 from yombo.utils.converters import epoch_to_string
@@ -15,20 +16,19 @@ def route_api_v1_statistics(webapp):
     with webapp.subroute("/api/v1") as webapp:
 
         @webapp.route("/statistics/names", methods=["GET"])
-        @require_auth(api=True)
+        @get_session(auth_required=True, api=True)
         @inlineCallbacks
         def apiv1_statistics_names(webinterface, request, session):
-            session.has_access("statistic", "*", "view", raise_error=True)
-            records = yield webinterface._LocalDB.get_distinct_stat_names()
+            session.is_allowed(AUTH_PLATFORM_STATISTIC, "view")
+            records = yield webinterface._LocalDB.database.get_distinct_stat_names()
             request.setHeader("Content-Type", CONTENT_TYPE_JSON)
             return json.dumps(records)
 
         @webapp.route("/statistics/echarts/buckets", methods=["GET", "POST"])
-        @require_auth(api=True)
+        @get_session(auth_required=True, api=True)
         @inlineCallbacks
         def apiv1_statistics_echarts_buckets(webinterface, request, session):
-
-            session.has_access("statistic", "*", "view", raise_error=True)
+            session.is_allowed(AUTH_PLATFORM_STATISTIC, "view")
             requested_stats = []
 
             chart_label = request.args.get("chart_label", [None, ])[0]
@@ -142,7 +142,7 @@ def route_api_v1_statistics(webapp):
                 except Exception as e:
                     my_bucket_size = bucket_size
 
-                records = yield webinterface._LocalDB.get_stats_sums(my_stat_name,
+                records = yield webinterface._LocalDB.database.get_stats_sums(my_stat_name,
                                                                                   bucket_size=my_bucket_size,
                                                                                   bucket_type=my_stat_type,
                                                                                   time_start=my_time_start,

@@ -110,7 +110,7 @@
     .nav-open{
         .main-panel{
             right: 0;
-            @include transform-translate-x(260px);
+            @include transform-translate-x(240px);
         }
 
         .dashboard-sidebar{
@@ -124,7 +124,7 @@
 
         .menu-on-right{
             .main-panel{
-                @include transform-translate-x(-260px);
+                @include transform-translate-x(-240px);
             }
 
             .navbar-collapse,
@@ -137,7 +137,7 @@
             }
 
             #bodyClick{
-                right: 260px;
+                right: 240px;
                 left: auto;
             }
         }
@@ -147,7 +147,7 @@
         .dashboard-sidebar{
             left: auto;
             right:0;
-            @include transform-translate-x(260px);
+            @include transform-translate-x(240px);
         }
     }
 
@@ -204,7 +204,7 @@
         opacity: 1;
         top: 0;
         right: 0;
-        left: 260px;
+        left: 240px;
         content: "";
         z-index: 9999;
         overflow-x: hidden;
@@ -237,7 +237,7 @@
         display: block;
         top: 0;
         height: 100%;
-        width: 260px;
+        width: 240px;
         right: auto;
         left: 0;
         z-index: 1032;
@@ -246,7 +246,7 @@
         padding: 0;
         @include transition (0.50s, cubic-bezier(0.685, 0.0473, 0.346, 1));
 
-        @include transform-translate-x(-260px);
+        @include transform-translate-x(-240px);
     }
 
 

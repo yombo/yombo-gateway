@@ -13,13 +13,14 @@ The input type (singular) class represents one input type.
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.12.0
 
-:copyright: Copyright 2016-2017 by Yombo.
+:copyright: Copyright 2016-2020 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/inputtypes.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/inputtypes/__init__.html>`_
 """
-import collections
+from collections import Callable
 from functools import reduce
-from time import time
+from pyclbr import readmodule
+from typing import Any, ClassVar, Dict, List, Optional, Type, Union
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks
@@ -27,94 +28,85 @@ from twisted.internet.defer import inlineCallbacks
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
-from yombo.mixins.library_db_model_mixin import LibraryDBModelMixin
+from yombo.core.schemas import InputTypeSchema
+from yombo.lib.inputtypes.input_type import InputType
+from yombo.mixins.library_db_parent_mixin import LibraryDBParentMixin
 from yombo.mixins.library_search_mixin import LibrarySearchMixin
 from yombo.core.log import get_logger
-from yombo.utils.hookinvoke import global_invoke_all
 
 logger = get_logger("library.inputtypes")
 
-BASE_INPUT_TYPE_PLATFORMS = {
-    "yombo.lib.inputtypes.automation_addresses": ["X10_Address", "X10_House", "X10_Unit", "Insteon_Address"],
-    "yombo.lib.inputtypes.basic_addresses": ["Email", "YomboUsername", "URI", "URL"],
-    "yombo.lib.inputtypes.basic_types": ["_Any", "_Bool", "_Checkbox", "_Float", "Filename", "_Integer", "_None",
-                                         "Number", "Password", "Percent", "_String"],
-    "yombo.lib.inputtypes.ip_address": ["IP_Address", "IP_Address_Public", "IP_Address_Private", "IPv4_Address",
-                                        "IPv4_Address_Public", "IPv4_Address_Private", "IPv6_Address",
-                                        "IPv6_Address_Public", "IPv6_Address_Private"],
-    "yombo.lib.inputtypes.latin_alphabet": ["Latin_Alphabet", "Latin_Alphanumeric"],
-    "yombo.lib.inputtypes.yombo_items": ["Yombo_Command", "Yombo_Device_Type", "Yombo_Module",
-                                         "Yombo_Device"],
-}
 
-class InputTypes(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
+class InputTypes(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
     """
     Manages all input types available for input types.
 
     All modules already have a predefined reference to this library as
     `self._InputTypes`. All documentation will reference this use case.
     """
-    input_types = {}
-    platforms = {}
+    input_types: dict = {}
+    platforms: dict = {}
 
-    # The following are used by get(), get_advanced(), search(), and search_advanced()
-    _class_storage_load_hook_prefix = "input_type"
-    _class_storage_load_db_class = None
-    _class_storage_attribute_name = "input_types"
-    _class_storage_search_fields = [
+    # The remaining attributes are used by various mixins.
+    _storage_primary_field_name: ClassVar[str] = "input_type_id"
+
+    _storage_attribute_name: ClassVar[str] = "input_types"
+    _storage_label_name: ClassVar[str] = "input_type"
+    _storage_class_reference: ClassVar = None
+    _storage_schema: ClassVar = InputTypeSchema()
+    _storage_search_fields: ClassVar[List[str]] = [
         "input_type_id", "machine_label", "label", "category_id", "description"
     ]
-    _class_storage_sort_key = "machine_label"
-
-    def _init_(self, **kwargs):
-        """
-        Setups up the basic framework. Nothing is loaded in here until the
-        Load() stage.
-        """
-        self.load_platforms(BASE_INPUT_TYPE_PLATFORMS)
+    _storage_attribute_sort_key: ClassVar[str] = "created_at"
+    _storage_attribute_sort_key_order: ClassVar[str] = "desc"
+    _storage_primary_field_name_extra: ClassVar[list] = ["is_usable"]
 
     @inlineCallbacks
-    def _load_(self, **kwargs):
+    def _init_(self, **kwargs) -> None:
         """
-        Loads all input types from DB to various arrays for quick lookup.
+        Setups up the basic framework. Loads the system input type classes.
         """
-        yield self._class_storage_load_from_database()
+        # load base input type.
+        # self.load_platforms({"yombo.lib.inputtypes.input_type": ["InputType"]})
+        classes = yield self._Files.extract_classes_from_files("yombo/lib/inputtypes/input_type.py")
+        self.platforms.update(classes)
 
-    def _class_storage_get_instance_model(self, incoming):
+        # load system input types
+        files = yield self._Files.search_path_for_files("yombo/lib/inputtypes/platforms/*.py")
+        # print(f"input types - files, system: {files}")
+        classes = yield self._Files.extract_classes_from_files(files)
+        # print(f"input types - classes, system: {classes}")
+        self.platforms.update(classes)
+
+        # load module input types
+        files = yield self._Modules.search_modules_for_files("inputtypes/*.py")
+        classes = yield self._Files.extract_classes_from_files(files)
+        self.platforms.update(classes)
+        self.platforms = dict((k.lower(), v) for k, v in self.platforms.items())
+
+        yield self.load_from_database()  # have to load after we have all input type platforms.
+
+    def load_an_item_to_memory_pre_check(self, incoming, load_source):
+        """ Checks if the given input item should be loaded into memory. """
+        platform = incoming["machine_label"].replace("_", "")
+        incoming["is_usable"] = True
+        if platform not in self.platforms:
+            incoming["is_usable"] = False
+            raise YomboWarning(f"Input type platform not found: {platform}")
+
+    def _storage_class_reference_getter(self, incoming: dict) -> Type[InputType]:
         """
         Return the correct class to use to create individual input types.
 
-        This is called by _class_storage_load_db_items_to_memory
+        This is called by load_an_item_to_memory
 
         :param incoming:
         :return:
         """
-        # print(f"input typoe: {incoming['machine_label']}")
         if incoming["machine_label"] in self.platforms:
-            return self.platforms[incoming["machine_label"]]
+            return self.platforms[incoming["machine_label"].replace("_", "")]
         else:
-            return self.platforms["any"]
-
-    def load_platforms(self, platforms):
-        """
-        Load the platforms and prep them for usage.
-
-        :param platforms: 
-        :return: 
-        """
-        for path, items in platforms.items():
-            for item in items:
-                item_key = item.lower()
-                if item_key.startswith("_"):
-                    item_key = item_key[1:]
-
-                module_root = __import__(path, globals(), locals(), [], 0)
-                module_tail = reduce(lambda p1, p2: getattr(p1, p2), [module_root, ] + path.split(".")[1:])
-                klass = getattr(module_tail, item)
-                if not isinstance(klass, collections.Callable):
-                    logger.warn("Unable to load input type platform '{name}', it's not callable.", name=item)
-                    continue
-                self.platforms[item_key] = klass
+            return InputType
 
     def check(self, input_type_requested, value, **kwargs):
         input_type_platform = self.get(input_type_requested)

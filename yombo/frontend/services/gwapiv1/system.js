@@ -1,7 +1,5 @@
-import gwapiv1 from '@/services/gwapiv1'
-
 export default {
     info() {
-        return gwapiv1().get('system/info');
+        return window.$nuxt.$gwapiv1axios.get('system/info');
     },
 }

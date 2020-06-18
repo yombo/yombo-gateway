@@ -13,9 +13,25 @@ Requests (yombo.lib.requests)
 ================================
 .. automodule:: yombo.lib.requests
 
+.. rubric:: Classes in this module
+
+.. autosummary::
+   :nosignatures:
+
+   Requests
+   WebResponse
+
 Requests Library Class
-==========================
-.. automodule:: Requests
+=============================
+.. autoclass:: Requests
+   :members:
+   :special-members:
+   :private-members:
+   :undoc-members:
+
+WebResponse Class
+=============================
+.. autoclass:: WebResponse
    :members:
    :special-members:
    :private-members:

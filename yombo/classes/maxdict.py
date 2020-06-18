@@ -1,5 +1,3 @@
-#This file was created by Yombo for use with Yombo Python Gateway automation
-#software.  Details can be found at https://yombo.net
 """
 Allows for creation of a dictionary with a maximum size.
 
@@ -14,12 +12,15 @@ Allows for creation of a dictionary with a maximum size.
 
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+.. versionadded:: 0.23.0
 
-:copyright: Copyright 2015-2017 by Yombo.
+:copyright: Copyright 2015-2020 by Yombo.
 :license: LICENSE for details.
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/classes/maxdict.html>`_
 """
 # Import python libraries
 import collections
+
 
 class MaxDict(collections.MutableMapping):
     """
@@ -35,7 +36,7 @@ class MaxDict(collections.MutableMapping):
         self.maxlen = maxlen
         self.d = dict(*a, **k)
         while len(self) > maxlen:
-           self.popitem()
+            self.popitem()
 
     def __iter__(self):
         return iter(self.d)

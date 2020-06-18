@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Yombo gateway configuration helper
+# Yombo gateway configuration helper, Sets up service/systemctl for debian based systems.
 
 if [ "$USER" = "root" ] && [ "$SUDO_USER" == "" ]; then
   echo "This script cannot be run as root directly and must be run"
@@ -36,9 +36,6 @@ FORCE="false"
 YOMBOVERSION=$($SCRIPTPATH/scripts/show_version)
 YOMBOVERSIONHASH=$(git -C "$SCRIPTPATH" log --pretty=format:'%h' -n 1)
 YOMBOFULLVERSION="$YOMBOVERSIONHASH-$YOMBOVERSION"
-
-echo "scriptpath :  $SCRIPTPATH"
-echo "REALUSER :  $REALUSER"
 
 
 function logonly {
@@ -99,14 +96,15 @@ COMMANDS:
   help, -?,      Show this text
     -h, --help
 
-  install          Install the systemd yombo.service file and enable it.
-  uninstall        Disable the yombo.service from systemd and remove the yombo.service file.
-  enable           Enable Yombo service, configures Yombo to run on system startup.
-  disable          Disable Yombo service, prevents Yombo from running on system startup.
-  sudoers_enable   Enable user access to manage yombo and mosquitto services.
-  sudoers_disble   Disable user access to manage yombo and mosquitto services.
-  update           Upgrade the operating system with 'apt update && apt upgrade'. Also
-                   updates Yombo Gateway software and its dependants.
+  install          Install Yombo gateway software.
+  upgrade          Updates Yombo Gateway software and its dependants.
+  svc-uninstall    Disable the yombo.service from systemd and remove the yombo.service file.
+  svc-install      Install the systemd yombo.service file and enable it.
+  svc-uninstall    Disable the yombo.service from systemd and remove the yombo.service file.
+  svc-enable       Enable Yombo service, configures Yombo to run on system startup.
+  svc-disable      Disable Yombo service, prevents Yombo from running on system startup.
+  sudoers-enable   Enable user access to manage yombo and mosquitto services.
+  sudoers-disble   Disable user access to manage yombo and mosquitto services.
   version          Set the Yombo gateway source code branch. **Advanced users only**
                    Option: The version name, eg: master, develop, tagname
   install-bash     Install bash completion scripts.
@@ -134,16 +132,16 @@ function run_command {
   return 0
 }
 
-function install_services
+function svc_install
 {
     create_systemd
-    install_sudoers
+    sudoers_enable
 }
 
-function uninstall_services
+function svc_uninstall
 {
     remove_systemd
-    remove_sudoers
+    sudoers_disable
 }
 
 
@@ -199,7 +197,7 @@ Type=forking
 User=$REALUSER
 Group=$REALUSER
 WorkingDirectory=/home/$REALUSER/.yombo/
-PIDFile=/home/$REALUSER/.yombo/yombo.pid
+PIDFile=/home/$REALUSER/.yombo/var/yombo.pid
 # Enable the following line if you get network-related errors during boot
 #ExecStartPre=/usr/bin/sleep 60
 # Use `whereis ybo` to determine the path of yombo gateway software
@@ -226,24 +224,24 @@ EOF
 
 function remove_systemd
 {
+    need_sudo
     systemctl stop yombo.service
     systemctl disable yombo.service
     rm /etc/systemd/system/yombo.service
     systemctl --system daemon-reload
 }
 
-
-function enable_yombo
+function svc_enable
 {
   need_sudo
   check_systemd
   info "About to enable systemd control of Yombo Gateway."
-  run_command "systemctl enable yombo.service"
+  run_command "sudo systemctl enable yombo.service"
   info "Yombo Gateway has been disabled from systemd control."
   exit 0
 }
 
-function disable_yombo
+function svc_disable
 {
   need_sudo
 
@@ -253,8 +251,7 @@ function disable_yombo
   exit 0
 }
 
-
-function install_sudoers
+function sudoers_enable
 {
     info "Updating/creating sudoers file for: $REALUSER"
     cat <<- EOF > /etc/sudoers.d/yombo_$REALUSER
@@ -291,7 +288,7 @@ EOF
     chown root:root /etc/sudoers.d/yombo_$REALUSER
 }
 
-function remove_sudoers
+function sudoers_disable
 {
     info "Removing sudoers file for: $REALUSER"
     rm /etc/sudoers.d/yombo_$REALUSER
@@ -354,7 +351,6 @@ function share-log {
   return 0
 }
 
-
 function share-log {
   if [ ! -f $SHARELOG ];then
     echo "No log entries found."
@@ -364,24 +360,22 @@ function share-log {
   return 0
 }
 
-
-function do_update {
+function do_install {
   need_sudo
-  info "Calling yombo_update to update the system and Yombo Gateway software."
-  run_command "sudo -H -u $SUDO_USER sudo bash $SCRIPTPATH/scripts/yombo_update"
-  info "Finised with system and Yombo Gateway software update."
+  info "Calling yombo_install to upgrade the system and install Yombo Gateway software."
+  run_command "sudo -H -u $SUDO_USER sudo bash $SCRIPTPATH/scripts/yombo_install"
+  info "Finished with system and Yombo Gateway software upgrade."
   return 0
 }
 
-
-function update {
+function upgrade {
   need_sudo
   if [ "$ACCEPT" == "true" ]; then
-    do_update
+    do_upgrade
     echo "Log file deleted: $SHARELOG"
   else
     echo ""
-    echo "About to update the operating system, Yombo Gateway, and it's dependencies."
+    echo "About to update Yombo Gateway, and it's dependencies."
     echo ""
     echo -n "Are you sure you want to complete this task? [N/y] : "
     read -r  RESPONSE
@@ -392,7 +386,33 @@ function update {
   return 0
 }
 
-function install-bash-completion {
+function do_upgrade {
+  need_sudo
+  info "Calling yombo_update to upgrade the system and Yombo Gateway software."
+  run_command "sudo -H -u $SUDO_USER sudo bash $SCRIPTPATH/scripts/yombo_update"
+  info "Finished with system and Yombo Gateway software upgrade."
+  return 0
+}
+
+function upgrade {
+  need_sudo
+  if [ "$ACCEPT" == "true" ]; then
+    do_upgrade
+    echo "Log file deleted: $SHARELOG"
+  else
+    echo ""
+    echo "About to update Yombo Gateway, and it's dependencies."
+    echo ""
+    echo -n "Are you sure you want to complete this task? [N/y] : "
+    read -r  RESPONSE
+    if [ "$RESPONSE" == "y" ] || [ "$RESPONSE" == "Y" ]; then
+        do_update
+    fi
+  fi
+  return 0
+}
+
+function bash_completion_install {
   need_sudo
   info "Starting bash completion setup."
   logonly "Starting to instasll /etc/bash_completion.d/ybo-cfg"
@@ -454,7 +474,6 @@ EOF
   . /etc/bash_completion.d/ybo-config
 }
 
-
 if [ $# -lt 1 ]; then
   usage
   exit 0
@@ -465,16 +484,16 @@ do
     COMMAND=$1
 
     case $COMMAND in
-      "disable" )
-        RUN="disable_yombo"
+      "svc-disable" )
+        RUN="svc_disable"
         shift
         ;;
-      "enable" )
-        RUN="enable_yombo"
+      "svc-enable" )
+        RUN="svc_enable"
         shift
         ;;
 
-      "-H" | "--help" | "--help" | "-h" | "-?" )
+      "-H" | "-help" | "--help" | "-h" | "-?" )
         RUN="help"
         shift # past argument
         ;;
@@ -484,23 +503,23 @@ do
         exit 0
         ;;
 
-      "install" )
-        RUN="install_services"
+      "svc-install" )
+        RUN="svc_install"
         shift # pass command
         ;;
 
-      "uninstall" )
-        RUN="uninstall_services"
+      "svc-uninstall" )
+        RUN="svc_uninstall"
         shift # pass command
         ;;
 
-      "sudoers_enable" )
-        RUN="install_sudoers"
+      "sudoers-enable" )
+        RUN="sudoers_enable"
         shift # pass command
         ;;
 
-      "sudoers_disble" )
-        RUN="remove_sudoers"
+      "sudoers-disble" )
+        RUN="sudoers_disable"
         shift # pass command
         ;;
 
@@ -540,13 +559,13 @@ do
         shift # pass command
         ;;
 
-      "install-bash")
-        RUN="install-bash-completion"
+      "bash-install")
+        RUN="bash_completion_install"
         shift # pass command
         ;;
 
-      "update")
-        RUN="update"
+      "upgrade")
+        RUN="upgrade"
         shift # pass command
         ;;
 
@@ -574,7 +593,6 @@ do
 done
 
 if [ "$RUN" != "" ]; then
-#  echo "About to run $RUN"
   $RUN
   exit 0
 fi

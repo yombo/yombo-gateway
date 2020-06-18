@@ -1,18 +1,16 @@
-// Looks for matching URLs, and if something matches, forces the app to
-// talk to the yombo gateway for the URL.
+// Looks for matching URLs, and if something matches, exits the Frontend Vue application and talks directly to
+// the webinterface library routes.
+//
+// Also if running in development, show a default page showing a capability isn't available for some tasks.
 
 export default function(context) {
-  // console.log(context)
-  // console.log("disable spa");
-
-  const paths = ['/user/logout', '/system/restart'];
+  const paths = ['/user/logout', '/system/restart', '/system/shutdown'];
 
   if (paths.includes(context.route.fullPath)) {
-    console.log("should logout.....");
     if (context.isDev) {
       return context.redirect("/devnoredirect")
     } else {
-       window.location.href = "/user/logout";
+       window.location.href = context.route.fullPath;
     }
   }
 }

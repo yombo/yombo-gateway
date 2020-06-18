@@ -4,7 +4,7 @@
         <card class="card-chart" no-footer-line>
           <div slot="header">
             <h2 class="card-title">
-              Intents
+              Webinterface Logs
             </h2>
           </div>
           <p>Content has not been created, this is a simple placeholder.</p>

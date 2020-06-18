@@ -9,8 +9,8 @@
        :aria-expanded="!collapsed"
        data-toggle="collapse"
        @click.prevent="collapseMenu">
+      <i :class="link.icon"></i>
       <p>
-        <i :class="link.icon"></i>
         {{link.name}}
         <b class="caret"></b>
       </p>
@@ -39,10 +39,8 @@
           <span class="dashboard-sidebar-normal">{{link.name}}</span>
         </template>
         <template v-else>
-          <p>
-            <i :class="link.icon"></i>
-            {{link.name}}
-          </p>
+          <i :class="link.icon"></i>
+          <p>{{link.name}}</p>
         </template>
       </component>
     </slot>
@@ -97,7 +95,18 @@ export default {
     },
     linkPrefix() {
       if (this.link.name) {
-        let words = this.link.name.split(' ');
+        let the_data = null;
+        if (typeof this.link.name === 'string' || this.link.name instanceof String) { // two types of string defintions.
+          the_data = this.link.name;
+        } else {
+          if ("other" in this.link.name) {
+            the_data = this.link.name["other"];
+          }
+        }
+        if ( the_data === null ) {
+          return;
+        }
+        let words = the_data.split(' ');
         return words.map(word => word.substring(0, 1)).join('');
       }
     },
@@ -182,5 +191,4 @@ export default {
   margin-top: 0;
   padding-top: 1px;
 }
-
 </style>

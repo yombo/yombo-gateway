@@ -1,0 +1,12 @@
+{
+  "lib": {
+    "configs": {
+      "yombo_toml": {
+        "warning": "ATENÇÃO ATENÇÃO ATENÇÃO ATENÇÃO ATENÇÃO ATENÇÃO ATENÇÃO"
+      }
+    }
+  },
+  "ui": {
+    "next": "Próximo"
+  }
+}

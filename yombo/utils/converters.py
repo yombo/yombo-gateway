@@ -1,5 +1,11 @@
 """
-Covnerts various things to other things.  Helpful huh?
+Converts various things to other things.  Helpful huh?
+
+.. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+
+:copyright: Copyright 2018-2020 by Yombo.
+:license: See LICENSE for details.
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/converters.html>`_
 """
 from time import strftime, localtime
 

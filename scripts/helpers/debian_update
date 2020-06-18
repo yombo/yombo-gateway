@@ -23,7 +23,7 @@ if [ "$USER" = "root" ] && [ "$SUDO_USER" == "" ]; then
   echo "as the user owning the Yombo gateway service."
   echo ""
   echo "Logout as root and then:"
-  echo "sudo yombo_update"
+  echo "sudo ./debian_update"
   exit
 fi
 
@@ -32,71 +32,57 @@ if [ "$(id -u)" -ne 0 ]; then
   echo "is needed to install the latest updates. Run this the user"
   echo "owning the Yombo gateway service:"
   echo ""
-  echo "sudo yombo_update"
+  echo "sudo ./debian_update"
   echo ""
   exit
 fi
 
-SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
-cd "$SCRIPTPATH"
+YOMBO_SCRIPT_HELPER_DIR="$( cd "$(dirname "$0")" ; pwd -P )"
+YOMBO_SCRIPT_DIR="$(dirname $YOMBO_SCRIPT_HELPER_DIR)"
+YOMBO_ROOT_DIR="$(dirname $YOMBO_SCRIPT_DIR)"
 
-apt-get update >> /dev/null
-apt-get upgrade -y
+LOGFILE=$HOME/yombo_update.log
+LOGFILEDETAILED=$HOME/yombo_update_detailed.log
 
-sudo npm install -g npm
-sudo npm update
+touch $LOGFILE
+chown $SUDO_USER:$SUDO_USER $LOGFILE
 
-sudo pip3 install --upgrade pip
+touch
+chown $SUDO_USER:$SUDO_USER $LOGFILEDETAILED
 
-cd /usr/local/src/yombo/libwebsockets
-git remote update
-UPSTREAM=${1:-'@{u}'}
-LOCAL=$(git rev-parse @)
-REMOTE=$(git rev-parse "$UPSTREAM")
-BASE=$(git merge-base @ "$UPSTREAM")
+echo ""
+echo "The log file for these changes will be available at: $LOGFILE";
+echo "Detailed logs can be found: $LOGFILEDETAILED";
+echo ""
+echo "You can monitor the details log from another terminal: tail -f $LOGFILEDETAILED"
+echo ""
+function logsetup {
+#    TMP=$(tail -n $RETAIN_NUM_LINES $LOGFILE 2>/dev/null) && echo "${TMP}" > $LOGFILE
+    exec > >(tee -a $LOGFILE $LOGFILEDETAILED)
+    exec 2>&1
+}
 
-if [ $LOCAL = $REMOTE ]; then
-    LIBWEBSOCKETSUPDATED=no
-    echo "libwebsockets is current, skipping"
-elif [ $LOCAL = $BASE ]; then
-    echo "libwebsockets is behind, updating.."
-    LIBWEBSOCKETSUPDATED=yes
-    git pull
-    cd build
-    make clean
-    cmake ..
-    sudo make install
-    sudo ldconfig
-fi
+function log {
+    echo "[$(date --rfc-3339=seconds)]: $*"
+}
+logsetup
 
-cd /usr/local/src/yombo/mosquitto-auth-plug
-git remote update
-UPSTREAM=${1:-'@{u}'}
-LOCAL=$(git rev-parse @)
-REMOTE=$(git rev-parse "$UPSTREAM")
-BASE=$(git merge-base @ "$UPSTREAM")
+log "==> apt-get - Running update"
+apt-get update >> $LOGFILEDETAILED 2>&1
 
-if [ $LOCAL = $REMOTE ]; then
-    echo "Mosquitto auth is current, skipping"
-elif [ $LOCAL = $BASE ]; then
-    git pull
-    make clean
-    make
-fi
+log "==> apt-get - Running upgrade, downloading packages."
+sudo apt-mark hold keyboard-configuration >> $LOGFILEDETAILED 2>&1
+sudo apt-mark hold grub-pc >> $LOGFILEDETAILED 2>&1
+apt-get upgrade --download-only -y >> $LOGFILEDETAILED 2>&1
 
-cd /usr/local/src/yombo/mosquitto
-git remote update
-UPSTREAM=${1:-'@{u}'}
-LOCAL=$(git rev-parse @)
-REMOTE=$(git rev-parse "$UPSTREAM")
-BASE=$(git merge-base @ "$UPSTREAM")
+log "==> apt-get - Running upgrade, installing packages."
+apt-get upgrade -y >> $LOGFILEDETAILED 2>&1
 
-if [ $LOCAL = $REMOTE ] && [ $LIBWEBSOCKETSUPDATED = "no" ]; then
-    echo "libwebsockets is current, skipping"
-elif [ $LOCAL = $BASE ] || [ $LIBWEBSOCKETSUPDATED = "yes" ]; then
-    echo "mosquitto is behind, or it's dependants were, updating mosquitto.."
-    git pull
-    make clean
-    make binary WITH_WEBSOCKETS=yes WITH_DOCS=no CFLAGS=-I/usr/local/include/
-    sudo make install WITH_WEBSOCKETS=yes WITH_DOCS=no CFLAGS=-I/usr/local/include/
-fi
+sudo apt-mark unhold keyboard-configuration >> $LOGFILEDETAILED 2>&1
+sudo apt-mark unhold grub-pc >> $LOGFILEDETAILED 2>&1
+
+log "==> Updating global pip3"
+sudo pip3 install --upgrade pip >> $LOGFILEDETAILED 2>&1
+
+log "==> Updating global yarn modules"
+sudo yarn upgrade >> $LOGFILEDETAILED 2>&1

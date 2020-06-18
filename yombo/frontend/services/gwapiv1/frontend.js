@@ -1,7 +1,8 @@
-import gwapiv1 from '@/services/gwapiv1'
-
 export default {
-    navbar_items() {
-        return gwapiv1().get('frontend/navbar_items');
+    dashboard_navbar_items() {
+        return window.$nuxt.$gwapiv1axios.get('frontend/dashboard_navbar_items');
+    },
+    globalitems_navbar_items() {
+        return window.$nuxt.$gwapiv1axios.get('frontend/globalitems_navbar_items');
     },
 }

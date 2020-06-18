@@ -3,53 +3,35 @@ Various utilities used to perform common functions to help speed development.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2016-2018 by Yombo.
+:copyright: Copyright 2016-2020 by Yombo.
 :license: See LICENSE for details.
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/utils.html>`_
 """
 # Import python libraries
 try:
     import fcntl
     HAS_FCNTL = True
 except ImportError:
-    # fcntl is not available on windows
-    HAS_FCNTL = False
-
+    HAS_FCNTL = False  # fcntl is not available on windows
 import base64
 from difflib import SequenceMatcher
 from docutils.core import publish_parts
-import errno
-from hashlib import sha256, sha224
-import importlib
 import inspect
-import itertools
-import jinja2
-import json
 import markdown
 import math
-import msgpack
 import os
-from packaging.requirements import Requirement as pkg_requirement
-import pkg_resources
 import random
 import re
-import shutil
 import string
-import socket
-from subprocess import check_output, CalledProcessError
-import sys
-from time import time
-import treq
 import textwrap
-from urllib.parse import urlparse
-import zlib
+from typing import Any, Dict, List, Optional, Type, Union
 
-from twisted.internet import reactor, threads
-from twisted.internet.defer import inlineCallbacks
+# Import twisted libraries
+from twisted.internet import reactor
 from twisted.internet.task import deferLater
 
 # Import 3rd-party libs
-from yombo.ext.hashids import Hashids
-import yombo.ext.magic as magicfile
+import yombo.ext.base62 as base62
 
 # Import Yombo libraries
 from yombo.core.entity import Entity
@@ -57,90 +39,40 @@ from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.module import YomboModule
 from yombo.utils.decorators import cached, memoize_
-import yombo.ext.base62 as base62
 
 logger = None  # This is set by the set_twisted_logger function.
-_Yombo = None  # Set by setup_yombo_references()
+_Yombo = None  # Set by setup_yombo_reference()
 
-magicparse = magicfile.Magic(mime_encoding=True, mime=True)
 
-@inlineCallbacks
-def test_url_listening(url):
+def setup_yombo_reference(loader):
     """
-    Tries to check if a server is listening at the URL. Returns True/False, or YomboWarning if port number was
-    not provided. In the URL.
+    Setup global references to Yombo libraries. This is called by loader::import_libraries()
 
-    :param url:
+    :param loader: Pointer to the loader instance.
     :return:
     """
-    parts = urlparse(url)
-    scheme = parts.scheme
-    host = parts.netloc
-    if scheme is None or host is None:
-        raise SyntaxWarning("Invalid URL format.")
-
-    port = parts.port
-    if port is None:  # Try to guess port number
-        if scheme == "ftp":
-            port = 21
-        elif scheme == "ssh":
-            port = 22
-        elif scheme == "telnet":
-            port = 23
-        elif scheme == "smtp":
-            port = 25
-        elif scheme == "tfpt":
-            port = 69
-        elif scheme == "http":
-            port = 80
-        elif scheme == "https":
-            port = 443
-
-    if port is None:
-        raise YomboWarning("Port number not found.")
-    results = yield test_port_listening(host, port)
-    return results
+    global _Yombo
+    _Yombo = Entity(loader)
 
 
-@inlineCallbacks
-def test_port_listening(host, port):
+def set_twisted_logger(the_logger):
     """
-    Returns a deferred whose result will be True/False.
-
-    Tests if port is open on the host.
-
-    :param host:
-    :param port:
+    Called by core.gwservice::start() to setup the utils logger.
+    :param logger:
     :return:
     """
-    results = yield threads.deferToThread(host, port)
-    return results
+    global logger
+    logger = the_logger
 
 
-def _test_port_listening(host, port):
+def dequote(input):
     """
-    Should only be called by it's parent 'test_port_listening' due to blocking.
-    :return:
+    Removes quotes from a string if it leads and trails with a single or double quote. The leading and trailing string
+    must be the same quote type.
     """
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    logger.debug("# Test non ssl host - port: {host} - {port}", host=host, port=port)
-    return sock.connect_ex((host, port)) == 0
-
-
-def download_file(url, destination_filename):
-    """
-    Returns a deferred!
-
-    This downloads a file from a URL and saves it toa  file.
-    :param url:
-    :param destination_filename:
-    :return:
-    """
-    destination = open(destination_filename, 'wb')
-    d = treq.get(url, unbuffered=True)
-    d.addCallback(treq.collect, destination.write)
-    d.addBoth(lambda _: destination.close())
-    return d
+    if (input[0] == input[-1]) and input.startswith(("'", '"')):
+        return input[1:-1]
+    return input
 
 
 def search_for_executable(executable):
@@ -161,54 +93,6 @@ def search_for_executable(executable):
     return None
 
 
-def setup_yombo_references(loader):
-    """
-    Setup global references to Yombo libraries. This is called by loader::import_libraries()
-
-    :param loader: Pointer to the loader instance.
-    :return:
-    """
-    global _Yombo
-    _Yombo = Entity(loader)
-
-
-def generate_source_string(gateway_id=None, offset=None):
-    """
-    Gets the python file, class, and method that was called. For example, if this was
-    called from yombo.lib.amqp within the class "AMQP" in the function new, the results
-    would look like: "F:yombo.lib.amqp C:AMQP Md:new"
-
-    If this wasn't called from within a class, it would look like:
-    "F:yombo.core.soemthing M:washere"
-
-    If gateway_id is supplied, it will now look like:
-    "G:zbc1230 F:yombo.lib.amqp C:AMQP M:new"
-
-    The offset is used to determine how far back in the call stack it should look. For example,
-    if this function was called within yombo.lib.module.somemodule and want to get the method
-    that directly called it, use offset "1".  If the previous caller is desired, use 2, etc.
-
-    :param gateway_id:
-    :param offset:
-    :return:
-    """
-    if offset is None:
-        offset = 1
-
-    offset = offset + 1
-    callingframe = sys._getframe(offset)
-    mod = inspect.getmodule(callingframe)
-    if "self" in callingframe.f_locals:
-        results = f"F:{mod.__name__} C:{callingframe.f_locals['self'].__class__.__name__} " \
-                  f"M:{callingframe.f_code.co_name}"
-    else:
-        results = f"F:{mod.__name__} M:{callingframe.f_code.co_name}"
-
-    if gateway_id is not None:
-        return f"G:{gateway_id} {results}"
-    return results
-
-
 def get_yombo_instance_type(value):
     """
     Determine what type of Yombo instance is being since, it's it name.
@@ -223,459 +107,6 @@ def get_yombo_instance_type(value):
     elif isinstance(value, str):
         return "unknown", value
     return None, None
-
-
-def set_twisted_logger(the_logger):
-    """
-    Called by core.gwservice::start() to setup the utils logger.
-    :param logger:
-    :return:
-    """
-    global logger
-    logger = the_logger
-
-
-def json_human(data):
-    return json.dumps(data, indent=4, sort_keys=True)
-
-
-def sha224_compact(value):
-    return base62.encodebytes(sha224(unicode_to_bytes(value)).digest())
-
-
-def sha256_compact(value):
-    return base62.encodebytes(sha256(unicode_to_bytes(value)).digest())
-
-
-@inlineCallbacks
-def get_python_package_info(required_package_name, install=None, events_queue=None):
-    """
-    Checks if a given python package name is installed. If so, returns it's info, otherwise returns None.
-
-    :param required_package_name:
-    :return:
-    """
-    global _Yombo
-    if install is None:
-        install = True
-
-    conditions = ("==", "<=", ">=")
-    if any(s in required_package_name for s in conditions) is False:
-        logger.warn("Invalid python requirement line: {package_name}", package_name=required_package_name)
-        raise YomboWarning("python requirement must specify a version or version with wildcard.")
-
-    requirement = pkg_requirement(required_package_name)
-    package_name = requirement.name
-
-    try:
-        pkg_info = pkg_resources.get_distribution(required_package_name)
-    except pkg_resources.DistributionNotFound as e:
-        if events_queue is not None:
-            events_queue.append(["pip", "not_found", (str(required_package_name)), time()])
-        else:
-            _Yombo._Events.new("pip", "not_found", (str(required_package_name)))
-        logger.info("Python package {required_package} is missing.",
-                    required_package=required_package_name,
-                    )
-        if install is False:
-            return None
-    except pkg_resources.VersionConflict as e:
-        pkg_info = pkg_resources.get_distribution(package_name)
-        logger.info("Python package {required_package} is old. Found: {version_installed}, want: {wanted}",
-                    required_package=package_name,
-                    version_installed=pkg_info.version,
-                    wanted=str(requirement.specifier),
-                    )
-        if events_queue is not None:
-            events_queue.append(["pip", "update_needed",
-                                 (package_name, str(pkg_info.version), str(requirement.specifier)), time()])
-        else:
-            _Yombo._Events.new("pip", "update_needed",
-                               (package_name, str(pkg_info.version), str(requirement.specifier)))
-        if install is False:
-            return pkg_info
-
-    else:
-        return pkg_info
-
-    # We now install the package...
-    start_time = time()
-    yield install_python_package(required_package_name)
-    duration = round(float(time()) - start_time, 4)
-    importlib.reload(pkg_resources)
-    try:
-        pkg_info = pkg_resources.get_distribution(required_package_name)
-        logger.info("Python package installed: {name} = {version}",
-                    name=pkg_info.project_name, version=pkg_info.version)
-
-        if events_queue is not None:
-            events_queue.append(["pip", "installed",
-                                 (str(pkg_info.project_name), str(pkg_info.version), duration), time()])
-        else:
-            _Yombo._Events.new("pip", "installed", (str(pkg_info.project_name), str(pkg_info.version), duration))
-        return pkg_info
-    except pkg_resources.DistributionNotFound as e:
-        raise YomboWarning(f"Unable to upgrade package: {e}")
-    return None
-
-
-@inlineCallbacks
-def install_python_package(package_name):
-    def update_pip_module(module_name):
-        try:
-            logger.info("About to install/upgrade python package: {module_name}", module_name=module_name)
-            out = check_output(["pip3", "install", "-U", module_name])
-            t = 0, out
-        except CalledProcessError as e:
-            t = e.returncode, e.message
-        return t
-
-    try:
-        pip_results = yield threads.deferToThread(update_pip_module, package_name)
-        if pip_results[0] != 0:
-            raise Exception(pip_results[1])
-    except Exception as e:
-        logger.error("Unable to install/upgrade python package '{package_name}', reason: {e}",
-                    package_name=package_name, e=e)
-        logger.error("Try to manually isntall/update required packages: pip3 install -U -r requirements.txt")
-        raise YomboWarning("Unable to install/upgrade python package.")
-
-# def get_mdns(hostname):
-#     import dns.resolver
-#     myRes = dns.resolver.Resolver()
-#     myRes.nameservers = ["224.0.0.251"]  # mdns multicast address
-#     myRes.port = 5353  # mdns port
-#     a = myRes.query("hostname.local", "A")
-#     return a[0].to_text()
-
-
-@inlineCallbacks
-def read_file(filename, convert_to_unicode=None):
-    """
-    Read a file, non-blocking.
-
-    :param filename:
-    :return:
-    """
-    def getFile(read_filename):
-        f = open(read_filename, "r")
-        data = f.read()
-        f.close()
-        return data
-
-    contents = yield threads.deferToThread(getFile, filename)
-    if convert_to_unicode is True:
-        return bytes_to_unicode(contents)
-    return contents
-
-
-@inlineCallbacks
-def save_file(filename, content, mode=None):
-    """
-    A quick function to save data to a file. Defaults to overwrite, us mode "a" to append.
-
-    Don't use this for saving large files.
-
-    :param filename: Full path to save to.
-    :param content: Content to save.
-    :param mode: File open mode, default to "w".
-    :return:
-    """
-    def writeFile(file, data, file_mode):
-        if not os.path.exists(os.path.dirname(file)):
-            try:
-                os.makedirs(os.path.dirname(file))
-            except OSError as exc:  # Guard against race condition
-                if exc.errno != errno.EEXIST:
-                    raise YomboWarning(f"Unable to save file: {exc}")
-        if file_mode is None:
-            if isinstance(data, bytes):
-                file_mode = "wb"
-            else:
-                file_mode = "w"
-        file = open(file, file_mode)
-        file.write(data)
-        file.close()
-
-    yield threads.deferToThread(writeFile, filename, content, mode)
-
-
-@inlineCallbacks
-def copy_file(source_path, dest_path):
-    def do_copy(src, dst):
-        shutil.copy2(src, dst)
-
-    yield threads.deferToThread(do_copy, source_path, dest_path)
-
-
-@inlineCallbacks
-def move_file(source_path, dest_path):
-    def do_move(src, dst):
-        shutil.copy2(src, dst)
-    yield threads.deferToThread(do_move, source_path, dest_path)
-
-
-@inlineCallbacks
-def file_size(filename):
-    def do_size(file):
-        os.path.getsize(file)
-    yield threads.deferToThread(do_size, filename)
-
-
-@inlineCallbacks
-def delete_file(filename, remove_empty=None):
-    """
-    Delete a file, returns a deferred.
-
-    :param filename: Full path of file to delete
-    :param remove_empty: If the directory is empty after the file is deleted, remove the directory.
-    :return:
-    """
-    def deleteFile(delete_filename, delete_empty):
-        try:
-            os.remove(delete_filename)
-        except OSError as e:
-            raise YomboWarning(f"delete_file: Could not delete: {e}")
-        if delete_empty is True:
-            folder = os.path.dirname(delete_filename)
-            if os.path.exists(folder) and os.path.isdir(folder):
-                all_items = os.listdir(os.path.dirname(delete_filename))
-                if len(all_items) == 0:
-                    os.rmdir(folder)
-
-    if remove_empty is None:
-        remove_empty = False
-
-    yield threads.deferToThread(deleteFile, filename, remove_empty)
-
-
-@inlineCallbacks
-def mime_type_from_file(filename):
-    """
-    Gets the mime type by inspecting the file.
-
-    :param filename:
-    :return:
-    """
-    def get_mime(file):
-        my_results = magicparse.from_file(file)
-        mime, charset = my_results.split("; charset=")
-        return {"content_type": mime, "charset": charset}
-    results = yield threads.deferToThread(get_mime, filename)
-    return results
-
-
-@inlineCallbacks
-def mime_type_from_buffer(data):
-    """
-    Gets the mime type by inspecting the file.
-
-    :param filename:
-    :return:
-    """
-    def get_mime(buffer):
-        my_results = magicparse.from_buffer(buffer)
-        mime, charset = my_results.split("; charset=")
-        return {"content_type": mime, "charset": charset}
-    results = yield threads.deferToThread(get_mime, data)
-    return results
-
-
-@inlineCallbacks
-def memory_usage():
-    usage = yield read_file("/proc/self/status", convert_to_unicode=True)
-    return int(re.search(r"^VmRSS:\s+(\d+) kb$", usage, flags=re.IGNORECASE|re.MULTILINE).group(1))
-
-
-def get_nested_dict(data_dict, map_list):
-    """
-    Get a dictionary value using keys as a list.
-    From: https://stackoverflow.com/questions/14692690/access-nested-dictionary-items-via-a-list-of-keys
-
-    :param dic:
-    :param map_list:
-    :return:
-    """
-    for k in map_list: data_dict = data_dict[k]
-    return data_dict
-    # return reduce(operator.getitem, dic, keys)
-
-
-def set_nested_dict(dic, keys, value):
-    """
-    For a given dic(t) and keys, set a value.
-    From:https://stackoverflow.com/questions/14692690/access-nested-dictionary-items-via-a-list-of-keys
-
-    >>> d = {}
-    >>> set_nested_dict(d, ["computer", "folder", "file"], "yombo.txt")
-    >>> d
-    {"computer": {"folder": {"file": "yombo.txt"}}}
-
-    :param dic:
-    :param keys:
-    :param value:
-    :return:
-    """
-    for key in keys[:-1]:
-        dic = dic.setdefault(key, {})
-    dic[keys[-1]] = value
-
-
-def slice_dict(dic, start, stop=None, step=None):
-    """
-    Slices a dictionary.
-    Usage:
-    >>> new_dict = slice_dict(old_dict, stop)  # start = 0 if not specificed
-    >>> new_dict = slice_dict(old_dict, start, stop)
-    >>> new_dict = slice_dict(old_dict, start, stop, step)
-
-    Examples:
-    >>> new_dict = slice_dict(old_dict, 1)  # equiv for a list: some_list[0:1]
-    >>> new_dict = slice_dict(old_dict, 2, 4)  # equiv for a list: some_list[2:4]
-    >>> new_dict = slice_dict(old_dict, 2, 6)  # Start at 2, end at 6, skiping every other one.
-
-    :param dic:
-    :param start: Place to start slicing, default is 0
-    :param stop: Where to stop slicing
-    :param step: Used to skep items, like every other one
-    :return:
-    """
-    if stop is None:
-        return dict(itertools.islice(dic.items(), start))
-
-    return dict(itertools.islice(dic.items(), start, stop, step))
-
-
-def ordereddict_to_dict(value):
-    """
-    Convert an ordered dict to a regular dict, recursive.
-
-    :param value:
-    :return:
-    """
-    for k, v in value.items():
-        if isinstance(v, dict):
-            value[k] = ordereddict_to_dict(v)
-    return dict(value)
-
-
-def data_pickle(data, encoder=None, zip=None, local=None):
-    """
-    Encodes data with an encoder type. The default is "msgpack_base85". This allows data to be sent to
-    databases or nearly everywhere.
-
-    :param data: String, list, or dictionary to be encoded.
-    :param encoder: Optional encode method. One of: json, msgpack, msgpack_zip, msgpack_base85, msgpack_base85_zip
-    :param zip: True or a compression number from 1 to 9.
-
-    :return: bytes (not string) of the encoded data that can be used with data_unpickle.
-    """
-    if zip is True:
-        has_zip = True
-        zip = 5
-    elif isinstance(zip, int):
-        has_zip = True
-        if zip < 1 or zip > 9:
-            zip = 5
-    elif zip is None:
-        has_zip = False
-        zip = 5
-    else:
-        has_zip = False
-        zip = 5
-
-    if encoder is None:
-        if has_zip:
-            encoder = "msgpack_base85_zip"
-        else:
-            encoder = "msgpack_base85"
-
-    if "json" in encoder and "msgack" in encoder:
-        raise YomboWarning("Pickle data can only have json or msgpack, not both.")
-    if "base64" in encoder and "base85" in encoder:
-        raise YomboWarning("Pickle data can only have base64 or base85, not both.")
-
-    if "json" in encoder:
-        try:
-            data = json.dumps(data, separators=(",", ":"))
-        except Exception as e:
-            raise YomboWarning(f"Error encoding json: {e}")
-    elif "msgpack" in encoder:
-        try:
-            data = msgpack.packb(data)
-        except Exception as e:
-            raise YomboWarning(f"Error encoding msgpack: {e}")
-
-    if "zip" in encoder:
-        try:
-            data = zlib.compress(data, zip)
-        except Exception as e:
-            raise YomboWarning(f"Error encoding msgpack_base85_zip: {e}")
-
-    if "base64" in encoder:
-        data = bytes_to_unicode(base64.b64encode(data))
-        if local is True:
-            data = data.rstrip("=")
-    elif "base85" in encoder:
-        data = bytes_to_unicode(base64.b85encode(data))
-
-    return data
-
-
-def data_unpickle(data, encoder=None, zip=None):
-    """
-    Unpack data packed with data_pickle.
-
-    :param data:
-    :param encoder:
-    :param zip: True if incoming data is zipped...
-
-    :return:
-    """
-    if data is None:
-        return None
-    data = bytes_to_unicode(data)
-
-    if encoder is None:
-        # if zip_level is True or isinstance(zip_level, int):
-        #     encoder = "msgpack_base85_zip"
-        # else:
-        encoder = "msgpack_base85"
-
-    # Sometimes empty dictionaries are encoded...  This is a simple shortcut.
-    if encoder == "msgpack_base85_zip" and data == "cwTD&004mifd":
-        return {}
-    elif encoder == "msgpack_base85" and data == "fB":
-        return {}
-
-    if "json" in encoder and "msgack" in encoder:
-        raise YomboWarning("Unpickle data can only have json or msgpack, not both.")
-    if "base64" in encoder and "base85" in encoder:
-        raise YomboWarning("Unpickle data can only have base64 or base85, not both.")
-
-    if "base64" in encoder:
-        data = data + "=" * (-len(data) % 4)
-        data = base64.b64decode(data)
-    elif "base85" in encoder:
-        data = base64.b85decode(data)
-
-    try:
-        data = zlib.decompress(data)
-    except Exception as e:
-        pass
-
-    if "json" in encoder:
-        try:
-            data = bytes_to_unicode(json.loads(data))
-        except Exception as e:
-            raise YomboWarning(f"Error encoding json: {e}")
-    elif "msgpack" in encoder:
-        try:
-            data = bytes_to_unicode(msgpack.unpackb(data))
-        except Exception as e:
-            raise YomboWarning(f"Error encoding msgpack: {e}")
-
-    return data
 
 
 def instance_properties(obj, startswith_filter=None, endwith_filter=None):
@@ -757,22 +188,11 @@ def clean_kwargs(**kwargs):
     return data
 
 
-def clean_dict(dictionary, **kwargs):
-    """
-    Returns a dictionary without any keys starting with kwargs["start"] (default "_" underscore).
-    """
-    data = {}
-    start = kwargs.get("start", "_")
-    for key, val in dictionary.items():
-        if not key.startswith(start):
-            data[key] = val
-    return data
-
-
 def bytes_to_unicode(value):
     """
-    Converts strings, lists, and dictionarys to unicode. Handles nested items too. Non-strings are untouched.
-    Inspired by: http://stackoverflow.com/questions/13101653/python-convert-complex-dictionary-of-strings-from-unicode-to-ascii
+    Converts strings, lists, and dictionariess to unicode (strings). Handles nested items too. Non-strings are
+    untouched. Inspired by:
+    http://stackoverflow.com/questions/13101653/python-convert-complex-dictionary-of-strings-from-unicode-to-ascii
 
     :param value: Convert strings to unicode.
     :type value: dict, list, str
@@ -793,8 +213,9 @@ def bytes_to_unicode(value):
 
 def unicode_to_bytes(value):
     """
-    Converts strings, lists, and dictionarys to strings. Handles nested items too. Non-strings are untouched.
-    Inspired by: http://stackoverflow.com/questions/13101653/python-convert-complex-dictionary-of-strings-from-unicode-to-ascii
+    Converts strings, lists, and dictionaries to bytes. Handles nested items too. Non-strings are untouched.
+    Inspired by:
+    http://stackoverflow.com/questions/13101653/python-convert-complex-dictionary-of-strings-from-unicode-to-ascii
 
     :param value:
     :return:
@@ -813,227 +234,6 @@ def snake_case(value):
     return value.replace(" ", "_").lower()
 
 
-def dict_has_key(dictionary, keys):
-    """
-    Check if a dictionary has the given list of keys
-
-    **Usage**:
-
-    .. code-block:: python
-
-       from yombo.utils import dict_has_key
-       a_dictionary = {"identity": {"location": {"state": "California"}}}
-       a_list = ["identity", "location", "state"]
-       has_state = dict_has_key(a_dictionary, a_list)
-       #has_state is now: True
-
-    :param dictionary: A dictionary to check
-    :type dictionary: dict
-    :param key: A list of keys
-    :type key: list
-    """
-    if not isinstance(keys, list):
-        keys = [keys]
-    try:
-        for key in keys:
-             tossaway = dictionary[key]
-    except KeyError:
-        return False
-    except TypeError:
-        return False
-    else:
-        return True
-
-
-def dict_find_key(search_dictionary, val):
-    """
-    Find a key of a dictionary for a given value.
-
-    :param search_dictionary: The dictionary to search.
-    :type search_dictionary: dict
-    :param val: The value to search for.
-    :type val: any valid dict key type
-    :return: The key of dictionary dic given the value
-    :rtype: any valid dict key type
-    """
-    return [k for k, v in search_dictionary.items() if v == val][0]
-
-
-def dict_has_value(dictionary, keys, value):
-    """
-    Check if a dictionary has the value based on a given list of keys
-
-    **Usage**:
-
-    .. code-block:: python
-
-       from yombo.utils import dict_has_value
-       a_dictionary = {"identity": {"location": {"state": "California"}}}
-       a_list = ["identity", "location", "state"]
-       has_california = dict_has_value(a_dictionary, a_list, "California")
-       #has_california is now: True
-
-    :param dictionary: A dictionary to check
-    :type dictionary: dict
-    :param key: A list of keys
-    :type key: list
-    :param value: The value to test for
-    :type value: Any value a dictionary can hold.
-    """
-    if not isinstance(keys, list):
-        keys = [keys]
-    try:
-        for key in keys[:-1]:
-             dictionary = dictionary[key]
-        if dictionary[keys[-1]] == value:
-            return True
-    except KeyError:
-        return False
-    except TypeError:
-        return False
-    else:
-        return False
-
-
-def dict_set_value(dictionary, keys, value):
-    """
-    Set dictionary value based on a given list of keys
-
-    **Usage**:
-
-    .. code-block:: python
-
-       from yombo.utils import dict_set_value
-       a_dictionary = {}
-       a_list = ["identity", "location", "state"]
-       dict_set_value(a_dictionary, a_list, "California")
-       #a_dictionary now: {"identity": {"location": {"state": "California"}}}
-
-    :param dictionary: A dictionary to update
-    :type dictionary: dict
-    :param key: A list of keys
-    :type key: list
-    :param value: The value to set
-    :type value: Any value a dictionary can hold.
-    """
-    if not isinstance(keys, list):
-        keys = [keys]
-    for key in keys[:-1]:
-         dictionary = dictionary.setdefault(key, {})
-    dictionary[keys[-1]] = value
-
-
-def dict_get_value(dictionary, keys):
-    """
-    Get dictionary value based on a given list of keys
-
-    **Usage**:
-
-    .. code-block:: python
-
-       from yombo.utils import dict_get_value
-       a_dictionary  = {"identity": {"location": {"state": "California"}}}
-       a_list = ["identity", "location", "state"]
-       value = dict_get_value(a_dictionary, a_list)
-       #value = "California"
-
-    :param dictionary: A dictionary to update
-    :type dictionary: dict
-    :param key: A list of keys
-    :type key: list
-    """
-    if not isinstance(keys, list):
-        keys = [keys]
-    for key in keys[:-1]:
-         dictionary = dictionary.setdefault(key, {})
-    return dictionary[keys[-1]]
-
-
-def dict_merge(original, changes):
-    """
-    Recursively merges a dictionary with any changes. Sub-dictionaries won't be overwritten - just updated.
-
-    *Usage**:
-
-    .. code-block:: python
-
-        my_information = {
-            "name": "Mitch"
-            "phone: {
-                "mobile": "4155551212"
-            }
-        }
-
-        updated_information = {
-            "phone": {
-                "home": "4155552121"
-            }
-        }
-
-        print(dict_merge(my_information, updated_information))
-
-    # Output:
-
-    .. code-block:: none
-
-        {
-            "name": "Mitch"
-            "phone: {
-                "mobile": "4155551212",
-                "home": "4155552121"
-            }
-        }
-    """
-    for key, value in original.items():
-        if key not in changes:
-            changes[key] = value
-        elif isinstance(value, dict):
-            dict_merge(value, changes[key])
-    return changes
-
-
-def dict_diff(dict1, dict2):
-    """
-    Returns the differences between two dictionarys.
-
-    **Usage**:
-
-    .. code-block:: python
-
-       from yombo.utils import dict_diff
-       aa = dict(a=1, b=2)
-       bb = dict(a=2, b=2)
-       added, removed, modified, same = dict_diff(aa, bb)
-
-    :param dict1:
-    :param dict2:
-    :return:
-    """
-    dict1_keys = set(dict1.keys())
-    dict2_keys = set(dict2.keys())
-    intersect_keys = dict1_keys.intersection(dict2_keys)
-    added = dict1_keys - dict2_keys
-    removed = dict2_keys - dict1_keys
-    modified = {o : (dict1[o], dict2[o]) for o in intersect_keys if dict1[o] != dict2[o]}
-    same = set(o for o in intersect_keys if dict1[o] == dict2[o])
-    return added, removed, modified, same
-
-
-def dict_filter(input_dict, key_list):
-    """
-    Returns a new dictionary with only the supplied list of keys.
-
-    :param input_dict:
-    :param key_list:
-    :return:
-    """
-    return dict((key, input_dict[key]) for key in key_list if key in input_dict)
-
-
-def file_last_modified(path_to_file):
-    return os.path.getmtime(path_to_file)
-
-
 def percentage(part, whole):
     """
     Return a float representing a percentage of part against the whole.
@@ -1045,6 +245,24 @@ def percentage(part, whole):
     :return:
     """
     return 100 * float(part)/float(whole)
+
+
+def encode_binary(data, encoder: Optional[str] = None, convert_to_unicode: Optional[bool] = True):
+    """Converts to text."""
+    if encoder is None:
+        encoder = "base62"
+
+    if encoder == "base62":
+        data = base62.encodebytes(data)
+    elif encoder == "base64":
+        data = base64.b64encode(data)
+    elif encoder == "base85":
+        data = base64.b85encode(data)
+    else:
+        raise YomboWarning("Base compactor type: {encoder}")
+    if convert_to_unicode in (None, True):
+        return bytes_to_unicode(data)
+    return data
 
 
 def percentile(data_list, percent, key=lambda x:x):
@@ -1133,8 +351,6 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, max_res
     # used when return highest
     best_ratio = 0
     best_limiter = 0
-    # best_match = None
-    # best_key = None
 
     key_list = []
 
@@ -1147,10 +363,7 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, max_res
                 continue
         for attr in attributes:
             stringDiff.set_seq1(str(attr["value"]))
-            # try:
             stringDiff.set_seq2(str(getattr(item, attr["field"])))
-            # except TypeError:
-            #     continue  # might get here, even though it"s not a string. Catch it!
             ratio = stringDiff.ratio()
 
             if ratio < limiter:
@@ -1165,7 +378,6 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, max_res
     key_list = sorted(key_list, key=lambda k: k["ratio"], reverse=True)
     result_values = {}
     result_ratios = {}
-    # count = 0
     for item in key_list:
         if item["key"] in result_values:
             if item["ratio"] > result_ratios[item["key"]]:
@@ -1174,7 +386,6 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, max_res
         result_values[item["key"]] = item["value"]
         result_ratios[item["key"]] = item["ratio"]
 
-        # count += 1
         if isinstance(max_results, int) and (len(result_values) == max_results and max_results > 0):
             break
 
@@ -1191,7 +402,8 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, max_res
 
 def get_method_definition_level(meth):
     for cls in inspect.getmro(meth.__self__.__class__):
-        if meth.__name__ in cls.__dict__: return str(cls)
+        if meth.__name__ in cls.__dict__:
+            return str(cls)
     return None
 
 
@@ -1309,60 +521,8 @@ def display_hide_none(value, allow_string=None, default=None):
 
 
 def human_alphabet():
-    """ A subset of the alphabet, but with 1 (one), l (ele)...etc, removed."""
+    """ A subset of the alphabet, but with 1 (one), l (ele) removed."""
     return "ABCDEFGHJKLMNPQRTSUVWXYZabcdefghkmnopqrstuvwxyz23456789"
-
-
-def get_public_gw_id():
-    configs = get_component("yombo.lib.configuration")
-    try:
-        gwid = configs.get("core", "gwid")[0:6] + ":" + configs.get("core", "gwuuid")[0:5]
-        return gwid
-    except:
-        return "unknown"
-
-#
-# def get_library(name):
-#     """
-#     Returns the requested library by it's name using :ref:`FuzzySearch <fuzzysearch>`. This
-#     allows the name to be off by one or two letters.
-#
-#     :raises KeyError: When the requested component cannot be found.
-#     :param name: The name of the component (library or module) to find.  Returns a
-#         pointer to the object so it's functions and attributes can be accessed.
-#     :type name: string
-#     :return: Pointer to requested library or module.
-#     :rtype: Object reference
-#     """
-#     get_library.asdfsadf = 'asdfasdf'
-#     if not hasattr(get_library, "library"):
-#         from yombo.lib.loader import get_library
-#         get_library.library = get_library
-#     try:
-#         return get_library.library(name)
-#     except KeyError:
-#         raise KeyError("No such library" + str(name))
-#
-#
-# def get_module(name):
-#     """
-#     Returns the requested library by it's name using :ref:`FuzzySearch <fuzzysearch>`. This
-#     allows the name to be off by one or two letters.
-#
-#     :raises KeyError: When the requested component cannot be found.
-#     :param name: The name of the component (library or module) to find.  Returns a
-#         pointer to the object so it's functions and attributes can be accessed.
-#     :type name: string
-#     :return: Pointer to requested library or module.
-#     :rtype: Object reference
-#     """
-#     if not hasattr(get_module, "module"):
-#         from yombo.lib.loader import get_module
-#         get_module.library = get_library
-#     try:
-#         return get_module.library(name)
-#     except KeyError:
-#         raise KeyError("No such library" + str(name))
 
 
 def get_component(name):
@@ -1404,13 +564,13 @@ def is_string_bool(value=None):
         elif str(value).lower() == "none":
             return None
         else:
-            raise YomboWarning("String is not true, false, or none.")
+            raise YomboWarning(f"String is not true, false, or none: {value}")
     if isinstance(value, bool):
         return value
-    raise YomboWarning("String is not true, false, or none.")
+    raise YomboWarning(f"1 String is not true, false, or none: {value}")
 
 
-def is_true_false(value, only_bool=False):
+def is_true_false(value: Union[str, int, bool], only_bool: Optional[bool] = None) -> bool:
     """
     Used by various utils to determine if an input is high or low. Other functions like is_one_zero and is_yes_no will
     return the results in different ways based on results from here
@@ -1419,16 +579,18 @@ def is_true_false(value, only_bool=False):
     :param only_bool: If true, will only return bools. Otherwise, None will be returned if indeterminate input.
     :return:
     """
+    only_bool = only_bool or True
+
     if isinstance(value, bool):
-            return value
+        return value
     elif isinstance(value, str):
         value = value.lower()
-        if value in ("true", "1", "open", "opened", "on", "running", "alive"):
+        if value in (1, "true", "1", "open", "opened", "on", "running", "alive"):
             return True
-        if value in ("false", "0", "close", "closed", "off", "stopped", "dead"):
+        if value in (0, "false", "0", "close", "closed", "off", "stopped", "dead"):
             return False
     elif isinstance(value, int):
-            if value == 1:
+            if value >= 1:
                 return True
             elif value == 0:
                 return False
@@ -1522,26 +684,6 @@ def multiply(value, amount):
         return value  # return input if value cannot be multiplied.
 
 
-def logarithm(value, base=math.e):
-    """
-    Primarily used for templates as a filter. Performs logarithm math to a value.
-
-    :param value:
-    :param base:
-    """
-    try:
-        return math.log(float(value), float(base))
-    except (ValueError, TypeError):
-        return value  # return input if value cannot be processed.
-
-
-def fail_when_undefined(value):
-    """Filter to force a failure when the value is undefined."""
-    if isinstance(value, jinja2.Undefined):
-        value()
-    return value
-
-
 def test_bit(int_type, offset):
     """
     Tests whether a specific bit is on or off for a given int.
@@ -1558,11 +700,6 @@ def test_bit(int_type, offset):
     else:
         return 0
     # return int_type & mask
-
-
-class ViewAsObject(object):
-    def __init__(self, d):
-        self.__dict__ = d
 
 
 def sleep(secs):
@@ -1588,55 +725,3 @@ def sleep(secs):
     :type secs: int of float
     """
     return deferLater(reactor, secs, lambda: None)
-
-
-def hashid_encode(input_value, min_length=2, salt="", alphabet="ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvxyz234"):
-    """
-    Encodes an int and returns a string. This typically shortens the length and is great for
-    showing users a better representation of a large int - if they don't care about the actual value.
-
-    :param input_value: Int - Input value to encode to a string.
-    :param min_length: Int - Minimum length string should be. Will pad if required.
-    :param salt: String - A salt to mangle the value. This isn't secure!
-    :param alphabet: String -
-    :return:
-    """
-    hashid = Hashids(salt, min_length, alphabet)
-    return hashid.encode(input_value)
-
-
-def hashid_decode(input_value, min_length=2, salt="", alphabet="ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvxyz234"):
-    hashid = Hashids(salt, min_length, alphabet)
-    return hashid.decode(input_value)
-
-
-@memoize_
-def is_freebsd():
-    """
-    Returns if the host is freebsd or not
-    """
-    return sys.platform.startswith("freebsd")
-
-
-@memoize_
-def is_linux():
-    """
-    Returns if the host is linus or not
-    """
-    return sys.platform.startswith("linux")
-
-
-@memoize_
-def is_windows():
-    """
-    Returns if the host is windows or not
-    """
-    return sys.platform.startswith("win")
-
-
-@memoize_
-def is_sunos():
-    """
-    Returns if the host is sunos or not
-    """
-    return sys.platform.startswith("sunos")

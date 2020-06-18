@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+if [ "$EUID" -eq 0 ]; then
+    echo ""
+    echo "This must NOT be run as root, instead run as the user running the Yombo Gateway"
+    echo ""
+    echo "If you created a dedicate account for this software, first log into that account."
+    echo "Then run this script as:"
+    echo ""
+    echo "mycomputer> bash ./pyenv-install.sh"
+    echo ""
+    exit
+fi
+
+YOMBO_SCRIPT_HELPER_DIR="$( cd "$(dirname "$0")" ; pwd -P )"
+YOMBO_SCRIPT_DIR="$(dirname $YOMBO_SCRIPT_HELPER_DIR)"
+YOMBO_ROOT_DIR="$(dirname $YOMBO_SCRIPT_DIR)"
+
+LOGFILE=$HOME/yombo_install.log
+LOGFILEDETAILED=$HOME/yombo_install_detailed.log
+
+function logsetup {
+    exec > >(tee -a $LOGFILE $LOGFILEDETAILED)
+    exec 2>&1
+}
+
+function log {
+    echo "[$(date --rfc-3339=seconds)]: $*"
+}
+logsetup
+
+bash "$YOMBO_SCRIPT_HELPER_DIR"/pyenv_install
+
+cd "$YOMBO_ROOT_DIR"/yombo/frontend
+log "==> yarn - Installing new packages."
+yarn install >> $LOGFILEDETAILED 2>&1
+log "==> yarn - Upgrading older packages."
+yarn upgrade >> $LOGFILEDETAILED 2>&1
+log "==> yarn - Autoclean / remove unused packages."
+yarn autoclean >> $LOGFILEDETAILED 2>&1

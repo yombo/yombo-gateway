@@ -1,100 +1,102 @@
 <template>
-  <div class="row">
-    <div class="col-md-12">
-      <card card-body-classes="table-full-width">
-        <div slot="header">
-          <div class="fa-pull-right">
-            <nuxt-link class="navbar-brand fa-pull-right" :to="localePath('dashboard-gateways-add')">
-              <button type="button" class="btn btn-info btn-sm" data-dismiss="modal">
-                <i class="fas fa-plus-circle fa-pull-left" style="font-size: 1.5em;"></i> &nbsp; Add new</a>
-                </button>
-            </nuxt-link>
-            <br>
-            <el-input
-                  class="fa-pull-right"
-                  v-model="search"
-                  size="mini"
-                  :placeholder="$t('ui.common.search_ddd')"/>
-          </div>
-          <h4 class="card-title">
-            {{ $t('ui.navigation.gateways') }}
-          </h4>
-        <last-updated refresh="yombo/gateways/fetch" getter="yombo/gateways/display_age"/>
-        </div>
-        <div class="card-body">
-          <el-table
-            :data="items.filter(data => !search
-             || data.label.toLowerCase().includes(search.toLowerCase())
-             || data.description.toLowerCase().includes(search.toLowerCase())
-             )"
-          >
-            <el-table-column :label="$t('ui.common.label')" property="label"></el-table-column>
-            <el-table-column :label="$t('ui.common.description')" property="description"></el-table-column>
-            <el-table-column :label="$t('ui.common.status')">
+  <dashboard-display-index
+    :pageTitle="$t('ui.navigation.gateways')"
+    addPath="dashboard-locations-add"
+    displayAgePath="gateway/locations/display_age"
+    :dashboardFetchData="dashboardFetchData"
+    :dashboardDisplayItems="dashboardDisplayItems"
+    :apiErrors="apiErrors"
+  >
+    <span v-if="dashboardDisplayItems">
+      <el-table stripe :data="dashboardQueriedData">
+            <el-table-column
+              :label="$t('ui.common.label')"
+              property="label">
               <div slot-scope="props" class="table-actions">
-                {{ $t($filters.status(props.row.status)) }}
+                <div
+                  :title="props.row.label"
+                  v-b-popover.hover.right.html="
+                  'Gateway ID: ' + props.row.id +
+                  '<br>Machine Label: ' + props.row.machine_label +
+                  '<br>DNS: ' + props.row.dns_name +
+                  '<br>IPv4: ' + props.row.internal_ipv4 + ' / ' + props.row.external_ipv4 +
+                  '<br>IPv4: ' + props.row.internal_ipv6"
+                  delay="10"
+                >
+                  {{props.row.label}}
+                </div>
               </div>
-
             </el-table-column>
             <el-table-column
-              align="right" :label="$t('ui.common.actions')">
+              :label="$t('ui.common.parent')">
               <div slot-scope="props" class="table-actions">
-                <action-details path="dashboard-gateways" :id="props.row.id"/>
-                <action-edit path="dashboard-gateways" :id="props.row.id"/>
-
-                <template v-if="props.row.status == 1">
-                  <action-disable dispatch="yombo/gateways/disable" :id="props.row.id"
-                               i18n="scene" :item_label="props.full_label"/>
-                </template>
-                <template v-else>
-                  <action-enable dispatch="yombo/gateways/enable" :id="props.row.id"
-                               i18n="scene" :item_label="props.full_label"/>
-                </template>
-
-                <action-delete dispatch="yombo/gateways/delete" :id="props.row.id"
-                               i18n="scene" :item_label="props.full_label"/>
+                {{props.row.master_gateway_id}}
+<!--             this is causing it fail. and wierdly reload... -->
+<!--                {{ gateway(props.row.master_gateway_id)["label"] }}-->
+<!--                {{ gateway(props.row.master_gateway_id) }}-->
               </div>
             </el-table-column>
-          </el-table>
-        </div>
-      </card>
-    </div>
-
-  </div>
+            <el-table-column
+              :min-width="120"
+              :label="$t('ui.common.description')"
+              property="description">
+            </el-table-column>
+        <el-table-column
+          align="right" :label="$t('ui.common.actions')">
+          <div slot-scope="props" class="table-actions">
+            <dashboard-row-actions
+              :typeLabel="$t('ui.common.area')"
+              :displayItem="props.row"
+              :itemLabel="props.row.id"
+              :id="props.row.id"
+              detailIcon="dashboard-gateways-id-details"
+              editIcon="dashboard-gateways-id-edit"
+              disableIcon="gateway/gateways/disable"
+              enableIcon="gateway/gateways/enable"
+              deleteIcon="gateway/gateways/delete"
+            ></dashboard-row-actions>
+          </div>
+        </el-table-column>
+      </el-table>
+    </span>
+  </dashboard-display-index>
 </template>
+
 <script>
-import { ActionDelete, ActionDetails, ActionDisable, ActionEdit, ActionEnable } from '@/components/Dashboard/Actions';
-import LastUpdated from '@/components/Dashboard/LastUpdated.vue'
+  import { dashboardApiIndexMixin } from "@/mixins/dashboardApiIndexMixin";
+  import Fuse from 'fuse.js';
 
+  import { GW_Gateway } from '@/models/gateway'
 
-import { Table, TableColumn } from 'element-ui';
-
-import Gateway from '@/models/gateway'
-
-export default {
-  layout: 'dashboard',
-  components: {
-    [Table.name]: Table,
-    [TableColumn.name]: TableColumn,
-    ActionDelete,
-    ActionDetails,
-    ActionDisable,
-    ActionEdit,
-    ActionEnable,
-    LastUpdated,
-  },
-  data() {
-    return {
-      search: '',
-    };
-  },
-  computed: {
-    items () {
-      return Gateway.query().orderBy('label', 'desc').get()
+  export default {
+    layout: 'dashboard',
+    mixins: [dashboardApiIndexMixin],
+    data() {
+      return {
+        dashboardBusModel: "locations",
+      }
     },
-  },
-  mounted () {
-    this.$store.dispatch('yombo/gateways/refresh');
-  },
-};
+    methods: {
+      gateway(gateway_id) {
+        console.log(`looking for gateway: ${gateway_id}`);
+        if (gateway_id)
+          return GW_Gateway.query().where('id', gateway_id).first();
+        console.log("returning empty gateway.");
+        return {label: ""}
+      },
+      dashboardGetFuseData() {
+        this.dashboardDisplayItems = GW_Gateway.query()
+                                      .orderBy('master_gateway_id')
+                                      .orderBy('is_master', 'desc')
+                                      .orderBy('label', 'asc')
+                                      .get();
+        this.dashboardFuseSearch = new Fuse(this.dashboardDisplayItems, {
+          keys: [
+            { name: 'label', weight: 0.7 },
+            { name: 'description', weight: 0.3 },
+          ]
+        });
+      }
+    },
+  };
 </script>

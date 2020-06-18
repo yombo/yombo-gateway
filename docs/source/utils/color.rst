@@ -10,3 +10,6 @@ Color (yombo.utils.color)
 
 .. automodule:: yombo.utils.color
    :members:
+   :private-members:
+   :special-members:
+   :undoc-members:

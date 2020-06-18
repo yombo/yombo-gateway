@@ -1,12 +1,12 @@
-@include form-control-placeholder($medium-gray, 1);
+@include form-control-placeholder($brand-primary, 1);
 
 .form-control {
   background-color: $transparent-bg;
   border: 1px solid $light-gray;
-  border-radius: $btn-round-radius;
+  border-radius: $form-control-radius;
   color: $black-color;
   line-height: normal;
-  font-size: $font-size-small;
+  font-size: $font-size-base;
   @include transition-input-focus-color();
   @include box-shadow(none);
 
@@ -284,8 +284,7 @@ textarea.form-control{
   max-height: 80px;
   padding: 10px 10px 0 0;
   resize: none;
-  border: none;
-  border-bottom: 1px solid $light-gray;
+  border: 1px solid $light-gray;
   border-radius: 0;
   line-height: 2;
 
@@ -331,7 +330,7 @@ textarea.form-control{
 }
 
 .form-text{
-  font-size: $font-size-small;
+  font-size: $font-size-medium;
 }
 
 .form-control-lg{

@@ -22,7 +22,7 @@
           <nuxt-link class="nav-link" :to="localePath('lock')">
             <i class="fas fa-lock" style="font-size: 18px"></i>
             <p>
-              <span class="d-lg-none d-md-block">Lock</span>
+              <span class="d-lg-none d-md-block">{{ $t('ui.navigation.lock') }}</span>
             </p>
           </nuxt-link>
         </li>
@@ -30,7 +30,7 @@
           <nuxt-link class="nav-link" :to="localePath('index')">
             <i class="fas fa-home" style="font-size: 18px"></i>
             <p>
-              <span class="d-lg-none d-md-block">Homer</span>
+              <span class="d-lg-none d-md-block">{{ $t('ui.navigation.home') }}</span>
             </p>
           </nuxt-link>
         </li>
@@ -38,15 +38,7 @@
           <nuxt-link class="nav-link" :to="localePath('controltower')">
             <i class="fas fa-broadcast-tower fa-lg"></i>
             <p>
-              <span class="d-lg-none d-md-block">Control Tower</span>
-            </p>
-          </nuxt-link>
-        </li>
-        <li class="nav-item">
-          <nuxt-link class="nav-link" :to="localePath('dashboard')">
-            <i class="fas fa-tachometer-alt fa-lg"></i>
-            <p>
-              <span class="d-lg-none d-md-block">Control Tower</span>
+              <span class="d-lg-none d-md-block">{{ $t('ui.navigation.control_tower') }}</span>
             </p>
           </nuxt-link>
         </li>
@@ -55,18 +47,23 @@
                    class="nav-item"
                    icon="now-ui-icons ui-1_bell-53">
 
-          <a class="dropdown-item" href="#">{{ $t('ui.alerts.messages.none')}}</a>
+          <a class="dropdown-item" href="#">{{ $t('ui.alerts.messages.none') }}</a>
         </drop-down>
         <drop-down tag="li"
                    position="right"
                    class="nav-item"
                    icon="now-ui-icons users_single-02">
-
-          <nuxt-link class="dropdown-item" :to="localePath('dashboard')">About</nuxt-link>
+          <nuxt-link class="dropdown-item" :to="localePath('dashboard')">{{ $t('ui.navigation.dashboard') }}</nuxt-link>
+          <nuxt-link class="dropdown-item" :to="localePath('global_items')">{{ $t('ui.navigation.global_items') }}</nuxt-link>
+          <nuxt-link class="dropdown-item" :to="localePath('frontend_settings')">{{ $t('ui.navigation.frontend_settings') }}</nuxt-link>
+          <nuxt-link class="dropdown-item" :to="localePath('about')">{{ $t('ui.navigation.about') }}</nuxt-link>
+          <b-dropdown-divider />
           <a class="dropdown-item" href="https://my.yombo.net">My.Yombo.Net</a>
-          <nuxt-link class="dropdown-item" :to="localePath('frontend_settings')">Frontend Settings</nuxt-link>
           <b-dropdown-divider />
           <a class="dropdown-item" href="/user/logout">{{ $t('ui.navigation.logout')}}</a>
+          <b-dropdown-divider />
+          <nuxt-link class="dropdown-item text-danger" :to="localePath('restart')">{{ $t('ui.common.restart')}}</nuxt-link>
+          <nuxt-link class="dropdown-item text-danger" :to="localePath('shutdown')">{{ $t('ui.common.shutdown')}}</nuxt-link>
         </drop-down>
 
         <drop-down tag="li"
@@ -126,6 +123,9 @@ export default {
     listenerDeleteBreadcrumb(index) {
       this.crumbs.splice(index, 1);
     },
+    listenerAppendBreadcrumb(data) {
+      this.crumbs.push(data);
+    },
     setupBreadcrumbs: function() {
       if (this.$route.path == "/") {
         return {}
@@ -170,6 +170,7 @@ export default {
     this.setupBreadcrumbs();
     this.$bus.$on('listenerUpdateBreadcrumb', e=> this.listenerUpdateBreadcrumb(e));
     this.$bus.$on('listenerDeleteBreadcrumb', e=> this.listenerDeleteBreadcrumb(e));
+    this.$bus.$on('listenerAppendBreadcrumb', e=> this.listenerAppendBreadcrumb(e));
   },
   watch: {
     '$route.path': function (id) {
@@ -178,5 +179,3 @@ export default {
   },
 };
 </script>
-<style>
-</style>

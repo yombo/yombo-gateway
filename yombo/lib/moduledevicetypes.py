@@ -11,10 +11,12 @@ Maps what modules have what device types. Used by the module library primarily.
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.24.0
 
-:copyright: Copyright 2019 by Yombo.
+:copyright: Copyright 2019-2020 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/moduledevicetypes.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/moduledevicetypes.html>`_
 """
+from typing import Any, ClassVar, Dict, List, Optional, Type, Union
+
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks
 
@@ -22,48 +24,38 @@ from twisted.internet.defer import inlineCallbacks
 from yombo.core.entity import Entity
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
+from yombo.core.schemas import ModuleDeviceTypeSchema
 from yombo.mixins.library_db_child_mixin import LibraryDBChildMixin
-from yombo.mixins.sync_to_everywhere_mixin import SyncToEverywhereMixin
-from yombo.mixins.library_db_model_mixin import LibraryDBModelMixin
+from yombo.mixins.library_db_parent_mixin import LibraryDBParentMixin
 from yombo.mixins.library_search_mixin import LibrarySearchMixin
 
 logger = get_logger("library.module_device_types")
 
 
-class ModuleDeviceType(Entity, LibraryDBChildMixin, SyncToEverywhereMixin):
+class ModuleDeviceType(Entity, LibraryDBChildMixin):
     """
     A class to manage a single module device type.
     """
-    _primary_column = "module_device_type_id"  # Used by mixins
-
-    def __init__(self, parent, incoming, source=None):
-        """
-        Setup the module device type object using information passed in.
-
-        :param module_device_type: An module device type with all required items to create the class.
-        :type module_device_type: dict
-        """
-        self._Entity_type = "Module device type"
-        self._Entity_label_attribute = "module_device_type_id"
-
-        super().__init__(parent)
-        self._setup_class_model(incoming, source=source)
+    _Entity_type: ClassVar[str] = "Module device type"
+    _Entity_label_attribute: ClassVar[str] = "module_device_type_id"
 
 
-class ModuleDeviceTypes(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
+class ModuleDeviceTypes(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
     """
     Manages module device types.
     """
-    module_device_types = {}
+    module_device_types: dict = {}
 
-    # The following are used by get(), get_advanced(), search(), and search_advanced()
-    _class_storage_load_hook_prefix = "module_device_type"
-    _class_storage_load_db_class = ModuleDeviceType
-    _class_storage_attribute_name = "module_device_types"
-    _class_storage_search_fields = [
+    # The remaining attributes are used by various mixins.
+    _storage_primary_field_name: ClassVar[str] = "module_device_type_id"
+    _storage_label_name: ClassVar[str] = "module_device_type"
+    _storage_class_reference: ClassVar = ModuleDeviceType
+    _storage_schema: ClassVar = ModuleDeviceTypeSchema()
+    _storage_attribute_name: ClassVar[str] = "module_device_types"
+    _storage_search_fields: ClassVar[List[str]] = [
         "module_device_type_id", "module_id", "device_type_id"
     ]
-    _class_storage_sort_key = "machine_label"
+    _storage_attribute_sort_key: ClassVar[str] = "machine_label"
 
     @inlineCallbacks
     def _init_(self, **kwargs):
@@ -71,7 +63,7 @@ class ModuleDeviceTypes(YomboLibrary, LibraryDBModelMixin, LibrarySearchMixin):
         Setups up the basic framework. Nothing is loaded in here until the
         Load() stage.
         """
-        yield self._class_storage_load_from_database()
+        yield self.load_from_database()
 
     def get_by_module_id(self, module_id):
         """

@@ -2,6 +2,7 @@
  * Various filters used for components.
  */
 import Vue from "vue";
+import moment from 'moment'
 
 /**
  * Converts a null (and hence undefined) value to a blank string.
@@ -95,6 +96,43 @@ function yes_no(value) {
   }
 }
 
+function lowercase(value) {
+  console.log(`lowercase: ${value}`);
+  return value.toLowerCase();
+}
+
+/**
+ * The following functions convert epoch to varioius standard formats.
+ *
+ * Locale detection changes are watched in: /frontend/plugins/root_items.js
+ */
+
+// 1585473840 -> Mar 29, 2020
+function epoch_to_date(value, format = "ll") {
+  console.log(`epoch_to_date: ${value} = ${format}`);
+  return moment.unix(parseInt(value)).format(format);
+}
+
+// 1585473840 -> 3/29/2020
+function epoch_to_date_terse(value, format = "l") {
+  return moment.unix(value).format(format);
+}
+
+// 1585473840 -> Mar 29, 2020 2:24:00 AM
+function epoch_to_datetime(value, format = "ll LTS") {
+  return moment.unix(value).format(format);
+}
+
+// 1585473840 -> 3/29/2020 2:24:00 AM
+function epoch_to_datetime_terse(value, format = "l LTS") {
+  return moment.unix(value).format(format);
+}
+
+Vue.filter('lowercase', lowercase);
+Vue.filter('epoch_to_date', epoch_to_date);
+Vue.filter('epoch_to_date_terse', epoch_to_date_terse);
+Vue.filter('epoch_to_datetime', epoch_to_datetime);
+Vue.filter('epoch_to_datetime_terse', epoch_to_datetime_terse);
 Vue.filter('hide_null', hide_null);
 Vue.filter('mask_encrypted', mask_encrypted);
 Vue.filter('public', publicstr);
@@ -102,4 +140,13 @@ Vue.filter('status', status);
 Vue.filter('true_false', true_false);
 Vue.filter('true_false_string', true_false_string);
 Vue.filter('yes_no', yes_no);
+Vue.filter('str_limit', function (value, size) {
+  if (!value) return '';
+  value = value.toString();
+
+  if (value.length <= size) {
+    return value;
+  }
+  return value.substr(0, size) + '...';
+});
 Vue.prototype.$filters = Vue.options.filters

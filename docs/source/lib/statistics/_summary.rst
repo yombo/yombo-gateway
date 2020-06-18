@@ -10,8 +10,8 @@ Statistics (yombo.lib.statistics)
 
 This library is responsible for handling system statistics.
 
-**See the `statistics developer docs <https://yombo.net/docs/libraries/statistics`_ for more
-details.**
+See the `statistics developer docs <https://yombo.net/docs/libraries/statistics`_ for more
+details.
 
 Statistics Library
 =========================
@@ -20,7 +20,6 @@ Statistics Library
    :maxdepth: 1
 
    __init__.rst
-
 
 Helper files and classes
 ========================

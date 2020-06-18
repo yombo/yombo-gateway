@@ -1,12 +1,10 @@
-# This file was created by Yombo for use with Yombo Python gateway automation
-# software.  Details can be found at https://yombo.net
 """
 Use ffmpeg to convert any supported video to h.264 and attempt to create a streamable video.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.24.0
 
-:copyright: Copyright 2018 by Yombo.
+:copyright: Copyright 2018-2020 by Yombo.
 :license: LICENSE for details.
 """
 
@@ -15,9 +13,8 @@ from twisted.internet.defer import inlineCallbacks, Deferred
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
-from yombo.classes.image import Image
 
-from .ffmpeg import YBOFFmpeg
+from .yboffmpeg import YBOFFmpeg
 
 logger = get_logger("utils.ffmpeg.mjpeg")
 

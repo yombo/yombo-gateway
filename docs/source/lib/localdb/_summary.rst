@@ -8,35 +8,19 @@
 LocalDB (yombo.lib.localdb)
 =====================================================
 
-This library is responsible for managing SSL/TLS certs.
+This library is responsible for handling all database connections.
 
 **See the `localdb developer docs <https://yombo.net/docs/libraries/localdb`_ for more
 details.**
 
-Local DB Library
-=========================
+LocalDB Library and associated items
+=====================================
 
 .. toctree::
    :maxdepth: 1
 
    __init__.rst
-
-
-Helper files and classes
-========================
-
-.. toctree::
-   :maxdepth: 1
-
-   _tools.rst
-   authkeys.rst
-   devices.rst
-   devicetypes.rst
-   events.rst
-   nodes.rst
-   states.rst
-   statistics.rst
-   variables.py
-   websessions.py
+   migrations/_summary.rst
+   tools.rst
 
 Last updated: |today|

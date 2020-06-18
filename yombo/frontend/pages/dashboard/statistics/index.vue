@@ -8,13 +8,6 @@
             </h2>
           </div>
           <p>Content has not been created, this is a simple placeholder.</p>
-          <p>
-            Content sources:
-          </p>
-          <ul>
-            <li>Logic: </li>
-            <li>Display: </li>
-          </ul>
         </card>
     </div>
 

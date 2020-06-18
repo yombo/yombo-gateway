@@ -57,7 +57,7 @@ REQUIRES = [
     'klein',
     'logger',
     'markdown',
-    'msgpack-python',
+    'msgpack',
     'netaddr',
     'netifaces',
     'numpy',

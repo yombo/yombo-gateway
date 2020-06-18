@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+#
+# This script shouldn't be called directly. This is called by 'ybo daemon'
+#
 # a basic wrapper around the yombo.tac (yombo service).
 
 if [[ "$EUID" -eq 0 ]]; then
@@ -23,7 +26,7 @@ LOGCFGFILE=$WORK_DIR/log/config.log
 LOGFILE=$WORK_DIR/log/service.log
 
 cd $SCRIPTPATH/..
-export SSL_CERT_FILE="$(python -m certifi)"
+#export SSL_CERT_FILE="$(python -m certifi)"
 
 #Check if pyenv is being used and isn't loaded...
 if [ -f ".python-version" ] ; then
@@ -41,9 +44,8 @@ do
   echo "Starting yombo svc..."
   eval $YOMBO_SERVICE
   OUT=$?
-  echo "Last output: $OUT"
-  if [ $OUT -ge "126" ]; then
-    # Gateway died for some reason or was told to quit, so, lets exit!
-    exit $OUT
+  echo "Gateway ended: $OUT"
+  if [ $OUT != "4" ]; then   # 4 is the exit code to signify a restart
+    exit $OUT  # Gateway died for some reason or was told to quit, so, lets exit!
   fi
 done

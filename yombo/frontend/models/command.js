@@ -1,14 +1,13 @@
-import { Model } from '@vuex-orm/core'
+import { Base_Model } from '@/models/base_model'
 
-export default class Command extends Model {
+class Command extends Base_Model {
   static entity = 'commands';
 
-  static primaryKey = 'id';
-  
   static fields () {
     return {
       id: this.string(''),
-      voice_cmd: this.string(''),
+      user_id: this.string(''),
+      original_user_id: this.string(''),
       machine_label: this.string(''),
       label: this.string(''),
       description: this.string(''),
@@ -18,4 +17,12 @@ export default class Command extends Model {
       updated_at: this.number(0),
     }
   }
+}
+
+export class GW_Command extends Command {
+  static entity = 'gw_commands';
+}
+
+export class Yombo_Command extends Command {
+  static entity = 'yombo_commands';
 }

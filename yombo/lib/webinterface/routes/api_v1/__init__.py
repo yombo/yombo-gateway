@@ -5,9 +5,20 @@ from yombo.utils import random_string
 from yombo.constants import CONTENT_TYPE_JSON
 
 
-def args_to_dict(arguments):
+def request_args(request):
+    """
+    Accepts the request and returns the submitted arguments as an easy to consume dictionary. This
+    can also handle one level deep nested dictionaries within the arguments. For example:
+    http://localhost:8080/api/v1/system/backup/configs?password1=hello&argument2=hi&argument[inside]=nested
+
+    This would return:
+    {'password1': 'hello', 'argument2': 'hi', 'argument': {'inside': 'nested'}}
+
+    :param request: The web request.
+    :return:
+    """
     results = {}
-    for argument, value in arguments.items():
+    for argument, value in request.args.items():
         value = value[0]
         if "[" in argument:
             name = argument[0:argument.find("[")]
@@ -90,6 +101,8 @@ def return_good(request, data_type, id=None, attributes=None, included=None, cod
 def return_error(request, errors=None, code=None, meta=None):
     request.setHeader("Content-Type", CONTENT_TYPE_JSON)
     if errors is None:
+        errors = [{}]
+    elif isinstance(errors, str):
         errors = [{}]
     if code is None:
         code = 400

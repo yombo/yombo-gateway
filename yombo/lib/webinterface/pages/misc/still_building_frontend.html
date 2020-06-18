@@ -1,0 +1,35 @@
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row" style="padding-top: 3em; padding-bottom: 2em;">
+        <div class="col-12 col-md-10 col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-header text-center">
+                  <h2>Still building frontend</h2>
+                </div>
+                <div class="card-body">
+                    <p></p>
+                    <p>
+                        It appears the system is still loading or the frontend is still building.
+                        Please wait a little bit and <strong><a href=".">try again</a></strong>.
+                    </p>
+                    <hr>
+                    <p>
+                        Some additional reading while you wait:
+                    </p>
+                    <ul>
+                        <li><a href="https://yombo.net" target="_blank">Yombo.Net</a></li>
+                        <li><a href="https://yombo.net/docs" target="_blank">Documentation</a></li>
+                        <li><a href="https://yombo.net/kbs" target="_blank">Knowledge base articles</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block body_bottom %}
+<!-- jQuery, js.cookie, bootstrap4, bootstrap select, bootstrap datatables, are you sure -->
+<script src="/js/basic_app.js"></script>
+{% endblock %}

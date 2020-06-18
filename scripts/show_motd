@@ -5,7 +5,6 @@
 A simple MOTD generator than can be used to update
 """
 import argparse
-from collections import OrderedDict
 import configparser
 from datetime import timedelta
 import netifaces
@@ -14,6 +13,7 @@ import platform
 import subprocess
 import re
 import sys
+import tomlkit as tk
 
 
 class CN:
@@ -65,9 +65,9 @@ else:
 data_path_exists = os.path.isdir(data_path)
 
 program_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
 sys.path.append(program_path)
 import yombo.constants as constants
+
 git_hash = subprocess.check_output(["git", "-C", program_path, "rev-parse", "--short", "HEAD"]).strip()
 git_branch = subprocess.check_output(["git", "-C", program_path, "rev-parse", "--abbrev-ref", "HEAD"]).strip()
 
@@ -89,16 +89,31 @@ for i in interfaces:
 if len(internal_hostnames) == 0:
     internal_hostnames = ['localhost']
 
-yombo_ini = 'Not configured'
+yombo_toml = 'Not configured'
 if data_path_exists is True:
     try:
-        config_parser = configparser.ConfigParser()
-        config_parser.read(f"{data_path}/yombo.ini")
-        yombo_ini = "Valid"
-        dns_fqdn = config_parser.get("dns", "fqdn", fallback="None")
-        external_ip = config_parser.get("core", "externalipaddress_v4", fallback="None")
-        nonsecure_port = config_parser.get("webinterface", "nonsecure_port", fallback=8080)
-        secure_port = config_parser.get("webinterface", "secure_port", fallback=8443)
+        toml_file_pointer = open(f"{data_path}/yombo.toml", 'r')
+        yombo_toml_meta = tk.parse(toml_file_pointer.read())
+        yombo_toml = "Valid"
+        try:
+            dns_fqdn = yombo_toml_meta["dns"]["fqdn"]
+        except:
+            dns_fqdn = "None"
+        try:
+            dns_fqdn = yombo_toml_meta["core"]["externalipaddress"]["v4"]
+        except:
+            dns_fqdn = "None"
+        try:
+            dns_fqdn = yombo_toml_meta["dns"]["fqdn"]
+        except:
+            dns_fqdn = "None"
+        try:
+            dns_fqdn = yombo_toml_meta["dns"]["fqdn"]
+        except:
+            dns_fqdn = "None"
+        external_ip = yombo_toml_meta.get("core", {}).get("externalipaddress_v4", "None")
+        nonsecure_port = yombo_toml_meta.get("webinterface", {}).get("nonsecure_port", 8080)
+        secure_port = yombo_toml_meta.get("webinterface", {}).get("secure_port", 8443)
     except IOError as e:
         pass
     except configparser.NoSectionError:
@@ -116,17 +131,17 @@ if dns_fqdn != "None":
     external = f"https://external.{dns_fqdn}:{secure_port}"
     globaluri = f"http://{dns_fqdn}"
 else:
-    local = "fhttp://127.0.0.1:{nonsecure_port}"
+    local = f"http://127.0.0.1:{nonsecure_port}"
     internal = []
     for hostname in internal_hostnames:
         internal.append(f"http://{hostname}:{nonsecure_port}")
     external = "Not available"
     globaluri = "Not available"
 
-data_yombo = OrderedDict()
-data_system = OrderedDict()
+data_yombo = {}
+data_system = {}
 data_system["Hostname"] = str(platform.node())
-data_yombo["yombo.ini"] = yombo_ini
+data_yombo["yombo.toml"] = yombo_toml
 data_yombo["Yombo Version"] = yombo_version
 data_yombo["FQDN"] = dns_fqdn
 data_yombo["From anywhere"] = globaluri
@@ -161,11 +176,19 @@ if data_path_exists is True:
     output = df.communicate()[0].decode("utf-8")
     device, size, used, available, percent, mountpoint = \
         output.split("\n")[1].split()
-    data_system["Disk"] = f"{used} / {available}"
+    data_system["Disk"] = f"{used} Used / {available} Avail"
 else:
     data_system["Disk"] = "Data directory not found"
 
 version = sys.version_info
+data_system["Python"] = f"{version.major}.{version.minor}.{version.micro} ({version.releaselevel})"
+
+ip_address_base = "IP Address"
+
+for i in range(len(ip_addresses)):
+    label = f"{ip_address_base} {i+1}"
+    data_system[label] = ip_addresses[i]
+
 data_system["Python"] = f"{version.major}.{version.minor}.{version.micro} ({version.releaselevel})"
 # Now convert the dict to a list.
 data_formatted = [
@@ -174,16 +197,16 @@ data_formatted = [
     f"{CBU.WHITE}Yombo Access URLS and details{CB.DONE}",
 ]
 
+justify_length = max(len(x) for x in data_yombo) + 1
 for key, value in data_yombo.items():
-    data_formatted.append(f"{CB.RED}{key}{CB.DONE}: {value}")
+    data_formatted.append(f"{CB.RED}{key.ljust(justify_length)}{CB.DONE}: {value}")
 
 data_formatted.append("")
 data_formatted.append(f"{CBU.WHITE}System details{CB.DONE}")
+justify_length = max(len(x) for x in data_yombo) + 1
 for key, value in data_system.items():
-    data_formatted.append(f"{CB.RED}{key}{CB.DONE}: {value}")
+    data_formatted.append(f"{CB.RED}{key.ljust(justify_length)}{CB.DONE}: {value}")
 
-for ip in ip_addresses:
-    data_formatted.append(f"{CB.RED}IP Address{CB.DONE}: {ip}")
 
 print("")
 print(f"{CB.BLUE}Yombo Gateway{CB.DONE} Learn more at: https://yombo.net")
@@ -221,4 +244,3 @@ for logo_idx, logo_elem in enumerate(logo):
         print(f"{logo_elem}  {data_formatted[logo_idx]}")
     except IndexError:
         print(f"{logo_elem}")
-

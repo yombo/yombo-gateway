@@ -1,0 +1,1 @@
+ROLE_ID_LENGTH = 38

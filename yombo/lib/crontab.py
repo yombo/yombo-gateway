@@ -24,24 +24,24 @@ Examples:
 
    # */2 * * * *  # call every other minute)
    myArgs=("arg1", "arg2")
-   self._CronTab.new(self.myFunction, min=range(0, 59, 2), args=myArgs)  # use range and specify a step
+   self._CronTab.new(self.myFunction, mins=range(0, 59, 2), args=myArgs)  # use range and specify a step
    # The range just creates a list of minutes. You can also just pass a list of numbers.
 
    # 0 0,6,12,18 * * *  # at midnight, 6am, 12pm, 6pm
    # myKwargs={"argument1" : "value1", "argument2" : "value2"}
-   self._CronTab.new(self.myFunction, min=0, hour=(0,6,12,18), kwargs=myKwargs)  # Notice the list of hours to run.
+   self._CronTab.new(self.myFunction, mins=0, hours=(0,6,12,18), kwargs=myKwargs)  # Notice the list of hours to run.
 
    # 0 12 * 0 0 # at 12:00pm on sunday
-   self._CronTab.new(self.myFunction, min=0, hour=12, dow=0 )  # use range and specify a step
+   self._CronTab.new(self.myFunction, mins=0, hours=12, dow=0 )  # use range and specify a step
 
    # 0 12 * 0 0 # at 12:00pm on sunday
-   self._CronTab.new(self.myFunction, min=0, hour=12, dow=0 )  # use range and specify a step
+   self._CronTab.new(self.myFunction, mins=0, hours=12, dow=0 )  # use range and specify a step
 
 Usage example
 
 .. code-block:: python
 
-   self.MyCron = self._CronTab.new(self.myFunction, min=0, hour=12, dow=0 )
+   self.MyCron = self._CronTab.new(self.myFunction, mins=0, hours=12, dow=0 )
 
    #want to disable for a while..
    self.MyCron.disable()
@@ -54,21 +54,26 @@ Usage example
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2013-2019 by Yombo.
+:copyright: Copyright 2013-2020 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/crontab.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/crontab.html>`_
 """
 # Import python libraries
 from datetime import datetime, timedelta
+from typing import Any, Callable, ClassVar, Dict, List, Optional, Type, Union
 
 # Import twisted libraries
 from twisted.internet.task import LoopingCall
 from twisted.internet import reactor
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboWarning, YomboCronTabError
+from yombo.constants.crontabs import CRONTAB_ID_LENGTH
+from yombo.core.entity import Entity
+from yombo.core.exceptions import YomboCronTabError
 from yombo.core.library import YomboLibrary
 from yombo.mixins.library_search_mixin import LibrarySearchMixin
+from yombo.mixins.child_storage_accessors_mixin import ChildStorageAccessorsMixin
+from yombo.mixins.parent_storage_accessors_mixin import ParentStorageAccessorsMixin
 from yombo.core.log import get_logger
 from yombo.utils import random_string
 
@@ -81,36 +86,38 @@ class AllMatch(set):
     def __contains__(self, item): return True
 
 
-allMatch = AllMatch()
-
-
 def conv_to_set(obj):  # Allow single integer to be provided
-    if isinstance(obj, str) and obj == "*": # return AllMatch
-        return conv_to_set(AllMatch) 
+    if (isinstance(obj, str) and obj == "*") or obj is None:  # return AllMatch
+        return set(AllMatch())
     if isinstance(obj, int):
         return set([obj])  # Single item
     if not isinstance(obj, set):
-        obj = set(obj)
+        return set(obj)
     return obj
 
 
-class CronTab(YomboLibrary, LibrarySearchMixin):
+class CronTab(YomboLibrary, ParentStorageAccessorsMixin, LibrarySearchMixin):
     """
     Manages all cron jobs.
 
     All modules already have a predefined reference to this library as
     `self._CronTab`. All documentation will reference this use case.
     """
-    cron_tasks = {}
+    crontabs: ClassVar[dict] = {}
+    check_cron_tabs_loop = None  # a simple loop that checks all cron tabs to see if they need to run.
 
-    # The following are used by get(), get_advanced(), search(), and search_advanced()
-    _class_storage_attribute_name = "cron_tasks"
-    _class_storage_search_fields = [
-        "cron_id", "label", "enabled"
+    _storage_attribute_name: ClassVar[str] = "crontabs"
+    _storage_attribute_sort_key: ClassVar[str] = "label"
+    _storage_primary_field_name: ClassVar[str] = "cron_id"
+    _storage_fields: ClassVar[list] = ["label", "cron_id", "mins_orig", "hours_orig", "days_orig", "months_orig",
+                                       "dow_orig", "", "args", "kwargs"]
+    _storage_pickled_fields: ClassVar[Dict[str, str]] = {"args": "json", "kwargs": "json"}
+    _storage_search_fields: ClassVar[List[str]] = [
+        "cron_id", "label"
     ]
-    _class_storage_sort_key = "machine_label"
+    _storage_attribute_sort_key: ClassVar[str] = "machine_label"
 
-    def __contains__(self, cron_task_requested):
+    def __contains__(self, cron_task_requested: str):
         """
         .. note::
 
@@ -126,7 +133,6 @@ class CronTab(YomboLibrary, LibrarySearchMixin):
 
         :raises YomboWarning: Raised when request is malformed.
         :param cron_task_requested: The cron task ID, label, or machine_label to search for.
-        :type cron_task_requested: string
         :return: Returns true if exists, otherwise false.
         :rtype: bool
         """
@@ -136,7 +142,7 @@ class CronTab(YomboLibrary, LibrarySearchMixin):
         except:
             return False
 
-    def __getitem__(self, cron_task_requested):
+    def __getitem__(self, cron_task_requested: str):
         """
         .. note::
 
@@ -154,13 +160,12 @@ class CronTab(YomboLibrary, LibrarySearchMixin):
         :raises YomboWarning: Raised when request is malformed.
         :raises KeyError: Raised when request is not found.
         :param cron_task_requested: The cron task ID, label, or machine_label to search for.
-        :type cron_task_requested: string
         :return: A pointer to the cron task instance.
         :rtype: instance
         """
         return self.get(cron_task_requested)
 
-    def __setitem__(self, cron_task_requested, value):
+    def __setitem__(self, cron_task_requested: str, value: Any):
         """
         Sets are not allowed. Raises exception.
 
@@ -168,7 +173,7 @@ class CronTab(YomboLibrary, LibrarySearchMixin):
         """
         raise Exception("Not allowed.")
 
-    def __delitem__(self, cron_task_requested):
+    def __delitem__(self, cron_task_requested: str):
         """
         Deletes are not allowed. Raises exception.
 
@@ -178,7 +183,7 @@ class CronTab(YomboLibrary, LibrarySearchMixin):
 
     def __iter__(self):
         """ iter cron tasks. """
-        return self.cron_tasks.__iter__()
+        return self.crontabs.__iter__()
 
     def __len__(self):
         """
@@ -187,16 +192,16 @@ class CronTab(YomboLibrary, LibrarySearchMixin):
         :return: The number of cron tasks configured.
         :rtype: int
         """
-        return len(self.cron_tasks)
+        return len(self.crontabs)
 
     def keys(self):
         """
         Returns the keys (cron task ID's) that are configured.
 
-        :return: A list of cron task IDs. 
+        :return: A list of cron task IDs.
         :rtype: list
         """
-        return list(self.cron_tasks.keys())
+        return list(self.crontabs.keys())
 
     def items(self):
         """
@@ -205,10 +210,10 @@ class CronTab(YomboLibrary, LibrarySearchMixin):
         :return: A list of tuples.
         :rtype: list
         """
-        return list(self.cron_tasks.items())
+        return list(self.crontabs.items())
 
     def values(self):
-        return list(self.cron_tasks.values())
+        return list(self.crontabs.values())
 
     def _init_(self, **kwargs):
         """
@@ -217,7 +222,6 @@ class CronTab(YomboLibrary, LibrarySearchMixin):
         :param loader: A pointer to the Loader library.
         :type loader: Instance of Loader
         """
-        self.check_cron_tabs_loop = None  # a simple loop that checks all cron tabs to see if they need to run.
         self.check_cron_tabs_loop = LoopingCall(self.check_cron_tabs)
 
     def _start_(self, **kwargs):
@@ -249,25 +253,28 @@ class CronTab(YomboLibrary, LibrarySearchMixin):
         Checks to see if cron needs to run anything.
         """
         the_time = datetime(*datetime.now().timetuple()[:5])
-        for task in self.cron_tasks:
-            self.cron_tasks[task].check(the_time)
+        logger.debug("Check if cronjobs need to be run.: {the_time}", the_time=the_time)
+        for task in self.crontabs:
+            self.crontabs[task].check(the_time)
 
-    def new(self, crontab_callback, min=allMatch, hour=allMatch, day=allMatch,
-            month=allMatch, dow=allMatch, label="", enabled=True, args=(),
-            kwargs={}, source=None, gateway_id=None):
+    def new(self, crontab_callback: Callable, mins: Optional[Union[str, int, list]] = None,
+            hours: Optional[Union[str, int, list]] = None, days: Optional[Union[str, int, list]] = None,
+            months: Optional[Union[str, int, list]] = None, dow: Optional[Union[str, int, list]] = None,
+            label="", enabled=True, args: Optional[list] = None, kwargs: Optional[dict] = {},
+            cron_id: Optional[str] = None, load_source: Optional = None):
         """
         Add a new :class:`CronTask`.
 
         :param crontab_callback: Function to call
         :type crontab_callback: Reference to function
-        :param min: (optional) Minute to perform crontab_callback
-        :type min: "*", int, or list of ints
-        :param hour: (optional) Hour to perform crontab_callback
-        :type hour: "*", int, or list of ints
-        :param day: (optional) Day to perform crontab_callback
-        :type day: "*", int, or list of ints
-        :param month: (optional) Month to perform crontab_callback
-        :type month: "*", int, or list of ints
+        :param mins: (optional) Minute to perform crontab_callback
+        :type mins: "*", int, or list of ints
+        :param hours: (optional) Hour to perform crontab_callback
+        :type hours: "*", int, or list of ints
+        :param days: (optional) Day to perform crontab_callback
+        :type days: "*", int, or list of ints
+        :param months: (optional) Month to perform crontab_callback
+        :type months: "*", int, or list of ints
         :param dow: (optional) Day of week to perform crontab_callback
         :type dow: "*", int, or list of ints
         :param label: (optional) Label for cron job.
@@ -278,24 +285,23 @@ class CronTab(YomboLibrary, LibrarySearchMixin):
         :type args: List of arguments
         :param kwargs: (optional) Keyword arguments to pass to "crontab_callback"
         :type kwargs: Dict of arguments
+        :param cron_id: A label for the cron task, used to find it again later.
         """
-        if source is None:
-            source = "system"
-        if gateway_id is None:
-            gateway_id = self.gateway_id
+        if load_source is None:
+            load_source = "system"
 
-        newCron = CronTask(self, crontab_callback, min=min, hour=hour, day=day, month=month,
-            dow=dow, label=label, enabled=enabled, crontab_library=self, args=args,
-            kwargs=kwargs, source=source, gateway_id=gateway_id)
-        self.cron_tasks[newCron.cron_id] = newCron
-        return newCron
+        new_cron = CronTask(self, crontab_callback, mins=mins, hours=hours, days=days, months=months,
+                            dow=dow, label=label, enabled=enabled, args=args,
+                            kwargs=kwargs, cron_id=cron_id, load_source=load_source)
+        self.crontabs[new_cron.cron_id] = new_cron
+        return new_cron
 
     def remove(self, cron_task_requested):
         """
         Removes a CronTask. Accepts either cron id or cron name.
 
         To remove a cron (note, it"s a method not a dictionary):
-        
+
             >>> self._CronTab.remove("7s453hhxl3")  #by cron id
 
         or::
@@ -308,7 +314,7 @@ class CronTab(YomboLibrary, LibrarySearchMixin):
         """
         crontask = self.get(cron_task_requested)
         crontask.disable()
-        del self.cron_tasks[crontask.cron_id]
+        del self.crontabs[crontask.cron_id]
 
     def enable(self, cron_task_requested):
         """
@@ -410,53 +416,56 @@ class CronTab(YomboLibrary, LibrarySearchMixin):
         :param kwargs: (optional) Keyword arguments to pass to "crontab_callback"
         :type kwargs: Dict of arguments
         """
-        dateObj = None
-        try: # hh:mm
+        try:
             try:
-                dateObj = datetime.strptime(timestring, "%I:%M%p")
+                date_object = datetime.strptime(timestring, "%I:%M%p")
             except:
                 try:
-                    dateObj = datetime.strptime(timestring, "%I:%M %p")
+                    date_object = datetime.strptime(timestring, "%I:%M %p")
                 except:
-                    dateObj = datetime.strptime(timestring, "%H:%M")
-            return self.new(crontab_callback, dateObj.minute, dateObj.hour, label=label,
-                   args=args, kwargs=kwargs)
+                    date_object = datetime.strptime(timestring, "%H:%M")
+            return self.new(crontab_callback, date_object.minute, date_object.hour, label=label,
+                            args=args, kwargs=kwargs)
         except:
-          YomboCronTabError("Unable to parse time string. Try HH:MM (24 hour time) format")
+            YomboCronTabError("Unable to parse time string. Try HH:MM (24 hour time) format")
 
 
-class CronTask(object):
+class CronTask(Entity, ChildStorageAccessorsMixin):
     """
     Individual cron task job, can be used to control the cron task.
     """
+    _Entity_type: ClassVar[str] = "CronTask"
+    _Entity_label_attribute: ClassVar[str] = "cron_id"
+
     def __init__(self, parent,
-                       crontab_callback, min=allMatch, hour=allMatch, day=allMatch,
-                       month=allMatch, dow=allMatch, label="",
-                       enabled=True, crontab_library=None, args=(), kwargs={},
-                       cron_id=None, source=None, gateway_id=None):
+                 crontab_callback: Callable, mins: Optional[Union[str, int, list]] = None,
+                 hours: Optional[Union[str, int, list]] = None, days: Optional[Union[str, int, list]] = None,
+                 months: Optional[Union[str, int, list]] = None, dow: Optional[Union[str, int, list]] = None,
+                 label="", enabled=True, args: Optional[list] = None, kwargs: Optional[dict] = {},
+                 cron_id: Optional[str] = None, load_source: Optional = None) -> None:
         """
         Setup the cron event.
         """
-        self._Parent = parent
-        self.crontab_library = crontab_library
-        self.cron_id = cron_id or random_string(length=10)
+        super().__init__(parent)  # Setup entity.
+
+        self.mins_orig = mins if mins is not None else "*"
+        self.hours_orig = hours if hours is not None else "*"
+        self.days_orig = days if days is not None else "*"
+        self.months_orig = months if months is not None else "*"
+        self.dow_orig = dow if dow is not None else "*"
+
+        self.cron_id = cron_id or random_string(length=CRONTAB_ID_LENGTH)
         self.crontab_callback = crontab_callback
-        self.mins = conv_to_set(min)
-        self.mins_orig = min
-        self.hours = conv_to_set(hour)
-        self.hours_orig = hour
-        self.days = conv_to_set(day)
-        self.days_orig = day
-        self.months = conv_to_set(month)
-        self.months_orig = month
+        self.mins = conv_to_set(mins)
+        self.hours = conv_to_set(hours)
+        self.days = conv_to_set(days)
+        self.months = conv_to_set(months)
         self.dow = conv_to_set(dow)
-        self.dow_orig = dow
         self.label = label
         self.enabled = enabled
         self.args = args
         self.kwargs = kwargs
-        self.source = source
-        self.gateway_id = gateway_id or parent.gateway_id
+        self.load_source = load_source
 
     def __del__(self):
         """
@@ -464,8 +473,7 @@ class CronTask(object):
         if it's linked.
         """
         self.enabled = False
-        if self.crontab_library is not None:
-          self.crontab_library.remove(self.cron_id)
+        self._Parent.remove(self.cron_id)
 
     def enable(self):
         """
@@ -492,11 +500,11 @@ class CronTask(object):
         """
         Return True if this event should trigger at the specified datetime
         """
-        return ((t.minute     in self.mins) and
-                (t.hour       in self.hours) and
-                (t.day        in self.days) and
-                (t.month      in self.months) and
-                (t.weekday()  in self.dow))
+        return ((t.minute in self.mins) and
+                (t.hour in self.hours) and
+                (t.day in self.days) and
+                (t.month in self.months) and
+                (t.weekday() in self.dow))
 
     def check(self, t):
         """"
@@ -506,8 +514,11 @@ class CronTask(object):
         :param t: Current time in a format for the cron task.
         :return: None
         """
+        logger.debug("CronTask::check({t}) -- {crontab_callback}", t=t, crontab_callback=self.crontab_callback)
         if self.enabled is True and self.match_time(t):
-            self.crontab_library._Statistics.increment("lib.crontab.jobs", bucket_size=15, anon=True)
+            logger.info("CronTask::check - enabled: {enabled}, match_time: {match_time}",
+                        enabled=self.enabled, match_time=self.match_time(t))
+            self._Parent._Statistics.increment("lib.crontab.jobs", bucket_size=15, anon=True)
             self.crontab_callback(*self.args, **self.kwargs)
 
     def run_now(self):
@@ -517,3 +528,15 @@ class CronTask(object):
         :return: None
         """
         self.crontab_callback(*self.args, **self.kwargs)
+
+    # def to_external_all(self, **kwargs) -> list:
+    #     """
+    #     Returns all items as a list. Typically used to output to API.
+    #
+    #     :return:
+    #     """
+    #     results = []
+    #     for item_id, item in self.crontabs.items():
+    #         data = item.to_dict(include_meta=False)
+    #         results.append(data)
+    #     return results

@@ -1,14 +1,13 @@
-// From: https://github.com/nuxt/nuxt.js/issues/1139
+/**
+ * Creates a global bus to communicate between components. See:
+ * https://binbytes.com/blog/create-global-event-bus-in-nuxtjs
+ */
 import Vue from 'vue';
 
-export default (ctx, inject) => {
-  const bus = new Vue;
-  inject('bus', bus);
-};
-//
-// export default function ( {app, store} ){
-//   console.log("adding busss....")
-//   app.$bus = new Vue
-//   if (store)
-//     store.$bus = app.$bus
-// }
+const eventBus = {}
+
+eventBus.install = function (Vue) {
+  Vue.prototype.$bus = new Vue()
+}
+
+Vue.use(eventBus)
