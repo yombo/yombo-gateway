@@ -404,8 +404,9 @@ class SSLCerts(YomboLibrary):
         self._Events.new(event_type="sslcerts",
                          event_subtype="generate_new",
                          attributes=(args["sslname"], kwargs["cn"], san_string, duration),
-                         request_by="sslcerts",
-                         request_by_type="library")
+                         _request_context=self._FullName,
+                         _authentication=self.AUTH_USER
+                         )
 
         req.set_pubkey(key)
 

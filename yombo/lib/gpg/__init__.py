@@ -102,6 +102,8 @@ class GPG(YomboLibrary, ParentStorageAccessorsMixin, LibrarySearchMixin):
         Get the GnuPG subsystem up and loaded.
         """
         aes_key_path = f"{self._working_dir}/etc/gpg/aes.key"
+        self.send_my_gpg_key_loop = LoopingCall(self.send_my_gpg_key)
+        self.send_my_gpg_key_loop.start(random_int(60 * 60 * 6, .2), now=False)
 
         self.key_generation_status = None
         self.sks_pools = [  # Send to a few to ensure we get our key seeded
@@ -120,13 +122,6 @@ class GPG(YomboLibrary, ParentStorageAccessorsMixin, LibrarySearchMixin):
         yield self.validate_gpg_ready()  # Ensure we have a GPG keypair for use.
 
         # self.get_root_key()
-
-    def _start_(self, **kwargs):
-        """
-        We don't do anything, but "pass" so we don't generate an exception.
-        """
-        self.send_my_gpg_key_loop = LoopingCall(self.send_my_gpg_key)
-        self.send_my_gpg_key_loop.start(random_int(60 * 60 * 6, .2))
 
     def _stop_(self, **kwargs):
         """
@@ -391,7 +386,7 @@ class GPG(YomboLibrary, ParentStorageAccessorsMixin, LibrarySearchMixin):
         except YomboWarning as e:
             logger.warn("Unable to send GPG key to Yombo: {e}", e=e)
             return
-        self._Configs.set("gpg.last_sent_yombo", int(time()))
+        self._Configs.set("gpg.last_sent_yombo", int(time()), ref_source=self)
 
     @inlineCallbacks
     def send_my_gpg_key_to_keyserver(self):
@@ -406,7 +401,7 @@ class GPG(YomboLibrary, ParentStorageAccessorsMixin, LibrarySearchMixin):
             yield threads.deferToThread(self._send_my_gpg_key_to_keyserver,
                                         server,
                                         self.gpg_key_id)
-        self._Configs.set("gpg.last_sent_keyserver", int(time()))
+        self._Configs.set("gpg.last_sent_keyserver", int(time()), ref_source=self)
 
     def _send_my_gpg_key_to_keyserver(self, server, gpg_key_id):
         print(f"sending key to server: {gpg_key_id} -> {server}")
@@ -427,7 +422,7 @@ class GPG(YomboLibrary, ParentStorageAccessorsMixin, LibrarySearchMixin):
                                         self.sks_pools[0],
                                         fingerprint)
             yield sleep(0.5)
-        self._Configs.set("gpg.last_received_keyserver", int(time()))
+        self._Configs.set("gpg.last_received_keyserver", int(time()), ref_source=self)
 
     def _get_my_gpg_key_from_keyserver(self, server, gpg_key_id):
         return self.gpg.recv_keys(f"hkp://{server}", gpg_key_id)
@@ -662,7 +657,7 @@ class GPG(YomboLibrary, ParentStorageAccessorsMixin, LibrarySearchMixin):
 
         newfingerprint = newkey.fingerprint
 
-        self._Configs.set("gpg.fingerprint", newfingerprint)
+        self._Configs.set("gpg.fingerprint", newfingerprint, ref_source=self)
         secret_file = f"{self._working_dir}/etc/gpg/{newfingerprint}.pass"
         yield self._Files.save(secret_file, passphrase)
         secret_file = f"{self._working_dir}/etc/gpg/last.pass"
@@ -673,9 +668,9 @@ class GPG(YomboLibrary, ParentStorageAccessorsMixin, LibrarySearchMixin):
         if newfingerprint not in self.gpg_keys:
             raise YomboWarning(f"Unable to find newly generated key: {newfingerprint}")
 
-        self._Configs.set("gpg.last_sent_yombo", None)
-        self._Configs.set("gpg.last_sent_keyserver", None)
-        self._Configs.set("gpg.last_received_keyserver", None)
+        self._Configs.set("gpg.last_sent_yombo", None, ref_source=self)
+        self._Configs.set("gpg.last_sent_keyserver", None, ref_source=self)
+        self._Configs.set("gpg.last_received_keyserver", None, ref_source=self)
 
         # self.send_my_gpg_key()
         self._generating_key = False

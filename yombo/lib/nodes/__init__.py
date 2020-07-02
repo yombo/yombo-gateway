@@ -208,26 +208,28 @@ class Nodes(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
         return children
 
     @inlineCallbacks
-    def new(self, node_type: str, machine_label: str,
-            label: str, data: Any, gateway_id: Optional[str] = None,
-            node_parent_id: Optional[str] = None, weight: Optional[int] = None,
-            always_load: Optional[int] = None, destination: Optional[str] = None,
-            data_content_type: Optional[str] = None, status: Optional[int] = None,
-            load_source: Optional[str] = None):
+    def new(self, node_type: str, machine_label: str, label: str, data: Any, gateway_id: Optional[str] = None,
+            node_parent_id: Optional[str] = None, weight: Optional[int] = None, always_load: Optional[int] = None,
+            destination: Optional[str] = None, data_content_type: Optional[str] = None, status: Optional[int] = None,
+            _load_source: Optional[str] = None, _request_context: Optional[str] = None,
+            _authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None, **kwargs):
         """
         Create a new node.
 
-        :param gateway_id: The gateway_id this node should be sent to.
-        :param node_parent_id: If set, this node becomes a child node to another node.
         :param node_type: What kind of node this is: scene, automation, etc
         :param machine_label: Node machine_label
         :param label: Node human label.
+        :param data: Node data.
+        :param gateway_id: The gateway_id this node should be sent to.
+        :param node_parent_id: If set, this node becomes a child node to another node.
         :param weight: Weighting is used for sorting.
         :param always_load: If the node should be loaded by the gateway.
         :param destination: Such as "gw" if it's to be loaded by a gateway. Otherwise, any string.
-        :param data: The actual data.
         :param data_content_type: Apply any processing to the data when saving/loading: string, int, float, json, msgpack
         :param status: 0 for disabled, 1 for enabled, 2 for deleted
+        :param _load_source: Where the data originated from. One of: local, database, yombo, system
+        :param _request_context: Context about the request. Such as an IP address of the source.
+        :param _authentication: An auth item such as a websession or authkey.
         :return:
         """
         if data_content_type is None:
@@ -250,10 +252,10 @@ class Nodes(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
         if status is None:
             status = 1
 
-        if load_source is None:
-            load_source = "library"
+        if _load_source is None:
+            _load_source = "library"
 
-        if load_source not in ("amqp", "api"):
+        if _load_source not in ("amqp", "api"):
             results = yield self._YomboAPI.new("nodes",
                                                {
                                                    "gateway_id": gateway_id,
@@ -272,7 +274,11 @@ class Nodes(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
         print(f"!!!! NEW node API results: {results}")
 
         print(f"!!!! NEW node, load_an_item_to_memory")
-        results = yield self.load_an_item_to_memory(results["content"]["data"]["attributes"], load_source=load_source)
+        results = yield self.load_an_item_to_memory(results["content"]["data"]["attributes"],
+                                                    load_source=_load_source,
+                                                    request_context="nodes.__init__::new",
+                                                    authentication=_authentication
+                                                    )
         print(f"!!!! NEW node, load_an_item_to_memory, results: {results}")
 
         # Todo: ensure node is uploaded to yombo!

@@ -21,10 +21,11 @@ To use this class, the following attributes must be defined within the library a
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/mixins/library_db_parent_mixin.html>`_
 """
+from inspect import signature
 from marshmallow.exceptions import ValidationError
 import sys
 import traceback
-from typing import Any, ClassVar, Dict, List, Optional, Union
+from typing import Any, ClassVar, Dict, List, Optional, Type, Union
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, maybeDeferred
@@ -34,6 +35,7 @@ from yombo.constants import LOCAL_SOURCES
 from yombo.core.exceptions import YomboWarning, YomboMarshmallowValidationError
 from yombo.core.log import get_logger
 from yombo.mixins.parent_storage_accessors_mixin import ParentStorageAccessorsMixin
+from yombo.utils.caller import caller_string
 from yombo.utils.hookinvoke import global_invoke_all
 
 logger = get_logger("mixins.library_db_parent_mixin")
@@ -155,12 +157,16 @@ class LibraryDBParentMixin(ParentStorageAccessorsMixin):
         return results
 
     @inlineCallbacks
-    def load_db_items_to_memory(self, items, load_source=None, save_into_storage: Optional[bool] = None, **kwargs):
+    def load_db_items_to_memory(self, items, load_source: Optional[str] = None, request_context: Optional[str] = None,
+                                authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None,
+                                save_into_storage: Optional[bool] = None, **kwargs):
         """
         This loads multiple items into memory, a list of pointers to the new items will be returned.
 
         :param items:
-        :param load_source:
+        :param load_source: Where the data originated from. One of: local, database, yombo, system
+        :param request_context: Context about the request. Such as an IP address of the source.
+        :param authentication: An auth item such as a websession or authkey.
         :param save_into_storage: If false, won't save into the library storage
         :param kwargs:
         :return: The new instance.
@@ -175,11 +181,16 @@ class LibraryDBParentMixin(ParentStorageAccessorsMixin):
         results = {}
         for item in items:
             # print(f"parent, about to call load_an_item_to_memory: {item}")
+            if authentication is None and "request_by" in item and "request_by_type" in item:
+                authentication = self._Permissions.find_authentication_item(item["request_by"], item["request_by_type"])
             try:
-                instance = yield self.load_an_item_to_memory(item,
-                                                             load_source=load_source,
-                                                             save_into_storage=save_into_storage,
-                                                             **kwargs)
+                instance = yield self.load_an_item_to_memory(
+                    item,
+                    load_source=load_source,
+                    request_context=caller_string(),
+                    authentication=authentication,
+                    save_into_storage=save_into_storage,
+                    **kwargs)
             except YomboWarning as e:
                 logger.warn(str(e))
                 continue
@@ -212,9 +223,9 @@ class LibraryDBParentMixin(ParentStorageAccessorsMixin):
 
     @inlineCallbacks
     def load_an_item_to_memory(self, incoming: dict,
-                               authentication: Optional = None,
                                load_source: Optional[str] = None,
-                               generated_source: Optional[str] = None,
+                               request_context: Optional[str] = None,
+                               authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None,
                                save_into_storage: Optional[bool] = None,
                                **kwargs,
                                ):
@@ -225,10 +236,16 @@ class LibraryDBParentMixin(ParentStorageAccessorsMixin):
         This method simply just calls do_class_storage_load_an_item_to_memory using the library variables
         for references.
 
+        Authentication can take place in one of two ways:
+
+          * as 'request_by' and 'request_by_type' inside incoming - Usually from the database or other external source
+            to load existing items.
+          * as 'authenticatin' - Used internally to add new items.
+
         :param incoming:
-        :param authentication: An authentication (AuthMixin source) to set request_by and request_type
+        :param authentication: An authentication (AuthMixin source)
         :param load_source: Where the data originated from. One of: local, database, yombo, system
-        :param generated_source: Last resource string to use as a source.
+        :param request_context: Last resource string to use as a source.
         :param save_into_storage: If false, won't save into the library storage
         :param kwargs:
         :return: The new instance.
@@ -241,26 +258,24 @@ class LibraryDBParentMixin(ParentStorageAccessorsMixin):
             return
 
         if self._new_items_require_authentication:
-            request_by = None
-            request_by_type = None
-            request_context = None
-            if "request_by" in incoming:
-                request_by = incoming["request_by"]
-            if "request_by_type" in incoming:
-                request_by_type = incoming["request_by_type"]
-            if "request_context" in incoming:
-                request_context = incoming["request_context"]
-            try:
-                incoming["request_by"], incoming["request_by_type"] = self._Permissions.request_by_info(
-                    authentication, request_by, request_by_type)
-            except YomboWarning:
+            if authentication is not None:
+                self._Users.validate_authentication(authentication)
+            elif "request_by" in incoming and "request_by_type" in incoming:
+                authentication = self._Permissions.find_authentication_item(incoming["request_by"],
+                                                                            incoming["request_by_type"])
+            else:
                 raise YomboWarning(f"New {self._storage_label_name} must have a valid authentication or request_by and"
-                                   f" request_by_type.")
+                                   f" request_by_type in 'incoming'.")
 
+        if "request_by" in incoming:
+            del incoming["request_by"]
+        if "request_by_type" in incoming:
+            del incoming["request_by_type"]
+
+        if "request_context" in incoming:
             if request_context is None:
-                incoming["request_context"] = generated_source  # get the module/class/function name of caller
-            # request.request_context = incoming["request_context"]
-            # incoming["request_context"] = request.request_id
+                request_context = incoming["request_context"]
+            del incoming["request_context"]
 
         if load_source is None:
             load_source = "local"  # get the module/class/function name of caller
@@ -305,11 +320,13 @@ class LibraryDBParentMixin(ParentStorageAccessorsMixin):
                                     )
         try:
             instance = self.do_load_an_item_to_memory(
-                            storage,
-                            self._storage_class_reference_getter(incoming),
-                            incoming,
-                            load_source=load_source,
-                            **kwargs)
+                storage,
+                self._storage_class_reference_getter(incoming),
+                incoming,
+                load_source=load_source,
+                request_context=request_context,
+                authentication=authentication,
+                **kwargs)
         except ValidationError as e:
             raise YomboWarning(f"Unable to load item '{self._Parent._storage_label_name}' into memory: {e}."
                                f" Incoming: {incoming}")
@@ -365,16 +382,20 @@ class LibraryDBParentMixin(ParentStorageAccessorsMixin):
         """
         pass
 
-    def do_load_an_item_to_memory(self, storage: dict, klass, incoming: dict, load_source: str,
-                                  save_into_storage: Optional[bool] = None, **kwargs):
+    def do_load_an_item_to_memory(self, storage: dict, klass, incoming: dict, save_into_storage: Optional[bool] = None,
+                                  load_source: Optional[str] = None, request_context: Optional[str] = None,
+                                  authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None,
+                                  **kwargs):
         """
         Loads data into memory using basic hook calls.
 
         :param storage: Dictionary to store new data in.
         :param klass: The class to use to store the data
         :param incoming: Data to be saved
-        :param load_source: Where the data originated from: database, amqp, system, module
         :param save_into_storage: If false, won't save into the library storage
+        :param load_source: Where the data originated from. One of: local, database, yombo, system
+        :param request_context: Context about the request. Such as an IP address of the source.
+        :param authentication: An auth item such as a websession or authkey.
         :return:
         """
         if self._storage_primary_field_name in incoming:
@@ -388,6 +409,8 @@ class LibraryDBParentMixin(ParentStorageAccessorsMixin):
             instance = klass(self,
                              incoming=incoming,
                              load_source=load_source,
+                             request_context=request_context,
+                             authentication=authentication,
                              **kwargs)
             # Used by system data mixin to save atoms/states manually.
             if hasattr(self, "save_an_item_to_memory") and callable(self.save_an_item_to_memory):
@@ -457,23 +480,88 @@ class LibraryDBParentMixin(ParentStorageAccessorsMixin):
     ########################################################
     # Generic handlers for creating/update/deleting items. #
     ########################################################
-    def update(self, item_id: str, incoming: dict, **kwargs) -> None:
+    @inlineCallbacks
+    def api_update(self, item_id: str, incoming: dict, load_source: Optional[str] = None,
+                   request_context: Optional[str] = None, authentication: Optional[Any] = None, **kwargs) -> None:
+        """
+        Update the resource item, but update at API.Yombo.net first, before updating locally. This helps
+        the ensure we have permission to make the change.
+
+        When to use api_update() instead of update()?
+
+          * Want to ensure the changes are persistent between restarts of the gateway.
+          * Checks that we have proper permission to make the requested change. This really only applies to
+            global items like commands, device types, modules, etc.
+          * api_update() treats the action like a synchronous update. Only returns when the action is done or failed.
+
+        When to use update():
+
+          * updates the data locally immediately, and then eventually calls API.Yombo.net to save as well as to the
+            local database.
+          * typically used for local items, such as states, device commands, etc.
+          * update() Returns right away, uses a callLater feature to schedule uploading to API.Yombo.net / local DB.
+
+        :param item_id: The item's id (or machine_label) to update.
+        :param incoming: A dictionary of key/values to update.
+        :param load_source: Where the data originated from. One of: local, database, yombo, system
+        :param request_context: Context about the request. Such as an IP address of the source.
+        :param authentication: An auth item such as a websession or authkey.
+        :param kwargs:
+        :return:
+        """
+        if incoming is None or isinstance(incoming, dict) is False:
+            raise YomboWarning("api_update() - 'incoming' must be a dictionary.")
+
+        if self._Parent._storage_schema is not None:
+            try:
+                data = incoming.copy()
+                print("parent api_update, a")
+                try:
+                    data = dict(self._Parent._storage_schema.load(data, partial=True))
+                except Exception as e:
+                    print(e)
+                    raise e
+                print("parent api_update, b")
+                incoming = {key: data[key] for key in incoming.keys() if key in data}
+            except ValidationError as e:
+                logger.warn("Validation error loading '{item_name}', reason: {e}",
+                            item_name=self._Parent._storage_label_name, e=e)
+                raise YomboMarshmallowValidationError(e)
+
+        get_args = signature(self.get)
+        if "instance" in get_args.parameters:
+            print(f"api_update: theItem: has instance...")
+            the_item = self.get(item_id, instance=True)
+        else:
+            print(f"api_update: theItem: NO instance...")
+            the_item = self.get(item_id)
+        print(f"api_update: theItem: {type(the_item)} - {the_item}")
+        if load_source == "library":  # Disable sending to API again.
+            load_source = "yombo"
+        yield the_item.api_update(incoming, load_source=load_source, request_context=request_context,
+                                  authentication=authentication)
+        return the_item
+
+    def update(self, item_id: str, incoming: dict, load_source: Optional[str] = None,
+               request_context: Optional[str] = None, authentication: Optional[Any] = None, **kwargs) -> None:
         """
         Updates an item. First, it finds the item by it's ID (or machine_label), then calls it's update() method
         with the incoming dictionary.
 
         In short, this is a simple wrapper to calling the item's update() method directly, same results.
 
+        See the api_update() for an alternative that immediately updates API.Yombo.net before the local gateway.
+
         :param item_id: The item's id (or machine_label) to update.
         :param incoming: A dictionary of key/values to update.
+        :param load_source: Where the data originated from. One of: local, database, yombo, system
+        :param request_context: Context about the request. Such as an IP address of the source.
+        :param authentication: An auth item such as a websession or authkey.
         """
         if incoming is None or isinstance(incoming, dict) is False:
             raise YomboWarning("update() - 'incoming' must be a dictionary.")
 
-        # print(f"item, update: {item_id}, {incoming}")
         if self._Parent._storage_schema is not None:
-            # print(f"library db PARENT: checking schema: {self._Parent._storage_label_name}: {incoming}")
-            # print(f"about to check data with schema: {self._Parent._storage_schema}")
             try:
                 data = incoming.copy()
                 data = dict(self._Parent._storage_schema.load(data, partial=True))
@@ -482,38 +570,99 @@ class LibraryDBParentMixin(ParentStorageAccessorsMixin):
                 logger.warn("Validation error loading '{item_name}', reason: {e}",
                             item_name=self._Parent._storage_label_name, e=e)
                 raise YomboMarshmallowValidationError(e)
-        # return
-        # the_item = self.get(item_id)
-        # the_item.update(incoming)
-        # return the_item
+        get_args = signature(self.get)
+        if "instance" in get_args.parameters:
+            the_item = self.get(item_id, instance=True)
+        else:
+            the_item = self.get(item_id)
+        print(f"update: theItem: {type(the_item)} - {the_item}")
+        the_item.update(incoming, load_source=load_source, request_context=request_context,
+                        authentication=authentication)
+        return the_item
 
     @inlineCallbacks
-    def delete(self, item_id: str) -> None:
+    def api_delete(self, item_id: str, load_source: Optional[str] = None, request_context: Optional[str] = None,
+                   authentication: Optional[Any] = None, **kwargs) -> None:
+        """
+        Delete the resource item, but delete at API.Yombo.net first, before deleting locally. This helps
+        the ensure we have permission to make the change.
+
+        When to use api_delete() instead of delete()?
+
+          * Want to ensure the changes are persistent between restarts of the gateway.
+          * Checks that we have proper permission to make the requested change. This really only applies to
+            global items like commands, device types, modules, etc.
+          * api_update() treats the action like a synchronous update. Only returns when the action is done or failed.
+
+        When to use update():
+
+          * updates the data locally immediately, and then eventually calls API.Yombo.net to save as well as to the
+            local database.
+          * typically used for local items, such as states, device commands, etc.
+          * update() Returns right away, uses a callLater feature to schedule uploading to API.Yombo.net / local DB.
+
+        :param item_id: The item's id (or machine_label) to update.
+        :param load_source: Where the data originated from. One of: local, database, yombo, system
+        :param request_context: Context about the request. Such as an IP address of the source.
+        :param authentication: An auth item such as a websession or authkey.
+        :param kwargs:
+        :return:
+        """
+        get_args = signature(self.get)
+        if "instance" in get_args.parameters:
+            the_item = self.get(item_id, instance=True)
+        else:
+            the_item = self.get(item_id)
+        yield the_item.api_delete(load_source=load_source, request_context=request_context,
+                                  authentication=authentication)
+        return the_item
+
+        yield maybeDeferred(self.delete_pre_process, the_item)
+        yield maybeDeferred(the_item.delete)
+        yield maybeDeferred(self.delete_post_process, the_item)
+
+    @inlineCallbacks
+    def delete(self, item_id: str, load_source: Optional[str] = None, request_context: Optional[str] = None,
+               authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None) -> None:
         """
         Finds the item, and then calls the item's delete method.
 
         :param item_id: The item's id (or machine_label) to update.
-        :param incoming: A dictionary of key/values to update.
+        :param load_source: Where the data originated from. One of: local, database, yombo, system
+        :param request_context: Context about the request. Such as an IP address of the source.
+        :param authentication: An auth item such as a websession or authkey.
         """
-        the_item = self.get(item_id)
-        yield maybeDeferred(self.delete_pre_process)
+        get_args = signature(self.get)
+        if "instance" in get_args.parameters:
+            the_item = self.get(item_id, instance=True)
+        else:
+            the_item = self.get(item_id)
+        yield maybeDeferred(self.delete_pre_process, the_item)
         yield maybeDeferred(the_item.delete)
-        yield maybeDeferred(self.delete_post_process)
+        yield maybeDeferred(self.delete_post_process, the_item)
 
-    def delete_pre_process(self, the_item):
+    def delete_pre_process(self, the_item, load_source: Optional[str] = None, request_context: Optional[str] = None,
+                           authentication: Optional[Any] = None):
         """
         Runs any pre-process tasks before an item is deleted.
 
         :param the_item:
+        :param load_source: Where the data originated from. One of: local, database, yombo, system
+        :param request_context: Context about the request. Such as an IP address of the source.
+        :param authentication: An auth item such as a websession or authkey.
         :return:
         """
         pass
 
-    def delete_post_process(self, the_item):
+    def delete_post_process(self, the_item, load_source: Optional[str] = None, request_context: Optional[str] = None,
+                            authentication: Optional[Any] = None):
         """
         Runs any post-process tasks after an item is deleted.
 
         :param the_item:
+        :param load_source: Where the data originated from. One of: local, database, yombo, system
+        :param request_context: Context about the request. Such as an IP address of the source.
+        :param authentication: An auth item such as a websession or authkey.
         :return:
         """
         pass

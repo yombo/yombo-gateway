@@ -25,7 +25,7 @@ from yombo.constants.features import (FEATURE_ALL_OFF, FEATURE_ALL_ON, FEATURE_P
                                       FEATURE_SCENE_CONTROLLABLE, FEATURE_ALLOW_DIRECT_CONTROL)
 
 # Import Yombo libraries
-from yombo.core.entity import Entity
+from yombo.core.library_child import YomboLibraryChild
 from yombo.core.log import get_logger
 from yombo.mixins.library_db_child_mixin import LibraryDBChildMixin
 from yombo.utils import is_true_false
@@ -33,7 +33,7 @@ from yombo.utils import is_true_false
 logger = get_logger("library.devices.device_attributes_mixin")
 
 
-class DeviceAttributesMixin(Entity, LibraryDBChildMixin):
+class DeviceAttributesMixin(YomboLibraryChild, LibraryDBChildMixin):
     """
     This base class is the main bootstrap and is responsible for settings up all core attributes.
 

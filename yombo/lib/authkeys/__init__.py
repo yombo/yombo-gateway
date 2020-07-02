@@ -79,16 +79,15 @@ class AuthKeys(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
                      description="Default authentication key created automatically. Can be deleted, but will be automatically recreated.",
                      roles=[admin_role.role_id],
                      preserve_key=True,
-                     authentication=self._Users.system_user,
+                     _authentication=self.AUTH_USER,
                      )
 
     @inlineCallbacks
     def new(self, machine_label: str, label: str, description: str, preserve_key: Optional[bool] = None,
-            status: Optional[int] = None, roles: Optional[List[str]] = None, request_by: Optional[str] = None,
-            request_by_type: Optional[str] = None, request_context: Optional[str] = None,
-            authentication: Optional[Type[AuthMixin]] = None, last_access_at: Optional[Union[int, float]] = None,
-            auth_key_id: Optional[str] = None, auth_key_id_full: Optional[str] = None,
-            load_source: Optional[str] = None, **kwargs) -> AuthKey:
+            status: Optional[int] = None, roles: Optional[List[str]] = None,
+            last_access_at: Optional[Union[int, float]] = None, _load_source: Optional[str] = None,
+            _request_context: Optional[str] = None,
+            _authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None, **kwargs) -> AuthKey:
         """
         Create a new auth_key.
 
@@ -102,20 +101,16 @@ class AuthKeys(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
         :param preserve_key: If true, the original auth_id will be available from auth_key
         :param status: 0 - disabled, 1 - enabled, 2 - deleted
         :param roles: Assign authkey to a list of roles.
-        :param request_by: Who created the Authkey. "alexamodule"
-        :param request_by_type: What type of item created it: "module"
-        :param request_context: Some additional information about where the request comes from.
-        :param authentication: An auth item such as a websession or authkey.
         :param last_access_at: When auth was last used.
-        :param auth_key_id: Authkey id to use, not normally set.
-        :param auth_key_id_full: Full auth key id to use, not normally set.
-        :param load_source: How the authkey was loaded.
+        :param _load_source: Where the data originated from. One of: local, database, yombo, system
+        :param _request_context: Context about the request. Such as an IP address of the source.
+        :param _authentication: An auth item such as a websession or authkey.
         :return:
         """
         preserve_key = is_true_false(preserve_key) or True
 
-        if request_context is None:
-            request_context = caller_string()  # get the module/class/function name of caller
+        if _request_context is None:
+            _request_context = caller_string()  # get the module/class/function name of caller
 
         try:
             results = self.get(machine_label)
@@ -123,30 +118,27 @@ class AuthKeys(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
                 {
                     "id": results.auth_key_id,
                     "title": "Duplicate entry",
-                    "something": "hahahaha",
                     "detail": "An authkey with that machine_label already exists."
                 })
         except KeyError as e:
             pass
 
+        self._Users.validate_authentication(_authentication)
         logger.debug("authkey new: about to load a new item....: {machine_label}", machine_label=machine_label)
         results = yield self.load_an_item_to_memory(
             {
-                "id": auth_key_id,
-                "auth_key_id_full": auth_key_id_full,
                 "machine_label": machine_label,
                 "label": label,
                 "description": description,
                 "preserve_key": preserve_key,
                 "status": status,
                 "roles": roles,
-                "request_by": request_by,
-                "request_by_type": request_by_type,
-                "request_context": request_context,
                 "last_access_at": last_access_at,
             },
-            authentication=authentication,
-            load_source=load_source)
+            load_source=_load_source,
+            request_context=_request_context if _request_context is not None else caller_string(),
+            authentication=_authentication
+        )
         return results
 
     def get_session_from_request(self, request: Type["twisted.web.http.Request"]) -> AuthKey:
@@ -201,44 +193,53 @@ class AuthKeys(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
 
         return auth_key
 
-    def delete(self, auth_key_id: str) -> None:
+    def delete(self, auth_key_id: str, load_source: Optional[str] = None, request_context: Optional[str] = None,
+               authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None) -> None:
         """
         Deletes an Auth Key.
 
-        :param auth_key_id:
+        :param auth_key_id: The auth key to find.
+        :param load_source: Where the data originated from. One of: local, database, yombo, system
+        :param request_context: Context about the request. Such as an IP address of the source.
+        :param authentication: An auth item such as a websession or authkey.
         :return:
         """
-        auth_key = self.get(auth_key_id)
-        auth_key.expire()
+        self.check_authorization(authentication, "remove")
 
-    def rotate(self, auth_key_id: str) -> AuthKey:
+        auth_key = self.get(auth_key_id)
+        auth_key.expire(request_context=request_context, authentication=authentication)
+
+    def rotate(self, auth_key_id: str, request_context: Optional[str] = None,
+               authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None) -> AuthKey:
         """
         Rotates an Auth Key for security.
 
-        :param auth_key_id:
+        :param auth_key_id: The auth key to find.
+        :param request_context: Context about the request. Such as an IP address of the source.
+        :param authentication: An auth item such as a websession or authkey.
         :return:
         """
         auth_key = self.get(auth_key_id)
-        auth_key.rotate()
+        auth_key.rotate(request_context=request_context, authentication=authentication)
         return auth_key
 
-    def _finish_rotate_key(self, old_auth_key_id: str, new_auth_key_id: str, auth: Type[AuthKey]) -> None:
-        """
-        Called by the child object to update the key_id in self.authkeys. Should never be called elsewhere.
-
-        :param old_auth_key_id:
-        :param new_auth_key_id:
-        :param auth:
-        :return:
-        """
-        self.authkeys[new_auth_key_id] = auth
-        del self.authkeys[old_auth_key_id]
+    # def _finish_rotate_key(self, old_auth_key_id: str, new_auth_key_id: str, auth: Type[AuthKey]) -> None:
+    #     """
+    #     Called by the child object to update the key_id in self.authkeys. Should never be called elsewhere.
+    #
+    #     :param old_auth_key_id:
+    #     :param new_auth_key_id:
+    #     :param auth:
+    #     :return:
+    #     """
+    #     self.authkeys[new_auth_key_id] = auth
+    #     del self.authkeys[old_auth_key_id]
 
     def validate_auth_id(self, auth_key_id: str) -> bool:
         """
         Validate the session id to make sure it's reasonable.
 
-        :param auth_key_id:
+        :param auth_key_id: The auth key to find.
         :return: 
         """
         if auth_key_id == "LOGOFF":  # lets not raise an error.

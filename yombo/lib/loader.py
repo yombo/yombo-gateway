@@ -120,7 +120,7 @@ class Loader(YomboLibrary):
     @operating_mode.setter
     def operating_mode(self, val):
         if RUN_PHASE[self._run_phase] > 1000:
-            self._States.set("loader.operating_mode", val, value_type="string", request_context=self._FullName)
+            self._States.set("loader.operating_mode", val, value_type="string", authentication=self.AUTH_USER)
             if val == 'run':
                 logger.debug("Operating mode set to: {mode}", mode=val)
             else:
@@ -266,7 +266,10 @@ class Loader(YomboLibrary):
 
         logger.debug("About to load library, operating mode: {operating_mode}", operating_mode=self.operating_mode)
         logger.info("Importing libraries, this can take a few moments.")
+        self.AUTH_TYPE = "library"
+        self.AUTH_PLATFORM = "yombo.lib.loader"
         yield self.import_and_init_libraries()  # import and init all libraries
+        self.AUTH_USER = yield self.loaded_libraries["users"].new_component_user("library", "loader")
         self._Configs = self.loaded_libraries["configs"]
 
         if self.sigint:
@@ -277,86 +280,108 @@ class Loader(YomboLibrary):
         self.operating_mode = self._operating_mode  # so we can update the State!
         # Sets run phase to modules_pre_init and then modules_init'
         logger.debug("About to call init_modules.")
-        yield self._moduleLibrary.init_modules()
 
-        for name, config in self.hard_load.items():
-            if self.sigint:
-                return
-            self._log_loader("debug", name, "library", "modules_imported", "About to call _modules_imported_.")
-            if self.check_operating_mode(config["operating_mode"]):
-                libraryName = name.lower()
-                yield self.invoke_hook("library", libraryName, "_modules_imported_", called_by=self)
-                self.hard_load[name]["_modules_imported_"] = True
-            else:
-                self.hard_load[name]["_modules_imported_"] = False
-            self._log_loader("debug", name, "library", "modules_imported", "Finished call to _modules_imported_.")
+        yield self._moduleLibrary.init_modules()
+        try:
+            for name, config in self.hard_load.items():
+                if self.sigint:
+                    return
+                self._log_loader("debug", name, "library", "modules_imported", "About to call _modules_imported_.")
+                if self.check_operating_mode(config["operating_mode"]):
+                    library_name = name.lower()
+                    yield self.invoke_hook("library", library_name, "_modules_imported_", called_by=self)
+                    self.hard_load[name]["_modules_imported_"] = True
+                else:
+                    self.hard_load[name]["_modules_imported_"] = False
+                self._log_loader("debug", name, "library", "modules_imported", "Finished call to _modules_imported_.")
+        except Exception as e:
+            logger.error("Library load failure for '{name}' while calling '_modules_imported_': {e}", name=name, e=e)
+            raise YomboCritical(f"Library load failure for '{name}' while calling '_modules_imported_': {e}")
 
         self._run_phase = "libraries_load"
-        for name, config in self.hard_load.items():
-            if self.sigint:
-                return
-            if self.check_operating_mode(config["operating_mode"]):
-                self.hard_load[name]["_load_"] = "Starting"
-                libraryName = name.lower()
-                yield self.invoke_hook("library", libraryName, "_load_", called_by=self)
-                self.hard_load[name]["_load_"] = True
-            else:
-                self.hard_load[name]["_load_"] = False
-            self._log_loader("debug", name, "library", "load", "Finished call to _load_.")
+        try:
+            for name, config in self.hard_load.items():
+                if self.sigint:
+                    return
+                if self.check_operating_mode(config["operating_mode"]):
+                    self.hard_load[name]["_load_"] = "Starting"
+                    library_name = name.lower()
+                    yield self.invoke_hook("library", library_name, "_load_", called_by=self)
+                    self.hard_load[name]["_load_"] = True
+                else:
+                    self.hard_load[name]["_load_"] = False
+                self._log_loader("debug", name, "library", "load", "Finished call to _load_.")
+        except Exception as e:
+            logger.error("Library load failure for '{name}' while calling '_load_': {e}", name=name, e=e)
+            raise YomboCritical(f"Library load failure for '{name}' while calling '_load_': {e}")
 
         self._moduleLibrary = self.loaded_libraries["modules"]
 
         self._run_phase = "libraries_start"
-        for name, config in self.hard_load.items():
-            if self.sigint:
-                return
-            self._log_loader("debug", name, "library", "start", "About to call _start_.")
-            if self.check_operating_mode(config["operating_mode"]):
-                libraryName = name.lower()
-                yield self.invoke_hook("library", libraryName, "_start_", called_by=self)
-                self.hard_load[name]["_start_"] = True
-            else:
-                self.hard_load[name]["_start_"] = False
-            self._log_loader("debug", name, "library", "_start_", "Finished call to _start_.")
+        try:
+            for name, config in self.hard_load.items():
+                if self.sigint:
+                    return
+                self._log_loader("debug", name, "library", "start", "About to call _start_.")
+                if self.check_operating_mode(config["operating_mode"]):
+                    library_name = name.lower()
+                    yield self.invoke_hook("library", library_name, "_start_", called_by=self)
+                    self.hard_load[name]["_start_"] = True
+                else:
+                    self.hard_load[name]["_start_"] = False
+                self._log_loader("debug", name, "library", "_start_", "Finished call to _start_.")
+        except Exception as e:
+            logger.error("Library load failure for '{name}' while calling '_start_': {e}", name=name, e=e)
+            raise YomboCritical(f"Library load failure for '{name}' while calling '_start_': {e}")
 
         yield self._moduleLibrary.load_modules()  # includes load & start
 
         self._run_phase = "libraries_started"
-        for name, config in self.hard_load.items():
-            if self.sigint:
-                return
-            self._log_loader("debug", name, "library", "started", "About to call _started_.")
-            if self.check_operating_mode(config["operating_mode"]):
-                libraryName = name.lower()
-                yield self.invoke_hook("library", libraryName, "_started_", called_by=self)
-                self.hard_load[name]["_started_"] = True
-            else:
-                self.hard_load[name]["_started_"] = False
+        try:
+            for name, config in self.hard_load.items():
+                if self.sigint:
+                    return
+                self._log_loader("debug", name, "library", "started", "About to call _started_.")
+                if self.check_operating_mode(config["operating_mode"]):
+                    library_name = name.lower()
+                    yield self.invoke_hook("library", library_name, "_started_", called_by=self)
+                    self.hard_load[name]["_started_"] = True
+                else:
+                    self.hard_load[name]["_started_"] = False
+        except Exception as e:
+            logger.error("Library load failure for '{name}' while calling '_started_': {e}", name=name, e=e)
+            raise YomboCritical(f"Library load failure for '{name}' while calling '_started_': {e}")
 
         self._run_phase = "system_loaded"
-        for name, config in self.hard_load.items():
-            if self.sigint:
-                return
-            self._log_loader("debug", name, "library", "_libraries_started_", "About to call _libraries_started_.")
-            if self.check_operating_mode(config["operating_mode"]):
-                libraryName = name.lower()
-                yield self.invoke_hook("library", libraryName, "_libraries_started_", called_by=self)
-                self.hard_load[name]["_started_"] = True
-            else:
-                self.hard_load[name]["_started_"] = False
+        try:
+            for name, config in self.hard_load.items():
+                if self.sigint:
+                    return
+                self._log_loader("debug", name, "library", "_libraries_started_", "About to call _libraries_started_.")
+                if self.check_operating_mode(config["operating_mode"]):
+                    library_name = name.lower()
+                    yield self.invoke_hook("library", library_name, "_libraries_started_", called_by=self)
+                    self.hard_load[name]["_started_"] = True
+                else:
+                    self.hard_load[name]["_started_"] = False
+        except Exception as e:
+            logger.error("Library load failure for '{name}' while calling '_libraries_started_': {e}", name=name, e=e)
+            raise YomboCritical(f"Library load failure for '{name}' while calling '_libraries_started_': {e}")
 
-        self.loaded_libraries["notifications"].new(title="System started1",
+        self.loaded_libraries["notifications"].new(title="System started",
                                                    message="System successfully started.",
                                                    timeout=300,
                                                    request_context="Yombo Gateway System",
                                                    persist=False,
                                                    always_show=False,
                                                    targets="system_startup_complete",
+                                                   _request_context=self._FullName,
+                                                   _authentication=self.AUTH_USER
                                                    )
 
         for event in self.startup_events_queue:
             created_at = event.pop()
-            self.loaded_libraries["events"].new(*event, created_at=created_at)
+            self.loaded_libraries["events"].new(*event, created_at=created_at, _authentication=self.AUTH_USER)
         self.startup_events_queue = None
         self._run_phase = "gateway_running"
         logger.info("Yombo Gateway started.")
@@ -480,8 +505,8 @@ class Loader(YomboLibrary):
                 component = name.lower()
                 library = self.loaded_libraries[component]
                 if hasattr(library, "_pre_init_") and isinstance(library._pre_init_, Callable) \
-                        and yombo.utils.get_method_definition_level(
-                    library._pre_init_) != "yombo.core.module.YomboModule":
+                        and yombo.utils.get_method_definition_level(library._pre_init_) != \
+                        "yombo.core.module.YomboModule":
                     d = Deferred()
                     d.addCallback(
                         lambda ignored: self._log_loader("debug", name, "library", "init", "About to call _pre_init_."))
@@ -521,6 +546,15 @@ class Loader(YomboLibrary):
                 except Exception as e:
                     logger.warn("Error adding library references.")
 
+        # For every library, add it's local user account
+        for name, config in self.hard_load.items():
+            component = name.lower()
+            library = self.loaded_libraries[component]
+
+            library.AUTH_TYPE = "library"
+            library.AUTH_PLATFORM = self.loaded_libraries["permissions"].get_auth_platform("library", name)
+            library.AUTH_USER = yield self.loaded_libraries["users"].new_component_user("library", name)
+
         # For every library, start it up (call _init_).
         for name, config in self.hard_load.items():
             component = name.lower()
@@ -553,6 +587,8 @@ class Loader(YomboLibrary):
         :param allowed: Either string or list or possible operating_modes
         :return: True/False
         """
+        # print(f"check_operating_mode, allowed: {allowed}")
+        # print(f"check_operating_mode, self.operating_mode: {self.operating_mode}")
         operating_mode = self.operating_mode
         if operating_mode is None:
             return True
@@ -941,9 +977,8 @@ class Loader(YomboLibrary):
             logger.warn("Not a valid component_type: {component_type}", component_type=component_type)
             raise YomboWarning("Invalid component_type.")
 
-    @classmethod
     @inlineCallbacks
-    def get_python_package_info(cls, required_package_name, install=None, events_queue=None):
+    def get_python_package_info(self, required_package_name, install=None, events_queue=None):
         """
         Checks if a given python package name is installed. If so, returns it's info, otherwise returns None.
 
@@ -968,7 +1003,8 @@ class Loader(YomboLibrary):
             if events_queue is not None:
                 events_queue.append(["pip", "not_found", (str(required_package_name)), time()])
             else:
-                _Yombo._Events.new("pip", "not_found", (str(required_package_name)))
+                _Yombo._Events.new("pip", "not_found", (str(required_package_name)),
+                                   _request_context=self._FullName, _authentication=self.AUTH_USER)
             logger.info("Python package {required_package} is missing.",
                         required_package=required_package_name,
                         )
@@ -986,7 +1022,8 @@ class Loader(YomboLibrary):
                                      (package_name, str(pkg_info.version), str(requirement.specifier)), time()])
             else:
                 _Yombo._Events.new("pip", "update_needed",
-                                   (package_name, str(pkg_info.version), str(requirement.specifier)))
+                                   (package_name, str(pkg_info.version), str(requirement.specifier)),
+                                   _request_context=self._FullName, _authentication=self.AUTH_USER)
             if install is False:
                 return pkg_info
 
@@ -995,7 +1032,7 @@ class Loader(YomboLibrary):
 
         # We now install the package...
         start_time = time()
-        yield cls.install_python_package(required_package_name)
+        yield self.install_python_package(required_package_name)
         duration = round(float(time()) - start_time, 4)
         importlib.reload(pkg_resources)
         try:
@@ -1007,7 +1044,8 @@ class Loader(YomboLibrary):
                 events_queue.append(["pip", "installed",
                                      (str(pkg_info.project_name), str(pkg_info.version), duration), time()])
             else:
-                _Yombo._Events.new("pip", "installed", (str(pkg_info.project_name), str(pkg_info.version), duration))
+                _Yombo._Events.new("pip", "installed", (str(pkg_info.project_name), str(pkg_info.version), duration),
+                                   _request_context=self._FullName, _authentication=self.AUTH_USER)
             return pkg_info
         except pkg_resources.DistributionNotFound as e:
             raise YomboWarning(f"Unable to upgrade package: {e}")

@@ -94,11 +94,11 @@ class Modules(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
     _storage_label_name: ClassVar[str] = "module"
     _storage_attribute_sort_key: ClassVar[str] = "_Name"
     _storage_primary_field_name: ClassVar[str] = "_module_id"
-    _storage_fields: ClassVar[list] = ["calllater_id", "description", "call_time", "created_at"]
+    _storage_fields: ClassVar[list] = ["task_id", "description", "call_time", "created_at"]
     _storage_class_reference: ClassVar = None
     _storage_search_fields: ClassVar[List[str]] = [
-        "_module_id", "_module_type", "_label", "_machine_label", "_description", "_short_description",
-        "_medium_description"
+        "_module_id", "_label", "_machine_label", "_description", "_short_description", "_medium_description",
+        "_module_type"
     ]
     module_api_version: ClassVar[str] = MODULE_API_VERSION
 
@@ -116,8 +116,7 @@ class Modules(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
             logger.debug("Calling load functions of libraries.")
             yield self.build_raw_module_list()  # Create a list of modules, includes localmodules.ini
             yield self.build_requirements()  # Collect all the requirements files...
-
-            self.import_modules()
+            yield self.import_modules()
 
     @inlineCallbacks
     def init_modules(self):
@@ -358,7 +357,12 @@ class Modules(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
                         "_fake_data": True,
                     }
                     logger.debug(" - Module variable field: {label}", label=field_label)
-                    self._VariableFields.load_an_item_to_memory(field, load_source="database")
+                    self._VariableFields.load_an_item_to_memory(
+                        field,
+                        load_source="database",
+                        request_context="modules::build_raw_module_list",
+                        authentication=self.AUTH_USER
+                    )
 
                     values = ini.get(section, field_label)
                     values = values.split(":::")
@@ -379,7 +383,10 @@ class Modules(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
                                 "created_at": int(time()),
                                 "updated_at": int(time()),
                             },
-                            load_source="database")
+                            load_source="database",
+                            request_context="modules::build_raw_module_list",
+                            authentication=self.AUTH_USER
+                        )
 
         except IOError as xxx_todo_changeme:
             (errno, strerror) = xxx_todo_changeme.args
@@ -423,6 +430,7 @@ class Modules(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
                     for line in requirements:
                         yield self._Loader.install_python_requirement(line, f"module:{module['machine_label']}")
 
+    @inlineCallbacks
     def import_modules(self):
         """
         This imports the modules into memory (using import_component) and then sets some base module
@@ -457,6 +465,12 @@ class Modules(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
                 continue
 
             try:
+                module_instance.AUTH_TYPE = "module"
+                module_instance.AUTH_PLATFORM = f"yombo.module.{module['machine_label']}"
+                module_instance.AUTH_USER = yield self._Users.new_component_user(
+                    "module", module['machine_label'],
+                    _request_context="modules::import_modules",
+                    _authentication=self.AUTH_USER)
                 module_instance._hooks_called = {}
                 module_instance._module_id = module["id"]
                 module_instance._primary_field_id = module["id"]
@@ -551,7 +565,6 @@ class Modules(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
         }
         return results
 
-
     def add_imported_module(self, module_id, module_label, module_instance):
         # logger.debug("adding module: {module_id}:{module_label}", module_id=module_id, module_label=module_label)
         self.modules[module_id] = module_instance
@@ -576,17 +589,25 @@ class Modules(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
         logit("({log_source}) {label}({type})::{method} - {msg}", label=label, type=type, method=method, msg=msg)
 
     @inlineCallbacks
-    def module_starting(self, module_id):
-        self.modules_that_are_starting[module_id] = True
-        yield self.update_starting_modules_notification()
+    def module_starting(self, module):
+        """ Called by a module that is still bootstrapping. """
+        self.modules_that_are_starting[module] = True
+        yield self.update_starting_modules_notification(module)
 
     @inlineCallbacks
-    def module_started(self, module_id):
-        del self.modules_that_are_starting[module_id]
-        yield self.update_starting_modules_notification()
+    def module_started(self, module):
+        """ Called by a module that has finished bootstrapping. """
+        del self.modules_that_are_starting[module]
+        yield self.update_starting_modules_notification(module)
 
     @inlineCallbacks
-    def update_starting_modules_notification(self):
+    def update_starting_modules_notification(self, module):
+        """
+        Update the active list of modules that are still starting.
+
+        :param module:
+        :return:
+        """
         if len(self.modules_that_are_starting) == 0:
             self._Notifications.delete("modules_that_are_starting")
         else:
@@ -596,13 +617,14 @@ class Modules(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
             modules = "<br>".join(module_labels)
             yield self._Notifications.new(title="Modules still starting",
                                           message=f"The following modules are still starting:<br>{modules}",
-                                          request_context=self._FullName,
                                           persist=False,
                                           priority="high",
                                           always_show=True,
                                           always_show_allow_clear=False,
                                           notice_id="modules_that_are_starting",
                                           local=True,
+                                          _request_context=self._FullName,
+                                          _authentication=self.AUTH_USER
                                           )
 
     @inlineCallbacks
@@ -752,10 +774,11 @@ class Modules(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
         yield self._Notifications.new(title=f"Module added: {label}",
                                       message=f"The module '{label}' has been disabled and will take affect on next reboot.",
                                       timeout=3600,
-                                      request_context=self._FullName,
                                       persist=False,
                                       always_show=False,
-                                      targets="module_updated"
+                                      targets="module_updated",
+                                      _request_context=self._FullName,
+                                      _authentication=self.AUTH_USER
                                       )
         return results
 
@@ -859,10 +882,11 @@ class Modules(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
         yield self._Notifications.new(title=f"Module edited: {a_module._label}",
                                       message=f"The module '{a_module._label}' has been edited.",
                                       timeout=3600,
-                                      request_context=self._FullName,
                                       persist=False,
                                       always_show=False,
-                                      targets="module_updated"
+                                      targets="module_updated",
+                                      _request_context=self._FullName,
+                                      _authentication=self.AUTH_USER
                                       )
 
         return results
@@ -918,10 +942,11 @@ class Modules(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
         yield self._Notifications.new(title=f"Module removed: {a_module._label}",
                                       message=f"The module '{a_module._label}' has been removed and will take affect on next reboot.",
                                       timeout=3600,
-                                      request_context=self._FullName,
                                       persist=False,
                                       always_show=False,
-                                      targets="module_updated"
+                                      targets="module_updated",
+                                      _request_context=self._FullName,
+                                      _authentication=self.AUTH_USER
                                       )
         #todo: add task to remove files.
         #todo: add system for "do something on next startup..."
@@ -982,10 +1007,11 @@ class Modules(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
         yield self._Notifications.new(title=f"Module enabled: {a_module._label}",
                                       message=f"The module '{a_module._label}' has been enabled and will take affect on next reboot.",
                                       timeout=3600,
-                                      request_context=self._FullName,
                                       persist=False,
                                       always_show=False,
-                                      targets="module_updated"
+                                      targets="module_updated",
+                                      _request_context=self._FullName,
+                                      _authentication=self.AUTH_USER
                                       )
         return results
 
@@ -1044,10 +1070,11 @@ class Modules(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
         yield self._Notifications.new(title=f"Module disabled: {a_module._label}",
                                       message=f"The module '{a_module._label}' has been disabled and will take affect on next reboot.",
                                       timeout=3600,
-                                      request_context=self._FullName,
                                       persist=False,
                                       always_show=False,
-                                      targets="module_updated"
+                                      targets="module_updated",
+                                      _request_context=self._FullName,
+                                      _authentication=self.AUTH_USER
                                       )
         return results
 

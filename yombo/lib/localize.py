@@ -175,7 +175,7 @@ class Localize(YomboLibrary):
                     logger.warn("Unable to write json local file: {e}", e=e)
 
             if self.default_lang.value not in self.available_translations:
-                self._Configs.set("localize.default_lang", "en")
+                self._Configs.set("localize.default_lang", "en", ref_source=self)
                 self.default_lang = self._Configs.get("localize.default_lang", "en", instance=True)
 
         yield process_locales(backend_files, "backend")

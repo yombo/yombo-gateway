@@ -148,7 +148,6 @@ class States(YomboLibrary, SystemDataParentMixin, LibraryDBParentMixin, LibraryS
         """
         if item_requested == "gateway.uptime":
             return float(time()) - float(self._Atoms.get("gateway.running_since", gateway_id=gateway_id))
-        # print(f"states - get - {item_requested}")
         return super().get(item_requested, default=default, gateway_id=gateway_id, instance=instance)
 
     @inlineCallbacks

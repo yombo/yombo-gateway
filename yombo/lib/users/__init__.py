@@ -16,6 +16,7 @@ Manages users within the gateway. All users are loaded on startup.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/users/__init__.html>`_
 """
+from time import time
 from typing import Any, ClassVar, Dict, List, Optional, Type, Union
 
 # Import twisted libraries
@@ -26,11 +27,14 @@ from yombo.core.exceptions import YomboWarning, YomboNoAccess
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.core.schemas import UserSchema
-from yombo.lib.users.user import User
 from yombo.lib.users.blankuser import BlankUser
+from yombo.lib.users.componentuser import ComponentUser
 from yombo.lib.users.systemuser import SystemUser
+from yombo.lib.users.user import User
+from yombo.mixins.auth_mixin import AuthMixin
 from yombo.mixins.library_db_parent_mixin import LibraryDBParentMixin
 from yombo.mixins.library_search_mixin import LibrarySearchMixin
+from yombo.utils.caller import caller_string
 
 logger = get_logger("library.users")
 
@@ -43,6 +47,8 @@ class Users(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
 
     # The remaining attributes are used by various mixins.
     _storage_primary_field_name: ClassVar[str] = "user_id"
+    _storage_fields: ClassVar[list] = ["id", "gateway_id", "email", "name", "access_code_string",
+                                       "updated_at", "created_at"]
     _storage_label_name: ClassVar[str] = "user"
     _storage_class_reference: ClassVar = User
     _storage_schema: ClassVar = UserSchema()
@@ -80,6 +86,56 @@ class Users(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
             self.owner_user = self.get(self.owner_id)
             self.owner_user.attach_role("admin")
 
+    def _storage_class_reference_getter(self, incoming: dict) -> AuthMixin:
+        """
+        Return the correct class to use to create individual input types.
+
+        This is called by load_an_item_to_memory
+
+        :param incoming:
+        :return:
+        """
+        if incoming["email"].startswith("^yombo^"):
+            return ComponentUser
+        else:
+            return User
+
+    # @classmethod
+    @staticmethod
+    def validate_authentication(authentication: AuthMixin,
+                                raise_error: Optional[bool] = None):
+        """
+        Validated that a provided item is a subclass of AuthMixin - ensuring that it's an authentication item.
+
+        :param authentication: An auth item such as a websession or authkey.
+        :param raise_error: Raises an error if authentication is None or not an AuthMixin - defaults to True.
+        :return:
+        """
+        if authentication is None:
+            if raise_error is False:
+                return False
+            else:
+                raise YomboWarning("Authentication must be supplied, cannot be None.")
+
+        if isinstance(authentication, AuthMixin):
+            if authentication.is_valid():
+                return True
+            else:
+                raise YomboWarning("Authentication item is not valid, expired, or revoked.")
+        else:
+            raise YomboWarning("No proper authentication item found.")
+
+    @classmethod
+    def request_by_info(cls, authentication: AuthMixin) -> list:
+        """
+        Extract request_by and request_by_type from an authentication item.
+
+        :param authentication:
+        :return: A list of 2 strings, request_by and request_by_type
+        """
+        cls.validate_authentication(authentication)
+        return authentication.accessor_id, authentication.accessor_type
+
     def list_roles_by_user(self):
         """
         All roles and which users belong to them. This takes a bit as it has to iterate all users.
@@ -113,6 +169,39 @@ class Users(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
             if role_id == search_id:
                 return True
         return False
+
+    @inlineCallbacks
+    def new_component_user(self, component_type: str, component_name: str, _load_source: Optional[str] = None,
+                           _request_context: Optional[str] = None,
+                           _authentication: Optional[AuthMixin] = None):
+        """
+        Used by the loader and modules libraries to create various component users. These users are used
+        internally for tracking.
+
+        :param component_type: Example: library, module, device
+        :param component_name: Name of the component. Such as: Commands, Events
+        :param _load_source: Where the data originated from. One of: local, database, yombo, system
+        :param _request_context: Context about the request. Such as an IP address of the source.
+        :param _authentication: An auth item such as a websession or authkey.
+        :return:
+        """
+        results = yield self.load_an_item_to_memory({
+            "id": f"^yombo^{component_type}^{component_name}",
+            "gateway_id": self._gateway_id,
+            "email": f"yombo_{component_type}_{component_name}@yombo.gateway",
+            "name": f"{component_type} {component_name}",
+            "last_access_at": int(time()),
+            "created_at": int(time()),
+            "updated_at": int(time()),
+            "access_code_string": "",
+            "_fake_data": True
+            },
+            # _fake_data=True,
+            load_source=_load_source,
+            request_context=_request_context if _request_context is not None else caller_string(),
+            authentication=_authentication
+        )
+        return results
 
     # def get_access(self, auth, requested_platform, requested_action):
     #     """

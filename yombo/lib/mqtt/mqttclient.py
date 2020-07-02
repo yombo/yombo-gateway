@@ -226,12 +226,12 @@ class MQTTClient(Entity):
         if self.session_expiry == 0:
             self.unsubscriptions[topic] = kwargs
 
-    def publish(self, topic: str, message: Optional[str] = None, qos: Optional[int] = None, **kwargs):
+    def publish(self, topic: str, payload: Optional[str] = None, qos: Optional[int] = None, **kwargs):
         """
         Publish a message to the MQTT broker. If not connected yet, will hold in a queue for later.
 
         :param topic: Topic to publish too.
-        :param message: Message to send.
+        :param payload: The payload to send.
         :param qos: quality of service.
         :param kwargs: Any additional items to send to the qmqtt publish command.
         :return:
@@ -239,8 +239,8 @@ class MQTTClient(Entity):
         if qos is None:
             qos = 1
         if self.connected is True:
-            self.client.publish(topic, payload=message, qos=qos, **kwargs)
+            self.client.publish(topic, payload=payload, qos=qos, **kwargs)
         else:
-            kwargs["message"] = message
+            kwargs["payload"] = payload
             kwargs["qos"] = qos
             self.send_queue.append({"topic": topic, "kwargs": kwargs})

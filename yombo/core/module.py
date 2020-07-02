@@ -104,7 +104,7 @@ from typing import Any, ClassVar, Dict, List, Optional, Union
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
-from yombo.core.entity import Entity
+from yombo.core.component_base import ComponentBase
 from yombo.core.log import get_logger
 from yombo.mixins.child_storage_accessors_mixin import ChildStorageAccessorsMixin
 # from yombo.utils.decorators import cached
@@ -112,21 +112,21 @@ from yombo.mixins.child_storage_accessors_mixin import ChildStorageAccessorsMixi
 logger = get_logger("core.entity")
 
 
-class YomboModule(Entity, ChildStorageAccessorsMixin):
+class YomboModule(ComponentBase, ChildStorageAccessorsMixin):
     """
     This class quickly integrates user developed modules into the Yombo framework. It also sets up various
     predefined various and functions.
     """
     _Entity_type: ClassVar[str] = "module"
 
-    def __init__(self, parent, *args, **kwargs) -> None:
-        try:  # Some exceptions not being caught. So, catch, display and release.
-            super().__init__(parent, **kwargs)
-        except Exception as e:
-            print(e)
-            print(f"{traceback.print_exc(file=sys.stdout)}")
-            print(f"YomboModule caught init exception in {self._Name}: {e}")
-            raise e
+    # def __init__(self, parent, *args, **kwargs) -> None:
+    #     try:  # Some exceptions not being caught. So, catch, display and release.
+    #         super().__init__(parent, **kwargs)
+    #     except Exception as e:
+    #         print(e)
+    #         print(f"{traceback.print_exc(file=sys.stdout)}")
+    #         print(f"YomboModule caught init exception in {self._Name}: {e}")
+    #         raise e
 
     @property
     def module_variables(self):
@@ -186,11 +186,11 @@ class YomboModule(Entity, ChildStorageAccessorsMixin):
         """
         return f"{self._label}.{self._module_id}"
 
-    def _init_(self, **kwargs):
-        """
-        Phase 1 of 3 for statup - configure basic variables, etc. Like __init__.
-        """
-        pass
+    # def _init_(self, **kwargs):
+    #     """
+    #     Phase 1 of 3 for statup - configure basic variables, etc. Like __init__.
+    #     """
+    #     pass
 
     def _load_yombo_internal_(self, **kwargs):
         """
@@ -199,27 +199,27 @@ class YomboModule(Entity, ChildStorageAccessorsMixin):
         pass
         # self._devices = partial(self._Modules.module_devices, self._module_id)
 
-    def _start_(self, **kwargs):
-        """
-        Phase 3 of 3 for statup - Called when this module should start processing and is
-        now able to send messages to other components.
-        """
-        pass
+    # def _start_(self, **kwargs):
+    #     """
+    #     Phase 3 of 3 for statup - Called when this module should start processing and is
+    #     now able to send messages to other components.
+    #     """
+    #     pass
 
-    def _stop_(self, **kwargs):
-        """
-        Phase 1 of 2 for shutdown - Stop sending messages, but can still accept incoming
-        messages for processing.
-        """
-        pass
+    # def _stop_(self, **kwargs):
+    #     """
+    #     Phase 1 of 2 for shutdown - Stop sending messages, but can still accept incoming
+    #     messages for processing.
+    #     """
+    #     pass
 
-    def _unload_(self, **kwargs):
-        """
-        Phase 2 of 2 for shutdown - By the time this is called, no messages will be sent
-        to this module. Close all connections/items. Once this function ends, it's
-        possible that the process will terminate.
-        """
-        pass
+    # def _unload_(self, **kwargs):
+    #     """
+    #     Phase 2 of 2 for shutdown - By the time this is called, no messages will be sent
+    #     to this module. Close all connections/items. Once this function ends, it's
+    #     possible that the process will terminate.
+    #     """
+    #     pass
 
     def to_dict(self, to_database: Optional[bool] = None, to_external: Optional[bool] = None,
                 include_meta: Optional[bool] = None, incoming_data: Optional[dict] = None):

@@ -67,7 +67,7 @@ def route_api_v1_system(webapp):
 
             """
             session.is_allowed("system_options", "backup", "*")
-            arguments = request_args(request)
+            arguments = request_args(webinterface, request)
             password1 = None
             if "password1" in arguments:
                 if "password2" not in arguments:
@@ -106,7 +106,7 @@ def route_api_v1_system(webapp):
             del yombo_toml, yombo_meta_toml
 
             backup_data["data"]["database"]["authkeys"] = webinterface._AuthKeys.to_database_all()
-            backup_data["data"]["database"]["crontabs"] = webinterface._CronTab.to_database_all()
+            backup_data["data"]["database"]["crontabs"] = webinterface._CronTabs.to_database_all()
             backup_data["data"]["database"]["mqtt_users"] = webinterface._MQTTUsers.to_database_all()
             backup_data["data"]["database"]["permissions"] = webinterface._Permissions.to_database_all()
             backup_data["data"]["database"]["roles"] = webinterface._Roles.to_database_all()

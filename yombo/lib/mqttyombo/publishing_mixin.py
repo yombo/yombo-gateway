@@ -253,7 +253,7 @@ class PublishingMixin:
         # print(message["body"])
         # print("kwargs:")
         # print(message["kwargs"])
-        self.mqtt.publish(message["topic"], message=message["body"], **message["kwargs"])
+        self.mqtt.publish(message["topic"], payload=message["body"], **message["kwargs"])
 
         self._Gateways.gateways[self._gateway_id].last_communications.append({
             "time": time(),

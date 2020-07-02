@@ -154,6 +154,7 @@ class Encryption(YomboLibrary):
 
         :param data: Any type of data can be encrypted. Text, binary.
         :param passphrase: A passphrase to use. If missing, uses system passphrase.
+        :param cipher: Which cipher to use, such as: aes128, aes192, aes256.
         :return: String containing the encrypted content.
         """
         if data is None:
@@ -171,13 +172,13 @@ class Encryption(YomboLibrary):
         return results
 
     @classmethod
-    def decrypt_aes(cls, ciphered_data, passphrase, cipher):
+    def decrypt_aes(cls, ciphered_data: str, passphrase: str, cipher: str):
         """
-        Decrypt data.
+        Decrypt data. Typically should only be called by decrypt() method.
 
-        :param ciphered_data:
-        :param passphrase:
-        :param cipher:
+        :param ciphered_data: Encrypted data string.
+        :param passphrase: A passphrase to use. If missing, uses system passphrase.
+        :param cipher: Which cipher to use, such as: aes128, aes192, aes256.
         :return:
         """
         passphrase = cls._aes_expand_key(passphrase, cipher)

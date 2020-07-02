@@ -75,7 +75,7 @@ class AMQPYombo(YomboLibrary, AMQPMixin):
 
     @connected.setter
     def connected(self, val):
-        return self._States.set("amqp.amqpyombo.state", val, value_type="bool", request_context=self._FullName)
+        return self._States.set("amqp.amqpyombo.state", val, value_type="bool", authentication=self.AUTH_USER)
 
     @inlineCallbacks
     def _init_(self, **kwargs):
@@ -194,10 +194,11 @@ class AMQPYombo(YomboLibrary, AMQPMixin):
                                              password=self._Configs.get("core.gwhash"),
                                              client_id="amqpyombo",
                                              keepalive=keepalive,
-                                             prefetch_count=prefetch_count,
                                              connected_callbacks=self.amqp_connected,
                                              disconnected_callbacks=self.amqp_disconnected,
-                                             critical_connection=True)
+                                             critical_connection=True,
+                                             prefetch_count=prefetch_count,
+                                             _authentication=self.AUTH_USER)
         self.amqp.connect()
 
         # The servers will have a dedicated queue for us.
@@ -213,14 +214,14 @@ class AMQPYombo(YomboLibrary, AMQPMixin):
 
         :return:
         """
-        if self._Loader.operating_mode != "run":
+        if self._Loader.operating_mode != "run" or self.connected is False:
             return
         request_msg = self.generate_message_request(
             exchange_name="ysrv.e.gw_system",
             source="yombo.gateway.lib.amqpyombo",
             destination="yombo.server.gw_system",
             request_type="disconnect",
-            message_headers={"request_type": "disconnect,"},
+            message_headers={"request_type": "disconnect"},
         )
         logger.debug("Sending amqpyombo disconnect")
         self.publish(**request_msg)

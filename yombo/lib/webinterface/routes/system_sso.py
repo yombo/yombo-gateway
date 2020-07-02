@@ -54,8 +54,8 @@ def route_system_sso(webapp):
             if jwt_public is None:
                 response = yield webinterface._Requests.request("get", f"https://yombo.net/jwt/{jwt_hash}")
                 jwt_public = response.content_raw
-                webinterface._Configs.set(f"jwt.{jwt_hash}.key", jwt_public)
-                webinterface._Configs.set(f"jwt.{jwt_hash}.time", int(time()))
+                webinterface._Configs.set(f"jwt.{jwt_hash}.key", jwt_public, ref_source=self)
+                webinterface._Configs.set(f"jwt.{jwt_hash}.time", int(time()), ref_source=self)
 
             try:
                 token_data = jwt.decode(token, jwt_public, verify=True, issuer="https://api.yombo.net",

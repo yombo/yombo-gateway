@@ -4,7 +4,7 @@
 
 .. note::
 
-  * For library documentation, see: `CronTab @ Library Documentation <https://yombo.net/docs/libraries/crontab>`_
+  * For library documentation, see: `CronTabs @ Library Documentation <https://yombo.net/docs/libraries/crontabs>`_
 
 Cron like library that can be used to perform scheduled actions. Can be used by modules to call a function at set times.
 
@@ -20,28 +20,28 @@ Examples:
 
    #  M H D M DOW
    #  * * * * *  # call every minute, every hour, every day, every month
-   self._CronTab.new(self.myFunction)
+   self._CronTabs.new(self.myFunction, _request_context=self._FullName, _authentication=self.AUTH_USER)
 
    # */2 * * * *  # call every other minute)
    myArgs=("arg1", "arg2")
-   self._CronTab.new(self.myFunction, mins=range(0, 59, 2), args=myArgs)  # use range and specify a step
+   self._CronTabs.new(self.myFunction, mins=range(0, 59, 2), args=myArgs, _request_context=self._FullName, _authentication=self.AUTH_USER)  # use range and specify a step
    # The range just creates a list of minutes. You can also just pass a list of numbers.
 
    # 0 0,6,12,18 * * *  # at midnight, 6am, 12pm, 6pm
    # myKwargs={"argument1" : "value1", "argument2" : "value2"}
-   self._CronTab.new(self.myFunction, mins=0, hours=(0,6,12,18), kwargs=myKwargs)  # Notice the list of hours to run.
+   self._CronTabs.new(self.myFunction, mins=0, hours=(0,6,12,18), kwargs=myKwargs, _request_context=self._FullName, _authentication=self.AUTH_USER)  # Notice the list of hours to run.
 
    # 0 12 * 0 0 # at 12:00pm on sunday
-   self._CronTab.new(self.myFunction, mins=0, hours=12, dow=0 )  # use range and specify a step
+   self._CronTabs.new(self.myFunction, mins=0, hours=12, dow=0, _request_context=self._FullName, _authentication=self.AUTH_USER)  # use range and specify a step
 
    # 0 12 * 0 0 # at 12:00pm on sunday
-   self._CronTab.new(self.myFunction, mins=0, hours=12, dow=0 )  # use range and specify a step
+   self._CronTabs.new(self.myFunction, mins=0, hours=12, dow=0, _request_context=self._FullName, _authentication=self.AUTH_USER)  # use range and specify a step
 
 Usage example
 
 .. code-block:: python
 
-   self.MyCron = self._CronTab.new(self.myFunction, mins=0, hours=12, dow=0 )
+   self.MyCron = self._CronTabs.new(self.myFunction, mins=0, hours=12, dow=0 )
 
    #want to disable for a while..
    self.MyCron.disable()
@@ -68,7 +68,7 @@ from twisted.internet import reactor
 
 # Import Yombo libraries
 from yombo.constants.crontabs import CRONTAB_ID_LENGTH
-from yombo.core.entity import Entity
+from yombo.core.library_child import YomboLibraryChild
 from yombo.core.exceptions import YomboCronTabError
 from yombo.core.library import YomboLibrary
 from yombo.mixins.library_search_mixin import LibrarySearchMixin
@@ -96,12 +96,12 @@ def conv_to_set(obj):  # Allow single integer to be provided
     return obj
 
 
-class CronTab(YomboLibrary, ParentStorageAccessorsMixin, LibrarySearchMixin):
+class CronTabs(YomboLibrary, ParentStorageAccessorsMixin, LibrarySearchMixin):
     """
     Manages all cron jobs.
 
     All modules already have a predefined reference to this library as
-    `self._CronTab`. All documentation will reference this use case.
+    `self._CronTabs`. All documentation will reference this use case.
     """
     crontabs: ClassVar[dict] = {}
     check_cron_tabs_loop = None  # a simple loop that checks all cron tabs to see if they need to run.
@@ -125,11 +125,11 @@ class CronTab(YomboLibrary, ParentStorageAccessorsMixin, LibrarySearchMixin):
 
         Checks to if a provided cron task id, label, or machine_label exists.
 
-            >>> if "129da137ab9318" in self._CronTab:
+            >>> if "129da137ab9318" in self._CronTabs:
 
         or:
 
-            >>> if "module.mymodule.mycron" in self._CronTab:
+            >>> if "module.mymodule.mycron" in self._CronTabs:
 
         :raises YomboWarning: Raised when request is malformed.
         :param cron_task_requested: The cron task ID, label, or machine_label to search for.
@@ -147,15 +147,15 @@ class CronTab(YomboLibrary, ParentStorageAccessorsMixin, LibrarySearchMixin):
         .. note::
 
            The cron task must be enabled to be found using this method. An alternative,
-           but equal function is: :py:meth:`get() <CronTab.get>`
+           but equal function is: :py:meth:`get() <_CronTabs.get>`
 
         Attempts to find the device requested using a couple of methods.
 
-            >>> off_cmd = self._CronTab["129da137ab9318"]  #by id
+            >>> off_cmd = self._CronTabs["129da137ab9318"]  #by id
 
         or:
 
-            >>> off_cmd = self._CronTab["module.mymodule.mycron"]  #by label & machine_label
+            >>> off_cmd = self._CronTabs["module.mymodule.mycron"]  #by label & machine_label
 
         :raises YomboWarning: Raised when request is malformed.
         :raises KeyError: Raised when request is not found.
@@ -260,177 +260,156 @@ class CronTab(YomboLibrary, ParentStorageAccessorsMixin, LibrarySearchMixin):
     def new(self, crontab_callback: Callable, mins: Optional[Union[str, int, list]] = None,
             hours: Optional[Union[str, int, list]] = None, days: Optional[Union[str, int, list]] = None,
             months: Optional[Union[str, int, list]] = None, dow: Optional[Union[str, int, list]] = None,
-            label="", enabled=True, args: Optional[list] = None, kwargs: Optional[dict] = {},
-            cron_id: Optional[str] = None, load_source: Optional = None):
+            label: Optional[str] = "", enabled=True, args: Optional[list] = None, kwargs: Optional[dict] = {},
+            cron_id: Optional[str] = None, _load_source: Optional[str] = None, _request_context: Optional[str] = None,
+            _authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None):
         """
         Add a new :class:`CronTask`.
 
         :param crontab_callback: Function to call
-        :type crontab_callback: Reference to function
-        :param mins: (optional) Minute to perform crontab_callback
-        :type mins: "*", int, or list of ints
-        :param hours: (optional) Hour to perform crontab_callback
-        :type hours: "*", int, or list of ints
-        :param days: (optional) Day to perform crontab_callback
-        :type days: "*", int, or list of ints
-        :param months: (optional) Month to perform crontab_callback
-        :type months: "*", int, or list of ints
-        :param dow: (optional) Day of week to perform crontab_callback
-        :type dow: "*", int, or list of ints
+        :param mins: (optional) Minute to perform crontab_callback, or "*" for every minute.
+        :param hours: (optional) Hour to perform crontab_callback, or "*" for every hour.
+        :param days: (optional) Day to perform crontab_callback, or "*" for every day.
+        :param months: (optional) Month to perform crontab_callback, or "*" for every month.
+        :param dow: (optional) Day of week to perform crontab_callback, or "*" for every day of week.
         :param label: (optional) Label for cron job.
-        :type label: string
         :param enabled: (optional, default=True) If CronTask should be enabled.
-        :type enabled: bool
-        :param args: (optional) Arguments to pass to "crontab_callback"
-        :type args: List of arguments
-        :param kwargs: (optional) Keyword arguments to pass to "crontab_callback"
-        :type kwargs: Dict of arguments
+        :param args: (optional) List of arguments to pass to "crontab_callback"
+        :param kwargs: (optional) Dict of arguments to pass to "crontab_callback"
         :param cron_id: A label for the cron task, used to find it again later.
+        :param _load_source: Where the data originated from. One of: local, database, yombo, system
+        :param _request_context: Context about the request. Such as an IP address of the source.
+        :param _authentication: An auth item such as a websession or authkey.
         """
-        if load_source is None:
-            load_source = "system"
+        if _load_source is None:
+            _load_source = "system"
+
+        self.check_authorization(_authentication, "create")
 
         new_cron = CronTask(self, crontab_callback, mins=mins, hours=hours, days=days, months=months,
                             dow=dow, label=label, enabled=enabled, args=args,
-                            kwargs=kwargs, cron_id=cron_id, load_source=load_source)
+                            kwargs=kwargs, cron_id=cron_id, _load_source=_load_source,
+                            _request_context=_request_context, _authentication=_authentication)
         self.crontabs[new_cron.cron_id] = new_cron
         return new_cron
 
-    def remove(self, cron_task_requested):
+    def delete(self, cron_task_requested: str, request_context: Optional[str] = None,
+               authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None):
         """
         Removes a CronTask. Accepts either cron id or cron name.
 
         To remove a cron (note, it"s a method not a dictionary):
 
-            >>> self._CronTab.remove("7s453hhxl3")  #by cron id
+            >>> self._CronTabs.delete("7s453hhxl3")  #by cron id
 
         or::
 
-            >>> self._CronTab.remove("module.YomboBot.MyCron")  #by label
+            >>> self._CronTabs.delete("module.YomboBot.MyCron")  #by label
 
-        :raises YomboCronTabError: Raised when cron job cannot be found.
         :param cron_task_requested: The cron task id or cron label
-        :type cron_task_requested: string
+        :param request_context: Context about the request. Such as an IP address of the source.
+        :param authentication: An auth item such as a websession or authkey.
+        :raises YomboCronTabError: Raised when cron job cannot be found.
         """
+        self.check_authorization(authentication, "modify")
         crontask = self.get(cron_task_requested)
-        crontask.disable()
+        crontask.disable(request_context=request_context, authentication=authentication)
         del self.crontabs[crontask.cron_id]
 
-    def enable(self, cron_task_requested):
+    def enable(self, cron_task_requested: str, request_context: Optional[str] = None,
+               authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None):
         """
         Enable a CronTask. Accepts either cron id or cron name.
 
         To enable a cron (note, it"s a method not a dictionary):
-            >>> self._CronTab.enable("7s453hhxl3")  #by cron id
+            >>> self._CronTabs.enable("7s453hhxl3")  #by cron id
         or::
-            >>> self._CronTab.enable("module.YomboBot.MyCron")  #by label
+            >>> self._CronTabs.enable("module.YomboBot.MyCron")  #by label
 
         :raises YomboCronTabError: Raised when cron job cannot be found.
         :param cron_task_requested: The cron task id or label
-        :type cron_task_requested: string
+        :param request_context: Context about the request. Such as an IP address of the source.
+        :param authentication: An auth item such as a websession or authkey.
         """
-        crontask = self.get(cron_task_requested)
-        crontask.enable()
+        self.check_authorization(authentication, "modify")
 
-    def disable(self, cron_task_requested):
+        crontask = self.get(cron_task_requested)
+        crontask.enable(request_context=request_context, authentication=authentication)
+
+    def disable(self, cron_task_requested: str, request_context: Optional[str] = None,
+                authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None):
         """
         Disable a CronTask. Accepts either cron id or cron name.
 
         To disable a cron (note, it's a method not a dictionary):
-            >>> self._CronTab.disable("7s453hhxl3")  #by cron id
+            >>> self._CronTabs.disable("7s453hhxl3")  #by cron id
         or::
-            >>> self._CronTab.disable("module.YomboBot.MyCron")  #by label
+            >>> self._CronTabs.disable("module.YomboBot.MyCron")  #by label
 
         :param cron_task_requested: The cron task id or label
-        :type cron_task_requested: string
+        :param request_context: Context about the request. Such as an IP address of the source.
+        :param authentication: An auth item such as a websession or authkey.
         """
         crontask = self.get(cron_task_requested)
-        crontask.disable()
+        crontask.disable(request_context=request_context, authentication=authentication)
 
-    def status(self, cron_task_requested):
+    def status(self, cron_task_requested: str, request_context: Optional[str] = None,
+               authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None):
         """
         Get the status of a cron task. Accepts either cron id or cron name.
 
         To disable a cron (note, it's a method not a dictionary):
-            >>> self._CronTab.disable("7s453hhxl3")  #by cron id
+            >>> self._CronTabs.disable("7s453hhxl3")  #by cron id
         or::
-            >>> self._CronTab.disable("module.YomboBot.MyCron")  #by name
+            >>> self._CronTabs.disable("module.YomboBot.MyCron")  #by name
 
         :param cron_task_requested: The cron task id or label
-        :type cron_task_requested: string
+        :param request_context: Context about the request. Such as an IP address of the source.
+        :param authentication: An auth item such as a websession or authkey.
         """
-        crontask = self.get(cron_task_requested)
-        crontask.disable()
+        self.check_authorization(authentication, "view")
 
-    def run_now(self, cron_task_requested):
+        crontask = self.get(cron_task_requested)
+        crontask.disable(request_context=request_context, authentication=authentication)
+
+    def run_now(self, cron_task_requested, request_context: Optional[str] = None,
+                authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None):
         """
         Runs a CronTask now. Accepts either cron id or cron name.
 
         To run a cron (note, it"s a method not a dictionary):
-            >>> self._CronTab.run_now("7s453hhxl3")  #by cron id
+            >>> self._CronTabs.run_now("7s453hhxl3")  #by cron id
         or::
-            >>> self._CronTab.run_now("module.YomboBot.MyCron")  #by name
+            >>> self._CronTabs.run_now("module.YomboBot.MyCron")  #by name
 
         :param cron_task_requested: The cron task id or label
-        :type cron_task_requested: string
+        :param request_context: Context about the request. Such as an IP address of the source.
+        :param authentication: An auth item such as a websession or authkey.
         """
         crontask = self.get(cron_task_requested)
-        crontask.run_now()
+        crontask.run_now(request_context=request_context, authentication=authentication)
 
-    def set_label(self, cron_task_requested, label):
+    def set_label(self, cron_task_requested, label, request_context: Optional[str] = None,
+                  authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None):
         """
         Set job label. Accepts either cron id or cron name.
 
         To set a label for a cron job:
-            >>> self._CronTab.set_label("7s453hhxl3", "modules.mymodule.mycrontask")  #by cron label
+            >>> self._CronTabs.set_label("7s453hhxl3", "modules.mymodule.mycrontask")  #by cron label
 
         :raises YomboCronTabError: Raised when cron job cannot be found.
         :param cron_task_requested: The cron task id
-        :type cron_task_requested: string
         :param label: New label for cron job.
-        :type label: string
+        :param request_context: Context about the request. Such as an IP address of the source.
+        :param authentication: An auth item such as a websession or authkey.
         """
+        self.check_authorization(authentication, "modify")
+
         crontask = self.get(cron_task_requested)
         crontask.label = label
 
-    def run_at(self, crontab_callback, timestring, label="", args=(), kwargs={}):
-        """
-        Helper function for CronTab.new(), should not be called externally.
 
-        Acceptable format for "timestring" value.
-
-        * "HH:MM" (24 hour). EG: 21:10 (9:10pm)
-        * "h:mAM" EG: 1:14pm, 6:30am
-        * "h:m AM" EG: 1:14 pm, 6:30 am
-
-        :param crontab_callback: Function to call
-        :type crontab_callback: Reference to function
-        :param timestring: String to parse to get hour:minute from
-        :type timestring: string
-        :param label: (optional) Label for cron job.
-        :type label: string
-        :param enabled: (optional, default=True) If CronTask should be enabled.
-        :type enabled: bool
-        :param args: (optional) Arguments to pass to "crontab_callback"
-        :type args: List of arguments
-        :param kwargs: (optional) Keyword arguments to pass to "crontab_callback"
-        :type kwargs: Dict of arguments
-        """
-        try:
-            try:
-                date_object = datetime.strptime(timestring, "%I:%M%p")
-            except:
-                try:
-                    date_object = datetime.strptime(timestring, "%I:%M %p")
-                except:
-                    date_object = datetime.strptime(timestring, "%H:%M")
-            return self.new(crontab_callback, date_object.minute, date_object.hour, label=label,
-                            args=args, kwargs=kwargs)
-        except:
-            YomboCronTabError("Unable to parse time string. Try HH:MM (24 hour time) format")
-
-
-class CronTask(Entity, ChildStorageAccessorsMixin):
+class CronTask(YomboLibraryChild, ChildStorageAccessorsMixin):
     """
     Individual cron task job, can be used to control the cron task.
     """
@@ -441,8 +420,10 @@ class CronTask(Entity, ChildStorageAccessorsMixin):
                  crontab_callback: Callable, mins: Optional[Union[str, int, list]] = None,
                  hours: Optional[Union[str, int, list]] = None, days: Optional[Union[str, int, list]] = None,
                  months: Optional[Union[str, int, list]] = None, dow: Optional[Union[str, int, list]] = None,
-                 label="", enabled=True, args: Optional[list] = None, kwargs: Optional[dict] = {},
-                 cron_id: Optional[str] = None, load_source: Optional = None) -> None:
+                 label: Optional[str] = "", enabled=True, args: Optional[list] = None, kwargs: Optional[dict] = {},
+                 cron_id: Optional[str] = None, _load_source: Optional = None,
+                 _request_context: Optional = None,
+                 _authentication: Union[None, Type["yombo.mixins.auth_mixin.AuthMixin"]] = None) -> None:
         """
         Setup the cron event.
         """
@@ -465,35 +446,47 @@ class CronTask(Entity, ChildStorageAccessorsMixin):
         self.enabled = enabled
         self.args = args
         self.kwargs = kwargs
-        self.load_source = load_source
+        self.load_source = _load_source
+        self.request_context = _request_context
+        self.authentication = _authentication
 
     def __del__(self):
-        """
-        About to delete myself.  Going to disable myself and tell crontab about this
-        if it's linked.
-        """
+        """ About to delete myself. Going to disable myself and tell crontab about this if it's linked. """
         self.enabled = False
-        self._Parent.remove(self.cron_id)
+        self._Parent.delete(self.cron_id)
 
-    def enable(self):
+    def enable(self, request_context: Optional[str] = None,
+               authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None) -> None:
         """
         Enable this CronTask.
+
+        :param request_context: Context about the request. Such as an IP address of the source.
+        :param authentication: An auth item such as a websession or authkey.
         """
+        self.check_authorization(authentication, "modify")
         self.enabled = True
 
-    def disable(self):
+    def disable(self, request_context: Optional[str] = None,
+                authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None) -> None:
         """
         Disable this CronTask.
+
+        :param request_context: Context about the request. Such as an IP address of the source.
+        :param authentication: An auth item such as a websession or authkey.
         """
+        self.check_authorization(authentication, "modify")
         self.enabled = False
 
-    def status(self):
+    def status(self, request_context: Optional[str] = None,
+               authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None) -> bool:
         """
         Returns the status of the cron task. If enabled, return True, otherwise returns False.
 
+        :param request_context: Context about the request. Such as an IP address of the source.
+        :param authentication: An auth item such as a websession or authkey.
         :return: Status of cron task.
-        :rtype: bool
         """
+        self.check_authorization(authentication, "view")
         self.enabled = False
 
     def match_time(self, t):
@@ -521,12 +514,16 @@ class CronTask(Entity, ChildStorageAccessorsMixin):
             self._Parent._Statistics.increment("lib.crontab.jobs", bucket_size=15, anon=True)
             self.crontab_callback(*self.args, **self.kwargs)
 
-    def run_now(self):
+    def run_now(self, request_context: Optional[str] = None,
+                authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None):
         """
         Run the cron task now.
 
+        :param request_context: Context about the request. Such as an IP address of the source.
+        :param authentication: An auth item such as a websession or authkey.
         :return: None
         """
+        self.check_authorization(authentication, "modify")
         self.crontab_callback(*self.args, **self.kwargs)
 
     # def to_external_all(self, **kwargs) -> list:

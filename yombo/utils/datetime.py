@@ -306,7 +306,7 @@ def time_from_string(time_string: str, source_time=None) -> tuple:
     elif what == 3:
         # result is a datetime
         output = time_struct
-    return (int(output.strftime("%s")), output)
+    return int(output.strftime("%s")), output
 
 
 @static_var("calendar", pdt.Calendar())

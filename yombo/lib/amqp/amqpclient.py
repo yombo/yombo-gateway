@@ -172,7 +172,8 @@ class AMQPClient(Entity):
         subscriptions.
         """
         print("amqpclient - connected..")
-        self._AMQP._Events.new("amqp", "connected", (self.client_id,))
+        self._AMQP._Events.new("amqp", "connected", (self.client_id,), _request_context=self._FullName,
+                               _authentication=self.AUTH_USER)
         self._local_log("debug", "AMQP Client: {client_id} - Connected")
         self._connecting = False
         self.is_connected = True
@@ -197,7 +198,8 @@ class AMQPClient(Entity):
         """
         Function is called when the Gateway is disconnected from the AMQP service.
         """
-        self._AMQP._Events.new("amqp", "disconnected", (self.client_id, ""))
+        self._AMQP._Events.new("amqp", "disconnected", (self.client_id, ""), _request_context=self._FullName,
+                               _authentication=self.AUTH_USER)
         logger.info("AMQP Client {client_id} disconnected. Will usually auto-reconnected.", client_id=self.client_id)
         self.is_connected = False
         self.call_callbacks(self.disconnected_callbacks)

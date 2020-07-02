@@ -100,8 +100,8 @@ class Storage(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
                 self.storage[scheme] = attrs
 
         yield self.purge_expired()
-        self._CronTab.new(self.purge_expired, mins=0, hours=4, label="Delete expired storage files.",
-                          load_source="system")
+        self._CronTabs.new(self.purge_expired, mins=0, hours=4, label="Delete expired storage files.",
+                           _load_source=self._FullName, _authentication=self.AUTH_USER)
 
     @inlineCallbacks
     def get(self, storage_id):

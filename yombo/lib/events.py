@@ -39,7 +39,6 @@ from yombo.utils.hookinvoke import global_invoke_all
 logger = get_logger("library.events")
 
 
-
 class Events(YomboLibrary):
     """
     A common location to collect system events. Not to be confused with notifications to display to users
@@ -106,9 +105,11 @@ class Events(YomboLibrary):
         yield self.save_event_queue()
 
     def new(self, event_type: str, event_subtype: str, attributes: list = None, priority: str = None,
-            request_by: Union[None, str] = None, request_by_type: Union[None, str] = None,
             request_context: Union[None, str] = None, authentication: Union[None, Type[AuthMixin]] = None,
-            created_at=None) -> None:
+            created_at=None, _load_source: Optional[str] = None, _request_context: Optional[str] = None,
+            _authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None) -> None:
+
+        self.check_authorization(_authentication, "create", required=False)
 
         if self.enabled is False:
             return
@@ -131,10 +132,9 @@ class Events(YomboLibrary):
             attributes = [attributes, ]
 
         try:
-            request_by, request_by_type = self._Permissions.request_by_info(
-                authentication, request_by, request_by_type)
+            request_by, request_by_type = self._Users.request_by_info(authentication)
         except YomboWarning:
-            request_by, request_by_type = self._Permissions.request_by_info(self._Users.system_user)
+            request_by, request_by_type = self._Users.request_by_info(self.AUTH_USER)
         if request_context is None:
             request_context = caller_string()  # get the module/class/function name of caller
 

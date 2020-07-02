@@ -73,9 +73,9 @@ class Hash(YomboLibrary):
         self.argon2_rounds = results[0]
         self.argon2_memory = results[1]
         self.argon2_duration = results[2]
-        self._Configs.set("hash.argon2_rounds", results[0])
-        self._Configs.set("hash.argon2_memory", results[1])
-        self._Configs.set("hash.argon2_duration", results[2])
+        self._Configs.set("hash.argon2_rounds", results[0], ref_source=self)
+        self._Configs.set("hash.argon2_memory", results[1], ref_source=self)
+        self._Configs.set("hash.argon2_duration", results[2], ref_source=self)
 
         if slow is True:
             yield sleep(1)
@@ -84,9 +84,9 @@ class Hash(YomboLibrary):
         self.argon2_rounds_fast = results[0]
         self.argon2_memory_fast = results[1]
         self.argon2_duration_fast = results[2]
-        self._Configs.set("hash.argon2_rounds_fast", results[0])
-        self._Configs.set("hash.argon2_memory_fast", results[1])
-        self._Configs.set("hash.argon2_duration_fast", results[2])
+        self._Configs.set("hash.argon2_rounds_fast", results[0], ref_source=self)
+        self._Configs.set("hash.argon2_memory_fast", results[1], ref_source=self)
+        self._Configs.set("hash.argon2_duration_fast", results[2], ref_source=self)
 
     def argon2_find_cost_calculator(self, max_time=None):
         """

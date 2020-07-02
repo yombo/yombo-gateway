@@ -8,12 +8,12 @@ A single authkey instance.
 :view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/authkeys/authkey.html>`_
 """
 # Import python libraries
-from typing import ClassVar
+from typing import ClassVar, Optional,Type, Union
 
 # Import Yombo libraries
 from yombo.constants import AUTH_TYPE_AUTHKEY, AUTH_TYPE_USER
 from yombo.constants.authkeys import AUTHKEY_ID_LENGTH_FULL
-from yombo.core.entity import Entity
+from yombo.core.library_child import YomboLibraryChild
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
 from yombo.mixins.auth_mixin import AuthMixin
@@ -26,7 +26,8 @@ from yombo.utils import random_string
 logger = get_logger("library.authkey_instance")
 
 
-class AuthKey(Entity, LibraryDBChildMixin, AuthMixin, PermissionMixin, RolesMixin, LibraryDBChildAttributesMixin):
+class AuthKey(YomboLibraryChild, LibraryDBChildMixin, AuthMixin, PermissionMixin, RolesMixin,
+              LibraryDBChildAttributesMixin):
     """
     A single auth key item.
     """
@@ -70,15 +71,11 @@ class AuthKey(Entity, LibraryDBChildMixin, AuthMixin, PermissionMixin, RolesMixi
             "machine_label": incoming["machine_label"],
             "auth_key_id": incoming["auth_key_id"]
         }
-        # print(f"auth load pre process 1")
         try:
             found = self._Parent.get_advanced(search_dict, multiple=False)
             raise YomboWarning(f"Found a duplicate auth key: {found.machine_label} - {found.label}")
         except KeyError:
             pass
-        # except Exception as e:
-        #     print(f"got some exception: {e}")
-        #     pass
 
         self.update_attributes_pre_process(incoming)
 
@@ -92,15 +89,23 @@ class AuthKey(Entity, LibraryDBChildMixin, AuthMixin, PermissionMixin, RolesMixi
             self.auth_key_id_full = ""
         return auth_key_id_full
 
-    def rotate(self):
+    def rotate(self, request_context: Optional[str] = None,
+               authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None):
         """
         Rotates the auth key (it's the matching auth_id). It's a good idea to rotate keys regularly.
 
+        :param request_context: Context about the request. Such as an IP address of the source.
+        :param authentication: An auth item such as a websession or authkey.
         :return:
         """
+        self.check_authorization(authentication, "modify")
+
         old_auth_id = self.auth_id
         auth_key_id_full = self._set_new_auth_id()
-        self._Parent._finish_rotate_key(old_auth_id, self.auth_id, self)
+
+        # self._Parent._finish_rotate_key(old_auth_id, self.auth_id, self)
+        self._Parent.authkeys[self.auth_id] = self
+        del self._Parent.authkeys[old_auth_id]
         return auth_key_id_full
 
     # def to_database_preprocess(self, incoming):

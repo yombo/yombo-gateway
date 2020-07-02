@@ -140,12 +140,10 @@ class DeviceStates(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
             energy_usage: Optional[str] = None, energy_type: Optional[str] = None,
             human_state: Optional[str] = None, human_message: Optional[str] = None,
             gateway_id: Optional[str] = None, reporting_source: Optional[str] = None,
-            request_by: Optional[str] = None, request_by_type: Optional[str] = None,
-            request_context: Optional[str] = None,
-            authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None,
             uploaded: Optional[bool] = None, uploadable: Optional[bool] = None,
-            _fake_data: Optional[bool] = None, load_source: Optional[str] = None,
-            device_state_id: Optional[str] = None) -> DeviceState:
+            _fake_data: Optional[bool] = None, device_state_id: Optional[str] = None,
+            _load_source: Optional[str] = None, _request_context: Optional[str] = None,
+            _authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None) -> DeviceState:
         """
         Create a new device state.
 
@@ -164,17 +162,16 @@ class DeviceStates(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
         :param machine_state_extra:
         :param gateway_id:
         :param reporting_source: Which module or library is reporting this state.
-        :param request_by: Who created the Authkey. "alexamodule"
-        :param request_by_type: What type of item created it: "module"
-        :param request_context: Some additional information about where the request comes from.
-        :param authentication: An auth item such as a websession or authkey.
         :param uploaded:
         :param uploadable:
-        :param _fake_data:
-        :param load_source: How the authkey was loaded.
         :param device_state_id: Device state id to use, not normally set.
+        :param _fake_data:
+        :param _load_source: Where the data originated from. One of: local, database, yombo, system
+        :param _request_context: Context about the request. Such as an IP address of the source.
+        :param _authentication: An auth item such as a websession or authkey.
         :return:
         """
+        self.check_authorization(_authentication, "create", required=False)
         if device_state_id is not None:
             try:
                 found = self.get_advanced({"device_state_id": device_state_id}, multiple=False)
@@ -186,37 +183,12 @@ class DeviceStates(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
             if isinstance(device_command, DeviceCommand) is False:
                 device_command = self._DeviceCommands.get(device_command)
 
-        try:
-            request_by, request_by_type = self._Permissions.request_by_info(
-                authentication, request_by, request_by_type, device_command)
-        except YomboWarning:
-            logger.warn("Device states accepted a state without any authentication information.")
-        if request_context is None:
+        self._Users.validate_authentication(_authentication)
+        if _request_context is None:
             request_context = caller_string()  # get the module/class/function name of caller
 
         if isinstance(machine_state, float):
             machine_state = Decimal(machine_state)
-        # print({
-        #         "id": device_state_id,
-        #         "device": device,
-        #         "command": command,
-        #         "device_command": device_command,
-        #         "energy_usage": energy_usage,
-        #         "energy_type": energy_type,
-        #         "human_state": human_state,
-        #         "human_message": human_message,
-        #         "machine_state": machine_state,
-        #         "machine_state_extra": machine_state_extra,
-        #         "gateway_id": gateway_id,
-        #         "reporting_source": reporting_source,
-        #         "uploaded": uploaded,
-        #         "uploadable": uploadable,
-        #         "request_by": request_by,
-        #         "request_by_type": request_by_type,
-        #         "request_context": request_context,
-        #         "created_at": created_at,
-        #         "_fake_data": _fake_data,
-        #     })
 
         results = yield self.load_an_item_to_memory(
             {
@@ -234,13 +206,13 @@ class DeviceStates(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
                 "reporting_source": reporting_source,
                 "uploaded": uploaded,
                 "uploadable": uploadable,
-                "request_by": request_by,
-                "request_by_type": request_by_type,
-                "request_context": request_context,
                 "created_at": created_at,
                 "_fake_data": _fake_data,
             },
-            load_source=load_source)
+            load_source=_load_source,
+            request_context=_request_context if _request_context is not None else caller_string(),
+            authentication=_authentication
+        )
         return results
 
     @cached(1)  # memoize for 5 seconds

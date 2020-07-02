@@ -71,11 +71,11 @@ class LocalDB(YomboLibrary, DatabaseMixin, LibrarySupport):
         # Perform DB cleanup activites based on local section.
         if self._Configs.get("database.purge_sqlidicts", False) is True:
             self.truncate("sqldicts")
-            self._Configs.set("database.purge_sqlidicts", False)
+            self._Configs.set("database.purge_sqlidicts", False, ref_source=self)
 
         if self._Configs.get("database.purge_device_states", False) is True:
             self.truncate("device_states")
-            self._Configs.set("database.purge_device_states", False)
+            self._Configs.set("database.purge_device_states", False, ref_source=self)
 
     @inlineCallbacks
     def get_ids_for_yombo_api_tables(self):

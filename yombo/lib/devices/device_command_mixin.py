@@ -64,10 +64,10 @@ class DeviceCommandMixin:
     def command(self, command: Union[Command, str, Command], pin: Optional[str] = None,
                 persistent_request_id: Optional[str] = None, not_before: Optional[Union[int, float]] = None,
                 delay: Optional[Union[int, float]] = None, max_delay: Optional[Union[int, float]] = None,
-                authentication: Optional[Type[AuthMixin]] = None, request_by: Optional[str] = None,
-                request_by_type: Optional[str] = None, request_context: Optional[str] = None,
                 inputs: Optional[Dict[str, Any]] = None, not_after: Optional[Union[int, str]] = None,
                 callbacks: Optional[Dict[str, Any]] = None, idempotence: Optional[Union[int, str]] = None,
+                request_context: Optional[str] = None,
+                authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None,
                 **kwargs) -> "yombo.lib.devicecommands.DeviceCommand":
         """
         Tells the device to a command. This in turn calls the hook _device_command_ so modules can process the command
@@ -86,31 +86,22 @@ class DeviceCommandMixin:
             - cmd doesn't exist
 
         :param command: Command instance, command id, or command machine_label to send.
-        :type command: str
         :param pin: A pin to check.
-        :type pin: str
         :param persistent_request_id: Can be used to cancel a request, typically used by modules for special neads.
-        :type persistent_request_id: str
         :param not_before: An epoch time when the command should be sent. Not to be combined with "delay".
-        :type not_before: int or float
         :param delay: How many seconds to delay sending the command. Not to be combined with "not_before"
-        :type delay: int or float
         :param max_delay: How many second after the "delay" or "not_before" can the command be send. This can occur
             if the system was stopped when the command was supposed to be send.
-        :type max_delay: int or float
-        :param authentication: An auth item such as a websession or authkey.
-        :param request_by: Who created the device state. "alexamodule"
-        :param request_by_type: What type of item created it: "module"
         :param inputs: A dictionary containing the "input_type_id" and any supplied "value".
         :param not_after: An epoch time when the command should be discarded.
-        :type not_after: int or float
         :param callbacks: A dictionary of callbacks
-        :type callbacks: dict
+        :param request_context: Context about the request. Such as an IP address of the source.
+        :param authentication: An auth item such as a websession or authkey.
         :param kwargs: Any additional named arguments will be sent to the module for processing.
-        :type kwargs: named arguments
-        :return: The request id.
-        :rtype: str
+        :return: The DeviceCommand that was created.
         """
+        self.check_authorization(authentication, "control", self.device_id, required=False)
+
         logger.info("device ({label}), command: starting", label=self.full_label)
         if self.status != 1:
             raise YomboWarning("Device cannot be used, it's not enabled.")
@@ -133,10 +124,15 @@ class DeviceCommandMixin:
             raise YomboWarning("This device cannot be directly controlled. Set 'control_method'.")
 
         logger.info("device ({label}), command: a", label=self.full_label)
+
+        if authentication is None:
+            authentication = self.AUTH_USER
+
         device_command = {
             "device": self,
             # "pin": pin,
             "idempotence": idempotence,
+            "_authentication": authentication
         }
 
         logger.info("device ({label}), command: d", label=self.full_label)
@@ -152,26 +148,15 @@ class DeviceCommandMixin:
 
         # This will raise YomboNoAccess exception if user doesn't have access.
         try:
-            request_by, request_by_type = self._Permissions.request_by_info(
-                authentication, request_by, request_by_type)
+            self._Users.validate_authentication(authentication)
         except YomboWarning:
             logger.warn("Device command received for device {label}, but no user specified."
                         " This will generate errors in future versions.",
                         label=self.full_label)
-        else:
-            if authentication is None and request_by is not None and request_by_type is not None:
-                authentication = self._Permissions.find_authentication_item(request_by, request_by_type)
         logger.info("device ({label}), command: j", label=self.full_label)
 
         # if authentication is not None:
         #     self._Permissions.is_allowed(AUTH_PLATFORM_DEVICE, "control", self.device_id, authentication)
-
-        if authentication is None:
-            authentication = self._Users.system_user
-
-        device_command["authentication"] = authentication
-        device_command["request_by"] = request_by
-        device_command["request_by_type"] = request_by_type
 
         if DEVICE_COMMAND_REQUEST_CONTEXT in kwargs:
             device_command[DEVICE_COMMAND_REQUEST_CONTEXT] = kwargs[DEVICE_COMMAND_REQUEST_CONTEXT]

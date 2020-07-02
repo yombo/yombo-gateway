@@ -129,9 +129,12 @@ class Atoms(YomboLibrary, SystemDataParentMixin, LibraryDBParentMixin, LibrarySe
         self.logger = logger
         self.atoms[self._gateway_id] = {}
         yield self.load_from_database()
-        yield self.set_yield("app_dir", self._Configs.app_dir, value_type="string", request_context=self)
-        yield self.set_yield("working_dir", self._Configs.working_dir, value_type="string", request_context=self)
-        yield self.set_yield("gateway.running_since", time(), value_type="int", request_context=self)
+        yield self.set_yield("app_dir", self._Configs.app_dir, value_type="string",
+                             request_context="lib:atoms:init:", authentication=self.AUTH_USER)
+        yield self.set_yield("working_dir", self._Configs.working_dir, value_type="string",
+                             request_context="lib:atoms:init:", authentication=self.AUTH_USER)
+        yield self.set_yield("gateway.running_since", time(), value_type="int",
+                             request_context="lib:atoms:init:", authentication=self.AUTH_USER)
         yield self.os_data()
 
     def os_data(self) -> None:
@@ -139,14 +142,21 @@ class Atoms(YomboLibrary, SystemDataParentMixin, LibraryDBParentMixin, LibrarySe
         Sets atoms concerning the operating system.
         """
         os_platform = sys.platform
-        self.set("gateway.pid", os.getpid(), value_type="int", request_context=self)
+        self.set("gateway.pid", os.getpid(), value_type="int",
+                 request_context="lib:atoms:init:", authentication=self.AUTH_USER)
         (_, system_name, kernel_version, kernel_notes, cpu_arch, _) = platform.uname()
-        self.set("hardware.cpu_arch", cpu_arch, value_type="string", request_context=self)
-        self.set("system.name", system_name, value_type="string", request_context=self)
-        self.set("os.type", os_platform, value_type="string", request_context=self)
-        self.set("os.kernel_version", kernel_version, value_type="string", request_context=self)
-        self.set("os.kernel_notes", kernel_notes, value_type="string", request_context=self)
-        self.set("python.version", platform.python_version(), value_type="string", request_context=self)
+        self.set("hardware.cpu_arch", cpu_arch, value_type="string",
+                 request_context="lib:atoms:init:", authentication=self.AUTH_USER)
+        self.set("system.name", system_name, value_type="string",
+                 request_context="lib:atoms:init:", authentication=self.AUTH_USER)
+        self.set("os.type", os_platform, value_type="string",
+                 request_context="lib:atoms:init:", authentication=self.AUTH_USER)
+        self.set("os.kernel_version", kernel_version, value_type="string",
+                 request_context="lib:atoms:init:", authentication=self.AUTH_USER)
+        self.set("os.kernel_notes", kernel_notes, value_type="string",
+                 request_context="lib:atoms:init:", authentication=self.AUTH_USER)
+        self.set("python.version", platform.python_version(), value_type="string",
+                 request_context="lib:atoms:init:", authentication=self.AUTH_USER)
         cpu_count = 1
         mem_total = 550502400
         mem_sizing = "small"
@@ -168,32 +178,46 @@ class Atoms(YomboLibrary, SystemDataParentMixin, LibraryDBParentMixin, LibrarySe
             else:                         # more than 4200mb
                 mem_sizing = "xx_large"
 
-        self.set("system.cpu_count", cpu_count, value_type="int", request_context=self)
-        self.set("system.memory_total", mem_total, value_type="int", request_context=self)
-        self.set("system.memory_sizing", mem_sizing, value_type="string", request_context=self)
+        self.set("system.cpu_count", cpu_count, value_type="int",
+                 request_context="lib:atoms:init:", authentication=self.AUTH_USER)
+        self.set("system.memory_total", mem_total, value_type="int",
+                 request_context="lib:atoms:init:", authentication=self.AUTH_USER)
+        self.set("system.memory_sizing", mem_sizing, value_type="string",
+                 request_context="lib:atoms:init:", authentication=self.AUTH_USER)
 
         if os_platform == "Windows":
-            self.set("os.family", "windows", value_type="string", request_context=self)
-            self.set("os.distrofamily", "nt", value_type="string", request_context=self)
+            self.set("os.family", "windows", value_type="string",
+                     request_context="lib:atoms:init:", authentication=self.AUTH_USER)
+            self.set("os.distrofamily", "nt", value_type="string",
+                     request_context="lib:atoms:init:", authentication=self.AUTH_USER)
         elif os_platform == "Linux":
-            self.set("os.family", "linux", value_type="string", request_context=self)
+            self.set("os.family", "linux", value_type="string",
+                     request_context="lib:atoms:init:", authentication=self.AUTH_USER)
             (osname, osrelease, oscodename) = \
                 [x.strip(""").strip(""") for x in
                  distro.linux_distribution()]
-            self.set("os.release", osrelease.strip(), value_type="string", request_context=self)
-            self.set("os.oscodename", oscodename.strip(), value_type="string", request_context=self)
+            self.set("os.release", osrelease.strip(), value_type="string",
+                     request_context="lib:atoms:init:", authentication=self.AUTH_USER)
+            self.set("os.oscodename", oscodename.strip(), value_type="string",
+                     request_context="lib:atoms:init:", authentication=self.AUTH_USER)
 
             distroname = osname.lower().strip()
-            self.set("os.distroname", distroname, value_type="string", request_context=self)
+            self.set("os.distroname", distroname, value_type="string",
+                     request_context="lib:atoms:init:", authentication=self.AUTH_USER)
             shortname = distroname.replace(" ", "").lower()[:10]
-            self.set("os.distrofamily", _MAP_OS_NAME.get(shortname, distroname), value_type="string", request_context=self)
+            self.set("os.distrofamily", _MAP_OS_NAME.get(shortname, distroname), value_type="string",
+                     request_context="lib:atoms:init:", authentication=self.AUTH_USER)
 
         elif os_platform == "Darwin":
-            self.set("os.family", "darwin", value_type="string", request_context=self)
-            self.set("os.distrofamily", "darwin", value_type="string", request_context=self)
+            self.set("os.family", "darwin", value_type="string",
+                     request_context="lib:atoms:init:", authentication=self.AUTH_USER)
+            self.set("os.distrofamily", "darwin", value_type="string",
+                     request_context="lib:atoms:init:", authentication=self.AUTH_USER)
         elif os_platform == "SunOS":
-            self.set("os.family", "solaris", value_type="string", request_context=self)
-            self.set("os.distrofamily", "solaris", value_type="string", request_context=self)
+            self.set("os.family", "solaris", value_type="string",
+                     request_context="lib:atoms:init:", authentication=self.AUTH_USER)
+            self.set("os.distrofamily", "solaris", value_type="string",
+                     request_context="lib:atoms:init:", authentication=self.AUTH_USER)
         else:
-            self.set("os.family", _MAP_OS_FAMILY.get(os_platform, os_platform),
-                     value_type="string", request_context=self)
+            self.set("os.family", _MAP_OS_FAMILY.get(os_platform, os_platform), value_type="string",
+                     request_context="lib:atoms:init:", authentication=self.AUTH_USER)

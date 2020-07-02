@@ -32,10 +32,12 @@ def sqlite_convert_step_line(lines: list) -> list:
     """
     varbinary = re.compile("VARBINARY\(([0-9]*)\)")
     collate = re.compile(r"COLLATE [A-Za-z_0-9]+")
+    comment = re.compile(r"""COMMENT ([`"'])(?:(?=(\\?))\2.)*?\1+""")
     results = []
     for line in lines:
         line = varbinary.sub('BLOB', line)
         line = collate.sub('', line)
+        line = comment.sub('', line)
         line = line.replace("INTEGER UNSIGNED NOT NULL PRIMARY KEY AUTOINCREMENT",
                             "INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT")
         results.append(line)

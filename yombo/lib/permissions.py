@@ -109,16 +109,17 @@ class Permissions(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
         """
         Define the base permissions
         """
+        self.system_seed = self._Configs.get("core.rand_seed")
         yield self.load_from_database()
         self.guard = vakt.Guard(self.vakt_storage, vakt.RulesChecker())
         self.auth_platforms = deepcopy(AUTH_PLATFORMS)  # Possible authentication platforms and their actions.
-
-        self.system_seed = self._Configs.get("core.rand_seed")
+        yield self.setup_permissions(self.auth_platforms)
 
     @inlineCallbacks
     def _load_(self, **kwargs):
         results = yield global_invoke_all("_auth_platforms_", called_by=self)
         logger.debug("_auth_platforms_ results: {results}", results=results)
+        new_permissions = {}
         for component, platforms in results.items():
             for machine_label, platform_data in platforms.items():
                 if "actions" not in platform_data:
@@ -135,12 +136,17 @@ class Permissions(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
                                 " setting to none.",
                                 component=component, machine_label=machine_label)
                     platform_data["actions"]["user"] = []
-                self.auth_platforms[machine_label] = platform_data
+                new_permissions[machine_label] = platform_data
 
-        yield self.setup_system_permissions()
+        self.auth_platforms.update(new_permissions)
+        yield self.setup_permissions(new_permissions)
 
     @inlineCallbacks
-    def setup_system_permissions(self):
+    def setup_permissions(self, new_permissions):
+        """
+        Setup all the system permissions. This creates all the system roles and sets up VAKT.
+        :return:
+        """
         Roles = self._Roles
         # print(f'permissions - init - roles: {Roles.roles}')
 
@@ -160,13 +166,12 @@ class Permissions(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
                 # subjects=[f"role:{role.role_id}"],
                 permission_id=permission_id,
                 effect=vakt.ALLOW_ACCESS,
-                request_by="permissions",
-                request_by_type="library",
-                request_context="setup_system_permissions",
-                load_source="local",
+                _request_context="setup_permissions",
+                _load_source="local",
+                _authentication=self.AUTH_USER
                 )
 
-        for platform, data in AUTH_PLATFORMS.items():
+        for platform, data in new_permissions.items():
             platform_parts = platform.split(".")
 
             # define platform admins
@@ -186,10 +191,9 @@ class Permissions(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
                     machine_label=platform_machine_label,
                     label=f"{platform_label} admin",
                     description=description,
-                    request_by="permissions",
-                    request_by_type="library",
-                    request_context="setup_system_permissions",
-                    load_source="local",
+                    _request_context="setup_permissions",
+                    _load_source="local",
+                    _authentication=self.AUTH_USER
                 )
             # print(f"22 permissions, about to define platform admin: {platform_label}")
             if permission_id not in self.permissions:
@@ -203,10 +207,9 @@ class Permissions(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
                     # subjects=[Eq(f"role:{role.role_id}")],
                     permission_id=permission_id,
                     effect=vakt.ALLOW_ACCESS,
-                    request_by="permissions",
-                    request_by_type="library",
-                    request_context="setup_system_permissions",
-                    load_source="local",
+                    _request_context="setup_permissions",
+                    _load_source="local",
+                    _authentication=self.AUTH_USER
                     )
             # else:
             #     self.attach_
@@ -227,10 +230,9 @@ class Permissions(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
                         label=f"{platform_label} {action}",
                         machine_label=platform_machine_label,
                         description=description,
-                        request_by="permissions",
-                        request_by_type="library",
-                        request_context="setup_system_permissions",
-                        load_source="local"
+                        _request_context="setup_permissions",
+                        _load_source="local",
+                        _authentication=self.AUTH_USER
                     )
                 if permission_id not in self.permissions:
                     yield self.new(
@@ -243,10 +245,9 @@ class Permissions(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
                         # subjects=[f"role:{role.role_id}"],
                         permission_id=permission_id,
                         effect=vakt.ALLOW_ACCESS,
-                        request_by="permissions",
-                        request_by_type="library",
-                        request_context="setup_system_permissions",
-                        load_source="local"
+                        _request_context="setup_permissions",
+                        _load_source="local",
+                        _authentication=self.AUTH_USER
                         )
                 # else:
                 #     attach....
@@ -269,18 +270,33 @@ class Permissions(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
                     # subjects=[Eq(f"role:{role.role_id}")],
                     permission_id=permission_id,
                     effect=vakt.ALLOW_ACCESS,
-                    request_by="permissions",
-                    request_by_type="library",
-                    request_context="setup_system_permissions",
-                    load_source="local"
+                    _request_context="setup_permissions",
+                    _load_source="local",
+                    _authentication=self.AUTH_USER
                 )
+
+    @staticmethod
+    def get_auth_platform(auth_type: str, auth_name: str) -> str:
+        """
+        Looks through AUTH_PLATFORMS for the requested type and name, and returns the auth platform.
+
+        :param auth_type: Either 'library' or 'module'.
+        :param auth_name: Name of the library or module, such as "Atoms".
+        :return:
+        """
+        # print(f"get_auth_platform - starting:  {auth_type} - {auth_name}")
+        for platform, data in AUTH_PLATFORMS.items():
+            # print(f"checking: {platform} - {data}")
+            if data["resource_type"] == auth_type and data["resource_name"] == auth_name:
+                return platform
+        # print(f"get_auth_platform - Not found:: {auth_name}")
+        return None
 
     @inlineCallbacks
     def new(self, attachment: Type[AuthMixin], machine_label: str, label: str, description: str, actions, resources,
             subjects: Optional[list] = None, effect: Union[None, vakt.ALLOW_ACCESS, vakt.DENY_ACCESS] = None,
-            request_by: Optional[str] = None, request_by_type: Union[None, str] = None,
-            request_context: Optional[str] = None, authentication: Optional[Type[AuthMixin]] = None,
-            permission_id=None, load_source=None):
+            permission_id=None, _load_source: Optional[str] = None, _request_context: Optional[str] = None,
+            _authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None):
         """
         Create a new permission and attach to a role, user, or authkey.
 
@@ -295,19 +311,15 @@ class Permissions(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
         :param resources:
         :param subjects:
         :param effect:
-        :param request_by: Who created the permission. "alexamodule"
-        :param request_by_type: What type of item created it: "module"
-        :param request_context: Some additional information about where the request comes from.
-        :param authentication: An auth item such as a websession or authkey.
         :param permission_id: permission the role was loaded.
-        :param load_source: How the permission was loaded.
+        :param _load_source: Where the data originated from. One of: local, database, yombo, system
+        :param _request_context: Context about the request. Such as an IP address of the source.
+        :param _authentication: An auth item such as a websession or authkey.
         :return:
         """
-        _request_by, _request_by_type = self.request_by_info(authentication, request_by, request_by_type)
+
         if permission_id is None:
             permission_id = random_string(length=38)
-        # else:
-        #     permission_id = self._Hash.sha224_compact(f"{_request_by}:{_request_by_type}:{machine_label}:{permission_id}")
 
         try:
             found = self.get_advanced({"machine_label": machine_label, "permission_id": permission_id}, multiple=False)
@@ -340,6 +352,8 @@ class Permissions(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
         if description is None:
             description = label
 
+        self._Users.validate_authentication(_authentication)
+
         results = yield self.load_an_item_to_memory(
             {
                 "id": permission_id,
@@ -349,13 +363,12 @@ class Permissions(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
                 "machine_label": machine_label,
                 "label": label,
                 "description": description,
-                "request_by": request_by,
-                "request_by_type": request_by_type,
-                "request_context": request_context,
+                "request_context": _request_context,
             },
-            authentication=authentication,
-            load_source=load_source,
-            generated_source=caller_string())
+            load_source=_load_source,
+            request_context=_request_context if _request_context is not None else caller_string(),
+            authentication=_authentication
+        )
         return results
 
     def delete(self, permssion_id: str) -> None:
@@ -385,60 +398,10 @@ class Permissions(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
                 return self._AuthKeys[request_by]
         if request_by_type == AUTH_TYPE_USER:
             if request_by in self._Users:
-                return self._Users[request_by]
-        raise KeyError("Could not find the source auth item.")
-
-    def request_by_info(self, authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None,
-                        request_by: Optional[str] = None,
-                        request_by_type: Optional[str] = None, instance: Optional[Any] = None,
-                        default: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None):
-        """
-        Extract authentication information from either authentication or request_by and request_by_type fields.
-
-        :param authentication:
-        :param request_by:
-        :param request_by_type:
-        :param instance: Any instance of an object that can contain request_by and request_by_type attributes.
-        :param default: If no available authentication information is available, use this as a last resort.
-        :return:
-        """
-        if authentication is not None:
-            return authentication.accessor_id, authentication.accessor_type
-
-        search = [{
-                "request_by": request_by,
-                "request_by_type": request_by_type,
-            }]
-
-        if instance is not None:
-            search.append({
-                "request_by": instance.request_by,
-                "request_by_type": instance.request_by_type,
-            })
-
-        if default is not None:
-            search.append({
-                "request_by": default.accessor_id,
-                "request_by_type": default.accessor_type,
-            })
-
-        return self.search_request_by_info(search)
-
-    @staticmethod
-    def search_request_by_info(the_items: List[dict]):
-        """
-        Searches the_items for authentication and returns request_id and request_type.
-
-        Returns request_by and request_by_type.
-
-        :param the_items: A list of dictionaries to search.
-        :return:
-        """
-        for item in the_items:
-            if "request_by" in item and item["request_by"] is not None and \
-                    "request_by_type" in item and item["request_by_type"] is not None:
-                return item["request_by"], item["request_by_type"]
-        raise YomboWarning("Authentication information not found.")
+                return self._Users.get(request_by)
+            else:
+                print(f"Cannot find in : {self._Users.users}")
+        raise KeyError(f"Could not find the source auth item: {request_by_type} - {request_by}")
 
     def is_allowed(self, platform: str, action: str, item_id: Optional[str] = None,
                    authentication: Type[AuthMixin] = None,
@@ -454,6 +417,11 @@ class Permissions(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
         :param raise_error: If true, raise YomboNoAccess if no access, this is the default.
         :return:
         """
+        if self._Loader.run_phase[1] <= 3400:
+            return True
+        # TODO: Validate libary and module permissions. For now, they can do anything.
+        if authentication.user_id.startswith("^yombo^"):
+            return True
         if authentication is None:
             logger.warn("is_allow got a blank authentication, going to deny because...duhhhh...")
             return False
@@ -480,8 +448,7 @@ class Permissions(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
             raise YomboNoAccess(action=action,
                                 platform=platform,
                                 item_id=item_id,
-                                request_by=authentication.accessor_id,
-                                request_by_type=authentication.accessor_type,
+                                authentication=authentication,
                                 request_context=request_context)
 
         return False

@@ -21,6 +21,7 @@ from typing import Optional, Union
 from twisted.internet.defer import inlineCallbacks
 
 from yombo.constants import CONTENT_TYPE_JSON, CONTENT_TYPE_MSGPACK
+from yombo.constants.webinterface import IGNORED_EXTENSIONS
 from yombo.constants.exceptions import ERROR_CODES
 from yombo.core.exceptions import (YomboWarning, YomboNoAccess, YomboInvalidValidation, YomboWebinterfaceError,
                                    YomboMarshmallowValidationError)
@@ -165,6 +166,13 @@ def get_session(auth_required: Optional[bool] = None,
             # Create session if login_redirect is set or create_session is True.
             if login_redirect is not None:
                 create_session = True
+
+            # 'Touch' any auth items for last_updated_at, if it's a happy URL.
+            if request.auth is not None:
+                url_path = request.path.decode().strip()
+                if any(ext in url_path for ext in IGNORED_EXTENSIONS) is False:
+                    request.auth.touch()
+
             try:
                 if create_session is True and request.auth is None:
                     # print(f"run_first: before session created: {session}")

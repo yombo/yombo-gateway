@@ -194,7 +194,7 @@ class Scenes(YomboLibrary, ParentStorageAccessorsMixin, LibrarySearchMixin):
             try:
                 scene.scene_init(**kwargs)
             except Exception as e:
-                logger.warn("Error validating scene '{label}'", label=scene.label)
+                logger.warn("Error validating scene '{label}': {e}", label=scene.label, e=e)
 
     def _started_(self, **kwargs):
         """
@@ -498,7 +498,11 @@ class Scenes(YomboLibrary, ParentStorageAccessorsMixin, LibrarySearchMixin):
                                           data_content_type="json",
                                           gateway_id=self._gateway_id,
                                           destination="gw",
-                                          status=1)
+                                          status=1,
+                                          _request_context="setup_system_permissions",
+                                          _load_source="local",
+                                          _authentication=self.AUTH_USER
+                                          )
         self.scenes[new_scene.node_id] = new_scene
         yield global_invoke_all("_scene_added_",
                                 called_by=self,

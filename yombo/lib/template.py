@@ -76,7 +76,7 @@ class Template(YomboLibrary):
         self.environment.globals["atoms"] = self._Atoms
         self.environment.globals["commands"] = self._Commands
         self.environment.globals["configs"] = self._Configs
-        self.environment.globals["crontab"] = self._CronTab
+        self.environment.globals["crontab"] = self._CronTabs
         self.environment.globals["devices"] = self._Devices
         self.environment.globals["devicetypes"] = self._DeviceTypes
         self.environment.globals["gateways"] = self._Gateways

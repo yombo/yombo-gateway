@@ -27,10 +27,9 @@ from yombo.constants.commands import COMMAND_ON, COMMAND_OFF
 from yombo.constants.device_commands import (DEVICE_COMMAND_CALLED_BY, DEVICE_COMMAND_COMMAND,
     DEVICE_COMMAND_COMMAND_ID, DEVICE_COMMAND_DEVICE, DEVICE_COMMAND_DEVICE_COMMAND,
     DEVICE_COMMAND_DEVICE_ID, DEVICE_COMMAND_INPUTS, DEVICE_COMMAND_PIN,
-    DEVICE_COMMAND_DEVICE_COMMAND_ID, DEVICE_COMMAND_GATEWAY_ID,
+    DEVICE_COMMAND_DEVICE_COMMAND_ID, DEVICE_COMMAND_GATEWAY_ID, DEVICE_COMMAND_AUTHENTICATION,
     DEVICE_COMMAND_REPORTING_SOURCE, DEVICE_COMMAND_ENERGY_TYPE, DEVICE_COMMAND_ENERGY_USAGE,
-    DEVICE_COMMAND_HUMAN_MESSAGE, DEVICE_COMMAND_HUMAN_STATUS, DEVICE_COMMAND_REQUEST_BY,
-    DEVICE_COMMAND_REQUEST_BY_TYPE, DEVICE_COMMAND_REQUEST_CONTEXT)
+    DEVICE_COMMAND_HUMAN_MESSAGE, DEVICE_COMMAND_HUMAN_STATUS, DEVICE_COMMAND_REQUEST_CONTEXT)
 from yombo.constants.permissions import AUTH_PLATFORM_DEVICE
 from yombo.core.exceptions import YomboPinCodeError, YomboWarning
 from yombo.core.log import get_logger
@@ -233,17 +232,12 @@ class DeviceStateMixin:
             device_command_id = device_command.device_command_id
             kwargs[DEVICE_COMMAND_REQUEST_CONTEXT] = device_command.request_context
             kwargs[DEVICE_COMMAND_COMMAND] = device_command.command
-            kwargs[DEVICE_COMMAND_REQUEST_BY] = device_command.request_by
-            kwargs[DEVICE_COMMAND_REQUEST_BY_TYPE] = device_command.request_by_type
+            kwargs[DEVICE_COMMAND_AUTHENTICATION] = device_command.authentication
         else:
             kwargs[DEVICE_COMMAND_REQUEST_CONTEXT] = None
             kwargs[DEVICE_COMMAND_COMMAND] = None
-            try:
-                kwargs[DEVICE_COMMAND_REQUEST_BY], kwargs[DEVICE_COMMAND_REQUEST_BY_TYPE] = \
-                    self._Permissions.search_request_by_info(kwargs)
-            except YomboWarning:
-                kwargs[DEVICE_COMMAND_REQUEST_BY] = self._Users.system_user.accessor_id
-                kwargs[DEVICE_COMMAND_REQUEST_BY_TYPE] = self._Users.system_user.accessor_type
+            if DEVICE_COMMAND_AUTHENTICATION not in kwargs or kwargs[DEVICE_COMMAND_AUTHENTICATION] is None:
+                kwargs[DEVICE_COMMAND_AUTHENTICATION] = self._Parent.AUTH_USER
 
         kwargs[DEVICE_COMMAND_DEVICE_COMMAND_ID] = device_command_id
 
@@ -291,14 +285,13 @@ class DeviceStateMixin:
             energy_usage=energy_usage,
             energy_type=energy_type,
             gateway_id=kwargs["gateway_id"],
-            request_by=kwargs[DEVICE_COMMAND_REQUEST_BY],
-            request_by_type=kwargs[DEVICE_COMMAND_REQUEST_BY_TYPE],
-            request_context=kwargs[DEVICE_COMMAND_REQUEST_CONTEXT],
             reporting_source=kwargs[DEVICE_COMMAND_REPORTING_SOURCE],
             device_command=device_command,
             created_at=created_at,
             uploaded=uploaded,
             uploadable=uploadable,
+            _request_context=kwargs[DEVICE_COMMAND_REQUEST_CONTEXT],
+            _authentication=kwargs[DEVICE_COMMAND_AUTHENTICATION]
         )
 
         # Yombo doesn't currently have the capacity to collect these....In the future...

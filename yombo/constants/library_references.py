@@ -12,7 +12,7 @@ LIBRARY_REFERENCES = {
         "class": "_Commands"
     },
     "crontab": {
-        "class": "_CronTab"
+        "class": "_CronTabs"
     },
     "devices": {
         "class": "_Devices"

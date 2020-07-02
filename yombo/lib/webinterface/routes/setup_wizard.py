@@ -476,24 +476,34 @@ def route_setup_wizard(webapp):
                         return webinterface.redirect(request, "/setup_wizard/dns")
 
             new_auth = response.content["data"]["attributes"]
-            webinterface._Configs.set("core.gwid", new_auth["id"])
-            webinterface._Configs.set("core.oauth_secret", new_auth["oauth_secret"])
-            webinterface._Configs.set("core.gwhash", new_auth["hash"])
-            webinterface._Configs.set("core.machine_label", session["setup_wizard_gateway_machine_label"])
-            webinterface._Configs.set("core.label", session["setup_wizard_gateway_label"])
-            webinterface._Configs.set("core.description", session["setup_wizard_gateway_description"])
-            webinterface._Configs.set("core.is_master", is_true_false(session["setup_wizard_gateway_is_master"]))
-            webinterface._Configs.set("core.master_gateway_id", session["setup_wizard_gateway_master_gateway_id"])
+            webinterface._Configs.set("core.gwid", new_auth["id"], ref_source=webinterface)
+            webinterface._Configs.set("core.oauth_secret", new_auth["oauth_secret"], ref_source=webinterface)
+            webinterface._Configs.set("core.gwhash", new_auth["hash"], ref_source=webinterface)
+            webinterface._Configs.set("core.machine_label", session["setup_wizard_gateway_machine_label"],
+                                      ref_source=webinterface)
+            webinterface._Configs.set("core.label", session["setup_wizard_gateway_label"], ref_source=webinterface)
+            webinterface._Configs.set("core.description", session["setup_wizard_gateway_description"],
+                                      ref_source=webinterface)
+            webinterface._Configs.set("core.is_master", is_true_false(session["setup_wizard_gateway_is_master"]),
+                                      ref_source=webinterface)
+            webinterface._Configs.set("core.master_gateway_id", session["setup_wizard_gateway_master_gateway_id"],
+                                      ref_source=webinterface)
             webinterface._Configs.set("security.amqp.send_device_states",
-                                      is_true_false(session["setup_wizard_security_send_device_states"]))
+                                      is_true_false(session["setup_wizard_security_send_device_states"]),
+                                      ref_source=webinterface)
             webinterface._Configs.set("security.amqp.send_private_stats",
-                                      is_true_false(session["setup_wizard_security_send_private_stats"]))
+                                      is_true_false(session["setup_wizard_security_send_private_stats"]),
+                                      ref_source=webinterface)
             webinterface._Configs.set("security.amqp.send_anon_stats",
-                                      is_true_false(session["setup_wizard_security_send_anon_stats"]))
-            webinterface._Configs.set("location.latitude", session["setup_wizard_gateway_latitude"])
-            webinterface._Configs.set("location.longitude", session["setup_wizard_gateway_longitude"])
-            webinterface._Configs.set("location.elevation", session["setup_wizard_gateway_elevation"])
-            webinterface._Configs.set("core.first_run", False)
+                                      is_true_false(session["setup_wizard_security_send_anon_stats"]),
+                                      ref_source=webinterface)
+            webinterface._Configs.set("location.latitude", session["setup_wizard_gateway_latitude"],
+                                      ref_source=webinterface)
+            webinterface._Configs.set("location.longitude", session["setup_wizard_gateway_longitude"],
+                                      ref_source=webinterface)
+            webinterface._Configs.set("location.elevation", session["setup_wizard_gateway_elevation"],
+                                      ref_source=webinterface)
+            webinterface._Configs.set("core.first_run", False, ref_source=webinterface)
 
             # Remove wizard settings...
             for session_key in list(session.keys()):
@@ -520,11 +530,11 @@ def route_setup_wizard(webapp):
                     authorization_header=auth_header)
             except YomboWarning as e:
                 response = e.meta
-                webinterface._Configs.set("dns.name", None)
-                webinterface._Configs.set("dns.domain", None)
-                webinterface._Configs.set("dns.domain_id", None)
-                webinterface._Configs.set("dns.allow_change_at", 0)
-                webinterface._Configs.set("dns.fqdn", None)
+                webinterface._Configs.set("dns.name", None, ref_source=webinterface)
+                webinterface._Configs.set("dns.domain", None, ref_source=webinterface)
+                webinterface._Configs.set("dns.domain_id", None, ref_source=webinterface)
+                webinterface._Configs.set("dns.allow_change_at", 0, ref_source=webinterface)
+                webinterface._Configs.set("dns.fqdn", None, ref_source=webinterface)
                 if response.response_code != 404:
                     for error in e.errors:
                         session.add_alert(
@@ -548,11 +558,12 @@ def route_setup_wizard(webapp):
                 #  'links': {'self': 'https://api.yombo.net/api/v1/gateways/gn16m4W7z9t9cZOx4Apyar/dns'},
                 #  'meta': {'includable': ['dns_domains']}}
 
-                webinterface._Configs.set("dns.fqdn", f'{dns_data["name"]}.{dns_data["domain"]}')
-                webinterface._Configs.set("dns.name", dns_data["name"])
-                webinterface._Configs.set("dns.domain", dns_data["domain"])
-                webinterface._Configs.set("dns.domain_id", dns_data["dns_domain_id"])
-                webinterface._Configs.set("dns.allow_change_at", dns_data["allow_change_at"])
+                webinterface._Configs.set("dns.fqdn", f'{dns_data["name"]}.{dns_data["domain"]}',
+                                          ref_source=webinterface)
+                webinterface._Configs.set("dns.name", dns_data["name"], ref_source=webinterface)
+                webinterface._Configs.set("dns.domain", dns_data["domain"], ref_source=webinterface)
+                webinterface._Configs.set("dns.domain_id", dns_data["dns_domain_id"], ref_source=webinterface)
+                webinterface._Configs.set("dns.allow_change_at", dns_data["allow_change_at"], ref_source=webinterface)
 
             dns_fqdn = webinterface._Configs.get("dns.fqdn", None)
             dns_name = webinterface._Configs.get("dns.name", None)
@@ -621,15 +632,15 @@ def route_setup_wizard(webapp):
                 return webinterface.redirect(request, "/setup_wizard/dns")
             else:
                 dns_data = response.content["data"]["attributes"]
-                webinterface._Configs.set("dns.fqdn", f'{dns_data["name"]}.{dns_data["domain"]}')
-                webinterface._Configs.set("dns.name", dns_data["name"])
-                webinterface._Configs.set("dns.domain", dns_data["domain"])
-                webinterface._Configs.set("dns.domain_id", dns_data["dns_domain_id"])
-                webinterface._Configs.set("dns.allow_change_at", dns_data["allow_change_at"])
+                webinterface._Configs.set("dns.fqdn", f'{dns_data["name"]}.{dns_data["domain"]}', ref_source=webinterface)
+                webinterface._Configs.set("dns.name", dns_data["name"], ref_source=webinterface)
+                webinterface._Configs.set("dns.domain", dns_data["domain"], ref_source=webinterface)
+                webinterface._Configs.set("dns.domain_id", dns_data["dns_domain_id"], ref_source=webinterface)
+                webinterface._Configs.set("dns.allow_change_at", dns_data["allow_change_at"], ref_source=webinterface)
 
             session["setup_wizard_last_step"] = "finished"
 
-            webinterface._Configs.set("core.first_run", False)
+            webinterface._Configs.set("core.first_run", False, ref_source=webinterface)
             return webinterface.render_template(request,
                                                 webinterface.wi_dir + "/pages/setup_wizard/finished.html",
                                                 )
@@ -638,5 +649,5 @@ def route_setup_wizard(webapp):
         @get_session(auth_required=True)
         def page_setup_wizard_finished_restart(webinterface, request, session):
             """ Restarts the gateway. """
-            webinterface._Configs.set("core.first_run", False)
+            webinterface._Configs.set("core.first_run", False, ref_source=webinterface)
             return webinterface.restart(request, message="The first restart after setup may take a little while.")

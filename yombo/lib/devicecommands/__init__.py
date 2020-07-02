@@ -196,20 +196,21 @@ class DeviceCommands(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
     @inlineCallbacks
     def new(self, device: Type[Device] = None, command: Optional[Command] = None,
             gateway_id: Optional[str] = None, inputs: Optional[List[dict]] = None,
-            status: Optional[str] = None, idempotence: Optional[str] = None, request_by: Optional[str] = None,
-            request_by_type: Optional[str] = None, request_context: Optional[str] = None,
-            authentication=None, device_command_id: Optional[str] = None, persistent_request_id: Optional[str] = None,
-            created_at: Optional[Union[int, float]] = None, broadcast_at: Optional[Union[int, float]] = None,
-            accepted_at: Optional[Union[int, float]] = None, sent_at: Optional[Union[int, float]] = None,
-            received_at: Optional[Union[int, float]] = None, pending_at: Optional[Union[int, float]] = None,
-            finished_at: Optional[Union[int, float]] = None, not_before_at: Optional[Union[int, float]] = None,
-            not_after_at: Optional[Union[int, float]] = None, history: Optional[List[dict]] = None,
-            uploadable: Optional[bool] = None, load_source: Optional[str] = None) -> DeviceCommand:
+            status: Optional[str] = None, idempotence: Optional[str] = None,
+            device_command_id: Optional[str] = None,
+            persistent_request_id: Optional[str] = None, created_at: Optional[Union[int, float]] = None,
+            broadcast_at: Optional[Union[int, float]] = None, accepted_at: Optional[Union[int, float]] = None,
+            sent_at: Optional[Union[int, float]] = None, received_at: Optional[Union[int, float]] = None,
+            pending_at: Optional[Union[int, float]] = None, finished_at: Optional[Union[int, float]] = None,
+            not_before_at: Optional[Union[int, float]] = None, not_after_at: Optional[Union[int, float]] = None,
+            history: Optional[List[dict]] = None, uploadable: Optional[bool] = None,
+            _load_source: Optional[str] = None, _request_context: Optional[str] = None,
+            _authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None) -> DeviceCommand:
         """
         Add a new role to the system.
 
-        To track how the role was created, either request_by and request_by_type or an authentication item
-        can be anything with the authmixin, such as a user, websession, or authkey.
+        To track how the role was created, an authentication item can be anything with the authmixin, such as a user,
+        websession, or authkey.
 
         :param device: Device instance, device id, or device machine label.
         :param command: Command instance, command id, or command machine label.
@@ -218,10 +219,6 @@ class DeviceCommands(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
         :param status:
         :param idempotence:
         :param device_command_id:
-        :param authentication: An auth item such as a websession or authkey.
-        :param request_by: Who created the device command. "alexamodule"
-        :param request_by_type: What type of item created it: "module"
-        :param request_context: Some additional information about where the request comes from.
         :param created_at:
         :param broadcast_at:
         :param accepted_at:
@@ -234,7 +231,9 @@ class DeviceCommands(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
         :param history:
         :param persistent_request_id:
         :param uploadable:
-        :param load_source: How the role was loaded.
+        :param _load_source: Where the data originated from. One of: local, database, yombo, system
+        :param _request_context: Context about the request. Such as an IP address of the source.
+        :param _authentication: An auth item such as a websession or authkey.
         :return:
         """
         print(f"devicecommand/init: new: {device}")
@@ -260,7 +259,7 @@ class DeviceCommands(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
                 if search_device_command.persistent_request_id == persistent_request_id:
                     search_device_command.cancel(message="This device command was superseded by a new persistent request.")
 
-        print("device command, about load into memory..")
+        self._Users.validate_authentication(_authentication)
         try:
             results = yield self.load_an_item_to_memory(
                 {
@@ -282,15 +281,13 @@ class DeviceCommands(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
                     "not_before_at": not_before_at,
                     "not_after_at": not_after_at,
                     "history": history,
-                    "request_context": request_context,
                     "uploadable": uploadable,
                     "uploaded": False,
-                    "request_by": authentication.accessor_id,
-                    "request_by_type": authentication.accessor_type,
                 },
-                authentication=authentication,
-                load_source=load_source,
-                generated_source=caller_string())
+                load_source=_load_source,
+                request_context=_request_context if _request_context is not None else caller_string(),
+                authentication=_authentication
+            )
             print(f"device command, about load into memory..: {results}")
             yield results.start_device_command()
         except Exception as e:
@@ -300,7 +297,9 @@ class DeviceCommands(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
         return results
 
     def set_status(self, device_command_id: str, status: str, message: str,
-                   log_at: Optional[Union[int, float]] = None, gateway_id: Optional[str] = None) -> None:
+                   log_at: Optional[Union[int, float]] = None, gateway_id: Optional[str] = None,
+                   request_context: Optional[str] = None,
+                   authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None) -> None:
         """
         Update the device command status. This is a helper function that calls the device command instance
         to actually set the status.
@@ -310,12 +309,14 @@ class DeviceCommands(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
         :param message: Message to set for the status.
         :param log_at: Time (int or float) that the status was set at.
         :param gateway_id: Gateway id of the setting gateway. Usually used by gateway coms.
-
+        :param request_context: Context about the request. Such as an IP address of the source.
+        :param authentication: An auth item such as a websession or authkey.
         :return:
         """
         if device_command_id in self.device_commands:
             self.device_commands[device_command_id].set_status(status=status, message=message, log_at=log_at,
-                                                               gateway_id=gateway_id)
+                                                               gateway_id=gateway_id, request_context=request_context,
+                                                               authentication=authentication)
             return self.device_commands[device_command_id]
         raise KeyError(f"Cannot find device command id: {device_command_id}")
 

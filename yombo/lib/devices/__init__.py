@@ -59,7 +59,7 @@ To send a command to a device is simple.
 from copy import deepcopy
 import simplejson as json
 from numbers import Number
-from typing import Any, ClassVar, Dict, List, Union
+from typing import Any, ClassVar, Dict, List, Optional, Type, Union
 
 from time import time
 
@@ -242,7 +242,24 @@ class Devices(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
         self.all_energy_usage = deepcopy(all_energy_usage)
 
     @inlineCallbacks
-    def load_an_item_to_memory(self, incoming: dict, load_source: Union[None, str] = None, **kwargs) -> Device:
+    def load_an_item_to_memory(self, incoming: dict,
+                               load_source: Optional[str] = None,
+                               request_context: Optional[str] = None,
+                               authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None,
+                               save_into_storage: Optional[bool] = None,
+                               **kwargs,
+                               ) -> Device:
+        """
+        Loads a device into memory.
+
+        :param incoming:
+        :param load_source: Where the data originated from. One of: local, database, yombo, system
+        :param request_context: Last resource string to use as a source.
+        :param authentication: An authentication (AuthMixin source)
+        :param save_into_storage: If false, won't save into the library storage
+        :param kwargs:
+        :return:
+        """
         new_map = {"0.0": "0", "1.0": "0"}
         if incoming["energy_map"] is None:
             incoming["energy_map"] = new_map
@@ -287,7 +304,9 @@ class Devices(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
                 self.devices,
                 klass,
                 incoming,
-                load_source=load_source
+                load_source=load_source,
+                request_context=request_context if request_context is not None else caller_string(),
+                authentication=self.AUTH_USER
                 )
             klass.system_disabled = device_system_disabled
             klass.system_disabled_reason = device_system_disabled_reason
@@ -320,11 +339,13 @@ class Devices(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
                 pass
         else:
             device = self.do_load_an_item_to_memory(
-                          self.devices,
-                          Device,
-                          incoming,
-                          load_source=load_source
-                          )
+                self.devices,
+                Device,
+                incoming,
+                load_source=load_source,
+                request_context=request_context if request_context is not None else caller_string(),
+                authentication=authentication
+            )
         # print(f"device checking start_data_sync...")
         if hasattr(device, 'start_data_sync'):
             # print(f"checking start_data_sync... has it")
@@ -364,7 +385,9 @@ class Devices(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
         new_device.device_parent_id = existing.device_id
         return new_device
 
-    def command(self, device: Union[Device, str], **kwargs):
+    def command(self, device: Union[Device, str], request_context: Optional[str] = None,
+                authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None,
+                **kwargs) -> Type["yombo.lib.devicecommands.DeviceCommand"]:
         """
         Tells the device to do a command. This in turn calls the hook _device_command_ so modules can process the
         command if they are supposed to.
@@ -380,30 +403,22 @@ class Devices(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
             - pin is required but not received one.
 
         :param device: Device Instance, Device ID, machine_label, or Label.
-        :type device: str
         :param command: Command InstanceCommand ID, machine_label, or Label to send.
-        :type command: str
         :param pin: A pin to check.
-        :type pin: str
         :param request_id: Request ID for tracking. If none given, one will be created.
-        :type request_id: str
         :param delay: How many seconds to delay sending the command. Not to be combined with "not_before"
-        :type delay: int or float
         :param not_before: An epoch time when the command should be sent. Not to be combined with "delay".
-        :type not_before: int or float
         :param max_delay: How many second after the "delay" or "not_before" can the command be send. This can occur
             if the system was stopped when the command was supposed to be send.
-        :type max_delay: int or float
         :param inputs: A list of dictionaries containing the "input_type_id" and any supplied "value".
-        :type input: list of dictionaries
+        :param request_context: Context about the request. Such as an IP address of the source.
+        :param authentication: An auth item such as a websession or authkey.
         :param kwargs: Any additional named arguments will be sent to the module for processing.
-        :type kwargs: named arguments
         :return: The request id.
-        :rtype: str
         """
         if "request_context" not in kwargs or kwargs["request_context"] is None:
             kwargs["request_context"] = caller_string()
-        return self.get(device).command(**kwargs)
+        return self.get(device).command(request_context=request_context, authentication=authentication, **kwargs)
 
     def device_user_access(self, device_id, access_type=None):
         """
@@ -454,102 +469,172 @@ class Devices(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
         return devices
 
     @inlineCallbacks
-    def add_device(self, api_data, source=None, **kwargs):
+    def new(self, machine_label: str, label: str, device_type_id: str, location_id: str, area_id: str,
+            pin_required: bool, description: Optional[str] = None, notes: Optional[str] = None,
+            intent_allow: Optional[bool] = None, intent_text: Optional[str] = None, status: Optional[int] = None,
+            pin_code: Optional[str] = None, pin_timeout: Optional[int] = None, device_parent_id: Optional[str] = None,
+            statistic_label: Optional[str] = None, statistic_lifetime: Optional[int] = None,
+            statistic_type: Optional[str] = None, statistic_bucket_size: Optional[int] = None,
+            energy_type: Optional[str] = None, energy_map: Optional[dict] = None,
+            energy_tracker_source_type: Optional[str] = None, energy_tracker_source_id: Optional[str] = None,
+            allow_direct_control: Optional[bool] = None, scene_controllable: Optional[bool] = None,
+            gateway_id: Optional[str] = None, variables: Optional[dict] = None, _load_source: Optional[str] = None,
+            device_id: Optional[str] = None, _request_context: Optional[str] = None,
+            _authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None):
         """
         Add a new device. This will also make an API request to add device at the server too.
 
-        :param data:
-        :param kwargs:
+        :param machine_label:
+        :param label:
+        :param device_type_id:
+        :param location_id:
+        :param area_id:
+        :param pin_required:
+        :param description:
+        :param notes:
+        :param intent_allow:
+        :param intent_text:
+        :param status:
+        :param pin_code:
+        :param pin_timeout:
+        :param device_parent_id:
+        :param pin_code:
+        :param statistic_label:
+        :param statistic_type:
+        :param statistic_lifetime:
+        :param statistic_bucket_size:
+        :param energy_type:
+        :param energy_map:
+        :param energy_tracker_source_type:
+        :param energy_tracker_source_id:
+        :param allow_direct_control:
+        :param scene_controllable:
+        :param gateway_id:
+        :param variables:
+        :param device_id:
+        :param _load_source: Where the data originated from. One of: local, database, yombo, system
+        :param _request_context: Context about the request. Such as an IP address of the source.
+        :param _authentication: An auth item such as a websession or authkey.
         :return:
         """
         results = None
-        # logger.info("Add new device.  Data: {data}", data=data)
-        if "gateway_id" not in api_data:
-            api_data["gateway_id"] = self._gateway_id
+        if gateway_id is None:
+            gateway_id = self._gateway_id
+
+        # try:
+        #     for key, value in api_data.items():
+        #         if value == "":
+        #             api_data[key] = None
+        #         elif key in ["statistic_lifetime", "pin_timeout"]:
+        #             if api_data[key] is None or (isinstance(value, str) and value.lower() == "none"):
+        #                 del api_data[key]
+        #             else:
+        #                 api_data[key] = int(value)
+        # except Exception as e:
+        #     return {
+        #         "status": "failed",
+        #         "msg": "Couldn't add device due to value mismatches.",
+        #         "apimsg": e,
+        #         "apimsghtml": e,
+        #         "device_id": None,
+        #         "data": None,
+        #     }
+
+        if _request_context is None:
+            _request_context = caller_string()  # get the module/class/function name of caller
 
         try:
-            for key, value in api_data.items():
-                if value == "":
-                    api_data[key] = None
-                elif key in ["statistic_lifetime", "pin_timeout"]:
-                    if api_data[key] is None or (isinstance(value, str) and value.lower() == "none"):
-                        del api_data[key]
-                    else:
-                        api_data[key] = int(value)
-        except Exception as e:
-            return {
-                "status": "failed",
-                "msg": "Couldn't add device due to value mismatches.",
-                "apimsg": e,
-                "apimsghtml": e,
-                "device_id": None,
-                "data": None,
-            }
+            results = self.get(machine_label)
+            raise YomboWarning(
+                {
+                    "id": results.device_id,
+                    "title": "Duplicate entry",
+                    "detail": "A device with that machine_label already exists."
+                })
+        except KeyError as e:
+            pass
+
+        device_data = {
+            "machine_label": machine_label,
+            "label": label,
+            "device_type_id": device_type_id,
+            "location_id": location_id,
+            "area_id": area_id,
+            "pin_required": pin_required,
+            "description": description,
+            "notes": notes,
+            "intent_allow": intent_allow,
+            "intent_text": intent_text,
+            "status": status,
+            "pin_code": pin_code,
+            "pin_timeout": pin_timeout,
+            "device_parent_id": device_parent_id,
+            "statistic_label": statistic_label,
+            "statistic_lifetime": statistic_lifetime,
+            "statistic_type": statistic_type,
+            "statistic_bucket_size": statistic_bucket_size,
+            "energy_type": energy_type,
+            "energy_map": energy_map,
+            "energy_tracker_source_type": energy_tracker_source_type,
+            "energy_tracker_source_id": energy_tracker_source_id,
+            "allow_direct_control": allow_direct_control,
+            "scene_controllable": scene_controllable,
+            "gateway_id": gateway_id,
+            "variables": variables,
+        }
 
         try:
             global_invoke_all("_device_before_add_",
                               called_by=self,
                               arguments={
-                                  "data": api_data,
+                                  "data": device_data,
                                   },
                               stop_on_error=True,
                               )
         except YomboHookStopProcessing as e:
             raise YomboWarning(f"Adding device was halted by '{e.name}', reason: {e.message}")
 
-        if source != "amqp":
-            logger.debug("POSTING device. api data: {api_data}", api_data=api_data)
-            try:
-                if "session" in kwargs:
-                    session = kwargs["session"]
-                else:
-                    session = None
+        if _load_source != "yombo":
+            logger.debug("POSTING device. api data: {device_data}", device_data=device_data)
+            device_results = yield self._YomboAPI.request("POST",
+                                                          "/v1/device",
+                                                          body=device_data
+                                                          )
 
-                if "variable_data" in api_data and len(api_data["variable_data"]) > 0:
-                    variable_data = api_data["variable_data"]
-                    del api_data["variable_data"]
-                else:
-                    variable_data = None
-
-                device_results = yield self._YomboAPI.request("POST",
-                                                              "/v1/device",
-                                                              body=api_data,
-                                                              session=session)
-            except YomboWarning as e:
-                return {
-                    "status": "failed",
-                    f"msg": "Couldn't add device: {e.message}",
-                    f"apimsg": f"Couldn't add device: {e.message}",
-                    f"apimsghtml": f"Couldn't add device: {e.html_message}",
-                }
             logger.info("add new device results: {device_results}", device_results=device_results)
-            if variable_data is not None:
-                variable_results = yield self.set_device_variables(device_results["data"]["id"],
-                                                                   variable_data,
-                                                                   "add",
-                                                                   source,
-                                                                   session=session)
-                if variable_results["code"] > 299:
-                    results = {
-                        "status": "failed",
-                        "msg": f"Device saved, but had problems with saving variables: {variable_results['msg']}",
-                        "apimsg": variable_results["apimsg"],
-                        "apimsghtml": variable_results["apimsghtml"],
-                        "device_id": device_results["data"]["id"],
-                        "data": device_results["data"],
-                    }
+            # if variables is not None:
+            #     variable_results = yield self.set_device_variables(device_results["data"]["id"],
+            #                                                        variables,
+            #                                                        "add",
+            #                                                        _load_source)
+            #     if variable_results["code"] > 299:
+            #         results = {
+            #             "status": "failed",
+            #             "msg": f"Device saved, but had problems with saving variables: {variable_results['msg']}",
+            #             "apimsg": variable_results["apimsg"],
+            #             "apimsghtml": variable_results["apimsghtml"],
+            #             "device_id": device_results["data"]["id"],
+            #             "data": device_results["data"],
+            #         }
 
             device_id = device_results["data"]["id"]
             new_device = device_results["data"]
             new_device["created"] = new_device["created_at"]
             new_device["updated"] = new_device["updated_at"]
         else:
-            device_id = api_data["id"]
-            new_device = api_data
+            if device_id is None:
+                raise YomboWarning("device_id is required if not loading data from Yombo.")
+            device_id = device_id
+            new_device = device_data
 
         logger.debug("device add results: {device_results}", device_results=device_results)
 
-        new_device = yield self._load_node_into_memory(new_device, source)
+        new_device = yield self.load_an_item_to_memory(
+            new_device,
+            load_source=_load_source,
+            request_context=_request_context if _request_context is not None else caller_string(),
+            authentication=_authentication
+        )
 
         try:
             yield global_invoke_all("_device_added_",
@@ -557,17 +642,10 @@ class Devices(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
                                     arguments={
                                         "id": device_id,
                                         "device": self.devices[device_id],
-                                        }
-                                    )
+                                        },
+                                    stop_on_error=True,
+            )
         except Exception:
             pass
 
-        if results is None:
-            return {
-                "status": "success",
-                "msg": "Device added",
-                "apimsg":  "Device added",
-                "apimsghtml":  "Device added",
-                "device_id": device_id,
-                "data": new_device,
-            }
+        return new_device

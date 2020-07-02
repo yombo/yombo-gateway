@@ -121,7 +121,7 @@ def route_restore(webapp):
 
             for section, options in data["configs"].items():
                 for option, value in options.items():
-                    webinterface._Configs.set(section, option, value)
+                    webinterface._Configs.set(section, option, value, ref_source=webinterface)
             for fingerprint, key in data["gpg_keys"].items():
                 if key["publickey"] != None:
                     yield webinterface._GPG.import_to_keyring(key["publickey"])

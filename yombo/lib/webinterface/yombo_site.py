@@ -16,6 +16,7 @@ from typing import ClassVar
 from twisted.web.server import Site
 from twisted.internet.task import LoopingCall
 
+from yombo.constants.webinterface import IGNORED_EXTENSIONS
 from yombo.core.entity import Entity
 from yombo.utils import random_string
 
@@ -69,10 +70,8 @@ class YomboSite(Entity, Site):
             request.request_id = random_string(length=20)
         if hasattr(request, "request_context") is False:
             request.request_context = None
-        ignored_extensions = (".png", ".js", ".css", ".jpg", ".jpeg", ".gif", ".ico", ".woff2", ".map",
-                              "site.webmanifest")
         url_path = request.path.decode().strip()
-        if any(url_path.endswith(ext) for ext in ignored_extensions):
+        if any(url_path.endswith(ext) for ext in IGNORED_EXTENSIONS):
             return
 
         if request.getClientIP() == "127.0.0.1" and url_path.startswith("/api/v1/mqtt/auth/"):

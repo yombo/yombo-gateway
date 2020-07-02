@@ -69,7 +69,7 @@ def route_system(webapp):
             del yombo_meta_toml
 
             # data_output["database"]["authkeys"] = webinterface._AuthKeys.to_database_all()
-            # data_output["database"]["crontabs"] = webinterface._CronTab.to_database_all()
+            # data_output["database"]["crontabs"] = webinterface._CronTabs.to_database_all()
             # data_output["database"]["mqtt_users"] = webinterface._MQTTUsers.to_database_all()
             # data_output["database"]["permissions"] = webinterface._Permissions.to_database_all()
             # data_output["database"]["roles"] = webinterface._Roles.to_database_all()

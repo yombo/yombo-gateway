@@ -32,7 +32,7 @@ HARD_LOAD: Dict[str, Dict[str, Union[bool, str]]] = {
     "Discovery": {"operating_mode": "all", "order": 12400},
     "Statistics": {"operating_mode": "all", "order": 12800},  # TODO: Convert database to new format.
     "AMQP": {"operating_mode": "run", "order": 13200},
-    "CronTab": {"operating_mode": "all", "order": 13600},
+    "CronTabs": {"operating_mode": "all", "order": 13600},
     "Times": {"operating_mode": "all", "order": 14000},
     "VariableData": {"operating_mode": "all", "order": 14400},
     "VariableFields": {"operating_mode": "all", "order": 14800},
@@ -99,7 +99,7 @@ HARD_UNLOAD = {
     "Discovery": {"operating_mode": "all", "order": 13600},
     "Statistics": {"operating_mode": "all", "order": 14000},
     "AMQP": {"operating_mode": "run", "order": 14400},
-    "CronTab": {"operating_mode": "all", "order": 14800},
+    "CronTabs": {"operating_mode": "all", "order": 14800},
     "Times": {"operating_mode": "all", "order": 15200},
     "VariableData": {"operating_mode": "all", "order": 15600},
     "VariableFields": {"operating_mode": "all", "order": 16000},

@@ -93,7 +93,7 @@ class WebSessions(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
                                                        )
 
         cookie_id = self._Configs.get("webinterface.cookie_id",
-                                      self._Hash.sha224_compact(random_string(length=randint(500, 1000))))
+                                      self._Hash.sha224_compact(random_string(length=randint(500, 1000)))[0:10])
 
         self.config = DictObject({
             "cookie_session_name": "yombo_" + cookie_id,
@@ -183,7 +183,10 @@ class WebSessions(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
 
             del db_session["user_id"]
             db_session["auth_id"] = db_session["id"]
-            yield self.load_an_item_to_memory(db_session, load_source="database")
+            yield self.load_an_item_to_memory(db_session,
+                                              load_source="database",
+                                              request_context="websessions::get_session_by_id",
+                                              authentication=self.AUTH_USER)
 
             if self.web_sessions[session_id].enabled is True:
                 return self.web_sessions[session_id]
@@ -311,7 +314,10 @@ class WebSessions(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
                               secure=self.config.secure, httpOnly=self.config.httponly)
             request.received_cookies[self.config.cookie_session_name] = session_long_id
 
-        results = yield self.load_an_item_to_memory(data)
+        results = yield self.load_an_item_to_memory(data, load_source="system",
+                                                    request_context="websesssions::create_from_web_request",
+                                                    authentication=self.AUTH_USER
+                                                    )
         logger.info("create_from_web_request - {results}", results=results)
         return results
 

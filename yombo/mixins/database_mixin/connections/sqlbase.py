@@ -457,8 +457,9 @@ class SQLBase(ConnectionBase):
         self._Events.new(event_type="localdb",
                          event_subtype="cleaning",
                          attributes=(section, timer),
-                         request_by="localdb",
-                         request_by_type="library")
+                         _request_context=self._FullName,
+                         _authentication=self._Parent.AUTH_USER
+                         )
 
         if section == "all":
             yield sleep(5)

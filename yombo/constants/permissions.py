@@ -49,13 +49,11 @@ AUTH_PLATFORM_WEBSTREAM = "yombo.webstream"
 AUTH_PLATFORM_WEBLOG = "yombo.lib.weblog"
 AUTH_PLATFORM_WILDCARD = "yombo.lib.*"
 
-ACTIONS_ATOM = {"possible": ["view", "modify"],
+ACTIONS_ATOM = {"possible": ["view"],
                 "user": ["view"]}
 ACTIONS_AUTHKEY = {"possible": ["create", "modify", "enable", "disable", "remove", "view"],
                    "user": []}
-ACTIONS_AUTOMATION = {"possible": ["create", "enable", "disable", "modify", "remove", "start", "stop", "", "view"],
-                      "user": ["view"]}
-ACTIONS_CALLLATER = {"possible": ["create", "view"],
+ACTIONS_CALLLATER = {"possible": ["create", "view", "cancel", "modify"],
                      "user": []}
 ACTIONS_CATEGORIES = {"possible": ["view"],
                      "user": []}
@@ -63,7 +61,7 @@ ACTIONS_COMMAND = {"possible": ["create", "modify", "remove", "view"],
                    "user": ["view"]}
 ACTIONS_CONFIG = {"possible": ["create", "modify", "view"],
                   "user": []}
-ACTIONS_CRONTAB = {"possible": ["create", "disable", "enable", "modify", "view"],
+ACTIONS_CRONTAB = {"possible": ["create", "disable", "enable", "modify", "view", "remove"],
                    "user": ["view"]}
 ACTIONS_DEBUG = {"possible": ["cache", "commands", "crontab", "device_types", "index", "libraries", "modules", "mqtt",
                               "nodes", "sslcerts", "statistics", "requirements", "", "locales", "event_types",
@@ -81,7 +79,7 @@ ACTIONS_DEVICE_TYPE = {"possible": ["create", "modify", "remove", "view"],
                        "user": ["view"]}
 ACTIONS_DEVICE_TYPE_COMMAND = {"possible": ["create", "modify", "remove", "view"],
                                "user": ["view"]}
-ACTIONS_DISCOVERY = {"possible": ["edit", "view"],
+ACTIONS_DISCOVERY = {"possible": ["create", "edit", "view"],
                      "user": ["view"]}
 ACTIONS_EVENTS = {"possible": ["view"],
                   "user": []}
@@ -156,7 +154,7 @@ AUTH_PLATFORMS = {
         "resource_type": "library", "resource_name": "AuthKeys", "resource_label": "authkeys"},
     AUTH_PLATFORM_CALLLATER: {
         "actions": ACTIONS_CALLLATER,
-        "resource_type": "library", "resource_name": "CallLater", "resource_label": "call_later"},
+        "resource_type": "library", "resource_name": "CallLater", "resource_label": "calllater"},
     AUTH_PLATFORM_CATEGORIES: {
         "actions": ACTIONS_CATEGORIES,
         "resource_type": "library", "resource_name": "Categories", "resource_label": "categories"},
@@ -168,7 +166,7 @@ AUTH_PLATFORMS = {
         "resource_type": "library", "resource_name": "Configs", "resource_label": "configs"},
     AUTH_PLATFORM_CRONTAB: {
         "actions": ACTIONS_CRONTAB,
-        "resource_type": "library", "resource_name": "CronTab", "resource_label": "crontabs"},
+        "resource_type": "library", "resource_name": "CronTabs", "resource_label": "crontabs"},
     AUTH_PLATFORM_DEBUG: {
         "actions": ACTIONS_DEBUG,
         "resource_type": None, "resource_name": None, "resource_label": None},
@@ -195,7 +193,7 @@ AUTH_PLATFORMS = {
         "resource_type": "library", "resource_name": "Discovery", "resource_label": "discovery"},
     AUTH_PLATFORM_EVENTS: {
         "actions": ACTIONS_EVENTS,
-        "resource_type": None, "resource_name": None, "resource_label": None},
+        "resource_type": "library", "resource_name": "Events", "resource_label": "events"},
     AUTH_PLATFORM_GATEWAY: {
         "actions": ACTIONS_GATEWAY,
         "resource_type": "library", "resource_name": "Gateways", "resource_label": "gateways"},

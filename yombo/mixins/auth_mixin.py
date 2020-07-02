@@ -191,7 +191,6 @@ class AuthMixin:
         self.auth_data = {}
         if hasattr(self, "gateway_id") is False or self.gateway_id is None:
             self.gateway_id = self._Parent._gateway_id
-        self.last_access_at = int(time())
         try:
             super().__init__(*args, **kwargs)
         except TypeError:
@@ -208,7 +207,6 @@ class AuthMixin:
         if key in ("last_access_at", "created_at", "updated_at", "auth_id", "user_id", "request_by"):
             return getattr(self, key)
         elif key in self.auth_data:
-            self.last_access_at = int(time())
             return self.auth_data[key]
         elif default is not SENTINEL:
             return default
@@ -234,7 +232,7 @@ class AuthMixin:
             self.auth_data[key] = val
             return val
 
-    def delete(self, key):
+    def delete(self, key) -> None:
         """
         Delete an auth_data item.
 
@@ -249,15 +247,15 @@ class AuthMixin:
             except Exception:
                 pass
 
-    def touch(self):
+    def touch(self) -> None:
         """
         Touch the auth item, usually just update the last_access_at.
 
         :return:
         """
-        self. update({"last_access_at": int(time())})
+        self.update({"last_access_at": int(time())})
 
-    def enable(self):
+    def enable(self) -> None:
         """
         Enable an auth
 
@@ -266,9 +264,9 @@ class AuthMixin:
         updates = {"status": 1}
         if hasattr(self, "expired_at"):
             updates["expired_at"] = None
-        self. update(updates)
+        self.update(updates)
 
-    def disable(self):
+    def disable(self) -> None:
         """
         Disable an auth
 
@@ -277,9 +275,9 @@ class AuthMixin:
         updates = {"status": 0}
         if hasattr(self, "expired_at"):
             updates["expired_at"] = None
-        self. update(updates)
+        self.update(updates)
 
-    def expire(self):
+    def expire(self) -> None:
         """
         Delete/expire an auth
 
@@ -289,10 +287,11 @@ class AuthMixin:
         updates = {"status": 2}
         if hasattr(self, "expired_at"):
             updates["expired_at"] = int(time())
-        self. update(updates)
+        self.update(updates)
 
     def is_allowed(self, platform, action, item_id: Optional[str] = None, raise_error: Optional[bool] = None):
         return self._Permissions.is_allowed(platform, action, item_id, self, raise_error)
 
-    def is_valid(self):
+    def is_valid(self) -> bool:
+        """ Checks if an authentication item is valid. Returns True if it is."""
         return self.status == 1

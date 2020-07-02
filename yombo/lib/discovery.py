@@ -32,6 +32,7 @@ from yombo.mixins.library_db_child_mixin import LibraryDBChildMixin
 from yombo.mixins.library_db_parent_mixin import LibraryDBParentMixin
 from yombo.mixins.library_search_mixin import LibrarySearchMixin
 from yombo.utils import random_string
+from yombo.utils.caller import caller_string
 
 logger = get_logger("library.discovery")
 
@@ -164,7 +165,9 @@ class Discovery(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
             gateway_id: Optional[str] = None, variables: Optional[dict] = None, yombo_device: Optional = None,
             discovered_at: Optional[Union[float, int]] = None, last_seen_at: Optional[Union[float, int]] = None,
             created_at: Optional[Union[float, int]] = None, updated_at: Optional[Union[float, int]] = None,
-            load_source: Optional[str] = None, notification: Optional[dict] = None):
+            notification: Optional[dict] = None, _load_source: Optional[str] = None,
+            _request_context: Optional[str] = None,
+            _authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None):
         """
         Creates a new auto-discovered device.
 
@@ -175,6 +178,7 @@ class Discovery(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
         :param discover_id: A unique id to reference this discovered device. No need to worry about conflicts from other modules.
         :param device_type: A device type to associate this device with.
         :param device_type_id: A device type id to associate this device with.
+        :param gateway_id: Gateway_id where device was found on.
         :param discovered_at: When this device was first discovered.
         :param last_seen_at: When this device was last scene at.
         :param mfr: Who makes this device.
@@ -188,17 +192,20 @@ class Discovery(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
         :param variables: A dictionary of variables which is used when creating the device.
         :param created_at: A float/int when this device was created.
         :param updated_at: A float/int when this device was last updated.
-        :param load_source: Where this information if coming from.
         :param notification: Notification details.
+        :param _load_source: Where the data originated from. One of: local, database, yombo, system
+        :param _request_context: Context about the request. Such as an IP address of the source.
+        :param _authentication: An auth item such as a websession or authkey.
         :return:
         """
         logger.debug("new discovered device: {discover_id}", discover_id=discover_id)
+        self.check_authorization(_authentication, "create", required=False)
 
-        if load_source is None and request_context is None:
+        if _load_source is None and request_context is None:
             raise YomboWarning(f"Device discovery must include either a load_source or request_context:"
                                f" {machine_label} - {label}")
 
-        if load_source == "database":
+        if _load_source == "database":
             discovery_source_string = request_context
         elif request_context is None:
             raise YomboWarning(f"If load_souce is not database, request_context must be a string."
@@ -251,9 +258,14 @@ class Discovery(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
             return self.discovery[discover_id]
 
         # print(f"discovered device2: {device_data}")
-        yield self.load_an_item_to_memory(device_data, load_source=load_source)
+        yield self.load_an_item_to_memory(
+            device_data,
+            load_source=_load_source,
+            request_context=_request_context if _request_context is not None else caller_string(),
+            authentication=_authentication
+        )
 
-        if load_source != "database":  # TODO: review. Probably not the correct check to display notificaiton.
+        if _load_source != "database":  # TODO: review. Probably not the correct check to display notificaiton.
             if notification is None:
                 notification = {}
 
@@ -275,12 +287,13 @@ class Discovery(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
 
             yield self._Notifications.new(title=notification_title,
                                           message=notification_message,
-                                          request_context=request_context,
                                           persist=True,
                                           priority="high",
                                           always_show=True,
                                           always_show_allow_clear=True,
-            )
+                                          _request_context=_request_context,
+                                          _authentication=_authentication
+                                          )
         return self.discovery[discover_id]
 
     def update(self, discover_id, data, source=None):

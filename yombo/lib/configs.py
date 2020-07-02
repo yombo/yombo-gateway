@@ -1,5 +1,3 @@
-# This file was created by Yombo for use with Yombo Python Gateway automation
-# software.  Details can be found at https://yombo.net
 """
 .. note::
 
@@ -17,7 +15,7 @@ If you wish to store persistent data for your module, use the
 
    latitude = self._Configs.get("location.latitude", "0", True)  # also can accept default and if a default value should be saved.
    latitude = self._Configs.get("location.latitude", "0", False)  # example of default and no save if default is used.
-   self._Configs.set("location.latitude", 100)  # Save a new latitude location.
+   self._Configs.set("location.latitude", 100, ref_source=self)  # Save a new latitude location.
 
 An instance of the configuration setting can also be be returned by simply adding "instance=True" to the list
 of arguments. This allows for always getting the current configuration variable.
@@ -82,10 +80,9 @@ from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
 from yombo.classes.dotdict import DotDict
-from yombo.core.entity import Entity
+from yombo.core.library_child import YomboLibraryChild
 from yombo.core.exceptions import YomboInvalidArgument, YomboCritical
 from yombo.core.log import get_logger
-from yombo.core.schemas import ConfigSchema
 from yombo.core.library import YomboLibrary
 import yombo.core.settings as settings
 from yombo.mixins.child_storage_accessors_mixin import ChildStorageAccessorsMixin
@@ -108,7 +105,7 @@ MAX_CONFIG_LENGTH: int = 1000
 MAX_VALUE_LENGTH: int = 20000
 
 
-class ConfigItem(Entity, ChildStorageAccessorsMixin):
+class ConfigItem(YomboLibraryChild, ChildStorageAccessorsMixin):
     """
     Represents one config item.
     """
@@ -134,7 +131,7 @@ class ConfigItem(Entity, ChildStorageAccessorsMixin):
                  fetches: Optional[int] = None,
                  writes: Optional[int] = None,
                  checksum: Optional[str] = None,
-                 source: Optional[str] = None,
+                 ref_source: Optional[str] = None,
                  **kwargs  # Toss away any extra items.
                  ):
         self._meta = {}
@@ -148,7 +145,7 @@ class ConfigItem(Entity, ChildStorageAccessorsMixin):
             self.config = config
         self._primary_field_id = self.config
         self.value = value
-        self.source = source
+        self.ref_source = ref_source
         self.created_at = created_at if isinstance(created_at, int) else int(time())
         self.updated_at = updated_at if isinstance(updated_at, int) else int(time())
         self.value_type = value_type if isinstance(value_type, str) else determine_variable_type(value_type)
@@ -165,20 +162,34 @@ class ConfigItem(Entity, ChildStorageAccessorsMixin):
             return str(self.value)
 
     def set(self, value: Any, value_type: Optional[str] = None,
-            source: Optional = None,  # the instance that is calling this function.
+            ref_source: Optional = None,  # the instance that is calling this function.
+            request_context: Optional[str] = None,
+            authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None
             ) -> None:
+        """
+        Set a new new value for the config.
+
+        :param value: Value to set.
+        :param value_type: Type of value, used to help display to humans. such as string, int, float, bool...
+        :param ref_source:
+        :param request_context:
+        :param authentication:
+        :return:
+        """
+        self.check_authorization(authentication, "modify", required=False)
+
         self.value = value
         self.value_type = value_type if isinstance(value_type, str) else determine_variable_type(value)
         self.updated_at = int(time())
         self.writes += 1
-        if source is not None:
-            self.source = source
-        reactor.callLater(0.0001, self.broadcast, source=source)
+        if ref_source is not None:
+            self.ref_source = ref_source
+        reactor.callLater(0.0001, self.broadcast, ref_source=ref_source)
 
-    def broadcast(self, source: Optional[Type["yombo.core.entity.Entity"]] = None):
-        source = source if source is not None else self
+    def broadcast(self, ref_source: Optional[Type["yombo.core.entity.Entity"]] = None):
+        ref_source = ref_source if ref_source is not None else self
         yield global_invoke_all("_configs_set_",
-                                called_by=source,
+                                called_by=ref_source,
                                 arguments={
                                     "config": self.config,
                                     "instance": self,
@@ -200,7 +211,7 @@ class Configs(YomboLibrary):
     _storage_attribute_name: ClassVar[str] = "configs"
     _storage_label_name: ClassVar[str] = "config"
     _storage_fields: ClassVar[list] = ["config", "value", "created_at", "updated_at", "value_type", "fetches",
-                                       "writes", "checksum", "source"]
+                                       "writes", "checksum", "ref_source"]
 
     configs: ClassVar[DotDict] = DotDict({"core": {}})
     configs_dirty: ClassVar = False
@@ -712,7 +723,7 @@ class Configs(YomboLibrary):
             create: Optional[bool] = None,
             instance: Optional[bool] = None,
             ignore_case: Optional[bool] = None,
-            source: Optional = None,
+            ref_source: Optional = None,
             **kwargs) -> Any:
         """
         Read value of configuration option, return None if it don't exist or
@@ -737,7 +748,7 @@ class Configs(YomboLibrary):
         :param create: If the config value is missing, and a default exists, it'll be created.
         :param instance: If true, returns the ConfigItem instance, default is to just return the value.
         :param ignore_case: If true, the config string will be set to lower case for case insensitive searches.
-        :param source: If the value will be set due to a default value, the source should be supplied - reference
+        :param ref_source: If the value will be set due to a default value, the source should be supplied - reference
             to the instance calling this function.
         :return: The configuration value requested by config argument.
         """
@@ -774,7 +785,7 @@ class Configs(YomboLibrary):
         # it"s not here, so, if there is a default, lets save that for future reference and return it... English much?
         if default != "7vce#hvjGW%w$~bA6jYv[P:*.kv6mAg934+HQhPpbDFJF2Nw9rU+saNvpVL2":
             if create in (True, None) or instance is True:
-                self.set(config, default, source=source)
+                self.set(config, default, ref_source=ref_source)
                 config_item = self.configs[config]
                 config_item.fetches += 1
                 if instance is True:
@@ -786,7 +797,7 @@ class Configs(YomboLibrary):
             raise KeyError(f"Config item not found, no default provided. {default}")
 
     def set(self, config: str, value: Any, value_type: Optional[str] = None, ignore_case: Optional[bool] = None,
-            source: Optional = None, **kwargs) -> ConfigItem:
+            ref_source: Optional = None, **kwargs) -> ConfigItem:
         """
         Set value of configuration option for a given config.  The option length
         **cannot exceed 1000 characters**.  The value cannot exceed 5000 bytes.
@@ -805,7 +816,7 @@ class Configs(YomboLibrary):
         :param value: What to return if no result is found, default = None.
         :param value_type:
         :param ignore_case:
-        :param source:
+        :param ref_source:
         """
         if config.endswith("*"):
             raise YomboInvalidArgument("Config item label cannot end with '*'.")
@@ -834,8 +845,8 @@ class Configs(YomboLibrary):
                 return value
             config_item.set(value, value_type=value_type)
         else:
-            self.configs[config] = ConfigItem(self, config=config, value=value, value_type=value_type, source=source)
-
+            self.configs[config] = ConfigItem(self, config=config, value=value, value_type=value_type,
+                                              ref_source=ref_source)
 
         self.configs_dirty = True
         return self.configs[config]

@@ -1,11 +1,118 @@
 # Import python libraries
 import json
-from yombo.utils import random_string
+import re
+from requests_toolbelt.multipart import MultipartDecoder
+from urllib.parse import (ParseResultBytes, urlparse as _urlparse, unquote_to_bytes as unquote)
 
-from yombo.constants import CONTENT_TYPE_JSON
+from yombo.constants import CONTENT_TYPE_JSON, CONTENT_TYPE_MSGPACK
+from yombo.utils import random_string, bytes_to_unicode
 
 
-def request_args(request):
+def parse_www_form_urlencoded(qs, keep_blank_values=1, strict_parsing=0):
+    """
+    Parse application/x-www-form-urlencoded data into a dictionary.
+
+    :param qs: The content to parse.
+    """
+    d = {}
+    items = [s2 for s1 in qs.split(b"&") for s2 in s1.split(b";")]
+    for item in items:
+        try:
+            k, v = item.split(b"=", 1)
+        except ValueError:
+            if strict_parsing:
+                raise
+            continue
+        if v or keep_blank_values:
+            k = unquote(k.replace(b"+", b" "))
+            v = unquote(v.replace(b"+", b" "))
+            if k in d:
+                d[k].append(v)
+            else:
+                d[k] = [v]
+    return d
+
+
+def parse_form_data(content, content_type):
+    """
+    Parse multipart/form-data data into a dictionary.
+
+    :param qs: The content to parse.
+    """
+    decoder = MultipartDecoder(content, content_type)
+    splitregex = re.compile(';\\s*')
+
+    results = {}
+    for part in decoder.parts:
+        disp = part.headers[b'Content-Disposition'].decode('utf-8')
+        # split:            form-data; name="mykey"     - Gets the key: mykey
+        results[splitregex.split(disp)[1].split('=')[1].strip('\"')] = part.text
+
+    return results
+
+
+def request_data(webinterface, request):
+    """
+    Attempts to look in various locations of the request to get the submitted data. The priority is:
+
+      # Look in the body for JSON/MSGPACK. This requires the content-type to be properly set. This
+        also requires the request method to be one of: POST, PATCH, or PUT
+      # Look at the query string for values.
+      # Attempt to decode x-www-form-urlencoded or form-data items.
+
+    Once one method has found to contain data, will stop processing. Will return a dictionary of the key/values.
+
+    :param webinterface:
+    :param request:
+    :return:
+    """
+    # method = request.method.decode().strip()
+    # headers = request.requestHeaders
+    # print(f"a 4: method: {method}")
+    # print(f"a 4: method: {type(method)}")
+    # print(f"a 4a: headers: {headers}")
+    # print(f"a 4b: headers: {type(headers)}")
+
+    results = {}
+    method = request.method.decode().strip()
+    headers = request.requestHeaders
+    if method.lower() in ("post", "patch", "put"):
+        if request.requestHeaders.hasHeader("content-type"):
+            content_type = bytes_to_unicode(request.requestHeaders.getRawHeaders("content-type")[0])
+            if content_type == CONTENT_TYPE_JSON:
+                return webinterface._Tools.data_unpickle(request.content.read(), content_type="json")
+            if content_type == CONTENT_TYPE_MSGPACK:
+                return webinterface._Tools.data_unpickle(request.content.read(), content_type="msgpack")
+            if content_type == "application/x-www-form-urlencoded":
+                return parse_www_form_urlencoded(request.content.read(), 1)
+            if content_type.startswith("multipart/form-data"):
+                return parse_form_data(request.content.read(), content_type)
+
+    for argument, value in request.args.items():
+        value = value[0]
+        if "[" in argument:
+            name = argument[0:argument.find("[")]
+            sub_name = argument[argument.find("[")+1: argument.find("]")]
+            if name == sub_name:
+                sub_name = None
+        else:
+            name = argument
+            sub_name = None
+
+        if name not in results:
+            if sub_name is None:
+                results[name] = []
+            else:
+                results[name] = {}
+
+        if sub_name is None:
+            results[name] = value
+        else:
+            results[name][sub_name] = value
+    return results
+
+
+def request_args(webinterface, request):
     """
     Accepts the request and returns the submitted arguments as an easy to consume dictionary. This
     can also handle one level deep nested dictionaries within the arguments. For example:
@@ -14,10 +121,28 @@ def request_args(request):
     This would return:
     {'password1': 'hello', 'argument2': 'hi', 'argument': {'inside': 'nested'}}
 
+    For POST/PATCH/PUT, this decodes JSON/MSGPACK contents to a dictionary. If there's not data, reverts to the
+    query string.
+
     :param request: The web request.
     :return:
     """
     results = {}
+    method = request.method.decode().strip()
+    headers = request.requestHeaders
+    # print(f"a 4: method: {method}")
+    # print(f"a 4: method: {type(method)}")
+    # print(f"a 4a: headers: {headers}")
+    # print(f"a 4b: headers: {type(headers)}")
+    if method.lower() in ("post", "patch", "put"):
+        if "content-type" in headers:
+            if request.requestHeaders.hasHeader("origin"):
+                origin = request.requestHeaders.getRawHeaders("origin")[0]
+
+            if headers["content-type"] == CONTENT_TYPE_JSON:
+                return webinterface._Tools.data_unpickle(request.content.read(), content_type="json")
+            if headers["content-type"] == CONTENT_TYPE_MSGPACK:
+                return webinterface._Tools.data_unpickle(request.content.read(), content_type="msgpack")
     for argument, value in request.args.items():
         value = value[0]
         if "[" in argument:

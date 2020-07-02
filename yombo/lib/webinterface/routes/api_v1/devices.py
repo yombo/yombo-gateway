@@ -62,7 +62,7 @@ def route_api_v1_devices(webapp):
             if request.processed_body is not None:
                 arguments = request.processed_body
             else:
-                arguments = request_args(request)
+                arguments = request_args(webinterface, request)
 
             pin_code = arguments.get("pin_code", None)
             delay = arguments.get("delay", None)

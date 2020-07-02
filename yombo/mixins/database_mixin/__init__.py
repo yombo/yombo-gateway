@@ -53,7 +53,8 @@ class DatabaseMixin:
         :return:
         """
         if self.database_type not in ("sqlite", "mysql", "mariadb"):
-            raise YomboCritical("Only sqlite, mariabdb, or mysql databases are currently supported.")
+            raise YomboCritical("Only sqlite, mariabdb, or mysql databases are currently supported, unknown type: "
+                                f"{self.database_type}")
 
         self.database = None  # Reference to the database connection.
         self.db_bulk_queue: Dict[str, Any] = {}
@@ -99,9 +100,12 @@ class DatabaseMixin:
         # print(f"self.db_model: {self.db_model}")
         self.db_save_bulk_queue_loop = LoopingCall(self.db_save_bulk_queue, slow=True)
         self.db_save_bulk_queue_loop.start(5, False)
-        self._CronTab.new(self.database.db_cleanup, mins=0, hours=3,  # Clean database at 3am every day.
-                          label="Periodically clean the database.",
-                          load_source="system")
+        self._CronTabs.new(self.database.db_cleanup, mins=0, hours=3,  # Clean database at 3am every day.
+                           label="Periodically clean the database.",
+                           _load_source="system",
+                           _request_context=self._FullName,
+                           _authentication=self.AUTH_USER
+                           )
 
     @inlineCallbacks
     def _unload_(self, **kwargs):

@@ -98,15 +98,15 @@ class Startup(YomboLibrary):
                     return
 
                 gateway = response.content["data"]["attributes"]
-                self._Configs.set("core.is_master", is_true_false(gateway["is_master"]))
-                self._Configs.set("core.master_gateway_id", gateway["master_gateway_id"])
-                self._Configs.set("core.created_at", gateway["created_at"])
-                self._Configs.set("core.updated_at", gateway["updated_at"])
-                self._Configs.set("core.machine_label", gateway["label"])
-                self._Configs.set("core.label", gateway["label"])
-                self._Configs.set("core.description", gateway["description"])
-                self._Configs.set("core.owner_id", gateway["user_id"])
-                self._Configs.set("dns.fqdn", gateway["dns_name"])
+                self._Configs.set("core.is_master", is_true_false(gateway["is_master"]), ref_source=self)
+                self._Configs.set("core.master_gateway_id", gateway["master_gateway_id"], ref_source=self)
+                self._Configs.set("core.created_at", gateway["created_at"], ref_source=self)
+                self._Configs.set("core.updated_at", gateway["updated_at"], ref_source=self)
+                self._Configs.set("core.machine_label", gateway["label"], ref_source=self)
+                self._Configs.set("core.label", gateway["label"], ref_source=self)
+                self._Configs.set("core.description", gateway["description"], ref_source=self)
+                self._Configs.set("core.owner_id", gateway["user_id"], ref_source=self)
+                self._Configs.set("dns.fqdn", gateway["dns_name"], ref_source=self)
 
                 if gateway["dns_name"] is not None:
                     try:
@@ -120,17 +120,17 @@ class Startup(YomboLibrary):
                         self.configs_needed_human.append("Gateway password is missing.")
                         return
                     gateway_dns = response.content["data"]["attributes"]
-                    self._Configs.set("dns.domain_id", gateway_dns["dns_domain_id"])
-                    self._Configs.set("dns.name", gateway_dns["name"])
-                    self._Configs.set("dns.allow_change_at", gateway_dns["allow_change_at"])
-                    self._Configs.set("dns.domain", gateway_dns["domain"])
-                    self._Configs.set("dns.fqdn", f"{gateway_dns['name']}.{gateway_dns['domain']}")
+                    self._Configs.set("dns.domain_id", gateway_dns["dns_domain_id"], ref_source=self)
+                    self._Configs.set("dns.name", gateway_dns["name"], ref_source=self)
+                    self._Configs.set("dns.allow_change_at", gateway_dns["allow_change_at"], ref_source=self)
+                    self._Configs.set("dns.domain", gateway_dns["domain"], ref_source=self)
+                    self._Configs.set("dns.fqdn", f"{gateway_dns['name']}.{gateway_dns['domain']}", ref_source=self)
                 else:
-                    self._Configs.set("dns.domain_id", None)
-                    self._Configs.set("dns.name", None)
-                    self._Configs.set("dns.allow_change_at", None)
-                    self._Configs.set("dns.domain", None)
-                    self._Configs.set("dns.fqdn", None)
+                    self._Configs.set("dns.domain_id", None, ref_source=self)
+                    self._Configs.set("dns.name", None, ref_source=self)
+                    self._Configs.set("dns.allow_change_at", None, ref_source=self)
+                    self._Configs.set("dns.domain", None, ref_source=self)
+                    self._Configs.set("dns.fqdn", None, ref_source=self)
 
         is_master = self._Configs.get("core.is_master", True)
         if is_master is False:
@@ -143,11 +143,13 @@ class Startup(YomboLibrary):
             yield self._Notifications.new(title="Need configurations",
                                           message=f"System has been placed into configuration mode. The following "
                                                   f"configurations are needed:<p><ul><li>{needed_text}</li></ul>",
-                                          request_context=self._FullName,
                                           persist=False,
                                           priority="high",
                                           always_show=True,
-                                          always_show_allow_clear=True)
+                                          always_show_allow_clear=True,
+                                          _request_context=self._FullName,
+                                          _authentication=self.AUTH_USER
+                                          )
 
             self._Loader.operating_mode = "config"
             return
@@ -157,6 +159,6 @@ class Startup(YomboLibrary):
     @inlineCallbacks
     def _load_(self, **kwargs):
         results = yield threads.deferToThread(search_for_executable, 'ffmpeg')
-        yield self._Atoms.set_yield("ffmpeg_bin", results, value_type="string", request_context=self._FullName)
+        yield self._Atoms.set_yield("ffmpeg_bin", results, value_type="string", authentication=self.AUTH_USER)
         results = yield threads.deferToThread(search_for_executable, 'ffprobe')
-        yield self._Atoms.set_yield("ffprobe_bin", results, value_type="string", request_context=self._FullName)
+        yield self._Atoms.set_yield("ffprobe_bin", results, value_type="string", authentication=self.AUTH_USER)

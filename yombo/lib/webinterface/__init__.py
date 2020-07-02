@@ -136,10 +136,11 @@ class WebInterface(YomboLibrary, FrontendMixin, LoadRoutesMixin, RenderMixin, We
         yield self._Notifications.new(notice_id="webinterface:starting",
                                       title="System still starting",
                                       message="Still starting up. Please wait.",
-                                      request_context=self._FullName,
                                       priority="high",
                                       always_show=True,
-                                      always_show_allow_clear=False
+                                      always_show_allow_clear=False,
+                                      _request_context=self._FullName,
+                                      _authentication=self.AUTH_USER
                                       )
 
         if self._Configs.get("webinterface.enable_frontend", True, False):

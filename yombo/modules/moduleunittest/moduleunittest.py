@@ -163,15 +163,17 @@ class ModuleUnitTest(YomboModule):
         :return:
         """
         self.test_crontask1_called = False
-        self.test_crontask1 = self._CronTab.new(self.test_crontab_crontask1,
-                                           label='module.unittest.1',
-                                           args=['letsgo'],
-                                           kwargs={'arg1':'letsgo'}
-                                           )
+        self.test_crontask1 = self._CronTabs.new(self.test_crontab_crontask1,
+                                                 label='module.unittest.1',
+                                                 args=['letsgo'],
+                                                 kwargs={'arg1': 'letsgo'},
+                                                 _request_context=self._FullName,
+                                                 _authentication=self.AUTH_USER
+                                                 )
         reactor.callLater(122, self.test_crontab_crontask1_check_if_called, True)
 
-        self.assertIsEqual(self.test_crontask1, self._CronTab['module.unittest.1'], 'Looking up job using dictionary method')
-        self.assertIsEqual(self.test_crontask1, self._CronTab.get('module.unittest.1'), 'Looking up job using function')
+        self.assertIsEqual(self.test_crontask1, self._CronTabs['module.unittest.1'], 'Looking up job using dictionary method')
+        self.assertIsEqual(self.test_crontask1, self._CronTabs.get('module.unittest.1'), 'Looking up job using function')
 
     def test_crontab_crontask1(self, *args, **kwargs):
         """
@@ -213,13 +215,13 @@ class ModuleUnitTest(YomboModule):
         :return:
         """
         #basic checks
-        self._States.set("module.unittest1", "letsdoit", value_type='string', request_context=self._FullName)
+        self._States.set("module.unittest1", "letsdoit", value_type='string', authentication=self.AUTH_USER)
         isLight_dynamic = self._States.get2("module.unittest1")
         self.assertIsEqual("letsdoit", self._States['module.unittest1'], "Get states as dictionary")
         self.assertIsEqual("letsdoit", self._States.get('module.unittest1'), "Get states as function")
         self.assertIsEqual("letsdoit", isLight_dynamic(), "Get states as with dynamic get2")
 
-        self._States.set("module.unittest1", "letsdoit2", value_type='string', request_context=self._FullName)
+        self._States.set("module.unittest1", "letsdoit2", value_type='string', authentication=self.AUTH_USER)
         self.assertIsEqual("letsdoit2", self._States['module.unittest1'], "Get states as dictionary")
         self.assertIsEqual("letsdoit2", self._States.get('module.unittest1'), "Get states as dictionary and function")
         self.assertIsEqual("letsdoit2", isLight_dynamic(), "Get states as dictionary and function")

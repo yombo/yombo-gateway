@@ -107,6 +107,7 @@ setup() {
     chown vagrant:vagrant /home/vagrant/.yombo
 
     if ! [ -f "$SCRIPTPATH/setup_done" ]; then
+        sudo apt-get update
         echo "==> apt-get - Upgrading OS (apt-get upgrade) - starting downloads"
         sudo apt-mark hold keyboard-configuration
         sudo apt-mark hold grub-pc

@@ -92,7 +92,7 @@ class Mosquitto(YomboLibrary):
         if self._is_master is not True:
             logger.info("Not managing MQTT broker, we are not the master.")
             if self.enabled is True:
-                self._Configs.set("mqtt.enabled", False)
+                self._Configs.set("mqtt.enabled", False, ref_source=self)
                 self.enabled = False 
             return
 
@@ -213,7 +213,7 @@ class Mosquitto(YomboLibrary):
                 yield getProcessOutput("sudo", ["systemctl", "enable", "mosquitto.service"])
             except Exception as e:
                 logger.warn("Error while trying to enable mosquitto (mqtt) service: {e}", e=e)
-            self._Configs.set("mqtt.enabled", True)
+            self._Configs.set("mqtt.enabled", True, ref_source=self)
             self.enabled = True
 
         yield self.check_mqtt_broker_running()

@@ -81,7 +81,7 @@ class YomboAPI(YomboLibrary, InteractionsMixin):
         except YomboWarning as e:
             logger.warn("Unable to validate gateway credentials: {message}", message=e.message)
             if e.error_code in (400, 404):
-                self._Configs.set("core.gwid", "local")
+                self._Configs.set("core.gwid", "local", ref_source=self)
 
             self.gateway_credentials_is_valid = False
             return
@@ -141,6 +141,7 @@ class YomboAPI(YomboLibrary, InteractionsMixin):
             logger.warn("Response Headers: {headers}", headers=response.headers)
             logger.warn("Content: {content}", content=response.content)
             logger.warn("--------------------------------------------------------")
+            raise YomboWarning(f"YomboAPI got a string back, this won't work: {response.content}")
         elif response.response_code >= 300:
             logger.warn("-----==( Error: API received an invalid response )==----")
             logger.warn("Request: {request}", request=response.request.__dict__)

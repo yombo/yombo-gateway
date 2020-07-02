@@ -12,7 +12,7 @@ Create various exceptions to be used throughout the Yombo gateway.
 from copy import deepcopy
 import inspect
 import sys
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Type, Union
 from twisted.internet.error import ReactorNotRunning
 from uuid import uuid4
 
@@ -528,13 +528,11 @@ class YomboNoAccess(YomboWarning):
     """
     Extends :class:`YomboWarning` - Resource accessed without required permissions.
     """
-
     def __init__(self,
                  action: str,
                  platform: str,
                  item_id: Union[str, int],
-                 request_by: str,
-                 request_by_type: str,
+                 authentication: Type["yombo.mixins.auth_mixin.AuthMixin"],
                  request_context: str,
                  error_code: Optional[Union[str, int]] = None,
                  message: Optional[str] = None,
@@ -580,8 +578,8 @@ class YomboNoAccess(YomboWarning):
         self.action = action
         self.platform = platform
         self.item_id = item_id
-        self.request_by = request_by
-        self.request_by_type = request_by_type
+        self.request_by = authentication.accessor_id
+        self.request_by_type = authentication.accessor_type
         self.request_context = request_context
 
 

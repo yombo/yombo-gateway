@@ -31,7 +31,7 @@ Yombo Gateway interacts with Yombo servers using AMQPYombo which depends on this
 :view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/amqp/__init__.html>`_
 """
 # Import python libraries
-from typing import Callable, ClassVar, List, Optional, Union
+from typing import Callable, ClassVar, List, Optional, Type, Union
 
 # Import twisted libraries
 
@@ -93,7 +93,8 @@ class AMQP(YomboLibrary, ParentStorageAccessorsMixin):
             connected_callbacks: Optional[Callable] = None, disconnected_callbacks: Optional[Callable] = None,
             error_callbacks: Optional[Callable] = None, client_id: Optional[str] = None,
             keepalive: Optional[int] = None, prefetch_count: Optional[int] = 10,
-            critical_connection: Optional[bool] = None) -> AMQPClient:
+            critical_connection: Optional[bool] = None, _request_context: Optional[str] = None,
+            _authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None) -> AMQPClient:
         """
         Creates a new :py:class:AMQPClient instance. It will not auto-connect, just simply call the connect method
         when you're ready for the instance to start connecting. It will continue to attempt to connect if connection
@@ -117,7 +118,9 @@ class AMQP(YomboLibrary, ParentStorageAccessorsMixin):
           traffic.
         :param prefetch_count: (default 10) - How many outstanding messages the client should have at any
           given time.
-        :param critical: If True and unable to connect to AMQP server, will stop the gateway.
+        :param critical_connection: If True and unable to connect to AMQP server, will stop the gateway.
+        :param _request_context: Context about the request. Such as an IP address of the source.
+        :param _authentication: An auth item such as a websession or authkey.
         :return:
         """
         port = port if port is not None else 5671
@@ -163,6 +166,5 @@ class AMQP(YomboLibrary, ParentStorageAccessorsMixin):
         self._Events.new(event_type="amqp",
                          event_subtype="new",
                          attributes=(client_id, hostname, port, username, use_ssl),
-                         request_by="amqp",
-                         request_by_type="library")
+                         _authentication=_authentication if _authentication is not None else self.AUTH_USER)
         return self.client_connections[client_id]

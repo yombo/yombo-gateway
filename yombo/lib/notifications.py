@@ -43,6 +43,7 @@ from yombo.mixins.library_db_child_mixin import LibraryDBChildMixin
 from yombo.mixins.library_db_parent_mixin import LibraryDBParentMixin
 from yombo.mixins.library_search_mixin import LibrarySearchMixin
 from yombo.utils import random_string, is_true_false
+from yombo.utils.caller import caller_string
 from yombo.utils.hookinvoke import global_invoke_all
 
 logger = get_logger("library.notifications")
@@ -160,19 +161,38 @@ class Notifications(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
             timeout: Optional[Union[int, float]] = None, expire_at: Optional[Union[int, float]] = None,
             always_show: Optional[bool] = None, always_show_allow_clear: Optional[bool] = None,
             notice_type: Optional[str] = None, notice_id: Optional[str] = None, local: Optional[bool] = None,
-            targets: Optional[List[str]] = None,
-            request_by: Optional[str] = None, request_by_type: Optional[str] = None,
-            request_context: Optional[str] = None,
-            meta: Optional[dict] = None,
+            targets: Optional[List[str]] = None, meta: Optional[dict] = None,
             acknowledged: Optional[bool] = None, acknowledged_at: Optional[int] = None,
             created_at: Optional[Union[int, float]] = None,
-            # gateway_id: Optional[str] = None,
-            create_event: Optional[bool] = None):
+            # gateway_id: Optional[str] = None, create_event: Optional[bool] = None,
+            _load_source: Optional[str] = None, _request_context: Optional[str] = None,
+            _authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None
+            ):
         """
         Add a new notice.
 
         :param title: Title, or label, for the not
-        :returns: Pointer to new notice. Only used during unittest
+        :param message:
+        :param gateway_id:
+        :param priority:
+        :param persist:
+        :param timeout:
+        :param expire_at:
+        :param always_show:
+        :param always_show_allow_clear:
+        :param notice_type:
+        :param notice_id:
+        :param local:
+        :param targets:
+        :param meta:
+        :param acknowledged:
+        :param acknowledged_at:
+        :param created_at:
+        :param create_event:
+        :param _load_source: Where the data originated from. One of: local, database, yombo, system
+        :param _request_context: Context about the request. Such as an IP address of the source.
+        :param _authentication: An auth item such as a websession or authkey.
+        :return: Pointer to new notice. Only used during unittest
         """
         if gateway_id is None:
             gateway_id = self._gateway_id
@@ -216,7 +236,7 @@ class Notifications(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
         elif timeout is not None:
             raise YomboWarning("timeout must be int or float.")
         if persist is True and expire_at is None:
-                expire_at = time() + 60*60*24*30  # keep persistent notifications for 30 days.
+            expire_at = time() + 60*60*24*30  # keep persistent notifications for 30 days.
 
         if targets is not None:  # tags on where to send notifications
             if isinstance(targets, list) is False:
@@ -241,6 +261,8 @@ class Notifications(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
         if acknowledged is True and acknowledged_at is None:
             acknowledged_at = int(time)
 
+        self._Users.validate_authentication(_authentication)
+
         notice = {
             "id": notice_id,
             "title": title,
@@ -253,9 +275,6 @@ class Notifications(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
             "type": notice_type,
             "local": local,
             "targets": targets,
-            "request_by": request_by,
-            "request_by_type": request_by_type,
-            "request_context": request_context,
             "meta": meta,
             "acknowledged": acknowledged,
             "acknowledged_at": acknowledged_at,
@@ -269,7 +288,12 @@ class Notifications(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
 
         logger.debug("notice: {notice}", notice=notice)
 
-        notification = yield self.load_an_item_to_memory(notice, load_source="local")
+        notification = yield self.load_an_item_to_memory(
+            notice,
+            load_source=_load_source,
+            request_context=_request_context if _request_context is not None else caller_string(),
+            authentication=_authentication
+        )
 
         reactor.callLater(.0001,
                           global_invoke_all,

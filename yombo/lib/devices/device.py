@@ -171,15 +171,16 @@ class Device(DeviceAttributesMixin, DeviceCommandMixin, DeviceStateMixin):
             energy_usage=0,
             energy_type=self.energy_type,
             gateway_id=self.gateway_id,
-            authentication=self._Users.system_user,
-            request_context="devices_attributes_system_init",
             reporting_source="devices_attributes_system_init",
             device_command=None,
             created_at=time(),
             uploaded=0,
             uploadable=0,
             _fake_data=True,
-            load_source="system")
+            _load_source="system",
+            _request_context="devices_attributes_system_init",
+            _authentication=self._Parent.AUTH_USER,
+        )
 
     def _init_(self, **kwargs) -> None:
         """

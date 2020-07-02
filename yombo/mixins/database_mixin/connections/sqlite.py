@@ -122,5 +122,6 @@ class SQLiteDB(SQLBase):
         self._Events.new(event_type="localdb",
                          event_subtype="dbbackup",
                          attributes=time() - start_time,
-                         request_by="localdb",
-                         request_by_type="library")
+                         _request_context=self._FullName,
+                         _authentication=self._Parent.AUTH_USER
+                         )

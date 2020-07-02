@@ -49,6 +49,7 @@ logger = get_logger("library.mqttyombo")
 class MQTTYombo(YomboLibrary, PublishingMixin, IncomingGwMixin,
                 AtomsMixin, PingMixin, StatesMixin):
     ok_to_publish_updates = False
+    enabled = False
 
     def _init_(self, **kwargs):
         """Setup MQTTYombo library."""

@@ -850,7 +850,7 @@ class Automation(YomboLibrary):
                         pass
 
             elif action_type == "state":
-                yield self._States.set_yield(action["name"], action["value"], request_context=self._FullName)
+                yield self._States.set_yield(action["name"], action["value"], authentication=self.AUTH_USER)
 
             elif action_type == "template":
                 try:

@@ -12,7 +12,7 @@ API.
 """
 from marshmallow.exceptions import ValidationError
 from time import time
-from typing import Any, ClassVar, Dict, List, Optional, Union
+from typing import Any, ClassVar, Dict, List, Optional, Type, Union
 
 # Import twisted libraries
 from twisted.internet import reactor
@@ -130,7 +130,7 @@ class LibraryDBChildMixin(ChildStorageAccessorsMixin):
 
         self.init_attributes()  # Setup columns based on the database table columns.
 
-        self.load_attribute_values(kwargs["incoming"])
+        self.load_attribute_values(**kwargs)
         self.__dict__["_sync_init_complete"] = True
 
     def __getitem__(self, key):
@@ -188,16 +188,29 @@ class LibraryDBChildMixin(ChildStorageAccessorsMixin):
         """
         pass
 
-    def load_attribute_values(self, incoming: Dict[str, Any]) -> None:
+    def load_attribute_values(self, incoming: Dict[str, Any], load_source: Optional[str] = None,
+                              request_context: Optional[str] = None,
+                              authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None,
+                              **kwargs) -> None:
         """
         This loads all the data from 'incoming' (a dictionary) and loads them into the instance attributes.
 
         This first setups the 'id' column value (based on _storage_primary_field_name). Then it calls update() to
         perform the actual update.
 
-        :param incoming:
+        :param incoming: Typically a dictionary conntaing the items attributes.
+        :param load_source: Where the data originated from. One of: local, database, yombo, system
+        :param request_context: Context about the request. Such as an IP address of the source.
+        :param authentication: An auth item such as a websession or authkey.
+
         :return:
         """
+        if load_source is not None:
+            incoming["load_source"] = load_source
+        if request_context is not None:
+            incoming["request_context"] = request_context
+        if authentication is not None:
+            incoming["request_by"], incoming["request_by_type"] = self._Users.request_by_info(authentication)
         if self._Parent._storage_schema is not None:
             try:
                 incoming = dict(self._Parent._storage_schema.load(incoming))
@@ -262,8 +275,43 @@ class LibraryDBChildMixin(ChildStorageAccessorsMixin):
         """
         pass
 
-    def update(self, incoming_items: dict, load_source: Optional[str] = None,
-               broadcast: Optional[bool] = None):
+    @inlineCallbacks
+    def api_update(self, incoming, load_source: Optional[str] = None, request_context: Optional[str] = None,
+                   authentication: Optional[Any] = None, **kwargs):
+        """
+        Alternative to update() found below. This first tries to update the data at API.Yombo.net before
+        updating locally.  After API.Yombo is updated, this method will call update() to complete locally.
+
+        Reasoning: The update() method is not deferred friendly. Update() will eventaully complete the same tasks,
+        but provides no status back on completed failed.
+
+        :param incoming: The dictionary to send Yombo API
+        :param load_source: Where the data originated from. One of: local, database, yombo, system
+        :param request_context: Context about the request. Such as an IP address of the source.
+        :param authentication: An auth item such as a websession or authkey.
+        :return:
+        """
+        print("api_update child: a")
+        logger.info("api_update: saving data to api: {incoming}", incoming=incoming)
+        print("api_update child: b")
+        if self._sync_init_complete is True and \
+                self.sync_allowed() is True and \
+                self._fake_data is False and \
+                self._sync_enabled is True and \
+                self._sync_to_api is True:
+            response = yield self._sync_do_sync_to_api(incoming=incoming)
+            print("api_update child: c")
+            data = response.content["data"]["attributes"]
+        print("api_update child: d")
+        logger.info("about to save the data locally.")
+        print("api_update child: e")
+        if load_source == "library":  # Disable sending to API again.
+            load_source = "yombo"
+        self.update(incoming, load_source=load_source, request_context=request_context, authentication=authentication)
+
+    def update(self, incoming_items: dict, load_source: Optional[str] = None, request_context: Optional[str] = None,
+               authentication: Optional[Any] = None, broadcast: Optional[bool] = None,
+               save_delay: Optional[Union[int, float]] = None):
         """
         Bulk update the attributes for the instance. Using this method prevents a flood of hook calls when
         updating multiple attributes at once. If the attributes were updated directly, which is fine for updating
@@ -276,8 +324,11 @@ class LibraryDBChildMixin(ChildStorageAccessorsMixin):
         * If from database (loading), then we just need to update memory and not Yombo API.
 
         :param incoming_items: A dictionary of items to update.
-        :param load_source: One of local, database, yombo, or system. Defaults to local.
+        :param load_source: Where the data originated from. One of: local, database, yombo, system
+        :param request_context: Context about the request. Such as an IP address of the source.
+        :param authentication: An auth item such as a websession or authkey.
         :param broadcast: If false, won't broadcast using the hook system.
+        :param save_delay: Override the default save delay, in seconds.
         """
         if isinstance(incoming_items, dict) is False:
             raise YomboWarning(f"update attributes expects a dictionary, got: {type(incoming_items)}")
@@ -340,7 +391,8 @@ class LibraryDBChildMixin(ChildStorageAccessorsMixin):
 
         sync_mode = self._sync_compute_sync_mode(load_source)
         if sync_mode > 0:
-            self.sync_item_data(sync_mode=sync_mode)
+
+            self.sync_item_data(sync_mode=sync_mode, save_delay=save_delay)
 
         if broadcast in (None, True) and self._Loader.run_phase[1] >= 6500:
             global_invoke_all(f"_{hook_prefix}_updated_",
@@ -434,13 +486,17 @@ class LibraryDBChildMixin(ChildStorageAccessorsMixin):
 
     def sync_allowed(self):
         """ A method that be overridden to determine if sync should take place."""
-        if self._meta["load_source"] == "system":
-            return False
+        # if self._meta["load_source"] == "system":
+        #     print(f"sync_allowed: {self._meta}")
+        #     return False
         return True
 
-    def sync_item_data(self, sync_mode: Optional[int] = None, load_source: Optional[str] = None):
+    def sync_item_data(self, sync_mode: Optional[int] = None, load_source: Optional[str] = None,
+                       save_delay: Optional[Union[int, float]] = None):
         """
         Syncs items to the database and/or to the Yombo api.
+
+        :param save_delay: Override the default save delay, in seconds.
 
         :return:
         """
@@ -449,6 +505,13 @@ class LibraryDBChildMixin(ChildStorageAccessorsMixin):
                 self._fake_data is True or \
                 self._sync_enabled is not True or \
                 (self._sync_to_api is False and self._sync_to_db is False):
+            # print("sync_item_data skipped in first check.")
+            # print(f"self._sync_init_complete: {self._sync_init_complete} - is not True - {self._sync_init_complete is not True}")
+            # print(f"self.sync_allowed: {self.sync_allowed()} - is False - {self.sync_allowed() is False}")
+            # print(f"self._fake_data: {self._fake_data} - is True- {self._fake_data is True}")
+            # print(f"self._sync_enabled: {self._sync_enabled} - is not True - {self._sync_enabled is not True}")
+            # print(f"self._sync_to_api: {self._sync_to_api} - is False - {self._sync_to_api is False and self._sync_to_db is False}")
+            # print(f"self._sync_to_db: {self._sync_to_db} - is False - {self._sync_to_api is False and self._sync_to_db is False}")
             return
 
         if sync_mode is None:
@@ -456,7 +519,10 @@ class LibraryDBChildMixin(ChildStorageAccessorsMixin):
 
         if self._sync_data_callLater is not None and self._sync_data_callLater.active():
             self._sync_data_callLater.cancel()
-        sync_delay = self._sync_data_delay
+        if isinstance(save_delay, int) or isinstance(save_delay, float):
+            sync_delay = save_delay
+        else:
+            sync_delay = self._sync_data_delay
         if sync_delay in (0, None):
             sync_delay = 0.001
         self._sync_data_callLater = reactor.callLater(sync_delay, self._do_sync_item_data, sync_mode)
@@ -470,8 +536,8 @@ class LibraryDBChildMixin(ChildStorageAccessorsMixin):
                 logger.warn("about to send to api: {the_item}", the_item=self)
                 results = yield self._sync_do_sync_to_api()
                 if results["status"] == "ok":
-                    # incoming_data = self._Parent.unpickle_data_records(results["content"]["data"]["attributes"])
-                    for name, value in self._Parent.unpickle_data_records(results["content"]["data"]["attributes"]).items():
+                    for name, value in \
+                            self._Parent.unpickle_data_records(results["content"]["data"]["attributes"]).items():
                         self.__dict__[name] = value
 
                 if self._Entity_type == "Device":
@@ -486,17 +552,18 @@ class LibraryDBChildMixin(ChildStorageAccessorsMixin):
             yield self.db_save(sync_mode & SYNC_NOW)
 
     @inlineCallbacks
-    def _sync_do_sync_to_api(self):
+    def _sync_do_sync_to_api(self, data: Optional[Any] = None):
         """
         Does the actual sync to Yombo API.
 
+        :param data: Data to send to the API, otherwise, uses data from memory.
         :return:
         """
         if self._sync_to_api is False:
             return None
 
         results = yield self._YomboAPI.update(request_type=self._Parent._storage_attribute_name,
-                                              data=self.to_database(),
+                                              data=data if data is not None else self.to_database(),
                                               url_format={"id": self._primary_field_id},
                                               )
         return results
@@ -596,6 +663,7 @@ class LibraryDBChildMixin(ChildStorageAccessorsMixin):
             raise YomboWarning(f"Table {self._storage_attribute_name} has no columns, cannot insert into database.")
 
         data = self.to_database()
+        print(f"_db_insert: data: {data}")
         if "gateway_id" in data and data["gateway_id"] == "local":
             return
 

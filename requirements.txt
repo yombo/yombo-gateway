@@ -3,8 +3,8 @@ argon2_cffi==20.1.0
 attrs==19.3.0
 attrdict==2.0.1
 asyncio==3.4.3
-cachetools==4.1.0
-certifi==2020.4.*
+cachetools==4.1.*
+certifi==2020.6.*
 cryptography==2.9.*
 cython==0.29.*
 decorator==4.4.2
@@ -27,14 +27,14 @@ marshmallow-jsonapi==0.23.*
 msgpack==1.0.0
 netaddr==0.7.19
 netifaces==0.10.9
-numpy==1.18.*
+numpy==1.19.*
 packaging==20.4.*
 parsedatetime==2.6
 passlib==1.7.2
 pika==1.1.0
-Pillow==7.1.*
+Pillow==7.2.*
 pycountry==19.8.18
-pycryptodome==3.9.7
+pycryptodome==3.9.8
 pydispatcher==2.0.5
 pyephem==3.7.*
 pyjwt==1.7.*
@@ -43,7 +43,7 @@ pyopenssl==19.1.*
 pyserial==3.2.0
 python_dateutil==2.8.*
 python-gnupg==0.4.6
-python-slugify==4.0.0
+python-slugify==4.0.1
 pytz==2020.1
 ratelimit==2.2.*
 service_identity==18.1.0

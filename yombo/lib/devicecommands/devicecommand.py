@@ -338,8 +338,7 @@ class DeviceCommand(Entity, LibraryDBChildMixin):
             DEVICE_COMMAND_DEVICE_COMMAND: self,
             DEVICE_COMMAND_PIN: self.pin,
             DEVICE_COMMAND_GATEWAY_ID: self.gateway_id,
-            DEVICE_COMMAND_REQUEST_BY: self.request_by,
-            DEVICE_COMMAND_REQUEST_BY_TYPE: self.request_by_type,
+            DEVICE_COMMAND_AUTHENTICATION: self.authentication,
             DEVICE_COMMAND_REQUEST_CONTEXT: self.request_context,
         }
         # logger.debug("calling _device_command_, device_command_id: {device_command_id}", device_command_id=device_command.device_command_id)
@@ -682,8 +681,21 @@ class DeviceCommand(Entity, LibraryDBChildMixin):
         self.set_finished(finished_at=finished_at, status="delay_expired", message=message, source=source)
 
     def set_status(self, status: str, message: Optional[str] = None, log_at: Optional[Union[int, float]] = None,
-                   gateway_id: Optional[str] = None, source: Optional[str] = None) -> None:
+                   gateway_id: Optional[str] = None, request_context: Optional[str] = None,
+                   authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None) -> None:
+        """
+        Sets the status of the device command, not the device.
+
+        :param status:
+        :param message:
+        :param log_at:
+        :param gateway_id:
+        :param request_context:
+        :param authentication:
+        :return:
+        """
         logger.debug("device ({label}) has new status: {status}", label=self.device.full_label, status=status)
+        self.check_authorization(authentication, "modify", required=False)
         if gateway_id is None:
             gateway_id = self._gateway_id
         self.status = status
@@ -691,16 +703,18 @@ class DeviceCommand(Entity, LibraryDBChildMixin):
             setattr(self, f"status_at", log_at)
         if log_at is None:
             log_at = time()
-        self.history.append(self.history_dict(log_at, status, message, gateway_id, source))
+        self.history.append(self.history_dict(log_at, status, message, gateway_id, request_context))
 
-    def set_message(self, message: str, source: Optional[str] = None) -> None:
-        self.history.append(self.history_dict(time(), self.status, message, self._gateway_id, source))
+    # def set_message(self, message: str, source: Optional[str] = None) -> None:
+    #     self.history.append(self.history_dict(time(), self.status, message, self._gateway_id, source))
 
     def cancel(self, finished_at: Optional[Union[int, float]] = None, status: Optional[str] = None,
-                     message: Optional[str] = None, source: Optional[str] = None) -> None:
+               message: Optional[str] = None, request_context: Optional[str] = None,
+               authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None) -> None:
+        self.check_authorization(authentication, "remove", required=False)
         if status is None:
             status = "canceled"
-        self.set_finished(finished_at, status, message, source)
+        self.set_finished(finished_at, status, message, request_context)
 
     def sync_allowed(self) -> bool:
         if self.device.gateway_id != self._gateway_id and self._Parent.is_master is not True:

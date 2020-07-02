@@ -153,14 +153,31 @@ class SystemDataParentMixin:
         return dict(sorted(iter(items_to_sort.items()), key=lambda i: getattr(i[1], key)))
 
     @inlineCallbacks
-    def update(self, requested_item, data, request_context: Optional[str] = None,
-               authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None,
-               **kwargs):
+    def api_update(self, requested_item: str, incoming: dict, request_context: Optional[str] = None,
+                   authentication: Optional[Any] = None, **kwargs) -> None:
+        """
+        This simply catches calls to api_update and passes them to the local update. Override the
+        library_db_child_mixin.
+
+        :param requested_item: The item's id (or machine_label) to update.
+        :param incoming: A dictionary of key/values to update.
+        :param kwargs:
+        :return:
+        """
+        results = yield self.update(requested_item, incoming, request_context=request_context,
+                                    authentication=authentication, **kwargs)
+        return results
+
+    @inlineCallbacks
+    def update(self, requested_item, incoming, request_context: Optional[str] = None,
+               authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None, **kwargs):
         """
         Updates the requested data.
 
         :param requested_item:
-        :param data:
+        :param incoming:
+        :param request_context: Context about the request. Such as an IP address of the source.
+        :param authentication: An auth item such as a websession or authkey.
         :param kwargs:
         :return:
         """
@@ -169,7 +186,7 @@ class SystemDataParentMixin:
         item = self.get(requested_item, instance=True)
         args = {
             "key": getattr(item, self._storage_primary_field_name),
-            "value": data["value"],
+            "value": incoming["value"],
         }
         # print(f"systemdata_mixin: item: {item} - {item.__dict__}")
         allowed_args = ["value_human", "value_type"]
@@ -268,9 +285,7 @@ class SystemDataParentMixin:
             else:
                 return default
 
-    def set(self, key, value, value_human=None, value_type=None, gateway_id=None,
-            request_by: Optional[str] = None, request_by_type: Optional[str] = None,
-            request_context: Optional[str] = None,
+    def set(self, key, value, value_human=None, value_type=None, gateway_id=None, request_context: Optional[str] = None,
             authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None,
             created_at: Optional[int] = None, updated_at: Optional[int] = None):
         """
@@ -285,35 +300,24 @@ class SystemDataParentMixin:
 
         :raises YomboWarning: Raised when request is malformed.
         :param key: Name of data item to set.
-        :type key: string
         :param value: The value to set
-        :type value: mixed
         :param value_human: What to display to mere mortals.
-        :type value_human: mixed
         :param value_type: Data type to help with display formatting. Should be: str, dict, list, int, float, epoch
-        :type value_type: string
         :param gateway_id: Gateway ID this item belongs to, defaults to local gateway.
-        :type gateway_id: string
-        :param request_by: Who created the Authkey. "alexamodule"
-        :param request_by_type: What type of item created it: "module"
         :param request_context: Some additional information about where the request comes from.
         :param authentication: An auth item such as a websession or authkey.
         :param created_at: Change the default created_at, typically used internally.
-        :type created_at: int
         :param updated_at: Change the default updated_at, typically used internally.
-        :type updated_at: int
         :return: Data item instance
         :rtype: instance
         """
         reactor.callLater(0.0001, self.set_yield, key, value, value_human=value_human, value_type=value_type,
-                          gateway_id=gateway_id, request_by=request_by, request_by_type=request_by_type,
-                          request_context=request_context, authentication=authentication, created_at=created_at,
-                          updated_at=updated_at)
+                          gateway_id=gateway_id, request_context=request_context, authentication=authentication,
+                          created_at=created_at, updated_at=updated_at)
 
     @inlineCallbacks
     def set_yield(self, key, value, value_human=None, value_type=None, gateway_id=None,
-                  request_by: Optional[str] = None, request_by_type: Optional[str] = None,
-                  request_context: Optional[str] = None,
+                  load_source: Optional[str] = None, request_context: Optional[str] = None,
                   authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None,
                   created_at: Optional[int] = None, updated_at: Optional[int] = None,
                   dont_save: Optional[bool] = None):
@@ -327,23 +331,13 @@ class SystemDataParentMixin:
 
         :raises YomboWarning: Raised when request is malformed.
         :param key: Name of data item to set.
-        :type key: string
         :param value: The value to set
-        :type value: mixed
         :param value_human: What to display to mere mortals.
-        :type value_human: mixed
         :param value_type: Data type to help with display formatting. Should be: str, dict, list, int, float, epoch
-        :type value_type: string
         :param gateway_id: Gateway ID this item belongs to, defaults to local gateway.
-        :type gateway_id: string
-        :param request_by: Who created the Authkey. "alexamodule"
-        :param request_by_type: What type of item created it: "module"
-        :param request_context: Some additional information about where the request comes from.
         :param authentication: An auth item such as a websession or authkey.
         :param created_at: Change the default created_at, typically used internally.
-        :type created_at: int
         :param updated_at: Change the default updated_at, typically used internally.
-        :type updated_at: int
         :return: Data item instance
         :rtype: instance
         """
@@ -368,19 +362,14 @@ class SystemDataParentMixin:
         if created_at is None:
             created_at = int(time())
 
-        if isinstance(request_context, str):
-            request_context = request_context
-        else:
+        if isinstance(request_context, str) is False:
             source_type, request_context = get_yombo_instance_type(request_context)
         if request_context is None:
             request_context = caller_string()
 
-        try:
-            request_by, request_by_type = self._Permissions.request_by_info(
-                authentication=authentication, request_by=request_by, request_by_type=request_by_type,
-                default=self._Users.system_user)
-        except YomboWarning:
+        if authentication is None:
             print("System data accepted a value without any authentication information.")
+            authentication = self.AUTH_USER
 
         if value_human is None:
             value_human = self.convert_to_human(value, value_type)
@@ -430,13 +419,13 @@ class SystemDataParentMixin:
                 "value": value,
                 "value_human": value_human,
                 "value_type": value_type,
-                "request_by": request_by,
-                "request_by_type": request_by_type,
-                "request_context": request_context,
                 "last_access_at": None,
                 "created_at": created_at,
                 "updated_at": updated_at,
                 },
+                load_source=load_source,
+                request_context=request_context if request_context is not None else caller_string(),
+                authentication=authentication,
                 save_into_storage=False
             )
             if dont_save is not True:
@@ -444,8 +433,11 @@ class SystemDataParentMixin:
                 self._Statistics.increment(f"lib.{self._storage_attribute_name}.new", bucket_size=60, anon=True)
 
         if dont_save is not True:
-            self._Events.new(self._storage_attribute_name, "set", (key, value, value_human, value_type, gateway_id,
-                                                                   request_context))
+            self._Events.new(self._storage_attribute_name, "set",
+                             (key, value, value_human, value_type, gateway_id, request_context),
+                             _request_context=self._FullName,
+                             _authentication=self.AUTH_USER
+                             )
 
         # Call any hooks
         if self._Loader.run_phase[1] >= 6000 and dont_save is not True:

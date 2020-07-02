@@ -62,6 +62,7 @@ from yombo.core.log import get_logger
 from yombo.core.schemas import SQLDictSchema
 from yombo.mixins.library_db_child_mixin import LibraryDBChildMixin
 from yombo.mixins.library_db_parent_mixin import LibraryDBParentMixin
+from yombo.utils.caller import caller_string
 
 logger = get_logger("core.sqldicts")
 
@@ -195,7 +196,11 @@ class SQLDicts(YomboLibrary, LibraryDBParentMixin):
 
         results = yield self.db_select(row_id=sqldict_id)
         if results:
-            instance = yield self.load_an_item_to_memory(results, load_source="database")
+            instance = yield self.load_an_item_to_memory(
+                results, load_source="database",
+                request_context=caller_string(),
+                authentication=self.AUTH_USER,
+            )
             if instance is None:
                 raise YomboWarning
             self.sqldicts[sqldict_id] = instance
@@ -211,6 +216,8 @@ class SQLDicts(YomboLibrary, LibraryDBParentMixin):
                 "unserializer": unserializer,
                 "max_length": max_length,
             },
-            load_source="local")
+            load_source="local",
+            request_context="sqldicts::get",
+            authentication=self.AUTH_USER)
         self.sqldicts[sqldict_id] = instance
         return instance

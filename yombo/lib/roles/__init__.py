@@ -82,7 +82,10 @@ class Roles(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
                 else:
                     load_source = "library"
                 role_data["machine_label"] = machine_label
-                self.new(role_data, load_source=load_source)
+                self.new(role_data,
+                         _load_source="local",
+                         _authentication=self.AUTH_USER
+                         )
 
         if self._Loader.operating_mode != "run":
             return
@@ -102,9 +105,8 @@ class Roles(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
                     machine_label="admin",
                     label="Administrators",
                     description="Full access to everything.",
-                    request_by="roles",
-                    request_by_type="library",
-                    load_source="local"
+                    _load_source="local",
+                    _authentication=self.AUTH_USER
                 )
         role_id = self._Hash.sha224_compact(f"users-{self.system_seed}")
         if role_id not in roles and "users" not in roles:
@@ -113,17 +115,15 @@ class Roles(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
                 machine_label="users",
                 label="Users",
                 description="All users have this role. Permits basic system operation.",
-                request_by="roles",
-                request_by_type="library",
-                load_source="local"
+                _load_source="local",
+                _authentication=self.AUTH_USER
             )
 
     @inlineCallbacks
     def new(self, machine_label: str, label: Optional[str] = None, description: Optional[str] = None,
-            request_by: Optional[str] = None, request_by_type: Optional[str] = None,
-            request_context: Optional[str] = None, authentication: Optional[Type[AuthMixin]] = None,
-            mqtt_topics: Optional[Union[List[str], str]] = None,
-            role_id: Optional[str] = None, load_source: Optional[str] = None) -> Role:
+            mqtt_topics: Optional[Union[List[str], str]] = None, role_id: Optional[str] = None,
+            _load_source: Optional[str] = None, _request_context: Optional[str] = None,
+            _authentication: Optional[Type["yombo.mixins.auth_mixin.AuthMixin"]] = None) -> Role:
         """
         Add a new role to the system.
 
@@ -137,13 +137,11 @@ class Roles(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
         :param machine_label: Role machine_label
         :param label: Role human label.
         :param description: Role description.
-        :param request_by: Who created the role. "alexamodule"
-        :param request_by_type: What type of item created it: "module"
-        :param request_context: Some additional information about where the request comes from.
-        :param authentication: An auth item such as a websession or authkey: read,write:/topic/path
         :param mqtt_topics: A list of strings, a single string, that denotes which topics the role can perform
-        :param load_source: How the role was loaded.
         :param role_id: How the role was loaded.
+        :param _load_source: Where the data originated from. One of: local, database, yombo, system
+        :param _request_context: Context about the request. Such as an IP address of the source.
+        :param _authentication: An auth item such as a websession or authkey.
         :return:
         """
         try:
@@ -154,24 +152,22 @@ class Roles(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
         except KeyError:
             pass
 
-        load_source = load_source or "local"
+        _load_source = _load_source or "local"
 
         try:
             self.get(machine_label)
             raise YomboWarning("Role already exists.")
         except KeyError:
             pass
-        if load_source not in LOCAL_SOURCES:
+        if _load_source not in LOCAL_SOURCES:
             raise YomboWarning(f"Add new roles requires a load_source received '{load_source}',"
                                f" must be one of: {', '.join(LOCAL_SOURCES)}")
 
-        try:
-            request_by, request_by_type = self._Permissions.request_by_info(
-                authentication, request_by, request_by_type)
-        except YomboWarning:
+        if _authentication is None:
             raise YomboWarning("New role must have a valid authentication or request_by and request_by_type.")
-        if request_context is None:
-            request_context = caller_string()  # get the module/class/function name of caller
+
+        if _request_context is None:
+            _request_context = caller_string()  # get the module/class/function name of caller
 
         mqtt = []
         if isinstance(mqtt_topics, str):
@@ -192,12 +188,12 @@ class Roles(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
                 "machine_label": machine_label,
                 "label": label,
                 "description": description,
-                "request_by": request_by,
-                "request_by_type": request_by_type,
-                "request_context": request_context,
                 "mqtt_topics": mqtt
             },
-            load_source=load_source)
+            load_source=_load_source,
+            request_context=_request_context if _request_context is not None else caller_string(),
+            authentication=_authentication
+        )
         return results
 
     def users(self, requested_role):

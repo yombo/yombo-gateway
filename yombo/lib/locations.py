@@ -155,7 +155,10 @@ class Locations(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
                 "updated_at": int(time()),
                 "created_at": int(time()),
                 },
-                load_source="local")
+                load_source="local",
+                request_context="locations::init",
+                authentication=self.AUTH_USER
+            )
 
         try:
             self.get_by_type("location", "none")
@@ -170,36 +173,39 @@ class Locations(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
                 "updated_at": int(time()),
                 "created_at": int(time()),
                 },
-               load_source="local")
+                load_source="local",
+                request_context="locations::init",
+                authentication=self.AUTH_USER
+            )
 
         detected_location_info = self._Configs.detected_location_info
         if detected_location_info["source"] is not None:
             yield self._States.set_yield("detected_location.source", detected_location_info["source"],
-                                         value_type="string", request_context=self._FullName)
+                                         value_type="string", authentication=self.AUTH_USER)
             yield self._States.set_yield("detected_location.ipv4", detected_location_info["ipv4"],
-                                         value_type="string", request_context=self._FullName)
+                                         value_type="string", authentication=self.AUTH_USER)
             yield self._States.set_yield("detected_location.ipv6", detected_location_info["ipv6"],
-                                         value_type="string", request_context=self._FullName)
+                                         value_type="string", authentication=self.AUTH_USER)
             yield self._States.set_yield("detected_location.country_code", detected_location_info["country_code"],
-                                         value_type="string", request_context=self._FullName)
+                                         value_type="string", authentication=self.AUTH_USER)
             yield self._States.set_yield("detected_location.country_name", detected_location_info["country_name"],
-                                         value_type="string", request_context=self._FullName)
+                                         value_type="string", authentication=self.AUTH_USER)
             yield self._States.set_yield("detected_location.region_name", detected_location_info["region_name"],
-                                         value_type="string", request_context=self._FullName)
+                                         value_type="string", authentication=self.AUTH_USER)
             yield self._States.set_yield("detected_location.city", detected_location_info["city"],
-                                         value_type="string", request_context=self._FullName)
+                                         value_type="string", authentication=self.AUTH_USER)
             yield self._States.set_yield("detected_location.time_zone", detected_location_info["time_zone"],
-                                         value_type="string", request_context=self._FullName)
+                                         value_type="string", authentication=self.AUTH_USER)
             yield self._States.set_yield("detected_location.latitude", detected_location_info["latitude"],
-                                         value_type="float", request_context=self._FullName)
+                                         value_type="float", authentication=self.AUTH_USER)
             yield self._States.set_yield("detected_location.longitude", detected_location_info["longitude"],
-                                         value_type="float", request_context=self._FullName)
+                                         value_type="float", authentication=self.AUTH_USER)
             yield self._States.set_yield("detected_location.elevation", detected_location_info["elevation"],
-                                         value_type="int", request_context=self._FullName)
+                                         value_type="int", authentication=self.AUTH_USER)
             yield self._States.set_yield("detected_location.isp", detected_location_info["isp"],
-                                         value_type="string", request_context=self._FullName)
+                                         value_type="string", authentication=self.AUTH_USER)
             yield self._States.set_yield("detected_location.use_metric", detected_location_info["use_metric"],
-                                         value_type="bool", request_context=self._FullName)
+                                         value_type="bool", authentication=self.AUTH_USER)
 
             data = {
                 "latitude": float(self._Configs.get("location.latitude", detected_location_info["latitude"], False)),
@@ -213,27 +219,29 @@ class Locations(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
             }
             for label, value in data.items():
                 if value in (None, "", "None"):
-                    self._Configs.set(f"location.{label}", detected_location_info[label])
+                    self._Configs.set(f"location.{label}", detected_location_info[label], ref_source=self)
 
             if self._Configs.get("location.searchbox", None, False) in (None, "", "None"):
                 searchbox = f"{detected_location_info['city']}, {detected_location_info['region_name']}, " \
                             f"{detected_location_info['country_code']}"
-                self._Configs.set("location.searchbox", searchbox)
+                self._Configs.set("location.searchbox", searchbox, ref_source=self)
         else:
-            yield self._States.set_yield("detected_location.source", None, request_context=self._FullName)
-            yield self._States.set_yield("detected_location.ipv4", None, request_context=self._FullName)
-            yield self._States.set_yield("detected_location.ipv6", None, request_context=self._FullName)
-            yield self._States.set_yield("detected_location.country_code", None, request_context=self._FullName)
-            yield self._States.set_yield("detected_location.country_name", None, request_context=self._FullName)
-            yield self._States.set_yield("detected_location.region_name", None, request_context=self._FullName)
-            yield self._States.set_yield("detected_location.city", None, request_context=self._FullName)
-            yield self._States.set_yield("detected_location.zip_code", None, request_context=self._FullName)
-            yield self._States.set_yield("detected_location.time_zone", None, request_context=self._FullName)
-            yield self._States.set_yield("detected_location.latitude", None, request_context=self._FullName)
-            yield self._States.set_yield("detected_location.longitude", None, request_context=self._FullName)
-            yield self._States.set_yield("detected_location.isp", None, request_context=self._FullName)
-            yield self._States.set_yield("detected_location.elevation", 800, value_type="int", request_context=self._FullName)
-            yield self._States.set_yield("detected_location.use_metric", True, value_type="bool", request_context=self._FullName)
+            yield self._States.set_yield("detected_location.source", None, authentication=self.AUTH_USER)
+            yield self._States.set_yield("detected_location.ipv4", None, authentication=self.AUTH_USER)
+            yield self._States.set_yield("detected_location.ipv6", None, authentication=self.AUTH_USER)
+            yield self._States.set_yield("detected_location.country_code", None, authentication=self.AUTH_USER)
+            yield self._States.set_yield("detected_location.country_name", None, authentication=self.AUTH_USER)
+            yield self._States.set_yield("detected_location.region_name", None, authentication=self.AUTH_USER)
+            yield self._States.set_yield("detected_location.city", None, authentication=self.AUTH_USER)
+            yield self._States.set_yield("detected_location.zip_code", None, authentication=self.AUTH_USER)
+            yield self._States.set_yield("detected_location.time_zone", None, authentication=self.AUTH_USER)
+            yield self._States.set_yield("detected_location.latitude", None, authentication=self.AUTH_USER)
+            yield self._States.set_yield("detected_location.longitude", None, authentication=self.AUTH_USER)
+            yield self._States.set_yield("detected_location.isp", None, authentication=self.AUTH_USER)
+            yield self._States.set_yield("detected_location.elevation", 800, value_type="int",
+                                         authentication=self.AUTH_USER)
+            yield self._States.set_yield("detected_location.use_metric", True, value_type="bool",
+                                         authentication=self.AUTH_USER)
 
         # Gateway logical location.  House, bedroom, etc.
         self.gateway_location = self.get_default("location")

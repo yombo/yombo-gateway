@@ -187,13 +187,13 @@ class InteractionsMixin:
     @inlineCallbacks
     def update(self, request_type: str, url_format: dict, data: dict) -> dict:
         """
-        Used to update (PATCH) items to the Yombo Gateway. This can be used to edit commands, devices, etc.
+        Used to update (PATCH) items to the Yombo API. This can be used to edit commands, devices, etc.
 
         Some requests, such as the gateway modules, require the ID of the gateway to modify. This is specified
-        in the index parameter.
+        in the url_format parameter: url_format={"id": self._primary_field_id}
 
         :param request_type: Request type such as "commands", "variables_data", or "modules".
-        :param url_format: A dictionary to send the format() function for the url.
+        :param url_format: A dictionary to send the the format() function for the url.
         :param data: Fields to send to the Yombo API.
         :return: Returns a dictionary containing various attributes on success. Raises YomboWarning on failure.
         """

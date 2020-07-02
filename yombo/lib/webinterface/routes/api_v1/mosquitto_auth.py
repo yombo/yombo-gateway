@@ -112,13 +112,10 @@ def route_api_v1_mosquitto_auth(webapp):
                     raise YomboWarning("MQTT username has invalid characters")
 
             elif username_parts[0] == "authkey":
-                print(f"mqttauth got userparts: {username_parts}")
                 try:
                     auth_key = webinterface._AuthKeys.get_session_by_id(username_parts[1])
                     if auth_key.is_valid is False:
                         return None
-                    print(f"authkey found: {auth_key}")
-                    print(f"authkey found dict: {auth_key.__dict__}")
                     return {
                         "type": "authkey",
                         "username": auth_key.machine_label,
@@ -126,20 +123,15 @@ def route_api_v1_mosquitto_auth(webapp):
                         "topics": None,
                         "password_validated": True
                     }
-                    print(f"authkey found, results: {results}")
                     return results
-
                 except Exception as e:
-                    print(f"Error looking for auth key: {e}")
                     YomboWarning("Authkey not found.")
 
             elif username_parts[0] == "web":
-                print(f"web session userparts: {username_parts}")
                 try:
                     session = yield webinterface._WebSessions.get_session_by_id(username_parts[1])
                     if session.is_valid is False:
                         return None
-                    print(f"websession found: {session}")
                     return {
                         "type": "websession",
                         "username": username_parts[1],
@@ -149,7 +141,6 @@ def route_api_v1_mosquitto_auth(webapp):
                     }
                     # return user_data
                 except Exception as e:
-                    print(f"Error looking for auth key: {e}")
                     YomboWarning("Authkey not found.")
 
             elif username_parts[0] == "mqtt":

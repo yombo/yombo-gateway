@@ -110,7 +110,9 @@ class Gateways(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
                     "status": 1,
                     "_fake_data": True,
                 },
-                load_source="system"
+                load_source="system",
+                request_context="gateways::init",
+                authentication=self.AUTH_USER
             )
         yield self.load_an_item_to_memory({
                 "id": "cluster",
@@ -127,7 +129,9 @@ class Gateways(YomboLibrary, LibraryDBParentMixin, LibrarySearchMixin):
                 "status": 1,
                 "_fake_data": True,
             },
-            load_source="system"
+            load_source="system",
+            request_context="gateways::init",
+            authentication=self.AUTH_USER
         )
         yield self.load_from_database()
 

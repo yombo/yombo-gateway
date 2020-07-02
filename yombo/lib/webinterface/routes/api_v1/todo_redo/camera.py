@@ -23,8 +23,8 @@ def route_api_v1_camera(webapp):
             else:
                 return return_not_found(request, "Device not found")
 
-            arguments = request_args(request)
-            print("arguments: %s" % arguments)
+            arguments = request_args(webinterface, request)
+            # print(f"arguments: {arguments}")
 
             try:
                 framerate = int(arguments["framerate"])
@@ -69,8 +69,8 @@ def route_api_v1_camera(webapp):
             else:
                 return return_not_found(request, "Device not found")
 
-            arguments = request_args(request)
-            print("arguments: %s" % arguments)
+            arguments = request_args(webinterface, request)
+            # print(f"arguments: {arguments}")
 
             try:
                 framerate = int(arguments["framerate"])

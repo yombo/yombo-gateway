@@ -141,7 +141,7 @@ class Times(YomboLibrary):
 
     @is_moon_visible.setter
     def is_moon_visible(self, val):
-        self._States.set("is.moonvisible", val, value_type="bool", request_context=self._FullName)
+        self._States.set("is.moonvisible", val, value_type="bool", authentication=self.AUTH_USER)
         self.__is_moon_visible = val
         self._Statistics.datapoint("lib.times.is_moonvisible", is_one_zero(val))
 
@@ -151,7 +151,7 @@ class Times(YomboLibrary):
 
     @is_sun_visible.setter
     def is_sun_visible(self, val):
-        self._States.set("is.sunvisible", val, value_type="bool", request_context=self._FullName)
+        self._States.set("is.sunvisible", val, value_type="bool", authentication=self.AUTH_USER)
         self.__is_sun_visible = val
         self._Statistics.datapoint("lib.times.is_sunvisible", is_one_zero(val))
 
@@ -161,7 +161,7 @@ class Times(YomboLibrary):
 
     @is_twilight.setter
     def is_twilight(self, val):
-        self._States.set("is.twilight", val, value_type="bool", request_context=self._FullName)
+        self._States.set("is.twilight", val, value_type="bool", authentication=self.AUTH_USER)
         self.__is_twilight = val
         self._Statistics.datapoint("lib.times.is_twilight", is_one_zero(val))
 
@@ -171,7 +171,7 @@ class Times(YomboLibrary):
 
     @is_twilight.setter
     def is_twilight(self, val):
-        self._States.set("is.twilight", val, value_type="bool", request_context=self._FullName)
+        self._States.set("is.twilight", val, value_type="bool", authentication=self.AUTH_USER)
         self.__is_twilight = val
         self._Statistics.datapoint("lib.times.is_twilight", is_one_zero(val))
 
@@ -181,7 +181,7 @@ class Times(YomboLibrary):
 
     @is_light.setter
     def is_light(self, val):
-        self._States.set("is.light", val, value_type="bool", request_context=self._FullName)
+        self._States.set("is.light", val, value_type="bool", authentication=self.AUTH_USER)
         self.__is_light = val
         self._Statistics.datapoint("lib.times.is_light", is_one_zero(val))
 
@@ -191,7 +191,7 @@ class Times(YomboLibrary):
 
     @is_dark.setter
     def is_dark(self, val):
-        self._States.set("is.dark", val, value_type="bool", request_context=self._FullName)
+        self._States.set("is.dark", val, value_type="bool", authentication=self.AUTH_USER)
         self.__is_dark = val
         self._Statistics.datapoint("lib.times.is_dark", is_one_zero(val))
 
@@ -201,7 +201,7 @@ class Times(YomboLibrary):
 
     @is_day.setter
     def is_day(self, val):
-        self._States.set("is.day", val, value_type="bool", request_context=self._FullName)
+        self._States.set("is.day", val, value_type="bool", authentication=self.AUTH_USER)
         self.__is_day = val
         self._Statistics.datapoint("lib.times.is_day", is_one_zero(val))
 
@@ -211,7 +211,7 @@ class Times(YomboLibrary):
 
     @is_night.setter
     def is_night(self, val):
-        self._States.set("is.night", val, value_type="bool", request_context=self._FullName)
+        self._States.set("is.night", val, value_type="bool", authentication=self.AUTH_USER)
         self.__is_night = val
         self._Statistics.datapoint("lib.times.is_night", is_one_zero(val))
 
@@ -221,7 +221,7 @@ class Times(YomboLibrary):
 
     @is_dawn.setter
     def is_dawn(self, val):
-        self._States.set("is.dawn", val, value_type="bool", request_context=self._FullName)
+        self._States.set("is.dawn", val, value_type="bool", authentication=self.AUTH_USER)
         self.__is_dawn = val
         self._Statistics.datapoint("lib.times.is_dawn", is_one_zero(val))
 
@@ -231,7 +231,7 @@ class Times(YomboLibrary):
 
     @is_dusk.setter
     def is_dusk(self, val):
-        self._States.set("is.dusk", val, value_type="bool", request_context=self._FullName)
+        self._States.set("is.dusk", val, value_type="bool", authentication=self.AUTH_USER)
         self.__is_dusk = val
         self._Statistics.datapoint("lib.times.is_dusk", is_one_zero(val))
 
@@ -241,7 +241,7 @@ class Times(YomboLibrary):
 
     @is_weekend.setter
     def is_weekend(self, val):
-        self._States.set("is.weekend", val, value_type="bool", request_context=self._FullName)
+        self._States.set("is.weekend", val, value_type="bool", authentication=self.AUTH_USER)
         self.__is_weekend = val
 
     @property
@@ -250,7 +250,7 @@ class Times(YomboLibrary):
 
     @is_weekday.setter
     def is_weekday(self, val):
-        self._States.set("is.weekday", val, value_type="bool", request_context=self._FullName)
+        self._States.set("is.weekday", val, value_type="bool", authentication=self.AUTH_USER)
         self.__is_weekday = val
 
     @property
@@ -259,7 +259,7 @@ class Times(YomboLibrary):
 
     @day_of_week.setter
     def day_of_week(self, val):
-        self._States.set("day_of_week", val, value_type="string", request_context=self._FullName)
+        self._States.set("day_of_week", val, value_type="string", authentication=self.AUTH_USER)
         self.__day_of_week = val
 
     @property
@@ -270,11 +270,11 @@ class Times(YomboLibrary):
     def next_day(self, val):
         if "__next_day" in locals():
             if val != self.__next_day:
-                self._States.set("next.day", int(round(val)), value_type="epoch", request_context=self._FullName)
+                self._States.set("next.day", int(round(val)), value_type="epoch", authentication=self.AUTH_USER)
                 self.__next_day = val
         else:
             self.__next_day = val
-            self._States.set("next.day", int(round(val)), value_type="epoch", request_context=self._FullName)
+            self._States.set("next.day", int(round(val)), value_type="epoch", authentication=self.AUTH_USER)
 
     @property
     def next_night(self):
@@ -284,11 +284,11 @@ class Times(YomboLibrary):
     def next_night(self, val):
         if "__next_night" in locals():
             if val != self.__next_night:
-                self._States.set("next.night", int(round(val)), value_type="epoch", request_context=self._FullName)
+                self._States.set("next.night", int(round(val)), value_type="epoch", authentication=self.AUTH_USER)
                 self.__next_night = val
         else:
             self.__next_night = val
-            self._States.set("next.night", int(round(val)), value_type="epoch", request_context=self._FullName)
+            self._States.set("next.night", int(round(val)), value_type="epoch", authentication=self.AUTH_USER)
 
     @property
     def next_light(self):
@@ -298,11 +298,11 @@ class Times(YomboLibrary):
     def next_light(self, val):
         if "__next_light" in locals():
             if val != self.__next_light:
-                self._States.set("next.light", int(round(val)), value_type="epoch", request_context=self._FullName)
+                self._States.set("next.light", int(round(val)), value_type="epoch", authentication=self.AUTH_USER)
                 self.__next_light = val
         else:
             self.__next_light = val
-            self._States.set("next.light", int(round(val)), value_type="epoch", request_context=self._FullName)
+            self._States.set("next.light", int(round(val)), value_type="epoch", authentication=self.AUTH_USER)
 
     @property
     def next_dark(self):
@@ -312,11 +312,11 @@ class Times(YomboLibrary):
     def next_dark(self, val):
         if "__next_dark" in locals():
             if val != self.__next_dark:
-                self._States.set("next.dark", int(round(val)), value_type="epoch", request_context=self._FullName)
+                self._States.set("next.dark", int(round(val)), value_type="epoch", authentication=self.AUTH_USER)
                 self.__next_dark = val
         else:
             self.__next_dark = val
-            self._States.set("next.dark", int(round(val)), value_type="epoch", request_context=self._FullName)
+            self._States.set("next.dark", int(round(val)), value_type="epoch", authentication=self.AUTH_USER)
 
     @property
     def next_wilight_start(self):
@@ -326,11 +326,11 @@ class Times(YomboLibrary):
     def next_wilight_start(self, val):
         if "__next_wilight_start" in locals():
             if val != self.__next_wilight_start:
-                self._States.set("next.twilightstart", int(round(val)), value_type="epoch", request_context=self._FullName)
+                self._States.set("next.twilightstart", int(round(val)), value_type="epoch", authentication=self.AUTH_USER)
                 self.__next_wilight_start = val
         else:
             self.__next_wilight_start = val
-            self._States.set("next.twilightstart", int(round(val)), value_type="epoch", request_context=self._FullName)
+            self._States.set("next.twilightstart", int(round(val)), value_type="epoch", authentication=self.AUTH_USER)
 
     @property
     def next_twilight_end(self):
@@ -340,11 +340,11 @@ class Times(YomboLibrary):
     def next_twilight_end(self, val):
         if "__next_twilight_end" in locals():
             if val != self.__next_twilight_end:
-                self._States.set("next.twilightend", int(round(val)), value_type="epoch", request_context=self._FullName)
+                self._States.set("next.twilightend", int(round(val)), value_type="epoch", authentication=self.AUTH_USER)
                 self.__next_twilight_end = val
         else:
             self.__next_twilight_end = val
-            self._States.set("next.twilightend", int(round(val)), value_type="epoch", request_context=self._FullName)
+            self._States.set("next.twilightend", int(round(val)), value_type="epoch", authentication=self.AUTH_USER)
 
     @property
     def next_sunrise(self):
@@ -354,11 +354,11 @@ class Times(YomboLibrary):
     def next_sunrise(self, val):
         if "__next_sunrise" in locals():
             if val != self.__next_sunrise:
-                self._States.set("next.sunrise", int(round(val)), value_type="epoch", request_context=self._FullName)
+                self._States.set("next.sunrise", int(round(val)), value_type="epoch", authentication=self.AUTH_USER)
                 self.__next_sunrise = val
         else:
             self.__next_sunrise = val
-            self._States.set("next.sunrise", int(round(val)), value_type="epoch", request_context=self._FullName)
+            self._States.set("next.sunrise", int(round(val)), value_type="epoch", authentication=self.AUTH_USER)
 
     @property
     def next_sunset(self, val):
@@ -368,10 +368,10 @@ class Times(YomboLibrary):
     def next_sunset(self, val):
         if "__next_sunset" in locals():
             if val != self.__next_sunset:
-                self._States.set("next.sunset", int(round(val)), value_type="epoch", request_context=self._FullName)
+                self._States.set("next.sunset", int(round(val)), value_type="epoch", authentication=self.AUTH_USER)
                 self.__next_sunset = val
         else:
-            self._States.set("next.sunset", int(round(val)), value_type="epoch", request_context=self._FullName)
+            self._States.set("next.sunset", int(round(val)), value_type="epoch", authentication=self.AUTH_USER)
             self.__next_sunset = val
 
     @property
@@ -382,10 +382,10 @@ class Times(YomboLibrary):
     def next_moonrise(self, val):
         if "__moonRise" in locals():
             if val != self.__moonRise:
-                self._States.set("next.moonrise", int(round(val)), value_type="epoch", request_context=self._FullName)
+                self._States.set("next.moonrise", int(round(val)), value_type="epoch", authentication=self.AUTH_USER)
                 self.__moonRise = val
         else:
-            self._States.set("next.moonrise", int(round(val)), value_type="epoch", request_context=self._FullName)
+            self._States.set("next.moonrise", int(round(val)), value_type="epoch", authentication=self.AUTH_USER)
             self.__moonRise = val
 
     @property
@@ -396,10 +396,10 @@ class Times(YomboLibrary):
     def next_moonset(self, val):
         if "__moonSet" in locals():
             if val != self.__moonSet:
-                self._States.set("next.moonset", int(round(val)), value_type="epoch", request_context=self._FullName)
+                self._States.set("next.moonset", int(round(val)), value_type="epoch", authentication=self.AUTH_USER)
                 self.__moonSet = val
         else:
-            self._States.set("next.moonset", int(round(val)), value_type="epoch", request_context=self._FullName)
+            self._States.set("next.moonset", int(round(val)), value_type="epoch", authentication=self.AUTH_USER)
             self.__moonSet = val
 
     # Functions dealing with celestial objects
@@ -616,11 +616,12 @@ class Times(YomboLibrary):
 
         if self.item_visible(item="Moon"):
             # print(f"setting send_now_moonset to call in: {moonset-cur_time}")
-            self._CallLater.new(moonset-cur_time+0.1, self._send_now_moonset, _task_description="Sets moonset state.")
-            self._CallLater.new(moonset-cur_time+1, self._setup_moon_events)
+            self._CallLater.new(moonset-cur_time+0.1, self._send_now_moonset, _task_description="Sets moonset state.",
+                                _authentication=self.AUTH_USER)
+            self._CallLater.new(moonset-cur_time+1, self._setup_moon_events, _authentication=self.AUTH_USER)
         else:
-            self._CallLater.new(moonrise-cur_time+0.1, self._send_now_moonrise)
-            self._CallLater.new(moonrise-cur_time+1, self._setup_moon_events)
+            self._CallLater.new(moonrise-cur_time+0.1, self._send_now_moonrise, _authentication=self.AUTH_USER)
+            self._CallLater.new(moonrise-cur_time+1, self._setup_moon_events, _authentication=self.AUTH_USER)
 
     def _setup_light_dark_events(self):
         """
@@ -642,11 +643,11 @@ class Times(YomboLibrary):
             self.next_light = sunrise
 
         if self.is_light:  # set a callLater to redo islight/dark, and setup next broadcast.
-            self._CallLater.new(sunset-cur_time+0.1, self._send_now_dark)
-            self._CallLater.new(sunset-cur_time+1, self._setup_light_dark_events)
+            self._CallLater.new(sunset-cur_time+0.1, self._send_now_dark, _authentication=self.AUTH_USER)
+            self._CallLater.new(sunset-cur_time+1, self._setup_light_dark_events, _authentication=self.AUTH_USER)
         else:
-            self._CallLater.new(sunrise-cur_time+0.1, self._send_now_light)
-            self._CallLater.new(sunrise-cur_time+1, self._setup_light_dark_events)
+            self._CallLater.new(sunrise-cur_time+0.1, self._send_now_light, _authentication=self.AUTH_USER)
+            self._CallLater.new(sunrise-cur_time+1, self._setup_light_dark_events, _authentication=self.AUTH_USER)
 
     def _setup_day_night_events(self):
         """
@@ -670,12 +671,12 @@ class Times(YomboLibrary):
 
         if self.is_day:
             # logger.debug("NowNight event in: {setTime}", setTime=setTime)
-            self._CallLater.new(sunset-cur_time+0.1, self._send_now_night)
-            self._CallLater.new(sunset-cur_time+1, self._setup_day_night_events)
+            self._CallLater.new(sunset-cur_time+0.1, self._send_now_night, _authentication=self.AUTH_USER)
+            self._CallLater.new(sunset-cur_time+1, self._setup_day_night_events, _authentication=self.AUTH_USER)
         else:
             # logger.debug("NowDay event in: {setTime}", setTime=setTime)
-            self._CallLater.new(sunrise-cur_time+0.1, self._send_now_day)
-            self._CallLater.new(sunrise-cur_time+1, self._setup_day_night_events)
+            self._CallLater.new(sunrise-cur_time+0.1, self._send_now_day, _authentication=self.AUTH_USER)
+            self._CallLater.new(sunrise-cur_time+1, self._setup_day_night_events, _authentication=self.AUTH_USER)
 
 
             #set a callLater to redo isday/night, and setup next broadcast.
@@ -699,8 +700,9 @@ class Times(YomboLibrary):
             riseTime = self.sunrise() + 1.1
             twTime = min(setTime, riseTime)
             logger.debug("nowNotTwilight event in: {twTime}", twTime=twTime)
-            self._CallLater.new(twTime-cur_time, self.send_event_hook, "now_twilight_end")
-            self._CallLater.new(twTime-cur_time+1, self._setup_next_twilight_events)
+            self._CallLater.new(twTime-cur_time, self.send_event_hook, "now_twilight_end",
+                                _authentication=self.AUTH_USER)
+            self._CallLater.new(twTime-cur_time+1, self._setup_next_twilight_events, _authentication=self.AUTH_USER)
             self.next_twilight_end = twTime
 
             setTime = self.sunset() + 1.1
@@ -713,8 +715,9 @@ class Times(YomboLibrary):
             riseTime = self.sunrise_twilight() + 1.1
             twTime = min(setTime, riseTime)
             logger.debug("nowTwilight event in: {twTime}", twTime=twTime)
-            self._CallLater.new(twTime-cur_time, self.send_event_hook, "now_twilight_start")
-            self._CallLater.new(twTime-cur_time+1, self._setup_next_twilight_events)
+            self._CallLater.new(twTime-cur_time, self.send_event_hook, "now_twilight_start",
+                                _authentication=self.AUTH_USER)
+            self._CallLater.new(twTime-cur_time+1, self._setup_next_twilight_events, _authentication=self.AUTH_USER)
             self.next_wilight_start = twTime
 
             setTime = self.sunset_twilight() + 1.1
@@ -747,14 +750,16 @@ class Times(YomboLibrary):
         secsSetEnd = sunset_end - curtime
         if self.is_twilight == True: # It's twilight. Sun is down.
             if secsRiseEnd < secsSetEnd: #  it's dawn right now = twilight + closer to sunrise's end
-                self._CallLater.new(secsRiseEnd+1.1, self._send_now_dawn_end) # set a timer for no more dawn
-                self._CallLater.new(secsRiseEnd+2, self._setup_next_dawn_dusk_event)
+                self._CallLater.new(secsRiseEnd+1.1, self._send_now_dawn_end,
+                                    _authentication=self.AUTH_USER)  # set a timer for no more dawn
+                self._CallLater.new(secsRiseEnd+2, self._setup_next_dawn_dusk_event, _authentication=self.AUTH_USER)
                 if self.is_now_init:
                     self.is_dawn = True
                     self.is_dusk = False
             else: # else, closer to sunset.
-                self.CLnowNotDusk = self._CallLater.new(secsSetEnd+1.1, self._send_now_dusk_end) # set a timer for no more dusk
-                self._CallLater.new(secsSetEnd+2, self._setup_next_dawn_dusk_event)
+                self.CLnowNotDusk = self._CallLater.new(secsSetEnd+1.1, self._send_now_dusk_end,
+                                                        _authentication=self.AUTH_USER)  # set a timer for no more dusk
+                self._CallLater.new(secsSetEnd+2, self._setup_next_dawn_dusk_event, _authentication=self.AUTH_USER)
                 if self.is_now_init:
                     self.is_dawn = False
                     self.is_dusk = True
@@ -764,11 +769,12 @@ class Times(YomboLibrary):
                 self.is_dusk = False
 
             if secsRise < secsSet: #  it's going to be dawn next = no twilight + closer to sunrise
-                self.CLnowDawn = self._CallLater.new(secsRise+1.1, self._send_now_dawn_start) # set a timer for is dawn
-                self._CallLater.new(secsRise+2, self._setup_next_dawn_dusk_event)
+                self.CLnowDawn = self._CallLater.new(secsRise+1.1, self._send_now_dawn_start,
+                                                     _authentication=self.AUTH_USER)  # set a timer for is dawn
+                self._CallLater.new(secsRise+2, self._setup_next_dawn_dusk_event, _authentication=self.AUTH_USER)
             else: # else, we are closer to sunset!
                 self.CLnowDusk = self._CallLater.new(secsSet+1.1, self._send_now_dusk_start) # set a timer for is dusk
-                self._CallLater.new(secsSet+2, self._setup_next_dawn_dusk_event)
+                self._CallLater.new(secsSet+2, self._setup_next_dawn_dusk_event, _authentication=self.AUTH_USER)
         logger.debug("Start next twilight in: rise begins {secsRise} (set begins {secSet}), stop next twilight: rise ends {secsRiseEnd} (set ends {secSetEnd})",
                      secsRise=secsRise, secsSet=secsSet, secsRiseEnd=secsRiseEnd, secsSetEnd=secsSetEnd)
 
@@ -796,7 +802,8 @@ class Times(YomboLibrary):
             self.is_weekend = True
 
         self.day_of_week = day_map[day_number]
-        self._CallLater.new(dt.get_next_time("12:00am")[0] - time.time(), self._setup_weekday_events)
+        self._CallLater.new(dt.get_next_time("12:00am")[0] - time.time(), self._setup_weekday_events,
+                            _authentication=self.AUTH_USER)
 
     def _send_now_night(self):
         """

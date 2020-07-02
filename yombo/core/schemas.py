@@ -191,7 +191,7 @@ class AtomSchema(YomboSchemaBase):
 
     @validates_schema
     def validate_value_human(self, incoming, **kwargs):
-        if incoming["value_human"] is None:
+        if incoming.get("value_human", None) is None:
             return
         if isinstance(incoming["value_human"], int) or isinstance(incoming["value_human"], float):
             incoming["value_human"] = str(incoming["value_human"])
@@ -205,6 +205,7 @@ class AtomSchema(YomboSchemaBase):
             raise ValidationError("Atom value_human length must be less than 8192.",
                                   field_name="value_human",
                                   data=incoming["value_human"])
+
 
 class AuthKeySchema(YomboSchemaBase):
     _id_length = AUTHKEY_ID_LENGTH
@@ -240,14 +241,13 @@ class AuthKeySchema(YomboSchemaBase):
         if isinstance(incoming["status"], int) is False or incoming["status"] < 0 or incoming["status"] > 2:
             raise ValidationError("'status' must be an integer ranging from 0 to 2.")
 
-        if "id" not in incoming:
-            auth_key_id_full = random_string(length=AUTHKEY_ID_LENGTH_FULL)
-            auth_key_id = self._Hash.sha256_compact(auth_key_id_full)
-            incoming["id"] = auth_key_id
-            if incoming["preserve_key"] is True:
-                incoming["auth_key_id_full"] = auth_key_id_full
-            else:
-                incoming["auth_key_id_full"] = None
+        auth_key_id_full = random_string(length=AUTHKEY_ID_LENGTH_FULL)
+        auth_key_id = self._Hash.sha256_compact(auth_key_id_full)
+        incoming["id"] = auth_key_id
+        if incoming["preserve_key"] is True:
+            incoming["auth_key_id_full"] = auth_key_id_full
+        else:
+            incoming["auth_key_id_full"] = None
 
         if "auth_key_id_full" not in incoming:
             incoming["auth_key_id_full"] = None
@@ -867,7 +867,7 @@ class StateSchema(YomboSchemaBase):
 
     @validates_schema
     def validate_value_human(self, incoming, **kwargs):
-        if incoming["value_human"] is None:
+        if incoming.get("value_human", None) is None:
             return
         if isinstance(incoming["value_human"], int) or isinstance(incoming["value_human"], float):
             incoming["value_human"] = str(incoming["value_human"])
